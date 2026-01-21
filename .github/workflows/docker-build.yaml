@@ -54,15 +54,34 @@ jobs:
       - name: Get short SHA and branch info
         id: vars
         run: |
+          # Validate github.sha is not empty
+          if [ -z "${{ github.sha }}" ]; then
+            echo "Error: github.sha is empty. Cannot proceed with build."
+            exit 1
+          fi
+          
           SHORT=$(echo ${{ github.sha }} | cut -c1-7)
           echo "short=$SHORT" >> $GITHUB_OUTPUT
+          
           if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/dev" ]; then
             echo "branch=dev" >> $GITHUB_OUTPUT
             echo "tag_prefix=dev" >> $GITHUB_OUTPUT
           else
             echo "branch=pr" >> $GITHUB_OUTPUT
-            echo "tag_prefix=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-
+            # Handle empty PR number gracefully
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            if [ -z "$PR_NUMBER" ]; then
+              # Fallback to branch name or generic identifier
+              BRANCH_NAME="${{ github.head_ref }}"
+              if [ -z "$BRANCH_NAME" ]; then
+                PR_NUMBER="unknown"
+              else
+                # Use sanitized branch name (replace / with -)
+                PR_NUMBER=$(echo "$BRANCH_NAME" | tr '/' '-')
+              fi
+            fi
+            echo "tag_prefix=pr-$PR_NUMBER" >> $GITHUB_OUTPUT
+          fi
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -110,6 +129,12 @@ jobs:
       - name: Get short SHA and branch info
         id: vars
         run: |
+          # Validate github.sha is not empty
+          if [ -z "${{ github.sha }}" ]; then
+            echo "Error: github.sha is empty. Cannot proceed with manifest creation."
+            exit 1
+          fi
+          
           echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
           echo "tag_prefix=dev" >> $GITHUB_OUTPUT
 
