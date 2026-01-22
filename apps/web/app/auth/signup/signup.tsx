@@ -19,7 +19,6 @@ import toast from 'react-hot-toast'
 import { BarLoader } from 'react-spinners'
 import { joinOrg } from '@services/organizations/orgs'
 import { useTranslation } from 'react-i18next'
-import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
 interface SignUpClientProps {
   org: any
@@ -46,11 +45,9 @@ function SignUpClient(props: SignUpClientProps) {
 
   return (
     <div className="grid grid-flow-col justify-stretch h-screen">
-      <div className="absolute top-4 right-4 z-50">
-        <LanguageSwitcher />
-      </div>
+    
       <div
-        className="right-login-part"
+        className="right-login-part hidden lg:block"
         style={{
           background:
             'linear-gradient(041.61deg, #202020 7.15%, #000000 90.96%)',
@@ -95,7 +92,7 @@ function SignUpClient(props: SignUpClientProps) {
           </div>
         </div>
       </div>
-      <div className="left-join-part bg-white flex flex-row">
+      <div className="left-join-part bg-white flex items-center justify-center ">
         {joinMethod == 'open' &&
           (session.status == 'authenticated' ? (
             <LoggedInJoinScreen inviteCode={inviteCode} />
