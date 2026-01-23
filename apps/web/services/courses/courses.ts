@@ -16,12 +16,34 @@ export async function getOrgCourses(
   next: any,
   access_token?: any
 ) {
-  const result: any = await fetch(
-    `${getAPIUrl()}courses/org_slug/${org_slug}/page/1/limit/100`,
-    RequestBodyWithAuthHeader('GET', null, next, access_token)
-  )
-  const res = await errorHandling(result)
-  return res
+  const apiUrl = getAPIUrl()
+  const fullUrl = `${apiUrl}courses/org_slug/${org_slug}/page/1/limit/100`
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[getOrgCourses] 🔍 Fetching from: "${fullUrl}"`)
+    console.log(`[getOrgCourses] API URL base: "${apiUrl}"`)
+  }
+  
+  try {
+    const result: any = await fetch(
+      fullUrl,
+      RequestBodyWithAuthHeader('GET', null, next, access_token)
+    )
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[getOrgCourses] ✅ Fetch successful, status: ${result.status}`)
+    }
+    
+    const res = await errorHandling(result)
+    return res
+  } catch (error: any) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[getOrgCourses] ❌ Fetch failed for URL: "${fullUrl}"`)
+      console.error(`[getOrgCourses] Error details:`, error.message)
+      console.error(`[getOrgCourses] Error stack:`, error.stack)
+    }
+    throw error
+  }
 }
 
 export async function searchOrgCourses(

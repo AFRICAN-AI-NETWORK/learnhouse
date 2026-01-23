@@ -167,6 +167,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
               onChange={formik.handleChange}
               value={formik.values.password}
               type="password"
+              autoComplete="new-password"
               required
             />
           </Form.Control>
