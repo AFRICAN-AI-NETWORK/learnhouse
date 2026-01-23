@@ -49,12 +49,9 @@ if (!process.env.HOSTNAME) {
   process.env.HOSTNAME = '0.0.0.0';
 }
 
-// Set PORT from environment or default
-// IMPORTANT: If PORT is 80 (set by Coolify), change to 8000 (Nginx uses 80, frontend uses 8000)
-if (process.env.PORT === '80') {
-  process.env.PORT = '8000';
-} else if (!process.env.PORT) {
-  process.env.PORT = '8000'; // Default to 8000 for production (was 3000 for dev)
+// Set PORT from environment or default to 3000
+if (!process.env.PORT) {
+  process.env.PORT = '3000';
 }
 
 // Now require and run the actual Next.js server
