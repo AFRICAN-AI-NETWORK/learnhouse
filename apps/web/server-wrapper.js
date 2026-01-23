@@ -75,5 +75,5 @@ if (!process.env.PORT) {
 
 // Now require and run the actual Next.js server
 // The server.js is in the same directory (standalone output)
-require('./server.js');
+require('./.next/standalone/server.js');
 
