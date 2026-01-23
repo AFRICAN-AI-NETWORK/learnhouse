@@ -134,277 +134,279 @@ function OpenSignUpComponent() {
           <div className="flex justify-end mb-4">
             <LanguageSwitcher />
           </div>
-          
+
           <div className=" space-y-4">
-      {/* Error feedback */}
-      {error && (
-        <div className="flex items-start gap-2 rounded-md bg-red-100 p-4 text-red-900 shadow-sm">
-          <AlertTriangle size={18} className="mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold">We couldn’t create your account</p>
-            <p className="opacity-90">{error}</p>
-          </div>
-        </div>
-      )}
+            {/* Error feedback */}
+            {error && (
+              <div className="flex items-start gap-2 rounded-md bg-red-100 p-4 text-red-900 shadow-sm">
+                <AlertTriangle size={18} className="mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-semibold">We couldn’t create your account</p>
+                  <p className="opacity-90">{error}</p>
+                </div>
+              </div>
+            )}
 
-      {/* Success feedback */}
-      {message && (
-        <div className="flex flex-col gap-3 rounded-md bg-green-100 p-4 text-green-900 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Check size={18} />
-            <p className="text-sm font-semibold">{message}</p>
-          </div>
+            {/* Success feedback */}
+            {message && (
+              <div className="flex flex-col gap-3 rounded-md bg-green-100 p-4 text-green-900 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Check size={18} />
+                  <p className="text-sm font-semibold">{message}</p>
+                </div>
 
-          <p className="text-xs opacity-80">
-            Your account is ready. You can now sign in and get started.
-          </p>
+                <p className="text-xs opacity-80">
+                  Your account is ready. You can now sign in and get started.
+                </p>
 
-          <Link
-            href="/login"
-            className="flex items-center gap-2 text-sm font-semibold underline"
-          >
-            <User size={14} />
-            {t('auth.login')}
-          </Link>
-        </div>
-      )}
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 text-sm font-semibold underline"
+                >
+                  <User size={14} />
+                  {t('auth.login')}
+                </Link>
+              </div>
+            )}
 
-      {/* Header */}
-      <div className="text-center space-y-1 flex flex-col   items-center">
-             <Image
+            {/* Header */}
+            <div className="text-center space-y-1 flex flex-col   items-center">
+              <Image
                 quality={100}
                 width={50}
                 height={50}
                 src={learnhouseIcon}
                 alt="learnhouseicon"
-               />
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t('auth.create_account')}
-        </h1>
-      
-        <p className="text-sm text-slate-600">
-          Create your account in just a few steps
-        </p>
-      </div>
-
-      <FormLayout onSubmit={formik.handleSubmit} className='border-2 border-gray-100 rounded-2xl p-5'>
-        {/* Email */}
-        <FormField name="email">
-          <FormLabelAndMessage label={t('auth.email')} />
-          <div className="relative">
-            <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Form.Control asChild>
-              <Input
-                className={`pl-10 ${formik.errors.email
-                    ? 'border-red-400 focus:ring-red-400'
-                    : ''
-                  }`}
-                onChange={formik.handleChange}
-                value={formik.values.email}
-                type="email"
-                placeholder="you@example.com"
-                required
               />
-            </Form.Control>
-          </div>
-          {formik.errors.email && (
-            <p className="mt-1 text-xs text-red-600">{formik.errors.email}</p>
-          )}
-        </FormField>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {t('auth.create_account')}
+              </h1>
 
-        {/* Names */}
-        <div className="flex flex-col md:flex-row gap-2">
-          <FormField name="first_name">
-            <FormLabelAndMessage label={t('user.first_name')} />
-            <Form.Control asChild>
-              <Input
-                onChange={formik.handleChange}
-                value={formik.values.first_name}
-                placeholder="First name"
-                type="text"
-                required
-              />
-            </Form.Control>
-            {formik.errors.first_name && (
-              <p className="mt-1 text-xs text-red-600">{formik.errors.first_name}</p>
-            )}
-          </FormField>
+              <p className="text-sm text-slate-600">
+                Create your account in just a few steps
+              </p>
+            </div>
 
-          <FormField name="last_name">
-            <FormLabelAndMessage label={t('user.last_name')} />
-            <Form.Control asChild>
-              <Input
-                onChange={formik.handleChange}
-                value={formik.values.last_name}
-                placeholder="Last name"
-                type="text"
-                required
-              />
-            </Form.Control>
-            {formik.errors.last_name && (
-              <p className="mt-1 text-xs text-red-600">{formik.errors.last_name}</p>
-            )}
-          </FormField>
-        </div>
+            <FormLayout onSubmit={formik.handleSubmit} className='border-2 border-gray-100 rounded-2xl p-5'>
+              {/* Email */}
+              <FormField name="email">
+                <FormLabelAndMessage label={t('auth.email')} />
+                <div className="relative">
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Form.Control asChild>
+                    <Input
+                      className={`pl-10 ${formik.errors.email
+                        ? 'border-red-400 focus:ring-red-400'
+                        : ''
+                        }`}
+                      onChange={formik.handleChange}
+                      value={formik.values.email}
+                      type="email"
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </Form.Control>
+                </div>
+                {formik.errors.email && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.email}</p>
+                )}
+              </FormField>
 
-             {/* Password */}
-            <FormField name="password">
-              <FormLabelAndMessage label={t('auth.password')} />
-              <div className="relative">
-                <LucideLock className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Form.Control asChild>
-                  <Input
-                    className={`pl-10 ${formik.errors.password ? 'border-red-400' : ''}`}
-                    onChange={formik.handleChange}
-                    value={formik.values.password}
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a strong password"
-                    required
-                  />
-                </Form.Control>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev: any) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              {/* Names */}
+              <div className="flex flex-col md:flex-row gap-2">
+                <FormField name="first_name">
+                  <FormLabelAndMessage label={t('user.first_name')} />
+                  <Form.Control asChild>
+                    <Input
+                      onChange={formik.handleChange}
+                      value={formik.values.first_name}
+                      placeholder="First name"
+                      type="text"
+                      required
+                    />
+                  </Form.Control>
+                  {formik.errors.first_name && (
+                    <p className="mt-1 text-xs text-red-600">{formik.errors.first_name}</p>
+                  )}
+                </FormField>
+
+                <FormField name="last_name">
+                  <FormLabelAndMessage label={t('user.last_name')} />
+                  <Form.Control asChild>
+                    <Input
+                      onChange={formik.handleChange}
+                      value={formik.values.last_name}
+                      placeholder="Last name"
+                      type="text"
+                      required
+                    />
+                  </Form.Control>
+                  {formik.errors.last_name && (
+                    <p className="mt-1 text-xs text-red-600">{formik.errors.last_name}</p>
+                  )}
+                </FormField>
               </div>
-              {formik.errors.password && (
-                <p className="mt-1 text-xs text-red-600">{formik.errors.password}</p>
-              )}
 
-              {formik.values.password && (() => {
-                const strength = getPasswordStrength(formik.values.password)
-                return (
-                  <div className="mt-2 space-y-2">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <div
-                          key={i}
-                          className={`h-1 flex-1 rounded-full ${i <= strength.score
+              {/* Password */}
+              <FormField name="password">
+                <FormLabelAndMessage label={t('auth.password')} />
+                <div className="relative">
+                  <LucideLock className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Form.Control asChild>
+                    <Input
+                      className={`pl-10 ${formik.errors.password ? 'border-red-400' : ''}`}
+                      onChange={formik.handleChange}
+                      value={formik.values.password}
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Create a strong password"
+                      autoComplete="new-password"
+                      required
+                    />
+                  </Form.Control>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev: any) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {formik.errors.password && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.password}</p>
+                )}
+
+                {formik.values.password && (() => {
+                  const strength = getPasswordStrength(formik.values.password)
+                  return (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-1 flex-1 rounded-full ${i <= strength.score
                               ? strength.strength === 'strong'
                                 ? 'bg-green-500'
                                 : strength.strength === 'medium'
                                   ? 'bg-yellow-500'
                                   : 'bg-red-500'
                               : 'bg-slate-200'
-                            }`}
-                        />
-                      ))}
+                              }`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Use at least 8 characters, one uppercase letter, and one number.
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-600">
-                      Use at least 8 characters, one uppercase letter, and one number.
-                    </p>
-                  </div>
-                )
-              })()}
-            </FormField>
+                  )
+                })()}
+              </FormField>
 
-        
-            {/* Confirm Password */}
-            <FormField name="confirmPassword">
-              <FormLabelAndMessage label={t('auth.confirm_password')} />
-              <div className="relative">
-                <LucideLock className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+
+              {/* Confirm Password */}
+              <FormField name="confirmPassword">
+                <FormLabelAndMessage label={t('auth.confirm_password')} />
+                <div className="relative">
+                  <LucideLock className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Form.Control asChild>
+                    <Input
+                      className={`pl-10 ${formik.errors.confirmPassword ? 'border-red-400' : ''}`}
+                      onChange={formik.handleChange}
+                      value={formik.values.confirmPassword}
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirm password"
+                      autoComplete="new-password"
+                      required
+                    />
+                  </Form.Control>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev: any) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {formik.errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.confirmPassword}</p>
+                )}
+              </FormField>
+
+              {/* Username */}
+              <FormField name="username">
+                <FormLabelAndMessage label={t('user.username')} />
+                <div className="relative">
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Form.Control asChild>
+                    <Input
+                      className="pl-10"
+                      onChange={formik.handleChange}
+                      value={formik.values.username}
+                      placeholder="Choose a unique username"
+                      type="text"
+                      required
+                    />
+                  </Form.Control>
+                </div>
+                {formik.errors.username && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.username}</p>
+                )}
+              </FormField>
+
+              {/* Bio */}
+              <FormField name="bio">
+                <FormLabelAndMessage label={t('user.bio')} />
                 <Form.Control asChild>
-                  <Input
-                    className={`pl-10 ${formik.errors.confirmPassword ? 'border-red-400' : ''}`}
+                  <Textarea
+                    className="resize-none"
+                    rows={4}
                     onChange={formik.handleChange}
-                    value={formik.values.confirmPassword}
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Confirm password"
+                    value={formik.values.bio}
+                    placeholder="Tell us a bit about yourself"
                     required
                   />
                 </Form.Control>
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((prev: any) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                {formik.errors.bio && (
+                  <p className="mt-1 text-xs text-red-600">{formik.errors.bio}</p>
+                )}
+              </FormField>
+
+              {/* Submit */}
+              <div className="py-4">
+                <Form.Submit asChild>
+                  <button
+                    disabled={isSubmitting}
+                    className="w-full flex items-center justify-center gap-2 rounded-md bg-black p-3 font-semibold text-white shadow hover:opacity-90 disabled:opacity-60"
+                  >
+                    {isSubmitting && (
+                      <LucideLoader2 className="h-4 w-4 animate-spin" />
+                    )}
+                    {isSubmitting
+                      ? t('common.loading')
+                      : t('auth.create_account')}
+                  </button>
+                </Form.Submit>
               </div>
-              {formik.errors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-600">{formik.errors.confirmPassword}</p>
-              )}
-            </FormField>
+            </FormLayout>
 
-        {/* Username */}
-        <FormField name="username">
-          <FormLabelAndMessage label={t('user.username')} />
-          <div className="relative">
-            <User className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Form.Control asChild>
-              <Input
-                className="pl-10"
-                onChange={formik.handleChange}
-                value={formik.values.username}
-                placeholder="Choose a unique username"
-                type="text"
-                required
-              />
-            </Form.Control>
-          </div>
-          {formik.errors.username && (
-            <p className="mt-1 text-xs text-red-600">{formik.errors.username}</p>
-          )}
-        </FormField>
-
-        {/* Bio */}
-        <FormField name="bio">
-          <FormLabelAndMessage label={t('user.bio')} />
-          <Form.Control asChild>
-            <Textarea
-              className="resize-none"
-              rows={4}
-              onChange={formik.handleChange}
-              value={formik.values.bio}
-              placeholder="Tell us a bit about yourself"
-              required
-            />
-          </Form.Control>
-          {formik.errors.bio && (
-            <p className="mt-1 text-xs text-red-600">{formik.errors.bio}</p>
-          )}
-        </FormField>
-
-        {/* Submit */}
-        <div className="py-4">
-          <Form.Submit asChild>
-            <button
-              disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 rounded-md bg-black p-3 font-semibold text-white shadow hover:opacity-90 disabled:opacity-60"
-            >
-              {isSubmitting && (
-                <LucideLoader2 className="h-4 w-4 animate-spin" />
-              )}
-              {isSubmitting
-                ? t('common.loading')
-                : t('auth.create_account')}
-            </button>
-          </Form.Submit>
-        </div>
-      </FormLayout>
-
-          {/* Divider + Google */}
-          <div className='flex flex-col mb-4'>
-            <div className="mx-10 my-5 h-0.5 rounded-2xl bg-slate-100" />
-            <button
-              onClick={() => signIn('google')}
-              className="flex w-full items-center justify-center gap-3 rounded-md bg-white p-3 text-sm font-semibold text-slate-600 shadow-sm hover:cursor-pointer"
-            >
-              <img
-                src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
-                alt=""
-              />
-              <span>{t('auth.sign_in_with_google')}</span>
-            </button>
+            {/* Divider + Google */}
+            <div className='flex flex-col mb-4'>
+              <div className="mx-10 my-5 h-0.5 rounded-2xl bg-slate-100" />
+              <button
+                onClick={() => signIn('google')}
+                className="flex w-full items-center justify-center gap-3 rounded-md bg-white p-3 text-sm font-semibold text-slate-600 shadow-sm hover:cursor-pointer"
+              >
+                <img
+                  src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+                  alt=""
+                />
+                <span>{t('auth.sign_in_with_google')}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </>
+    </>
   )
 }
 

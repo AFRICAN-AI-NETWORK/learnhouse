@@ -194,6 +194,7 @@ function ResetPasswordClient() {
                                     onChange={formik.handleChange}
                                     value={formik.values.new_password}
                                     type="password"
+                                    autoComplete="new-password"
                                 />
                             </Form.Control>
                         </FormField>
@@ -208,6 +209,7 @@ function ResetPasswordClient() {
                                     onChange={formik.handleChange}
                                     value={formik.values.confirm_password}
                                     type="password"
+                                    autoComplete="new-password"
                                 />
                             </Form.Control>
                         </FormField>
