@@ -25,23 +25,42 @@ Object.keys(env).forEach((key) => {
 // Write runtime config JSON file
 const configPath = path.join(__dirname, 'runtime-config.json');
 fs.writeFileSync(configPath, JSON.stringify(runtimeConfig, null, 2), 'utf8');
+console.log(`✅ Wrote runtime-config.json to ${configPath}`);
 
 // Create client-side runtime config script for browser access
-// In Next.js standalone, public files are served from the public directory
-const publicDir = path.join(__dirname, 'public');
-try {
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
+// In Next.js standalone, public files are served from the standalone output's public directory
+// Try multiple possible locations for the public directory
+const possiblePublicDirs = [
+  path.join(__dirname, 'public'),           // Standard location
+  path.join(__dirname, '.next/static'),     // Standalone static assets
+  path.join(__dirname, '.next/standalone/public'), // Alternative location
+];
+
+let publicDir = null;
+for (const dir of possiblePublicDirs) {
+  if (fs.existsSync(dir)) {
+    publicDir = dir;
+    console.log(`✅ Found public directory at: ${dir}`);
+    break;
   }
+}
+
+// If no existing public dir found, create one
+if (!publicDir) {
+  publicDir = path.join(__dirname, 'public');
+  console.log(`📁 Creating public directory at: ${publicDir}`);
+  fs.mkdirSync(publicDir, { recursive: true });
+}
+
+try {
   const scriptPath = path.join(publicDir, 'runtime-config.js');
-  fs.writeFileSync(
-    scriptPath,
-    `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`,
-    'utf8'
-  );
-} catch {
-  // Ignore if can't create (non-critical for server-side rendering)
-  // Client-side config is optional if runtime-config.json is available
+  const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`;
+  fs.writeFileSync(scriptPath, scriptContent, 'utf8');
+  console.log(`✅ Wrote runtime-config.js to ${scriptPath}`);
+  console.log(`📋 Runtime config contains ${Object.keys(runtimeConfig).length} variables`);
+} catch (error) {
+  console.error('❌ Failed to create runtime-config.js:', error.message);
+  console.error('⚠️ Client-side config will rely on server-side rendering fallback');
 }
 
 // Set default HOSTNAME if not provided
@@ -49,12 +68,9 @@ if (!process.env.HOSTNAME) {
   process.env.HOSTNAME = '0.0.0.0';
 }
 
-// Set PORT from environment or default
-// IMPORTANT: If PORT is 80 (set by Coolify), change to 8000 (Nginx uses 80, frontend uses 8000)
-if (process.env.PORT === '80') {
-  process.env.PORT = '8000';
-} else if (!process.env.PORT) {
-  process.env.PORT = '8000'; // Default to 8000 for production (was 3000 for dev)
+// Set PORT from environment or default to 3000
+if (!process.env.PORT) {
+  process.env.PORT = '3000';
 }
 
 // Now require and run the actual Next.js server
