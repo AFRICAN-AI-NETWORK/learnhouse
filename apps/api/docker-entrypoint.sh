@@ -75,7 +75,7 @@ export PYTHONIOENCODING=utf-8
 
 # Get port from config or use default
 PORT=${LEARNHOUSE_PORT:-9000}
-HOST=${HOSTNAME:-0.0.0.0}
+HOST=0.0.0.0  # Bind to all interfaces for healthcheck
 
 echo "Starting LearnHouse backend on ${HOST}:${PORT}..."
 
