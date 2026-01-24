@@ -24,14 +24,6 @@ export default function RootLayout({
     <html className="" lang="en" suppressHydrationWarning>
       <head />
       <body suppressHydrationWarning>
-        {/* Inject runtime configuration for client-side access - optional, fallback to SSR if unavailable */}
-        <Script
-          src="/runtime-config.js"
-          strategy="beforeInteractive"
-          onError={(e) => {
-            console.warn('Runtime config file not available, using server-side fallback');
-          }}
-        />
         {isDevEnv ? '' : <Script data-website-id="a1af6d7a-9286-4a1f-8385-ddad2a29fcbb" src="/umami/script.js" />}
         <SessionProvider key="session-provider" refetchInterval={60000}>
           <LHSessionProvider>
