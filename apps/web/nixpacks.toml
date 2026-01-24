@@ -1,0 +1,12 @@
+# Nixpacks configuration for Next.js standalone deployment
+# This ensures static assets are properly copied into the standalone build
+
+[phases.build]
+cmds = [
+  "pnpm run build",
+  "cp -r .next/static .next/standalone/.next/static || echo 'Static folder already exists'",
+  "cp -r public .next/standalone/public || echo 'Public folder already exists'"
+]
+
+[start]
+cmd = "node server-wrapper.js"

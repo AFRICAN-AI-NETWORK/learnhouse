@@ -21,19 +21,20 @@ env:
 
 jobs:
   build:
-    name: Build ${{ matrix.platform }}
-    runs-on: ubuntu-latest
+    name: Build ${{ matrix.config.platform }}
+    runs-on: ${{ matrix.config.runner }}
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        config:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm64
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      # QEMU not needed - using native ARM64 runners for ARM builds
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -88,9 +89,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ steps.vars.outputs.short }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-            type=raw,value=${{ steps.vars.outputs.tag_prefix }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-            type=raw,value=${{ steps.vars.outputs.tag_prefix }}-${{ steps.vars.outputs.short }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+            type=raw,value=${{ steps.vars.outputs.short }}-${{ matrix.config.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+            type=raw,value=${{ steps.vars.outputs.tag_prefix }}-${{ matrix.config.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+            type=raw,value=${{ steps.vars.outputs.tag_prefix }}-${{ steps.vars.outputs.short }}-${{ matrix.config.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
 
       - name: Build Docker image (push only on dev)
         uses: docker/build-push-action@v5
@@ -100,9 +101,9 @@ jobs:
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+          platforms: ${{ matrix.config.platform }}
+          cache-from: type=gha,scope=${{ matrix.config.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.config.platform }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             LEARNHOUSE_PUBLIC=true

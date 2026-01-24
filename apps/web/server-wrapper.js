@@ -74,6 +74,26 @@ if (!process.env.PORT) {
 }
 
 // Now require and run the actual Next.js server
-// The server.js is in the same directory (standalone output)
-require('./server.js');
+// Try both Nixpacks and Dockerfile paths for compatibility
+try {
+  // Nixpacks puts server in .next/standalone/
+  require('./.next/standalone/server.js');
+  console.log('✅ Started Next.js server (Nixpacks build)');
+} catch (error) {
+  if (error.code === 'MODULE_NOT_FOUND') {
+    try {
+      // Dockerfile puts server in root
+      require('./server.js');
+      console.log('✅ Started Next.js server (Dockerfile build)');
+    } catch (fallbackError) {
+      console.error('❌ Failed to start Next.js server:');
+      console.error('   Tried: ./.next/standalone/server.js');
+      console.error('   Tried: ./server.js');
+      console.error('   Error:', fallbackError.message);
+      process.exit(1);
+    }
+  } else {
+    throw error;
+  }
+}
 
