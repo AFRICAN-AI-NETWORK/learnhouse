@@ -2,98 +2,62 @@
 
 /**
  * Server wrapper for Next.js standalone mode
- * This script generates a runtime config file from environment variables
- * and injects them before starting the Next.js server.
+ * Generates runtime-config.js from NEXT_PUBLIC_* env vars
+ * and starts the Next.js server correctly.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// Read all NEXT_PUBLIC_* environment variables from the environment
-const env = process.env;
-
-// Collect all NEXT_PUBLIC_* variables from the environment
+// -----------------------------------------------------------------------------
+// 1. Collect NEXT_PUBLIC_* env variables
+// -----------------------------------------------------------------------------
 const runtimeConfig = {};
 
-Object.keys(env).forEach((key) => {
+for (const [key, value] of Object.entries(process.env)) {
   if (key.startsWith('NEXT_PUBLIC_')) {
-    runtimeConfig[key] = env[key];
-    process.env[key] = env[key];
-  }
-});
-
-// Write runtime config JSON file
-const configPath = path.join(__dirname, 'runtime-config.json');
-fs.writeFileSync(configPath, JSON.stringify(runtimeConfig, null, 2), 'utf8');
-console.log(`✅ Wrote runtime-config.json to ${configPath}`);
-
-// Create client-side runtime config script for browser access
-// In Next.js standalone, public files are served from the standalone output's public directory
-// Try multiple possible locations for the public directory
-const possiblePublicDirs = [
-  path.join(__dirname, 'public'),           // Standard location
-  path.join(__dirname, '.next/static'),     // Standalone static assets
-  path.join(__dirname, '.next/standalone/public'), // Alternative location
-];
-
-let publicDir = null;
-for (const dir of possiblePublicDirs) {
-  if (fs.existsSync(dir)) {
-    publicDir = dir;
-    console.log(`✅ Found public directory at: ${dir}`);
-    break;
+    runtimeConfig[key] = value;
   }
 }
 
-// If no existing public dir found, create one
-if (!publicDir) {
-  publicDir = path.join(__dirname, 'public');
-  console.log(`📁 Creating public directory at: ${publicDir}`);
-  fs.mkdirSync(publicDir, { recursive: true });
-}
+console.log(`📋 Collected ${Object.keys(runtimeConfig).length} NEXT_PUBLIC_* variables`);
 
+// -----------------------------------------------------------------------------
+// 2. Write runtime-config.json (optional, for debugging)
+// -----------------------------------------------------------------------------
+const jsonPath = path.join(__dirname, 'runtime-config.json');
+fs.writeFileSync(jsonPath, JSON.stringify(runtimeConfig, null, 2), 'utf8');
+console.log(`✅ Wrote runtime-config.json → ${jsonPath}`);
+
+// -----------------------------------------------------------------------------
+// 3. Write runtime-config.js to the ONLY valid public directory
+//    Next.js standalone serves files from:
+//    .next/standalone/public
+// -----------------------------------------------------------------------------
+const publicDir = path.join(__dirname, '.next', 'standalone', 'public');
+
+fs.mkdirSync(publicDir, { recursive: true });
+
+const jsPath = path.join(publicDir, 'runtime-config.js');
+const jsContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`;
+
+fs.writeFileSync(jsPath, jsContent, 'utf8');
+console.log(`✅ Wrote runtime-config.js → ${jsPath}`);
+
+// -----------------------------------------------------------------------------
+// 4. Ensure correct host + port
+// -----------------------------------------------------------------------------
+process.env.HOSTNAME ||= '0.0.0.0';
+process.env.PORT ||= '3000';
+
+// -----------------------------------------------------------------------------
+// 5. Start Next.js standalone server
+// -----------------------------------------------------------------------------
 try {
-  const scriptPath = path.join(publicDir, 'runtime-config.js');
-  const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`;
-  fs.writeFileSync(scriptPath, scriptContent, 'utf8');
-  console.log(`✅ Wrote runtime-config.js to ${scriptPath}`);
-  console.log(`📋 Runtime config contains ${Object.keys(runtimeConfig).length} variables`);
-} catch (error) {
-  console.error('❌ Failed to create runtime-config.js:', error.message);
-  console.error('⚠️ Client-side config will rely on server-side rendering fallback');
-}
-
-// Set default HOSTNAME if not provided
-if (!process.env.HOSTNAME) {
-  process.env.HOSTNAME = '0.0.0.0';
-}
-
-// Set PORT from environment or default to 3000
-if (!process.env.PORT) {
-  process.env.PORT = '3000';
-}
-
-// Now require and run the actual Next.js server
-// Try both Nixpacks and Dockerfile paths for compatibility
-try {
-  // Nixpacks puts server in .next/standalone/
   require('./.next/standalone/server.js');
-  console.log('✅ Started Next.js server (Nixpacks build)');
-} catch (error) {
-  if (error.code === 'MODULE_NOT_FOUND') {
-    try {
-      // Dockerfile puts server in root
-      require('./server.js');
-      console.log('✅ Started Next.js server (Dockerfile build)');
-    } catch (fallbackError) {
-      console.error('❌ Failed to start Next.js server:');
-      console.error('   Tried: ./.next/standalone/server.js');
-      console.error('   Tried: ./server.js');
-      console.error('   Error:', fallbackError.message);
-      process.exit(1);
-    }
-  } else {
-    throw error;
-  }
+  console.log('🚀 Next.js standalone server started');
+} catch (err) {
+  console.error('❌ Failed to start Next.js standalone server');
+  console.error(err);
+  process.exit(1);
 }
-
