@@ -28,38 +28,36 @@ fs.writeFileSync(configPath, JSON.stringify(runtimeConfig, null, 2), 'utf8');
 console.log(`✅ Wrote runtime-config.json to ${configPath}`);
 
 // Create client-side runtime config script for browser access
-// In Next.js standalone, public files are served from the standalone output's public directory
-// Try multiple possible locations for the public directory
-const possiblePublicDirs = [
-  path.join(__dirname, 'public'),           // Standard location
-  path.join(__dirname, '.next/static'),     // Standalone static assets
-  path.join(__dirname, '.next/standalone/public'), // Alternative location
+// In Next.js standalone, public files are served from .next/standalone/public/
+// We write to ALL possible locations to ensure it works in all environments
+
+const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`;
+
+// All possible public directories - write to ALL of them
+const allPublicDirs = [
+  path.join(__dirname, '.next', 'standalone', 'public'),  // Next.js standalone (PRIORITY!)
+  path.join(__dirname, 'public'),                          // Standard location
 ];
 
-let publicDir = null;
-for (const dir of possiblePublicDirs) {
-  if (fs.existsSync(dir)) {
-    publicDir = dir;
-    console.log(`✅ Found public directory at: ${dir}`);
-    break;
+let successCount = 0;
+for (const publicDir of allPublicDirs) {
+  try {
+    // Create directory if it doesn't exist
+    fs.mkdirSync(publicDir, { recursive: true });
+
+    const scriptPath = path.join(publicDir, 'runtime-config.js');
+    fs.writeFileSync(scriptPath, scriptContent, 'utf8');
+    console.log(`✅ Wrote runtime-config.js to ${scriptPath}`);
+    successCount++;
+  } catch (error) {
+    console.warn(`⚠️ Could not write to ${publicDir}: ${error.message}`);
   }
 }
 
-// If no existing public dir found, create one
-if (!publicDir) {
-  publicDir = path.join(__dirname, 'public');
-  console.log(`📁 Creating public directory at: ${publicDir}`);
-  fs.mkdirSync(publicDir, { recursive: true });
-}
-
-try {
-  const scriptPath = path.join(publicDir, 'runtime-config.js');
-  const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`;
-  fs.writeFileSync(scriptPath, scriptContent, 'utf8');
-  console.log(`✅ Wrote runtime-config.js to ${scriptPath}`);
-  console.log(`📋 Runtime config contains ${Object.keys(runtimeConfig).length} variables`);
-} catch (error) {
-  console.error('❌ Failed to create runtime-config.js:', error.message);
+if (successCount > 0) {
+  console.log(`📋 Runtime config contains ${Object.keys(runtimeConfig).length} variables (written to ${successCount} locations)`);
+} else {
+  console.error('❌ Failed to write runtime-config.js to any location');
   console.error('⚠️ Client-side config will rely on server-side rendering fallback');
 }
 
