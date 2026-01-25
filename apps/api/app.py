@@ -30,9 +30,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# -------------------------
-# ✅ CORS Middleware
-# -------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=learnhouse_config.hosting_config.allowed_regexp,
@@ -41,42 +38,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------------
-# ✅ FIX #1: Global OPTIONS handler
-# This MUST be defined BEFORE routers
-# -------------------------
-@app.options("/{path:path}")
-async def preflight_handler(path: str):
-    return JSONResponse(status_code=200)
-
-# -------------------------
-# Logfire (optional)
-# -------------------------
+# Only enable logfire if explicitly configured
 if learnhouse_config.general_config.logfire_enabled:
-    logfire.configure(console=False, service_name=learnhouse_config.site_name)
+    logfire.configure(console=False, service_name=learnhouse_config.site_name,)
     logfire.instrument_fastapi(app)
+    # Instrument database after logfire is configured
     from src.core.events.database import engine
     logfire.instrument_sqlalchemy(engine=engine)
 
-# -------------------------
-# Gzip Middleware
-# -------------------------
+# Gzip Middleware (will add brotli later)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# -------------------------
-# EE Middlewares
-# -------------------------
+# Register EE Middlewares if available
 register_ee_middlewares(app)
 
-# -------------------------
-# Lifecycle Events
-# -------------------------
+
+# Events
 app.add_event_handler("startup", startup_app(app))
 app.add_event_handler("shutdown", shutdown_app(app))
 
-# -------------------------
+
 # JWT Exception Handler
-# -------------------------
 @app.exception_handler(AuthJWTException)
 def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     return JSONResponse(
@@ -84,26 +66,14 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
         content={"detail": exc.message},  # type: ignore
     )
 
-# -------------------------
+
 # Static Files
-# -------------------------
 app.mount("/content", StaticFiles(directory="content"), name="content")
 
-# -------------------------
-# API Routes (AFTER OPTIONS FIX)
-# -------------------------
+# Global Routes
 app.include_router(v1_router)
 
-# -------------------------
-# Root Route
-# -------------------------
-@app.get("/")
-async def root():
-    return {"Message": "Welcome to LearnHouse ✨"}
 
-# -------------------------
-# Run Server
-# -------------------------
 if __name__ == "__main__":
     uvicorn.run(
         "app:app",
@@ -111,3 +81,9 @@ if __name__ == "__main__":
         port=learnhouse_config.hosting_config.port,
         reload=learnhouse_config.general_config.development_mode,
     )
+
+
+# General Routes
+@app.get("/")
+async def root():
+    return {"Message": "Welcome to LearnHouse ✨"}
