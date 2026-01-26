@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from fastapi.middleware.gzip import GZipMiddleware
 from src.core.ee_hooks import register_ee_middlewares
-
+from starlette.middleware.base import BaseHTTPMiddleware
 
 ########################
 # Pre-Alpha Version 0.1.0
@@ -30,10 +30,30 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Custom middleware to add CORS headers to all responses including errors
+class CORSHeaderMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        origin = request.headers.get("origin")
+        
+        # Check if origin is in allowed origins
+        if origin in learnhouse_config.hosting_config.allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
+
+# Add CORS header middleware first
+app.add_middleware(CORSHeaderMiddleware)
+
+# Then add the standard CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=learnhouse_config.hosting_config.allowed_origins,
-    allow_credentials=True,  # CRITICAL for cookies
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -53,11 +73,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Register EE Middlewares if available
 register_ee_middlewares(app)
 
-
 # Events
 app.add_event_handler("startup", startup_app(app))
 app.add_event_handler("shutdown", shutdown_app(app))
-
 
 # JWT Exception Handler
 @app.exception_handler(AuthJWTException)
@@ -67,13 +85,27 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
         content={"detail": exc.message},  # type: ignore
     )
 
+# Global Exception Handler to ensure CORS on all errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
+    headers = {}
+    
+    if origin in learnhouse_config.hosting_config.allowed_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers=headers
+    )
 
 # Static Files
 app.mount("/content", StaticFiles(directory="content"), name="content")
 
 # Global Routes
 app.include_router(v1_router)
-
 
 if __name__ == "__main__":
     uvicorn.run(
@@ -82,7 +114,6 @@ if __name__ == "__main__":
         port=learnhouse_config.hosting_config.port,
         reload=learnhouse_config.general_config.development_mode,
     )
-
 
 # General Routes
 @app.get("/")
