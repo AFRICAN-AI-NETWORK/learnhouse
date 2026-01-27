@@ -21,7 +21,7 @@ function VerifyEmailContent() {
         }
 
         // Call your API to verify the email using fetch instead of axios
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-lms.africanainetwork.com/api/v1';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://lms-backend.africanainetwork.com/api/v1';
 
         fetch(`${apiUrl}/auth/verify-email`, {
             method: 'POST',
