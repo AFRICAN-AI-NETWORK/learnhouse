@@ -68,7 +68,26 @@ export const nextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         // When working on localhost, the cookie domain must be omitted entirely (https://stackoverflow.com/a/1188145)
-        domain: `.${getLEARNHOUSE_TOP_DOMAIN_VAL()}`,
+        domain: isDevEnv ? undefined : `.${getLEARNHOUSE_TOP_DOMAIN_VAL()}`,
+        secure: !isDevEnv,
+      },
+    },
+    callbackUrl: {
+      name: `${!isDevEnv ? '__Secure-' : ''}next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        domain: isDevEnv ? undefined : `.${getLEARNHOUSE_TOP_DOMAIN_VAL()}`,
+        secure: !isDevEnv,
+      },
+    },
+    csrfToken: {
+      name: `${!isDevEnv ? '__Secure-' : ''}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        domain: isDevEnv ? undefined : `.${getLEARNHOUSE_TOP_DOMAIN_VAL()}`,
         secure: !isDevEnv,
       },
     },
@@ -95,7 +114,7 @@ export const nextAuthOptions = {
       if (token?.user?.tokens) {
         const tokenExpiry = token.user.tokens.expiry || 0;
         const oneMinute = 1 * 60 * 1000;
-        
+
         if (Date.now() + oneMinute >= tokenExpiry) {
           const RefreshedToken = await getNewAccessTokenUsingRefreshTokenServer(
             token?.user?.tokens?.refresh_token
@@ -120,7 +139,7 @@ export const nextAuthOptions = {
       if (token.user) {
         // Cache the session for 1 minute to refresh every minute
         const cacheKey = `user_session_${token.user.tokens.access_token}`;
-        
+
         // Initialize cache if it doesn't exist
         if (!global.sessionCache) {
           global.sessionCache = {};
@@ -135,14 +154,14 @@ export const nextAuthOptions = {
 
         let cachedSession = global.sessionCache[cacheKey];
         const now = Date.now();
-        
+
         if (cachedSession && now - cachedSession.timestamp < 1 * 60 * 1000) {
           return cachedSession.data;
         }
 
         try {
           let api_SESSION = await getUserSession(token.user.tokens.access_token);
-          
+
           if (api_SESSION && api_SESSION.user) {
             session.user = api_SESSION.user;
             session.roles = api_SESSION.roles;
