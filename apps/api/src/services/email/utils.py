@@ -16,17 +16,17 @@ def send_email(to: EmailStr, subject: str, body: str):
     try:
         # SMTP configuration from environment variables
         smtp_host = os.getenv('EMAIL_HOST', 'smtp.zoho.com')
-        smtp_port = int(os.getenv('EMAIL_PORT', '465'))
+        smtp_port = int(os.getenv('EMAIL_PORT', '587'))  # Changed default to 587
         smtp_user = os.getenv('EMAIL_ADDRESS')
         smtp_password = os.getenv('EMAIL_PASSWORD')
-        smtp_secure = os.getenv('EMAIL_SECURE', 'true').lower() == 'true'
+        smtp_secure = os.getenv('EMAIL_SECURE', 'false').lower() == 'true'  # Changed default to false
         
         # Validate required credentials
         if not smtp_user or not smtp_password:
             raise ValueError("EMAIL_ADDRESS and EMAIL_PASSWORD must be set in environment variables")
         
-        # Prepare sender address
-        from_email = f"LearnHouse <{lh_config.mailing_config.system_email_address}>"
+        # FIXED: Use the authenticated email address instead of config
+        from_email = f"LearnHouse <{smtp_user}>"
         
         # Create message
         msg = MIMEMultipart('alternative')
