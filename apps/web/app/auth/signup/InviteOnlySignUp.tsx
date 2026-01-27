@@ -77,8 +77,14 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
       let res = await signUpWithInviteCode(values, props.inviteCode)
       let message = await res.json()
       if (res.status == 200) {
-        //router.push(`/login`);
         setMessage(t('auth.account_created_success'))
+
+        // ADD THIS: Redirect to org-specific page
+        setTimeout(() => {
+          const orgSlug = org?.slug || 'default'
+          router.push(`/org/${orgSlug}/courses`) // or /dashboard
+        }, 2000)
+
         setIsSubmitting(false)
       } else if (
         res.status == 401 ||

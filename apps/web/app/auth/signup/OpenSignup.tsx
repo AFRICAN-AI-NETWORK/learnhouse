@@ -110,6 +110,13 @@ function OpenSignUpComponent() {
 
       if (res.status === 200) {
         setMessage(t('auth.account_created_success'))
+
+        // ADD THIS: Redirect to org-specific page after showing success message
+        setTimeout(() => {
+          const orgSlug = org?.slug || 'default'
+          router.push(`/org/${orgSlug}/courses`) // or /dashboard
+        }, 2000)
+
       } else if (
         res.status === 401 ||
         res.status === 400 ||

@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal
 from uuid import uuid4
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
+import jwt
+import os
 from src.security.features_utils.usage import (
     check_limits_with_usage,
     increase_feature_usage,
@@ -35,6 +37,96 @@ from src.db.user_organizations import UserOrganization
 from src.security.security import security_hash_password, security_verify_password
 
 
+# JWT Verification Token Functions
+def generate_verification_token(user_email: str, user_id: int, org_slug: str) -> str:
+    """Generate a JWT token for email verification"""
+    secret = os.getenv("JWT_VERIFICATION_TOKEN_SECRET", "your-secret-key-change-in-production")
+    expiry = datetime.utcnow() + timedelta(days=7)  # Token valid for 7 days
+    
+    payload = {
+        "email": user_email,
+        "user_id": user_id,
+        "org_slug": org_slug,
+        "exp": expiry,
+        "type": "email_verification"
+    }
+    
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    return token
+
+
+def verify_verification_token(token: str) -> dict:
+    """Verify and decode a JWT verification token"""
+    secret = os.getenv("JWT_VERIFICATION_TOKEN_SECRET", "your-secret-key-change-in-production")
+    
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        
+        # Check if token is for email verification
+        if payload.get("type") != "email_verification":
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid token type"
+            )
+        
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=400,
+            detail="Verification token has expired. Please request a new one."
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid verification token"
+        )
+
+
+async def verify_user_email(
+    request: Request,
+    db_session: Session,
+    token: str,
+) -> dict:
+    """Verify user's email using the verification token"""
+    
+    # Decode and verify token
+    payload = verify_verification_token(token)
+    
+    user_id = payload.get("user_id")
+    email = payload.get("email")
+    
+    # Get user from database
+    statement = select(User).where(User.id == user_id, User.email == email)
+    user = db_session.exec(statement).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="User not found"
+        )
+    
+    # Check if already verified
+    if user.email_verified:
+        return {
+            "message": "Email already verified",
+            "already_verified": True
+        }
+    
+    # Mark email as verified
+    user.email_verified = True
+    user.update_date = str(datetime.now())
+    
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    
+    return {
+        "message": "Email verified successfully",
+        "already_verified": False,
+        "user": UserRead.model_validate(user)
+    }
+
+
 async def create_user(
     request: Request,
     db_session: Session,
@@ -59,8 +151,9 @@ async def create_user(
     # Check if Organization exists
     statement = select(Organization).where(Organization.id == org_id)
     result = db_session.exec(statement)
+    org = result.first()
 
-    if not result.first():
+    if not org:
         raise HTTPException(
             status_code=400,
             detail="Organization does not exist",
@@ -116,10 +209,19 @@ async def create_user(
 
     increase_feature_usage("members", org_id, db_session)
 
-    # Send Account creation email
+    # Generate verification token
+    verification_token = generate_verification_token(
+        user_email=user.email,
+        user_id=user.id,
+        org_slug=org.slug
+    )
+
+    # Send Account creation email with verification token
     send_account_creation_email(
         user=user,
         email=user.email,
+        organization=OrganizationRead.model_validate(org),
+        verification_token=verification_token,
     )
 
     return user
@@ -220,10 +322,12 @@ async def create_user_without_org(
 
     user = UserRead.model_validate(user)
 
-    # Send Account creation email
+    # Send Account creation email without verification (no org)
     send_account_creation_email(
         user=user,
         email=user.email,
+        organization=None,
+        verification_token=None,
     )
 
     return user

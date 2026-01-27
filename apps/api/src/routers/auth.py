@@ -2,15 +2,28 @@ from datetime import timedelta
 from typing import Literal, Optional
 from fastapi import Depends, APIRouter, HTTPException, Response, status, Request, Form
 from pydantic import BaseModel, EmailStr
-from sqlmodel import Session
-from src.db.users import AnonymousUser, UserRead
+from sqlmodel import Session, select
+from src.db.users import AnonymousUser, UserRead, User
+from src.db.organizations import Organization, OrganizationRead
 from src.core.events.database import get_db_session
 from config.config import get_learnhouse_config
 from src.security.auth import AuthJWT, authenticate_user, get_current_user
 from src.services.auth.utils import signWithGoogle
+from src.services.users.users import verify_user_email, generate_verification_token
+from src.services.users.emails import send_account_creation_email
 
 
 router = APIRouter()
+
+
+# Email verification models
+class EmailVerificationRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+    org_slug: str
 
 
 @router.get("/refresh")
@@ -140,3 +153,111 @@ def logout(Authorize: AuthJWT = Depends()):
 
     Authorize.unset_jwt_cookies()
     return {"msg": "Successfully logout"}
+
+
+# NEW: Email verification endpoint
+@router.post("/verify-email")
+async def verify_email_endpoint(
+    request: Request,
+    verification_data: EmailVerificationRequest,
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Verify user's email address using the verification token from the email.
+    
+    This endpoint is called when a user clicks the verification link in their email.
+    
+    Example request:
+```json
+    {
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+    }
+```
+    
+    Returns:
+    - success: bool
+    - message: str
+    - already_verified: bool
+    """
+    result = await verify_user_email(
+        request=request,
+        db_session=db_session,
+        token=verification_data.token
+    )
+    
+    return {
+        "success": True,
+        "message": result["message"],
+        "already_verified": result.get("already_verified", False)
+    }
+
+
+# NEW: Resend verification email endpoint
+@router.post("/resend-verification")
+async def resend_verification_email(
+    request: Request,
+    resend_data: ResendVerificationRequest,
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Resend verification email to user if they didn't receive it or it expired.
+    
+    Example request:
+```json
+    {
+        "email": "user@example.com",
+        "org_slug": "default"
+    }
+```
+    
+    Returns:
+    - success: bool
+    - message: str
+    """
+    # Get user
+    statement = select(User).where(User.email == resend_data.email)
+    user = db_session.exec(statement).first()
+    
+    if not user:
+        # Don't reveal if user exists or not for security reasons
+        return {
+            "success": True,
+            "message": "If the email exists in our system, a verification email has been sent."
+        }
+    
+    # Check if already verified
+    if user.email_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="Email is already verified. You can log in now."
+        )
+    
+    # Get organization
+    statement = select(Organization).where(Organization.slug == resend_data.org_slug)
+    org = db_session.exec(statement).first()
+    
+    if not org:
+        raise HTTPException(
+            status_code=400,
+            detail="Organization not found"
+        )
+    
+    # Generate new verification token
+    verification_token = generate_verification_token(
+        user_email=user.email,
+        user_id=user.id,
+        org_slug=org.slug
+    )
+    
+    # Resend email
+    send_account_creation_email(
+        user=UserRead.model_validate(user),
+        email=user.email,
+        organization=OrganizationRead.model_validate(org),
+        verification_token=verification_token,
+    )
+    
+    return {
+        "success": True,
+        "message": "Verification email sent successfully. Please check your inbox."
+    }
