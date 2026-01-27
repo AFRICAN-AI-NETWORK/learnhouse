@@ -2,30 +2,25 @@
 
 /**
  * Server wrapper for Next.js standalone mode
- * This script generates a runtime config file from environment variables
- * and injects them before starting the Next.js server.
+ * Generates runtime-config.js from NEXT_PUBLIC_* env vars
+ * and starts the Next.js server correctly.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// Read all NEXT_PUBLIC_* environment variables from the environment
-const env = process.env;
-
-// Collect all NEXT_PUBLIC_* variables from the environment
+// -----------------------------------------------------------------------------
+// 1. Collect NEXT_PUBLIC_* env variables
+// -----------------------------------------------------------------------------
 const runtimeConfig = {};
 
-Object.keys(env).forEach((key) => {
+for (const [key, value] of Object.entries(process.env)) {
   if (key.startsWith('NEXT_PUBLIC_')) {
-    runtimeConfig[key] = env[key];
-    process.env[key] = env[key];
+    runtimeConfig[key] = value;
   }
-});
+}
 
-// Write runtime config JSON file
-const configPath = path.join(__dirname, 'runtime-config.json');
-fs.writeFileSync(configPath, JSON.stringify(runtimeConfig, null, 2), 'utf8');
-console.log(`✅ Wrote runtime-config.json to ${configPath}`);
+console.log(`📋 Collected ${Object.keys(runtimeConfig).length} NEXT_PUBLIC_* variables`);
 
 // Create client-side runtime config script for browser access
 // In Next.js standalone, public files are served from .next/standalone/public/
@@ -61,37 +56,23 @@ if (successCount > 0) {
   console.error('⚠️ Client-side config will rely on server-side rendering fallback');
 }
 
-// Set default HOSTNAME if not provided
-if (!process.env.HOSTNAME) {
-  process.env.HOSTNAME = '0.0.0.0';
-}
+fs.writeFileSync(jsPath, jsContent, 'utf8');
+console.log(`✅ Wrote runtime-config.js → ${jsPath}`);
 
-// Set PORT from environment or default to 3000
-if (!process.env.PORT) {
-  process.env.PORT = '3000';
-}
+// -----------------------------------------------------------------------------
+// 4. Ensure correct host + port
+// -----------------------------------------------------------------------------
+process.env.HOSTNAME ||= '0.0.0.0';
+process.env.PORT ||= '3000';
 
-// Now require and run the actual Next.js server
-// Try both Nixpacks and Dockerfile paths for compatibility
+// -----------------------------------------------------------------------------
+// 5. Start Next.js standalone server
+// -----------------------------------------------------------------------------
 try {
-  // Nixpacks puts server in .next/standalone/
   require('./.next/standalone/server.js');
-  console.log('✅ Started Next.js server (Nixpacks build)');
-} catch (error) {
-  if (error.code === 'MODULE_NOT_FOUND') {
-    try {
-      // Dockerfile puts server in root
-      require('./server.js');
-      console.log('✅ Started Next.js server (Dockerfile build)');
-    } catch (fallbackError) {
-      console.error('❌ Failed to start Next.js server:');
-      console.error('   Tried: ./.next/standalone/server.js');
-      console.error('   Tried: ./server.js');
-      console.error('   Error:', fallbackError.message);
-      process.exit(1);
-    }
-  } else {
-    throw error;
-  }
+  console.log('🚀 Next.js standalone server started');
+} catch (err) {
+  console.error('❌ Failed to start Next.js standalone server');
+  console.error(err);
+  process.exit(1);
 }
-
