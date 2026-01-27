@@ -3,7 +3,6 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
-from config.config import get_learnhouse_config
 
 
 def send_email(to: EmailStr, subject: str, body: str):
@@ -11,21 +10,21 @@ def send_email(to: EmailStr, subject: str, body: str):
     Send email using SMTP instead of Resend
     Maintains the same function signature for compatibility
     """
-    lh_config = get_learnhouse_config()
+    # Removed: lh_config = get_learnhouse_config()
     
     try:
         # SMTP configuration from environment variables
         smtp_host = os.getenv('EMAIL_HOST', 'smtp.zoho.com')
-        smtp_port = int(os.getenv('EMAIL_PORT', '587'))  # Changed default to 587
+        smtp_port = int(os.getenv('EMAIL_PORT', '587'))
         smtp_user = os.getenv('EMAIL_ADDRESS')
         smtp_password = os.getenv('EMAIL_PASSWORD')
-        smtp_secure = os.getenv('EMAIL_SECURE', 'false').lower() == 'true'  # Changed default to false
+        smtp_secure = os.getenv('EMAIL_SECURE', 'false').lower() == 'true'
         
         # Validate required credentials
         if not smtp_user or not smtp_password:
             raise ValueError("EMAIL_ADDRESS and EMAIL_PASSWORD must be set in environment variables")
         
-        # FIXED: Use the authenticated email address instead of config
+        # Use the authenticated email address
         from_email = f"LearnHouse <{smtp_user}>"
         
         # Create message
