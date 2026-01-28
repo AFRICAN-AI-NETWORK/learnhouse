@@ -52,6 +52,11 @@ def generate_verification_token(user_email: str, user_id: int, org_slug: str) ->
     }
     
     token = jwt.encode(payload, secret, algorithm="HS256")
+    
+    # FIX: Ensure token is a string, not bytes
+    if isinstance(token, bytes):
+        token = token.decode('utf-8')
+
     return token
 
 

@@ -109,13 +109,13 @@ function OpenSignUpComponent() {
       const response = await res.json()
 
       if (res.status === 200) {
-        setMessage(t('auth.account_created_success'))
+        // Updated message to guide user
+        setMessage('Account created successfully! Please check your email to verify your account before logging in.')
 
-        // ADD THIS: Redirect to org-specific page after showing success message
         setTimeout(() => {
           const orgSlug = org?.slug || 'default'
-          router.push(`/org/${orgSlug}/courses`) // or /dashboard
-        }, 2000)
+          router.push(`/org/${orgSlug}/login`)
+        }, 3000) // Changed to 3 seconds to give time to read
 
       } else if (
         res.status === 401 ||
@@ -163,7 +163,11 @@ function OpenSignUpComponent() {
                 </div>
 
                 <p className="text-xs opacity-80">
-                  Your account is ready. You can now sign in and get started.
+                  Check your email inbox (and spam folder) for the verification link. You must verify your email before you can log in.
+                </p>
+
+                <p className="text-xs opacity-80">
+                  Redirecting to login page in 3 seconds...
                 </p>
 
                 <Link

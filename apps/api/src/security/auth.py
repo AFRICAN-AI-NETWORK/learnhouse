@@ -51,16 +51,26 @@ class TokenData(BaseModel):
 
 #### Classes ####################################################
 async def authenticate_user(
-    request: Request,
-    email: str,
-    password: str,
-    db_session: Session,
+    request: Request, username: str, password: str, db_session: Session
 ) -> User | bool:
-    user = await security_get_user(request, db_session, email)
+    # Get user (existing code)
+    statement = select(User).where(User.email == username)
+    user = db_session.exec(statement).first()
+    
     if not user:
         return False
+    
+    # Verify password (existing code)
     if not security_verify_password(password, user.password):
         return False
+    
+    # NEW: Check if email is verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address before logging in. Check your inbox for the verification link."
+        )
+    
     return user
 
 
