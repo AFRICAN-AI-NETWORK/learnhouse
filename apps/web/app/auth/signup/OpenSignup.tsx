@@ -171,7 +171,7 @@ function OpenSignUpComponent() {
                 </p>
 
                 <Link
-                  href="/login"
+                  href={`/login?orgslug=${org?.slug}`}
                   className="flex items-center gap-2 text-sm font-semibold underline"
                 >
                   <User size={14} />

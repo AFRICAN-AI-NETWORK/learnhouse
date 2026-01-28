@@ -25,7 +25,7 @@ def send_email(to: EmailStr, subject: str, body: str):
             raise ValueError("EMAIL_ADDRESS and EMAIL_PASSWORD must be set in environment variables")
         
         # Use the authenticated email address
-        from_email = f"LearnHouse <{smtp_user}>"
+        from_email = f"AFRICAN AI NETWORK LMS <{smtp_user}>"
         
         # Create message
         msg = MIMEMultipart('alternative')
