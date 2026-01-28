@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from fastapi import HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
-from sqlmodel import Session
+from sqlmodel import Session, create_engine, SQLModel
 from src.security.auth import (
     authenticate_user,
     create_access_token,
@@ -15,7 +15,7 @@ from src.security.auth import (
 from src.db.users import User, AnonymousUser, PublicUser
 from datetime import datetime, timedelta, timezone
 from jose import jwt
-from src.security.security import SECRET_KEY, ALGORITHM
+from src.security.security import SECRET_KEY, ALGORITHM, security_hash_password
 
 
 class TestAuth:
@@ -25,6 +25,18 @@ class TestAuth:
     def mock_request(self):
         """Create a mock request object"""
         return Mock(spec=Request)
+
+    @pytest.fixture
+    def session(self):
+        """Create a test database session with real SQLModel tables"""
+        # Create in-memory SQLite database for testing
+        engine = create_engine("sqlite:///:memory:")
+        
+        # Create all tables
+        SQLModel.metadata.create_all(engine)
+        
+        with Session(engine) as session:
+            yield session
 
     @pytest.fixture
     def mock_db_session(self):
@@ -37,6 +49,7 @@ class TestAuth:
         user = Mock(spec=User)
         user.email = "test@example.com"
         user.password = "hashed_password"
+        user.email_verified = True
         user.model_dump.return_value = {
             "id": 1,
             "email": "test@example.com",
@@ -72,59 +85,95 @@ class TestAuth:
         assert settings.authjwt_cookie_samesite == "lax"
         assert settings.authjwt_cookie_secure is True
 
-    # Note: get_config is a decorator function for AuthJWT.load_config
-    # Testing it directly may not be appropriate in unit tests
-    pass
+    @pytest.mark.asyncio
+    async def test_authenticate_user_success(self, mock_request, session):
+        """Test successful user authentication with verified email"""
+        # Create a real user with verified email
+        user = User(
+            email="test@example.com",
+            password=security_hash_password("testpassword123"),
+            username="testuser",
+            first_name="Test",
+            last_name="User",
+            email_verified=True  # Email must be verified
+        )
+        session.add(user)
+        session.commit()
+        
+        # Test authentication
+        result = await authenticate_user(
+            request=mock_request,
+            username="test@example.com",
+            password="testpassword123",
+            db_session=session
+        )
+        
+        assert result is not False
+        assert isinstance(result, User)
+        assert result.email == "test@example.com"
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_success(self, mock_request, mock_db_session, mock_user):
-        """Test successful user authentication"""
-        with patch('src.security.auth.security_get_user', new_callable=AsyncMock) as mock_get_user, \
-             patch('src.security.auth.security_verify_password', return_value=True):
-            
-            mock_get_user.return_value = mock_user
-            
-            result = await authenticate_user(
-                request=mock_request,
-                email="test@example.com",
-                password="correct_password",
-                db_session=mock_db_session
-            )
-            
-            assert result == mock_user
-            mock_get_user.assert_called_once_with(mock_request, mock_db_session, "test@example.com")
-
-    @pytest.mark.asyncio
-    async def test_authenticate_user_user_not_found(self, mock_request, mock_db_session):
+    async def test_authenticate_user_user_not_found(self, mock_request, session):
         """Test authentication when user is not found"""
-        with patch('src.security.auth.security_get_user', new_callable=AsyncMock) as mock_get_user:
-            mock_get_user.return_value = None
-            
-            result = await authenticate_user(
-                request=mock_request,
-                email="nonexistent@example.com",
-                password="password",
-                db_session=mock_db_session
-            )
-            
-            assert result is False
+        result = await authenticate_user(
+            request=mock_request,
+            username="nonexistent@example.com",
+            password="password",
+            db_session=session
+        )
+        
+        assert result is False
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_wrong_password(self, mock_request, mock_db_session, mock_user):
+    async def test_authenticate_user_wrong_password(self, mock_request, session):
         """Test authentication with wrong password"""
-        with patch('src.security.auth.security_get_user', new_callable=AsyncMock) as mock_get_user, \
-             patch('src.security.auth.security_verify_password', return_value=False):
-            
-            mock_get_user.return_value = mock_user
-            
-            result = await authenticate_user(
+        # Create a real user
+        user = User(
+            email="test@example.com",
+            password=security_hash_password("correctpassword"),
+            username="testuser",
+            first_name="Test",
+            last_name="User",
+            email_verified=True
+        )
+        session.add(user)
+        session.commit()
+        
+        result = await authenticate_user(
+            request=mock_request,
+            username="test@example.com",
+            password="wrongpassword",
+            db_session=session
+        )
+        
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_email_not_verified(self, mock_request, session):
+        """Test authentication fails when email is not verified"""
+        # Create a real user with unverified email
+        user = User(
+            email="unverified@example.com",
+            password=security_hash_password("testpassword123"),
+            username="testuser",
+            first_name="Test",
+            last_name="User",
+            email_verified=False  # Email not verified
+        )
+        session.add(user)
+        session.commit()
+        
+        # Test authentication should raise HTTPException
+        with pytest.raises(HTTPException) as exc_info:
+            await authenticate_user(
                 request=mock_request,
-                email="test@example.com",
-                password="wrong_password",
-                db_session=mock_db_session
+                username="unverified@example.com",
+                password="testpassword123",
+                db_session=session
             )
-            
-            assert result is False
+        
+        assert exc_info.value.status_code == 403
+        assert "verify your email" in exc_info.value.detail.lower()
 
     def test_create_access_token_default_expiry(self):
         """Test access token creation with default expiry"""
@@ -249,4 +298,4 @@ class TestAuth:
             await non_public_endpoint(anonymous_user)
         
         assert exc_info.value.status_code == 401
-        assert "Not authenticated" in exc_info.value.detail 
+        assert "Not authenticated" in exc_info.value.detail
