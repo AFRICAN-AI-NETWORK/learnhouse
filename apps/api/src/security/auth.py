@@ -1,4 +1,4 @@
-from sqlmodel import Session
+from sqlmodel import Session, select  # Added 'select' here
 from src.core.events.database import get_db_session
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.services.users.users import security_get_user
@@ -12,7 +12,6 @@ from src.services.dev.dev import isDevModeEnabled
 from src.services.users.users import security_verify_password
 from src.security.security import ALGORITHM, SECRET_KEY
 from fastapi_jwt_auth import AuthJWT
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
