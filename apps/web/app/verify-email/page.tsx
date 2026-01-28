@@ -20,7 +20,7 @@ function VerifyEmailContent() {
             return;
         }
 
-        // Call your API to verify the email using fetch instead of axios
+        // Call your API to verify the email using fetch
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://lms-backend.africanainetwork.com/api/v1';
 
         fetch(`${apiUrl}/auth/verify-email`, {
@@ -41,7 +41,7 @@ function VerifyEmailContent() {
 
                     // Redirect to login after 3 seconds
                     setTimeout(() => {
-                        router.push(`/org/${orgslug}/login`);
+                        router.push(`/login?orgslug=${orgslug}`);
                     }, 3000);
                 } else {
                     throw new Error(data.detail || data.message || 'Verification failed');
@@ -100,10 +100,10 @@ function VerifyEmailContent() {
                                 Back to Signup
                             </button>
                             <button
-                                onClick={() => window.location.reload()}
+                                onClick={() => router.push('/login?orgslug=default')}
                                 className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-semibold"
                             >
-                                Try Again
+                                Go to Login
                             </button>
                         </div>
                     </div>

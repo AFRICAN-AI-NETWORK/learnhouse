@@ -79,11 +79,12 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
       if (res.status == 200) {
         setMessage(t('auth.account_created_success'))
 
-        // UPDATED: Redirect to login page
         setTimeout(() => {
           const orgSlug = org?.slug || 'default'
-          router.push(`/org/${orgSlug}/login`) // Changed from /courses to /login
+          // FIXED: Changed from /org/${orgSlug}/login to /login?orgslug=${orgSlug}
+          router.push(`/login?orgslug=${orgSlug}`)
         }, 2000)
+
 
         setIsSubmitting(false)
       } else if (

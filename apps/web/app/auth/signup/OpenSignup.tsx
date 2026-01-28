@@ -109,13 +109,13 @@ function OpenSignUpComponent() {
       const response = await res.json()
 
       if (res.status === 200) {
-        // Updated message to guide user
         setMessage('Account created successfully! Please check your email to verify your account before logging in.')
 
         setTimeout(() => {
           const orgSlug = org?.slug || 'default'
-          router.push(`/org/${orgSlug}/login`)
-        }, 3000) // Changed to 3 seconds to give time to read
+          // FIXED: Changed from /org/${orgSlug}/login to /login?orgslug=${orgSlug}
+          router.push(`/login?orgslug=${orgSlug}`)
+        }, 3000)
 
       } else if (
         res.status === 401 ||

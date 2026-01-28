@@ -10,7 +10,7 @@ import * as Form from '@radix-ui/react-form'
 import { useFormik } from 'formik'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import React from 'react'
-import { AlertTriangle, UserRoundPlus } from 'lucide-react'
+import { AlertTriangle, UserRoundPlus, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from "next-auth/react"
@@ -26,6 +26,8 @@ interface LoginClientProps {
 const LoginClient = (props: LoginClientProps) => {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showResendButton, setShowResendButton] = React.useState(false)
+  const [resendingEmail, setResendingEmail] = React.useState(false)
   const router = useRouter();
   const session = useLHSession() as any;
 
@@ -48,6 +50,35 @@ const LoginClient = (props: LoginClientProps) => {
   }
 
   const [error, setError] = React.useState('')
+
+  // NEW: Handle resend verification email
+  const handleResendVerification = async () => {
+    setResendingEmail(true)
+    try {
+      const response = await fetch('https://lms-backend.africanainetwork.com/api/v1/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formik.values.email,
+          org_slug: props.org.slug || 'default'
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setError('Verification email sent! Please check your inbox and spam folder.')
+        setShowResendButton(false)
+      } else {
+        setError('Failed to send verification email. Please try again.')
+      }
+    } catch (err) {
+      setError('Error sending verification email. Please try again.')
+    } finally {
+      setResendingEmail(false)
+    }
+  }
+
   const formik = useFormik({
     initialValues: {
       email: '',
@@ -58,10 +89,13 @@ const LoginClient = (props: LoginClientProps) => {
     validateOnChange: true,
     onSubmit: async (values, { validateForm, setErrors, setSubmitting }) => {
       setIsSubmitting(true)
+      setShowResendButton(false) // Reset on new attempt
+
       const errors = await validateForm(values);
       if (Object.keys(errors).length > 0) {
         setErrors(errors);
         setSubmitting(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -71,8 +105,18 @@ const LoginClient = (props: LoginClientProps) => {
         password: values.password,
         callbackUrl: '/redirect_from_auth'
       });
+
       if (res && res.error) {
-        setError(t('auth.wrong_email_password'));
+        // Check if error is about email verification
+        if (res.error.includes('verify your email') ||
+          res.error.includes('email address before') ||
+          res.error.includes('Email Not Verified')) {
+          setError('Please verify your email address before logging in. Check your inbox for the verification link.')
+          setShowResendButton(true)
+        } else {
+          setError(t('auth.wrong_email_password'));
+          setShowResendButton(false)
+        }
         setIsSubmitting(false);
       } else {
         await signIn('credentials', {
@@ -139,7 +183,7 @@ const LoginClient = (props: LoginClientProps) => {
             <LanguageSwitcher />
           </div>
           {/* Header */}
-          <div className="text-center space-y-1 flex flex-col   items-center">
+          <div className="text-center space-y-1 flex flex-col items-center">
             <Image
               quality={100}
               width={50}
@@ -155,12 +199,40 @@ const LoginClient = (props: LoginClientProps) => {
               Welcome Back
             </p>
           </div>
+
+          {/* UPDATED: Enhanced error display with email verification handling */}
           {error && (
-            <div className="flex justify-center bg-red-200 rounded-md text-red-950 space-x-2 items-center p-4 transition-all shadow-xs">
-              <AlertTriangle size={18} />
-              <div className="font-bold text-sm">{error}</div>
+            <div className={`flex flex-col justify-center rounded-md space-y-3 p-4 transition-all shadow-xs ${showResendButton
+                ? 'bg-yellow-100 border border-yellow-400 text-yellow-900'
+                : 'bg-red-200 text-red-950'
+              }`}>
+              <div className="flex items-start space-x-2">
+                {showResendButton ? <Mail size={18} className="mt-0.5" /> : <AlertTriangle size={18} />}
+                <div className="flex-1">
+                  <p className="font-bold text-sm">
+                    {showResendButton ? 'Email Not Verified' : 'Login Failed'}
+                  </p>
+                  <p className="text-sm mt-1">{error}</p>
+                </div>
+              </div>
+
+              {showResendButton && (
+                <div className="space-y-2 pt-2 border-t border-yellow-300">
+                  <p className="text-xs">
+                    Didn't receive the email? Check your spam folder or request a new verification email.
+                  </p>
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={resendingEmail}
+                    className="text-sm font-semibold underline hover:no-underline disabled:opacity-50"
+                  >
+                    {resendingEmail ? 'Sending...' : 'Resend verification email'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
+
           <FormLayout onSubmit={formik.handleSubmit} className='border-2 border-gray-100 rounded-2xl p-5 mt-5'>
             <FormField name="email">
               <FormLabelAndMessage
@@ -172,7 +244,6 @@ const LoginClient = (props: LoginClientProps) => {
                   onChange={formik.handleChange}
                   value={formik.values.email}
                   type="email"
-
                 />
               </Form.Control>
             </FormField>
@@ -201,15 +272,18 @@ const LoginClient = (props: LoginClientProps) => {
                 {t('auth.forgot_password')}
               </Link>
             </div>
-            <div className="flex  py-4">
+            <div className="flex py-4">
               <Form.Submit asChild>
-                <button className="w-full bg-black text-white font-bold text-center p-2 rounded-md shadow-md hover:cursor-pointer">
+                <button
+                  disabled={isSubmitting}
+                  className="w-full bg-black text-white font-bold text-center p-2 rounded-md shadow-md hover:cursor-pointer disabled:opacity-50"
+                >
                   {isSubmitting ? t('common.loading') : t('auth.login')}
                 </button>
               </Form.Submit>
             </div>
           </FormLayout>
-          <div className='flex h-0.5 rounded-2xl bg-slate-100 mt-5  mx-10'></div>
+          <div className='flex h-0.5 rounded-2xl bg-slate-100 mt-5 mx-10'></div>
           <div className='flex justify-center py-5 mx-auto'>{t('common.or')} </div>
           <div className='flex flex-col space-y-4'>
             <Link href={{ pathname: getUriWithoutOrg('/signup'), query: props.org.slug ? { orgslug: props.org.slug } : null }} className="flex justify-center items-center py-3 text-md w-full bg-gray-800 text-gray-300 space-x-3 font-semibold text-center p-2 rounded-md shadow-sm hover:cursor-pointer">
