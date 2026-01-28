@@ -203,8 +203,8 @@ const LoginClient = (props: LoginClientProps) => {
           {/* UPDATED: Enhanced error display with email verification handling */}
           {error && (
             <div className={`flex flex-col justify-center rounded-md space-y-3 p-4 transition-all shadow-xs ${showResendButton
-                ? 'bg-yellow-100 border border-yellow-400 text-yellow-900'
-                : 'bg-red-200 text-red-950'
+              ? 'bg-yellow-100 border border-yellow-400 text-yellow-900'
+              : 'bg-red-200 text-red-950'
               }`}>
               <div className="flex items-start space-x-2">
                 {showResendButton ? <Mail size={18} className="mt-0.5" /> : <AlertTriangle size={18} />}
@@ -290,10 +290,10 @@ const LoginClient = (props: LoginClientProps) => {
               <UserRoundPlus size={17} />
               <span>{t('auth.sign_up')}</span>
             </Link>
-            <button onClick={() => signIn('google', { callbackUrl: '/redirect_from_auth' })} className="flex justify-center py-3 text-md w-full bg-white text-slate-600 space-x-3 font-semibold text-center p-2 rounded-md shadow-sm hover:cursor-pointer">
+            {/* <button onClick={() => signIn('google', { callbackUrl: '/redirect_from_auth' })} className="flex justify-center py-3 text-md w-full bg-white text-slate-600 space-x-3 font-semibold text-center p-2 rounded-md shadow-sm hover:cursor-pointer">
               <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="" />
               <span>{t('auth.sign_in_with_google')}</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

@@ -401,7 +401,7 @@ function OpenSignUpComponent() {
             </FormLayout>
 
             {/* Divider + Google */}
-            <div className='flex flex-col mb-4'>
+            {/* <div className='flex flex-col mb-4'>
               <div className="mx-10 my-5 h-0.5 rounded-2xl bg-slate-100" />
               <button
                 onClick={() => signIn('google')}
@@ -413,7 +413,7 @@ function OpenSignUpComponent() {
                 />
                 <span>{t('auth.sign_in_with_google')}</span>
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
