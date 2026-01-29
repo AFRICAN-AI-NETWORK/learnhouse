@@ -367,11 +367,11 @@ function OpenSignUpComponent() {
               </Form.Control>
             </FormField>
 
-            <div className="grid grid-cols-2 gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-6">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="h-12 flex items-center justify-center gap-3 bg-white text-slate-700 font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all"
+                className="flex-1 h-12 flex items-center justify-center gap-3 bg-white text-slate-700 font-bold rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] transition-all"
               >
                 <ArrowLeft size={18} />
                 <span>Back</span>
@@ -380,7 +380,7 @@ function OpenSignUpComponent() {
               <Form.Submit asChild>
                 <button
                   disabled={isSubmitting}
-                  className="h-12 flex items-center justify-center gap-3 bg-black text-white font-bold rounded-xl shadow-lg shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="flex-[2] h-12 flex items-center justify-center gap-3 bg-black text-white font-bold rounded-xl shadow-lg shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <LucideLoader2 className="h-5 w-5 animate-spin" />
