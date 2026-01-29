@@ -98,8 +98,8 @@ function DashLeftMenu() {
                   <span className={cn(
                     "px-1.5 py-0.5 rounded-[3px] text-[7px] font-black uppercase tracking-widest border transition-colors inline-block",
                     plan === 'pro' ? "bg-purple-500/20 text-purple-300 border-purple-500/20" :
-                    plan === 'standard' ? "bg-blue-500/20 text-blue-300 border-blue-500/20" :
-                    "bg-white/10 text-white/60 border-white/10"
+                      plan === 'standard' ? "bg-blue-500/20 text-blue-300 border-blue-500/20" :
+                        "bg-white/10 text-white/60 border-white/10"
                   )}>
                     {plan} PLAN
                   </span>
@@ -116,52 +116,52 @@ function DashLeftMenu() {
 
         <div className="flex-1 flex flex-col justify-center space-y-1 py-8">
           <AdminAuthorization authorizationMode="component">
-            <MenuLink 
-              href="/dash" 
-              icon={<Home size={18} />} 
-              label={t('common.home')} 
-              isCollapsed={isCollapsed} 
+            <MenuLink
+              href="/dash"
+              icon={<Home size={18} />}
+              label={t('common.home')}
+              isCollapsed={isCollapsed}
             />
-            <MenuLink 
-              href="/dash/courses" 
-              icon={<BookCopy size={18} />} 
-              label={t('courses.courses')} 
-              isCollapsed={isCollapsed} 
+            <MenuLink
+              href="/dash/courses"
+              icon={<BookCopy size={18} />}
+              label={t('courses.courses')}
+              isCollapsed={isCollapsed}
             />
-            <MenuLink 
-              href="/dash/assignments" 
-              icon={<Backpack size={18} />} 
-              label={t('common.assignments')} 
-              isCollapsed={isCollapsed} 
+            <MenuLink
+              href="/dash/assignments"
+              icon={<Backpack size={18} />}
+              label={t('common.assignments')}
+              isCollapsed={isCollapsed}
             />
-            <MenuLink 
-              href="/dash/users/settings/users" 
-              icon={<Users size={18} />} 
-              label={t('common.users')} 
-              isCollapsed={isCollapsed} 
+            <MenuLink
+              href="/dash/users/settings/users"
+              icon={<Users size={18} />}
+              label={t('common.users')}
+              isCollapsed={isCollapsed}
             />
             {isPaymentsEnabled && (
-              <MenuLink 
-                href="/dash/payments/customers" 
-                icon={<BadgeDollarSign size={18} />} 
-                label={t('common.payments')} 
-                isCollapsed={isCollapsed} 
+              <MenuLink
+                href="/dash/payments/customers"
+                icon={<BadgeDollarSign size={18} />}
+                label={t('common.payments')}
+                isCollapsed={isCollapsed}
               />
             )}
-            <MenuLink 
-              href="/dash/org/settings/general" 
-              icon={<School size={18} />} 
-              label={t('common.organization')} 
-              isCollapsed={isCollapsed} 
+            <MenuLink
+              href="/dash/org/settings/general"
+              icon={<School size={18} />}
+              label={t('common.organization')}
+              isCollapsed={isCollapsed}
             />
-            
+
             <div className="my-4 border-t border-white/5 mx-2 opacity-50" />
-            
-            <MenuLink 
-              href="https://docs.learnhouse.app" 
-              icon={<HelpCircle size={18} />} 
-              label={t('common.help')} 
-              isCollapsed={isCollapsed} 
+
+            <MenuLink
+              href="https://docs.learnhouse.app"
+              icon={<HelpCircle size={18} />}
+              label={t('common.help')}
+              isCollapsed={isCollapsed}
               isExternal
             />
           </AdminAuthorization>
@@ -174,8 +174,8 @@ function DashLeftMenu() {
                 "flex items-center space-x-3 cursor-pointer rounded-xl hover:bg-white/5 transition-all group duration-300 mx-2",
                 isCollapsed ? "justify-center px-0 py-2" : "px-3 py-2.5"
               )}>
-                <UserAvatar 
-                  width={isCollapsed ? 32 : 28} 
+                <UserAvatar
+                  width={isCollapsed ? 32 : 28}
                   rounded="rounded-full"
                   shadow="shadow-[0_10px_40px_rgba(0,0,0,1)]"
                 />
@@ -192,61 +192,61 @@ function DashLeftMenu() {
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="end" className="w-56 ml-2">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium">{session?.data?.user?.username}</p>
-                    <p className="text-xs text-gray-500">{session?.data?.user?.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className="flex items-center space-x-2">
-                    <Languages size={14} />
-                    <span>{t('common.language')}</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      {AVAILABLE_LANGUAGES.map((language) => (
-                        <DropdownMenuItem 
-                          key={language.code}
-                          onClick={() => changeLanguage(language.code)} 
-                          className="flex items-center justify-between"
-                        >
-                          <span>{t(language.translationKey)} ({language.nativeName})</span>
-                          {i18n.language === language.code && <Check size={14} />}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dash/user-account/settings/general" className="flex items-center space-x-2 w-full">
-                    <Settings size={16} />
-                    <span>{t('common.settings')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dash/user-account/owned" className="flex items-center space-x-2 w-full">
-                    <Package2 size={16} />
-                    <span>{t('courses.my_courses')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => logOutUI()}
-                  className="flex items-center space-x-2 text-red-600 focus:text-red-600"
-                >
-                  <LogOut size={16} />
-                  <span>{t('user.sign_out')}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <p className="text-sm font-medium">{session?.data?.user?.username}</p>
+                  <p className="text-xs text-gray-500">{session?.data?.user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex items-center space-x-2">
+                  <Languages size={14} />
+                  <span>{t('common.language')}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    {AVAILABLE_LANGUAGES.map((language) => (
+                      <DropdownMenuItem
+                        key={language.code}
+                        onClick={() => changeLanguage(language.code)}
+                        className="flex items-center justify-between"
+                      >
+                        <span>{t(language.translationKey)} ({language.nativeName})</span>
+                        {i18n.language === language.code && <Check size={14} />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dash/user-account/settings/general" className="flex items-center space-x-2 w-full">
+                  <Settings size={16} />
+                  <span>{t('common.settings')}</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dash/user-account/owned" className="flex items-center space-x-2 w-full">
+                  <Package2 size={16} />
+                  <span>{t('courses.my_courses')}</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => logOutUI()}
+                className="flex items-center space-x-2 text-red-600 focus:text-red-600"
+              >
+                <LogOut size={16} />
+                <span>{t('user.sign_out')}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {!isCollapsed && (
             <div className="flex flex-col mt-2">
               <div className="h-px bg-white/5 -mx-4 my-2" />
-              
+
               <div className="px-4 mt-1.5 animate-in fade-in duration-1000">
                 <div className="flex items-center space-x-2 text-white/10 font-black tracking-widest text-[8px]">
                   <div className="flex items-center space-x-1.5">
@@ -286,11 +286,11 @@ const MenuLink = ({ href, icon, label, isCollapsed, isExternal }: { href: string
           {label}
         </span>
       )}
-    {isCollapsed && (
-      <div className="absolute left-full ml-4 px-3 py-1.5 bg-white text-black text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-50 pointer-events-none shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)] translate-x-[-10px] group-hover:translate-x-0 uppercase tracking-wider">
-        {label}
-      </div>
-    )}
+      {isCollapsed && (
+        <div className="absolute left-full ml-4 px-3 py-1.5 bg-white text-black text-[11px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-50 pointer-events-none shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.05)] translate-x-[-10px] group-hover:translate-x-0 uppercase tracking-wider">
+          {label}
+        </div>
+      )}
     </div>
   )
 

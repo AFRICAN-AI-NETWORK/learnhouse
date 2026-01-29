@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Editor } from '@tiptap/core'
-import learnhouseAI_icon from 'public/learnhouse_ai_simple.png'
+import africanAiSquareLogo from 'public/african_ai_square.png'
 import Image from 'next/image'
 import { BookOpen, FormInput, Languages, MoreVertical } from 'lucide-react'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
@@ -55,10 +55,10 @@ function AICanvaToolkit(props: AICanvaToolkitProps) {
     // Calculate position - always above the selection
     const bubbleHeight = 50
     const bubbleWidth = 350
-    
+
     // Position above selection with margin
     const top = rect.top + window.scrollY - bubbleHeight - 2
-    
+
     // Center horizontally on selection
     const centerX = rect.left + rect.width / 2
     const left = centerX - bubbleWidth / 2
@@ -103,7 +103,7 @@ function AICanvaToolkit(props: AICanvaToolkitProps) {
 
     // Listen to editor events
     props.editor.on('selectionUpdate', handleSelectionUpdate)
-    
+
     // Listen to scroll and click events
     window.addEventListener('scroll', handleScroll, true)
     document.addEventListener('mousedown', handleClickOutside)
@@ -141,7 +141,7 @@ function AICanvaToolkit(props: AICanvaToolkitProps) {
           <Image
             className="outline-1 outline-neutral-200/10 rounded-lg"
             width={24}
-            src={learnhouseAI_icon}
+            src={africanAiSquareLogo}
             alt=""
           />
           <div>AI</div>

@@ -92,7 +92,7 @@ export const OrgMenu = (props: any) => {
               <MenuLinks orgslug={orgslug} />
             </div>
           </div>
-          
+
           {/* Search Section */}
           <div className="hidden md:flex flex-1 justify-center max-w-lg px-4">
             <SearchBar orgslug={orgslug} className="w-full" />
@@ -120,9 +120,8 @@ export const OrgMenu = (props: any) => {
         </div>
       </div>
       <div
-        className={`fixed inset-x-0 z-40 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${
-          isMenuOpen ? 'top-[60px] opacity-100' : '-top-full opacity-0'
-        }`}
+        className={`fixed inset-x-0 z-40 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${isMenuOpen ? 'top-[60px] opacity-100' : '-top-full opacity-0'
+          }`}
       >
         <div className="flex flex-col px-4 py-3 space-y-4 justify-center items-center">
           {/* Mobile Search */}

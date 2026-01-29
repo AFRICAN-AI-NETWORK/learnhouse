@@ -99,6 +99,8 @@
     "signup_to": "Sign up to",
     "create_account": "Create an account",
     "create_account_and_join": "Create an account & Join",
+    "create_your_account_in_steps": "Create your account in just a few steps",
+    "welcome_back": "Welcome back",
     "account_created_success": "Your account was successfully created",
     "login_to_your_account": "Login to your account",
     "authenticate_to_contribute": "Authenticate to contribute",
@@ -662,15 +664,6 @@
         }
       },
       "learnhouse_university": "LearnHouse University"
-    },
-    "courses": {
-      "title": "Courses",
-      "rights_guide": "Rights Guide",
-      "create_course": "Create Course",
-      "create_new_course": "Create a new course",
-      "no_courses": "No courses yet",
-      "create_course_placeholder": "Create a course to add content",
-      "no_courses_available": "No courses available yet"
     },
     "organization": {
       "settings": {

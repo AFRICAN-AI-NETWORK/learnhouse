@@ -7,7 +7,7 @@ import { ArrowRightCircle, Info } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import learnhouseIcon from 'public/learnhouse_bigicon_1.png'
+import africanAiLogo from 'public/african_ai_horizontal.png'
 import React, { useEffect } from 'react'
 import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
@@ -45,13 +45,14 @@ function HomeClient() {
           quality={100}
           width={60}
           height={60}
-          src={learnhouseIcon}
-          alt=""
+          src={africanAiLogo}
+          alt="African AI Network"
+          className="w-auto h-12 py-2"
         />
       </div>
 
       <div className='flex space-x-4 mx-auto font-semibold text-2xl pt-16 items-center'>
-        <span>{t('common.hello')},</span> 
+        <span>{t('common.hello')},</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="cursor-pointer transition-transform hover:scale-105">
@@ -74,9 +75,9 @@ function HomeClient() {
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
                   {AVAILABLE_LANGUAGES.map((language) => (
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       key={language.code}
-                      onClick={() => changeLanguage(language.code)} 
+                      onClick={() => changeLanguage(language.code)}
                       className="flex items-center justify-between"
                     >
                       <span>{t(language.translationKey)} ({language.nativeName})</span>
@@ -94,7 +95,7 @@ function HomeClient() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => signOut({ redirect: true, callbackUrl: getUriWithoutOrg('/') })}
               className="flex items-center space-x-2 text-red-600 focus:text-red-600"
             >
@@ -105,7 +106,7 @@ function HomeClient() {
         </DropdownMenu>
         <span className='capitalize'>{session?.data?.user.first_name} {session?.data?.user.last_name}</span>
       </div>
-      
+
       <div className='flex space-x-4 mx-auto font-semibold text-sm mt-12 items-center uppercase bg-slate-200 text-gray-600 px-3 py-2 rounded-md'>{t('common.your_organizations')}</div>
       {orgs && orgs.length == 0 && <div className='flex mx-auto my-5 space-x-3 bg-rose-200 rounded-lg px-3 py-2'>
         <Info />

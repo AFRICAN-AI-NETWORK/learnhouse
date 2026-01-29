@@ -1,5 +1,5 @@
 import React from 'react'
-import learnhouseAI_icon from 'public/learnhouse_ai_simple.png'
+import africanAiSquareLogo from 'public/african_ai_square.png'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -94,7 +94,7 @@ function AIEditorToolkit(props: AIEditorToolkitProps) {
                           <Image
                             className="outline outline-1 outline-neutral-200/20 rounded-lg"
                             width={24}
-                            src={learnhouseAI_icon}
+                            src={africanAiSquareLogo}
                             alt=""
                           />
                           <div className="flex items-center">
@@ -453,7 +453,7 @@ const UserFeedbackModal = (props: AIEditorToolkitProps) => {
           <Image
             className="outline outline-1 outline-neutral-200/20 rounded-lg"
             width={24}
-            src={learnhouseAI_icon}
+            src={africanAiSquareLogo}
             alt=""
           />
         </div>

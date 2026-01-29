@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import blacklogo from '@public/black_logo.png'
+import africanAiLogo from '@public/african_ai_horizontal.png'
 import React, { useEffect } from 'react'
 import { useOrg } from '../Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
@@ -17,8 +17,8 @@ function Watermark() {
         return (
             <div className='fixed bottom-8 right-8'>
                 <Link href={`https://www.learnhouse.app/?source=in-app`} className="flex items-center cursor-pointer bg-white/80 backdrop-blur-lg text-gray-700 rounded-2xl p-2 light-shadow text-xs px-5 font-semibold space-x-2">
-                    <p>{t('common.made_with')}</p>
-                    <Image unoptimized src={blacklogo} alt="logo" quality={100} width={85} />
+                    <p>Made with African AI Network</p>
+                    <Image unoptimized src={africanAiLogo} alt="logo" quality={100} width={120} />
                 </Link>
             </div>
         )

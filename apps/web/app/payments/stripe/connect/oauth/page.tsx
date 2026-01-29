@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { verifyStripeConnection } from '@services/payments/payments'
 import Image from 'next/image'
-import learnhouseIcon from 'public/learnhouse_bigicon_1.png'
+import africanAiLogo from 'public/african_ai_horizontal.png'
 import { useTranslation } from 'react-i18next'
 
 function StripeConnectCallback() {
@@ -37,15 +37,15 @@ function StripeConnectCallback() {
 
         // Wait for 1 second to show processing state
         await new Promise(resolve => setTimeout(resolve, 1000))
-        
+
         setStatus('success')
         setMessage(t('payments.stripe_success'))
-        
+
         // Close the window after 2 seconds of showing success
         setTimeout(() => {
           window.close()
         }, 2000)
-        
+
       } catch (error) {
         console.error('Error verifying Stripe connection:', error)
         setStatus('error')
@@ -67,11 +67,11 @@ function StripeConnectCallback() {
             quality={100}
             width={50}
             height={50}
-            src={learnhouseIcon}
+            src={africanAiLogo}
             alt=""
           />
         </div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

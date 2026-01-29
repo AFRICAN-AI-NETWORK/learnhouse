@@ -7,8 +7,8 @@ import { AlertTriangle, BadgeInfo, NotebookTabs } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FlaskConical, MessageCircle, X } from 'lucide-react'
 import Image from 'next/image'
-import learnhouseAI_icon from 'public/learnhouse_ai_simple.png'
-import learnhouseAI_logo_black from 'public/learnhouse_ai_black_logo.png'
+import africanAiSquareLogo from 'public/african_ai_square.png'
+import africanAiHorizontalLogo from 'public/african_ai_horizontal.png'
 import React, { useEffect, useRef } from 'react'
 import {
   AIChatBotStateTypes,
@@ -148,7 +148,7 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
       })
       await dispatchAIChatBot({ type: 'setIsWaitingForResponse' })
       const response = await startActivityAIChatSession(
-        message,access_token,
+        message, access_token,
         props.activity.activity_uuid
 
       )
@@ -232,7 +232,7 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
                     className={`outline outline-1 outline-neutral-200/20 rounded-lg ${aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
                       }`}
                     width={24}
-                    src={learnhouseAI_icon}
+                    src={africanAiSquareLogo}
                     alt=""
                   />
                   <span className="text-sm font-semibold text-white/70">
@@ -406,7 +406,7 @@ const AIMessagePlaceHolder = (props: {
             <Image
               width={100}
               className="mx-auto"
-              src={learnhouseAI_logo_black}
+              src={africanAiHorizontalLogo}
               alt=""
             />
             <p className="pt-3 text-2xl font-semibold text-white/70 flex justify-center space-x-2 items-center">

@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import React from 'react'
-import learnhousetextlogo from '../../../../public/learnhouse_logo.png'
+import africanAiLogo from '../../../../public/african_ai_horizontal.png'
 import { BookCopy, School, Settings, University, Users } from 'lucide-react'
 import Link from 'next/link'
 import AdminAuthorization from '@components/Security/AdminAuthorization'
@@ -13,9 +13,9 @@ function DashboardHome() {
     <div className="flex items-center justify-center mx-auto min-h-screen flex-col p-4 sm:mb-0 mb-16">
       <div className="mx-auto pb-6 sm:pb-10">
         <Image
-          alt="learnhouse logo"
-          width={230}
-          src={learnhousetextlogo}
+          alt="African AI Network logo"
+          width={280}
+          src={africanAiLogo}
           className="w-48 sm:w-auto"
         />
       </div>
@@ -43,22 +43,6 @@ function DashboardHome() {
         </div>
       </AdminAuthorization>
       <div className="flex flex-col gap-6 sm:gap-10 mt-6 sm:mt-10">
-        <AdminAuthorization authorizationMode="component">
-          <div className="h-1 w-[100px] bg-neutral-200/100 rounded-full mx-auto"></div>
-          <div className="flex justify-center items-center">
-            <Link
-              href={'https://university.learnhouse.io/'}
-              target='_blank'
-              className="flex mt-4 sm:mt-[40px] bg-black gap-2 items-center py-3 px-7 rounded-lg shadow-lg hover:scale-105 transition-all ease-linear cursor-pointer"
-            >
-              <University className="text-gray-100/100" size={20} />
-              <div className="text-sm font-bold text-gray-100/100">
-                {t('dashboard.home.learnhouse_university')}
-              </div>
-            </Link>
-          </div>
-          <div className="mx-auto mt-4 sm:mt-[40px] w-28 h-1 bg-neutral-200/100 rounded-full"></div>
-        </AdminAuthorization>
 
         <Link
           href={'/dash/user-account/settings/general'}

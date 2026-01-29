@@ -21,7 +21,7 @@ const LanguageSwitcher = () => {
   const currentLangCode = i18n.language.split('-')[0].toUpperCase()
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center space-x-1.5 px-2.5 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm font-bold outline-none text-gray-600">
           <Languages size={16} strokeWidth={2.5} />

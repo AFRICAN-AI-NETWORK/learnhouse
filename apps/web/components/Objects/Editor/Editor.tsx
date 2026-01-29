@@ -2,13 +2,13 @@
 import React from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import learnhouseIcon from 'public/learnhouse_icon.png'
+import africanAiSquareLogo from 'public/african_ai_square.png'
 import { ToolbarButtons } from './Toolbar/ToolbarButtons'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import styled from 'styled-components'
 import { DividerVerticalIcon, SlashIcon } from '@radix-ui/react-icons'
-import learnhouseAI_icon from 'public/learnhouse_ai_simple.png'
+import africanAiSquareLogoSimple from 'public/african_ai_square.png'
 import {
   AIEditorStateTypes,
   useAIEditor,
@@ -221,7 +221,7 @@ function Editor(props: Editor) {
                   <EditorInfoLearnHouseLogo
                     width={25}
                     height={25}
-                    src={learnhouseIcon}
+                    src={africanAiSquareLogo}
                     alt=""
                   />
                 </Link>
@@ -267,7 +267,7 @@ function Editor(props: Editor) {
                         <Image
                           className=""
                           width={20}
-                          src={learnhouseAI_icon}
+                          src={africanAiSquareLogoSimple}
                           alt=""
                         />
                       </i>{' '}

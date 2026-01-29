@@ -1,5 +1,5 @@
 'use client'
-import learnhouseIcon from 'public/learnhouse_bigicon_1.png'
+import africanAiLogo from 'public/african_ai_horizontal.png'
 import Image from 'next/image'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import Link from 'next/link'
@@ -24,6 +24,8 @@ interface SignUpClientProps {
   org: any
 }
 
+import AuthSplitLayout from '../components/AuthSplitLayout'
+
 function SignUpClient(props: SignUpClientProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -43,65 +45,28 @@ function SignUpClient(props: SignUpClientProps) {
     }
   }, [props.org, inviteCodeParam])
 
+  const getSubtitle = () => {
+    if (joinMethod === 'open') return t('auth.create_your_account_in_steps')
+    if (inviteCode) return t('auth.invited_to_join')
+    return t('auth.invite_code_required')
+  }
+
   return (
-    <div className="grid grid-flow-col justify-stretch h-screen">
-    
-      <div
-        className="right-login-part hidden lg:block"
-        style={{
-          background:
-            'linear-gradient(041.61deg, #202020 7.15%, #000000 90.96%)',
-        }}
-      >
-        <div className="login-topbar m-10">
-          <Link prefetch href={getUriWithOrg(props.org.slug, '/')}>
-            <Image
-              quality={100}
-              width={30}
-              height={30}
-              src={learnhouseIcon}
-              alt=""
-            />
-          </Link>
-        </div>
-        <div className="ml-10 h-3/4 flex flex-row text-white">
-          <div className="m-auto flex space-x-4 items-center flex-wrap">
-            <div>{t('auth.invited_to_join')} </div>
-            <div className="shadow-[0px_4px_16px_rgba(0,0,0,0.02)]">
-              {props.org?.logo_image ? (
-                <img
-                  src={`${getOrgLogoMediaDirectory(
-                    props.org.org_uuid,
-                    props.org?.logo_image
-                  )}`}
-                  alt="LearnHouse"
-                  style={{ width: 'auto', height: 70 }}
-                  className="rounded-xl shadow-xl inset-0 ring-1 ring-inset ring-black/10 bg-white"
-                />
-              ) : (
-                <Image
-                  quality={100}
-                  width={70}
-                  height={70}
-                  src={learnhouseIcon}
-                  alt=""
-                />
-              )}
-            </div>
-            <div className="font-bold text-xl">{props.org?.name}</div>
-          </div>
-        </div>
-      </div>
-      <div className="left-join-part bg-white flex items-center justify-center ">
-        {joinMethod == 'open' &&
-          (session.status == 'authenticated' ? (
+    <AuthSplitLayout
+      org={props.org}
+      title={t('auth.create_account')}
+      subtitle={getSubtitle()}
+    >
+      <div className="w-full">
+        {joinMethod === 'open' &&
+          (session.status === 'authenticated' ? (
             <LoggedInJoinScreen inviteCode={inviteCode} />
           ) : (
             <OpenSignUpComponent />
           ))}
-        {joinMethod == 'inviteOnly' &&
+        {joinMethod === 'inviteOnly' &&
           (inviteCode ? (
-            session.status == 'authenticated' ? (
+            session.status === 'authenticated' ? (
               <LoggedInJoinScreen inviteCode={inviteCode} />
             ) : (
               <InviteOnlySignUpComponent inviteCode={inviteCode} />
@@ -110,7 +75,7 @@ function SignUpClient(props: SignUpClientProps) {
             <NoTokenScreen />
           ))}
       </div>
-    </div>
+    </AuthSplitLayout>
   )
 }
 
@@ -118,58 +83,49 @@ const LoggedInJoinScreen = (props: any) => {
   const { t } = useTranslation()
   const session = useLHSession() as any
   const org = useOrg() as any
-  const invite_code = props.inviteCode
-  const [isLoading, setIsLoading] = React.useState(true)
   const [isSumbitting, setIsSubmitting] = React.useState(false)
   const router = useRouter()
 
   const join = async () => {
     setIsSubmitting(true)
     const res = await joinOrg({ org_id: org.id, user_id: session?.data?.user?.id, invite_code: props.inviteCode }, null, session.data?.tokens?.access_token)
-    //wait for 1s
     if (res.success) {
-      toast.success(
-        res.data
-      )
+      toast.success(res.data)
       setTimeout(() => {
-        router.push(getUriWithOrg(org.slug,'/'))
+        router.push(getUriWithOrg(org.slug, '/'))
       }, 2000)
       setIsSubmitting(false)
     } else {
       toast.error(res.data.detail)
-      setIsLoading(false)
       setIsSubmitting(false)
     }
-
   }
 
-  useEffect(() => {
-    if (session && org) {
-      setIsLoading(false)
-    }
-  }, [org, session])
-
   return (
-    <div className="flex flex-row  items-center mx-auto">
-       <Toast />
-      <div className="flex space-y-7 flex-col justify-center items-center">
-        <p className="pt-3 text-2xl font-semibold text-black/70 flex justify-center space-x-2 items-center">
-          <span className="items-center">{t('common.hi')}</span>
-          <span className="capitalize flex space-x-2 items-center">
-            <UserAvatar rounded="rounded-xl" border="border-4" width={35} />
-            <span>{session.data.username},</span>
-          </span>
-          <span>{t('auth.join')} {org?.name} ?</span>
+    <div className="flex flex-col items-center justify-center space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center space-y-3">
+        <p className="text-2xl font-bold text-slate-900">
+          {t('common.hi')}, {session.data.username}!
         </p>
-        <button onClick={() => join()} className="flex w-fit h-[35px] space-x-2 bg-black px-6 py-2 text-md rounded-lg font-semibold h-fit text-white items-center shadow-md">
-          {isSumbitting ? <BarLoader
-            cssOverride={{ borderRadius: 60 }}
-            width={60}
-            color="#ffffff"
-          /> : <><UserPlus size={18} />
-            <p>{t('auth.join')} </p></>}
-        </button>
+        <div className="flex items-center justify-center gap-4">
+          <UserAvatar rounded="rounded-xl" border="border-2" width={48} />
+          <p className="text-slate-600 font-medium">Ready to join <span className="text-black font-bold">{org?.name}</span>?</p>
+        </div>
       </div>
+      <button
+        onClick={() => join()}
+        disabled={isSumbitting}
+        className="flex items-center justify-center gap-3 w-64 bg-black text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50"
+      >
+        {isSumbitting ? (
+          <BarLoader width={60} color="#ffffff" />
+        ) : (
+          <>
+            <UserPlus size={20} />
+            <span>{t('auth.join')} {org?.name}</span>
+          </>
+        )}
+      </button>
     </div>
   )
 }
@@ -179,9 +135,8 @@ const NoTokenScreen = (props: any) => {
   const session = useLHSession() as any
   const org = useOrg() as any
   const router = useRouter()
-  const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoading, setIsLoading] = React.useState(false)
   const [inviteCode, setInviteCode] = React.useState('')
-  const [messsage, setMessage] = React.useState('bruh')
 
   const handleInviteCodeChange = (e: any) => {
     setInviteCode(e.target.value)
@@ -190,11 +145,8 @@ const NoTokenScreen = (props: any) => {
   const validateCode = async () => {
     setIsLoading(true)
     let res = await validateInviteCode(org?.id, inviteCode, session?.user?.tokens.access_token)
-    //wait for 1s
     if (res.success) {
-      toast.success(
-        t('auth.invite_code_valid')
-      )
+      toast.success(t('auth.invite_code_valid'))
       setTimeout(() => {
         router.push(getUriWithoutOrg(`/signup?inviteCode=${inviteCode}&orgslug=${org.slug}`))
       }, 2000)
@@ -204,40 +156,42 @@ const NoTokenScreen = (props: any) => {
     }
   }
 
-  useEffect(() => {
-    if (session && org) {
-      setIsLoading(false)
-    }
-  }, [org, session])
-
   return (
-    <div className="flex flex-row  items-center mx-auto">
-      <Toast />
-      {isLoading ? (
-        <div className="flex space-y-7 flex-col w-[300px] justify-center items-center">
-          <PageLoading />
+    <div className="flex flex-col items-center justify-center space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center space-y-2">
+        <div className="bg-rose-50 p-4 rounded-2xl inline-flex mb-4">
+          <MailWarning size={32} className="text-rose-600" />
         </div>
-      ) : (
-        <div className="flex space-y-7 flex-col justify-center items-center">
-          <p className="flex space-x-2 text-lg font-medium text-red-800 items-center">
-            <MailWarning size={18} />
-            <span>{t('auth.invite_code_required')} {org?.name}</span>
-          </p>
+        <h3 className="text-xl font-bold text-slate-900">{t('auth.invite_code_required')}</h3>
+        <p className="text-slate-500 text-sm italic">{org?.name}</p>
+      </div>
+
+      <div className="w-full max-w-sm space-y-4">
+        <div className="relative group">
+          <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
           <input
             onChange={handleInviteCodeChange}
-            className="bg-white outline-2 outline outline-gray-200 rounded-lg px-5 w-[300px] h-[50px]"
+            className="w-full bg-slate-50 border border-slate-200 focus:border-black focus:ring-4 focus:ring-black/5 rounded-xl px-12 py-4 transition-all outline-none text-slate-900 font-medium"
             placeholder={t('auth.enter_invite_code')}
             type="text"
           />
-          <button
-            onClick={validateCode}
-            className="flex w-fit space-x-2 bg-black px-6 py-2 text-md rounded-lg font-semibold h-fit text-white items-center shadow-md"
-          >
-            <Ticket size={18} />
-            <p>{t('common.submit')} </p>
-          </button>
         </div>
-      )}
+
+        <button
+          onClick={validateCode}
+          disabled={isLoading || !inviteCode}
+          className="flex w-full justify-center items-center gap-3 bg-black text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {isLoading ? (
+            <BarLoader width={60} color="#ffffff" />
+          ) : (
+            <>
+              <Ticket size={20} />
+              <span>{t('common.submit')}</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   )
 }

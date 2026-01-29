@@ -19,7 +19,7 @@ import { Switch } from "@components/ui/switch"
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
 import Image from 'next/image'
-import learnhouseIcon from '@public/learnhouse_logo.png'
+import africanAiLogo from '@public/african_ai_horizontal.png'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 
@@ -215,7 +215,7 @@ const OrgEditGeneral: React.FC = () => {
                       )}
                     </div>
 
-                    
+
 
                     <div className="flex items-center justify-between space-x-2 mt-6 bg-gray-50/50 p-4 rounded-lg nice-shadow">
                       <div className="flex items-center space-x-4">
@@ -223,8 +223,8 @@ const OrgEditGeneral: React.FC = () => {
                           <Image
                             quality={100}
                             width={120}
-                            src={learnhouseIcon}
-                            alt="LearnHouse"
+                            src={africanAiLogo}
+                            alt="African AI Network"
                             className="rounded-lg"
                           />
                           <span className="px-2 py-1 mt-1 bg-black rounded-md text-[10px] font-semibold text-white">
@@ -248,8 +248,8 @@ const OrgEditGeneral: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-row-reverse mt-0 mx-5 mb-5">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting}
                   className="bg-black text-white hover:bg-black/90"
                 >
