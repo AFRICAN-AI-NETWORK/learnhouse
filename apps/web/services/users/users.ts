@@ -47,3 +47,12 @@ export async function updateUserAvatar(
   const res = await getResponseMetadata(result)
   return res
 }
+
+export async function deleteUser(user_id: any, access_token: string) {
+  const result = await fetch(
+    `${getAPIUrl()}users/user_id/${user_id}`,
+    RequestBodyWithAuthHeader('DELETE', null, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}

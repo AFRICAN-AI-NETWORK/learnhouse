@@ -1066,10 +1066,10 @@
         },
         "actions": {
           "edit_role": "Modifier le rôle",
-          "remove_from_org": "Retirer de l'organisation",
+          "remove_from_org": "Supprimer le compte utilisateur",
           "removing": "Suppression...",
-          "remove_success": "Utilisateur retiré de l'organisation",
-          "remove_error": "Erreur lors du retrait de l'utilisateur"
+          "remove_success": "Compte utilisateur supprimé avec succès",
+          "remove_error": "Erreur lors de la suppression de l'utilisateur"
         },
         "modals": {
           "update_role": {
@@ -1078,8 +1078,8 @@
           },
           "remove_user": {
             "title": "Supprimer {{username}} ?",
-            "message": "Êtes-vous sûr de vouloir retirer cet utilisateur de l'organisation ?",
-            "button": "Retirer l'utilisateur"
+            "message": "Êtes-vous sûr de vouloir supprimer définitivement ce compte utilisateur de la base de données ?",
+            "button": "Supprimer le compte utilisateur"
           }
         }
       },

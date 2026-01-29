@@ -1075,10 +1075,10 @@
         },
         "actions": {
           "edit_role": "Edit Role",
-          "remove_from_org": "Remove from organization",
-          "removing": "Removing...",
-          "remove_success": "Removed user from org",
-          "remove_error": "Error removing user"
+          "remove_from_org": "Delete user account",
+          "removing": "Deleting...",
+          "remove_success": "User account deleted successfully",
+          "remove_error": "Error deleting user account"
         },
         "modals": {
           "update_role": {
@@ -1087,8 +1087,8 @@
           },
           "remove_user": {
             "title": "Delete {{username}} ?",
-            "message": "Are you sure you want remove this user from the organization?",
-            "button": "Remove User"
+            "message": "Are you sure you want to permanently delete this user account from the database?",
+            "button": "Delete User Account"
           }
         }
       },

@@ -21,6 +21,7 @@ from src.security.rbac.rbac import (
     authorization_verify_if_user_is_anon,
 )
 from src.db.organizations import Organization, OrganizationRead
+from src.db.user_organizations import UserOrganization
 from src.db.users import (
     AnonymousUser,
     InternalUser,
@@ -649,6 +650,12 @@ async def delete_user_by_id(
 
     # RBAC check
     await rbac_check(request, current_user, "delete", user.user_uuid, db_session)
+
+    # Cleanup UserOrganization first (backup for the DB cascade)
+    statement_org = select(UserOrganization).where(UserOrganization.user_id == user_id)
+    user_orgs = db_session.exec(statement_org).all()
+    for user_org in user_orgs:
+        db_session.delete(user_org)
 
     # Delete user
     db_session.delete(user)

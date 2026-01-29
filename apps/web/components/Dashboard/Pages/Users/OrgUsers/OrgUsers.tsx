@@ -8,6 +8,7 @@ import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import Toast from '@components/Objects/StyledElements/Toast/Toast'
 import { getAPIUrl } from '@services/config/config'
 import { removeUserFromOrg } from '@services/organizations/orgs'
+import { deleteUser } from '@services/users/users'
 import { swrFetcher } from '@services/utils/ts/requests'
 import { KeyRound, LogOut } from 'lucide-react'
 import React, { useEffect } from 'react'
@@ -35,12 +36,12 @@ function OrgUsers() {
 
   const handleRemoveUser = async (user_id: any) => {
     const toastId = toast.loading(t('dashboard.users.active_users.actions.removing'));
-    const res = await removeUserFromOrg(org.id, user_id,access_token)
+    const res = await deleteUser(user_id, access_token)
     if (res.status === 200) {
       await mutate(`${getAPIUrl()}orgs/${org.id}/users`)
-      toast.success(t('dashboard.users.active_users.actions.remove_success'), {id:toastId});
+      toast.success(t('dashboard.users.active_users.actions.remove_success'), { id: toastId });
     } else {
-      toast.error(t('dashboard.users.active_users.actions.remove_error'), {id:toastId});
+      toast.error(t('dashboard.users.active_users.actions.remove_error'), { id: toastId });
     }
   }
 
