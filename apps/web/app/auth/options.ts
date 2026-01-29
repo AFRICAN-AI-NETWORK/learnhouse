@@ -46,7 +46,7 @@ export const nextAuthOptions = {
           // If login failed, then this is the place you could do a registration
           return res.data
         } else {
-          return null
+          throw new Error(res.data?.detail || 'Incorrect Email or password')
         }
       },
     }),

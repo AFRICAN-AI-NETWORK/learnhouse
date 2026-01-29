@@ -676,15 +676,6 @@
       },
       "learnhouse_university": "LearnHouse 大学"
     },
-    "courses": {
-      "title": "课程",
-      "rights_guide": "权利指南",
-      "create_course": "创建课程",
-      "create_new_course": "创建新课程",
-      "no_courses": "尚无课程",
-      "create_course_placeholder": "创建课程以添加内容",
-      "no_courses_available": "尚无可用课程"
-    },
     "organization": {
       "settings": {
         "title": "组织设置",

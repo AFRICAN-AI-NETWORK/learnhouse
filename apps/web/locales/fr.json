@@ -673,15 +673,6 @@
       },
       "learnhouse_university": "Université LearnHouse"
     },
-    "courses": {
-      "title": "Cours",
-      "rights_guide": "Guide des droits",
-      "create_course": "Créer un cours",
-      "create_new_course": "Créer un nouveau cours",
-      "no_courses": "Aucun cours pour le moment",
-      "create_course_placeholder": "Créez un cours pour ajouter du contenu",
-      "no_courses_available": "Aucun cours disponible pour le moment"
-    },
     "organization": {
       "settings": {
         "title": "Paramètres de l'organisation",

@@ -677,15 +677,6 @@
       },
       "learnhouse_university": "جامعة LearnHouse"
     },
-    "courses": {
-      "title": "الدورات",
-      "rights_guide": "دليل الحقوق",
-      "create_course": "إنشاء دورة",
-      "create_new_course": "إنشاء دورة جديدة",
-      "no_courses": "لا توجد دورات بعد",
-      "create_course_placeholder": "أنشئ دورة لإضافة محتوى",
-      "no_courses_available": "لا توجد دورات متاحة بعد"
-    },
     "organization": {
       "settings": {
         "title": "إعدادات المنظمة",
