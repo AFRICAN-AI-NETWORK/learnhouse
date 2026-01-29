@@ -158,7 +158,7 @@ function DashLeftMenu() {
             <div className="my-4 border-t border-white/5 mx-2 opacity-50" />
 
             <MenuLink
-              href="https://docs.learnhouse.app"
+              href="https://africanainetwork.com"
               icon={<HelpCircle size={18} />}
               label={t('common.help')}
               isCollapsed={isCollapsed}
@@ -250,7 +250,7 @@ function DashLeftMenu() {
               <div className="px-4 mt-1.5 animate-in fade-in duration-1000">
                 <div className="flex items-center space-x-2 text-white/10 font-black tracking-widest text-[8px]">
                   <div className="flex items-center space-x-1.5">
-                    <span>LEARNHOUSE</span>
+                    <span>AFRICAN AI</span>
                     {isEE ? (
                       <ToolTip content="ENTERPRISE EDITION" side="top" slateBlack sideOffset={10}>
                         <span className="bg-purple-500/10 text-purple-400/40 px-1 py-0.5 rounded-[3px] border border-purple-500/10 cursor-help transition-colors hover:text-purple-300">EE</span>

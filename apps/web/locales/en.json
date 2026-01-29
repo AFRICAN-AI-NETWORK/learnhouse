@@ -663,7 +663,7 @@
           "description": "Configure your personal settings, passwords, email"
         }
       },
-      "learnhouse_university": "LearnHouse University"
+      "african_ai_university": "African AI Network University"
     },
     "organization": {
       "settings": {
@@ -706,8 +706,8 @@
         "label_placeholder": "Select organization label",
         "about": "About Organization",
         "about_placeholder": "Detailed description of your organization",
-        "showcase_explore": "Showcase in LearnHouse Explore",
-        "showcase_description": "Share your organization's courses and content with the LearnHouse community. Enable this to help learners discover your valuable educational resources.",
+        "showcase_explore": "Showcase in African AI Network Explore",
+        "showcase_description": "Share your organization's courses and content with the African AI Network community. Enable this to help learners discover your valuable educational resources.",
         "save_changes": "Save Changes",
         "saving": "Saving...",
         "update_success": "Organization Updated",

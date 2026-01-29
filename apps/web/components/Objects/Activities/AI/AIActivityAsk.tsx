@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FlaskConical, MessageCircle, X } from 'lucide-react'
 import Image from 'next/image'
 import africanAiSquareLogo from 'public/african_ai_square.png'
-import africanAiHorizontalLogo from 'public/african_ai_horizontal.png'
+import africanAiLogo from 'public/african_ai_horizontal.png'
 import React, { useEffect, useRef } from 'react'
 import {
   AIChatBotStateTypes,
@@ -53,7 +53,7 @@ function AIActivityAsk(props: AIActivityAskProps) {
               <Image
                 className="outline outline-1 outline-neutral-200/20 rounded-md"
                 width={20}
-                src={learnhouseAI_icon}
+                src={africanAiSquareLogo}
                 alt=""
               />
             </i>{' '}
@@ -406,7 +406,7 @@ const AIMessagePlaceHolder = (props: {
             <Image
               width={100}
               className="mx-auto"
-              src={africanAiHorizontalLogo}
+              src={africanAiLogo}
               alt=""
             />
             <p className="pt-3 text-2xl font-semibold text-white/70 flex justify-center space-x-2 items-center">

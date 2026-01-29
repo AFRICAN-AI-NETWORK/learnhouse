@@ -107,10 +107,11 @@ const LoggedInJoinScreen = (props: any) => {
         <p className="text-2xl font-bold text-slate-900">
           {t('common.hi')}, {session.data.username}!
         </p>
-        <div className="flex items-center justify-center gap-4">
-          <UserAvatar rounded="rounded-xl" border="border-2" width={48} />
-          <p className="text-slate-600 font-medium">Ready to join <span className="text-black font-bold">{org?.name}</span>?</p>
-        </div>
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-4">
+        <UserAvatar rounded="rounded-xl" border="border-2" width={48} />
+        <p className="text-slate-600 font-medium">Ready to join <span className="text-black font-bold">{org?.name}</span>?</p>
       </div>
       <button
         onClick={() => join()}
@@ -126,7 +127,7 @@ const LoggedInJoinScreen = (props: any) => {
           </>
         )}
       </button>
-    </div>
+    </div >
   )
 }
 

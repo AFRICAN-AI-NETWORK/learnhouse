@@ -8,7 +8,6 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import styled from 'styled-components'
 import { DividerVerticalIcon, SlashIcon } from '@radix-ui/react-icons'
-import africanAiSquareLogoSimple from 'public/african_ai_square.png'
 import {
   AIEditorStateTypes,
   useAIEditor,
@@ -267,7 +266,7 @@ function Editor(props: Editor) {
                         <Image
                           className=""
                           width={20}
-                          src={africanAiSquareLogoSimple}
+                          src={africanAiSquareLogo}
                           alt=""
                         />
                       </i>{' '}
