@@ -19,12 +19,13 @@ import toast from 'react-hot-toast'
 import { BarLoader } from 'react-spinners'
 import { joinOrg } from '@services/organizations/orgs'
 import { useTranslation } from 'react-i18next'
+import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
 interface SignUpClientProps {
   org: any
 }
 
-import AuthSplitLayout from '../components/AuthSplitLayout'
+
 
 function SignUpClient(props: SignUpClientProps) {
   const { t } = useTranslation()
@@ -52,30 +53,64 @@ function SignUpClient(props: SignUpClientProps) {
   }
 
   return (
-    <AuthSplitLayout
-      org={props.org}
-      title={t('auth.create_account')}
-      subtitle={getSubtitle()}
-    >
-      <div className="w-full">
-        {joinMethod === 'open' &&
-          (session.status === 'authenticated' ? (
-            <LoggedInJoinScreen inviteCode={inviteCode} />
-          ) : (
-            <OpenSignUpComponent />
-          ))}
-        {joinMethod === 'inviteOnly' &&
-          (inviteCode ? (
-            session.status === 'authenticated' ? (
-              <LoggedInJoinScreen inviteCode={inviteCode} />
-            ) : (
-              <InviteOnlySignUpComponent inviteCode={inviteCode} />
-            )
-          ) : (
-            <NoTokenScreen />
-          ))}
+    <div className="min-h-screen w-full flex flex-col items-center justify-center overflow-y-auto bg-slate-50/50">
+      <div className="w-full md:w-[500px] py-12 px-6">
+        <div className="flex justify-between items-center mb-8">
+          <Link href={getUriWithOrg(props.org?.slug, '/')}>
+            <Image
+              quality={100}
+              width={160}
+              src={africanAiLogo}
+              alt="African AI Network"
+              className="w-auto h-8 hover:opacity-80 transition-opacity"
+            />
+          </Link>
+          <LanguageSwitcher />
+        </div>
+
+        <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {t('auth.create_account')}
+            </h1>
+            {getSubtitle() && (
+              <p className="text-sm text-slate-500 italic">
+                {getSubtitle()}
+              </p>
+            )}
+          </div>
+
+          <div className="w-full">
+            {joinMethod === 'open' &&
+              (session.status === 'authenticated' ? (
+                <LoggedInJoinScreen inviteCode={inviteCode} />
+              ) : (
+                <OpenSignUpComponent />
+              ))}
+            {joinMethod === 'inviteOnly' &&
+              (inviteCode ? (
+                session.status === 'authenticated' ? (
+                  <LoggedInJoinScreen inviteCode={inviteCode} />
+                ) : (
+                  <InviteOnlySignUpComponent inviteCode={inviteCode} />
+                )
+              ) : (
+                <NoTokenScreen />
+              ))}
+          </div>
+
+          <p className="text-center text-xs text-slate-500 pt-4 border-t border-slate-50">
+            {t('auth.already_have_an_account')}{' '}
+            <Link
+              href={`/login?orgslug=${props.org?.slug}`}
+              className="font-bold text-black hover:underline"
+            >
+              {t('auth.login')}
+            </Link>
+          </p>
+        </div>
       </div>
-    </AuthSplitLayout>
+    </div>
   )
 }
 
