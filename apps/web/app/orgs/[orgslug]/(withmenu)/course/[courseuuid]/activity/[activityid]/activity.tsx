@@ -74,7 +74,7 @@ function useActivityPosition(course: any, activityId: string) {
   return useMemo(() => {
     let allActivities: any[] = [];
     let currentIndex = -1;
-    
+
     course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
         const cleanActivityUuid = activity.activity_uuid?.replace('activity_', '');
@@ -83,19 +83,19 @@ function useActivityPosition(course: any, activityId: string) {
           cleanUuid: cleanActivityUuid,
           chapterName: chapter.name
         });
-        
+
         if (cleanActivityUuid === activityId.replace('activity_', '')) {
           currentIndex = allActivities.length - 1;
         }
       });
     });
-    
+
     return { allActivities, currentIndex };
   }, [course, activityId]);
 }
 
 function ActivityActions({ activity, activityid, course, orgslug, assignment, showNavigation = true }: ActivityActionsProps) {
-  
+
   const { t } = useTranslation();
   const { contributorStatus } = useContributorStatus(course.course_uuid);
   const org = useOrg() as any;
@@ -160,7 +160,7 @@ function ActivityClient(props: ActivityClientProps) {
     const weeks = Math.floor(days / 7);
     const months = Math.floor(days / 30);
     const years = Math.floor(days / 365);
-  
+
     if (years > 0) return t('time.years_ago', { count: years });
     if (months > 0) return t('time.months_ago', { count: months });
     if (weeks > 0) return t('time.weeks_ago', { count: weeks });
@@ -194,7 +194,7 @@ function ActivityClient(props: ActivityClientProps) {
 
   // Memoize activity position calculation
   const { allActivities, currentIndex } = useActivityPosition(course, activityid);
-  
+
   // Get previous and next activities
   const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null;
   const nextActivity = currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null;
@@ -244,7 +244,7 @@ function ActivityClient(props: ActivityClientProps) {
   // Navigate to an activity
   const navigateToActivity = (activity: any) => {
     if (!activity) return;
-    
+
     const cleanCourseUuid = course.course_uuid?.replace('course_', '');
     router.push(getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`);
   };
@@ -262,8 +262,8 @@ function ActivityClient(props: ActivityClientProps) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('globalFocusMode', isFocusMode.toString());
       // Dispatch custom event for focus mode change
-      window.dispatchEvent(new CustomEvent('focusModeChange', { 
-        detail: { isFocusMode } 
+      window.dispatchEvent(new CustomEvent('focusModeChange', {
+        detail: { isFocusMode }
       }));
       isInitialRender.current = false;
     }
@@ -309,7 +309,7 @@ function ActivityClient(props: ActivityClientProps) {
           <AIChatBotProvider>
             {isFocusMode ? (
               <AnimatePresence>
-                <motion.div 
+                <motion.div
                   initial={isInitialRender.current ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -317,7 +317,7 @@ function ActivityClient(props: ActivityClientProps) {
                   className="fixed inset-0 bg-white z-50"
                 >
                   {/* Focus Mode Top Bar */}
-                  <motion.div 
+                  <motion.div
                     initial={isInitialRender.current ? false : { y: -100 }}
                     animate={{ y: 0 }}
                     exit={{ y: -100 }}
@@ -327,7 +327,7 @@ function ActivityClient(props: ActivityClientProps) {
                     <div className="container mx-auto px-4 py-2">
                       <div className="flex items-center justify-between h-14">
                         {/* Progress Indicator - Moved to left */}
-                        <motion.div 
+                        <motion.div
                           initial={isInitialRender.current ? false : { opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 }}
@@ -365,9 +365,9 @@ function ActivityClient(props: ActivityClientProps) {
                             {trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0} {t('common.of')} {course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0}
                           </div>
                         </motion.div>
-                        
+
                         {/* Center Course Info */}
-                        <motion.div 
+                        <motion.div
                           initial={isInitialRender.current ? false : { opacity: 0, y: -20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.1 }}
@@ -397,13 +397,13 @@ function ActivityClient(props: ActivityClientProps) {
                         </motion.div>
 
                         {/* Minimize and Chapters - Moved to right */}
-                        <motion.div 
+                        <motion.div
                           initial={isInitialRender.current ? false : { opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 }}
                           className="flex items-center space-x-2"
                         >
-                          <ActivityChapterDropdown 
+                          <ActivityChapterDropdown
                             course={course}
                             currentActivityId={activity.activity_uuid ? activity.activity_uuid.replace('activity_', '') : activityid.replace('activity_', '')}
                             orgslug={orgslug}
@@ -431,7 +431,7 @@ function ActivityClient(props: ActivityClientProps) {
                           {activity.content.paid_access == false ? (
                             <PaidCourseActivityDisclaimer course={course} />
                           ) : (
-                            <motion.div 
+                            <motion.div
                               initial={isInitialRender.current ? false : { scale: 0.95, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: 0.3 }}
@@ -450,7 +450,7 @@ function ActivityClient(props: ActivityClientProps) {
 
                   {/* Focus Mode Bottom Bar */}
                   {activity && activity.published == true && activity.content.paid_access != false && (
-                    <motion.div 
+                    <motion.div
                       initial={isInitialRender.current ? false : { y: 100 }}
                       animate={{ y: 0 }}
                       exit={{ y: 100 }}
@@ -462,11 +462,10 @@ function ActivityClient(props: ActivityClientProps) {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => navigateToActivity(prevActivity)}
-                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
-                                prevActivity 
-                                  ? 'text-gray-700' 
-                                  : 'opacity-50 text-gray-400 cursor-not-allowed'
-                              }`}
+                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${prevActivity
+                                ? 'text-gray-700'
+                                : 'opacity-50 text-gray-400 cursor-not-allowed'
+                                }`}
                               disabled={!prevActivity}
                               title={prevActivity ? `${t('common.previous')}: ${prevActivity.name}` : t('activities.no_previous_activity')}
                             >
@@ -480,7 +479,7 @@ function ActivityClient(props: ActivityClientProps) {
                             </button>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <ActivityActions 
+                            <ActivityActions
                               activity={activity}
                               activityid={activityid}
                               course={course}
@@ -490,11 +489,10 @@ function ActivityClient(props: ActivityClientProps) {
                             />
                             <button
                               onClick={() => navigateToActivity(nextActivity)}
-                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
-                                nextActivity 
-                                  ? 'text-gray-700' 
-                                  : 'opacity-50 text-gray-400 cursor-not-allowed'
-                              }`}
+                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${nextActivity
+                                ? 'text-gray-700'
+                                : 'opacity-50 text-gray-400 cursor-not-allowed'
+                                }`}
                               disabled={!nextActivity}
                               title={nextActivity ? `${t('common.next')}: ${nextActivity.name}` : t('activities.no_next_activity')}
                             >
@@ -514,10 +512,10 @@ function ActivityClient(props: ActivityClientProps) {
                 </motion.div>
               </AnimatePresence>
             ) : (
-              <GeneralWrapperStyled>
+              <GeneralWrapperStyled maxWidth="max-w-(--breakpoint-xl)">
                 {/* Original non-focus mode UI */}
                 {activityid === 'end' ? (
-                  <CourseEndView 
+                  <CourseEndView
                     courseName={course.name}
                     orgslug={orgslug}
                     courseUuid={course.course_uuid}
@@ -528,20 +526,20 @@ function ActivityClient(props: ActivityClientProps) {
                 ) : (
                   <div className="space-y-4 pt-0">
                     <div className="pt-2">
-                      <ActivityBreadcrumbs 
+                      <ActivityBreadcrumbs
                         course={course}
                         activity={activity}
                         orgslug={orgslug}
                       />
                       <div className="space-y-4 pb-4 activity-info-section">
                         <div className="flex justify-between items-center">
-                          <div className="flex space-x-6">
-                            <div className="flex">
+                          <div className="flex space-x-4 md:space-x-6">
+                            <div className="hidden sm:flex">
                               <Link
                                 href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
                               >
                                 <img
-                                  className="w-[100px] h-[57px] rounded-md drop-shadow-md"
+                                  className="w-[80px] md:w-[100px] h-[45px] md:h-[57px] rounded-md drop-shadow-md"
                                   src={`${getCourseThumbnailMediaDirectory(
                                     org?.org_uuid,
                                     course.course_uuid,
@@ -551,9 +549,9 @@ function ActivityClient(props: ActivityClientProps) {
                                 />
                               </Link>
                             </div>
-                            <div className="flex flex-col -space-y-1">
-                              <p className="font-bold text-gray-700 text-md">{t('search.course')} </p>
-                              <h1 className="font-bold text-gray-950 text-3xl first-letter:uppercase">
+                            <div className="flex flex-col -space-y-0.5 md:-space-y-1">
+                              <p className="font-bold text-gray-700 text-sm md:text-md">{t('search.course')} </p>
+                              <h1 className="font-bold text-gray-950 text-xl md:text-3xl first-letter:uppercase line-clamp-1">
                                 {course.name}
                               </h1>
                             </div>
@@ -571,15 +569,15 @@ function ActivityClient(props: ActivityClientProps) {
 
                         <div className="flex justify-between items-center w-full">
                           <div className="flex flex-1/3 items-center space-x-3">
-                            <div className="flex flex-col -space-y-1">
-                              <p className="font-bold text-gray-700 text-md">
+                            <div className="flex flex-col -space-y-0.5 md:-space-y-1">
+                              <p className="font-bold text-gray-700 text-sm md:text-md">
                                 {getChapterNameByActivityId(course, activity.id)}
                               </p>
-                              <h1 className="font-bold text-gray-950 text-2xl first-letter:uppercase">
+                              <h1 className="font-bold text-gray-950 text-lg md:text-2xl first-letter:uppercase">
                                 {activity.name}
                               </h1>
-                              {/* Authors and Dates Section */}
-                              <div className="flex flex-wrap items-center gap-3 mt-2">
+                              {/* Authors and Dates Section - Hidden on mobile */}
+                              <div className="hidden sm:flex flex-wrap items-center gap-3 mt-2">
                                 {/* Avatars */}
                                 {course.authors && course.authors.length > 0 && (
                                   <div className="flex -space-x-3">
@@ -660,7 +658,7 @@ function ActivityClient(props: ActivityClientProps) {
                                 {activity.activity_type != 'TYPE_ASSIGNMENT' && (
                                   <>
                                     <AIActivityAsk activity={activity} />
-                                    <ActivityChapterDropdown 
+                                    <ActivityChapterDropdown
                                       course={course}
                                       currentActivityId={activity.activity_uuid ? activity.activity_uuid.replace('activity_', '') : activityid.replace('activity_', '')}
                                       orgslug={orgslug}
@@ -698,7 +696,7 @@ function ActivityClient(props: ActivityClientProps) {
                           {activity.content.paid_access == false ? (
                             <PaidCourseActivityDisclaimer course={course} />
                           ) : (
-                            <div className={`p-7 drop-shadow-xs rounded-lg ${bgColor} relative`}>
+                            <div className={`p-4 md:p-6 drop-shadow-xs rounded-lg ${bgColor} relative`}>
                               <button
                                 onClick={() => setIsFocusMode(true)}
                                 className="absolute top-4 right-4 bg-white/80 hover:bg-white nice-shadow p-2 rounded-full cursor-pointer transition-all duration-200 group overflow-hidden z-50 pointer-events-auto"
@@ -719,28 +717,32 @@ function ActivityClient(props: ActivityClientProps) {
 
                       {/* Activity Actions below the content box */}
                       {activity && activity.published == true && activity.content.paid_access != false && (
-                        <div className="flex justify-between items-center mt-4 w-full">
-                          <div>
-                            <PreviousActivityButton 
-                              course={course} 
-                              currentActivityId={activity.id} 
-                              orgslug={orgslug} 
+                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 w-full gap-4">
+                          <div className="flex-1">
+                            <PreviousActivityButton
+                              course={course}
+                              currentActivityId={activity.id}
+                              orgslug={orgslug}
                             />
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <ActivityActions 
-                              activity={activity}
-                              activityid={activityid}
-                              course={course}
-                              orgslug={orgslug}
-                              assignment={assignment}
-                              showNavigation={false}
-                            />
-                            <NextActivityButton 
-                              course={course} 
-                              currentActivityId={activity.id} 
-                              orgslug={orgslug} 
-                            />
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-2">
+                            <div className="flex justify-center">
+                              <ActivityActions
+                                activity={activity}
+                                activityid={activityid}
+                                course={course}
+                                orgslug={orgslug}
+                                assignment={assignment}
+                                showNavigation={false}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <NextActivityButton
+                                course={course}
+                                currentActivityId={activity.id}
+                                orgslug={orgslug}
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -754,7 +756,7 @@ function ActivityClient(props: ActivityClientProps) {
                           activity={activity}
                         />
                       )}
-                      
+
                       <div style={{ height: '100px' }}></div>
                     </div>
                   </div>
@@ -789,7 +791,7 @@ export function MarkStatus(props: {
     if (typeof window !== 'undefined') {
       const markedTooltipCount = localStorage.getItem('activity_marked_tooltip_count');
       const unmarkedTooltipCount = localStorage.getItem('activity_unmarked_tooltip_count');
-      
+
       if (!markedTooltipCount || parseInt(markedTooltipCount) < 3) {
         setShowMarkedTooltip(true);
       }
@@ -814,12 +816,12 @@ export function MarkStatus(props: {
   };
 
   const infoIcon = (
-    <svg 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
       strokeLinejoin="round"
     >
       <circle cx="12" cy="12" r="10" />
@@ -856,7 +858,7 @@ export function MarkStatus(props: {
     try {
       const willCompleteAll = areAllActivitiesCompleted();
       setIsLoading(true);
-      
+
       await markActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
@@ -865,7 +867,7 @@ export function MarkStatus(props: {
       );
 
       await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`);
-      
+
       if (willCompleteAll) {
         const cleanCourseUuid = props.course.course_uuid.replace('course_', '');
         router.push(getUriWithOrg(props.orgslug, '') + `/course/${cleanCourseUuid}/activity/end`);
@@ -881,7 +883,7 @@ export function MarkStatus(props: {
   async function unmarkActivityAsCompleteFront() {
     try {
       setIsLoading(true);
-      
+
       await unmarkActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
@@ -900,7 +902,7 @@ export function MarkStatus(props: {
   const isActivityCompleted = () => {
     // Clean up course UUID by removing 'course_' prefix if it exists
     const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
-    
+
     let run = props.trailData?.runs?.find(
       (run: any) => {
         const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
@@ -935,14 +937,14 @@ export function MarkStatus(props: {
                 <div className="bg-teal-600 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
                   <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
                   <div className="flex items-center space-x-2">
-                    <svg 
-                      width="17" 
-                      height="17" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
                       strokeLinejoin="round"
                     >
                       <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -978,28 +980,28 @@ export function MarkStatus(props: {
               <div className="flex items-center space-x-2">
                 {isLoading ? (
                   <div className="animate-spin">
-                    <svg 
-                      width="17" 
-                      height="17" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
                       strokeLinejoin="round"
                     >
                       <path d="M21 12a9 9 0 11-6.219-8.56" />
                     </svg>
                   </div>
                 ) : (
-                  <svg 
-                    width="17" 
-                    height="17" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
                     strokeLinejoin="round"
                   >
                     <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -1033,7 +1035,7 @@ function NextActivityButton({ course, currentActivityId, orgslug }: { course: an
   const findNextActivity = () => {
     let allActivities: any[] = [];
     let currentIndex = -1;
-    
+
     // Flatten all activities from all chapters
     course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
@@ -1043,14 +1045,14 @@ function NextActivityButton({ course, currentActivityId, orgslug }: { course: an
           cleanUuid: cleanActivityUuid,
           chapterName: chapter.name
         });
-        
+
         // Check if this is the current activity
         if (activity.id === currentActivityId) {
           currentIndex = allActivities.length - 1;
         }
       });
     });
-    
+
     // Get next activity
     return currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null;
   };
@@ -1086,7 +1088,7 @@ function PreviousActivityButton({ course, currentActivityId, orgslug }: { course
   const findPreviousActivity = () => {
     let allActivities: any[] = [];
     let currentIndex = -1;
-    
+
     // Flatten all activities from all chapters
     course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
@@ -1096,14 +1098,14 @@ function PreviousActivityButton({ course, currentActivityId, orgslug }: { course
           cleanUuid: cleanActivityUuid,
           chapterName: chapter.name
         });
-        
+
         // Check if this is the current activity
         if (activity.id === currentActivityId) {
           currentIndex = allActivities.length - 1;
         }
       });
     });
-    
+
     // Get previous activity
     return currentIndex > 0 ? allActivities[currentIndex - 1] : null;
   };
@@ -1202,7 +1204,7 @@ function AssignmentTools(props: {
   }
 
   useEffect(() => {
-    if ( submission && submission.length > 0 && submission[0].submission_status === 'GRADED') {
+    if (submission && submission.length > 0 && submission[0].submission_status === 'GRADED') {
       getGradingBasedOnMethod();
     }
   }
