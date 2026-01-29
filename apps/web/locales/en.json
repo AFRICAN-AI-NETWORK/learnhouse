@@ -32,6 +32,7 @@
     "thai": "Thai",
     "bengali": "Bengali",
     "loading": "Loading...",
+    "sending": "Sending...",
     "search": "Search",
     "all": "All",
     "help": "Help",
@@ -105,7 +106,18 @@
     "login_to_your_account": "Login to your account",
     "authenticate_to_contribute": "Authenticate to contribute",
     "sign_up_to_contribute": "Sign up to contribute",
-    "already_have_an_account": "Already have an account?"
+    "already_have_an_account": "Already have an account?",
+    "no_account": "Don't have an account?",
+    "email_not_verified": "Email Not Verified",
+    "login_failed": "Login Failed",
+    "verify_prompt": "Please verify your email address before logging in. Check your inbox for the verification link.",
+    "verification_sent": "Verification email sent! Please check your inbox and spam folder.",
+    "verification_failed": "Failed to send verification email. Please try again.",
+    "verification_error": "Error sending verification email. Please try again.",
+    "resend_verification": "Resend verification email",
+    "didnt_receive_email": "Didn't receive the email? Check your spam folder.",
+    "email_placeholder": "you@example.com",
+    "password_placeholder": "••••••••"
   },
   "validation": {
     "required": "Required",

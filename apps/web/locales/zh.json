@@ -102,7 +102,20 @@
     "account_created_success": "您的账户已成功创建",
     "login_to_your_account": "登录您的账户",
     "authenticate_to_contribute": "请登录以参与贡献",
-    "sign_up_to_contribute": "请注册以参与贡献"
+    "sign_up_to_contribute": "请注册以参与贡献",
+    "welcome_back": "欢迎回来",
+    "already_have_an_account": "已经有账号了？",
+    "no_account": "还没有账号？",
+    "email_not_verified": "电子邮件未验证",
+    "login_failed": "登录失败",
+    "verify_prompt": "请在登录前验证您的电子邮件地址。请检查收件箱中的验证链接。",
+    "verification_sent": "验证邮件已发送！请检查您的收件箱和垃圾邮件文件夹。",
+    "verification_failed": "发送验证邮件失败。请重试。",
+    "verification_error": "发送验证邮件时出错。请重试。",
+    "resend_verification": "重新发送验证邮件",
+    "didnt_receive_email": "没有收到电子邮件？请检查您的垃圾邮件文件夹。",
+    "email_placeholder": "you@example.com",
+    "password_placeholder": "••••••••"
   },
   "validation": {
     "required": "必填",

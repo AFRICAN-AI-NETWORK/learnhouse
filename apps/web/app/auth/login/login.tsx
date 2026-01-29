@@ -8,14 +8,12 @@ import FormLayout, {
 import Image from 'next/image'
 import * as Form from '@radix-ui/react-form'
 import { useFormik } from 'formik'
-import { getOrgLogoMediaDirectory } from '@services/media/media'
 import React from 'react'
-import { AlertTriangle, UserRoundPlus, Mail } from 'lucide-react'
+import { AlertTriangle, UserRoundPlus, Mail, Lock, Eye, EyeOff, LucideLoader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from "next-auth/react"
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
-import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
@@ -23,13 +21,12 @@ interface LoginClientProps {
   org: any
 }
 
-import AuthSplitLayout from '../components/AuthSplitLayout'
-
 const LoginClient = (props: LoginClientProps) => {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showResendButton, setShowResendButton] = React.useState(false)
   const [resendingEmail, setResendingEmail] = React.useState(false)
+  const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState('')
   const router = useRouter();
 
@@ -64,13 +61,13 @@ const LoginClient = (props: LoginClientProps) => {
       })
 
       if (response.ok) {
-        setError('Verification email sent! Please check your inbox and spam folder.')
+        setError(t('auth.verification_sent'))
         setShowResendButton(false)
       } else {
-        setError('Failed to send verification email. Please try again.')
+        setError(t('auth.verification_failed'))
       }
     } catch (err) {
-      setError('Error sending verification email. Please try again.')
+      setError(t('auth.verification_error'))
     } finally {
       setResendingEmail(false)
     }
@@ -107,7 +104,7 @@ const LoginClient = (props: LoginClientProps) => {
         if (res.error.includes('verify your email') ||
           res.error.includes('email address before') ||
           res.error.includes('Email Not Verified')) {
-          setError('Please verify your email address before logging in. Check your inbox for the verification link.')
+          setError(t('auth.verify_prompt'))
           setShowResendButton(true)
         } else {
           setError(t('auth.wrong_email_password'));
@@ -124,120 +121,170 @@ const LoginClient = (props: LoginClientProps) => {
     },
   })
 
+  const getBorderColor = (fieldName: string) => {
+    const fName = fieldName as keyof typeof formik.values
+    if (!formik.touched[fName]) return 'border-slate-200 focus:border-black'
+    return formik.errors[fName]
+      ? 'border-rose-400 focus:border-rose-500 bg-rose-50/10'
+      : 'border-emerald-400 focus:border-emerald-500 bg-emerald-50/10'
+  }
+
   return (
-    <AuthSplitLayout
-      org={props.org}
-      title="Login to your Account"
-      subtitle="Welcome Back"
-    >
-      <div className="space-y-6">
-        {/* Error/Verification Alerts */}
-        {error && (
-          <div className={`p-4 rounded-xl transition-all shadow-sm flex flex-col gap-3 ${showResendButton
-            ? 'bg-amber-50 border border-amber-200 text-amber-900'
-            : 'bg-rose-50 border border-rose-200 text-rose-900'
-            }`}>
-            <div className="flex items-start gap-3">
-              {showResendButton ? <Mail size={18} className="mt-1" /> : <AlertTriangle size={18} className="mt-1" />}
-              <div className="flex-1">
-                <p className="font-bold text-sm">
-                  {showResendButton ? 'Email Not Verified' : 'Login Failed'}
-                </p>
-                <p className="text-sm opacity-90">{error}</p>
-              </div>
-            </div>
-
-            {showResendButton && (
-              <div className="pt-3 border-t border-amber-200">
-                <p className="text-xs mb-2 italic">
-                  Didn't receive the email? Check your spam folder.
-                </p>
-                <button
-                  onClick={handleResendVerification}
-                  disabled={resendingEmail}
-                  className="text-sm font-semibold underline hover:no-underline disabled:opacity-50 flex items-center gap-2"
-                >
-                  {resendingEmail ? 'Sending...' : 'Resend verification email'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        <FormLayout onSubmit={formik.handleSubmit} className='space-y-4'>
-          <FormField name="email">
-            <FormLabelAndMessage
-              label={t('auth.email')}
-              message={formik.errors.email}
+    <div className="min-h-screen w-full flex flex-col items-center justify-center overflow-y-auto bg-slate-50/50 p-6">
+      <div className="w-full max-w-[450px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex justify-between items-center mb-8">
+          <Link href={getUriWithOrg(props.org?.slug, '/')}>
+            <Image
+              quality={100}
+              width={160}
+              src={africanAiLogo}
+              alt="African AI Network"
+              className="w-auto h-8 hover:opacity-80 transition-opacity"
             />
-            <Form.Control asChild>
-              <Input
-                className="focus:ring-2 focus:ring-black/5 transition-shadow"
-                onChange={formik.handleChange}
-                value={formik.values.email}
-                type="email"
-                placeholder="you@example.com"
-              />
-            </Form.Control>
-          </FormField>
-
-          <FormField name="password">
-            <FormLabelAndMessage
-              label={t('auth.password')}
-              message={formik.errors.password}
-            />
-            <Form.Control asChild>
-              <Input
-                className="focus:ring-2 focus:ring-black/5 transition-shadow"
-                onChange={formik.handleChange}
-                value={formik.values.password}
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-              />
-            </Form.Control>
-          </FormField>
-
-          <div className="flex justify-end">
-            <Link
-              href={{ pathname: getUriWithoutOrg('/forgot'), query: props.org.slug ? { orgslug: props.org.slug } : null }}
-              passHref
-              className="text-xs font-semibold text-slate-500 hover:text-black transition-colors"
-            >
-              {t('auth.forgot_password')}
-            </Link>
-          </div>
-
-          <div className="pt-2">
-            <Form.Submit asChild>
-              <button
-                disabled={isSubmitting}
-                className="w-full bg-black text-white font-bold py-3 rounded-xl shadow-lg shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {isSubmitting ? t('common.loading') : t('auth.login')}
-              </button>
-            </Form.Submit>
-          </div>
-        </FormLayout>
-
-        <div className="relative py-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-100"></div>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-slate-400 font-medium tracking-widest">{t('common.or')}</span>
-          </div>
+          </Link>
+          <LanguageSwitcher />
         </div>
 
-        <Link
-          href={{ pathname: getUriWithoutOrg('/signup'), query: props.org.slug ? { orgslug: props.org.slug } : null }}
-          className="flex justify-center items-center gap-3 w-full py-3 bg-slate-50 text-slate-900 border border-slate-200 rounded-xl font-semibold hover:bg-slate-100 transition-colors"
-        >
-          <UserRoundPlus size={18} />
-          <span>{t('auth.sign_up')}</span>
-        </Link>
+        <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {t('auth.login')}
+            </h1>
+            <p className="text-sm text-slate-500 italic">
+              {t('auth.welcome_back')}
+            </p>
+          </div>
+
+          {error && (
+            <div className={`p-4 rounded-2xl transition-all shadow-sm flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300 ${showResendButton
+              ? 'bg-amber-50 border border-amber-200 text-amber-900'
+              : 'bg-rose-50 border border-rose-200 text-rose-900'
+              }`}>
+              <div className="flex items-start gap-3">
+                {showResendButton ? <Mail size={18} className="mt-1" /> : <AlertTriangle size={18} className="mt-1" />}
+                <div className="flex-1">
+                  <p className="font-bold text-sm">
+                    {showResendButton ? t('auth.email_not_verified') : t('auth.login_failed')}
+                  </p>
+                  <p className="text-sm opacity-90">{error}</p>
+                </div>
+              </div>
+
+              {showResendButton && (
+                <div className="pt-3 border-t border-amber-200">
+                  <p className="text-xs mb-2 italic">
+                    {t('auth.didnt_receive_email')}
+                  </p>
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={resendingEmail}
+                    className="text-sm font-semibold underline hover:no-underline disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {resendingEmail ? t('common.sending') : t('auth.resend_verification')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <FormLayout onSubmit={formik.handleSubmit} className='space-y-4'>
+            <FormField name="email">
+              <FormLabelAndMessage
+                label={t('auth.email')}
+                message={formik.errors.email}
+              />
+              <Form.Control asChild>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
+                  <input
+                    name="email"
+                    className={`w-full h-12 pl-12 pr-4 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('email')}`}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.email}
+                    type="email"
+                    placeholder={t('auth.email_placeholder')}
+                  />
+                </div>
+              </Form.Control>
+            </FormField>
+
+            <FormField name="password">
+              <div className="flex justify-between items-center mb-2">
+                <FormLabelAndMessage
+                  label={t('auth.password')}
+                  message={formik.errors.password}
+                />
+                <Link
+                  href={{ pathname: getUriWithoutOrg('/forgot'), query: props.org.slug ? { orgslug: props.org.slug } : null }}
+                  passHref
+                  className="text-xs font-semibold text-slate-500 hover:text-black transition-colors"
+                >
+                  {t('auth.forgot_password')}
+                </Link>
+              </div>
+              <Form.Control asChild>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
+                  <input
+                    name="password"
+                    className={`w-full h-12 pl-12 pr-12 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('password')}`}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.password}
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder={t('auth.password_placeholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </Form.Control>
+            </FormField>
+
+            <div className="pt-4">
+              <Form.Submit asChild>
+                <button
+                  disabled={isSubmitting}
+                  className="w-full h-12 flex items-center justify-center gap-3 bg-black text-white font-bold rounded-xl shadow-lg shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isSubmitting ? (
+                    <LucideLoader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <UserRoundPlus size={18} />
+                  )}
+                  <span>{isSubmitting ? t('common.loading') : t('auth.login')}</span>
+                </button>
+              </Form.Submit>
+            </div>
+          </FormLayout>
+
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-100"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-slate-400 font-medium tracking-widest">{t('common.or')}</span>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-slate-600">
+            {t('auth.no_account')}{' '}
+            <Link
+              href={{ pathname: getUriWithoutOrg('/signup'), query: props.org.slug ? { orgslug: props.org.slug } : null }}
+              className="font-bold text-black hover:underline underline-offset-4"
+            >
+              {t('auth.sign_up')}
+            </Link>
+          </p>
+        </div>
       </div>
-    </AuthSplitLayout>
+    </div>
   )
 }
 
