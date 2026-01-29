@@ -34,7 +34,6 @@ from src.db.users import (
     UserUpdate,
     UserUpdatePassword,
 )
-from src.db.user_organizations import UserOrganization
 from src.security.security import security_hash_password, security_verify_password
 
 
