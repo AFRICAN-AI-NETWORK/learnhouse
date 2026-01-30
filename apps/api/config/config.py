@@ -237,17 +237,13 @@ def get_learnhouse_config() -> LearnHouseConfig:
     env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY")
     env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET")
     
-    paystack_secret_key = env_paystack_secret_key or yaml_config.get("payments_config", {}).get(
-        "paystack", {}
-    ).get("paystack_secret_key")
+    # Safely get Paystack config from YAML
+    payments_config = yaml_config.get("payments_config", {}) if yaml_config else {}
+    paystack_config = payments_config.get("paystack", {}) if isinstance(payments_config, dict) else {}
     
-    paystack_public_key = env_paystack_public_key or yaml_config.get("payments_config", {}).get(
-        "paystack", {}
-    ).get("paystack_public_key")
-    
-    paystack_webhook_secret = env_paystack_webhook_secret or yaml_config.get("payments_config", {}).get(
-        "paystack", {}
-    ).get("paystack_webhook_secret")
+    paystack_secret_key = env_paystack_secret_key or paystack_config.get("paystack_secret_key")
+    paystack_public_key = env_paystack_public_key or paystack_config.get("paystack_public_key")
+    paystack_webhook_secret = env_paystack_webhook_secret or paystack_config.get("paystack_webhook_secret")
 
     # Create HostingConfig and DatabaseConfig objects
     hosting_config = HostingConfig(

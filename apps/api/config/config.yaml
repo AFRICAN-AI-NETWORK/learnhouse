@@ -38,6 +38,10 @@ redis_config:
   redis_connection_string: redis://localhost:6379/learnhouse
 
 payments_config:
+  paystack:
+    paystack_secret_key: ""
+    paystack_public_key: ""
+    paystack_webhook_secret: ""
 
 ai_config:
   openai_api_key: ""

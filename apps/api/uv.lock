@@ -446,7 +446,6 @@ dependencies = [
     { name = "resend" },
     { name = "sqlalchemy-utils" },
     { name = "sqlmodel" },
-    { name = "stripe" },
     { name = "tiktoken" },
     { name = "typer" },
     { name = "uvicorn" },
@@ -481,7 +480,6 @@ requires-dist = [
     { name = "resend", specifier = ">=2.4.0" },
     { name = "sqlalchemy-utils", specifier = ">=0.41.2" },
     { name = "sqlmodel", specifier = ">=0.0.19" },
-    { name = "stripe", specifier = ">=11.1.1" },
     { name = "tiktoken", specifier = ">=0.7.0" },
     { name = "typer", specifier = ">=0.12.5" },
     { name = "uvicorn", specifier = "==0.30.1" },
@@ -1100,19 +1098,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/de/1a/608df0b10b53b0beb96a37854ee05864d182ddd4b1156a22f1ad3860425a/starlette-0.49.3.tar.gz", hash = "sha256:1c14546f299b5901a1ea0e34410575bc33bbd741377a10484a54445588d00284", size = 2655031, upload-time = "2025-11-01T15:12:26.13Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a3/e0/021c772d6a662f43b63044ab481dc6ac7592447605b5b35a957785363122/starlette-0.49.3-py3-none-any.whl", hash = "sha256:b579b99715fdc2980cf88c8ec96d3bf1ce16f5a8051a7c2b84ef9b1cdecaea2f", size = 74340, upload-time = "2025-11-01T15:12:24.387Z" },
-]
-
-[[package]]
-name = "stripe"
-version = "13.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/12/a0/3d13718648b8d93140ac649f70202aeb7bfc12516626d308d6fec73a5503/stripe-13.1.1.tar.gz", hash = "sha256:62141a5a2ede69c35e0f257a77acc3fa9cec6e8a30131a49f001bd90fda7a681", size = 1357445, upload-time = "2025-10-31T20:10:49.789Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/c9/6a968b6e3da48224f4f473884566ef660560e4f90072f14261a347987b1b/stripe-13.1.1-py3-none-any.whl", hash = "sha256:2a74981ba559f6e518e657b808c6339a397c3862f3e5dd10ec7603c3829addba", size = 1961719, upload-time = "2025-10-31T20:10:47.603Z" },
 ]
 
 [[package]]
