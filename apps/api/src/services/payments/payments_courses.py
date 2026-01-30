@@ -5,6 +5,7 @@ from src.db.payments.payments_products import PaymentsProduct
 from src.db.courses.courses import Course
 from src.db.users import PublicUser, AnonymousUser
 from src.security.courses_security import courses_rbac_check
+from src.security.features_utils.usage import check_limits_with_usage
 
 async def link_course_to_product(
     request: Request,
@@ -14,6 +15,9 @@ async def link_course_to_product(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if course exists and user has permission
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
@@ -63,6 +67,9 @@ async def unlink_course_from_product(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if course exists and user has permission
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
@@ -98,6 +105,9 @@ async def get_courses_by_product(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if product exists
     statement = select(PaymentsProduct).where(
         PaymentsProduct.id == product_id,

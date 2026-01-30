@@ -7,11 +7,12 @@ from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey
 # PaymentsConfig 
 class PaymentProviderEnum(str, Enum):
     STRIPE = "stripe"
+    PAYSTACK = "paystack"
     
 class PaymentsConfigBase(SQLModel):
     enabled: bool = True
     active: bool = False
-    provider: PaymentProviderEnum = PaymentProviderEnum.STRIPE
+    provider: PaymentProviderEnum = PaymentProviderEnum.PAYSTACK
     provider_specific_id: str | None = None
     provider_config: dict = Field(default={}, sa_column=Column(JSON))
 

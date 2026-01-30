@@ -6,6 +6,7 @@ from src.db.payments.payments_users import PaymentsUser
 from src.services.orgs.orgs import rbac_check
 from src.services.payments.payments_products import get_payments_product
 from src.services.users.users import read_user_by_id
+from src.security.features_utils.usage import check_limits_with_usage
 
 async def get_customers(
     request: Request,
@@ -13,6 +14,9 @@ async def get_customers(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()

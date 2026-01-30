@@ -5,6 +5,7 @@ from src.db.users import PublicUser, AnonymousUser
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
+from src.db.organization_config import OrganizationConfig
 from fastapi import HTTPException, Request
 
 async def check_activity_paid_access(
@@ -42,6 +43,15 @@ async def check_activity_paid_access(
     if is_course_author:
         return True
 
+    # Check if payments feature is enabled for the organization
+    org_config = db_session.exec(
+        select(OrganizationConfig).where(OrganizationConfig.org_id == course.org_id)
+    ).first()
+    
+    # If payments are disabled, treat everything as free
+    if org_config and org_config.config.get("features", {}).get("payments", {}).get("enabled") == False:
+        return True
+    
     # Check if course is linked to a product
     statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
     course_payment = db_session.exec(statement).first()
@@ -85,6 +95,15 @@ async def check_course_paid_access(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
+    # Check if payments feature is enabled for the organization
+    org_config = db_session.exec(
+        select(OrganizationConfig).where(OrganizationConfig.org_id == course.org_id)
+    ).first()
+    
+    # If payments are disabled, treat everything as free
+    if org_config and org_config.config.get("features", {}).get("payments", {}).get("enabled") == False:
+        return True
+    
     # Check if course is linked to a product
     statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
     course_payment = db_session.exec(statement).first()

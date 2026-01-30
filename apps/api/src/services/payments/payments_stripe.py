@@ -16,6 +16,7 @@ from src.services.payments.payments_config import (
     get_payments_config,
     update_payments_config,
 )
+from src.security.features_utils.usage import check_limits_with_usage
 from sqlmodel import select
 
 from src.services.payments.payments_users import (
@@ -205,6 +206,9 @@ async def create_checkout_session(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Get Stripe credentials
     creds = await get_stripe_internal_credentials()
     stripe.api_key = creds.get("stripe_secret_key")
@@ -330,6 +334,9 @@ async def generate_stripe_connect_link(
     """
     Generate a Stripe OAuth link for connecting a Stripe account
     """
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Get credentials
     creds = await get_stripe_internal_credentials()
     stripe.api_key = creds.get("stripe_secret_key")
@@ -355,6 +362,9 @@ async def create_stripe_account(
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
 ):
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Get credentials
     creds = await get_stripe_internal_credentials()
     stripe.api_key = creds.get("stripe_secret_key")
@@ -405,6 +415,9 @@ async def update_stripe_account_id(
     """
     Update the Stripe account ID for an organization
     """
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Get existing payments config
     statement = select(PaymentsConfig).where(PaymentsConfig.org_id == org_id)
     existing_config = db_session.exec(statement).first()
@@ -440,6 +453,9 @@ async def handle_stripe_oauth_callback(
     """
     Handle the OAuth callback from Stripe and complete the account connection
     """
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     creds = await get_stripe_internal_credentials()
     stripe.api_key = creds.get("stripe_secret_key")
 
