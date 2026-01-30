@@ -18,7 +18,7 @@ from src.services.payments.payments_courses import (
     get_courses_by_product,
 )
 from src.services.payments.payments_users import get_owned_courses
-from src.services.payments.payments_paystack import initialize_transaction
+from src.services.payments.payments_paystack import initialize_transaction, get_supported_currencies
 from src.services.payments.payments_access import check_course_paid_access
 from src.services.payments.payments_customers import get_customers
 from src.services.payments.webhooks.payments_paystack_webhooks import handle_paystack_webhook
@@ -175,11 +175,24 @@ async def api_create_checkout_session(
     org_id: int,
     product_id: int,
     redirect_uri: str,
+    currency: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    """Initialize Paystack transaction for checkout"""
-    return await initialize_transaction(request, org_id, product_id, redirect_uri, current_user, db_session)
+    """
+    Initialize Paystack transaction for checkout
+    
+    Query Parameters:
+        redirect_uri: URL to redirect after payment completion
+        currency: Optional currency code (ISO 4217). Supported: NGN, USD, GHS, ZAR, KES, XOF
+                 If not provided, uses the product's default currency
+    
+    Example:
+        POST /api/v1/payments/{org_id}/checkout/product/{product_id}?redirect_uri=https://example.com/success&currency=USD
+    """
+    return await initialize_transaction(
+        request, org_id, product_id, redirect_uri, currency, current_user, db_session
+    )
 
 @router.get("/{org_id}/courses/{course_id}/access")
 async def api_check_course_paid_access(
@@ -220,3 +233,13 @@ async def api_get_owned_courses(
     db_session: Session = Depends(get_db_session),
 ):
     return await get_owned_courses(request, current_user, db_session)
+
+@router.get("/currencies")
+async def api_get_supported_currencies(
+    request: Request,
+):
+    """
+    Get list of supported currencies for payments
+    Returns currency codes with their names, symbols, and subunit information
+    """
+    return get_supported_currencies()

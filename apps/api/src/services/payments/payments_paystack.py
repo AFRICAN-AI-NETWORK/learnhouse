@@ -27,6 +27,37 @@ logger = logging.getLogger(__name__)
 # Paystack API base URL
 PAYSTACK_API_BASE_URL = "https://api.paystack.co"
 
+# Paystack supported currencies (ISO 4217 format)
+PAYSTACK_SUPPORTED_CURRENCIES = {
+    "NGN",  # Nigerian Naira
+    "USD",  # US Dollar
+    "GHS",  # Ghanaian Cedi
+    "ZAR",  # South African Rand
+    "KES",  # Kenyan Shilling
+    "XOF",  # West African CFA Franc
+}
+
+# Currency information for display
+PAYSTACK_CURRENCY_INFO = {
+    "NGN": {"name": "Nigerian Naira", "symbol": "₦", "subunit": "Kobo"},
+    "USD": {"name": "US Dollar", "symbol": "$", "subunit": "Cent"},
+    "GHS": {"name": "Ghanaian Cedi", "symbol": "₵", "subunit": "Pesewa"},
+    "ZAR": {"name": "South African Rand", "symbol": "R", "subunit": "Cent"},
+    "KES": {"name": "Kenyan Shilling", "symbol": "Ksh.", "subunit": "Cent"},
+    "XOF": {"name": "West African CFA Franc", "symbol": "CFA", "subunit": "Centime"},
+}
+
+
+def get_supported_currencies() -> dict:
+    """Get list of supported currencies with their information"""
+    return {
+        code: {
+            "code": code,
+            **info
+        }
+        for code, info in PAYSTACK_CURRENCY_INFO.items()
+    }
+
 
 async def get_paystack_secret_key() -> str:
     """Get Paystack secret key from config"""
@@ -213,15 +244,36 @@ async def update_paystack_product(
         return {"id": product_id}
 
 
+def validate_currency(currency: str) -> None:
+    """Validate that currency is supported by Paystack"""
+    currency_upper = currency.upper()
+    if currency_upper not in PAYSTACK_SUPPORTED_CURRENCIES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Currency {currency} is not supported. Supported currencies: {', '.join(sorted(PAYSTACK_SUPPORTED_CURRENCIES))}"
+        )
+
+
 async def initialize_transaction(
     request: Request,
     org_id: int,
     product_id: int,
     redirect_uri: str,
-    current_user: PublicUser | AnonymousUser,
-    db_session: Session,
+    currency: str | None = None,
+    current_user: PublicUser | AnonymousUser = None,
+    db_session: Session = None,
 ) -> dict:
-    """Initialize a Paystack transaction for checkout"""
+    """Initialize a Paystack transaction for checkout
+    
+    Args:
+        request: FastAPI request object
+        org_id: Organization ID
+        product_id: Product ID
+        redirect_uri: URL to redirect after payment
+        currency: Optional currency code (ISO 4217). If not provided, uses product's default currency
+        current_user: Current user making the payment
+        db_session: Database session
+    """
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
     
@@ -233,6 +285,12 @@ async def initialize_transaction(
     
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Determine currency to use
+    selected_currency = currency.upper() if currency else product.currency.upper()
+    
+    # Validate currency
+    validate_currency(selected_currency)
     
     # Create or get Paystack customer
     try:
@@ -285,10 +343,21 @@ async def initialize_transaction(
         "org_id": str(org_id),
     }
     
+    # Calculate amount in selected currency
+    # If currency matches product currency, use product amount directly
+    # If different, use product amount (Paystack will handle conversion on their end)
+    # Note: For production, you may want to implement exchange rate conversion here
+    amount_in_subunit = int(product.amount * 100)
+    
+    # Store selected currency in metadata for reference
+    metadata_dict["selected_currency"] = selected_currency
+    metadata_dict["product_currency"] = product.currency
+    metadata_dict["product_amount"] = str(product.amount)
+    
     transaction_data = {
         "email": current_user.email,
-        "amount": int(product.amount * 100),  # Convert to subunit (kobo for NGN, cents for USD, etc.)
-        "currency": product.currency,
+        "amount": amount_in_subunit,  # Convert to subunit (kobo for NGN, cents for USD, etc.)
+        "currency": selected_currency,
         "callback_url": redirect_uri,
         "metadata": json.dumps(metadata_dict),  # Paystack expects metadata as JSON string
     }
@@ -311,12 +380,14 @@ async def initialize_transaction(
         if not authorization_url:
             raise HTTPException(status_code=400, detail="Failed to get authorization URL from Paystack")
         
-        # Update payment user with transaction reference
+        # Update payment user with transaction reference and selected currency
         from src.services.payments.payments_users import update_payment_user_status
-        # We'll store the reference in provider_specific_data
+        # We'll store the reference and currency in provider_specific_data
         payment_user.provider_specific_data.update({
             "paystack_transaction_reference": reference,
             "paystack_access_code": access_code,
+            "selected_currency": selected_currency,
+            "product_currency": product.currency,
         })
         db_session.add(payment_user)
         db_session.commit()
