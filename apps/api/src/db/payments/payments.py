@@ -6,7 +6,6 @@ from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey
 
 # PaymentsConfig 
 class PaymentProviderEnum(str, Enum):
-    STRIPE = "stripe"
     PAYSTACK = "paystack"
     
 class PaymentsConfigBase(SQLModel):

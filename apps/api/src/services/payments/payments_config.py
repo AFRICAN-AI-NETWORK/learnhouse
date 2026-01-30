@@ -16,7 +16,7 @@ from src.security.features_utils.usage import check_limits_with_usage
 async def init_payments_config(
     request: Request,
     org_id: int,
-    provider: Literal["stripe", "paystack"],
+    provider: Literal["paystack"],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> PaymentsConfig:
@@ -45,10 +45,9 @@ async def init_payments_config(
         )
 
     # Initialize new config
-    provider_enum = PaymentProviderEnum.STRIPE if provider == "stripe" else PaymentProviderEnum.PAYSTACK
     new_config = PaymentsConfig(
         org_id=org_id,
-        provider=provider_enum,
+        provider=PaymentProviderEnum.PAYSTACK,
         provider_config={
             "onboarding_completed": False,
         },

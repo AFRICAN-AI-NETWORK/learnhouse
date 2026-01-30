@@ -38,11 +38,6 @@ redis_config:
   redis_connection_string: redis://localhost:6379/learnhouse
 
 payments_config:
-  stripe:
-    stripe_secret_key: ""
-    stripe_publishable_key: ""
-    stripe_webhook_standard_secret: ""
-    stripe_client_id: ""
 
 ai_config:
   openai_api_key: ""

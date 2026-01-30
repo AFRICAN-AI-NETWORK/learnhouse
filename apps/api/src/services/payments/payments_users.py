@@ -44,19 +44,16 @@ async def create_payment_user(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    # Handle provider-specific data based on the data structure
+    # Handle provider-specific data
     if isinstance(provider_data, dict):
         provider_specific_data = ProviderSpecificData(
-            stripe_customer=provider_data.get("stripe_customer") if "stripe_customer" in provider_data else None,
             paystack_customer=provider_data.get("paystack_customer") if "paystack_customer" in provider_data else provider_data,
             paystack_customer_code=provider_data.get("paystack_customer_code") if "paystack_customer_code" in provider_data else None,
             paystack_transaction_reference=provider_data.get("paystack_transaction_reference") if "paystack_transaction_reference" in provider_data else None,
+            paystack_access_code=provider_data.get("paystack_access_code") if "paystack_access_code" in provider_data else None,
         )
     else:
-        # Backward compatibility with Stripe customer objects
-        provider_specific_data = ProviderSpecificData(
-            stripe_customer=provider_data if provider_data else None,
-        )
+        provider_specific_data = ProviderSpecificData()
 
     # Check if user already has a payment user for this product
     statement = select(PaymentsUser).where(

@@ -22,9 +22,6 @@ from src.services.payments.payments_paystack import initialize_transaction
 from src.services.payments.payments_access import check_course_paid_access
 from src.services.payments.payments_customers import get_customers
 from src.services.payments.webhooks.payments_paystack_webhooks import handle_paystack_webhook
-from src.db.payments.payments import PaymentProviderEnum
-from sqlmodel import select
-from src.db.payments.payments import PaymentsConfig
 
 
 router = APIRouter()
@@ -33,7 +30,7 @@ router = APIRouter()
 async def api_create_payments_config(
     request: Request,
     org_id: int,
-    provider: Literal["stripe", "paystack"],
+    provider: Literal["paystack"],
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> PaymentsConfig:
@@ -181,50 +178,8 @@ async def api_create_checkout_session(
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    """Create checkout session (works with both Paystack and Stripe based on provider)"""
-    # Check which provider is configured for this org
-    statement = select(PaymentsConfig).where(PaymentsConfig.org_id == org_id)
-    config = db_session.exec(statement).first()
-    
-    if config and config.provider == PaymentProviderEnum.PAYSTACK:
-        # Use Paystack
-        return await initialize_transaction(request, org_id, product_id, redirect_uri, current_user, db_session)
-    else:
-        # Fallback to Stripe for backward compatibility
-        from src.services.payments.payments_stripe import create_checkout_session
-        return await create_checkout_session(request, org_id, product_id, redirect_uri, current_user, db_session)
-
-# Legacy Stripe endpoints (for backward compatibility)
-@router.post("/{org_id}/stripe/checkout/product/{product_id}")
-async def api_create_stripe_checkout_session(
-    request: Request,
-    org_id: int,
-    product_id: int,
-    redirect_uri: str,
-    current_user: PublicUser = Depends(get_current_user),
-    db_session: Session = Depends(get_db_session),
-):
-    """Legacy Stripe checkout endpoint (for backward compatibility)"""
-    from src.services.payments.payments_stripe import create_checkout_session
-    return await create_checkout_session(request, org_id, product_id, redirect_uri, current_user, db_session)
-
-@router.post("/stripe/webhook")
-async def api_handle_connected_accounts_stripe_webhook(
-    request: Request,
-    db_session: Session = Depends(get_db_session),
-):
-    """Legacy Stripe webhook endpoint (for backward compatibility)"""
-    from src.services.payments.webhooks.payments_webhooks import handle_stripe_webhook
-    return await handle_stripe_webhook(request, "standard", db_session)
-
-@router.post("/stripe/webhook/connect")
-async def api_handle_connected_accounts_stripe_webhook_connect(
-    request: Request,
-    db_session: Session = Depends(get_db_session),
-):
-    """Legacy Stripe Connect webhook endpoint (for backward compatibility)"""
-    from src.services.payments.webhooks.payments_webhooks import handle_stripe_webhook
-    return await handle_stripe_webhook(request, "connect", db_session)
+    """Initialize Paystack transaction for checkout"""
+    return await initialize_transaction(request, org_id, product_id, redirect_uri, current_user, db_session)
 
 @router.get("/{org_id}/courses/{course_id}/access")
 async def api_check_course_paid_access(
@@ -265,47 +220,3 @@ async def api_get_owned_courses(
     db_session: Session = Depends(get_db_session),
 ):
     return await get_owned_courses(request, current_user, db_session)
-
-# Legacy Stripe Connect endpoints (for backward compatibility - Paystack doesn't need these)
-@router.put("/{org_id}/stripe/account")
-async def api_update_stripe_account_id(
-    request: Request,
-    org_id: int,
-    stripe_account_id: str,
-    current_user: PublicUser = Depends(get_current_user),
-    db_session: Session = Depends(get_db_session),
-):
-    """Legacy Stripe account update endpoint (for backward compatibility)"""
-    from src.services.payments.payments_stripe import update_stripe_account_id
-    return await update_stripe_account_id(
-        request, org_id, stripe_account_id, current_user, db_session
-    )
-
-@router.post("/{org_id}/stripe/connect/link")
-async def api_generate_stripe_connect_link(
-    request: Request,
-    org_id: int,
-    redirect_uri: str,
-    current_user: PublicUser = Depends(get_current_user),
-    db_session: Session = Depends(get_db_session),
-):
-    """
-    Legacy Stripe Connect link endpoint (for backward compatibility)
-    Note: Paystack doesn't require OAuth/Connect setup
-    """
-    from src.services.payments.payments_stripe import generate_stripe_connect_link
-    return await generate_stripe_connect_link(
-        request, org_id, redirect_uri, current_user, db_session
-    )
-
-@router.get("/stripe/oauth/callback")
-async def stripe_oauth_callback(
-    request: Request,
-    code: str,
-    org_id: int,
-    current_user: PublicUser = Depends(get_current_user),
-    db_session: Session = Depends(get_db_session),
-):
-    """Legacy Stripe OAuth callback endpoint (for backward compatibility)"""
-    from src.services.payments.payments_stripe import handle_stripe_oauth_callback
-    return await handle_stripe_oauth_callback(request, org_id, code, current_user, db_session)

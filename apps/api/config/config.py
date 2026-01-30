@@ -58,14 +58,6 @@ class RedisConfig(BaseModel):
     redis_connection_string: Optional[str]
 
 
-class InternalStripeConfig(BaseModel):
-    stripe_secret_key: str | None
-    stripe_publishable_key: str | None
-    stripe_webhook_standard_secret: str | None
-    stripe_webhook_connect_secret: str | None
-    stripe_client_id: str | None
-
-
 class InternalPaystackConfig(BaseModel):
     paystack_secret_key: str | None
     paystack_public_key: str | None
@@ -73,7 +65,6 @@ class InternalPaystackConfig(BaseModel):
 
 
 class InternalPaymentsConfig(BaseModel):
-    stripe: InternalStripeConfig
     paystack: InternalPaystackConfig
 
 
@@ -241,33 +232,6 @@ def get_learnhouse_config() -> LearnHouseConfig:
         "mailing_config", {}
     ).get("system_email_address")
 
-    # Payments config - Stripe
-    env_stripe_secret_key = os.environ.get("LEARNHOUSE_STRIPE_SECRET_KEY")
-    env_stripe_publishable_key = os.environ.get("LEARNHOUSE_STRIPE_PUBLISHABLE_KEY")
-    env_stripe_webhook_standard_secret = os.environ.get("LEARNHOUSE_STRIPE_WEBHOOK_STANDARD_SECRET")
-    env_stripe_webhook_connect_secret = os.environ.get("LEARNHOUSE_STRIPE_WEBHOOK_CONNECT_SECRET")
-    env_stripe_client_id = os.environ.get("LEARNHOUSE_STRIPE_CLIENT_ID")
-    
-    stripe_secret_key = env_stripe_secret_key or yaml_config.get("payments_config", {}).get(
-        "stripe", {}
-    ).get("stripe_secret_key")
-    
-    stripe_publishable_key = env_stripe_publishable_key or yaml_config.get("payments_config", {}).get(
-        "stripe", {}
-    ).get("stripe_publishable_key")
-
-    stripe_webhook_standard_secret = env_stripe_webhook_standard_secret or yaml_config.get("payments_config", {}).get(
-        "stripe", {}
-    ).get("stripe_webhook_standard_secret")
-
-    stripe_webhook_connect_secret = env_stripe_webhook_connect_secret or yaml_config.get("payments_config", {}).get(
-        "stripe", {}
-    ).get("stripe_webhook_connect_secret")
-
-    stripe_client_id = env_stripe_client_id or yaml_config.get("payments_config", {}).get(
-        "stripe", {}
-    ).get("stripe_client_id")
-    
     # Payments config - Paystack
     env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY")
     env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY")
@@ -325,13 +289,6 @@ def get_learnhouse_config() -> LearnHouseConfig:
             resend_api_key=resend_api_key, system_email_address=system_email_address
         ),
         payments_config=InternalPaymentsConfig(
-            stripe=InternalStripeConfig(
-                stripe_secret_key=stripe_secret_key,
-                stripe_publishable_key=stripe_publishable_key,
-                stripe_webhook_standard_secret=stripe_webhook_standard_secret,
-                stripe_webhook_connect_secret=stripe_webhook_connect_secret,
-                stripe_client_id=stripe_client_id
-            ),
             paystack=InternalPaystackConfig(
                 paystack_secret_key=paystack_secret_key,
                 paystack_public_key=paystack_public_key,

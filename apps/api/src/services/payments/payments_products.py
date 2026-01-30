@@ -17,7 +17,6 @@ from src.security.features_utils.usage import check_limits_with_usage
 from datetime import datetime
 
 from src.services.payments.payments_paystack import archive_paystack_product, create_paystack_product, update_paystack_product
-from src.db.payments.payments import PaymentProviderEnum
 
 async def create_payments_product(
     request: Request,
@@ -52,15 +51,9 @@ async def create_payments_product(
     new_product.creation_date = datetime.now()
     new_product.update_date = datetime.now()
 
-    # Create product in Paystack (or Stripe if provider is Stripe)
-    if config.provider == PaymentProviderEnum.PAYSTACK:
-        paystack_product = await create_paystack_product(request, org_id, new_product, current_user, db_session)
-        new_product.provider_product_id = paystack_product.get("id") or paystack_product.get("plan_code", "")
-    else:
-        # Fallback to Stripe for backward compatibility
-        from src.services.payments.payments_stripe import create_stripe_product
-        stripe_product = await create_stripe_product(request, org_id, new_product, current_user, db_session)
-        new_product.provider_product_id = stripe_product.id
+    # Create product in Paystack
+    paystack_product = await create_paystack_product(request, org_id, new_product, current_user, db_session)
+    new_product.provider_product_id = paystack_product.get("id") or paystack_product.get("plan_code", "")
 
     # Save to DB
     db_session.add(new_product)
@@ -132,17 +125,8 @@ async def update_payments_product(
     db_session.commit()
     db_session.refresh(product)
 
-    # Update product in Paystack (or Stripe if provider is Stripe)
-    # Get payments config to check provider
-    statement = select(PaymentsConfig).where(PaymentsConfig.id == product.payments_config_id)
-    payments_config = db_session.exec(statement).first()
-    
-    if payments_config and payments_config.provider == PaymentProviderEnum.PAYSTACK:
-        await update_paystack_product(request, org_id, product.provider_product_id, product, current_user, db_session)
-    else:
-        # Fallback to Stripe for backward compatibility
-        from src.services.payments.payments_stripe import update_stripe_product
-        await update_stripe_product(request, org_id, product.provider_product_id, product, current_user, db_session)
+    # Update product in Paystack
+    await update_paystack_product(request, org_id, product.provider_product_id, product, current_user, db_session)
 
     return PaymentsProductRead.model_validate(product)
 
@@ -183,17 +167,8 @@ async def delete_payments_product(
             detail="Cannot delete product because users have paid access to it."
         )
 
-    # Archive product in Paystack (or Stripe if provider is Stripe)
-    # Get payments config to check provider
-    statement = select(PaymentsConfig).where(PaymentsConfig.id == product.payments_config_id)
-    payments_config = db_session.exec(statement).first()
-    
-    if payments_config and payments_config.provider == PaymentProviderEnum.PAYSTACK:
-        await archive_paystack_product(request, org_id, product.provider_product_id, current_user, db_session)
-    else:
-        # Fallback to Stripe for backward compatibility
-        from src.services.payments.payments_stripe import archive_stripe_product
-        await archive_stripe_product(request, org_id, product.provider_product_id, current_user, db_session)
+    # Archive product in Paystack
+    await archive_paystack_product(request, org_id, product.provider_product_id, current_user, db_session)
 
     # Delete product
     db_session.delete(product)

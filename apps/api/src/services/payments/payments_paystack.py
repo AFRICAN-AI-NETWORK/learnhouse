@@ -130,7 +130,7 @@ async def create_paystack_product(
     db_session: Session,
 ) -> dict:
     """Create a product in Paystack (Paystack doesn't have products API, so we'll use plans for subscriptions)"""
-    # Paystack doesn't have a products API like Stripe
+    # Paystack doesn't have a products API
     # For one-time payments, we'll create a plan with a single invoice
     # For subscriptions, we'll create a plan
     
@@ -148,7 +148,7 @@ async def create_paystack_product(
         
         plan = await make_paystack_request("POST", "/plan", plan_data)
         
-        # Return plan data in a format similar to Stripe product
+        # Return plan data
         return {
             "id": plan.get("plan_code"),
             "plan_code": plan.get("plan_code"),
@@ -221,7 +221,7 @@ async def initialize_transaction(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> dict:
-    """Initialize a Paystack transaction (equivalent to Stripe checkout session)"""
+    """Initialize a Paystack transaction for checkout"""
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
     
@@ -342,16 +342,3 @@ async def verify_transaction(reference: str) -> dict:
     return await make_paystack_request("GET", f"/transaction/verify/{reference}")
 
 
-async def get_paystack_connected_account_id(
-    request: Request,
-    org_id: int,
-    current_user: PublicUser | AnonymousUser | InternalUser,
-    db_session: Session,
-) -> str | None:
-    """Get Paystack connected account ID (Paystack doesn't have Connect like Stripe)"""
-    # Paystack doesn't have Connect accounts, so we'll return None
-    # The organization will use the main Paystack account
-    payments_config = await get_payments_config(request, org_id, current_user, db_session)
-    if payments_config:
-        return payments_config[0].provider_specific_id
-    return None
