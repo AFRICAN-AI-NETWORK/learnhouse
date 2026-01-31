@@ -58,7 +58,8 @@ def check_limits_with_usage(
     r = redis.Redis.from_url(redis_conn_string)
 
     # Check limits
-    feature_limit = org_config.config["features"][feature]["limit"]
+    feature_config = org_config.config["features"][feature]
+    feature_limit = feature_config.get("limit", 0)  # Default to 0 (unlimited) if limit not present
 
     if feature_limit > 0:
         # Get the number of feature usage
