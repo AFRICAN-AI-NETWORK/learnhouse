@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import  Optional
 from sqlalchemy import JSON
+from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
 from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey
 
 # PaymentsConfig 
@@ -11,7 +12,13 @@ class PaymentProviderEnum(str, Enum):
 class PaymentsConfigBase(SQLModel):
     enabled: bool = True
     active: bool = False
-    provider: PaymentProviderEnum = PaymentProviderEnum.PAYSTACK
+    provider: PaymentProviderEnum = Field(
+        default=PaymentProviderEnum.PAYSTACK,
+        sa_column=Column(
+            PG_ENUM(PaymentProviderEnum, name='paymentproviderenum', create_type=False),
+            nullable=False
+        )
+    )
     provider_specific_id: str | None = None
     provider_config: dict = Field(default={}, sa_column=Column(JSON))
 

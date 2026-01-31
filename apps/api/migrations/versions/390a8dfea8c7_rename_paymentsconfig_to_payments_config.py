@@ -31,6 +31,29 @@ def upgrade() -> None:
         # Table exists, rename it to payments_config
         op.rename_table('paymentsconfig', 'payments_config')
         
+        # Add 'paystack' to the enum if it doesn't exist
+        # Check if enum exists and if 'paystack' value is already in it
+        enum_exists = False
+        paystack_exists = False
+        try:
+            result = conn.execute(sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentproviderenum')"
+            ))
+            enum_exists = result.scalar()
+            if enum_exists:
+                # Check if 'paystack' value exists in the enum
+                result = conn.execute(sa.text(
+                    "SELECT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'paystack' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'paymentproviderenum'))"
+                ))
+                paystack_exists = result.scalar()
+        except Exception:
+            pass
+        
+        if enum_exists and not paystack_exists:
+            # Add 'paystack' to the existing enum
+            conn.execute(sa.text("ALTER TYPE paymentproviderenum ADD VALUE IF NOT EXISTS 'paystack'"))
+            conn.commit()
+        
         # Update foreign key constraint in paymentsproduct table if it exists
         if 'paymentsproduct' in tables:
             # Find the foreign key constraint name dynamically
