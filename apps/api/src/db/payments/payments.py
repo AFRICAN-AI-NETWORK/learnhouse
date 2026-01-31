@@ -72,7 +72,8 @@ class PaymentsConfigCreate(PaymentsConfigBase):
 
 
 class PaymentsConfigUpdate(PaymentsConfigBase):
-    enabled: Optional[bool] = True
+    enabled: Optional[bool] = None
+    active: Optional[bool] = None
     provider_config: Optional[dict] = None
     provider_specific_id: Optional[str] = None
 

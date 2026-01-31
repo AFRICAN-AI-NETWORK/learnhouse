@@ -47,12 +47,14 @@ async def init_payments_config(
         )
         db_session.commit()
 
-    # Initialize new config
+    # Initialize new config - automatically activate it
     new_config = PaymentsConfig(
         org_id=org_id,
         provider=PaymentProviderEnum.PAYSTACK,
+        active=True,  # Automatically activate when creating config
+        enabled=True,
         provider_config={
-            "onboarding_completed": False,
+            "onboarding_completed": True,  # Set to True since config is active
         },
         provider_specific_id=None
     )
@@ -127,8 +129,9 @@ async def update_payments_config(
     if not config:
         raise HTTPException(status_code=404, detail="Payments config not found")
 
-    # Update config
-    for key, value in payments_config.model_dump().items():
+    # Update config - only update fields that are provided (not None)
+    update_data = payments_config.model_dump(exclude_unset=True, exclude_none=True)
+    for key, value in update_data.items():
         setattr(config, key, value)
 
     db_session.add(config)

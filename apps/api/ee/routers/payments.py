@@ -2,12 +2,13 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 from src.core.events.database import get_db_session
-from src.db.payments.payments import PaymentsConfig, PaymentsConfigRead
+from src.db.payments.payments import PaymentsConfig, PaymentsConfigRead, PaymentsConfigUpdate
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.payments.payments_config import (
     init_payments_config,
     get_payments_config,
+    update_payments_config,
     delete_payments_config,
 )
 from src.db.payments.payments_products import PaymentsProductCreate, PaymentsProductRead, PaymentsProductUpdate
@@ -45,6 +46,28 @@ async def api_get_payments_config(
     db_session: Session = Depends(get_db_session),
 ) -> list[PaymentsConfigRead]:
     return await get_payments_config(request, org_id, current_user, db_session)
+
+@router.put(
+    "/{org_id}/config",
+    summary="Update payments configuration",
+    description="Update and activate the payments configuration for an organization. Set 'active' to true to enable payment processing."
+)
+async def api_update_payments_config(
+    request: Request,
+    org_id: int,
+    payments_config: PaymentsConfigUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> PaymentsConfig:
+    """
+    Update payments configuration.
+    
+    Use this endpoint to:
+    - Activate the payments config (set active: true)
+    - Update provider configuration
+    - Enable/disable payments
+    """
+    return await update_payments_config(request, org_id, payments_config, current_user, db_session)
 
 @router.delete("/{org_id}/config")
 async def api_delete_payments_config(
