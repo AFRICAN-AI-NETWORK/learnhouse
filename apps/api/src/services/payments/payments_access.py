@@ -5,6 +5,7 @@ from src.db.users import PublicUser, AnonymousUser
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
+from src.db.organization_config import OrganizationConfig
 from fastapi import HTTPException, Request
 
 async def check_activity_paid_access(
@@ -42,6 +43,15 @@ async def check_activity_paid_access(
     if is_course_author:
         return True
 
+    # Check if payments feature is enabled for the organization
+    org_config = db_session.exec(
+        select(OrganizationConfig).where(OrganizationConfig.org_id == course.org_id)
+    ).first()
+    
+    # If payments are disabled, treat everything as free
+    if org_config and org_config.config.get("features", {}).get("payments", {}).get("enabled") == False:
+        return True
+    
     # Check if course is linked to a product
     statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
     course_payment = db_session.exec(statement).first()
@@ -70,6 +80,7 @@ async def check_course_paid_access(
     course_id: int,
     user: PublicUser | AnonymousUser,
     db_session: Session,
+    request: Request = None,
 ) -> bool:
     """
     Check if a user has paid access to a specific course
@@ -85,6 +96,27 @@ async def check_course_paid_access(
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
+    # Check if user is author of the course (if request is provided)
+    if request and not isinstance(user, AnonymousUser):
+        try:
+            is_course_author = await authorization_verify_if_user_is_author(
+                request, user.id, "update", course.course_uuid, db_session
+            )
+            if is_course_author:
+                return True
+        except Exception:
+            # If authorization check fails, continue with payment check
+            pass
+
+    # Check if payments feature is enabled for the organization
+    org_config = db_session.exec(
+        select(OrganizationConfig).where(OrganizationConfig.org_id == course.org_id)
+    ).first()
+    
+    # If payments are disabled, treat everything as free
+    if org_config and org_config.config.get("features", {}).get("payments", {}).get("enabled") == False:
+        return True
+    
     # Check if course is linked to a product
     statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
     course_payment = db_session.exec(statement).first()
@@ -92,6 +124,10 @@ async def check_course_paid_access(
     # If course is not linked to any product, it's free
     if not course_payment:
         return True
+
+    # Anonymous users have no access to paid courses
+    if isinstance(user, AnonymousUser):
+        return False
 
     # Check if user has a valid subscription
     statement = select(PaymentsUser).where(

@@ -14,7 +14,10 @@ class PaymentStatusEnum(str, Enum):
 
 
 class ProviderSpecificData(BaseModel):
-    stripe_customer: dict | None = None
+    paystack_customer: dict | None = None
+    paystack_customer_code: str | None = None
+    paystack_transaction_reference: str | None = None
+    paystack_access_code: str | None = None
     custom_customer: dict | None = None
 
 class PaymentsUserBase(SQLModel):

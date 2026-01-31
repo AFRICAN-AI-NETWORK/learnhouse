@@ -40,6 +40,7 @@ class AssignmentOrgConfig(BaseModel):
 
 class PaymentOrgConfig(BaseModel):
     enabled: bool = True
+    limit: int = 0
 
 
 class DiscussionOrgConfig(BaseModel):

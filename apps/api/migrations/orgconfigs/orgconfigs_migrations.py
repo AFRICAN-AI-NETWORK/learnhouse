@@ -55,7 +55,7 @@ def migrate_v0_to_v1(v0_config):
                 "model": 'gpt-4o-mini',
             },
             "assignments": {"enabled": True, "limit": 5},
-            "payments": {"enabled": False, "stripe_key": ""},
+            "payments": {"enabled": False},
             "discussions": {"enabled": False, "limit": 10},
             "analytics": {"enabled": False, "limit": 10},
             "collaboration": {
@@ -92,8 +92,8 @@ def migrate_to_v1_2(v1_1_config):
     # Enable payments for everyone
     v1_2_config['features']['payments']['enabled'] = True
     
-    # Only delete stripe_key if it exists
-    if 'stripe_key' in v1_2_config['features']['payments']:
+    # Remove stripe_key if it exists (legacy field)
+    if 'stripe_key' in v1_2_config.get('features', {}).get('payments', {}):
         del v1_2_config['features']['payments']['stripe_key']
 
     return v1_2_config

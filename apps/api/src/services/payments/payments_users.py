@@ -9,6 +9,7 @@ from src.db.resource_authors import ResourceAuthor
 from src.db.users import InternalUser, PublicUser, AnonymousUser, User, UserRead
 from src.db.organizations import Organization
 from src.services.orgs.orgs import rbac_check
+from src.security.features_utils.usage import check_limits_with_usage
 from datetime import datetime
 
 async def create_payment_user(
@@ -21,6 +22,10 @@ async def create_payment_user(
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
 ) -> PaymentsUser:
+    # Check if payments feature is enabled (skip for InternalUser to allow webhook processing)
+    if not isinstance(current_user, InternalUser):
+        check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -39,9 +44,16 @@ async def create_payment_user(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    provider_specific_data = ProviderSpecificData(
-        stripe_customer=provider_data if provider_data else None,
-    )
+    # Handle provider-specific data
+    if isinstance(provider_data, dict):
+        provider_specific_data = ProviderSpecificData(
+            paystack_customer=provider_data.get("paystack_customer") if "paystack_customer" in provider_data else provider_data,
+            paystack_customer_code=provider_data.get("paystack_customer_code") if "paystack_customer_code" in provider_data else None,
+            paystack_transaction_reference=provider_data.get("paystack_transaction_reference") if "paystack_transaction_reference" in provider_data else None,
+            paystack_access_code=provider_data.get("paystack_access_code") if "paystack_access_code" in provider_data else None,
+        )
+    else:
+        provider_specific_data = ProviderSpecificData()
 
     # Check if user already has a payment user for this product
     statement = select(PaymentsUser).where(
@@ -85,6 +97,9 @@ async def get_payment_user(
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
 ) -> PaymentsUser:
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -113,6 +128,10 @@ async def update_payment_user_status(
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
 ) -> PaymentsUser:
+    # Check if payments feature is enabled (skip for InternalUser to allow webhook processing)
+    if not isinstance(current_user, InternalUser):
+        check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -147,6 +166,9 @@ async def list_payment_users(
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
 ) -> list[PaymentsUser]:
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -171,6 +193,10 @@ async def delete_payment_user(
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
 ) -> None:
+    # Check if payments feature is enabled (skip for InternalUser to allow webhook processing)
+    if not isinstance(current_user, InternalUser):
+        check_limits_with_usage("payments", org_id, db_session)
+    
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
