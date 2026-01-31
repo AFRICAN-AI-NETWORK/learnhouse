@@ -80,6 +80,7 @@ async def check_course_paid_access(
     course_id: int,
     user: PublicUser | AnonymousUser,
     db_session: Session,
+    request: Request = None,
 ) -> bool:
     """
     Check if a user has paid access to a specific course
@@ -94,6 +95,18 @@ async def check_course_paid_access(
 
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+
+    # Check if user is author of the course (if request is provided)
+    if request and not isinstance(user, AnonymousUser):
+        try:
+            is_course_author = await authorization_verify_if_user_is_author(
+                request, user.id, "update", course.course_uuid, db_session
+            )
+            if is_course_author:
+                return True
+        except Exception:
+            # If authorization check fails, continue with payment check
+            pass
 
     # Check if payments feature is enabled for the organization
     org_config = db_session.exec(
@@ -111,6 +124,10 @@ async def check_course_paid_access(
     # If course is not linked to any product, it's free
     if not course_payment:
         return True
+
+    # Anonymous users have no access to paid courses
+    if isinstance(user, AnonymousUser):
+        return False
 
     # Check if user has a valid subscription
     statement = select(PaymentsUser).where(
