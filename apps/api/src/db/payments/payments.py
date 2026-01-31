@@ -17,6 +17,8 @@ class PaymentsConfigBase(SQLModel):
 
 
 class PaymentsConfig(PaymentsConfigBase, table=True):
+    __tablename__ = "payments_config"
+    
     id: Optional[int] = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("organization.id", ondelete="CASCADE"))

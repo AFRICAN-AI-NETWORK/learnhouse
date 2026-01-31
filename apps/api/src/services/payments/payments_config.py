@@ -36,16 +36,14 @@ async def init_payments_config(
     # Check for existing config
     # Use raw SQL to avoid enum validation issues with old STRIPE configs
     result = db_session.exec(
-        text("SELECT id FROM payments_config WHERE org_id = :org_id"),
-        {"org_id": org_id}
+        text("SELECT id FROM payments_config WHERE org_id = :org_id").bindparams(org_id=org_id)
     ).first()
     
     if result:
         # If there's an existing config (possibly with STRIPE), delete it first
         # This handles migration from STRIPE to PAYSTACK
         db_session.exec(
-            text("DELETE FROM payments_config WHERE org_id = :org_id"),
-            {"org_id": org_id}
+            text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(org_id=org_id)
         )
         db_session.commit()
 
@@ -87,8 +85,7 @@ async def get_payments_config(
 
     # Clean up any old STRIPE configs first
     db_session.exec(
-        text("DELETE FROM payments_config WHERE org_id = :org_id AND provider = 'stripe'"),
-        {"org_id": org_id}
+        text("DELETE FROM payments_config WHERE org_id = :org_id AND provider = 'stripe'").bindparams(org_id=org_id)
     )
     db_session.commit()
 
@@ -120,8 +117,7 @@ async def update_payments_config(
 
     # Clean up any old STRIPE configs first
     db_session.exec(
-        text("DELETE FROM payments_config WHERE org_id = :org_id AND provider = 'stripe'"),
-        {"org_id": org_id}
+        text("DELETE FROM payments_config WHERE org_id = :org_id AND provider = 'stripe'").bindparams(org_id=org_id)
     )
     db_session.commit()
 
@@ -161,9 +157,8 @@ async def delete_payments_config(
     await rbac_check(request, org.org_uuid, current_user, "delete", db_session)
 
     # Delete config using raw SQL to avoid enum validation issues
-    result = db_session.exec(
-        text("DELETE FROM payments_config WHERE org_id = :org_id"),
-        {"org_id": org_id}
+    result = db_session.execute(
+        text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(org_id=org_id)
     )
     db_session.commit()
     
