@@ -7,7 +7,6 @@ Usage:
     cd apps/api
     uv run python fix_enum_direct.py
 """
-import os
 from sqlalchemy import create_engine, text
 from config.config import get_learnhouse_config
 

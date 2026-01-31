@@ -1,21 +1,14 @@
 import logging
 import httpx
-from typing import Literal
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 from config.config import get_learnhouse_config
-from src.db.payments.payments import PaymentsConfigUpdate, PaymentsConfig
 from src.db.payments.payments_products import (
-    PaymentPriceTypeEnum,
     PaymentProductTypeEnum,
     PaymentsProduct,
 )
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
-from src.services.payments.payments_config import (
-    get_payments_config,
-    update_payments_config,
-)
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.payments.payments_users import (
     create_payment_user,
@@ -381,7 +374,6 @@ async def initialize_transaction(
             raise HTTPException(status_code=400, detail="Failed to get authorization URL from Paystack")
         
         # Update payment user with transaction reference and selected currency
-        from src.services.payments.payments_users import update_payment_user_status
         # We'll store the reference and currency in provider_specific_data
         payment_user.provider_specific_data.update({
             "paystack_transaction_reference": reference,

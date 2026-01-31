@@ -332,7 +332,7 @@ async def api_check_course_paid_access(
     """
     from sqlmodel import select
     from src.db.payments.payments_courses import PaymentsCourse
-    from src.db.payments.payments_users import PaymentsUser, PaymentStatusEnum
+    from src.db.payments.payments_users import PaymentsUser
     
     # Get course
     course_statement = select(Course).where(Course.id == course_id)

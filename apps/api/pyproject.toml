@@ -57,3 +57,8 @@ filterwarnings = [
     "ignore:.*Instrumentation will have no effect.*",
     "ignore:.*handler names should be lower-case.*",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.14",
+]

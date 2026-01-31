@@ -2,7 +2,7 @@ import logging
 import hmac
 import hashlib
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select
+from sqlmodel import Session
 from config.config import get_learnhouse_config
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import InternalUser
