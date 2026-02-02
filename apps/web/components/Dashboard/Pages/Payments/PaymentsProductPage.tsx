@@ -37,7 +37,7 @@ function PaymentsProductPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingProductId, setEditingProductId] = useState<string | null>(null);
     const [expandedProducts, setExpandedProducts] = useState<{ [key: string]: boolean }>({});
-    const [isStripeEnabled, setIsStripeEnabled] = useState(false);
+    const [isPaystackEnabled, setIsPaystackEnabled] = useState(false);
     const { isEnabled, isLoading } = usePaymentsEnabled();
 
     const { data: products, error } = useSWR(
@@ -52,8 +52,8 @@ function PaymentsProductPage() {
 
     useEffect(() => {
         if (paymentConfigs) {
-            const stripeConfig = paymentConfigs.find((config: any) => config.provider === 'stripe');
-            setIsStripeEnabled(!!stripeConfig);
+            const paystackConfig = paymentConfigs.find((config: any) => config.provider === 'paystack');
+            setIsPaystackEnabled(!!paystackConfig);
         }
     }, [paymentConfigs]);
 
@@ -120,8 +120,8 @@ function PaymentsProductPage() {
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={() => setEditingProductId(product.id)}
-                                                className={`text-blue-500 hover:text-blue-700 ${isStripeEnabled ? '' : 'opacity-50 cursor-not-allowed'}`}
-                                                disabled={!isStripeEnabled}
+                                                className={`text-blue-500 hover:text-blue-700 ${isPaystackEnabled ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                                disabled={!isPaystackEnabled}
                                             >
                                                 <Pencil size={16} />
                                             </button>
@@ -194,9 +194,9 @@ function PaymentsProductPage() {
                 <div className="flex justify-center items-center py-10">
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className={`mb-4 flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-linear-to-bl text-white font-medium from-gray-700 to-gray-900 border border-gray-600 shadow-gray-900/20 nice-shadow transition duration-300 ${isStripeEnabled ? 'hover:from-gray-600 hover:to-gray-800' : 'opacity-50 cursor-not-allowed'
+                        className={`mb-4 flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-linear-to-bl text-white font-medium from-gray-700 to-gray-900 border border-gray-600 shadow-gray-900/20 nice-shadow transition duration-300 ${isPaystackEnabled ? 'hover:from-gray-600 hover:to-gray-800' : 'opacity-50 cursor-not-allowed'
                             }`}
-                        disabled={!isStripeEnabled}
+                        disabled={!isPaystackEnabled}
                     >
                         <Plus size={18} />
                         <span className="text-sm font-bold">Create New Product</span>

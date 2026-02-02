@@ -16,10 +16,9 @@ class PaymentProviderEnumType(TypeDecorator):
     cache_ok = True
     
     def __init__(self):
-        # Include all possible enum values that exist in the database
-        # The database has 'STRIPE' and 'paystack', but we only use 'paystack'
+        # Only include 'paystack' since that's the only value in the database
         super().__init__(
-            'STRIPE', 'paystack',  # All enum values in the database
+            'paystack',  # Only paystack is valid in the database enum
             name='paymentproviderenum',
             create_type=False
         )

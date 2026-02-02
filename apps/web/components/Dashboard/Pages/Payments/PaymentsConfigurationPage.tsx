@@ -1,11 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useOrg } from '@components/Contexts/OrgContext';
-import { SiStripe } from '@icons-pack/react-simple-icons'
+// Using CreditCard icon as Paystack icon is not available in the icon pack
 import { useLHSession } from '@components/Contexts/LHSessionContext';
-import { getPaymentConfigs, initializePaymentConfig, deletePaymentConfig, updateStripeAccountID, getStripeOnboardingLink } from '@services/payments/payments';
+import { getPaymentConfigs, initializePaymentConfig, deletePaymentConfig, updatePaymentAccountID, getPaymentOnboardingLink } from '@services/payments/payments';
 import FormLayout, { ButtonBlack, Input, FormField, FormLabelAndMessage, Flex } from '@components/Objects/StyledElements/Form/Form';
-import { BarChart2, Coins, CreditCard, ExternalLink, Info, Loader2, RefreshCcw, Trash2, UnplugIcon } from 'lucide-react';
+import { BarChart2, Coins, CreditCard, ExternalLink, Info, Loader2, RefreshCcw, Trash2, UnplugIcon, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useSWR, { mutate } from 'swr';
 import Modal from '@components/Objects/StyledElements/Modal/Modal';
@@ -25,21 +25,21 @@ const PaymentsConfigurationPage: React.FC = () => {
         ([url, token]) => getPaymentConfigs(org.id, token)
     );
 
-    const stripeConfig = paymentConfigs?.find((config: any) => config.provider === 'stripe');
+    const paystackConfig = paymentConfigs?.find((config: any) => config.provider === 'paystack');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isOnboarding, setIsOnboarding] = useState(false);
     const [isOnboardingLoading, setIsOnboardingLoading] = useState(false);
 
-    const enableStripe = async () => {
+    const enablePaystack = async () => {
         try {
             setIsOnboarding(true);
-            const newConfig = { provider: 'stripe', enabled: true };
-            const config = await initializePaymentConfig(org.id, newConfig, 'stripe', access_token);
-            toast.success('Stripe enabled successfully');
+            const newConfig = { provider: 'paystack', enabled: true };
+            const config = await initializePaymentConfig(org.id, newConfig, 'paystack', access_token);
+            toast.success('Paystack enabled successfully');
             mutate([`/payments/${org.id}/config`, access_token]);
         } catch (error) {
-            console.error('Error enabling Stripe:', error);
-            toast.error('Failed to enable Stripe');
+            console.error('Error enabling Paystack:', error);
+            toast.error('Failed to enable Paystack');
         } finally {
             setIsOnboarding(false);
         }
@@ -51,26 +51,18 @@ const PaymentsConfigurationPage: React.FC = () => {
 
     const deleteConfig = async () => {
         try {
-            await deletePaymentConfig(org.id, stripeConfig.id, access_token);
-            toast.success('Stripe configuration deleted successfully');
+            await deletePaymentConfig(org.id, paystackConfig.id, access_token);
+            toast.success('Paystack configuration deleted successfully');
             mutate([`/payments/${org.id}/config`, access_token]);
         } catch (error) {
-            console.error('Error deleting Stripe configuration:', error);
-            toast.error('Failed to delete Stripe configuration');
+            console.error('Error deleting Paystack configuration:', error);
+            toast.error('Failed to delete Paystack configuration');
         }
     };
 
-    const handleStripeOnboarding = async () => {
-        try {
-            setIsOnboardingLoading(true);
-            const { connect_url } = await getStripeOnboardingLink(org.id, access_token, getUriWithoutOrg('/payments/stripe/connect/oauth'));
-            window.open(connect_url, '_blank');
-        } catch (error) {
-            console.error('Error getting onboarding link:', error);
-            toast.error('Failed to start Stripe onboarding');
-        } finally {
-            setIsOnboardingLoading(false);
-        }
+    const handlePaystackOnboarding = async () => {
+        // For Paystack, we'll use a manual configuration modal instead of an onboarding link
+        setIsModalOpen(true);
     };
 
     if (isLoading) {
@@ -90,8 +82,8 @@ const PaymentsConfigurationPage: React.FC = () => {
                 </div>
 
                 <Alert className="mb-3 p-6 border-2 border-blue-100 bg-blue-50/50">
-                   
-                    <AlertTitle className="text-lg font-semibold mb-2 flex items-center space-x-2"> <Info className="h-5 w-5 " /> <span>About the Stripe Integration</span></AlertTitle>
+
+                    <AlertTitle className="text-lg font-semibold mb-2 flex items-center space-x-2"> <Info className="h-5 w-5 " /> <span>About the Paystack Integration</span></AlertTitle>
                     <AlertDescription className="space-y-5">
                         <div className="pl-2">
                             <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
@@ -113,27 +105,27 @@ const PaymentsConfigurationPage: React.FC = () => {
                                 </li>
                             </ul>
                         </div>
-                        <a 
-                            href="https://stripe.com/docs"
+                        <a
+                            href="https://paystack.com/docs"
                             target="_blank"
-                            rel="noopener noreferrer" 
+                            rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 inline-flex items-center font-medium transition-colors duration-200 pl-2"
                         >
-                            Learn more about Stripe
+                            Learn more about Paystack
                             <ExternalLink className="ml-1.5 h-4 w-4" />
                         </a>
                     </AlertDescription>
                 </Alert>
 
                 <div className="flex flex-col rounded-lg light-shadow">
-                    {stripeConfig ? (
+                    {paystackConfig ? (
                         <div className="flex items-center justify-between bg-linear-to-r from-indigo-500 to-purple-600 p-6 rounded-lg shadow-md">
                             <div className="flex items-center space-x-3">
-                                <SiStripe className="text-white" size={32} />
+                                <Wallet className="text-white" size={32} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center space-x-2">
-                                        <span className="text-xl font-semibold text-white">Stripe</span>
-                                        {stripeConfig.provider_specific_id && stripeConfig.active ? (
+                                        <span className="text-xl font-semibold text-white">Paystack</span>
+                                        {paystackConfig.provider_specific_id && paystackConfig.active ? (
                                             <div className="flex items-center space-x-1 bg-green-500/20 px-2 py-0.5 rounded-full">
                                                 <div className="h-2 w-2 bg-green-500 rounded-full" />
                                                 <span className="text-xs text-green-100">Connected</span>
@@ -146,16 +138,16 @@ const PaymentsConfigurationPage: React.FC = () => {
                                         )}
                                     </div>
                                     <span className="text-white/80 text-sm">
-                                        {stripeConfig.provider_specific_id ? 
-                                            `Linked Account: ${stripeConfig.provider_specific_id}` : 
+                                        {paystackConfig.provider_specific_id ?
+                                            `Linked Account: ${paystackConfig.provider_specific_id}` :
                                             'Account ID not configured'}
                                     </span>
                                 </div>
                             </div>
                             <div className="flex space-x-2">
-                                {(!stripeConfig.provider_specific_id || !stripeConfig.active) && (
+                                {(!paystackConfig.provider_specific_id || !paystackConfig.active) && (
                                     <Button
-                                        onClick={handleStripeOnboarding}
+                                        onClick={handlePaystackOnboarding}
                                         className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white text-sm rounded-full hover:bg-green-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-green-400 shadow-md"
                                         disabled={isOnboardingLoading}
                                     >
@@ -164,15 +156,15 @@ const PaymentsConfigurationPage: React.FC = () => {
                                         ) : (
                                             <UnplugIcon className="h-3 w-3" />
                                         )}
-                                        <span className="font-semibold">Connect with Stripe</span>
+                                        <span className="font-semibold">Connect with Paystack</span>
                                     </Button>
                                 )}
                                 <ConfirmationModal
                                     confirmationButtonText="Remove Connection"
-                                    confirmationMessage="Are you sure you want to remove the Stripe connection? This action cannot be undone."
-                                    dialogTitle="Remove Stripe Connection"
+                                    confirmationMessage="Are you sure you want to remove the Paystack connection? This action cannot be undone."
+                                    dialogTitle="Remove Paystack Connection"
                                     dialogTrigger={
-                                        <Button 
+                                        <Button
                                             className="flex items-center space-x-2 bg-red-500 text-white text-sm rounded-full hover:bg-red-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Trash2 size={16} />
@@ -185,30 +177,30 @@ const PaymentsConfigurationPage: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <Button 
-                            onClick={enableStripe} 
+                        <Button
+                            onClick={enablePaystack}
                             className="flex items-center justify-center space-x-2 bg-linear-to-r p-3 from-indigo-500 to-purple-600 text-white px-6 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isOnboarding}
                         >
                             {isOnboarding ? (
                                 <>
                                     <Loader2 className="animate-spin" size={24} />
-                                    <span className="text-lg font-semibold">Connecting to Stripe...</span>
+                                    <span className="text-lg font-semibold">Connecting to Paystack...</span>
                                 </>
                             ) : (
                                 <>
-                                    <SiStripe size={24} />
-                                    <span className="text-lg font-semibold">Enable Stripe</span>
+                                    <Wallet size={24} />
+                                    <span className="text-lg font-semibold">Enable Paystack</span>
                                 </>
                             )}
                         </Button>
                     )}
                 </div>
             </div>
-            {stripeConfig && (
-                <EditStripeConfigModal
+            {paystackConfig && (
+                <EditPaystackConfigModal
                     orgId={org.id}
-                    configId={stripeConfig.id}
+                    configId={paystackConfig.id}
                     accessToken={access_token}
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
@@ -218,7 +210,7 @@ const PaymentsConfigurationPage: React.FC = () => {
     );
 };
 
-interface EditStripeConfigModalProps {
+interface EditPaystackConfigModalProps {
     orgId: number;
     configId: string;
     accessToken: string;
@@ -226,19 +218,19 @@ interface EditStripeConfigModalProps {
     onClose: () => void;
 }
 
-const EditStripeConfigModal: React.FC<EditStripeConfigModalProps> = ({ orgId, configId, accessToken, isOpen, onClose }) => {
-    const [stripeAccountId, setStripeAccountId] = useState('');
+const EditPaystackConfigModal: React.FC<EditPaystackConfigModalProps> = ({ orgId, configId, accessToken, isOpen, onClose }) => {
+    const [paystackAccountId, setPaystackAccountId] = useState('');
 
     useEffect(() => {
         const fetchConfig = async () => {
             try {
                 const config = await getPaymentConfigs(orgId, accessToken);
-                const stripeConfig = config.find((c: any) => c.id === configId);
-                if (stripeConfig && stripeConfig.provider_specific_id) {
-                    setStripeAccountId(stripeConfig.provider_specific_id || '');
+                const paystackConfig = config.find((c: any) => c.id === configId);
+                if (paystackConfig && paystackConfig.provider_specific_id) {
+                    setPaystackAccountId(paystackConfig.provider_specific_id || '');
                 }
             } catch (error) {
-                console.error('Error fetching Stripe configuration:', error);
+                console.error('Error fetching Paystack configuration:', error);
                 toast.error('Failed to load existing configuration');
             }
         };
@@ -250,10 +242,10 @@ const EditStripeConfigModal: React.FC<EditStripeConfigModalProps> = ({ orgId, co
 
     const handleSubmit = async () => {
         try {
-            const stripe_config = {
-                stripe_account_id: stripeAccountId,
+            const paystack_config = {
+                account_id: paystackAccountId,
             };
-            await updateStripeAccountID(orgId, stripe_config, accessToken);
+            await updatePaymentAccountID(orgId, paystack_config, accessToken);
             toast.success('Configuration updated successfully');
             mutate([`/payments/${orgId}/config`, accessToken]);
             onClose();
@@ -264,15 +256,15 @@ const EditStripeConfigModal: React.FC<EditStripeConfigModalProps> = ({ orgId, co
     };
 
     return (
-        <Modal isDialogOpen={isOpen} dialogTitle="Edit Stripe Configuration" dialogDescription='Edit your stripe configuration' onOpenChange={onClose}
+        <Modal isDialogOpen={isOpen} dialogTitle="Edit Paystack Configuration" dialogDescription='Edit your paystack configuration' onOpenChange={onClose}
             dialogContent={
                 <FormLayout onSubmit={handleSubmit}>
-                    <FormField name="stripe-account-id">
-                        <FormLabelAndMessage label="Stripe Account ID" />
-                        <Input 
-                            type="text" 
-                            value={stripeAccountId} 
-                            onChange={(e) => setStripeAccountId(e.target.value)} 
+                    <FormField name="paystack-account-id">
+                        <FormLabelAndMessage label="Paystack Account ID" />
+                        <Input
+                            type="text"
+                            value={paystackAccountId}
+                            onChange={(e) => setPaystackAccountId(e.target.value)}
                             placeholder="acct_..."
                         />
                     </FormField>
