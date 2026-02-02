@@ -15,12 +15,8 @@ import { Textarea } from "@components/ui/textarea"
 import { Button } from "@components/ui/button"
 import { Label } from "@components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select"
-import { Switch } from "@components/ui/switch"
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
-import Image from 'next/image'
-import africanAiLogo from '@public/african_ai_horizontal.png'
-import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 
 const ORG_LABELS = [
@@ -66,7 +62,6 @@ const validationSchema = Yup.object().shape({
     .optional()
     .max(400, 'About text must be 400 characters or less'),
   label: Yup.string().required('Organization label is required'),
-  explore: Yup.boolean(),
 })
 
 interface OrganizationValues {
@@ -74,7 +69,6 @@ interface OrganizationValues {
   description: string
   about: string
   label: string
-  explore: boolean
 }
 
 const OrgEditGeneral: React.FC = () => {
@@ -89,7 +83,6 @@ const OrgEditGeneral: React.FC = () => {
     description: org?.description || '',
     about: org?.about || '',
     label: org?.label || '',
-    explore: org?.explore ?? false,
   }
 
   const updateOrg = async (values: OrganizationValues) => {
@@ -213,36 +206,6 @@ const OrgEditGeneral: React.FC = () => {
                       {touched.about && errors.about && (
                         <p className="text-red-500 text-sm mt-1">{errors.about}</p>
                       )}
-                    </div>
-
-
-
-                    <div className="flex items-center justify-between space-x-2 mt-6 bg-gray-50/50 p-4 rounded-lg nice-shadow">
-                      <div className="flex items-center space-x-4">
-                        <Link href="https://www.learnhouse.app/explore" target="_blank" className="flex items-center space-x-2">
-                          <Image
-                            quality={100}
-                            width={120}
-                            src={africanAiLogo}
-                            alt="African AI Network"
-                            className="rounded-lg"
-                          />
-                          <span className="px-2 py-1 mt-1 bg-black rounded-md text-[10px] font-semibold text-white">
-                            EXPLORE
-                          </span>
-                        </Link>
-                        <div className="space-y-0.5">
-                          <Label className="text-base">{t('dashboard.organization.settings.showcase_explore')}</Label>
-                          <p className="text-sm text-gray-500">
-                            {t('dashboard.organization.settings.showcase_description')}
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        name="explore"
-                        checked={values.explore ?? false}
-                        onCheckedChange={(checked) => setFieldValue('explore', checked)}
-                      />
                     </div>
                   </div>
                 </div>
