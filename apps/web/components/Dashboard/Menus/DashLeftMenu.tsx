@@ -65,8 +65,6 @@ function DashLeftMenu() {
 
   if (!org || !session) return null
 
-  const plan = org?.config?.cloud?.plan || 'free'
-
   return (
     <div
       style={{
@@ -94,16 +92,6 @@ function DashLeftMenu() {
           >
             {!isCollapsed && (
               <div className="flex flex-col animate-in fade-in slide-in-from-left-2 duration-500 min-w-0 pr-2 overflow-visible">
-                <div className="mb-1.5">
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded-[3px] text-[7px] font-black uppercase tracking-widest border transition-colors inline-block",
-                    plan === 'pro' ? "bg-purple-500/20 text-purple-300 border-purple-500/20" :
-                      plan === 'standard' ? "bg-blue-500/20 text-blue-300 border-blue-500/20" :
-                        "bg-white/10 text-white/60 border-white/10"
-                  )}>
-                    {plan} PLAN
-                  </span>
-                </div>
                 <div className="flex items-center space-x-2">
                   <span className="font-bold text-sm leading-[1.2] text-white whitespace-normal wrap-break-word">
                     {org?.name}
