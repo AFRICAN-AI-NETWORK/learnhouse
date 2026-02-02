@@ -54,7 +54,7 @@ function DashLeftMenu() {
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng)
   }
-  const isPaymentsEnabled = useFeatureFlag({ path: ['features', 'payments', 'enabled'], defaultValue: false })
+  const isPaymentsEnabled = useFeatureFlag({ path: ['features', 'payments', 'enabled'], defaultValue: true })
 
   async function logOutUI() {
     const res = await signOut({ redirect: true, callbackUrl: getUriWithoutOrg('/login?orgslug=' + org.slug) })

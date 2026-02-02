@@ -85,13 +85,7 @@ async def get_payments_config(
     # RBAC check
     await rbac_check(request, org.org_uuid, current_user, "read", db_session)
 
-    # Clean up any old STRIPE configs first
-    db_session.exec(
-        text("DELETE FROM payments_config WHERE org_id = :org_id AND provider = 'stripe'").bindparams(org_id=org_id)
-    )
-    db_session.commit()
-
-    # Get payments config (now only PAYSTACK configs exist)
+    # Get payments config
     statement = select(PaymentsConfig).where(PaymentsConfig.org_id == org_id)
     configs = db_session.exec(statement).all()
 
@@ -117,13 +111,7 @@ async def update_payments_config(
     # RBAC check
     await rbac_check(request, org.org_uuid, current_user, "update", db_session)
 
-    # Clean up any old STRIPE configs first
-    db_session.exec(
-        text("DELETE FROM payments_config WHERE org_id = :org_id AND provider = 'stripe'").bindparams(org_id=org_id)
-    )
-    db_session.commit()
-
-    # Get existing payments config (now only PAYSTACK configs exist)
+    # Get existing payments config
     statement = select(PaymentsConfig).where(PaymentsConfig.org_id == org_id)
     config = db_session.exec(statement).first()
     if not config:

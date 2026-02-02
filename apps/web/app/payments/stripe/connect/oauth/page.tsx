@@ -5,7 +5,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { Check, Loader2, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { verifyStripeConnection } from '@services/payments/payments'
+import { verifyPaymentConnection } from '@services/payments/payments'
 import Image from 'next/image'
 import africanAiLogo from 'public/african_ai_horizontal.png'
 import { useTranslation } from 'react-i18next'
@@ -29,7 +29,7 @@ function StripeConnectCallback() {
           throw new Error('Missing required parameters')
         }
 
-        const response = await verifyStripeConnection(
+        const response = await verifyPaymentConnection(
           parseInt(orgId),
           code,
           session?.data?.tokens?.access_token
@@ -47,7 +47,7 @@ function StripeConnectCallback() {
         }, 2000)
 
       } catch (error) {
-        console.error('Error verifying Stripe connection:', error)
+        console.error('Error verifying payment connection:', error)
         setStatus('error')
         setMessage(t('payments.stripe_failed'))
         toast.error(t('payments.stripe_failed'))

@@ -29,34 +29,31 @@ export async function initializePaymentConfig(orgId: number, data: any, provider
   return res;
 }
 
-export async function updatePaymentConfig(orgId: number, id: string, data: any, access_token: string) {
+export async function updatePaymentConfig(orgId: number, data: any, access_token: string) {
   const result = await fetch(
-    `${getAPIUrl()}payments/${orgId}/config?id=${id}`,
+    `${getAPIUrl()}payments/${orgId}/config`,
     RequestBodyWithAuthHeader('PUT', data, null, access_token)
   );
   const res = await errorHandling(result);
   return res;
 }
 
-export async function updateStripeAccountID(orgId: number, data: any, access_token: string) {
-  const result = await fetch(
-    `${getAPIUrl()}payments/${orgId}/stripe/account?stripe_account_id=${data.stripe_account_id}`,
-    RequestBodyWithAuthHeader('PUT', data, null, access_token)
-  );
-  const res = await errorHandling(result);
-  return res;
+export async function updatePaymentAccountID(orgId: number, data: any, access_token: string) {
+  // Update the provider_specific_id in the payments config
+  const updateData = {
+    provider_specific_id: data.account_id,
+    active: true,
+  };
+  return updatePaymentConfig(orgId, updateData, access_token);
 }
 
-export async function getStripeOnboardingLink(orgId: number, access_token: string, redirect_uri: string) {
-  const result = await fetch(
-    `${getAPIUrl()}payments/${orgId}/stripe/connect/link?redirect_uri=${redirect_uri}`,
-    RequestBodyWithAuthHeader('POST', null, null, access_token)
-  );
-  const res = await errorHandling(result);
-  return res;
+export async function getPaymentOnboardingLink(orgId: number, access_token: string, redirect_uri: string) {
+  // This is no longer used for Paystack as it uses a manual setup
+  // But we return a dummy to not break the UI immediately 
+  return { connect_url: '' };
 }
 
-export async function verifyStripeConnection(orgId: number, code: string, access_token: string) {
+export async function verifyPaymentConnection(orgId: number, code: string, access_token: string) {
   const result = await fetch(
     `${getAPIUrl()}payments/stripe/oauth/callback?code=${code}&org_id=${orgId}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
