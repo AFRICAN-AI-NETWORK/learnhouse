@@ -425,7 +425,7 @@ function ActivityClient(props: ActivityClientProps) {
 
                   {/* Focus Mode Content */}
                   <div className="pt-16 pb-20 h-full overflow-auto">
-                    <div className="container mx-auto px-4">
+                    <div className={`${activity?.activity_type === 'TYPE_VIDEO' ? "max-w-5xl" : "max-w-(--breakpoint-xl)"} mx-auto px-4`}>
                       {activity && activity.published == true && (
                         <>
                           {activity.content.paid_access == false ? (
@@ -435,7 +435,7 @@ function ActivityClient(props: ActivityClientProps) {
                               initial={isInitialRender.current ? false : { scale: 0.95, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: 0.3 }}
-                              className={`p-7 rounded-lg ${bgColor} mt-4`}
+                              className={`p-4 md:p-6 rounded-lg ${bgColor} mt-4`}
                             >
                               {/* Activity Types */}
                               <div>
@@ -512,7 +512,7 @@ function ActivityClient(props: ActivityClientProps) {
                 </motion.div>
               </AnimatePresence>
             ) : (
-              <GeneralWrapperStyled maxWidth="max-w-(--breakpoint-xl)">
+              <GeneralWrapperStyled maxWidth={activity?.activity_type === 'TYPE_VIDEO' ? "max-w-5xl" : "max-w-(--breakpoint-xl)"}>
                 {/* Original non-focus mode UI */}
                 {activityid === 'end' ? (
                   <CourseEndView
