@@ -93,6 +93,10 @@ async def make_paystack_request(
     
     async with httpx.AsyncClient() as client:
         try:
+            logger.info(f"Making Paystack {method} request to {endpoint}")
+            if data:
+                logger.debug(f"Request data: {data}")
+            
             if method.upper() == "GET":
                 response = await client.get(url, headers=headers)
             elif method.upper() == "POST":
@@ -109,14 +113,18 @@ async def make_paystack_request(
             
             if not result.get("status"):
                 error_message = result.get("message", "Unknown error")
+                logger.error(f"Paystack API returned error: {error_message}")
                 raise HTTPException(status_code=400, detail=f"Paystack API error: {error_message}")
             
             return result.get("data", {})
         except httpx.HTTPStatusError as e:
-            logger.error(f"Paystack API error: {e.response.text}")
+            logger.error(f"Paystack HTTP error {e.response.status_code}: {e.response.text}")
             raise HTTPException(status_code=e.response.status_code, detail=f"Paystack API error: {e.response.text}")
+        except httpx.RequestError as e:
+            logger.error(f"Request error to Paystack: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error connecting to Paystack: {str(e)}")
         except Exception as e:
-            logger.error(f"Error making Paystack request: {str(e)}")
+            logger.error(f"Unexpected error making Paystack request: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error making Paystack request: {str(e)}")
 
 
@@ -461,7 +469,18 @@ async def initialize_transaction(
 
 
 async def verify_transaction(reference: str) -> dict:
-    """Verify a Paystack transaction"""
-    return await make_paystack_request("GET", f"/transaction/verify/{reference}")
+    """Verify a Paystack transaction
+    
+    Returns the full Paystack response including status and data fields.
+    The data field contains transaction details like amount, currency, metadata, etc.
+    """
+    # Make request and get the data portion
+    transaction_data = await make_paystack_request("GET", f"/transaction/verify/{reference}")
+    
+    # Return in the format expected by the endpoint (with status and data keys)
+    return {
+        "status": "success",  # If make_paystack_request didn't throw, it was successful
+        "data": transaction_data
+    }
 
 

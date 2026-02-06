@@ -23,6 +23,13 @@ class ProviderSpecificData(BaseModel):
 class PaymentsUserBase(SQLModel):
     status: PaymentStatusEnum = PaymentStatusEnum.PENDING
     provider_specific_data: dict = Field(default={}, sa_column=Column(JSON))
+    discount_code_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("discountcode.id", ondelete="SET NULL"))
+    )
+    original_amount: Optional[float] = None
+    discount_amount: Optional[float] = None
+    final_amount: Optional[float] = None
 
 class PaymentsUser(PaymentsUserBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
