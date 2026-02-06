@@ -2,12 +2,16 @@ import logging
 import hmac
 import hashlib
 from fastapi import HTTPException, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
 from config.config import get_learnhouse_config
-from src.db.payments.payments_users import PaymentStatusEnum
+from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import InternalUser
 from src.services.payments.payments_users import update_payment_user_status
 from src.services.payments.payments_paystack import verify_transaction
+from src.services.payments.discount_codes import (
+    record_discount_usage,
+    increment_discount_usage_atomic,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +94,45 @@ async def handle_paystack_webhook(
                         current_user=InternalUser(),
                         db_session=db_session,
                     )
+                    
+                    # CRITICAL: Record discount usage if discount was applied
+                    # Implements idempotency check to prevent duplicate webhook processing
+                    discount_code_id = metadata.get("discount_code_id")
+                    course_id = metadata.get("course_id")
+                    
+                    if discount_code_id and course_id:
+                        # Get payment user to retrieve discount information
+                        payment_user = db_session.exec(
+                            select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
+                        ).first()
+                        
+                        if payment_user and payment_user.discount_code_id:
+                            try:
+                                # First, atomically increment the usage counter
+                                # This prevents race conditions with concurrent payments
+                                increment_success = await increment_discount_usage_atomic(
+                                    int(discount_code_id),
+                                    db_session
+                                )
+                                
+                                if increment_success:
+                                    # Record the usage details
+                                    await record_discount_usage(
+                                        discount_code_id=int(discount_code_id),
+                                        user_id=int(metadata.get("user_id")),
+                                        course_id=int(course_id),
+                                        payment_user_id=int(payment_user_id),
+                                        original_amount=payment_user.original_amount,
+                                        discount_amount=payment_user.discount_amount,
+                                        final_amount=payment_user.final_amount,
+                                        db_session=db_session
+                                    )
+                                    logger.info(f"Recorded discount usage for payment_user_id: {payment_user_id}, discount_code_id: {discount_code_id}")
+                                else:
+                                    logger.warning(f"Failed to increment discount usage counter (max_uses reached?) for discount_code_id: {discount_code_id}")
+                            except Exception as e:
+                                logger.error(f"Error recording discount usage: {str(e)}")
+                                # Don't fail the webhook - payment was successful
                     
                     logger.info(f"Payment completed for payment_user_id: {payment_user_id}")
                     return {"status": "success", "message": "Payment processed successfully"}
