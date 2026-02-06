@@ -15,7 +15,6 @@ from src.services.payments.payments_users import (
     create_payment_user,
     delete_payment_user,
 )
-from src.db.payments.discount_codes import DiscountCode
 from src.services.payments.discount_codes import validate_discount_code, DiscountValidationError
 
 logger = logging.getLogger(__name__)
