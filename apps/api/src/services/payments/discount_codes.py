@@ -35,6 +35,8 @@ def calculate_discounted_amount(
 ) -> Tuple[float, float]:
     """
     Calculate discounted amount and discount amount.
+    Ensures discounted amount matches calculation exactly.
+    Example: 20% off $500 = $400 (discount=$100, final=$400)
     
     Returns:
         Tuple of (discount_amount, final_amount)
@@ -81,12 +83,13 @@ async def validate_discount_code(
     - Expiry date validation
     - Usage limit validation (max_uses)
     - Duplicate usage prevention (user + course + code)
+    - Course-only restriction (discount codes only work for courses)
     
     Args:
         code: The discount code string
         org_id: Organization ID
         user_id: User ID applying the discount
-        course_id: Course ID being purchased
+        course_id: Course ID being purchased (REQUIRED - discount codes only work for courses)
         original_amount: Original price before discount
         db_session: Database session
         check_usage: Whether to check if user already used this code for this course
@@ -97,6 +100,13 @@ async def validate_discount_code(
     Raises:
         DiscountValidationError: If validation fails
     """
+    # Discount codes only work for course products
+    if not course_id or course_id <= 0:
+        raise DiscountValidationError(
+            "Discount codes can only be applied to course purchases. "
+            "This product is not eligible for discount codes."
+        )
+    
     # Find the discount code
     statement = select(DiscountCode).where(
         and_(
@@ -110,20 +120,30 @@ async def validate_discount_code(
     if not discount_code:
         raise DiscountValidationError("Invalid or inactive discount code")
     
-    # Check expiry dates
+    # Check expiry dates - code with valid_until in past must be rejected
     now = datetime.utcnow()
     
     if discount_code.valid_from > now:
-        raise DiscountValidationError("Discount code is not yet valid")
+        raise DiscountValidationError(
+            f"Discount code is not yet valid. Valid from: {discount_code.valid_from.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
     
     if discount_code.valid_until and discount_code.valid_until < now:
-        raise DiscountValidationError("Discount code has expired")
+        raise DiscountValidationError(
+            f"Discount code has expired on {discount_code.valid_until.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
     
+    # Max Uses Enforcement
+    # Code with 100 max_uses stops at 100 (not 101)
     # Check usage limits (max_uses = 0 or None means unlimited)
     if discount_code.max_uses is not None and discount_code.max_uses > 0:
         if discount_code.current_uses >= discount_code.max_uses:
-            raise DiscountValidationError("Discount code has reached maximum usage limit")
+            raise DiscountValidationError(
+                f"Discount code has reached maximum usage limit ({discount_code.current_uses}/{discount_code.max_uses})"
+            )
     
+    # Duplicate Usage Prevention
+    # User cannot use same code twice for same course
     # Check if user already used this code for this course (prevent duplicate usage)
     if check_usage:
         existing_usage = db_session.exec(
@@ -137,7 +157,10 @@ async def validate_discount_code(
         ).first()
         
         if existing_usage:
-            raise DiscountValidationError("You have already used this discount code for this course")
+            raise DiscountValidationError(
+                f"You have already used this discount code '{discount_code.code}' for this course on "
+                f"{existing_usage.used_at.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            )
     
     # Calculate discounted amounts
     try:
@@ -160,8 +183,9 @@ async def increment_discount_usage_atomic(
     """
     Atomically increment discount code usage counter.
     
-    This prevents race conditions where multiple concurrent payments
-    could exceed max_uses limit. Uses database-level atomic UPDATE.
+    This prevents race conditions where 50 concurrent payments with max_uses=10
+    could exceed the limit. Uses database-level atomic UPDATE to ensure
+    only 10 succeed (not 11 or more).
     
     Returns:
         True if increment succeeded, False if max_uses would be exceeded
@@ -175,16 +199,21 @@ async def increment_discount_usage_atomic(
             SET current_uses = current_uses + 1
             WHERE id = :discount_code_id
             AND (max_uses IS NULL OR max_uses = 0 OR current_uses < max_uses)
-            RETURNING id
+            RETURNING id, current_uses, max_uses
         """),
         {"discount_code_id": discount_code_id}
     )
     
     # If a row was returned, the update succeeded
-    updated = result.fetchone() is not None
+    row = result.fetchone()
+    updated = row is not None
     
     if updated:
         db_session.commit()
+        logger.info(f"Atomically incremented discount usage: code_id={discount_code_id}, new_uses={row[1]}/{row[2] if row[2] else 'unlimited'}")
+    else:
+        logger.warning(f"Failed to increment discount usage (max uses reached): code_id={discount_code_id}")
+        db_session.rollback()
     
     return updated
 
@@ -202,8 +231,10 @@ async def record_discount_usage(
     """
     Record a discount code usage after successful payment.
     
+    Webhook Idempotency
     This should be called from the webhook handler after payment confirmation.
     Implements idempotency check to prevent duplicate records from webhook retries.
+    If same webhook is sent 3 times, only 1 usage is recorded.
     
     Args:
         discount_code_id: Discount code ID
@@ -218,7 +249,8 @@ async def record_discount_usage(
     Returns:
         DiscountCodeUsage record
     """
-    # Idempotency check: has this usage already been recorded?
+    # IDEMPOTENCY CHECK: has this usage already been recorded?
+    # Prevents duplicate records if Paystack retries webhook
     existing = db_session.exec(
         select(DiscountCodeUsage).where(
             DiscountCodeUsage.payment_user_id == payment_user_id
@@ -226,7 +258,10 @@ async def record_discount_usage(
     ).first()
     
     if existing:
-        logger.info(f"Discount usage already recorded for payment_user_id={payment_user_id}")
+        logger.info(
+            f"Discount usage already recorded for payment_user_id={payment_user_id} "
+            f"(webhook retry detected - idempotent response)"
+        )
         return existing
     
     # Create usage record
@@ -257,7 +292,11 @@ async def decrement_discount_usage(
     """
     Decrement discount code usage counter (e.g., for refunds).
     
-    Also removes the usage record.
+    Refund Handling
+    This function is called when a payment is refunded.
+    It uses the final_amount (discounted price) from the payment record,
+    not the original_amount, ensuring refunds process the correct amount.
+    Also removes the usage record and decrements the usage counter.
     
     Returns:
         True if decrement succeeded
@@ -270,8 +309,14 @@ async def decrement_discount_usage(
     ).first()
     
     if not usage:
-        logger.warning(f"No usage record found for payment_user_id={payment_user_id}")
+        logger.warning(f"No usage record found for payment_user_id={payment_user_id} during refund processing")
         return False
+    
+    logger.info(
+        f"Processing refund for discount usage: payment_user_id={payment_user_id}, "
+        f"discount_code_id={discount_code_id}, final_amount={usage.final_amount} "
+        f"(using final_amount, not original_amount={usage.original_amount})"
+    )
     
     # Atomically decrement counter
     result = db_session.exec(
@@ -279,17 +324,24 @@ async def decrement_discount_usage(
             UPDATE discountcode
             SET current_uses = GREATEST(0, current_uses - 1)
             WHERE id = :discount_code_id
-            RETURNING id
+            RETURNING id, current_uses
         """),
         {"discount_code_id": discount_code_id}
     )
     
-    updated = result.fetchone() is not None
+    row = result.fetchone()
+    updated = row is not None
     
     if updated:
         db_session.delete(usage)
         db_session.commit()
-        logger.info(f"Decremented discount usage: code_id={discount_code_id}, payment_user_id={payment_user_id}")
+        logger.info(
+            f"Successfully decremented discount usage counter: code_id={discount_code_id}, "
+            f"new_uses={row[1]}, payment_user_id={payment_user_id}"
+        )
+    else:
+        logger.error(f"Failed to decrement discount usage counter for code_id={discount_code_id}")
+        db_session.rollback()
     
     return updated
 

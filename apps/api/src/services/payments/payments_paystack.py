@@ -331,7 +331,12 @@ async def initialize_transaction(
             logger.error(f"Error validating discount code: {str(e)}")
             raise HTTPException(status_code=400, detail=f"Error validating discount code: {str(e)}")
     elif discount_code and not course_id:
-        raise HTTPException(status_code=400, detail="Discount codes can only be applied to course products")
+        # Explicit rejection - discount codes only work for courses
+        raise HTTPException(
+            status_code=400,
+            detail="Discount codes can only be applied to course purchases. "
+                   "This product is not a course and is not eligible for discount codes."
+        )
     
     # Create or get Paystack customer
     try:

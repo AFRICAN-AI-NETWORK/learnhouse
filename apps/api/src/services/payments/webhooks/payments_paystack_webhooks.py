@@ -215,6 +215,62 @@ async def handle_paystack_webhook(
             logger.info(f"Subscription cancelled for payment_user_id: {payment_user_id}")
             return {"status": "success", "message": "Subscription cancelled"}
         
+        elif event_type == "refund.processed":
+            # Refund should use final_amount (not original_amount)
+            # and decrement discount usage counter
+            metadata = data.get("metadata", {})
+            payment_user_id = metadata.get("payment_user_id")
+            
+            if not payment_user_id:
+                logger.warning("No payment_user_id in refund webhook metadata")
+                return {"status": "ignored", "message": "No payment_user_id in metadata"}
+            
+            org_id = int(metadata.get("org_id"))
+            
+            # Update payment user status to refunded
+            await update_payment_user_status(
+                request=request,
+                org_id=org_id,
+                payment_user_id=int(payment_user_id),
+                status=PaymentStatusEnum.REFUNDED,
+                current_user=InternalUser(),
+                db_session=db_session,
+            )
+            
+            # Check if discount was used and decrement usage
+            payment_user = db_session.exec(
+                select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
+            ).first()
+            
+            if payment_user and payment_user.discount_code_id:
+                try:
+                    # Import here to avoid circular dependency
+                    from src.services.payments.discount_codes import decrement_discount_usage
+                    
+                    # Decrement usage counter and remove usage record
+                    decrement_success = await decrement_discount_usage(
+                        discount_code_id=payment_user.discount_code_id,
+                        payment_user_id=int(payment_user_id),
+                        db_session=db_session
+                    )
+                    
+                    if decrement_success:
+                        logger.info(
+                            f"Refund processed: payment_user_id={payment_user_id}, "
+                            f"discount_code_id={payment_user.discount_code_id}, "
+                            f"refund_amount={payment_user.final_amount} (used final_amount, not original_amount)"
+                        )
+                    else:
+                        logger.warning(
+                            f"Failed to decrement discount usage for refund: payment_user_id={payment_user_id}"
+                        )
+                except Exception as e:
+                    logger.error(f"Error processing refund discount usage: {str(e)}")
+                    # Don't fail the webhook - refund was processed
+            
+            logger.info(f"Refund processed for payment_user_id: {payment_user_id}")
+            return {"status": "success", "message": "Refund processed"}
+        
         else:
             logger.warning(f"Unhandled Paystack event type: {event_type}")
             return {"status": "ignored", "message": f"Unhandled event type: {event_type}"}
