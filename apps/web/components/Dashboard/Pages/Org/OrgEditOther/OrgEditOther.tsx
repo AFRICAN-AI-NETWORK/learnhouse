@@ -97,6 +97,7 @@ const OrgEditOther: React.FC = () => {
         id: loadingToast,
       })
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error updating organization:', err)
       toast.error(t('dashboard.organization.scripts.toasts.save_success'), {
         id: loadingToast,
@@ -129,6 +130,7 @@ const OrgEditOther: React.FC = () => {
         id: loadingToast,
       })
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error deleting script:', err)
       toast.error(t('dashboard.organization.scripts.toasts.delete_success'), {
         id: loadingToast,

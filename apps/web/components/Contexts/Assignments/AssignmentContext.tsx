@@ -1,5 +1,5 @@
 'use client'
-import React, { createContext, useContext } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { getAPIUrl } from '@services/config/config'
 import { swrFetcher } from '@services/utils/ts/requests'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -17,31 +17,31 @@ export function AssignmentProvider({
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token
 
-  const { data: assignment, error: assignmentError } = useSWR(
+  const { data: assignment } = useSWR(
     `${getAPIUrl()}assignments/${assignment_uuid}`,
     (url) => swrFetcher(url, accessToken)
   )
 
-  const { data: assignment_tasks, error: assignmentTasksError } = useSWR(
+  const { data: assignment_tasks } = useSWR(
     `${getAPIUrl()}assignments/${assignment_uuid}/tasks`,
     (url) => swrFetcher(url, accessToken)
   )
 
   const course_id = assignment?.course_id
 
-  const { data: course_object, error: courseObjectError } = useSWR(
+  const { data: course_object } = useSWR(
     course_id ? `${getAPIUrl()}courses/id/${course_id}` : null,
     (url) => swrFetcher(url, accessToken)
   )
 
   const activity_id = assignment?.activity_id
 
-  const { data: activity_object, error: activityObjectError } = useSWR(
+  const { data: activity_object } = useSWR(
     activity_id ? `${getAPIUrl()}activities/id/${activity_id}` : null,
     (url) => swrFetcher(url, accessToken)
   )
 
-  const assignmentsFull = React.useMemo(() => {
+  const assignmentsFull = useMemo(() => {
     if (
       assignment &&
       assignment_tasks &&
@@ -55,12 +55,7 @@ export function AssignmentProvider({
         activity_object: activity_object,
       }
     }
-    return {
-      assignment_object: null,
-      assignment_tasks: null,
-      course_object: null,
-      activity_object: null,
-    }
+    return {}
   }, [
     assignment,
     assignment_tasks,
@@ -69,22 +64,6 @@ export function AssignmentProvider({
     course_id,
     activity_id,
   ])
-
-  if (
-    assignmentError ||
-    assignmentTasksError ||
-    courseObjectError ||
-    activityObjectError
-  )
-    return <div></div>
-
-  if (
-    !assignment ||
-    !assignment_tasks ||
-    (course_id && !course_object) ||
-    (activity_id && !activity_object)
-  )
-    return <div></div>
 
   return (
     <AssignmentContext.Provider value={assignmentsFull}>

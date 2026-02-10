@@ -339,6 +339,7 @@ const OrgEditLanding = () => {
       }
     } catch (error) {
       toast.error(t('dashboard.organization.landing.save_error'))
+      // eslint-disable-next-line no-console
       console.error('Error saving landing page:', error)
     } finally {
       setIsSaving(false)

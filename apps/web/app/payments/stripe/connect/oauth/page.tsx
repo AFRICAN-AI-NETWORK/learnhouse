@@ -59,7 +59,7 @@ function StripeConnectCallback() {
     if (session) {
       verifyConnection()
     }
-  }, [session, router, searchParams])
+  }, [session, router, searchParams, t])
 
   return (
     <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center">

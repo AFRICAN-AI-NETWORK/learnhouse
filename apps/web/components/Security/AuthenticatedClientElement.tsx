@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 
@@ -8,73 +8,74 @@ interface AuthenticatedClientElementProps {
   checkMethod: 'authentication' | 'roles'
   orgId?: string | number
   ressourceType?:
-  | 'collections'
-  | 'courses'
-  | 'activities'
-  | 'users'
-  | 'organizations'
+    | 'collections'
+    | 'courses'
+    | 'activities'
+    | 'users'
+    | 'organizations'
   action?: 'create' | 'update' | 'delete' | 'read'
+}
+
+function isUserAllowed(
+  roles: any[],
+  action: string,
+  resourceType: string,
+  org_uuid: string
+): boolean {
+  // Iterate over the user's roles
+  for (const role of roles) {
+    // Check if the role is for the right organization
+    if (role.org.org_uuid === org_uuid) {
+      // Check if the user has the role for the resource type
+      if (role.role.rights && role.role.rights[resourceType]) {
+        // Check if the user is allowed to execute the action
+        const actionKey = `action_${action}`
+        if (role.role.rights[resourceType][actionKey] === true) {
+          return true
+        }
+      }
+    }
+  }
+
+  // If no role matches the organization, resource type, and action, return false
+  return false
 }
 
 export const AuthenticatedClientElement = (
   props: AuthenticatedClientElementProps
 ) => {
-  const [isAllowed, setIsAllowed] = React.useState(false)
   const session = useLHSession() as any
   const org = useOrg() as any
 
-  function isUserAllowed(
-    roles: any[],
-    action: string,
-    resourceType: string,
-    org_uuid: string
-  ): boolean {
-    // Iterate over the user's roles
-    for (const role of roles) {
-      // Check if the role is for the right organization
-      if (role.org.org_uuid === org_uuid) {
-        // Check if the user has the role for the resource type
-        if (role.role.rights && role.role.rights[resourceType]) {
-          // Check if the user is allowed to execute the action
-          const actionKey = `action_${action}`
-          if (role.role.rights[resourceType][actionKey] === true) {
-            return true
-          }
-        }
-      }
-    }
-
-    // If no role matches the organization, resource type, and action, return false
-    return false
-  }
-
-  function check() {
-    if (session.status == 'unauthenticated') {
-      setIsAllowed(false)
-      return
-    } else {
-      if (props.checkMethod === 'authentication') {
-        setIsAllowed(session.status == 'authenticated')
-      } else if (props.checkMethod === 'roles' ) {
-        return setIsAllowed(
-          isUserAllowed(
-            session?.data?.roles,
-            props.action!,
-            props.ressourceType!,
-            org?.org_uuid
-          )
-        )
-      }
-    }
-  }
-
-  React.useEffect(() => {
+  const isAllowed = useMemo(() => {
     if (session.status == 'loading') {
-      return
+      return false
     }
 
-    check()
-  }, [session.data, org])
+    if (session.status == 'unauthenticated') {
+      return false
+    }
+
+    if (props.checkMethod === 'authentication') {
+      return session.status == 'authenticated'
+    } else if (props.checkMethod === 'roles') {
+      return isUserAllowed(
+        session?.data?.roles || [],
+        props.action!,
+        props.ressourceType!,
+        org?.org_uuid
+      )
+    }
+
+    return false
+  }, [
+    session.status,
+    session?.data?.roles,
+    props.checkMethod,
+    props.action,
+    props.ressourceType,
+    org?.org_uuid,
+  ])
 
   return <>{isAllowed && props.children}</>
 }

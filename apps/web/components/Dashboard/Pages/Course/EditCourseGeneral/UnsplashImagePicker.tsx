@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { createApi } from 'unsplash-js'
 import {
   Search,
@@ -88,6 +88,7 @@ const UnsplashImagePicker: React.FC<UnsplashImagePickerProps> = ({
           )
         }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching images:', error)
       } finally {
         setLoading(false)
@@ -96,11 +97,12 @@ const UnsplashImagePicker: React.FC<UnsplashImagePickerProps> = ({
     []
   )
 
-  const debouncedFetchImages = useCallback(
-    debounce((searchQuery: string) => {
-      setPage(1)
-      fetchImages(searchQuery, 1)
-    }, 300),
+  const debouncedFetchImages = useMemo(
+    () =>
+      debounce((searchQuery: string) => {
+        setPage(1)
+        fetchImages(searchQuery, 1)
+      }, 300),
     [fetchImages]
   )
 
