@@ -51,3 +51,4 @@ fly.toml
 apps/web/public/runtime-config.js
 apps/web/runtime-config.json
 apps/web/lint_output.txt
+apps/web/build_output.txt

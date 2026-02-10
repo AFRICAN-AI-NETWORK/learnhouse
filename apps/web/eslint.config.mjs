@@ -2,7 +2,7 @@ import unusedImports from "eslint-plugin-unused-imports";
 import nextConfig from "eslint-config-next";
 import js from "@eslint/js";
 
-export default [
+const config = [
     js.configs.recommended,
     ...nextConfig,
     {
@@ -21,3 +21,5 @@ export default [
         },
     },
 ];
+
+export default config;

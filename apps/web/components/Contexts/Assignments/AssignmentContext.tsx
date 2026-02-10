@@ -1,5 +1,5 @@
 'use client'
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getAPIUrl } from '@services/config/config'
 import { swrFetcher } from '@services/utils/ts/requests'
@@ -16,13 +16,6 @@ export function AssignmentProvider({
 }) {
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token
-
-  const [assignmentsFull, setAssignmentsFull] = useState<any>({
-    assignment_object: null,
-    assignment_tasks: null,
-    course_object: null,
-    activity_object: null,
-  })
 
   const { data: assignment } = useSWR(
     assignment_uuid ? `${getAPIUrl()}assignments/${assignment_uuid}` : null,
@@ -49,19 +42,25 @@ export function AssignmentProvider({
     (url: string) => swrFetcher(url, accessToken)
   )
 
-  useEffect(() => {
+  const assignmentsFull = useMemo(() => {
     if (
       assignment &&
       assignment_tasks &&
       (!course_id || course_object) &&
       (!activity_id || activity_object)
     ) {
-      setAssignmentsFull({
+      return {
         assignment_object: assignment,
         assignment_tasks: assignment_tasks,
         course_object: course_object,
         activity_object: activity_object,
-      })
+      }
+    }
+    return {
+      assignment_object: null,
+      assignment_tasks: null,
+      course_object: null,
+      activity_object: null,
     }
   }, [
     assignment,

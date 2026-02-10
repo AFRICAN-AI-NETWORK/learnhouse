@@ -123,7 +123,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
     }
 
     fetchUserCertificate()
-  }, [isCourseCompleted, courseUuid, session?.data?.tokens?.access_token])
+  }, [isCourseCompleted, courseUuid, session?.data?.tokens?.access_token, t])
 
   // Generate PDF using canvas
   const downloadCertificate = async () => {

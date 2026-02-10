@@ -47,35 +47,30 @@ export const AuthenticatedClientElement = (
   const session = useLHSession() as any
   const org = useOrg() as any
 
+  const roles = session?.data?.roles
+  const status = session.status
+  const checkMethod = props.checkMethod
+  const action = props.action
+  const ressourceType = props.ressourceType
+  const orgUuid = org?.org_uuid
+
   const isAllowed = useMemo(() => {
-    if (session.status == 'loading') {
+    if (status == 'loading') {
       return false
     }
 
-    if (session.status == 'unauthenticated') {
+    if (status == 'unauthenticated') {
       return false
     }
 
-    if (props.checkMethod === 'authentication') {
-      return session.status == 'authenticated'
-    } else if (props.checkMethod === 'roles') {
-      return isUserAllowed(
-        session?.data?.roles || [],
-        props.action!,
-        props.ressourceType!,
-        org?.org_uuid
-      )
+    if (checkMethod === 'authentication') {
+      return status == 'authenticated'
+    } else if (checkMethod === 'roles') {
+      return isUserAllowed(roles || [], action!, ressourceType!, orgUuid)
     }
 
     return false
-  }, [
-    session.status,
-    session?.data?.roles,
-    props.checkMethod,
-    props.action,
-    props.ressourceType,
-    org?.org_uuid,
-  ])
+  }, [status, roles, checkMethod, action, ressourceType, orgUuid])
 
   return <>{isAllowed && props.children}</>
 }

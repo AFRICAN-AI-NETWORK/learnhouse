@@ -97,7 +97,7 @@ export default function ProductLinkedCourses({
             <span>No courses linked yet</span>
           </div>
         ) : (
-          linkedCourses.map((course) => (
+          linkedCourses.map((course: any) => (
             <div
               key={course.id}
               className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
