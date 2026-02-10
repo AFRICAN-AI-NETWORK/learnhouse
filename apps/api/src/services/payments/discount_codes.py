@@ -4,8 +4,8 @@ Implements critical security measures for race condition prevention.
 """
 import logging
 from datetime import datetime
-from typing import Tuple
-from fastapi import HTTPException, Request
+from typing import Tuple, Literal
+from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select, and_
 from src.db.payments.discount_codes import (
     DiscountCode,
@@ -131,6 +131,13 @@ async def validate_discount_code(
     if discount_code.valid_until and discount_code.valid_until < now:
         raise DiscountValidationError(
             f"Discount code has expired on {discount_code.valid_until.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
+    
+    # Course-Specific Restriction Enforcement
+    # If a code is linked to a specific course, it must match the current purchase
+    if discount_code.course_id and discount_code.course_id != course_id:
+        raise DiscountValidationError(
+            f"Discount code '{discount_code.code}' is not valid for this course."
         )
     
     # Max Uses Enforcement
@@ -372,8 +379,50 @@ async def create_discount_code(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
     
-    # RBAC check - only org admins can create discount codes
-    await rbac_check(request, org.org_uuid, current_user, "create", db_session)
+    # RBAC check - Org Admins or Instructors (with course_id)
+    is_org_admin = False
+    try:
+        await rbac_check(request, org.org_uuid, current_user, "create", db_session)
+        is_org_admin = True
+    except HTTPException:
+        # User is not an org admin, check if they are an instructor for the specific course
+        if not discount_data.course_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only organization admins can create global discount codes. Instructors must provide a course_id."
+            )
+        
+        # Check course ownership/instructor rights
+        from src.db.courses.courses import Course
+        from src.security.courses_security import courses_rbac_check
+        
+        course = db_session.exec(select(Course).where(Course.id == discount_data.course_id)).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+        
+        # This will raise 403 if user is not an instructor/owner of this course
+        await courses_rbac_check(
+            request=request,
+            course_uuid=course.course_uuid,
+            current_user=current_user,
+            action="update",  # Using update action as proxy for course management rights
+            db_session=db_session,
+            require_course_ownership=True
+        )
+    
+    # Validate course belongs to organization if provided
+    if discount_data.course_id:
+        from src.db.courses.courses import Course
+        course_check = db_session.exec(
+            select(Course).where(
+                and_(
+                    Course.id == discount_data.course_id,
+                    Course.org_id == org_id
+                )
+            )
+        ).first()
+        if not course_check:
+            raise HTTPException(status_code=400, detail="Course does not belong to this organization")
     
     # Validate discount value
     if discount_data.discount_type == DiscountTypeEnum.PERCENTAGE:
@@ -414,7 +463,8 @@ async def create_discount_code(
         max_uses=discount_data.max_uses,
         valid_from=valid_from_naive,
         valid_until=valid_until_naive,
-        description=discount_data.description
+        description=discount_data.description,
+        course_id=discount_data.course_id
     )
     
     db_session.add(discount_code)
@@ -442,11 +492,30 @@ async def list_discount_codes(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
     
-    # RBAC check
-    await rbac_check(request, org.org_uuid, current_user, "read", db_session)
+    # RBAC check - Org Admins can read all, Instructors can read their own
+    is_org_admin = False
+    try:
+        await rbac_check(request, org.org_uuid, current_user, "read", db_session)
+        is_org_admin = True
+    except HTTPException:
+        # Not an org admin, will filter by course authorship later
+        pass
     
     # Query discount codes
     query = select(DiscountCode).where(DiscountCode.org_id == org_id)
+    
+    if not is_org_admin:
+        # For non-admins, only show codes for courses they manage
+        # This requires an inner join with ResourceAuthor
+        from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
+        query = query.join(
+            ResourceAuthor, 
+            and_(
+                ResourceAuthor.resource_uuid == select(Course.course_uuid).where(Course.id == DiscountCode.course_id).scalar_subquery(),
+                ResourceAuthor.user_id == current_user.id,
+                ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
+            )
+        )
     
     if not include_inactive:
         query = query.where(DiscountCode.is_active == True)
@@ -461,7 +530,8 @@ async def get_discount_code(
     org_id: int,
     code_id: int,
     current_user: PublicUser,
-    db_session: Session
+    db_session: Session,
+    action: Literal["read", "update", "delete"] = "read"
 ) -> DiscountCode:
     """
     Get a specific discount code (admin only).
@@ -473,7 +543,12 @@ async def get_discount_code(
         raise HTTPException(status_code=404, detail="Organization not found")
     
     # RBAC check
-    await rbac_check(request, org.org_uuid, current_user, "read", db_session)
+    is_org_admin = False
+    try:
+        await rbac_check(request, org.org_uuid, current_user, action if action != "read" else "read", db_session)
+        is_org_admin = True
+    except HTTPException:
+        pass
     
     # Get discount code
     discount_code = db_session.exec(
@@ -487,6 +562,30 @@ async def get_discount_code(
     
     if not discount_code:
         raise HTTPException(status_code=404, detail="Discount code not found")
+    
+    if not is_org_admin:
+        # If not an org admin, user must be an owner/instructor of the specific course linked to the code
+        if not discount_code.course_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only organization admins can access global discount codes."
+            )
+        
+        from src.db.courses.courses import Course
+        from src.security.courses_security import courses_rbac_check
+        
+        course = db_session.exec(select(Course).where(Course.id == discount_code.course_id)).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+            
+        await courses_rbac_check(
+            request=request,
+            course_uuid=course.course_uuid,
+            current_user=current_user,
+            action=action,
+            db_session=db_session,
+            require_course_ownership=True
+        )
     
     return discount_code
 
@@ -503,7 +602,7 @@ async def update_discount_code(
     Update a discount code (admin only).
     """
     # Get the discount code (includes RBAC check)
-    discount_code = await get_discount_code(request, org_id, code_id, current_user, db_session)
+    discount_code = await get_discount_code(request, org_id, code_id, current_user, db_session, action="update")
     
     # Update fields
     if discount_update.discount_value is not None:
@@ -555,7 +654,7 @@ async def deactivate_discount_code(
     """
     Deactivate a discount code (admin only).
     """
-    discount_code = await get_discount_code(request, org_id, code_id, current_user, db_session)
+    discount_code = await get_discount_code(request, org_id, code_id, current_user, db_session, action="update")
     
     discount_code.is_active = False
     discount_code.updated_at = datetime.utcnow()
@@ -582,7 +681,7 @@ async def get_discount_code_analytics(
     Returns usage statistics, revenue impact, and student enrollment data.
     """
     # Get the discount code (includes RBAC check)
-    discount_code = await get_discount_code(request, org_id, code_id, current_user, db_session)
+    discount_code = await get_discount_code(request, org_id, code_id, current_user, db_session, action="read")
     
     # Get all usage records
     usages = db_session.exec(

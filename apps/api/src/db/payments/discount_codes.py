@@ -22,6 +22,10 @@ class DiscountCodeBase(SQLModel):
     valid_until: Optional[datetime] = None
     is_active: bool = Field(default=True)
     description: Optional[str] = None
+    course_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True)
+    )
 
 
 class DiscountCode(DiscountCodeBase, table=True):
@@ -38,6 +42,7 @@ class DiscountCodeCreate(SQLModel):
     valid_from: datetime
     valid_until: Optional[datetime] = None
     description: Optional[str] = None
+    course_id: Optional[int] = None
 
 
 class DiscountCodeRead(DiscountCodeBase):
@@ -52,6 +57,7 @@ class DiscountCodeUpdate(SQLModel):
     valid_until: Optional[datetime] = None
     is_active: Optional[bool] = None
     description: Optional[str] = None
+    course_id: Optional[int] = None
 
 
 class DiscountCodeUsageBase(SQLModel):
