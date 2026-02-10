@@ -443,7 +443,8 @@
     "select_course": "Select a course",
     "unlimited": "Unlimited",
     "value_percentage_hint": "Value as a percentage (e.g., 10 for 10%)",
-    "value_fixed_hint": "Value in your organization's currency"
+    "value_fixed_hint": "Value in your organization's currency",
+    "global_admin_only_tooltip": "You don't have access to this feature. Only admins can create global discounts."
   },
   "user": {
     "user_settings": "User Settings",

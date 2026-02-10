@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import * as Yup from 'yup'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -25,7 +25,9 @@ import { Switch } from '@components/ui/switch'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
-import { Ticket, Percent, DollarSign, Info } from 'lucide-react'
+import { Ticket, Percent, DollarSign, Info, Lock } from 'lucide-react'
+import useAdminStatus from '@components/Hooks/useAdminStatus'
+import Tooltip from '@components/Objects/StyledElements/Tooltip/Tooltip'
 
 interface DiscountFormModalProps {
   isOpen: boolean
@@ -70,6 +72,20 @@ const DiscountFormModal = ({
   const { t } = useTranslation()
   const org = useOrg() as any
   const session = useLHSession() as any
+  const { userRoles } = useAdminStatus()
+
+  // Check if the user is an org admin or maintainer (not just an instructor)
+  const isOrgAdmin = useMemo(() => {
+    if (!userRoles || userRoles.length === 0 || !org?.id) return false
+    const orgRoles = userRoles.filter((role: any) => role.org.id === org.id)
+    return orgRoles.some(
+      (role: any) =>
+        role.role.role_uuid === 'role_global_admin' ||
+        role.role.role_uuid === 'role_global_maintainer' ||
+        role.role.id === 1 ||
+        role.role.id === 2
+    )
+  }, [userRoles, org?.id])
 
   const { data: ownedCourses } = useSWR(
     () =>
@@ -96,7 +112,8 @@ const DiscountFormModal = ({
       : '',
     is_active: discount ? discount.is_active : true,
     course_id: discount?.course_id || null,
-    is_global: !discount?.course_id,
+    // If not an admin, force is_global to false so the course dropdown always shows
+    is_global: isOrgAdmin ? !discount?.course_id : false,
   }
 
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
@@ -262,18 +279,39 @@ const DiscountFormModal = ({
                       <Label className="text-sm font-semibold">
                         {t('payments.global_code') || 'Global Discount'}
                       </Label>
-                      <p className="text-xs text-gray-500">
-                        {t('payments.global_code_description') ||
-                          'Applies to all products in the organization (Admins only)'}
-                      </p>
                     </div>
-                    <Switch
-                      checked={values.is_global}
-                      onCheckedChange={(v) => {
-                        setFieldValue('is_global', v)
-                        if (v) setFieldValue('course_id', null)
-                      }}
-                    />
+                    {isOrgAdmin ? (
+                      <Switch
+                        checked={values.is_global}
+                        onCheckedChange={(v) => {
+                          setFieldValue('is_global', v)
+                          if (v) setFieldValue('course_id', null)
+                        }}
+                      />
+                    ) : (
+                      <Tooltip
+                        content={
+                          <div className="flex items-center gap-1.5">
+                            <Lock size={12} />
+                            <span>
+                              {t('payments.global_admin_only_tooltip') ||
+                                "You don't have access to this feature. Only admins can create global discounts."}
+                            </span>
+                          </div>
+                        }
+                        side="top"
+                        sideOffset={8}
+                        slateBlack
+                      >
+                        <div className="cursor-not-allowed">
+                          <Switch
+                            checked={false}
+                            disabled
+                            className="pointer-events-none opacity-50"
+                          />
+                        </div>
+                      </Tooltip>
+                    )}
                   </div>
 
                   {!values.is_global && (
@@ -365,13 +403,15 @@ const DiscountFormModal = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 p-3 bg-blue-50/50 text-blue-700 rounded-lg text-xs">
-                <Info size={14} className="mt-0.5 shrink-0" />
-                <p>
-                  {t('payments.discount_admin_note') ||
-                    'Instructors can only create course-specific discounts for courses they own. Global discounts require organization admin permissions.'}
-                </p>
-              </div>
+              {!isOrgAdmin && (
+                <div className="flex items-start gap-2 p-3 bg-blue-50/50 text-blue-700 rounded-lg text-xs">
+                  <Info size={14} className="mt-0.5 shrink-0" />
+                  <p>
+                    {t('payments.discount_admin_note') ||
+                      'Instructors can only create course-specific discounts for courses they own. Global discounts require organization admin permissions.'}
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <Button

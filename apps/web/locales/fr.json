@@ -438,7 +438,8 @@
     "select_course": "Sélectionner un cours",
     "unlimited": "Illimité",
     "value_percentage_hint": "Valeur en pourcentage (ex. 10 pour 10 %)",
-    "value_fixed_hint": "Valeur dans la devise de votre organisation"
+    "value_fixed_hint": "Valeur dans la devise de votre organisation",
+    "global_admin_only_tooltip": "Vous n'avez pas accès à cette fonctionnalité. Seuls les administrateurs peuvent créer des remises globales."
   },
   "user": {
     "user_settings": "Profil",
