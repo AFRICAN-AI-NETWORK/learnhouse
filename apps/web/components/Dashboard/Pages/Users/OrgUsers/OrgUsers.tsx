@@ -26,7 +26,7 @@ function OrgUsers() {
   )
   const [rolesModal, setRolesModal] = React.useState(false)
   const [selectedUser, setSelectedUser] = React.useState(null) as any
-  const [isLoading, setIsLoading] = React.useState(true)
+  const isLoading = !orgUsers
 
   const handleRolesModal = (user_uuid: any) => {
     setSelectedUser(user_uuid)
@@ -49,12 +49,6 @@ function OrgUsers() {
       })
     }
   }
-
-  useEffect(() => {
-    if (orgUsers) {
-      setIsLoading(false)
-    }
-  }, [org, orgUsers])
 
   return (
     <div>

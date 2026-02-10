@@ -27,7 +27,7 @@ function NewCollection(props: any) {
   const router = useRouter()
   const {
     data: courses,
-    error: error,
+    error,
     isLoading,
   } = useSWR(
     orgslug && access_token
@@ -82,7 +82,7 @@ function NewCollection(props: any) {
       await revalidateTags(['collections'], org.slug)
       toast.success(t('collections.collection_created_success'))
       router.push(getUriWithOrg(orgslug, '/collections'))
-    } catch (error) {
+    } catch {
       toast.error(t('collections.failed_to_create_collection'))
     } finally {
       setIsSubmitting(false)

@@ -5,7 +5,7 @@ import { getAPIUrl, getUriWithoutOrg } from '@services/config/config'
 import { swrFetcher } from '@services/utils/ts/requests'
 import { Globe, Ticket, UserSquare, Users, X } from 'lucide-react'
 import Link from 'next/link'
-import React, { useEffect } from 'react'
+import React from 'react'
 import useSWR, { mutate } from 'swr'
 import dayjs from 'dayjs'
 import {
@@ -23,55 +23,63 @@ function OrgAccess() {
   const { t } = useTranslation()
   const org = useOrg() as any
   const session = useLHSession() as any
-  const access_token = session?.data?.tokens?.access_token;
+  const access_token = session?.data?.tokens?.access_token
   const { data: invites } = useSWR(
     org ? `${getAPIUrl()}orgs/${org?.id}/invites` : null,
     (url) => swrFetcher(url, access_token)
   )
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [joinMethod, setJoinMethod] = React.useState('closed')
+  const isLoading = !invites
+  const joinMethod =
+    org?.config?.config?.features?.members?.signup_mode === 'open'
+      ? 'open'
+      : 'inviteOnly'
   const [invitesModal, setInvitesModal] = React.useState(false)
   const router = useRouter()
 
-  async function getOrgJoinMethod() {
-    if (org) {
-      if (org.config.config.features.members.signup_mode == 'open') {
-        setJoinMethod('open')
-      } else {
-        setJoinMethod('inviteOnly')
-      }
-    }
-  }
-
   async function deleteInvite(invite: any) {
-    const toastId = toast.loading(t('dashboard.users.signups.invite_codes.toasts.deleting'))
-    let res = await deleteInviteCode(org.id, invite.invite_code_uuid, access_token)
+    const toastId = toast.loading(
+      t('dashboard.users.signups.invite_codes.toasts.deleting')
+    )
+    let res = await deleteInviteCode(
+      org.id,
+      invite.invite_code_uuid,
+      access_token
+    )
     if (res.status == 200) {
       mutate(`${getAPIUrl()}orgs/${org.id}/invites`)
-      toast.success(t('dashboard.users.signups.invite_codes.toasts.delete_success'), {id:toastId})
+      toast.success(
+        t('dashboard.users.signups.invite_codes.toasts.delete_success'),
+        { id: toastId }
+      )
     } else {
-      toast.error(t('dashboard.users.signups.invite_codes.toasts.delete_error'), {id:toastId})
+      toast.error(
+        t('dashboard.users.signups.invite_codes.toasts.delete_error'),
+        { id: toastId }
+      )
     }
   }
 
   async function changeJoinMethod(method: 'open' | 'inviteOnly') {
-    const toastId = toast.loading(t('dashboard.users.signups.invite_codes.toasts.changing_method'))
+    const toastId = toast.loading(
+      t('dashboard.users.signups.invite_codes.toasts.changing_method')
+    )
     let res = await changeSignupMechanism(org.id, method, access_token)
     if (res.status == 200) {
       router.refresh()
       mutate(`${getAPIUrl()}orgs/slug/${org?.slug}`)
-      toast.success(t('dashboard.users.signups.invite_codes.toasts.change_success', { method }), {id:toastId})
+      toast.success(
+        t('dashboard.users.signups.invite_codes.toasts.change_success', {
+          method,
+        }),
+        { id: toastId }
+      )
     } else {
-      toast.error(t('dashboard.users.signups.invite_codes.toasts.change_error'), {id:toastId})
+      toast.error(
+        t('dashboard.users.signups.invite_codes.toasts.change_error'),
+        { id: toastId }
+      )
     }
   }
-
-  useEffect(() => {
-    if (invites && org) {
-      getOrgJoinMethod()
-      setIsLoading(false)
-    }
-  }, [org, invites])
 
   return (
     <>
@@ -80,7 +88,9 @@ function OrgAccess() {
           <div className="h-6"></div>
           <div className="ml-10 mr-10 mx-auto bg-white rounded-xl shadow-xs px-4 py-4 anit ">
             <div className="flex flex-col bg-gray-50 -space-y-1  px-5 py-3 rounded-md mb-3 ">
-              <h1 className="font-bold text-xl text-gray-800">{t('dashboard.users.signups.title')}</h1>
+              <h1 className="font-bold text-xl text-gray-800">
+                {t('dashboard.users.signups.title')}
+              </h1>
               <h2 className="text-gray-500  text-md">
                 {' '}
                 {t('dashboard.users.signups.subtitle')}{' '}
@@ -88,9 +98,15 @@ function OrgAccess() {
             </div>
             <div className="flex space-x-2 mx-auto">
               <ConfirmationModal
-                confirmationButtonText={t('dashboard.users.signups.open.change_to')}
-                confirmationMessage={t('dashboard.users.signups.open.confirmation_message')}
-                dialogTitle={t('dashboard.users.signups.open.confirmation_title')}
+                confirmationButtonText={t(
+                  'dashboard.users.signups.open.change_to'
+                )}
+                confirmationMessage={t(
+                  'dashboard.users.signups.open.confirmation_message'
+                )}
+                dialogTitle={t(
+                  'dashboard.users.signups.open.confirmation_title'
+                )}
                 dialogTrigger={
                   <div className="w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
                     {joinMethod == 'open' ? (
@@ -115,9 +131,15 @@ function OrgAccess() {
                 status="info"
               ></ConfirmationModal>
               <ConfirmationModal
-                confirmationButtonText={t('dashboard.users.signups.closed.change_to')}
-                confirmationMessage={t('dashboard.users.signups.closed.confirmation_message')}
-                dialogTitle={t('dashboard.users.signups.closed.confirmation_title')}
+                confirmationButtonText={t(
+                  'dashboard.users.signups.closed.change_to'
+                )}
+                confirmationMessage={t(
+                  'dashboard.users.signups.closed.confirmation_message'
+                )}
+                dialogTitle={t(
+                  'dashboard.users.signups.closed.confirmation_title'
+                )}
                 dialogTrigger={
                   <div className="w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
                     {joinMethod == 'inviteOnly' ? (
@@ -160,11 +182,25 @@ function OrgAccess() {
               <table className="table-auto w-full text-left whitespace-nowrap rounded-md overflow-hidden">
                 <thead className="bg-gray-100 text-gray-500 rounded-xl uppercase">
                   <tr className="font-bolder text-sm">
-                    <th className="py-3 px-4">{t('dashboard.users.signups.invite_codes.table.code')}</th>
-                    <th className="py-3 px-4">{t('dashboard.users.signups.invite_codes.table.signup_link')}</th>
-                    <th className="py-3 px-4">{t('dashboard.users.signups.invite_codes.table.type')}</th>
-                    <th className="py-3 px-4">{t('dashboard.users.signups.invite_codes.table.expiration_date')}</th>
-                    <th className="py-3 px-4">{t('dashboard.users.signups.invite_codes.table.actions')}</th>
+                    <th className="py-3 px-4">
+                      {t('dashboard.users.signups.invite_codes.table.code')}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t(
+                        'dashboard.users.signups.invite_codes.table.signup_link'
+                      )}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t('dashboard.users.signups.invite_codes.table.type')}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t(
+                        'dashboard.users.signups.invite_codes.table.expiration_date'
+                      )}
+                    </th>
+                    <th className="py-3 px-4">
+                      {t('dashboard.users.signups.invite_codes.table.actions')}
+                    </th>
                   </tr>
                 </thead>
                 <>
@@ -177,7 +213,7 @@ function OrgAccess() {
                         <td className="py-3 px-4">{invite.invite_code}</td>
                         <td className="py-3 px-4 ">
                           <Link
-                            className="outline bg-gray-50 text-gray-600 px-2 py-1 rounded-md outline-gray-300 outline-dashed outline-1"
+                            className="bg-gray-50 text-gray-600 px-2 py-1 rounded-md outline-gray-300 outline-dashed outline-1"
                             target="_blank"
                             href={getUriWithoutOrg(
                               `/signup?inviteCode=${invite.invite_code}&orgslug=${org.slug}`
@@ -192,12 +228,20 @@ function OrgAccess() {
                           {invite.usergroup_id ? (
                             <div className="flex space-x-2 items-center">
                               <UserSquare className="w-4 h-4" />
-                              <span>{t('dashboard.users.signups.invite_codes.types.linked_to_usergroup')}</span>
+                              <span>
+                                {t(
+                                  'dashboard.users.signups.invite_codes.types.linked_to_usergroup'
+                                )}
+                              </span>
                             </div>
                           ) : (
                             <div className="flex space-x-2 items-center">
                               <Users className="w-4 h-4" />
-                              <span>{t('dashboard.users.signups.invite_codes.types.normal')}</span>
+                              <span>
+                                {t(
+                                  'dashboard.users.signups.invite_codes.types.normal'
+                                )}
+                              </span>
                             </div>
                           )}
                         </td>
@@ -208,13 +252,24 @@ function OrgAccess() {
                         </td>
                         <td className="py-3 px-4">
                           <ConfirmationModal
-                            confirmationButtonText={t('dashboard.users.signups.invite_codes.actions.delete_code')}
-                            confirmationMessage={t('dashboard.users.signups.invite_codes.actions.delete_confirmation_message')}
-                            dialogTitle={t('dashboard.users.signups.invite_codes.actions.delete_confirmation_title')}
+                            confirmationButtonText={t(
+                              'dashboard.users.signups.invite_codes.actions.delete_code'
+                            )}
+                            confirmationMessage={t(
+                              'dashboard.users.signups.invite_codes.actions.delete_confirmation_message'
+                            )}
+                            dialogTitle={t(
+                              'dashboard.users.signups.invite_codes.actions.delete_confirmation_title'
+                            )}
                             dialogTrigger={
                               <button className="mr-2 flex space-x-2 hover:cursor-pointer p-1 px-3 bg-rose-700 rounded-md font-bold items-center text-sm text-rose-100">
                                 <X className="w-4 h-4" />
-                                <span> {t('dashboard.users.signups.invite_codes.actions.delete_code')}</span>
+                                <span>
+                                  {' '}
+                                  {t(
+                                    'dashboard.users.signups.invite_codes.actions.delete_code'
+                                  )}
+                                </span>
                               </button>
                             }
                             functionToExecute={() => {
@@ -228,35 +283,34 @@ function OrgAccess() {
                   </tbody>
                 </>
               </table>
-              <div className='flex flex-row-reverse mt-3 mr-2'>
+              <div className="flex flex-row-reverse mt-3 mr-2">
                 <Modal
-                  isDialogOpen={
-                    invitesModal
-                  }
-                  onOpenChange={() =>
-                    setInvitesModal(!invitesModal)
-                  }
+                  isDialogOpen={invitesModal}
+                  onOpenChange={() => setInvitesModal(!invitesModal)}
                   minHeight="no-min"
-                  minWidth='lg'
+                  minWidth="lg"
                   dialogContent={
-                    <OrgInviteCodeGenerate
-                      setInvitesModal={setInvitesModal}
-                    />
+                    <OrgInviteCodeGenerate setInvitesModal={setInvitesModal} />
                   }
-                  dialogTitle={t('dashboard.users.signups.invite_codes.actions.generate_title')}
-                  dialogDescription={t('dashboard.users.signups.invite_codes.actions.generate_description')}
+                  dialogTitle={t(
+                    'dashboard.users.signups.invite_codes.actions.generate_title'
+                  )}
+                  dialogDescription={t(
+                    'dashboard.users.signups.invite_codes.actions.generate_description'
+                  )}
                   dialogTrigger={
-                    <button
-                      className=" flex space-x-2 hover:cursor-pointer p-1 px-3 bg-green-700 rounded-md font-bold items-center text-sm text-green-100"
-                    >
+                    <button className=" flex space-x-2 hover:cursor-pointer p-1 px-3 bg-green-700 rounded-md font-bold items-center text-sm text-green-100">
                       <Ticket className="w-4 h-4" />
-                      <span> {t('dashboard.users.signups.invite_codes.actions.generate')}</span>
+                      <span>
+                        {' '}
+                        {t(
+                          'dashboard.users.signups.invite_codes.actions.generate'
+                        )}
+                      </span>
                     </button>
                   }
                 />
-
               </div>
-
             </div>
           </div>
         </>

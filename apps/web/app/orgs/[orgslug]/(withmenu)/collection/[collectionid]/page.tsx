@@ -21,7 +21,7 @@ const CollectionPage = (props: any) => {
   const access_token = session?.data?.tokens?.access_token
   const org = useOrg() as any
 
-  const { data: col, error } = useSWR(
+  const { data: col } = useSWR(
     collectionid && access_token
       ? [`collections/collection_${collectionid}`, access_token]
       : null,

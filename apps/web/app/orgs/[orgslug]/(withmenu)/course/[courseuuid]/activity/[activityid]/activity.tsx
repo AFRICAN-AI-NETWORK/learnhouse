@@ -1,25 +1,53 @@
 'use client'
 import Link from 'next/link'
 import { getAPIUrl, getUriWithOrg } from '@services/config/config'
-import { BookOpenCheck, CheckCircle, ChevronLeft, ChevronRight, UserRoundPen, Edit2, Maximize2, Minimize2 } from 'lucide-react'
-import { markActivityAsComplete, unmarkActivityAsComplete } from '@services/courses/activity'
-import { usePathname, useRouter } from 'next/navigation'
+import {
+  BookOpenCheck,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  UserRoundPen,
+  Edit2,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react'
+import {
+  markActivityAsComplete,
+  unmarkActivityAsComplete,
+} from '@services/courses/activity'
+import { useRouter } from 'next/navigation'
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
-import { getCourseThumbnailMediaDirectory, getUserAvatarMediaDirectory } from '@services/media/media'
+import {
+  getCourseThumbnailMediaDirectory,
+  getUserAvatarMediaDirectory,
+} from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import React, { useEffect, useRef, useMemo, lazy, Suspense } from 'react'
-import { getAssignmentFromActivityUUID, getFinalGrade, submitAssignmentForGrading } from '@services/courses/assignments'
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  lazy,
+  Suspense,
+} from 'react'
+import {
+  getAssignmentFromActivityUUID,
+  getFinalGrade,
+  submitAssignmentForGrading,
+} from '@services/courses/assignments'
 import { AssignmentProvider } from '@components/Contexts/Assignments/AssignmentContext'
 import { AssignmentsTaskProvider } from '@components/Contexts/Assignments/AssignmentsTaskContext'
-import AssignmentSubmissionProvider, { useAssignmentSubmission } from '@components/Contexts/Assignments/AssignmentSubmissionContext'
+import AssignmentSubmissionProvider, {
+  useAssignmentSubmission,
+} from '@components/Contexts/Assignments/AssignmentSubmissionContext'
 import toast from 'react-hot-toast'
 import { mutate } from 'swr'
 import useSWR from 'swr'
 import { swrFetcher } from '@services/utils/ts/requests'
 import ConfirmationModal from '@components/Objects/StyledElements/ConfirmationModal/ConfirmationModal'
-import { useMediaQuery } from 'usehooks-ts'
+// import { useMediaQuery } from 'usehooks-ts'
 import PaidCourseActivityDisclaimer from '@components/Objects/Courses/CourseActions/PaidCourseActivityDisclaimer'
 import { useContributorStatus } from '../../../../../../../../hooks/useContributorStatus'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
@@ -35,12 +63,27 @@ import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
 
 // Lazy load heavy components
-const Canva = lazy(() => import('@components/Objects/Activities/DynamicCanva/DynamicCanva'))
-const VideoActivity = lazy(() => import('@components/Objects/Activities/Video/Video'))
-const DocumentPdfActivity = lazy(() => import('@components/Objects/Activities/DocumentPdf/DocumentPdf'))
-const AssignmentStudentActivity = lazy(() => import('@components/Objects/Activities/Assignment/AssignmentStudentActivity'))
-const AIActivityAsk = lazy(() => import('@components/Objects/Activities/AI/AIActivityAsk'))
-const AIChatBotProvider = lazy(() => import('@components/Contexts/AI/AIChatBotContext'))
+const Canva = lazy(
+  () => import('@components/Objects/Activities/DynamicCanva/DynamicCanva')
+)
+const VideoActivity = lazy(
+  () => import('@components/Objects/Activities/Video/Video')
+)
+const DocumentPdfActivity = lazy(
+  () => import('@components/Objects/Activities/DocumentPdf/DocumentPdf')
+)
+const AssignmentStudentActivity = lazy(
+  () =>
+    import(
+      '@components/Objects/Activities/Assignment/AssignmentStudentActivity'
+    )
+)
+const AIActivityAsk = lazy(
+  () => import('@components/Objects/Activities/AI/AIActivityAsk')
+)
+const AIChatBotProvider = lazy(
+  () => import('@components/Contexts/AI/AIChatBotContext')
+)
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -50,7 +93,7 @@ const LoadingFallback = () => (
       <div className="absolute top-0 left-0 w-full h-full border-2 border-gray-400 rounded-full animate-spin border-t-transparent"></div>
     </div>
   </div>
-);
+)
 
 interface ActivityClientProps {
   activityid: string
@@ -72,78 +115,92 @@ interface ActivityActionsProps {
 // Custom hook for activity position
 function useActivityPosition(course: any, activityId: string) {
   return useMemo(() => {
-    let allActivities: any[] = [];
-    let currentIndex = -1;
+    let allActivities: any[] = []
+    let currentIndex = -1
 
     course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
-        const cleanActivityUuid = activity.activity_uuid?.replace('activity_', '');
+        const cleanActivityUuid = activity.activity_uuid?.replace(
+          'activity_',
+          ''
+        )
         allActivities.push({
           ...activity,
           cleanUuid: cleanActivityUuid,
-          chapterName: chapter.name
-        });
+          chapterName: chapter.name,
+        })
 
         if (cleanActivityUuid === activityId.replace('activity_', '')) {
-          currentIndex = allActivities.length - 1;
+          currentIndex = allActivities.length - 1
         }
-      });
-    });
+      })
+    })
 
-    return { allActivities, currentIndex };
-  }, [course, activityId]);
+    return { allActivities, currentIndex }
+  }, [course, activityId])
 }
 
-function ActivityActions({ activity, activityid, course, orgslug, assignment, showNavigation = true }: ActivityActionsProps) {
-
-  const { t } = useTranslation();
-  const { contributorStatus } = useContributorStatus(course.course_uuid);
-  const org = useOrg() as any;
-  const session = useLHSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+function ActivityActions({
+  activity,
+  activityid,
+  course,
+  orgslug,
+  assignment,
+  showNavigation = true,
+}: ActivityActionsProps) {
+  const org = useOrg() as any
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
 
   // Add SWR for trail data
   const { data: trailData } = useSWR(
     `${getAPIUrl()}trail/org/${org?.id}/trail`,
     (url) => swrFetcher(url, access_token)
-  );
-
+  )
 
   return (
     <div className="flex space-x-2 items-center">
-      {activity && activity.published == true && activity.content.paid_access != false && (
-        <AuthenticatedClientElement checkMethod="authentication">
-          {activity.activity_type != 'TYPE_ASSIGNMENT' && (
-            <>
-              <MarkStatus
-                activity={activity}
-                activityid={activityid}
-                course={course}
-                orgslug={orgslug}
-                trailData={trailData}
-              />
-            </>
-          )}
-          {activity.activity_type == 'TYPE_ASSIGNMENT' && (
-            <>
-              <AssignmentSubmissionProvider assignment_uuid={assignment?.assignment_uuid}>
-                <AssignmentTools
-                  assignment={assignment}
+      {activity &&
+        activity.published == true &&
+        activity.content.paid_access != false && (
+          <AuthenticatedClientElement checkMethod="authentication">
+            {activity.activity_type != 'TYPE_ASSIGNMENT' && (
+              <>
+                <MarkStatus
                   activity={activity}
                   activityid={activityid}
                   course={course}
                   orgslug={orgslug}
+                  trailData={trailData}
                 />
-              </AssignmentSubmissionProvider>
-            </>
-          )}
-          {showNavigation && (
-            <NextActivityButton course={course} currentActivityId={activity.id} orgslug={orgslug} />
-          )}
-        </AuthenticatedClientElement>
-      )}
+              </>
+            )}
+            {activity.activity_type == 'TYPE_ASSIGNMENT' && (
+              <>
+                <AssignmentSubmissionProvider
+                  assignment_uuid={assignment?.assignment_uuid}
+                >
+                  <AssignmentTools
+                    assignment={assignment}
+                    activity={activity}
+                    activityid={activityid}
+                    course={course}
+                    orgslug={orgslug}
+                  />
+                </AssignmentSubmissionProvider>
+              </>
+            )}
+            {showNavigation && (
+              <NextActivityButton
+                course={course}
+                currentActivityId={activity.id}
+                orgslug={orgslug}
+              />
+            )}
+          </AuthenticatedClientElement>
+        )}
     </div>
-  );
+  )
 }
 
 function ActivityClient(props: ActivityClientProps) {
@@ -151,23 +208,22 @@ function ActivityClient(props: ActivityClientProps) {
   const activityid = props.activityid
 
   function getRelativeTime(date: Date): string {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    const weeks = Math.floor(days / 7);
-    const months = Math.floor(days / 30);
-    const years = Math.floor(days / 365);
-
-    if (years > 0) return t('time.years_ago', { count: years });
-    if (months > 0) return t('time.months_ago', { count: months });
-    if (weeks > 0) return t('time.weeks_ago', { count: weeks });
-    if (days > 0) return t('time.days_ago', { count: days });
-    if (hours > 0) return t('time.hours_ago', { count: hours });
-    if (minutes > 0) return t('time.minutes_ago', { count: minutes });
-    return t('common.just_now');
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const seconds = Math.floor(diff / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+    const weeks = Math.floor(days / 7)
+    const months = Math.floor(days / 30)
+    const years = Math.floor(days / 365)
+    if (years > 0) return t('time.years_ago', { count: years })
+    if (months > 0) return t('time.months_ago', { count: months })
+    if (weeks > 0) return t('time.weeks_ago', { count: weeks })
+    if (days > 0) return t('time.days_ago', { count: days })
+    if (hours > 0) return t('time.hours_ago', { count: hours })
+    if (minutes > 0) return t('time.minutes_ago', { count: minutes })
+    return t('common.just_now')
   }
 
   const courseuuid = props.courseuuid
@@ -175,34 +231,41 @@ function ActivityClient(props: ActivityClientProps) {
   const activity = props.activity
   const course = props.course
   const org = useOrg() as any
-  const session = useLHSession() as any;
-  const pathname = usePathname()
-  const access_token = session?.data?.tokens?.access_token;
-  const [bgColor, setBgColor] = React.useState('bg-white')
-  const [assignment, setAssignment] = React.useState(null) as any;
-  const [markStatusButtonActive, setMarkStatusButtonActive] = React.useState(false);
-  const [isFocusMode, setIsFocusMode] = React.useState(false);
-  const isInitialRender = useRef(true);
-  const { contributorStatus } = useContributorStatus(courseuuid);
-  const router = useRouter();
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
+  const [assignment, setAssignment] = useState(null) as any
+  const [isFocusMode, setIsFocusMode] = useState(false)
+  const [hasMounted, setHasMounted] = useState(false)
+  const { contributorStatus } = useContributorStatus(courseuuid)
+  const router = useRouter()
 
   // Add SWR for trail data
-  const { data: trailData, error: error } = useSWR(
+  const { data: trailData } = useSWR(
     `${getAPIUrl()}trail/org/${org?.id}/trail`,
     (url) => swrFetcher(url, access_token)
   )
 
   // Memoize activity position calculation
-  const { allActivities, currentIndex } = useActivityPosition(course, activityid);
+  const { allActivities, currentIndex } = useActivityPosition(
+    course,
+    activityid
+  )
 
   // Get previous and next activities
-  const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null;
-  const nextActivity = currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null;
+  const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null
+  const nextActivity =
+    currentIndex < allActivities.length - 1
+      ? allActivities[currentIndex + 1]
+      : null
 
   // Memoize activity content
   const activityContent = useMemo(() => {
-    if (!activity || !activity.published || activity.content.paid_access === false) {
-      return null;
+    if (
+      !activity ||
+      !activity.published ||
+      activity.content.paid_access === false
+    ) {
+      return null
     }
 
     switch (activity.activity_type) {
@@ -211,63 +274,71 @@ function ActivityClient(props: ActivityClientProps) {
           <Suspense fallback={<LoadingFallback />}>
             <Canva content={activity.content} activity={activity} />
           </Suspense>
-        );
+        )
       case 'TYPE_VIDEO':
         return (
           <Suspense fallback={<LoadingFallback />}>
             <VideoActivity course={course} activity={activity} />
           </Suspense>
-        );
+        )
       case 'TYPE_DOCUMENT':
         return (
           <Suspense fallback={<LoadingFallback />}>
             <DocumentPdfActivity course={course} activity={activity} />
           </Suspense>
-        );
+        )
       case 'TYPE_ASSIGNMENT':
         return assignment ? (
           <Suspense fallback={<LoadingFallback />}>
             <AssignmentProvider assignment_uuid={assignment?.assignment_uuid}>
               <AssignmentsTaskProvider>
-                <AssignmentSubmissionProvider assignment_uuid={assignment?.assignment_uuid}>
+                <AssignmentSubmissionProvider
+                  assignment_uuid={assignment?.assignment_uuid}
+                >
                   <AssignmentStudentActivity />
                 </AssignmentSubmissionProvider>
               </AssignmentsTaskProvider>
             </AssignmentProvider>
           </Suspense>
-        ) : null;
+        ) : null
       default:
-        return null;
+        return null
     }
-  }, [activity, course, assignment]);
+  }, [activity, course, assignment])
 
   // Navigate to an activity
   const navigateToActivity = (activity: any) => {
-    if (!activity) return;
+    if (!activity) return
 
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '');
-    router.push(getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`);
-  };
+    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+    router.push(
+      getUriWithOrg(orgslug, '') +
+        `/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`
+    )
+  }
 
   // Initialize focus mode from localStorage
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('globalFocusMode');
-      setIsFocusMode(saved === 'true');
+      const saved = localStorage.getItem('globalFocusMode')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsFocusMode(saved === 'true')
+      setHasMounted(true)
     }
-  }, []);
+  }, [])
 
   // Save focus mode to localStorage
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('globalFocusMode', isFocusMode.toString());
+      localStorage.setItem('globalFocusMode', isFocusMode.toString())
       // Dispatch custom event for focus mode change
-      window.dispatchEvent(new CustomEvent('focusModeChange', {
-        detail: { isFocusMode }
-      }));
-      isInitialRender.current = false;
+      window.dispatchEvent(
+        new CustomEvent('focusModeChange', {
+          detail: { isFocusMode },
+        })
+      )
     }
-  }, [isFocusMode]);
+  }, [isFocusMode])
 
   function getChapterNameByActivityId(course: any, activity_id: any) {
     for (let i = 0; i < course.chapters.length; i++) {
@@ -282,25 +353,31 @@ function ActivityClient(props: ActivityClientProps) {
     return null // return null if no matching activity is found
   }
 
-  async function getAssignmentUI() {
-    const assignment = await getAssignmentFromActivityUUID(activity.activity_uuid, access_token)
+  const getAssignmentUI = useCallback(async () => {
+    const assignment = await getAssignmentFromActivityUUID(
+      activity.activity_uuid,
+      access_token
+    )
     setAssignment(assignment.data)
-  }
+  }, [activity.activity_uuid, access_token, setAssignment])
+
+  // Derive bgColor based on activity type and focus mode
+  const bgColor = useMemo(() => {
+    if (activity.activity_type == 'TYPE_DYNAMIC') {
+      return isFocusMode ? 'bg-white' : 'bg-white nice-shadow'
+    } else if (activity.activity_type == 'TYPE_ASSIGNMENT') {
+      return isFocusMode ? 'bg-white' : 'bg-white nice-shadow'
+    } else {
+      return isFocusMode ? 'bg-zinc-950' : 'bg-zinc-950 nice-shadow'
+    }
+  }, [activity.activity_type, isFocusMode])
 
   useEffect(() => {
-    if (activity.activity_type == 'TYPE_DYNAMIC') {
-      setBgColor(isFocusMode ? 'bg-white' : 'bg-white nice-shadow');
+    if (activity.activity_type == 'TYPE_ASSIGNMENT') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      getAssignmentUI()
     }
-    else if (activity.activity_type == 'TYPE_ASSIGNMENT') {
-      setMarkStatusButtonActive(false);
-      setBgColor(isFocusMode ? 'bg-white' : 'bg-white nice-shadow');
-      getAssignmentUI();
-    }
-    else {
-      setBgColor(isFocusMode ? 'bg-zinc-950' : 'bg-zinc-950 nice-shadow');
-    }
-  }
-    , [activity, pathname, isFocusMode])
+  }, [activity.activity_type, getAssignmentUI])
 
   return (
     <>
@@ -310,7 +387,7 @@ function ActivityClient(props: ActivityClientProps) {
             {isFocusMode ? (
               <AnimatePresence>
                 <motion.div
-                  initial={isInitialRender.current ? false : { opacity: 0 }}
+                  initial={!hasMounted ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
@@ -318,7 +395,7 @@ function ActivityClient(props: ActivityClientProps) {
                 >
                   {/* Focus Mode Top Bar */}
                   <motion.div
-                    initial={isInitialRender.current ? false : { y: -100 }}
+                    initial={!hasMounted ? false : { y: -100 }}
                     animate={{ y: 0 }}
                     exit={{ y: -100 }}
                     transition={{ duration: 0.3 }}
@@ -328,7 +405,7 @@ function ActivityClient(props: ActivityClientProps) {
                       <div className="flex items-center justify-between h-14">
                         {/* Progress Indicator - Moved to left */}
                         <motion.div
-                          initial={isInitialRender.current ? false : { opacity: 0, x: -20 }}
+                          initial={!hasMounted ? false : { opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 }}
                           className="flex items-center space-x-2"
@@ -352,30 +429,79 @@ function ActivityClient(props: ActivityClientProps) {
                                 fill="none"
                                 strokeLinecap="round"
                                 strokeDasharray={2 * Math.PI * 14}
-                                strokeDashoffset={2 * Math.PI * 14 * (1 - (trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0) / (course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 1))}
+                                strokeDashoffset={
+                                  2 *
+                                  Math.PI *
+                                  14 *
+                                  (1 -
+                                    (trailData?.runs
+                                      ?.find(
+                                        (run: any) =>
+                                          run.course_uuid === course.course_uuid
+                                      )
+                                      ?.steps?.filter(
+                                        (step: any) => step.complete
+                                      )?.length || 0) /
+                                      (course.chapters?.reduce(
+                                        (acc: number, chapter: any) =>
+                                          acc + chapter.activities.length,
+                                        0
+                                      ) || 1))
+                                }
                               />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
                               <span className="text-xs font-bold text-gray-800">
-                                {Math.round(((trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0) / (course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 1)) * 100)}%
+                                {Math.round(
+                                  ((trailData?.runs
+                                    ?.find(
+                                      (run: any) =>
+                                        run.course_uuid === course.course_uuid
+                                    )
+                                    ?.steps?.filter(
+                                      (step: any) => step.complete
+                                    )?.length || 0) /
+                                    (course.chapters?.reduce(
+                                      (acc: number, chapter: any) =>
+                                        acc + chapter.activities.length,
+                                      0
+                                    ) || 1)) *
+                                    100
+                                )}
+                                %
                               </span>
                             </div>
                           </div>
                           <div className="text-xs text-gray-600">
-                            {trailData?.runs?.find((run: any) => run.course_uuid === course.course_uuid)?.steps?.filter((step: any) => step.complete)?.length || 0} {t('common.of')} {course.chapters?.reduce((acc: number, chapter: any) => acc + chapter.activities.length, 0) || 0}
+                            {trailData?.runs
+                              ?.find(
+                                (run: any) =>
+                                  run.course_uuid === course.course_uuid
+                              )
+                              ?.steps?.filter((step: any) => step.complete)
+                              ?.length || 0}{' '}
+                            {t('common.of')}{' '}
+                            {course.chapters?.reduce(
+                              (acc: number, chapter: any) =>
+                                acc + chapter.activities.length,
+                              0
+                            ) || 0}
                           </div>
                         </motion.div>
 
                         {/* Center Course Info */}
                         <motion.div
-                          initial={isInitialRender.current ? false : { opacity: 0, y: -20 }}
+                          initial={!hasMounted ? false : { opacity: 0, y: -20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.1 }}
                           className="flex items-center space-x-4"
                         >
                           <div className="flex">
                             <Link
-                              href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
+                              href={
+                                getUriWithOrg(orgslug, '') +
+                                `/course/${courseuuid}`
+                              }
                             >
                               <img
                                 className="w-[60px] h-[34px] rounded-md drop-shadow-md"
@@ -389,7 +515,9 @@ function ActivityClient(props: ActivityClientProps) {
                             </Link>
                           </div>
                           <div className="flex flex-col -space-y-1">
-                            <p className="font-bold text-gray-700 text-sm">{t('search.course')} </p>
+                            <p className="font-bold text-gray-700 text-sm">
+                              {t('search.course')}{' '}
+                            </p>
                             <h1 className="font-bold text-gray-950 text-lg first-letter:uppercase">
                               {course.name}
                             </h1>
@@ -398,14 +526,21 @@ function ActivityClient(props: ActivityClientProps) {
 
                         {/* Minimize and Chapters - Moved to right */}
                         <motion.div
-                          initial={isInitialRender.current ? false : { opacity: 0, x: 20 }}
+                          initial={!hasMounted ? false : { opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 }}
                           className="flex items-center space-x-2"
                         >
                           <ActivityChapterDropdown
                             course={course}
-                            currentActivityId={activity.activity_uuid ? activity.activity_uuid.replace('activity_', '') : activityid.replace('activity_', '')}
+                            currentActivityId={
+                              activity.activity_uuid
+                                ? activity.activity_uuid.replace(
+                                    'activity_',
+                                    ''
+                                  )
+                                : activityid.replace('activity_', '')
+                            }
                             orgslug={orgslug}
                             trailData={trailData}
                           />
@@ -425,22 +560,26 @@ function ActivityClient(props: ActivityClientProps) {
 
                   {/* Focus Mode Content */}
                   <div className="pt-16 pb-20 h-full overflow-auto">
-                    <div className={`${activity?.activity_type === 'TYPE_VIDEO' ? "max-w-5xl" : "max-w-(--breakpoint-xl)"} mx-auto px-4`}>
+                    <div
+                      className={`${activity?.activity_type === 'TYPE_VIDEO' ? 'max-w-5xl' : 'max-w-(--breakpoint-xl)'} mx-auto px-4`}
+                    >
                       {activity && activity.published == true && (
                         <>
                           {activity.content.paid_access == false ? (
                             <PaidCourseActivityDisclaimer course={course} />
                           ) : (
                             <motion.div
-                              initial={isInitialRender.current ? false : { scale: 0.95, opacity: 0 }}
+                              initial={
+                                !hasMounted
+                                  ? false
+                                  : { scale: 0.95, opacity: 0 }
+                              }
                               animate={{ scale: 1, opacity: 1 }}
                               transition={{ delay: 0.3 }}
                               className={`p-4 md:p-6 rounded-lg ${bgColor} mt-4`}
                             >
                               {/* Activity Types */}
-                              <div>
-                                {activityContent}
-                              </div>
+                              <div>{activityContent}</div>
                             </motion.div>
                           )}
                         </>
@@ -449,70 +588,102 @@ function ActivityClient(props: ActivityClientProps) {
                   </div>
 
                   {/* Focus Mode Bottom Bar */}
-                  {activity && activity.published == true && activity.content.paid_access != false && (
-                    <motion.div
-                      initial={isInitialRender.current ? false : { y: 100 }}
-                      animate={{ y: 0 }}
-                      exit={{ y: 100 }}
-                      transition={{ duration: 0.3 }}
-                      className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-100"
-                    >
-                      <div className="container mx-auto px-4">
-                        <div className="flex items-center justify-between h-16">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => navigateToActivity(prevActivity)}
-                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${prevActivity
-                                ? 'text-gray-700'
-                                : 'opacity-50 text-gray-400 cursor-not-allowed'
+                  {activity &&
+                    activity.published == true &&
+                    activity.content.paid_access != false && (
+                      <motion.div
+                        initial={!hasMounted ? false : { y: 100 }}
+                        animate={{ y: 0 }}
+                        exit={{ y: 100 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-100"
+                      >
+                        <div className="container mx-auto px-4">
+                          <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => navigateToActivity(prevActivity)}
+                                className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
+                                  prevActivity
+                                    ? 'text-gray-700'
+                                    : 'opacity-50 text-gray-400 cursor-not-allowed'
                                 }`}
-                              disabled={!prevActivity}
-                              title={prevActivity ? `${t('common.previous')}: ${prevActivity.name}` : t('activities.no_previous_activity')}
-                            >
-                              <ChevronLeft size={20} className="text-gray-800 shrink-0" />
-                              <div className="flex flex-col items-start">
-                                <span className="text-xs text-gray-500">{t('common.previous')}</span>
-                                <span className="text-sm capitalize font-semibold text-left">
-                                  {prevActivity ? prevActivity.name : t('activities.no_previous_activity')}
-                                </span>
-                              </div>
-                            </button>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <ActivityActions
-                              activity={activity}
-                              activityid={activityid}
-                              course={course}
-                              orgslug={orgslug}
-                              assignment={assignment}
-                              showNavigation={false}
-                            />
-                            <button
-                              onClick={() => navigateToActivity(nextActivity)}
-                              className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${nextActivity
-                                ? 'text-gray-700'
-                                : 'opacity-50 text-gray-400 cursor-not-allowed'
+                                disabled={!prevActivity}
+                                title={
+                                  prevActivity
+                                    ? `${t('common.previous')}: ${prevActivity.name}`
+                                    : t('activities.no_previous_activity')
+                                }
+                              >
+                                <ChevronLeft
+                                  size={20}
+                                  className="text-gray-800 shrink-0"
+                                />
+                                <div className="flex flex-col items-start">
+                                  <span className="text-xs text-gray-500">
+                                    {t('common.previous')}
+                                  </span>
+                                  <span className="text-sm capitalize font-semibold text-left">
+                                    {prevActivity
+                                      ? prevActivity.name
+                                      : t('activities.no_previous_activity')}
+                                  </span>
+                                </div>
+                              </button>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <ActivityActions
+                                activity={activity}
+                                activityid={activityid}
+                                course={course}
+                                orgslug={orgslug}
+                                assignment={assignment}
+                                showNavigation={false}
+                              />
+                              <button
+                                onClick={() => navigateToActivity(nextActivity)}
+                                className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
+                                  nextActivity
+                                    ? 'text-gray-700'
+                                    : 'opacity-50 text-gray-400 cursor-not-allowed'
                                 }`}
-                              disabled={!nextActivity}
-                              title={nextActivity ? `${t('common.next')}: ${nextActivity.name}` : t('activities.no_next_activity')}
-                            >
-                              <div className="flex flex-col items-end">
-                                <span className="text-xs text-gray-500">{t('common.next')}</span>
-                                <span className="text-sm capitalize font-semibold text-right">
-                                  {nextActivity ? nextActivity.name : t('activities.no_next_activity')}
-                                </span>
-                              </div>
-                              <ChevronRight size={20} className="text-gray-800 shrink-0" />
-                            </button>
+                                disabled={!nextActivity}
+                                title={
+                                  nextActivity
+                                    ? `${t('common.next')}: ${nextActivity.name}`
+                                    : t('activities.no_next_activity')
+                                }
+                              >
+                                <div className="flex flex-col items-end">
+                                  <span className="text-xs text-gray-500">
+                                    {t('common.next')}
+                                  </span>
+                                  <span className="text-sm capitalize font-semibold text-right">
+                                    {nextActivity
+                                      ? nextActivity.name
+                                      : t('activities.no_next_activity')}
+                                  </span>
+                                </div>
+                                <ChevronRight
+                                  size={20}
+                                  className="text-gray-800 shrink-0"
+                                />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
+                      </motion.div>
+                    )}
                 </motion.div>
               </AnimatePresence>
             ) : (
-              <GeneralWrapperStyled maxWidth={activity?.activity_type === 'TYPE_VIDEO' ? "max-w-5xl" : "max-w-(--breakpoint-xl)"}>
+              <GeneralWrapperStyled
+                maxWidth={
+                  activity?.activity_type === 'TYPE_VIDEO'
+                    ? 'max-w-5xl'
+                    : 'max-w-(--breakpoint-xl)'
+                }
+              >
                 {/* Original non-focus mode UI */}
                 {activityid === 'end' ? (
                   <CourseEndView
@@ -536,7 +707,10 @@ function ActivityClient(props: ActivityClientProps) {
                           <div className="flex space-x-4 md:space-x-6">
                             <div className="hidden sm:flex">
                               <Link
-                                href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
+                                href={
+                                  getUriWithOrg(orgslug, '') +
+                                  `/course/${courseuuid}`
+                                }
                               >
                                 <img
                                   className="w-[80px] md:w-[100px] h-[45px] md:h-[57px] rounded-md drop-shadow-md"
@@ -550,7 +724,9 @@ function ActivityClient(props: ActivityClientProps) {
                               </Link>
                             </div>
                             <div className="flex flex-col -space-y-0.5 md:-space-y-1">
-                              <p className="font-bold text-gray-700 text-sm md:text-md">{t('search.course')} </p>
+                              <p className="font-bold text-gray-700 text-sm md:text-md">
+                                {t('search.course')}{' '}
+                              </p>
                               <h1 className="font-bold text-gray-950 text-xl md:text-3xl first-letter:uppercase line-clamp-1">
                                 {course.name}
                               </h1>
@@ -571,7 +747,10 @@ function ActivityClient(props: ActivityClientProps) {
                           <div className="flex flex-1/3 items-center space-x-3">
                             <div className="flex flex-col -space-y-0.5 md:-space-y-1">
                               <p className="font-bold text-gray-700 text-sm md:text-md">
-                                {getChapterNameByActivityId(course, activity.id)}
+                                {getChapterNameByActivityId(
+                                  course,
+                                  activity.id
+                                )}
                               </p>
                               <h1 className="font-bold text-gray-950 text-lg md:text-2xl first-letter:uppercase">
                                 {activity.name}
@@ -579,104 +758,202 @@ function ActivityClient(props: ActivityClientProps) {
                               {/* Authors and Dates Section - Hidden on mobile */}
                               <div className="hidden sm:flex flex-wrap items-center gap-3 mt-2">
                                 {/* Avatars */}
-                                {course.authors && course.authors.length > 0 && (
-                                  <div className="flex -space-x-3">
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').slice(0, 3).map((author: any, idx: number) => (
-                                      <div key={author.user.user_uuid} className="relative z-[${10-idx}]">
-                                        <UserAvatar
-                                          border="border-2"
-                                          rounded="rounded-full"
-                                          avatar_url={author.user.avatar_image ? getUserAvatarMediaDirectory(author.user.user_uuid, author.user.avatar_image) : ''}
-                                          predefined_avatar={author.user.avatar_image ? undefined : 'empty'}
-                                          width={26}
-                                          showProfilePopup={true}
-                                          userId={author.user.id}
-                                        />
-                                      </div>
-                                    ))}
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length > 3 && (
-                                      <div className="flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-2 border-white shadow-sm w-9 h-9 text-xs z-0">
-                                        +{course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length - 3}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                {/* Author names */}
-                                {course.authors && course.authors.length > 0 && (
-                                  <div className="text-xs text-gray-700 font-medium flex items-center gap-1">
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length > 1 && (
-                                      <span>{t('courses.co_created_by')} </span>
-                                    )}
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').slice(0, 2).map((author: any, idx: number, arr: any[]) => (
-                                      <span key={author.user.user_uuid}>
-                                        {author.user.first_name && author.user.last_name
-                                          ? `${author.user.first_name} ${author.user.last_name}`
-                                          : `@${author.user.username}`}
-                                        {idx === 0 && arr.length > 1 ? ' & ' : ''}
-                                      </span>
-                                    ))}
-                                    {course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length > 2 && (
-                                      <ToolTip
-                                        content={
-                                          <div className="p-2">
-                                            {course.authors
-                                              .filter((a: any) => a.authorship_status === 'ACTIVE')
-                                              .slice(2)
-                                              .map((author: any) => (
-                                                <div key={author.user.user_uuid} className="text-white text-sm py-1">
-                                                  {author.user.first_name && author.user.last_name
-                                                    ? `${author.user.first_name} ${author.user.last_name}`
-                                                    : `@${author.user.username}`}
-                                                </div>
-                                              ))}
+                                {course.authors &&
+                                  course.authors.length > 0 && (
+                                    <div className="flex -space-x-3">
+                                      {course.authors
+                                        .filter(
+                                          (a: any) =>
+                                            a.authorship_status === 'ACTIVE'
+                                        )
+                                        .slice(0, 3)
+                                        .map((author: any) => (
+                                          <div
+                                            key={author.user.user_uuid}
+                                            className="relative z-10"
+                                          >
+                                            <UserAvatar
+                                              border="border-2"
+                                              rounded="rounded-full"
+                                              avatar_url={
+                                                author.user.avatar_image
+                                                  ? getUserAvatarMediaDirectory(
+                                                      author.user.user_uuid,
+                                                      author.user.avatar_image
+                                                    )
+                                                  : ''
+                                              }
+                                              predefined_avatar={
+                                                author.user.avatar_image
+                                                  ? undefined
+                                                  : 'empty'
+                                              }
+                                              width={26}
+                                              showProfilePopup={true}
+                                              userId={author.user.id}
+                                            />
                                           </div>
-                                        }
-                                      >
-                                        <div className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md cursor-pointer text-xs font-medium transition-colors duration-200">
-                                          +{course.authors.filter((a: any) => a.authorship_status === 'ACTIVE').length - 2}
+                                        ))}
+                                      {course.authors.filter(
+                                        (a: any) =>
+                                          a.authorship_status === 'ACTIVE'
+                                      ).length > 3 && (
+                                        <div className="flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-2 border-white shadow-sm w-9 h-9 text-xs z-0">
+                                          +
+                                          {course.authors.filter(
+                                            (a: any) =>
+                                              a.authorship_status === 'ACTIVE'
+                                          ).length - 3}
                                         </div>
-                                      </ToolTip>
-                                    )}
-                                  </div>
-                                )}
+                                      )}
+                                    </div>
+                                  )}
+                                {/* Author names */}
+                                {course.authors &&
+                                  course.authors.length > 0 && (
+                                    <div className="text-xs text-gray-700 font-medium flex items-center gap-1">
+                                      {course.authors.filter(
+                                        (a: any) =>
+                                          a.authorship_status === 'ACTIVE'
+                                      ).length > 1 && (
+                                        <span>
+                                          {t('courses.co_created_by')}{' '}
+                                        </span>
+                                      )}
+                                      {course.authors
+                                        .filter(
+                                          (a: any) =>
+                                            a.authorship_status === 'ACTIVE'
+                                        )
+                                        .slice(0, 2)
+                                        .map(
+                                          (
+                                            author: any,
+                                            idx: number,
+                                            arr: any[]
+                                          ) => (
+                                            <span key={author.user.user_uuid}>
+                                              {author.user.first_name &&
+                                              author.user.last_name
+                                                ? `${author.user.first_name} ${author.user.last_name}`
+                                                : `@${author.user.username}`}
+                                              {idx === 0 && arr.length > 1
+                                                ? ' & '
+                                                : ''}
+                                            </span>
+                                          )
+                                        )}
+                                      {course.authors.filter(
+                                        (a: any) =>
+                                          a.authorship_status === 'ACTIVE'
+                                      ).length > 2 && (
+                                        <ToolTip
+                                          content={
+                                            <div className="p-2">
+                                              {course.authors
+                                                .filter(
+                                                  (a: any) =>
+                                                    a.authorship_status ===
+                                                    'ACTIVE'
+                                                )
+                                                .slice(2)
+                                                .map((author: any) => (
+                                                  <div
+                                                    key={author.user.user_uuid}
+                                                    className="text-white text-sm py-1"
+                                                  >
+                                                    {author.user.first_name &&
+                                                    author.user.last_name
+                                                      ? `${author.user.first_name} ${author.user.last_name}`
+                                                      : `@${author.user.username}`}
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          }
+                                        >
+                                          <div className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md cursor-pointer text-xs font-medium transition-colors duration-200">
+                                            +
+                                            {course.authors.filter(
+                                              (a: any) =>
+                                                a.authorship_status === 'ACTIVE'
+                                            ).length - 2}
+                                          </div>
+                                        </ToolTip>
+                                      )}
+                                    </div>
+                                  )}
                                 {/* Dates */}
                                 <div className="flex items-center text-xs text-gray-500 gap-2">
                                   <span>
-                                    {t('courses.created_on')} {new Date(course.creation_date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    {t('courses.created_on')}{' '}
+                                    {new Date(
+                                      course.creation_date
+                                    ).toLocaleDateString(undefined, {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric',
+                                    })}
                                   </span>
                                   <span className="mx-1">•</span>
                                   <span>
-                                    {t('courses.last_updated')} {getRelativeTime(new Date(course.updated_at || course.last_updated || course.creation_date))}
+                                    {t('courses.last_updated')}{' '}
+                                    {getRelativeTime(
+                                      new Date(
+                                        course.updated_at ||
+                                          course.last_updated ||
+                                          course.creation_date
+                                      )
+                                    )}
                                   </span>
                                 </div>
                               </div>
                             </div>
                           </div>
                           <div className="flex space-x-2 items-center">
-                            {activity && activity.published == true && activity.content.paid_access != false && (
-                              <AuthenticatedClientElement checkMethod="authentication">
-                                {activity.activity_type != 'TYPE_ASSIGNMENT' && (
-                                  <>
-                                    <AIActivityAsk activity={activity} />
-                                    <ActivityChapterDropdown
-                                      course={course}
-                                      currentActivityId={activity.activity_uuid ? activity.activity_uuid.replace('activity_', '') : activityid.replace('activity_', '')}
-                                      orgslug={orgslug}
-                                      trailData={trailData}
-                                    />
-                                    {contributorStatus === 'ACTIVE' && activity.activity_type == 'TYPE_DYNAMIC' && (
-                                      <Link
-                                        href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}/activity/${activityid}/edit`}
-                                        className="bg-emerald-600 rounded-full px-5 drop-shadow-md flex items-center space-x-2 p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out"
-                                      >
-                                        <Edit2 size={17} />
-                                        <span className="text-xs font-bold">{t('courses.contribute')}</span>
-                                      </Link>
-                                    )}
-                                  </>
-                                )}
-                              </AuthenticatedClientElement>
-                            )}
+                            {activity &&
+                              activity.published == true &&
+                              activity.content.paid_access != false && (
+                                <AuthenticatedClientElement checkMethod="authentication">
+                                  {activity.activity_type !=
+                                    'TYPE_ASSIGNMENT' && (
+                                    <>
+                                      <AIActivityAsk activity={activity} />
+                                      <ActivityChapterDropdown
+                                        course={course}
+                                        currentActivityId={
+                                          activity.activity_uuid
+                                            ? activity.activity_uuid.replace(
+                                                'activity_',
+                                                ''
+                                              )
+                                            : activityid.replace(
+                                                'activity_',
+                                                ''
+                                              )
+                                        }
+                                        orgslug={orgslug}
+                                        trailData={trailData}
+                                      />
+                                      {contributorStatus === 'ACTIVE' &&
+                                        activity.activity_type ==
+                                          'TYPE_DYNAMIC' && (
+                                          <Link
+                                            href={
+                                              getUriWithOrg(orgslug, '') +
+                                              `/course/${courseuuid}/activity/${activityid}/edit`
+                                            }
+                                            className="bg-emerald-600 rounded-full px-5 drop-shadow-md flex items-center space-x-2 p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out"
+                                          >
+                                            <Edit2 size={17} />
+                                            <span className="text-xs font-bold">
+                                              {t('courses.contribute')}
+                                            </span>
+                                          </Link>
+                                        )}
+                                    </>
+                                  )}
+                                </AuthenticatedClientElement>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -696,14 +973,19 @@ function ActivityClient(props: ActivityClientProps) {
                           {activity.content.paid_access == false ? (
                             <PaidCourseActivityDisclaimer course={course} />
                           ) : (
-                            <div className={`p-4 md:p-6 drop-shadow-xs rounded-lg ${bgColor} relative`}>
+                            <div
+                              className={`p-4 md:p-6 drop-shadow-xs rounded-lg ${bgColor} relative`}
+                            >
                               <button
                                 onClick={() => setIsFocusMode(true)}
                                 className="absolute top-4 right-4 bg-white/80 hover:bg-white nice-shadow p-2 rounded-full cursor-pointer transition-all duration-200 group overflow-hidden z-50 pointer-events-auto"
                                 title={t('activities.focus_mode')}
                               >
                                 <div className="flex items-center">
-                                  <Maximize2 size={16} className="text-gray-700" />
+                                  <Maximize2
+                                    size={16}
+                                    className="text-gray-700"
+                                  />
                                   <span className="text-xs font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-all duration-200 w-0 group-hover:w-auto group-hover:ml-2 whitespace-nowrap">
                                     {t('activities.focus_mode')}
                                   </span>
@@ -716,46 +998,50 @@ function ActivityClient(props: ActivityClientProps) {
                       )}
 
                       {/* Activity Actions below the content box */}
-                      {activity && activity.published == true && activity.content.paid_access != false && (
-                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 w-full gap-4">
-                          <div className="flex-1">
-                            <PreviousActivityButton
-                              course={course}
-                              currentActivityId={activity.id}
-                              orgslug={orgslug}
-                            />
-                          </div>
-                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-2">
-                            <div className="flex justify-center">
-                              <ActivityActions
-                                activity={activity}
-                                activityid={activityid}
-                                course={course}
-                                orgslug={orgslug}
-                                assignment={assignment}
-                                showNavigation={false}
-                              />
-                            </div>
+                      {activity &&
+                        activity.published == true &&
+                        activity.content.paid_access != false && (
+                          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 w-full gap-4">
                             <div className="flex-1">
-                              <NextActivityButton
+                              <PreviousActivityButton
                                 course={course}
                                 currentActivityId={activity.id}
                                 orgslug={orgslug}
                               />
                             </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-2">
+                              <div className="flex justify-center">
+                                <ActivityActions
+                                  activity={activity}
+                                  activityid={activityid}
+                                  course={course}
+                                  orgslug={orgslug}
+                                  assignment={assignment}
+                                  showNavigation={false}
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <NextActivityButton
+                                  course={course}
+                                  currentActivityId={activity.id}
+                                  orgslug={orgslug}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Fixed Activity Secondary Bar */}
-                      {activity && activity.published == true && activity.content.paid_access != false && (
-                        <FixedActivitySecondaryBar
-                          course={course}
-                          currentActivityId={activityid}
-                          orgslug={orgslug}
-                          activity={activity}
-                        />
-                      )}
+                      {activity &&
+                        activity.published == true &&
+                        activity.content.paid_access != false && (
+                          <FixedActivitySecondaryBar
+                            course={course}
+                            currentActivityId={activityid}
+                            orgslug={orgslug}
+                            activity={activity}
+                          />
+                        )}
 
                       <div style={{ height: '100px' }}></div>
                     </div>
@@ -774,46 +1060,48 @@ export function MarkStatus(props: {
   activity: any
   activityid: string
   course: any
-  orgslug: string,
+  orgslug: string
   trailData: any
 }) {
   const { t } = useTranslation()
   const router = useRouter()
-  const session = useLHSession() as any;
-  const org = useOrg() as any;
-  const isMobile = useMediaQuery('(max-width: 768px)')
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [showMarkedTooltip, setShowMarkedTooltip] = React.useState(false);
-  const [showUnmarkedTooltip, setShowUnmarkedTooltip] = React.useState(false);
+  const session = useLHSession() as any
+  const org = useOrg() as any
+  const [isLoading, setIsLoading] = useState(false)
+  const [showMarkedTooltip, setShowMarkedTooltip] = useState(false)
+  const [showUnmarkedTooltip, setShowUnmarkedTooltip] = useState(false)
 
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const markedTooltipCount = localStorage.getItem('activity_marked_tooltip_count');
-      const unmarkedTooltipCount = localStorage.getItem('activity_unmarked_tooltip_count');
+      const markedTooltipCount = localStorage.getItem(
+        'activity_marked_tooltip_count'
+      )
+      const unmarkedTooltipCount = localStorage.getItem(
+        'activity_unmarked_tooltip_count'
+      )
 
       if (!markedTooltipCount || parseInt(markedTooltipCount) < 3) {
-        setShowMarkedTooltip(true);
+        setShowMarkedTooltip(true)
       }
       if (!unmarkedTooltipCount || parseInt(unmarkedTooltipCount) < 3) {
-        setShowUnmarkedTooltip(true);
+        setShowUnmarkedTooltip(true)
       }
     }
-  }, []);
+  }, [])
 
   const handleMarkedTooltipClose = () => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('activity_marked_tooltip_count', '3');
-      setShowMarkedTooltip(false);
+      localStorage.setItem('activity_marked_tooltip_count', '3')
+      setShowMarkedTooltip(false)
     }
-  };
+  }
 
   const handleUnmarkedTooltipClose = () => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('activity_unmarked_tooltip_count', '3');
-      setShowUnmarkedTooltip(false);
+      localStorage.setItem('activity_unmarked_tooltip_count', '3')
+      setShowUnmarkedTooltip(false)
     }
-  };
+  }
 
   const infoIcon = (
     <svg
@@ -828,100 +1116,104 @@ export function MarkStatus(props: {
       <path d="M12 16v-4" />
       <path d="M12 8h.01" />
     </svg>
-  );
+  )
 
   const areAllActivitiesCompleted = () => {
     const run = props.trailData?.runs?.find(
       (run: any) => run.course_uuid === props.course.course_uuid
-    );
-    if (!run) return false;
+    )
+    if (!run) return false
 
-    let totalActivities = 0;
-    let completedActivities = 0;
+    let totalActivities = 0
+    let completedActivities = 0
 
     props.course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
-        totalActivities++;
+        totalActivities++
         const isCompleted = run.steps.find(
-          (step: any) => step.activity_uuid === activity.activity_uuid && step.complete === true
-        );
+          (step: any) =>
+            step.activity_uuid === activity.activity_uuid &&
+            step.complete === true
+        )
         if (isCompleted) {
-          completedActivities++;
+          completedActivities++
         }
-      });
-    });
+      })
+    })
 
-    return completedActivities >= totalActivities - 1;
-  };
+    return completedActivities >= totalActivities - 1
+  }
 
   async function markActivityAsCompleteFront() {
     try {
-      const willCompleteAll = areAllActivitiesCompleted();
-      setIsLoading(true);
+      const willCompleteAll = areAllActivitiesCompleted()
+      setIsLoading(true)
 
       await markActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
         props.activity.activity_uuid,
         session.data?.tokens?.access_token
-      );
+      )
 
-      await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`);
+      await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
 
       if (willCompleteAll) {
-        const cleanCourseUuid = props.course.course_uuid.replace('course_', '');
-        router.push(getUriWithOrg(props.orgslug, '') + `/course/${cleanCourseUuid}/activity/end`);
+        const cleanCourseUuid = props.course.course_uuid.replace('course_', '')
+        router.push(
+          getUriWithOrg(props.orgslug, '') +
+            `/course/${cleanCourseUuid}/activity/end`
+        )
       }
-    } catch (error) {
-      console.error('Error marking activity as complete:', error);
-      toast.error(t('activities.failed_mark_complete'));
+    } catch {
+      // Error marking activity as complete
+      toast.error(t('activities.failed_mark_complete'))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
   async function unmarkActivityAsCompleteFront() {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
 
       await unmarkActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
         props.activity.activity_uuid,
         session.data?.tokens?.access_token
-      );
+      )
 
-      await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`);
-    } catch (error) {
-      toast.error(t('activities.failed_unmark_complete'));
+      await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
+    } catch {
+      toast.error(t('activities.failed_unmark_complete'))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
   const isActivityCompleted = () => {
     // Clean up course UUID by removing 'course_' prefix if it exists
-    const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
+    const cleanCourseUuid = props.course.course_uuid?.replace('course_', '')
 
-    let run = props.trailData?.runs?.find(
-      (run: any) => {
-        const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '');
-        return cleanRunCourseUuid === cleanCourseUuid;
-      }
-    );
+    let run = props.trailData?.runs?.find((run: any) => {
+      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
+      return cleanRunCourseUuid === cleanCourseUuid
+    })
 
     if (run) {
       // Find the step that matches the current activity
       return run.steps.find(
-        (step: any) => step.activity_id === props.activity.id && step.complete === true
-      );
+        (step: any) =>
+          step.activity_id === props.activity.id && step.complete === true
+      )
     }
-    return false;
+    return false
   }
 
   // Don't render until we have trail data
   if (!props.trailData) {
-    return null;
+    return null
   }
 
   return (
@@ -935,7 +1227,9 @@ export function MarkStatus(props: {
               dialogTitle={t('activities.unmark_activity_title')}
               dialogTrigger={
                 <div className="bg-teal-600 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
-                  <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
+                  <span className="text-[10px] font-bold mb-1 uppercase">
+                    {t('common.status')}
+                  </span>
                   <div className="flex items-center space-x-2">
                     <svg
                       width="17"
@@ -950,7 +1244,9 @@ export function MarkStatus(props: {
                       <rect x="3" y="3" width="18" height="18" rx="2" />
                       <path d="M7 12l3 3 7-7" />
                     </svg>
-                    <span className="text-xs font-bold">{t('common.complete')}</span>
+                    <span className="text-xs font-bold">
+                      {t('common.complete')}
+                    </span>
                   </div>
                 </div>
               }
@@ -976,7 +1272,9 @@ export function MarkStatus(props: {
               className={`${isLoading ? 'opacity-90' : ''} bg-gray-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition-all duration-200 ${isLoading ? 'cursor-not-allowed' : 'hover:bg-gray-700'}`}
               onClick={!isLoading ? markActivityAsCompleteFront : undefined}
             >
-              <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
+              <span className="text-[10px] font-bold mb-1 uppercase">
+                {t('common.status')}
+              </span>
               <div className="flex items-center space-x-2">
                 {isLoading ? (
                   <div className="animate-spin">
@@ -1007,7 +1305,11 @@ export function MarkStatus(props: {
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                   </svg>
                 )}
-                <span className="text-xs font-bold min-w-[90px]">{isLoading ? t('activities.marking') : t('activities.mark_as_complete')}</span>
+                <span className="text-xs font-bold min-w-[90px]">
+                  {isLoading
+                    ? t('activities.marking')
+                    : t('activities.mark_as_complete')}
+                </span>
               </div>
             </div>
             {showUnmarkedTooltip && (
@@ -1027,110 +1329,146 @@ export function MarkStatus(props: {
   )
 }
 
-function NextActivityButton({ course, currentActivityId, orgslug }: { course: any, currentActivityId: string, orgslug: string }) {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+function NextActivityButton({
+  course,
+  currentActivityId,
+  orgslug,
+}: {
+  course: any
+  currentActivityId: string
+  orgslug: string
+}) {
+  const { t } = useTranslation()
+  const router = useRouter()
 
   const findNextActivity = () => {
-    let allActivities: any[] = [];
-    let currentIndex = -1;
+    let allActivities: any[] = []
+    let currentIndex = -1
 
     // Flatten all activities from all chapters
     course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
-        const cleanActivityUuid = activity.activity_uuid?.replace('activity_', '');
+        const cleanActivityUuid = activity.activity_uuid?.replace(
+          'activity_',
+          ''
+        )
         allActivities.push({
           ...activity,
           cleanUuid: cleanActivityUuid,
-          chapterName: chapter.name
-        });
+          chapterName: chapter.name,
+        })
 
         // Check if this is the current activity
         if (activity.id === currentActivityId) {
-          currentIndex = allActivities.length - 1;
+          currentIndex = allActivities.length - 1
         }
-      });
-    });
+      })
+    })
 
     // Get next activity
-    return currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null;
-  };
+    return currentIndex < allActivities.length - 1
+      ? allActivities[currentIndex + 1]
+      : null
+  }
 
-  const nextActivity = findNextActivity();
+  const nextActivity = findNextActivity()
 
-  if (!nextActivity) return null;
+  if (!nextActivity) return null
 
   const navigateToActivity = () => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '');
-    router.push(getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/${nextActivity.cleanUuid}`);
-  };
+    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+    router.push(
+      getUriWithOrg(orgslug, '') +
+        `/course/${cleanCourseUuid}/activity/${nextActivity.cleanUuid}`
+    )
+  }
 
   return (
     <div
       onClick={navigateToActivity}
       className="bg-gray-200 rounded-md px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-gray-200"
     >
-      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('common.next')}</span>
+      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase">
+        {t('common.next')}
+      </span>
       <div className="flex items-center space-x-1">
-        <span className="text-sm font-semibold truncate max-w-[200px]">{nextActivity.name}</span>
+        <span className="text-sm font-semibold truncate max-w-[200px]">
+          {nextActivity.name}
+        </span>
         <ChevronRight size={17} />
       </div>
     </div>
-  );
+  )
 }
 
-function PreviousActivityButton({ course, currentActivityId, orgslug }: { course: any, currentActivityId: string, orgslug: string }) {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+function PreviousActivityButton({
+  course,
+  currentActivityId,
+  orgslug,
+}: {
+  course: any
+  currentActivityId: string
+  orgslug: string
+}) {
+  const { t } = useTranslation()
+  const router = useRouter()
 
   const findPreviousActivity = () => {
-    let allActivities: any[] = [];
-    let currentIndex = -1;
+    let allActivities: any[] = []
+    let currentIndex = -1
 
     // Flatten all activities from all chapters
     course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
-        const cleanActivityUuid = activity.activity_uuid?.replace('activity_', '');
+        const cleanActivityUuid = activity.activity_uuid?.replace(
+          'activity_',
+          ''
+        )
         allActivities.push({
           ...activity,
           cleanUuid: cleanActivityUuid,
-          chapterName: chapter.name
-        });
+          chapterName: chapter.name,
+        })
 
         // Check if this is the current activity
         if (activity.id === currentActivityId) {
-          currentIndex = allActivities.length - 1;
+          currentIndex = allActivities.length - 1
         }
-      });
-    });
+      })
+    })
 
     // Get previous activity
-    return currentIndex > 0 ? allActivities[currentIndex - 1] : null;
-  };
+    return currentIndex > 0 ? allActivities[currentIndex - 1] : null
+  }
 
-  const previousActivity = findPreviousActivity();
+  const previousActivity = findPreviousActivity()
 
-  if (!previousActivity) return null;
+  if (!previousActivity) return null
 
   const navigateToActivity = () => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '');
-    router.push(getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/${previousActivity.cleanUuid}`);
-  };
+    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+    router.push(
+      getUriWithOrg(orgslug, '') +
+        `/course/${cleanCourseUuid}/activity/${previousActivity.cleanUuid}`
+    )
+  }
 
   return (
     <div
       onClick={navigateToActivity}
       className="bg-white rounded-md px-4 nice-shadow flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out"
     >
-      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase">{t('common.previous')}</span>
+      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase">
+        {t('common.previous')}
+      </span>
       <div className="flex items-center space-x-1">
         <ChevronLeft size={17} />
-        <span className="text-sm font-semibold truncate max-w-[200px]">{previousActivity.name}</span>
+        <span className="text-sm font-semibold truncate max-w-[200px]">
+          {previousActivity.name}
+        </span>
       </div>
     </div>
-  );
+  )
 }
 
 function AssignmentTools(props: {
@@ -1140,10 +1478,11 @@ function AssignmentTools(props: {
   orgslug: string
   assignment: any
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation()
   const submission = useAssignmentSubmission() as any
-  const session = useLHSession() as any;
-  const [finalGrade, setFinalGrade] = React.useState(null) as any;
+  const session = useLHSession() as any
+  // Final grade is now derived from SWR
+  // const [finalGrade, setFinalGrade] = useState(null) as any;
 
   const submitForGradingUI = async () => {
     if (props.assignment) {
@@ -1153,62 +1492,63 @@ function AssignmentTools(props: {
       )
       if (res.success) {
         toast.success(t('assignments.assignment_submitted_success'))
-        mutate(`${getAPIUrl()}assignments/${props.assignment?.assignment_uuid}/submissions/me`,)
-      }
-      else {
+        mutate(
+          `${getAPIUrl()}assignments/${props.assignment?.assignment_uuid}/submissions/me`
+        )
+      } else {
         toast.error(t('assignments.failed_submit_assignment'))
       }
     }
   }
 
-  const getGradingBasedOnMethod = async () => {
-    const res = await getFinalGrade(
-      session.data?.user?.id,
-      props.assignment?.assignment_uuid,
-      session.data?.tokens?.access_token
-    );
-
-    if (res.success) {
-      const { grade, max_grade, grading_type } = res.data;
-      let displayGrade;
-
-      switch (grading_type) {
-        case 'ALPHABET':
-          displayGrade = convertNumericToAlphabet(grade, max_grade);
-          break;
-        case 'NUMERIC':
-          displayGrade = `${grade}/${max_grade}`;
-          break;
-        case 'PERCENTAGE':
-          const percentage = (grade / max_grade) * 100;
-          displayGrade = `${percentage.toFixed(2)}%`;
-          break;
-        default:
-          displayGrade = 'Unknown grading type';
-      }
-
-      // Use displayGrade here, e.g., update state or display it
-      setFinalGrade(displayGrade);
-    } else {
-    }
-  };
-
   // Helper function to convert numeric grade to alphabet grade
-  function convertNumericToAlphabet(grade: any, maxGrade: any) {
-    const percentage = (grade / maxGrade) * 100;
-    if (percentage >= 90) return 'A';
-    if (percentage >= 80) return 'B';
-    if (percentage >= 70) return 'C';
-    if (percentage >= 60) return 'D';
-    return 'F';
-  }
+  const convertNumericToAlphabet = React.useCallback(
+    (grade: any, maxGrade: any) => {
+      const percentage = (grade / maxGrade) * 100
+      if (percentage >= 90) return 'A'
+      if (percentage >= 80) return 'B'
+      if (percentage >= 70) return 'C'
+      if (percentage >= 60) return 'D'
+      return 'F'
+    },
+    []
+  )
 
-  useEffect(() => {
-    if (submission && submission.length > 0 && submission[0].submission_status === 'GRADED') {
-      getGradingBasedOnMethod();
+  // Fetch final grade using SWR
+  const shouldFetchGrade =
+    submission &&
+    submission.length > 0 &&
+    submission[0].submission_status === 'GRADED'
+  const { data: finalGradeRes } = useSWR(
+    shouldFetchGrade
+      ? [
+          'final-grade',
+          session.data?.user?.id,
+          props.assignment?.assignment_uuid,
+          session.data?.tokens?.access_token,
+        ]
+      : null,
+    ([_, userId, assignmentId, token]) =>
+      getFinalGrade(userId, assignmentId, token)
+  )
+
+  // Derive final grade from SWR data
+  const finalGrade = React.useMemo(() => {
+    if (!finalGradeRes?.success) return null
+    const { grade, max_grade, grading_type } = finalGradeRes.data
+
+    switch (grading_type) {
+      case 'ALPHABET':
+        return convertNumericToAlphabet(grade, max_grade)
+      case 'NUMERIC':
+        return `${grade}/${max_grade}`
+      case 'PERCENTAGE':
+        const percentage = (grade / max_grade) * 100
+        return `${percentage.toFixed(2)}%`
+      default:
+        return 'Unknown grading type'
     }
-  }
-    , [submission, props.assignment])
+  }, [finalGradeRes, convertNumericToAlphabet])
 
   if (!submission || submission.length === 0) {
     return (
@@ -1218,10 +1558,14 @@ function AssignmentTools(props: {
         dialogTitle={t('assignments.submit_assignment_title')}
         dialogTrigger={
           <div className="bg-cyan-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
-            <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
+            <span className="text-[10px] font-bold mb-1 uppercase">
+              {t('common.status')}
+            </span>
             <div className="flex items-center space-x-2">
               <BookOpenCheck size={17} />
-              <span className="text-xs font-bold">{t('assignments.submit_for_grading')}</span>
+              <span className="text-xs font-bold">
+                {t('assignments.submit_for_grading')}
+              </span>
             </div>
           </div>
         }
@@ -1234,10 +1578,14 @@ function AssignmentTools(props: {
   if (submission[0].submission_status === 'SUBMITTED') {
     return (
       <div className="bg-amber-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white transition delay-150 duration-300 ease-in-out">
-        <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
+        <span className="text-[10px] font-bold mb-1 uppercase">
+          {t('common.status')}
+        </span>
         <div className="flex items-center space-x-2">
           <UserRoundPen size={17} />
-          <span className="text-xs font-bold">{t('assignments.grading_in_progress')}</span>
+          <span className="text-xs font-bold">
+            {t('assignments.grading_in_progress')}
+          </span>
         </div>
       </div>
     )
@@ -1246,12 +1594,16 @@ function AssignmentTools(props: {
   if (submission[0].submission_status === 'GRADED') {
     return (
       <div className="bg-teal-600 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white transition delay-150 duration-300 ease-in-out">
-        <span className="text-[10px] font-bold mb-1 uppercase">{t('common.status')}</span>
+        <span className="text-[10px] font-bold mb-1 uppercase">
+          {t('common.status')}
+        </span>
         <div className="flex items-center space-x-2">
           <CheckCircle size={17} />
           <span className="text-xs flex space-x-2 font-bold items-center">
             <span>{t('assignments.graded')} </span>
-            <span className='bg-white text-teal-800 px-1 py-0.5 rounded-md'>{finalGrade}</span>
+            <span className="bg-white text-teal-800 px-1 py-0.5 rounded-md">
+              {finalGrade}
+            </span>
           </span>
         </div>
       </div>

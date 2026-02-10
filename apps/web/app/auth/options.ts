@@ -184,7 +184,7 @@ export const nextAuthOptions = {
             session.tokens = token.user.tokens
           }
         } catch (error) {
-          console.error('Error in session callback:', error)
+          // Error in session callback handled
           // Fall back to token data if API fails
           if (token.user?.user) {
             session.user = token.user.user
