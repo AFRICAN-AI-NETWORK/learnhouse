@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { getUriWithOrg, getAPIUrl } from '@services/config/config'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { swrFetcher } from '@services/utils/ts/requests'

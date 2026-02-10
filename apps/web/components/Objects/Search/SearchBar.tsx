@@ -176,6 +176,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
         setSearchResults(processedResults)
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error searching content:', error)
         setSearchResults({ courses: [], collections: [], users: [] })
       }

@@ -112,7 +112,6 @@ const LearningItemsList = ({
         initializedRef.current = true
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('Error parsing learning items:', e)
       // Initialize with one empty item on error if not already initialized
       if (!initializedRef.current) {

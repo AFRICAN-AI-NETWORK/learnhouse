@@ -178,7 +178,6 @@ const OrgAuditLogs = () => {
         { id: toastId }
       )
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('Export error:', error)
       toast.error(t('dashboard.organization.audit_logs.export_toasts.error'), {
         id: toastId,

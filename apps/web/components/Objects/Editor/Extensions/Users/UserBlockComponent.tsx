@@ -1,13 +1,13 @@
 import { NodeViewWrapper } from '@tiptap/react'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUserByUsername, getUser } from '@services/users/users'
-import { Input } from "@components/ui/input"
-import { Button } from "@components/ui/button"
-import { Label } from "@components/ui/label"
-import { 
-  Loader2, 
-  User, 
+import { Input } from '@components/ui/input'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import {
+  Loader2,
+  User,
   ExternalLink,
   Briefcase,
   GraduationCap,
@@ -20,9 +20,9 @@ import {
   Link,
   Users,
   Calendar,
-  Lightbulb
+  Lightbulb,
 } from 'lucide-react'
-import { Badge } from "@components/ui/badge"
+import { Badge } from '@components/ui/badge'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
@@ -47,19 +47,19 @@ type UserData = {
 }
 
 const AVAILABLE_ICONS = {
-  'briefcase': Briefcase,
+  briefcase: Briefcase,
   'graduation-cap': GraduationCap,
   'map-pin': MapPin,
   'building-2': Building2,
-  'speciality': Lightbulb,
-  'globe': Globe,
+  speciality: Lightbulb,
+  globe: Globe,
   'laptop-2': Laptop2,
-  'award': Award,
+  award: Award,
   'book-open': BookOpen,
-  'link': Link,
-  'users': Users,
-  'calendar': Calendar,
-} as const;
+  link: Link,
+  users: Users,
+  calendar: Calendar,
+} as const
 
 const IconComponent = ({ iconName }: { iconName: string }) => {
   const IconElement = AVAILABLE_ICONS[iconName as keyof typeof AVAILABLE_ICONS]
@@ -79,33 +79,37 @@ function UserBlockComponent(props: any) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchUserById = useCallback(
+    async (userId: string) => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getUser(userId)
+        if (!data) {
+          throw new Error('User not found')
+        }
+        setUserData(data)
+        setUsername(data.username)
+      } catch (err: any) {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching user by ID:', err)
+        setError(err.detail || 'User not found')
+        // Clear the invalid user_id from the node attributes
+        props.updateAttributes({
+          user_id: null,
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [props]
+  )
+
   useEffect(() => {
     if (props.node.attrs.user_id) {
       fetchUserById(props.node.attrs.user_id)
     }
-  }, [props.node.attrs.user_id])
-
-  const fetchUserById = async (userId: string) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await getUser(userId)
-      if (!data) {
-        throw new Error('User not found')
-      }
-      setUserData(data)
-      setUsername(data.username)
-    } catch (err: any) {
-      console.error('Error fetching user by ID:', err)
-      setError(err.detail || 'User not found')
-      // Clear the invalid user_id from the node attributes
-      props.updateAttributes({
-        user_id: null
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [props.node.attrs.user_id, fetchUserById])
 
   const fetchUserByUsername = async (username: string) => {
     setIsLoading(true)
@@ -117,9 +121,10 @@ function UserBlockComponent(props: any) {
       }
       setUserData(data)
       props.updateAttributes({
-        user_id: data.id
+        user_id: data.id,
       })
     } catch (err: any) {
+      // eslint-disable-next-line no-console
       console.error('Error fetching user by username:', err)
       setError(err.detail || 'User not found')
     } finally {
@@ -156,9 +161,7 @@ function UserBlockComponent(props: any) {
                   )}
                 </Button>
               </div>
-              {error && (
-                <p className="text-sm text-red-500 mt-2">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
             </div>
           </form>
         </div>
@@ -179,9 +182,7 @@ function UserBlockComponent(props: any) {
   if (error) {
     return (
       <NodeViewWrapper className="block-user">
-        <div className="bg-red-50 text-red-500 p-4 rounded-lg">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-500 p-4 rounded-lg">{error}</div>
       </NodeViewWrapper>
     )
   }
@@ -205,18 +206,27 @@ function UserBlockComponent(props: any) {
         {/* Header with Avatar and Name */}
         <div className="relative">
           {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-gray-100/30 to-transparent h-28 rounded-t-lg" />
-          
+          <div className="absolute inset-0 bg-linear-to-b from-gray-100/30 to-transparent h-28 rounded-t-lg" />
+
           {/* Content */}
           <div className="relative px-5 pt-5 pb-4">
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="rounded-full">
                   <UserAvatar
                     width={80}
-                    avatar_url={userData.avatar_image ? getUserAvatarMediaDirectory(userData.user_uuid, userData.avatar_image) : ''}
-                    predefined_avatar={userData.avatar_image ? undefined : 'empty'}
+                    avatar_url={
+                      userData.avatar_image
+                        ? getUserAvatarMediaDirectory(
+                            userData.user_uuid,
+                            userData.avatar_image
+                          )
+                        : ''
+                    }
+                    predefined_avatar={
+                      userData.avatar_image ? undefined : 'empty'
+                    }
                     userId={userData.id}
                     showProfilePopup
                     rounded="rounded-full"
@@ -232,7 +242,10 @@ function UserBlockComponent(props: any) {
                       {userData.first_name} {userData.last_name}
                     </h4>
                     {userData.username && (
-                      <Badge variant="outline" className="text-xs font-normal text-gray-500 px-2 truncate">
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-normal text-gray-500 px-2 truncate"
+                      >
                         @{userData.username}
                       </Badge>
                     )}
@@ -240,8 +253,11 @@ function UserBlockComponent(props: any) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-gray-600 hover:text-gray-900 flex-shrink-0"
-                    onClick={() => userData.username && router.push(`/user/${userData.username}`)}
+                    className="h-6 w-6 text-gray-600 hover:text-gray-900 shrink-0"
+                    onClick={() =>
+                      userData.username &&
+                      router.push(`/user/${userData.username}`)
+                    }
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>

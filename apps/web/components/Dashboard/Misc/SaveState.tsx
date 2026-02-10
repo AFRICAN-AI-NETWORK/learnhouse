@@ -90,7 +90,6 @@ function SaveState(props: { orgslug: string }) {
           session.data?.tokens?.access_token
         )
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error('Failed to save certification data:', error)
         // Don't throw error to prevent breaking the main save flow
       }

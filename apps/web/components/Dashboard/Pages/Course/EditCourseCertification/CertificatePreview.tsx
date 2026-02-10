@@ -53,7 +53,6 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         })
         setQrCodeUrl(qrUrl)
       } catch (error) {
-        // eslint-disable-next-line no-console
         console.error('Error generating QR code:', error)
       }
     }

@@ -22,8 +22,8 @@ interface TrailCourseElementProps {
 function TrailCourseElement(props: TrailCourseElementProps) {
   const { t } = useTranslation()
   const org = useOrg() as any
-  const session = useLHSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
   const courseid = props.course.course_uuid.replace('course_', '')
   const course = props.course
   const router = useRouter()
@@ -33,13 +33,13 @@ function TrailCourseElement(props: TrailCourseElementProps) {
   const course_progress = Math.round(
     (course_completed_steps / course_total_steps) * 100
   )
-  
+
   const [courseCertificate, setCourseCertificate] = useState<any>(null)
   const [isLoadingCertificate, setIsLoadingCertificate] = useState(false)
 
   async function quitCourse(course_uuid: string) {
     // Close activity
-    let activity = await removeCourse(course_uuid, props.orgslug,access_token)
+    let activity = await removeCourse(course_uuid, props.orgslug, access_token)
     // Mutate course
     await revalidateTags(['courses'], props.orgslug)
     router.refresh()
@@ -51,27 +51,28 @@ function TrailCourseElement(props: TrailCourseElementProps) {
   // Fetch certificate for this course
   useEffect(() => {
     const fetchCourseCertificate = async () => {
-      if (!access_token || course_progress < 100) return;
-      
-      setIsLoadingCertificate(true);
+      if (!access_token || course_progress < 100) return
+
+      setIsLoadingCertificate(true)
       try {
         const result = await getUserCertificates(
           props.course.course_uuid,
           access_token
-        );
-        
+        )
+
         if (result.success && result.data && result.data.length > 0) {
-          setCourseCertificate(result.data[0]);
+          setCourseCertificate(result.data[0])
         }
       } catch (error) {
-        console.error('Error fetching course certificate:', error);
+        // eslint-disable-next-line no-console
+        console.error('Error fetching course certificate:', error)
       } finally {
-        setIsLoadingCertificate(false);
+        setIsLoadingCertificate(false)
       }
-    };
+    }
 
-    fetchCourseCertificate();
-  }, [access_token, course_progress, props.course.course_uuid]);
+    fetchCourseCertificate()
+  }, [access_token, course_progress, props.course.course_uuid])
 
   useEffect(() => {}, [props.course, org])
 
@@ -97,7 +98,9 @@ function TrailCourseElement(props: TrailCourseElementProps) {
         <div className="course_top">
           <div className="course_info flex">
             <div className="course_basic flex flex-col flex-end -space-y-2">
-              <p className="p-0 font-bold text-sm text-gray-700">{t('search.course')}</p>
+              <p className="p-0 font-bold text-sm text-gray-700">
+                {t('search.course')}
+              </p>
               <div className="course_progress flex items-center space-x-2">
                 <h2 className="font-bold text-xl">{course.name}</h2>
                 <div className="bg-slate-300 rounded-full w-[10px] h-[5px]"></div>
@@ -122,7 +125,7 @@ function TrailCourseElement(props: TrailCourseElementProps) {
             ></div>
           </div>
         </div>
-        
+
         {/* Certificate Section */}
         {course_progress === 100 && (
           <div className="mt-2 pt-2 border-t border-gray-100">
@@ -140,7 +143,10 @@ function TrailCourseElement(props: TrailCourseElementProps) {
                   </span>
                 </div>
                 <Link
-                  href={getUriWithOrg(props.orgslug, `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`)}
+                  href={getUriWithOrg(
+                    props.orgslug,
+                    `/certificates/${courseCertificate.certificate_user.user_certification_uuid}/verify`
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-xs font-medium"
