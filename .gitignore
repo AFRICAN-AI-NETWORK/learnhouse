@@ -50,4 +50,4 @@ fly.toml
 # Generated runtime config
 apps/web/public/runtime-config.js
 apps/web/runtime-config.json
-test.txt
+apps/web/lint_output.txt

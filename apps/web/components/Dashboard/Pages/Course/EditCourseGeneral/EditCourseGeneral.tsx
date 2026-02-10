@@ -198,7 +198,13 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
         clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [formik.values, isLoading, courseStructure, dispatchCourse])
+  }, [
+    formik.values,
+    formik.initialValues,
+    isLoading,
+    courseStructure,
+    dispatchCourse,
+  ])
 
   // Reset form when courseStructure changes (initial load)
 

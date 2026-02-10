@@ -31,6 +31,14 @@ const AdminAuthorization: React.FC<AuthorizationProps> = ({
   const pathname = usePathname()
   const router = useRouter()
   const { isAdmin, loading } = useAdminStatus() as any
+
+  // Derived State
+  const isUserAuthenticated = !!session?.data?.user
+  const isAdminPath = ADMIN_PATHS.some((path) => {
+    const pattern = path.replace('*', '')
+    return pathname.startsWith(pattern)
+  })
+
   // Derived State (No useState/useEffect needed for authorization status)
   let isAuthorized = false
 
@@ -67,7 +75,7 @@ const AdminAuthorization: React.FC<AuthorizationProps> = ({
     isAdminPath,
     isAdmin,
     router,
-    org.slug,
+    org?.slug,
   ])
 
   if (loading) {
