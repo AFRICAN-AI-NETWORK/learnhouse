@@ -1,6 +1,9 @@
 'use client'
 import React, { createContext, useContext } from 'react'
+import { getAPIUrl } from '@services/config/config'
+import { swrFetcher } from '@services/utils/ts/requests'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import useSWR from 'swr'
 
 export const AssignmentContext = createContext({})
 
@@ -13,6 +16,31 @@ export function AssignmentProvider({
 }) {
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token
+
+  const { data: assignment, error: assignmentError } = useSWR(
+    `${getAPIUrl()}assignments/${assignment_uuid}`,
+    (url) => swrFetcher(url, accessToken)
+  )
+
+  const { data: assignment_tasks, error: assignmentTasksError } = useSWR(
+    `${getAPIUrl()}assignments/${assignment_uuid}/tasks`,
+    (url) => swrFetcher(url, accessToken)
+  )
+
+  const course_id = assignment?.course_id
+
+  const { data: course_object, error: courseObjectError } = useSWR(
+    course_id ? `${getAPIUrl()}courses/id/${course_id}` : null,
+    (url) => swrFetcher(url, accessToken)
+  )
+
+  const activity_id = assignment?.activity_id
+
+  const { data: activity_object, error: activityObjectError } = useSWR(
+    activity_id ? `${getAPIUrl()}activities/id/${activity_id}` : null,
+    (url) => swrFetcher(url, accessToken)
+  )
+
   const assignmentsFull = React.useMemo(() => {
     if (
       assignment &&

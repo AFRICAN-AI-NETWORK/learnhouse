@@ -1027,6 +1027,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.users'
               )}
@@ -1041,6 +1045,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.usergroups'
               )}
@@ -1055,6 +1063,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.collections'
               )}
@@ -1069,6 +1081,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.organizations'
               )}
@@ -1083,6 +1099,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.coursechapters'
               )}
@@ -1097,6 +1117,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.activities'
               )}
@@ -1111,6 +1135,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.roles'
               )}
@@ -1125,6 +1153,10 @@ function AddRole(props: AddRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.create.permissions.sections.dashboard'
               )}

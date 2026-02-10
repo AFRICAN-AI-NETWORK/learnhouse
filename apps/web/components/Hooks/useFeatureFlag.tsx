@@ -1,5 +1,5 @@
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 type FeatureType = {
   path: string[]

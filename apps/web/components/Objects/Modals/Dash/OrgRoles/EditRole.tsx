@@ -975,6 +975,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.users'
               )}
@@ -989,6 +993,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.usergroups'
               )}
@@ -1003,6 +1011,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.collections'
               )}
@@ -1017,6 +1029,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.organizations'
               )}
@@ -1031,6 +1047,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.coursechapters'
               )}
@@ -1045,6 +1065,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.activities'
               )}
@@ -1059,6 +1083,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.roles'
               )}
@@ -1073,6 +1101,10 @@ function EditRole(props: EditRoleProps) {
             />
 
             <PermissionSection
+              rights={rights}
+              onSelectAll={handleSelectAll}
+              onRightChange={handleRightChange}
+              t={t}
               title={t(
                 'dashboard.users.roles.modals.edit.permissions.sections.dashboard'
               )}
