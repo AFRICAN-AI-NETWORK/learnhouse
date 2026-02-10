@@ -1,8 +1,5 @@
 'use client'
-import { getAPIUrl } from '@services/config/config'
-import { swrFetcher } from '@services/utils/ts/requests'
-import React, { createContext, useContext, useEffect } from 'react'
-import useSWR from 'swr'
+import React, { createContext, useContext } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 export const AssignmentContext = createContext({})

@@ -17,6 +17,7 @@ export default function GlobalError({
       error.message.includes('Failed to find Server Action') ||
       error.message.includes('older or newer deployment')
     ) {
+      // eslint-disable-next-line no-console
       console.warn('Version mismatch detected, reloading page...')
       window.location.reload()
     }

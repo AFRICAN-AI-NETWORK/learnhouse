@@ -15,7 +15,9 @@ function StripeConnectCallback() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const session = useLHSession() as any
-  const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing')
+  const [status, setStatus] = useState<'processing' | 'success' | 'error'>(
+    'processing'
+  )
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -36,7 +38,7 @@ function StripeConnectCallback() {
         )
 
         // Wait for 1 second to show processing state
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
         setStatus('success')
         setMessage(t('payments.stripe_success'))
@@ -45,8 +47,8 @@ function StripeConnectCallback() {
         setTimeout(() => {
           window.close()
         }, 2000)
-
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error verifying payment connection:', error)
         setStatus('error')
         setMessage(t('payments.stripe_failed'))
@@ -85,9 +87,7 @@ function StripeConnectCallback() {
                 <h2 className="text-xl font-semibold text-gray-800">
                   {t('payments.stripe_completing')}
                 </h2>
-                <p className="text-gray-500">
-                  {t('payments.stripe_wait')}
-                </p>
+                <p className="text-gray-500">{t('payments.stripe_wait')}</p>
               </>
             )}
 
@@ -96,10 +96,10 @@ function StripeConnectCallback() {
                 <div className="bg-green-100 p-3 rounded-full">
                   <Check className="h-8 w-8 text-green-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800">{message}</h2>
-                <p className="text-gray-500">
-                  {t('payments.stripe_return')}
-                </p>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {message}
+                </h2>
+                <p className="text-gray-500">{t('payments.stripe_return')}</p>
               </>
             )}
 
@@ -108,10 +108,10 @@ function StripeConnectCallback() {
                 <div className="bg-red-100 p-3 rounded-full">
                   <AlertTriangle className="h-8 w-8 text-red-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800">{message}</h2>
-                <p className="text-gray-500">
-                  {t('payments.stripe_retry')}
-                </p>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {message}
+                </h2>
+                <p className="text-gray-500">{t('payments.stripe_retry')}</p>
               </>
             )}
           </div>
@@ -121,4 +121,4 @@ function StripeConnectCallback() {
   )
 }
 
-export default StripeConnectCallback 
+export default StripeConnectCallback

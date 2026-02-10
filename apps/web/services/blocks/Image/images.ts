@@ -21,6 +21,7 @@ export async function uploadNewImageFile(
     )
       .then((result) => result.json())
       // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console
       .catch((error) => console.error('error', error))
   )
 }
@@ -33,6 +34,7 @@ export async function getImageFile(file_id: string, access_token: string) {
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
       .then((result) => result.json())
+      // eslint-disable-next-line no-console
       // eslint-disable-next-line no-console
       .catch((error) => console.error('error', error))
   )

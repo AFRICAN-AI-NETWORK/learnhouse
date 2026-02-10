@@ -29,8 +29,11 @@ export async function getOrgCourses(
     return res
   } catch (error: any) {
     if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.error(`[getOrgCourses] ❌ Fetch failed for URL: "${fullUrl}"`)
+      // eslint-disable-next-line no-console
       console.error(`[getOrgCourses] Error details:`, error.message)
+      // eslint-disable-next-line no-console
       console.error(`[getOrgCourses] Error stack:`, error.stack)
     }
     throw error

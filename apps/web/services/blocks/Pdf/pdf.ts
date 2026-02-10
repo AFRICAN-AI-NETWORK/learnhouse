@@ -21,6 +21,7 @@ export async function uploadNewPDFFile(
     )
       .then((result) => result.json())
       // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console
       .catch((error) => console.error('error', error))
   )
 }
@@ -33,6 +34,7 @@ export async function getPDFFile(file_id: string, access_token: string) {
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
       .then((result) => result.json())
+      // eslint-disable-next-line no-console
       // eslint-disable-next-line no-console
       .catch((error) => console.error('error', error))
   )

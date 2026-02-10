@@ -71,6 +71,7 @@ const PaymentsConfigurationPage: React.FC = () => {
       toast.success('Paystack enabled successfully')
       mutate([`/payments/${org.id}/config`, access_token])
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error enabling Paystack:', error)
       toast.error('Failed to enable Paystack')
     } finally {
@@ -88,6 +89,7 @@ const PaymentsConfigurationPage: React.FC = () => {
       toast.success('Paystack configuration deleted successfully')
       mutate([`/payments/${org.id}/config`, access_token])
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error deleting Paystack configuration:', error)
       toast.error('Failed to delete Paystack configuration')
     }
@@ -284,6 +286,7 @@ const EditPaystackConfigModal: React.FC<EditPaystackConfigModalProps> = ({
           setPaystackAccountId(paystackConfig.provider_specific_id || '')
         }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching Paystack configuration:', error)
         toast.error('Failed to load existing configuration')
       }
@@ -304,6 +307,7 @@ const EditPaystackConfigModal: React.FC<EditPaystackConfigModalProps> = ({
       mutate([`/payments/${orgId}/config`, accessToken])
       onClose()
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error updating config:', error)
       toast.error('Failed to update configuration')
     }

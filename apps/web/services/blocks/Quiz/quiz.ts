@@ -12,6 +12,7 @@ export async function submitQuizBlock(
   )
     .then((result) => result.json())
     // eslint-disable-next-line no-console
+    // eslint-disable-next-line no-console
     .catch((error) => console.error('error', error))
   return result
 }

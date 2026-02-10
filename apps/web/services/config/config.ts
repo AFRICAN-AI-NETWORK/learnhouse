@@ -156,6 +156,7 @@ const getLEARNHOUSE_API_URL = () => {
     typeof process !== 'undefined' &&
     process.env?.NODE_ENV === 'development'
   ) {
+    // eslint-disable-next-line no-console
     console.warn(
       `[getLEARNHOUSE_API_URL] ⚠️ No API URL found in env vars, using fallback: "${fallbackUrl}"`
     )
