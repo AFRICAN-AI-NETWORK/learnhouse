@@ -409,7 +409,7 @@ async def api_get_owned_courses(
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    return await get_owned_courses(request, current_user, db_session)
+    return await get_owned_courses(request, current_user, db_session, org_id)
 
 @router.get("/currencies")
 async def api_get_supported_currencies(

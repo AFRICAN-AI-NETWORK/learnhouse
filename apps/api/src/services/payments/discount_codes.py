@@ -107,6 +107,10 @@ async def validate_discount_code(
             "This product is not eligible for discount codes."
         )
     
+    # Ensure this is a paid product/course
+    if original_amount <= 0:
+        raise DiscountValidationError("Discount codes can only be applied to paid courses.")
+    
     # Find the discount code
     statement = select(DiscountCode).where(
         and_(

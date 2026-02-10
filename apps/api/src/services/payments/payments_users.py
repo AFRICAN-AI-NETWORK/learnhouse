@@ -5,7 +5,7 @@ from src.db.courses.courses import Course, CourseRead, AuthorWithRole
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_users import PaymentsUser, PaymentStatusEnum, ProviderSpecificData
 from src.db.payments.payments_products import PaymentsProduct
-from src.db.resource_authors import ResourceAuthor
+from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.users import InternalUser, PublicUser, AnonymousUser, User, UserRead
 from src.db.organizations import Organization
 from src.services.orgs.orgs import rbac_check
@@ -224,32 +224,65 @@ async def get_owned_courses(
     request: Request,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
+    org_id: int | None = None,
 ) -> list[CourseRead]:
     # Anonymous users don't own any courses
     if isinstance(current_user, AnonymousUser):
         return []
 
-    # Get all active/completed payment users for the current user
-    statement = select(PaymentsUser).where(
-        PaymentsUser.user_id == current_user.id,
-        PaymentsUser.status.in_([PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED])  # type: ignore
-    )
-    payment_users = db_session.exec(statement).all()
-
-    # Get all product IDs from payment users
-    product_ids = [pu.payment_product_id for pu in payment_users]
-
-    # Get all courses linked to these products
-    courses = []
-    for product_id in product_ids:
-        # Get courses linked to this product through PaymentsCourse
-        statement = (
-            select(Course)
-            .join(PaymentsCourse, Course.id == PaymentsCourse.course_id)  # type: ignore
-            .where(PaymentsCourse.payment_product_id == product_id)
+    # If org_id is provided, check if user is an admin of THIS organization
+    is_admin = False
+    if org_id and not isinstance(current_user, AnonymousUser):
+        from src.db.user_organizations import UserOrganization
+        statement = select(UserOrganization).where(
+            UserOrganization.user_id == current_user.id,
+            UserOrganization.org_id == org_id,
+            UserOrganization.role_id.in_([1, 2])
         )
-        product_courses = db_session.exec(statement).all()
-        courses.extend(product_courses)
+        is_admin = db_session.exec(statement).first() is not None
+
+    if is_admin and org_id:
+        # Admins see all courses in the organization
+        statement = select(Course).where(Course.org_id == org_id)
+        courses = db_session.exec(statement).all()
+    else:
+        # Get all active/completed payment users for the current user
+        statement = select(PaymentsUser).where(
+            PaymentsUser.user_id == current_user.id,
+            PaymentsUser.status.in_([PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED])  # type: ignore
+        )
+        payment_users = db_session.exec(statement).all()
+
+        # Get all product IDs from payment users
+        product_ids = [pu.payment_product_id for pu in payment_users]
+
+        # Get all courses linked to these products
+        courses = []
+        for product_id in product_ids:
+            # Get courses linked to this product through PaymentsCourse
+            statement = (
+                select(Course)
+                .join(PaymentsCourse, Course.id == PaymentsCourse.course_id)  # type: ignore
+                .where(PaymentsCourse.payment_product_id == product_id)
+            )
+            product_courses = db_session.exec(statement).all()
+            courses.extend(product_courses)
+            
+        # Also include authored courses if authenticated
+        if not isinstance(current_user, AnonymousUser):
+            authored_statement = (
+                select(Course)
+                .join(ResourceAuthor, ResourceAuthor.resource_uuid == Course.course_uuid)
+                .where(
+                    ResourceAuthor.user_id == current_user.id,
+                    ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
+                )
+            )
+            if org_id:
+                authored_statement = authored_statement.where(Course.org_id == org_id)
+            
+            authored_courses = db_session.exec(authored_statement).all()
+            courses.extend(authored_courses)
 
     # Remove duplicates by converting to set and back to list
     unique_courses = list({course.id: course for course in courses}.values())
