@@ -1,5 +1,5 @@
 'use client'
-import React, { useMemo } from 'react'
+import React from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 
@@ -47,7 +47,7 @@ export const AuthenticatedClientElement = (
   const session = useLHSession() as any
   const org = useOrg() as any
 
-  const isAllowed = useMemo(() => {
+  const isAllowed = (() => {
     if (session.status == 'loading') {
       return false
     }
@@ -68,14 +68,7 @@ export const AuthenticatedClientElement = (
     }
 
     return false
-  }, [
-    session.status,
-    session?.data?.roles,
-    props.checkMethod,
-    props.action,
-    props.ressourceType,
-    org?.org_uuid,
-  ])
+  })()
 
   return <>{isAllowed && props.children}</>
 }
