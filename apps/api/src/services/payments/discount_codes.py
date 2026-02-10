@@ -178,7 +178,8 @@ async def validate_discount_code(
 
 async def increment_discount_usage_atomic(
     discount_code_id: int,
-    db_session: Session
+    db_session: Session,
+    auto_commit: bool = True
 ) -> bool:
     """
     Atomically increment discount code usage counter.
@@ -193,7 +194,7 @@ async def increment_discount_usage_atomic(
     # Use raw SQL for atomic increment with conditional check
     # This ensures database handles concurrency, not application code
     # max_uses = NULL or 0 means unlimited
-    result = db_session.exec(
+    result = db_session.execute(
         text("""
             UPDATE discountcode
             SET current_uses = current_uses + 1
@@ -209,11 +210,13 @@ async def increment_discount_usage_atomic(
     updated = row is not None
     
     if updated:
-        db_session.commit()
+        if auto_commit:
+            db_session.commit()
         logger.info(f"Atomically incremented discount usage: code_id={discount_code_id}, new_uses={row[1]}/{row[2] if row[2] else 'unlimited'}")
     else:
         logger.warning(f"Failed to increment discount usage (max uses reached): code_id={discount_code_id}")
-        db_session.rollback()
+        if auto_commit:
+            db_session.rollback()
     
     return updated
 
@@ -287,7 +290,8 @@ async def record_discount_usage(
 async def decrement_discount_usage(
     discount_code_id: int,
     payment_user_id: int,
-    db_session: Session
+    db_session: Session,
+    auto_commit: bool = True
 ) -> bool:
     """
     Decrement discount code usage counter (e.g., for refunds).
@@ -319,7 +323,7 @@ async def decrement_discount_usage(
     )
     
     # Atomically decrement counter
-    result = db_session.exec(
+    result = db_session.execute(
         text("""
             UPDATE discountcode
             SET current_uses = GREATEST(0, current_uses - 1)
@@ -334,14 +338,16 @@ async def decrement_discount_usage(
     
     if updated:
         db_session.delete(usage)
-        db_session.commit()
+        if auto_commit:
+            db_session.commit()
         logger.info(
             f"Successfully decremented discount usage counter: code_id={discount_code_id}, "
             f"new_uses={row[1]}, payment_user_id={payment_user_id}"
         )
     else:
         logger.error(f"Failed to decrement discount usage counter for code_id={discount_code_id}")
-        db_session.rollback()
+        if auto_commit:
+            db_session.rollback()
     
     return updated
 
