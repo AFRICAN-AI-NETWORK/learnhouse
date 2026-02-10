@@ -16,12 +16,12 @@ from sqlalchemy.pool import StaticPool
 from src.db.organizations import Organization
 from src.db.users import User
 from src.db.courses.courses import Course
-from src.db.roles import Role
-from src.db.user_organizations import UserOrganization
-from src.db.resource_authors import ResourceAuthor
+from src.db.roles import Role  # noqa: F401
+from src.db.user_organizations import UserOrganization  # noqa: F401
+from src.db.resource_authors import ResourceAuthor  # noqa: F401
 from src.db.payments.discount_codes import DiscountCode, DiscountCodeUsage, DiscountTypeEnum
-from src.db.payments.payments import PaymentsConfig
-from src.db.payments.payments_products import PaymentsProduct
+from src.db.payments.payments import PaymentsConfig, PaymentProviderEnum  # noqa: F401
+from src.db.payments.payments_products import PaymentsProduct, PaymentProductTypeEnum, PaymentPriceTypeEnum  # noqa: F401
 from src.db.payments.payments_users import PaymentsUser
 
 
@@ -232,7 +232,6 @@ def max_uses_discount_code(db_session: Session, mock_org: Organization) -> Disco
 @pytest.fixture
 def mock_payments_config(db_session: Session, mock_org: Organization):
     """Create a test payments configuration."""
-    from src.db.payments.payments import PaymentsConfig, PaymentProviderEnum
     from datetime import datetime
     
     config = PaymentsConfig(
@@ -254,7 +253,6 @@ def mock_payments_config(db_session: Session, mock_org: Organization):
 @pytest.fixture
 def mock_payments_product(db_session: Session, mock_org: Organization, mock_payments_config):
     """Create a test payments product."""
-    from src.db.payments.payments_products import PaymentsProduct, PaymentProductTypeEnum, PaymentPriceTypeEnum
     from datetime import datetime
     
     product = PaymentsProduct(
