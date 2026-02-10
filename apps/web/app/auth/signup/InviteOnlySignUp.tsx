@@ -13,7 +13,6 @@ import { AlertTriangle, Check, User } from 'lucide-react'
 import Link from 'next/link'
 import { signUpWithInviteCode } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { signIn } from 'next-auth/react'
 import { useTranslation } from 'react-i18next'
 
 const validate = (values: any, t: any) => {
@@ -85,7 +84,6 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
           router.push(`/login?orgslug=${orgSlug}`)
         }, 2000)
 
-
         setIsSubmitting(false)
       } else if (
         res.status == 401 ||
@@ -102,7 +100,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
     },
   })
 
-  useEffect(() => { }, [org])
+  useEffect(() => {}, [org])
 
   return (
     <div className="login-form m-auto w-72">
@@ -119,16 +117,20 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
             <div className="font-bold text-sm">{message}</div>
           </div>
           <hr className="border-green-900/20 800 w-40 border" />
-          <Link className="flex space-x-2 items-center" href={
-            `/login?orgslug=${org?.slug}`
-          } >
+          <Link
+            className="flex space-x-2 items-center"
+            href={`/login?orgslug=${org?.slug}`}
+          >
             <User size={14} /> <div>{t('auth.login_to_your_account')}</div>
           </Link>
         </div>
       )}
       <FormLayout onSubmit={formik.handleSubmit}>
         <FormField name="email">
-          <FormLabelAndMessage label={t('auth.email')} message={formik.errors.email} />
+          <FormLabelAndMessage
+            label={t('auth.email')}
+            message={formik.errors.email}
+          />
           <Form.Control asChild>
             <Input
               onChange={formik.handleChange}
@@ -140,7 +142,10 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         </FormField>
         <div className="flex flex-row space-x-2">
           <FormField name="first_name">
-            <FormLabelAndMessage label={t('user.first_name')} message={formik.errors.first_name} />
+            <FormLabelAndMessage
+              label={t('user.first_name')}
+              message={formik.errors.first_name}
+            />
             <Form.Control asChild>
               <Input
                 onChange={formik.handleChange}
@@ -151,7 +156,10 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
             </Form.Control>
           </FormField>
           <FormField name="last_name">
-            <FormLabelAndMessage label={t('user.last_name')} message={formik.errors.last_name} />
+            <FormLabelAndMessage
+              label={t('user.last_name')}
+              message={formik.errors.last_name}
+            />
             <Form.Control asChild>
               <Input
                 onChange={formik.handleChange}
@@ -198,7 +206,10 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
 
         {/* for bio  */}
         <FormField name="bio">
-          <FormLabelAndMessage label={t('user.bio')} message={formik.errors.bio} />
+          <FormLabelAndMessage
+            label={t('user.bio')}
+            message={formik.errors.bio}
+          />
 
           <Form.Control asChild>
             <Textarea
@@ -212,7 +223,9 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         <div className="flex  py-4">
           <Form.Submit asChild>
             <button className="w-full bg-black text-white font-bold text-center p-2 rounded-md shadow-md hover:cursor-pointer">
-              {isSubmitting ? t('common.loading') : t('auth.create_account_and_join')}
+              {isSubmitting
+                ? t('common.loading')
+                : t('auth.create_account_and_join')}
             </button>
           </Form.Submit>
         </div>

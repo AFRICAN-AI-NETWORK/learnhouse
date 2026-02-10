@@ -41,18 +41,19 @@ export type OrderPayload =
 const EditCourseStructure = (props: EditCourseStructureProps) => {
   const { t } = useTranslation()
   const router = useRouter()
-  const session = useLHSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
   // Check window availability
   const [winReady, setwinReady] = useState(false)
 
   const dispatchCourse = useCourseDispatch() as any
 
-  const [order, setOrder] = useState<OrderPayload>()
   const course = useCourse() as any
   const course_structure = course ? course.courseStructure : {}
   const course_uuid = course ? course.courseStructure.course_uuid : ''
-  const withUnpublishedActivities = course ? course.withUnpublishedActivities : false
+  const withUnpublishedActivities = course
+    ? course.withUnpublishedActivities
+    : false
   // New Chapter creation
   const [newChapterModal, setNewChapterModal] = useState(false)
 
@@ -62,8 +63,10 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
 
   // Submit new chapter
   const submitChapter = async (chapter: any) => {
-    await createChapter(chapter,access_token)
-    mutate(`${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+    await createChapter(chapter, access_token)
+    mutate(
+      `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+    )
     await revalidateTags(['courses'], props.orgslug)
     router.refresh()
     setNewChapterModal(false)
@@ -79,7 +82,7 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
       return
 
     const newCourseStructure = { ...course_structure }
-    
+
     if (type === 'chapter') {
       const newChapterOrder = Array.from(newCourseStructure.chapters)
       const [movedChapter] = newChapterOrder.splice(source.index, 1)
@@ -92,9 +95,10 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
       const sourceChapter = newChapterOrder.find(
         (chapter: any) => chapter.chapter_uuid === source.droppableId
       ) as any
-      const destinationChapter = newChapterOrder.find(
-        (chapter: any) => chapter.chapter_uuid === destination.droppableId
-      ) ?? sourceChapter
+      const destinationChapter =
+        newChapterOrder.find(
+          (chapter: any) => chapter.chapter_uuid === destination.droppableId
+        ) ?? sourceChapter
 
       const [movedActivity] = sourceChapter.activities.splice(source.index, 1)
       destinationChapter.activities.splice(destination.index, 0, movedActivity)
@@ -109,8 +113,9 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setwinReady(true)
-  }, [props.course_uuid, course_structure, course])
+  }, [])
 
   if (!course) return <PageLoading></PageLoading>
 
@@ -155,8 +160,12 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
                 submitChapter={submitChapter}
               ></NewChapterModal>
             }
-            dialogTitle={t('dashboard.courses.structure.modals.new_chapter.title')}
-            dialogDescription={t('dashboard.courses.structure.modals.new_chapter.description')}
+            dialogTitle={t(
+              'dashboard.courses.structure.modals.new_chapter.title'
+            )}
+            dialogDescription={t(
+              'dashboard.courses.structure.modals.new_chapter.description'
+            )}
             dialogTrigger={
               <div className="w-44 my-16 py-5 max-w-(--breakpoint-2xl) mx-auto bg-cyan-800 text-white rounded-xl shadow-xs px-6 items-center flex flex-row h-10">
                 <div className="mx-auto flex space-x-2 items-center hover:cursor-pointer">
@@ -165,7 +174,9 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
                     size={16}
                     className="text-white text-sm "
                   />
-                  <div className="font-bold text-sm">{t('dashboard.courses.structure.actions.add_chapter')}</div>
+                  <div className="font-bold text-sm">
+                    {t('dashboard.courses.structure.actions.add_chapter')}
+                  </div>
                 </div>
               </div>
             }

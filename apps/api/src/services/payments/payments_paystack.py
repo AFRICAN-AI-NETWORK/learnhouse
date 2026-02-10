@@ -7,6 +7,7 @@ from src.db.payments.payments_products import (
     PaymentProductTypeEnum,
     PaymentsProduct,
 )
+from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
@@ -14,6 +15,7 @@ from src.services.payments.payments_users import (
     create_payment_user,
     delete_payment_user,
 )
+from src.services.payments.discount_codes import validate_discount_code, DiscountValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +92,10 @@ async def make_paystack_request(
     
     async with httpx.AsyncClient() as client:
         try:
+            logger.info(f"Making Paystack {method} request to {endpoint}")
+            if data:
+                logger.debug(f"Request data: {data}")
+            
             if method.upper() == "GET":
                 response = await client.get(url, headers=headers)
             elif method.upper() == "POST":
@@ -106,14 +112,18 @@ async def make_paystack_request(
             
             if not result.get("status"):
                 error_message = result.get("message", "Unknown error")
+                logger.error(f"Paystack API returned error: {error_message}")
                 raise HTTPException(status_code=400, detail=f"Paystack API error: {error_message}")
             
             return result.get("data", {})
         except httpx.HTTPStatusError as e:
-            logger.error(f"Paystack API error: {e.response.text}")
+            logger.error(f"Paystack HTTP error {e.response.status_code}: {e.response.text}")
             raise HTTPException(status_code=e.response.status_code, detail=f"Paystack API error: {e.response.text}")
+        except httpx.RequestError as e:
+            logger.error(f"Request error to Paystack: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error connecting to Paystack: {str(e)}")
         except Exception as e:
-            logger.error(f"Error making Paystack request: {str(e)}")
+            logger.error(f"Unexpected error making Paystack request: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Error making Paystack request: {str(e)}")
 
 
@@ -253,6 +263,7 @@ async def initialize_transaction(
     product_id: int,
     redirect_uri: str,
     currency: str | None = None,
+    discount_code: str | None = None,
     current_user: PublicUser | AnonymousUser = None,
     db_session: Session = None,
 ) -> dict:
@@ -264,6 +275,7 @@ async def initialize_transaction(
         product_id: Product ID
         redirect_uri: URL to redirect after payment
         currency: Optional currency code (ISO 4217). If not provided, uses product's default currency
+        discount_code: Optional discount code to apply
         current_user: Current user making the payment
         db_session: Database session
     """
@@ -285,6 +297,47 @@ async def initialize_transaction(
     # Validate currency
     validate_currency(selected_currency)
     
+    # Get course_id from product (if product is linked to a course)
+    course_statement = select(PaymentsCourse).where(
+        PaymentsCourse.payment_product_id == product_id,
+        PaymentsCourse.org_id == org_id
+    )
+    payment_course = db_session.exec(course_statement).first()
+    course_id = payment_course.course_id if payment_course else None
+    
+    # Initialize discount variables
+    discount_code_obj = None
+    original_amount = product.amount
+    discount_amount = 0.0
+    final_amount = product.amount
+    
+    # CRITICAL: Validate discount code if provided (prevents race conditions)
+    if discount_code and course_id:
+        try:
+            discount_code_obj, discount_amount, final_amount = await validate_discount_code(
+                code=discount_code,
+                org_id=org_id,
+                user_id=current_user.id,
+                course_id=course_id,
+                original_amount=original_amount,
+                db_session=db_session,
+                check_usage=True
+            )
+            logger.info(f"Discount code validated: {discount_code}, discount={discount_amount}, final={final_amount}")
+        except DiscountValidationError as e:
+            logger.warning(f"Discount code validation failed: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Discount code error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error validating discount code: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Error validating discount code: {str(e)}")
+    elif discount_code and not course_id:
+        # Explicit rejection - discount codes only work for courses
+        raise HTTPException(
+            status_code=400,
+            detail="Discount codes can only be applied to course purchases. "
+                   "This product is not a course and is not eligible for discount codes."
+        )
+    
     # Create or get Paystack customer
     try:
         try:
@@ -303,6 +356,7 @@ async def initialize_transaction(
                 raise
         
         # Create initial payment user with pending status
+        # Include discount information if discount code was validated
         payment_user = await create_payment_user(
             request=request,
             org_id=org_id,
@@ -319,6 +373,16 @@ async def initialize_transaction(
         
         if not payment_user:
             raise HTTPException(status_code=400, detail="Error creating payment user")
+        
+        # Update payment_user with discount information if applicable
+        if discount_code_obj:
+            payment_user.discount_code_id = discount_code_obj.id
+            payment_user.original_amount = original_amount
+            payment_user.discount_amount = discount_amount
+            payment_user.final_amount = final_amount
+            db_session.add(payment_user)
+            db_session.commit()
+            db_session.refresh(payment_user)
         
     except Exception as e:
         logger.error(f"Error creating/retrieving customer: {str(e)}")
@@ -337,15 +401,23 @@ async def initialize_transaction(
     }
     
     # Calculate amount in selected currency
-    # If currency matches product currency, use product amount directly
-    # If different, use product amount (Paystack will handle conversion on their end)
-    # Note: For production, you may want to implement exchange rate conversion here
-    amount_in_subunit = int(product.amount * 100)
+    # Use final_amount if discount was applied, otherwise use product amount
+    amount_to_charge = final_amount if discount_code_obj else product.amount
+    amount_in_subunit = int(amount_to_charge * 100)
     
-    # Store selected currency in metadata for reference
+    # Store selected currency and discount info in metadata for reference
     metadata_dict["selected_currency"] = selected_currency
     metadata_dict["product_currency"] = product.currency
     metadata_dict["product_amount"] = str(product.amount)
+    
+    if discount_code_obj:
+        metadata_dict["discount_code_id"] = str(discount_code_obj.id)
+        metadata_dict["discount_code"] = discount_code_obj.code
+        metadata_dict["original_amount"] = str(original_amount)
+        metadata_dict["discount_amount"] = str(discount_amount)
+        metadata_dict["final_amount"] = str(final_amount)
+        if course_id:
+            metadata_dict["course_id"] = str(course_id)
     
     transaction_data = {
         "email": current_user.email,
@@ -401,7 +473,18 @@ async def initialize_transaction(
 
 
 async def verify_transaction(reference: str) -> dict:
-    """Verify a Paystack transaction"""
-    return await make_paystack_request("GET", f"/transaction/verify/{reference}")
+    """Verify a Paystack transaction
+    
+    Returns the full Paystack response including status and data fields.
+    The data field contains transaction details like amount, currency, metadata, etc.
+    """
+    # Make request and get the data portion
+    transaction_data = await make_paystack_request("GET", f"/transaction/verify/{reference}")
+    
+    # Return in the format expected by the endpoint (with status and data keys)
+    return {
+        "status": "success",  # If make_paystack_request didn't throw, it was successful
+        "data": transaction_data
+    }
 
 

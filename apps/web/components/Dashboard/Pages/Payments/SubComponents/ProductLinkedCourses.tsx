@@ -1,53 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { getCoursesLinkedToProduct, unlinkCourseFromProduct } from '@services/payments/products';
-import { useLHSession } from '@components/Contexts/LHSessionContext';
-import { useOrg } from '@components/Contexts/OrgContext';
-import { Trash2, Plus, BookOpen } from 'lucide-react';
-import { Button } from "@components/ui/button";
-import toast from 'react-hot-toast';
-import { mutate } from 'swr';
-import Modal from '@components/Objects/StyledElements/Modal/Modal';
-import LinkCourseModal from './LinkCourseModal';
+import React, { useState } from 'react'
+import useSWR, { mutate } from 'swr'
+import {
+  getCoursesLinkedToProduct,
+  unlinkCourseFromProduct,
+} from '@services/payments/products'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { useOrg } from '@components/Contexts/OrgContext'
+import { Trash2, Plus, BookOpen } from 'lucide-react'
+import { Button } from '@components/ui/button'
+import toast from 'react-hot-toast'
+
+import Modal from '@components/Objects/StyledElements/Modal/Modal'
+import LinkCourseModal from './LinkCourseModal'
 
 interface ProductLinkedCoursesProps {
-  productId: string;
+  productId: string
 }
 
-export default function ProductLinkedCourses({ productId }: ProductLinkedCoursesProps) {
-  const [linkedCourses, setLinkedCourses] = useState<any[]>([]);
-  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const session = useLHSession() as any;
-  const org = useOrg() as any;
+export default function ProductLinkedCourses({
+  productId,
+}: ProductLinkedCoursesProps) {
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
+  const session = useLHSession() as any
+  const org = useOrg() as any
 
-  const fetchLinkedCourses = async () => {
-    try {
-      const response = await getCoursesLinkedToProduct(org.id, productId, session.data?.tokens?.access_token);
-      setLinkedCourses(response.data || []);
-    } catch (error) {
-      toast.error('Failed to fetch linked courses');
-    }
-  };
+  const { data: fetchResponse, mutate: mutateLinkedCourses } = useSWR(
+    org?.id && productId && session?.data?.tokens?.access_token
+      ? [
+          `/payments/${org.id}/products/${productId}/courses`,
+          session.data.tokens.access_token,
+        ]
+      : null,
+    ([url, token]) => getCoursesLinkedToProduct(org.id, productId, token)
+  )
+
+  const linkedCourses = fetchResponse?.data || []
 
   const handleUnlinkCourse = async (courseId: string) => {
     try {
-      const response = await unlinkCourseFromProduct(org.id, productId, courseId, session.data?.tokens?.access_token);
+      const response = await unlinkCourseFromProduct(
+        org.id,
+        productId,
+        courseId,
+        session.data?.tokens?.access_token
+      )
       if (response.success) {
-        await fetchLinkedCourses();
-        mutate([`/payments/${org.id}/products`, session.data?.tokens?.access_token]);
-        toast.success('Course unlinked successfully');
+        await mutateLinkedCourses()
+        mutate([
+          `/payments/${org.id}/products`,
+          session.data?.tokens?.access_token,
+        ])
+        toast.success('Course unlinked successfully')
       } else {
-        toast.error(response.data?.detail || 'Failed to unlink course');
+        toast.error(response.data?.detail || 'Failed to unlink course')
       }
     } catch (error) {
-      toast.error('Failed to unlink course');
+      toast.error('Failed to unlink course')
     }
-  };
-
-  useEffect(() => {
-    if (org && session && productId) {
-      fetchLinkedCourses();
-    }
-  }, [org, session, productId]);
+  }
 
   return (
     <div className="mt-4">
@@ -62,13 +72,17 @@ export default function ProductLinkedCourses({ productId }: ProductLinkedCourses
             <LinkCourseModal
               productId={productId}
               onSuccess={() => {
-                setIsLinkModalOpen(false);
-                fetchLinkedCourses();
+                setIsLinkModalOpen(false)
+                mutateLinkedCourses()
               }}
             />
           }
           dialogTrigger={
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
               <Plus size={16} />
               <span>Link Course</span>
             </Button>
@@ -83,7 +97,7 @@ export default function ProductLinkedCourses({ productId }: ProductLinkedCourses
             <span>No courses linked yet</span>
           </div>
         ) : (
-          linkedCourses.map((course) => (
+          linkedCourses.map((course: any) => (
             <div
               key={course.id}
               className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
@@ -102,5 +116,5 @@ export default function ProductLinkedCourses({ productId }: ProductLinkedCourses
         )}
       </div>
     </div>
-  );
-} 
+  )
+}

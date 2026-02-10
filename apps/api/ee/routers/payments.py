@@ -27,6 +27,21 @@ from src.db.users import InternalUser
 from src.services.payments.payments_customers import get_customers
 from src.services.payments.webhooks.payments_paystack_webhooks import handle_paystack_webhook
 from src.db.courses.courses import Course
+from src.services.payments.discount_codes import (
+    create_discount_code,
+    list_discount_codes,
+    get_discount_code,
+    update_discount_code,
+    deactivate_discount_code,
+    get_discount_code_analytics,
+    validate_discount_code,
+    DiscountValidationError,
+)
+from src.db.payments.discount_codes import (
+    DiscountCodeCreate,
+    DiscountCodeRead,
+    DiscountCodeUpdate,
+)
 
 
 router = APIRouter()
@@ -203,6 +218,7 @@ async def api_create_checkout_session(
     product_id: int,
     redirect_uri: str,
     currency: str | None = None,
+    discount_code: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -213,12 +229,13 @@ async def api_create_checkout_session(
         redirect_uri: URL to redirect after payment completion
         currency: Optional currency code (ISO 4217). Supported: NGN, USD, GHS, ZAR, KES, XOF
                  If not provided, uses the product's default currency
+        discount_code: Optional discount code to apply to the purchase
     
     Example:
-        POST /api/v1/payments/{org_id}/checkout/product/{product_id}?redirect_uri=https://example.com/success&currency=USD
+        POST /api/v1/payments/{org_id}/checkout/product/{product_id}?redirect_uri=https://example.com/success&currency=USD&discount_code=SCHOOL2026
     """
     return await initialize_transaction(
-        request, org_id, product_id, redirect_uri, currency, current_user, db_session
+        request, org_id, product_id, redirect_uri, currency, discount_code, current_user, db_session
     )
 
 @router.get("/{org_id}/transactions/{reference}")
@@ -392,7 +409,7 @@ async def api_get_owned_courses(
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    return await get_owned_courses(request, current_user, db_session)
+    return await get_owned_courses(request, current_user, db_session, org_id)
 
 @router.get("/currencies")
 async def api_get_supported_currencies(
@@ -403,3 +420,123 @@ async def api_get_supported_currencies(
     Returns currency codes with their names, symbols, and subunit information
     """
     return get_supported_currencies()
+
+# Discount code endpoints
+
+@router.post("/{org_id}/discount-codes")
+async def api_create_discount_code(
+    request: Request,
+    org_id: int,
+    discount_data: DiscountCodeCreate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> DiscountCodeRead:
+    """Create a new discount code for an organization (admin only)"""
+    return await create_discount_code(request, org_id, discount_data, current_user, db_session)
+
+
+@router.get("/{org_id}/discount-codes")
+async def api_list_discount_codes(
+    request: Request,
+    org_id: int,
+    include_inactive: bool = False,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[DiscountCodeRead]:
+    """List all discount codes for an organization (admin only)"""
+    return await list_discount_codes(request, org_id, current_user, db_session, include_inactive)
+
+
+@router.get("/{org_id}/discount-codes/{code_id}")
+async def api_get_discount_code(
+    request: Request,
+    org_id: int,
+    code_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> DiscountCodeRead:
+    """Get a specific discount code (admin only)"""
+    code = await get_discount_code(request, org_id, code_id, current_user, db_session)
+    return DiscountCodeRead.model_validate(code)
+
+
+@router.patch("/{org_id}/discount-codes/{code_id}")
+async def api_update_discount_code(
+    request: Request,
+    org_id: int,
+    code_id: int,
+    discount_update: DiscountCodeUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> DiscountCodeRead:
+    """Update a discount code (admin only)"""
+    code = await update_discount_code(request, org_id, code_id, discount_update, current_user, db_session)
+    return DiscountCodeRead.model_validate(code)
+
+
+@router.post("/{org_id}/discount-codes/{code_id}/deactivate")
+async def api_deactivate_discount_code(
+    request: Request,
+    org_id: int,
+    code_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> DiscountCodeRead:
+    """Deactivate a discount code (admin only)"""
+    code = await deactivate_discount_code(request, org_id, code_id, current_user, db_session)
+    return DiscountCodeRead.model_validate(code)
+
+
+@router.get("/{org_id}/discount-codes/{code_id}/analytics")
+async def api_get_discount_code_analytics(
+    request: Request,
+    org_id: int,
+    code_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> dict:
+    """Get usage analytics for a discount code (admin only)"""
+    return await get_discount_code_analytics(request, org_id, code_id, current_user, db_session)
+
+
+@router.post("/{org_id}/validate-discount")
+async def api_validate_discount_code(
+    request: Request,
+    org_id: int,
+    code: str,
+    course_id: int,
+    amount: float,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> dict:
+    """
+    Validate a discount code and calculate discounted price (student operation).
+    This is a read-only operation that doesn't record usage.
+    """
+    try:
+        discount_code, discount_amount, final_amount = await validate_discount_code(
+            code=code,
+            org_id=org_id,
+            user_id=current_user.id,
+            course_id=course_id,
+            original_amount=amount,
+            db_session=db_session,
+            check_usage=True
+        )
+        
+        return {
+            "valid": True,
+            "discount_code_id": discount_code.id,
+            "code": discount_code.code,
+            "discount_type": discount_code.discount_type,
+            "discount_value": discount_code.discount_value,
+            "original_amount": amount,
+            "discount_amount": discount_amount,
+            "final_amount": final_amount,
+            "description": discount_code.description
+        }
+    except DiscountValidationError as e:
+        return {
+            "valid": False,
+            "error": str(e)
+        }

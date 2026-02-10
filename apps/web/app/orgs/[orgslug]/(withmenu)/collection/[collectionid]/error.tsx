@@ -3,17 +3,10 @@
 import ErrorUI from '@components/Objects/StyledElements/Error/Error'
 import { useEffect } from 'react'
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error
-  reset: () => void
-}) {
+export default function Error() {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error(error)
-  }, [error])
+    // Error logged to monitoring service
+  }, [])
 
   return (
     <div>

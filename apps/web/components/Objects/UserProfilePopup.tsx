@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from 'react'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
-import { MapPin, Building2, Globe, Briefcase, GraduationCap, Link, Users, Calendar, Lightbulb, Loader2, ExternalLink } from 'lucide-react'
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card'
+import {
+  MapPin,
+  Building2,
+  Globe,
+  Briefcase,
+  GraduationCap,
+  Link,
+  Users,
+  Calendar,
+  Lightbulb,
+  Loader2,
+  ExternalLink,
+} from 'lucide-react'
 import { getUser } from '@services/users/users'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { Button } from '@/components/ui/button'
@@ -29,15 +45,15 @@ type UserData = {
 }
 
 const ICON_MAP = {
-  'briefcase': Briefcase,
+  briefcase: Briefcase,
   'graduation-cap': GraduationCap,
   'map-pin': MapPin,
   'building-2': Building2,
-  'speciality': Lightbulb,
-  'globe': Globe,
-  'link': Link,
-  'users': Users,
-  'calendar': Calendar,
+  speciality: Lightbulb,
+  globe: Globe,
+  link: Link,
+  users: Users,
+  calendar: Calendar,
 } as const
 
 const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
@@ -50,15 +66,16 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
   useEffect(() => {
     const fetchUserData = async () => {
       if (!userId) return
-      
+
       setIsLoading(true)
       setError(null)
-      
+
       try {
         const data = await getUser(userId, session?.data?.tokens?.access_token)
         setUserData(data)
       } catch (err) {
         setError('Failed to load user data')
+        // eslint-disable-next-line no-console
         console.error('Error fetching user data:', err)
       } finally {
         setIsLoading(false)
@@ -76,9 +93,7 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
 
   return (
     <HoverCard openDelay={100} closeDelay={150}>
-      <HoverCardTrigger asChild>
-        {children}
-      </HoverCardTrigger>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent className="w-96 bg-white/95 backdrop-blur-md p-0 nice-shadow">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -91,16 +106,14 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
             {/* Header with Avatar and Name */}
             <div className="relative">
               {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-b from-gray-100/30 to-transparent h-28 rounded-t-lg" />
-              
+              <div className="absolute inset-0 bg-linear-to-b from-gray-100/30 to-transparent h-28 rounded-t-lg" />
+
               {/* Content */}
               <div className="relative px-5 pt-5 pb-4">
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
-                  <div className="flex-shrink-0">
-                    <div className="rounded-full">
-                      {children}
-                    </div>
+                  <div className="shrink-0">
+                    <div className="rounded-full">{children}</div>
                   </div>
 
                   {/* Name, Bio, and Button */}
@@ -111,7 +124,10 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
                           {userData.first_name} {userData.last_name}
                         </h4>
                         {userData.username && (
-                          <Badge variant="outline" className="text-xs font-normal text-gray-500 px-2 truncate">
+                          <Badge
+                            variant="outline"
+                            className="text-xs font-normal text-gray-500 px-2 truncate"
+                          >
                             @{userData.username}
                           </Badge>
                         )}
@@ -119,8 +135,11 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-gray-600 hover:text-gray-900 flex-shrink-0"
-                        onClick={() => userData.username && router.push(`/user/${userData.username}`)}
+                        className="h-6 w-6 text-gray-600 hover:text-gray-900 shrink-0"
+                        onClick={() =>
+                          userData.username &&
+                          router.push(`/user/${userData.username}`)
+                        }
                       >
                         <ExternalLink className="w-4 h-4" />
                       </Button>
@@ -142,8 +161,12 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
                   <div key={detail.id} className="flex items-center gap-2.5">
                     <IconComponent iconName={detail.icon} />
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500">{detail.label}</span>
-                      <span className="text-sm text-gray-700">{detail.text}</span>
+                      <span className="text-xs text-gray-500">
+                        {detail.label}
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        {detail.text}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -156,4 +179,4 @@ const UserProfilePopup = ({ children, userId }: UserProfilePopupProps) => {
   )
 }
 
-export default UserProfilePopup 
+export default UserProfilePopup

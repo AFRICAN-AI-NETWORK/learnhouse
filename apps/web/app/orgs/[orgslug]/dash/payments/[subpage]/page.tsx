@@ -1,16 +1,16 @@
 'use client'
-import React, { use } from 'react';
+import React, { use } from 'react'
 import { motion } from 'framer-motion'
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 import { Settings, Users, Gem } from 'lucide-react'
-import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useOrg } from '@components/Contexts/OrgContext'
 import PaymentsConfigurationPage from '@components/Dashboard/Pages/Payments/PaymentsConfigurationPage'
 import PaymentsProductPage from '@components/Dashboard/Pages/Payments/PaymentsProductPage'
 import PaymentsCustomersPage from '@components/Dashboard/Pages/Payments/PaymentsCustomersPage'
+import PaymentsDiscountsPage from '@components/Dashboard/Pages/Payments/PaymentsDiscountsPage'
 import useFeatureFlag from '@components/Hooks/useFeatureFlag'
+import { Ticket } from 'lucide-react'
 
 export type PaymentsParams = {
   subpage: string
@@ -18,14 +18,12 @@ export type PaymentsParams = {
 }
 
 function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
-  const params = use(props.params);
-  const session = useLHSession() as any
-  const org = useOrg() as any
+  const params = use(props.params)
   const subpage = params.subpage || 'customers'
 
   const isPaymentsEnabled = useFeatureFlag({
     path: ['features', 'payments', 'enabled'],
-    defaultValue: true
+    defaultValue: true,
   })
 
   const getPageTitle = () => {
@@ -33,22 +31,27 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
       case 'customers':
         return {
           h1: 'Customers',
-          h2: 'View and manage your customer information'
+          h2: 'View and manage your customer information',
         }
       case 'paid-products':
         return {
           h1: 'Paid Products',
-          h2: 'Manage your paid products and pricing'
+          h2: 'Manage your paid products and pricing',
         }
       case 'configuration':
         return {
           h1: 'Payment Configuration',
-          h2: 'Set up and manage your payment gateway'
+          h2: 'Set up and manage your payment gateway',
+        }
+      case 'discounts':
+        return {
+          h1: 'Discounts',
+          h2: 'Create and manage discount codes for your courses',
         }
       default:
         return {
           h1: 'Payments',
-          h2: 'Overview of your payment settings and transactions'
+          h2: 'Overview of your payment settings and transactions',
         }
     }
   }
@@ -58,8 +61,12 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
       <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center p-4">
         <div className="bg-white p-6 rounded-lg shadow-md text-center max-w-md">
           <h2 className="text-xl font-bold mb-4">Payments Not Available</h2>
-          <p className="text-gray-600">The payments feature is not enabled for this organization.</p>
-          <p className="text-gray-600 mt-2">Please contact your administrator to enable payments.</p>
+          <p className="text-gray-600">
+            The payments feature is not enabled for this organization.
+          </p>
+          <p className="text-gray-600 mt-2">
+            Please contact your administrator to enable payments.
+          </p>
         </div>
       </div>
     )
@@ -76,9 +83,7 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
             <div className="pt-3 flex font-bold text-4xl tracking-tighter">
               {h1}
             </div>
-            <div className="flex font-medium text-gray-400 text-md">
-              {h2}
-            </div>
+            <div className="flex font-medium text-gray-400 text-md">{h2}</div>
           </div>
         </div>
         <div className="flex space-x-0.5 font-black text-sm">
@@ -100,6 +105,12 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
             label="Configuration"
             isActive={subpage === 'configuration'}
           />
+          <TabLink
+            href={getUriWithOrg(params.orgslug, '/dash/payments/discounts')}
+            icon={<Ticket size={16} />}
+            label="Discounts"
+            isActive={subpage === 'discounts'}
+          />
         </div>
       </div>
       <div className="h-6 shrink-0"></div>
@@ -113,12 +124,23 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
         {subpage === 'configuration' && <PaymentsConfigurationPage />}
         {subpage === 'paid-products' && <PaymentsProductPage />}
         {subpage === 'customers' && <PaymentsCustomersPage />}
+        {subpage === 'discounts' && <PaymentsDiscountsPage />}
       </motion.div>
     </div>
   )
 }
 
-const TabLink = ({ href, icon, label, isActive }: { href: string, icon: React.ReactNode, label: string, isActive: boolean }) => (
+const TabLink = ({
+  href,
+  icon,
+  label,
+  isActive,
+}: {
+  href: string
+  icon: React.ReactNode
+  label: string
+  isActive: boolean
+}) => (
   <Link href={href}>
     <div
       className={`py-2 w-fit text-center border-black transition-all ease-linear ${isActive ? 'border-b-4' : 'opacity-50'} cursor-pointer`}

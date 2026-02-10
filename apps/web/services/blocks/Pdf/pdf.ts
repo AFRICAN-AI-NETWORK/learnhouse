@@ -14,20 +14,26 @@ export async function uploadNewPDFFile(
   formData.append('file_object', file)
   formData.append('activity_uuid', activity_uuid)
 
-  return fetch(
-    `${getAPIUrl()}blocks/pdf`,
-    RequestBodyFormWithAuthHeader('POST', formData, null, access_token)
+  return (
+    fetch(
+      `${getAPIUrl()}blocks/pdf`,
+      RequestBodyFormWithAuthHeader('POST', formData, null, access_token)
+    )
+      .then((result) => result.json())
+      // eslint-disable-next-line no-console
+      .catch((error) => console.error('error', error))
   )
-    .then((result) => result.json())
-    .catch((error) => console.log('error', error))
 }
 
 export async function getPDFFile(file_id: string, access_token: string) {
   // todo : add course id to url
-  return fetch(
-    `${getAPIUrl()}blocks/pdf?file_id=${file_id}`,
-    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  return (
+    fetch(
+      `${getAPIUrl()}blocks/pdf?file_id=${file_id}`,
+      RequestBodyWithAuthHeader('GET', null, null, access_token)
+    )
+      .then((result) => result.json())
+      // eslint-disable-next-line no-console
+      .catch((error) => console.error('error', error))
   )
-    .then((result) => result.json())
-    .catch((error) => console.log('error', error))
 }

@@ -3,16 +3,22 @@ import africanAiLogo from 'public/african_ai_horizontal.png'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
-  Input,
 } from '@components/Objects/StyledElements/Form/Form'
 import Image from 'next/image'
 import * as Form from '@radix-ui/react-form'
 import { useFormik } from 'formik'
 import React from 'react'
-import { AlertTriangle, UserRoundPlus, Mail, Lock, Eye, EyeOff, LucideLoader2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import {
+  AlertTriangle,
+  UserRoundPlus,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  LucideLoader2,
+} from 'lucide-react'
 import Link from 'next/link'
-import { signIn } from "next-auth/react"
+import { signIn } from 'next-auth/react'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
@@ -28,7 +34,6 @@ const LoginClient = (props: LoginClientProps) => {
   const [resendingEmail, setResendingEmail] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState('')
-  const router = useRouter();
 
   const validate = (values: any) => {
     const errors: any = {}
@@ -51,14 +56,17 @@ const LoginClient = (props: LoginClientProps) => {
   const handleResendVerification = async () => {
     setResendingEmail(true)
     try {
-      const response = await fetch('https://lms-backend.africanainetwork.com/api/v1/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formik.values.email,
-          org_slug: props.org.slug || 'default'
-        })
-      })
+      const response = await fetch(
+        'https://lms-backend.africanainetwork.com/api/v1/auth/resend-verification',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formik.values.email,
+            org_slug: props.org.slug || 'default',
+          }),
+        }
+      )
 
       if (response.ok) {
         setError(t('auth.verification_sent'))
@@ -66,7 +74,7 @@ const LoginClient = (props: LoginClientProps) => {
       } else {
         setError(t('auth.verification_failed'))
       }
-    } catch (err) {
+    } catch {
       setError(t('auth.verification_error'))
     } finally {
       setResendingEmail(false)
@@ -85,38 +93,40 @@ const LoginClient = (props: LoginClientProps) => {
       setIsSubmitting(true)
       setShowResendButton(false)
 
-      const errors = await validateForm(values);
+      const errors = await validateForm(values)
       if (Object.keys(errors).length > 0) {
-        setErrors(errors);
-        setSubmitting(false);
-        setIsSubmitting(false);
-        return;
+        setErrors(errors)
+        setSubmitting(false)
+        setIsSubmitting(false)
+        return
       }
 
       const res = await signIn('credentials', {
         redirect: false,
         email: values.email,
         password: values.password,
-        callbackUrl: '/redirect_from_auth'
-      });
+        callbackUrl: '/redirect_from_auth',
+      })
 
       if (res && res.error) {
-        if (res.error.includes('verify your email') ||
+        if (
+          res.error.includes('verify your email') ||
           res.error.includes('email address before') ||
-          res.error.includes('Email Not Verified')) {
+          res.error.includes('Email Not Verified')
+        ) {
           setError(t('auth.verify_prompt'))
           setShowResendButton(true)
         } else {
-          setError(t('auth.wrong_email_password'));
+          setError(t('auth.wrong_email_password'))
           setShowResendButton(false)
         }
-        setIsSubmitting(false);
+        setIsSubmitting(false)
       } else {
         await signIn('credentials', {
           email: values.email,
           password: values.password,
-          callbackUrl: '/redirect_from_auth'
-        });
+          callbackUrl: '/redirect_from_auth',
+        })
       }
     },
   })
@@ -156,15 +166,24 @@ const LoginClient = (props: LoginClientProps) => {
           </div>
 
           {error && (
-            <div className={`p-4 rounded-2xl transition-all shadow-sm flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300 ${showResendButton
-              ? 'bg-amber-50 border border-amber-200 text-amber-900'
-              : 'bg-rose-50 border border-rose-200 text-rose-900'
-              }`}>
+            <div
+              className={`p-4 rounded-2xl transition-all shadow-sm flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-300 ${
+                showResendButton
+                  ? 'bg-amber-50 border border-amber-200 text-amber-900'
+                  : 'bg-rose-50 border border-rose-200 text-rose-900'
+              }`}
+            >
               <div className="flex items-start gap-3">
-                {showResendButton ? <Mail size={18} className="mt-1" /> : <AlertTriangle size={18} className="mt-1" />}
+                {showResendButton ? (
+                  <Mail size={18} className="mt-1" />
+                ) : (
+                  <AlertTriangle size={18} className="mt-1" />
+                )}
                 <div className="flex-1">
                   <p className="font-bold text-sm">
-                    {showResendButton ? t('auth.email_not_verified') : t('auth.login_failed')}
+                    {showResendButton
+                      ? t('auth.email_not_verified')
+                      : t('auth.login_failed')}
                   </p>
                   <p className="text-sm opacity-90">{error}</p>
                 </div>
@@ -180,14 +199,16 @@ const LoginClient = (props: LoginClientProps) => {
                     disabled={resendingEmail}
                     className="text-sm font-semibold underline hover:no-underline disabled:opacity-50 flex items-center gap-2"
                   >
-                    {resendingEmail ? t('common.sending') : t('auth.resend_verification')}
+                    {resendingEmail
+                      ? t('common.sending')
+                      : t('auth.resend_verification')}
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          <FormLayout onSubmit={formik.handleSubmit} className='space-y-4'>
+          <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
             <FormField name="email">
               <FormLabelAndMessage
                 label={t('auth.email')}
@@ -195,7 +216,10 @@ const LoginClient = (props: LoginClientProps) => {
               />
               <Form.Control asChild>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
+                  <Mail
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
+                    size={18}
+                  />
                   <input
                     name="email"
                     className={`w-full h-12 pl-12 pr-4 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('email')}`}
@@ -216,7 +240,10 @@ const LoginClient = (props: LoginClientProps) => {
                   message={formik.errors.password}
                 />
                 <Link
-                  href={{ pathname: getUriWithoutOrg('/forgot'), query: props.org.slug ? { orgslug: props.org.slug } : null }}
+                  href={{
+                    pathname: getUriWithoutOrg('/forgot'),
+                    query: props.org.slug ? { orgslug: props.org.slug } : null,
+                  }}
                   passHref
                   className="text-xs font-semibold text-slate-500 hover:text-black transition-colors"
                 >
@@ -225,7 +252,10 @@ const LoginClient = (props: LoginClientProps) => {
               </div>
               <Form.Control asChild>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
+                    size={18}
+                  />
                   <input
                     name="password"
                     className={`w-full h-12 pl-12 pr-12 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('password')}`}
@@ -258,7 +288,9 @@ const LoginClient = (props: LoginClientProps) => {
                   ) : (
                     <UserRoundPlus size={18} />
                   )}
-                  <span>{isSubmitting ? t('common.loading') : t('auth.login')}</span>
+                  <span>
+                    {isSubmitting ? t('common.loading') : t('auth.login')}
+                  </span>
                 </button>
               </Form.Submit>
             </div>
@@ -269,14 +301,19 @@ const LoginClient = (props: LoginClientProps) => {
               <div className="w-full border-t border-slate-100"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-slate-400 font-medium tracking-widest">{t('common.or')}</span>
+              <span className="bg-white px-3 text-slate-400 font-medium tracking-widest">
+                {t('common.or')}
+              </span>
             </div>
           </div>
 
           <p className="text-center text-sm text-slate-600">
             {t('auth.no_account')}{' '}
             <Link
-              href={{ pathname: getUriWithoutOrg('/signup'), query: props.org.slug ? { orgslug: props.org.slug } : null }}
+              href={{
+                pathname: getUriWithoutOrg('/signup'),
+                query: props.org.slug ? { orgslug: props.org.slug } : null,
+              }}
               className="font-bold text-black hover:underline underline-offset-4"
             >
               {t('auth.sign_up')}

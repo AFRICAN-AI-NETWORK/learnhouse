@@ -1,10 +1,17 @@
 'use client'
-import React, { useEffect, use } from 'react';
+import React, { use } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useMediaQuery } from 'usehooks-ts'
 import { getUriWithOrg } from '@services/config/config'
-import { Monitor, ScanEye, SquareUserRound, UserPlus, Users, Shield } from 'lucide-react'
+import {
+  Monitor,
+  ScanEye,
+  SquareUserRound,
+  UserPlus,
+  Users,
+  Shield,
+} from 'lucide-react'
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -25,52 +32,63 @@ export type SettingsParams = {
 
 function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
   const { t } = useTranslation()
-  const params = use(props.params);
+  const params = use(props.params)
   const session = useLHSession() as any
   const org = useOrg() as any
   const { isEE } = useEEStatus()
-  const [H1Label, setH1Label] = React.useState('')
-  const [H2Label, setH2Label] = React.useState('')
   const isMobile = useMediaQuery('(max-width: 767px)')
 
-  function handleLabels() {
+  const getLabels = () => {
     if (params.subpage == 'users') {
-      setH1Label(t('dashboard.users.settings.pages.users.title'))
-      setH2Label(t('dashboard.users.settings.pages.users.subtitle'))
+      return {
+        h1: t('dashboard.users.settings.pages.users.title'),
+        h2: t('dashboard.users.settings.pages.users.subtitle'),
+      }
     }
     if (params.subpage == 'signups') {
-      setH1Label(t('dashboard.users.settings.pages.signups.title'))
-      setH2Label(t('dashboard.users.settings.pages.signups.subtitle'))
+      return {
+        h1: t('dashboard.users.settings.pages.signups.title'),
+        h2: t('dashboard.users.settings.pages.signups.subtitle'),
+      }
     }
     if (params.subpage == 'add') {
-      setH1Label(t('dashboard.users.settings.pages.add.title'))
-      setH2Label(t('dashboard.users.settings.pages.add.subtitle'))
+      return {
+        h1: t('dashboard.users.settings.pages.add.title'),
+        h2: t('dashboard.users.settings.pages.add.subtitle'),
+      }
     }
     if (params.subpage == 'usergroups') {
-      setH1Label(t('dashboard.users.settings.pages.usergroups.title'))
-      setH2Label(t('dashboard.users.settings.pages.usergroups.subtitle'))
+      return {
+        h1: t('dashboard.users.settings.pages.usergroups.title'),
+        h2: t('dashboard.users.settings.pages.usergroups.subtitle'),
+      }
     }
     if (params.subpage == 'roles') {
-      setH1Label(t('dashboard.users.settings.pages.roles.title'))
-      setH2Label(t('dashboard.users.settings.pages.roles.subtitle'))
+      return {
+        h1: t('dashboard.users.settings.pages.roles.title'),
+        h2: t('dashboard.users.settings.pages.roles.subtitle'),
+      }
     }
     if (params.subpage == 'audit-logs') {
-      setH1Label(t('dashboard.users.settings.pages.audit_logs.title'))
-      setH2Label(t('dashboard.users.settings.pages.audit_logs.subtitle'))
+      return {
+        h1: t('dashboard.users.settings.pages.audit_logs.title'),
+        h2: t('dashboard.users.settings.pages.audit_logs.subtitle'),
+      }
     }
+    return { h1: '', h2: '' }
   }
 
-  useEffect(() => {
-    handleLabels()
-  }, [session, org, params.subpage, params, t])
+  const { h1: H1Label, h2: H2Label } = getLabels()
 
   if (isMobile) {
     // TODO: Work on a better mobile experience
     return (
       <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center p-4">
         <div className="bg-white p-6 rounded-lg shadow-md text-center">
-          <h2 className="text-xl font-bold mb-4">{t('dashboard.users.settings.mobile.title')}</h2>
-          <Monitor className='mx-auto my-5' size={60} />
+          <h2 className="text-xl font-bold mb-4">
+            {t('dashboard.users.settings.mobile.title')}
+          </h2>
+          <Monitor className="mx-auto my-5" size={60} />
           <p>{t('dashboard.users.settings.mobile.message1')}</p>
           <p>{t('dashboard.users.settings.mobile.message2')}</p>
         </div>
@@ -99,10 +117,11 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${params.subpage.toString() === 'users'
+              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                params.subpage.toString() === 'users'
                   ? 'border-b-4'
                   : 'opacity-50'
-                } cursor-pointer`}
+              } cursor-pointer`}
             >
               <div className="flex items-center space-x-2.5 mx-2">
                 <Users size={16} />
@@ -112,14 +131,16 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
           </Link>
           <Link
             href={
-              getUriWithOrg(params.orgslug, '') + `/dash/users/settings/usergroups`
+              getUriWithOrg(params.orgslug, '') +
+              `/dash/users/settings/usergroups`
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${params.subpage.toString() === 'usergroups'
+              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                params.subpage.toString() === 'usergroups'
                   ? 'border-b-4'
                   : 'opacity-50'
-                } cursor-pointer`}
+              } cursor-pointer`}
             >
               <div className="flex items-center space-x-2.5 mx-2">
                 <SquareUserRound size={16} />
@@ -133,10 +154,11 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${params.subpage.toString() === 'roles'
+              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                params.subpage.toString() === 'roles'
                   ? 'border-b-4'
                   : 'opacity-50'
-                } cursor-pointer`}
+              } cursor-pointer`}
             >
               <div className="flex items-center space-x-2.5 mx-2">
                 <Shield size={16} />
@@ -150,10 +172,11 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${params.subpage.toString() === 'signups'
+              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                params.subpage.toString() === 'signups'
                   ? 'border-b-4'
                   : 'opacity-50'
-                } cursor-pointer`}
+              } cursor-pointer`}
             >
               <div className="flex items-center space-x-2.5 mx-2">
                 <ScanEye size={16} />
@@ -167,10 +190,11 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${params.subpage.toString() === 'add'
+              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                params.subpage.toString() === 'add'
                   ? 'border-b-4'
                   : 'opacity-50'
-                } cursor-pointer`}
+              } cursor-pointer`}
             >
               <div className="flex items-center space-x-2.5 mx-2">
                 <UserPlus size={16} />
@@ -178,18 +202,20 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
               </div>
             </div>
           </Link>
-          
+
           {isEE && (
             <Link
               href={
-                getUriWithOrg(params.orgslug, '') + `/dash/users/settings/audit-logs`
+                getUriWithOrg(params.orgslug, '') +
+                `/dash/users/settings/audit-logs`
               }
             >
               <div
-                className={`py-2 w-fit text-center border-black transition-all ease-linear ${params.subpage.toString() === 'audit-logs'
+                className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                  params.subpage.toString() === 'audit-logs'
                     ? 'border-b-4'
                     : 'opacity-50'
-                  } cursor-pointer`}
+                } cursor-pointer`}
               >
                 <div className="flex items-center space-x-2.5 mx-2">
                   <ShieldAlert size={16} />
@@ -198,7 +224,6 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
               </div>
             </Link>
           )}
-          
         </div>
       </div>
       <motion.div

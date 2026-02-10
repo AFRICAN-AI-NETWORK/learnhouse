@@ -1,9 +1,16 @@
 'use client'
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs'
 import { getUriWithOrg } from '@services/config/config'
-import { ImageIcon, TextIcon, LucideIcon, Share2Icon, LayoutDashboardIcon, CodeIcon } from 'lucide-react'
+import {
+  ImageIcon,
+  TextIcon,
+  LucideIcon,
+  Share2Icon,
+  LayoutDashboardIcon,
+  CodeIcon,
+} from 'lucide-react'
 import Link from 'next/link'
-import React, { useEffect, use } from 'react';
+import React, { use } from 'react'
 import { motion } from 'framer-motion'
 import OrgEditGeneral from '@components/Dashboard/Pages/Org/OrgEditGeneral/OrgEditGeneral'
 import OrgEditImages from '@components/Dashboard/Pages/Org/OrgEditImages/OrgEditImages'
@@ -24,17 +31,41 @@ interface TabItem {
 }
 
 const getSettingTabs = (t: any): TabItem[] => [
-  { id: 'general', label: t('dashboard.organization.settings.tabs.general'), icon: TextIcon },
-  { id: 'landing', label: t('dashboard.organization.settings.tabs.landing'), icon: LayoutDashboardIcon },
-  { id: 'previews', label: t('dashboard.organization.settings.tabs.previews'), icon: ImageIcon },
-  { id: 'socials', label: t('dashboard.organization.settings.tabs.socials'), icon: Share2Icon },
-  { id: 'other', label: t('dashboard.organization.settings.tabs.other'), icon: CodeIcon },
+  {
+    id: 'general',
+    label: t('dashboard.organization.settings.tabs.general'),
+    icon: TextIcon,
+  },
+  {
+    id: 'landing',
+    label: t('dashboard.organization.settings.tabs.landing'),
+    icon: LayoutDashboardIcon,
+  },
+  {
+    id: 'previews',
+    label: t('dashboard.organization.settings.tabs.previews'),
+    icon: ImageIcon,
+  },
+  {
+    id: 'socials',
+    label: t('dashboard.organization.settings.tabs.socials'),
+    icon: Share2Icon,
+  },
+  {
+    id: 'other',
+    label: t('dashboard.organization.settings.tabs.other'),
+    icon: CodeIcon,
+  },
 ]
 
-function TabLink({ tab, isActive, orgslug }: { 
-  tab: TabItem, 
-  isActive: boolean, 
-  orgslug: string 
+function TabLink({
+  tab,
+  isActive,
+  orgslug,
+}: {
+  tab: TabItem
+  isActive: boolean
+  orgslug: string
 }) {
   return (
     <Link href={getUriWithOrg(orgslug, '') + `/dash/org/settings/${tab.id}`}>
@@ -54,37 +85,42 @@ function TabLink({ tab, isActive, orgslug }: {
 
 function OrgPage(props: { params: Promise<OrgParams> }) {
   const { t } = useTranslation()
-  const params = use(props.params);
-  const [H1Label, setH1Label] = React.useState('')
-  const [H2Label, setH2Label] = React.useState('')
-  const SETTING_TABS = getSettingTabs(t)
-
-  function handleLabels() {
+  const params = use(props.params)
+  const getLabels = () => {
     if (params.subpage == 'general') {
-      setH1Label(t('dashboard.organization.settings.pages.general.title'))
-      setH2Label(t('dashboard.organization.settings.pages.general.subtitle'))
+      return {
+        h1: t('dashboard.organization.settings.pages.general.title'),
+        h2: t('dashboard.organization.settings.pages.general.subtitle'),
+      }
     } else if (params.subpage == 'previews') {
-      setH1Label(t('dashboard.organization.settings.pages.previews.title'))
-      setH2Label(t('dashboard.organization.settings.pages.previews.subtitle'))
+      return {
+        h1: t('dashboard.organization.settings.pages.previews.title'),
+        h2: t('dashboard.organization.settings.pages.previews.subtitle'),
+      }
     } else if (params.subpage == 'socials') {
-      setH1Label(t('dashboard.organization.settings.pages.socials.title'))
-      setH2Label(t('dashboard.organization.settings.pages.socials.subtitle'))
+      return {
+        h1: t('dashboard.organization.settings.pages.socials.title'),
+        h2: t('dashboard.organization.settings.pages.socials.subtitle'),
+      }
     } else if (params.subpage == 'landing') {
-      setH1Label(t('dashboard.organization.settings.pages.landing.title'))
-      setH2Label(t('dashboard.organization.settings.pages.landing.subtitle'))
+      return {
+        h1: t('dashboard.organization.settings.pages.landing.title'),
+        h2: t('dashboard.organization.settings.pages.landing.subtitle'),
+      }
     } else if (params.subpage == 'other') {
-      setH1Label(t('dashboard.organization.settings.pages.other.title'))
-      setH2Label(t('dashboard.organization.settings.pages.other.subtitle'))
+      return {
+        h1: t('dashboard.organization.settings.pages.other.title'),
+        h2: t('dashboard.organization.settings.pages.other.subtitle'),
+      }
     }
+    return { h1: '', h2: '' }
   }
 
-  useEffect(() => {
-    handleLabels()
-  }, [params.subpage, params, t])
+  const { h1: H1Label, h2: H2Label } = getLabels()
 
   return (
     <div className="h-full w-full bg-[#f8f8f8] flex flex-col">
-      <div className="pl-10 pr-10 tracking-tight bg-[#fcfbfc] nice-shadow flex-shrink-0">
+      <div className="pl-10 pr-10 tracking-tight bg-[#fcfbfc] nice-shadow shrink-0">
         <BreadCrumbs type="org"></BreadCrumbs>
         <div className="my-2  py-2">
           <div className="w-100 flex flex-col space-y-1">
@@ -97,7 +133,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
           </div>
         </div>
         <div className="flex space-x-0.5 font-black text-sm">
-          {SETTING_TABS.map((tab) => (
+          {getSettingTabs(t).map((tab) => (
             <TabLink
               key={tab.id}
               tab={tab}
@@ -107,7 +143,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
           ))}
         </div>
       </div>
-      <div className="h-6 flex-shrink-0"></div>
+      <div className="h-6 shrink-0"></div>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

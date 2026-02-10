@@ -4,8 +4,8 @@ import React, { useState } from 'react'
 import { createCollection } from '@services/courses/collections'
 import { getOrgCourses } from '@services/courses/courses'
 import useSWR from 'swr'
-import { getAPIUrl, getUriWithOrg } from '@services/config/config'
-import { revalidateTags, swrFetcher } from '@services/utils/ts/requests'
+import { getUriWithOrg } from '@services/config/config'
+import { revalidateTags } from '@services/utils/ts/requests'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { Loader2, Image as ImageIcon } from 'lucide-react'
@@ -25,8 +25,14 @@ function NewCollection(props: any) {
   const [selectedCourses, setSelectedCourses] = React.useState([]) as any
   const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
-  const { data: courses, error: error, isLoading } = useSWR(
-    orgslug && access_token ? [`courses/org_slug/${orgslug}`, access_token] : null,
+  const {
+    data: courses,
+    error,
+    isLoading,
+  } = useSWR(
+    orgslug && access_token
+      ? [`courses/org_slug/${orgslug}`, access_token]
+      : null,
     ([, token]) => getOrgCourses(orgslug, null, token)
   )
   const [isPublic, setIsPublic] = useState('true')
@@ -47,7 +53,7 @@ function NewCollection(props: any) {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    
+
     if (!name.trim()) {
       toast.error(t('collections.enter_collection_name'))
       return
@@ -76,7 +82,7 @@ function NewCollection(props: any) {
       await revalidateTags(['collections'], org.slug)
       toast.success(t('collections.collection_created_success'))
       router.push(getUriWithOrg(orgslug, '/collections'))
-    } catch (error) {
+    } catch {
       toast.error(t('collections.failed_to_create_collection'))
     } finally {
       setIsSubmitting(false)
@@ -95,7 +101,9 @@ function NewCollection(props: any) {
     <div className="max-w-2xl mx-auto py-12 px-4">
       <div className="space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('collections.create_new_collection')}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t('collections.create_new_collection')}
+          </h1>
           <p className="mt-2 text-sm text-gray-600">
             {t('collections.create_collection_desc')}
           </p>
@@ -104,7 +112,9 @@ function NewCollection(props: any) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">{t('collections.collection_name')}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {t('collections.collection_name')}
+              </span>
               <input
                 type="text"
                 placeholder={t('collections.enter_collection_name_placeholder')}
@@ -116,21 +126,31 @@ function NewCollection(props: any) {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">{t('collections.visibility')}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {t('collections.visibility')}
+              </span>
               <select
                 onChange={handleVisibilityChange}
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 defaultValue={isPublic}
               >
-                <option value="true">{t('collections.public_collection_desc')}</option>
-                <option value="false">{t('collections.private_collection_desc')}</option>
+                <option value="true">
+                  {t('collections.public_collection_desc')}
+                </option>
+                <option value="false">
+                  {t('collections.private_collection_desc')}
+                </option>
               </select>
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">{t('collections.description')}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {t('collections.description')}
+              </span>
               <textarea
-                placeholder={t('collections.enter_collection_description_placeholder')}
+                placeholder={t(
+                  'collections.enter_collection_description_placeholder'
+                )}
                 value={description}
                 onChange={handleDescriptionChange}
                 rows={4}
@@ -140,13 +160,17 @@ function NewCollection(props: any) {
             </label>
 
             <div className="space-y-2">
-              <span className="text-sm font-medium text-gray-700">{t('collections.select_courses')}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {t('collections.select_courses')}
+              </span>
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
                 </div>
               ) : courses?.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">{t('collections.no_courses_available_desc')}</p>
+                <p className="text-sm text-gray-500 py-4">
+                  {t('collections.no_courses_available_desc')}
+                </p>
               ) : (
                 <div className="mt-2 border border-gray-200 rounded-lg bg-gray-50">
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
@@ -162,10 +186,15 @@ function NewCollection(props: any) {
                           value={course.id}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedCourses([...selectedCourses, course.id])
+                              setSelectedCourses([
+                                ...selectedCourses,
+                                course.id,
+                              ])
                             } else {
                               setSelectedCourses(
-                                selectedCourses.filter((id: any) => id !== course.id)
+                                selectedCourses.filter(
+                                  (id: any) => id !== course.id
+                                )
                               )
                             }
                           }}
@@ -174,7 +203,11 @@ function NewCollection(props: any) {
                         <div className="relative w-24 h-16 rounded-md overflow-hidden bg-gray-100 shrink-0">
                           {course.thumbnail_image ? (
                             <img
-                              src={getCourseThumbnailMediaDirectory(org.org_uuid, course.course_uuid, course.thumbnail_image)}
+                              src={getCourseThumbnailMediaDirectory(
+                                org.org_uuid,
+                                course.course_uuid,
+                                course.thumbnail_image
+                              )}
                               alt={course.name}
                               className="object-cover"
                             />
@@ -185,9 +218,13 @@ function NewCollection(props: any) {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-gray-900 truncate">{course.name}</h3>
+                          <h3 className="text-sm font-medium text-gray-900 truncate">
+                            {course.name}
+                          </h3>
                           {course.description && (
-                            <p className="mt-1 text-xs text-gray-500 line-clamp-2">{course.description}</p>
+                            <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                              {course.description}
+                            </p>
                           )}
                         </div>
                       </label>
@@ -195,7 +232,9 @@ function NewCollection(props: any) {
                   </div>
                   <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                     <p className="text-xs text-gray-500">
-                      {t('collections.selected_courses_count', { count: selectedCourses.length })}
+                      {t('collections.selected_courses_count', {
+                        count: selectedCourses.length,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -217,7 +256,11 @@ function NewCollection(props: any) {
               className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>{isSubmitting ? t('common.creating') : t('collections.create_collection_btn')}</span>
+              <span>
+                {isSubmitting
+                  ? t('common.creating')
+                  : t('collections.create_collection_btn')}
+              </span>
             </button>
           </div>
         </form>

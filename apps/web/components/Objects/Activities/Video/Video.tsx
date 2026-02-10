@@ -52,18 +52,13 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
     <div className="w-full max-w-full px-2 sm:px-4">
       {activity && (
         <>
-          {console.log('Activity type:', activity.activity_sub_type)}
-          {console.log('Video source:', getVideoSrc())}
           {activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' && (
             <div className="my-3 md:my-5 w-full">
               <div className="relative w-full max-h-[75vh] aspect-video rounded-lg overflow-hidden ring-1 ring-gray-300/30 dark:ring-gray-600/30 sm:ring-gray-200/10 sm:dark:ring-gray-700/20 shadow-xs sm:shadow-none">
                 {(() => {
                   const src = getVideoSrc()
                   return src ? (
-                    <LearnHousePlayer
-                      src={src}
-                      details={activity.details}
-                    />
+                    <LearnHousePlayer src={src} details={activity.details} />
                   ) : null
                 })()}
               </div>
@@ -84,7 +79,7 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
                       end: activity.details?.endTime || undefined,
                       controls: 1,
                       modestbranding: 1,
-                      rel: 0
+                      rel: 0,
                     },
                   }}
                   videoId={videoId}

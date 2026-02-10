@@ -8,10 +8,10 @@ import { useRouter } from 'next/navigation'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { toast } from 'react-hot-toast'
-import { Button } from "@components/ui/button"
-import { Label } from "@components/ui/label"
-import { Textarea } from "@components/ui/textarea"
-import { Code2, Plus, Trash2, PencilLine, AlertTriangle } from "lucide-react"
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import { Textarea } from '@components/ui/textarea'
+import { Code2, Plus, Trash2, PencilLine, AlertTriangle } from 'lucide-react'
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
 import {
@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from '@/components/ui/tooltip'
 import { useTranslation } from 'react-i18next'
 
 interface Script {
@@ -31,10 +31,15 @@ interface OrganizationScripts {
   scripts: Script[]
 }
 
-const getValidationSchema = (t: any) => Yup.object().shape({
-  name: Yup.string().required(t('dashboard.organization.scripts.script_name') + ' is required'),
-  content: Yup.string().required(t('dashboard.organization.scripts.script_content') + ' is required')
-})
+const getValidationSchema = (t: any) =>
+  Yup.object().shape({
+    name: Yup.string().required(
+      t('dashboard.organization.scripts.script_name') + ' is required'
+    ),
+    content: Yup.string().required(
+      t('dashboard.organization.scripts.script_content') + ' is required'
+    ),
+  })
 
 const OrgEditOther: React.FC = () => {
   const { t } = useTranslation()
@@ -42,7 +47,9 @@ const OrgEditOther: React.FC = () => {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
   const org = useOrg() as any
-  const [selectedView, setSelectedView] = React.useState<'list' | 'edit'>('list')
+  const [selectedView, setSelectedView] = React.useState<'list' | 'edit'>(
+    'list'
+  )
   const [scripts, setScripts] = React.useState<Script[]>([])
   const [currentScript, setCurrentScript] = React.useState<Script | null>(null)
 
@@ -56,13 +63,15 @@ const OrgEditOther: React.FC = () => {
   }, [org])
 
   const updateOrg = async (values: Script) => {
-    const loadingToast = toast.loading(t('dashboard.organization.settings.updating'))
+    const loadingToast = toast.loading(
+      t('dashboard.organization.settings.updating')
+    )
     try {
       let updatedScripts: Script[]
-      
+
       if (currentScript) {
         // Edit existing script
-        updatedScripts = scripts.map(script => 
+        updatedScripts = scripts.map((script) =>
           script.name === currentScript.name ? values : script
         )
       } else {
@@ -74,44 +83,58 @@ const OrgEditOther: React.FC = () => {
       const updateData = {
         id: org.id,
         scripts: {
-          scripts: updatedScripts
-        }
+          scripts: updatedScripts,
+        },
       }
-      
+
       await updateOrganization(org.id, updateData, access_token)
       await revalidateTags(['organizations'], org.slug)
       mutate(`${getAPIUrl()}orgs/slug/${org.slug}`)
       setScripts(updatedScripts)
       setSelectedView('list')
       setCurrentScript(null)
-      toast.success(t('dashboard.organization.scripts.toasts.save_success'), { id: loadingToast })
+      toast.success(t('dashboard.organization.scripts.toasts.save_success'), {
+        id: loadingToast,
+      })
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error updating organization:', err)
-      toast.error(t('dashboard.organization.scripts.toasts.save_success'), { id: loadingToast })
+      toast.error(t('dashboard.organization.scripts.toasts.save_success'), {
+        id: loadingToast,
+      })
     }
   }
 
   const deleteScript = async (scriptToDelete: Script) => {
-    const loadingToast = toast.loading(t('dashboard.organization.settings.updating'))
+    const loadingToast = toast.loading(
+      t('dashboard.organization.settings.updating')
+    )
     try {
-      const updatedScripts = scripts.filter(script => script.name !== scriptToDelete.name)
-      
+      const updatedScripts = scripts.filter(
+        (script) => script.name !== scriptToDelete.name
+      )
+
       // Create a new organization object with scripts array wrapped in an object
       const updateData = {
         id: org.id,
         scripts: {
-          scripts: updatedScripts
-        }
+          scripts: updatedScripts,
+        },
       }
 
       await updateOrganization(org.id, updateData, access_token)
       await revalidateTags(['organizations'], org.slug)
       mutate(`${getAPIUrl()}orgs/slug/${org.slug}`)
       setScripts(updatedScripts)
-      toast.success(t('dashboard.organization.scripts.toasts.delete_success'), { id: loadingToast })
+      toast.success(t('dashboard.organization.scripts.toasts.delete_success'), {
+        id: loadingToast,
+      })
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('Error deleting script:', err)
-      toast.error(t('dashboard.organization.scripts.toasts.delete_success'), { id: loadingToast })
+      toast.error(t('dashboard.organization.scripts.toasts.delete_success'), {
+        id: loadingToast,
+      })
     }
   }
 
@@ -129,11 +152,13 @@ const OrgEditOther: React.FC = () => {
                     <TooltipTrigger>
                       <AlertTriangle className="h-4 w-4 text-orange-500 hover:text-orange-600 transition-colors" />
                     </TooltipTrigger>
-                    <TooltipContent 
+                    <TooltipContent
                       className="max-w-[400px] bg-orange-50 border-orange-100 text-orange-900 [&>p]:text-orange-800 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1"
                       sideOffset={8}
                     >
-                      <p className="p-2 leading-relaxed">{t('dashboard.organization.scripts.warning')}</p>
+                      <p className="p-2 leading-relaxed">
+                        {t('dashboard.organization.scripts.warning')}
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -161,11 +186,15 @@ const OrgEditOther: React.FC = () => {
       <div className="p-4 pt-1">
         {selectedView === 'list' ? (
           <div className="space-y-4">
-            {(!scripts || scripts.length === 0) ? (
+            {!scripts || scripts.length === 0 ? (
               <div className="text-center py-8 px-4 text-gray-500 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
                 <Code2 className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm font-medium">{t('dashboard.organization.scripts.no_scripts')}</p>
-                <p className="text-xs text-gray-400 mt-1">{t('dashboard.organization.scripts.add_first_script')}</p>
+                <p className="text-sm font-medium">
+                  {t('dashboard.organization.scripts.no_scripts')}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {t('dashboard.organization.scripts.add_first_script')}
+                </p>
               </div>
             ) : (
               scripts.map((script, index) => (
@@ -176,11 +205,13 @@ const OrgEditOther: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 min-w-0 flex-1">
                       <div className="flex items-baseline space-x-2">
-                        <h4 className="text-sm font-medium text-gray-800 truncate">{script.name}</h4>
+                        <h4 className="text-sm font-medium text-gray-800 truncate">
+                          {script.name}
+                        </h4>
                       </div>
                       <pre className="text-sm text-gray-600 font-mono bg-white/80 p-2 rounded border border-gray-200 overflow-x-auto">
-                        {script.content.length > 100 
-                          ? script.content.substring(0, 100) + '...' 
+                        {script.content.length > 100
+                          ? script.content.substring(0, 100) + '...'
                           : script.content}
                       </pre>
                     </div>
@@ -219,11 +250,20 @@ const OrgEditOther: React.FC = () => {
               updateOrg(values)
             }}
           >
-            {({ values, handleChange, handleSubmit, errors, touched, isSubmitting }) => (
+            {({
+              values,
+              handleChange,
+              handleSubmit,
+              errors,
+              touched,
+              isSubmitting,
+            }) => (
               <Form onSubmit={handleSubmit}>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="name">{t('dashboard.organization.scripts.script_name')}</Label>
+                    <Label htmlFor="name">
+                      {t('dashboard.organization.scripts.script_name')}
+                    </Label>
                     <input
                       type="text"
                       id="name"
@@ -231,25 +271,33 @@ const OrgEditOther: React.FC = () => {
                       value={values.name}
                       onChange={handleChange}
                       className="mt-1 w-full px-3 py-2 border rounded-md"
-                      placeholder={t('dashboard.organization.scripts.placeholders.name')}
+                      placeholder={t(
+                        'dashboard.organization.scripts.placeholders.name'
+                      )}
                     />
                     {touched.name && errors.name && (
                       <p className="text-red-500 text-sm mt-1">{errors.name}</p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="content">{t('dashboard.organization.scripts.script_content')}</Label>
+                    <Label htmlFor="content">
+                      {t('dashboard.organization.scripts.script_content')}
+                    </Label>
                     <Textarea
                       id="content"
                       name="content"
                       value={values.content}
                       onChange={handleChange}
                       className="mt-1 font-mono"
-                      placeholder={t('dashboard.organization.scripts.placeholders.content')}
+                      placeholder={t(
+                        'dashboard.organization.scripts.placeholders.content'
+                      )}
                       rows={10}
                     />
                     {touched.content && errors.content && (
-                      <p className="text-red-500 text-sm mt-1">{errors.content}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.content}
+                      </p>
                     )}
                   </div>
                   <div className="flex justify-end space-x-3">
@@ -263,12 +311,14 @@ const OrgEditOther: React.FC = () => {
                     >
                       {t('common.cancel')}
                     </Button>
-                    <Button 
+                    <Button
                       type="submit"
                       disabled={isSubmitting}
                       className="bg-black text-white hover:bg-black/90"
                     >
-                      {isSubmitting ? t('dashboard.organization.settings.saving') : t('dashboard.organization.scripts.save_script')}
+                      {isSubmitting
+                        ? t('dashboard.organization.settings.saving')
+                        : t('dashboard.organization.scripts.save_script')}
                     </Button>
                   </div>
                 </div>
@@ -281,4 +331,4 @@ const OrgEditOther: React.FC = () => {
   )
 }
 
-export default OrgEditOther 
+export default OrgEditOther
