@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons'
 
@@ -8,20 +8,27 @@ interface LinkInputTooltipProps {
   currentUrl?: string
 }
 
-const LinkInputTooltip: React.FC<LinkInputTooltipProps> = ({ onSave, onCancel, currentUrl }) => {
+const LinkInputTooltip: React.FC<LinkInputTooltipProps> = ({
+  onSave,
+  onCancel,
+  currentUrl,
+}) => {
+  const [prevCurrentUrl, setPrevCurrentUrl] = useState(currentUrl)
   const [url, setUrl] = useState(currentUrl || '')
 
-  useEffect(() => {
+  if (currentUrl !== prevCurrentUrl) {
+    setPrevCurrentUrl(currentUrl)
     setUrl(currentUrl || '')
-  }, [currentUrl])
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (url) {
       // Ensure the URL has a protocol
-      const formattedUrl = url.startsWith('http://') || url.startsWith('https://') 
-        ? url 
-        : `https://${url}`
+      const formattedUrl =
+        url.startsWith('http://') || url.startsWith('https://')
+          ? url
+          : `https://${url}`
       onSave(formattedUrl)
     }
   }
@@ -108,11 +115,11 @@ const Button = styled.button`
 `
 
 const SaveButton = styled(Button)`
-  color: #4CAF50;
+  color: #4caf50;
 `
 
 const CancelButton = styled(Button)`
-  color: #F44336;
+  color: #f44336;
 `
 
-export default LinkInputTooltip 
+export default LinkInputTooltip

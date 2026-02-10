@@ -32,7 +32,11 @@ export const RequestBodyWithAuthHeader = (
     headers: HeadersConfig,
     redirect: 'follow',
     credentials: 'include',
-    body: (method === 'POST' || method === 'PUT' || method === 'DELETE') && data !== null ? JSON.stringify(data) : null,
+    body:
+      (method === 'POST' || method === 'PUT' || method === 'DELETE') &&
+      data !== null
+        ? JSON.stringify(data)
+        : null,
     // Next.js
     next: next,
   }
@@ -46,7 +50,7 @@ export const RequestBodyForm = (method: string, data: any, next: any) => {
     headers: HeadersConfig,
     redirect: 'follow',
     credentials: 'include',
-    body: (method === 'POST' || method === 'PUT') ? JSON.stringify(data) : null,
+    body: method === 'POST' || method === 'PUT' ? JSON.stringify(data) : null,
     // Next.js
     next: next,
   }
@@ -88,16 +92,12 @@ export const swrFetcher = async (url: string, token?: string) => {
     credentials: 'include',
   }
 
-  try {
-    // Fetch the data
-    const request = await fetch(url, options)
-    let res = errorHandling(request)
+  // Fetch the data
+  const request = await fetch(url, options)
+  const res = errorHandling(request)
 
-    // Return the data
-    return res
-  } catch (error: any) {
-    throw error
-  }
+  // Return the data
+  return res
 }
 
 export const errorHandling = (res: any) => {

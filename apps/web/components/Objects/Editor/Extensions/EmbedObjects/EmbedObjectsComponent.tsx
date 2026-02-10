@@ -61,8 +61,8 @@ const getYouTubeEmbedUrl = (url: string): string => {
     }
 
     // Handle different YouTube URL formats with a more precise regex
-    // eslint-disable-next-line no-useless-escape
     const youtubeRegex =
+      // eslint-disable-next-line no-useless-escape
       /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
     const match = url.match(youtubeRegex)
 
@@ -210,15 +210,20 @@ function EmbedObjectsComponent(props: any) {
 
         // If embedWidth is set to a percentage, maintain that percentage
         // Otherwise, adjust to fit parent width
-        if (typeof embedWidth === 'string' && embedWidth.endsWith('%')) {
-          const percentage = parseInt(embedWidth, 10)
+        if (
+          typeof embedWidthRef.current === 'string' &&
+          embedWidthRef.current.endsWith('%')
+        ) {
+          const percentage = parseInt(embedWidthRef.current, 10)
           const newWidth = `${Math.min(100, percentage)}%`
           setEmbedWidth(newWidth)
-          props.updateAttributes({ embedWidth: newWidth })
-        } else if (newParentWidth < parseInt(String(embedWidth), 10)) {
+          updateAttributes({ embedWidth: newWidth })
+        } else if (
+          newParentWidth < parseInt(String(embedWidthRef.current), 10)
+        ) {
           // If parent is smaller than current width, adjust to fit
           setEmbedWidth('100%')
-          props.updateAttributes({ embedWidth: '100%' })
+          updateAttributes({ embedWidth: '100%' })
         }
       }
     }
@@ -239,7 +244,7 @@ function EmbedObjectsComponent(props: any) {
     return () => {
       resizeObserver.disconnect()
     }
-  }, [])
+  }, [updateAttributes])
 
   const supportedProducts = [
     {

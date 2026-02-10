@@ -13,7 +13,7 @@ import {
 import { getTaskFileSubmissionDir } from '@services/media/media'
 import { Cloud, Download, File, Info, Loader, UploadCloud } from 'lucide-react'
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import useSWR from 'swr'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'

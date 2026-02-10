@@ -1,0 +1,335 @@
+
+> learnhouse@0.1.0 lint C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web
+> eslint .
+
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\global-error.tsx
+  18:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\course\[courseuuid]\activity\[activityid]\activity.tsx
+  1546:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\course\[courseuuid]\course.tsx
+  3:17  warning  'useEffect' is defined but never used  unused-imports/no-unused-imports
+  3:38  warning  'useRef' is defined but never used     unused-imports/no-unused-imports
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\course\[courseuuid]\error.tsx
+  14:5  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\courses\error.tsx
+  15:5  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\error.tsx
+  15:5  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\trail\trail.tsx
+  53:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\(withmenu)\user\[username]\UserProfileClient.tsx
+  91:11  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\dash\assignments\[assignmentuuid]\_components\TaskEditor\Subs\TaskTypes\TaskFormObject.tsx
+  129:13  warning  Unexpected console statement                                                                                                                        no-console
+  218:13  warning  Unexpected console statement                                                                                                                        no-console
+  343:8   warning  React Hook useEffect has a missing dependency: 'getAssignmentTaskSubmissionFromIdentifiedUserUI'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\dash\assignments\[assignmentuuid]\_components\TaskEditor\Subs\TaskTypes\TaskQuizObject.tsx
+  337:8  warning  React Hook useEffect has missing dependencies: 'assignmentTaskUUID', 'getAssignmentTaskSubmissionFromIdentifiedUserUI', 'getAssignmentTaskSubmissionFromUserUI', 'getAssignmentTaskUI', and 'view'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\dash\assignments\[assignmentuuid]\_components\TaskEditor\TaskEditor.tsx
+  11:17  warning  'useEffect' is defined but never used  unused-imports/no-unused-imports
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\dash\assignments\page.tsx
+  46:6  warning  React Hook React.useEffect has a missing dependency: 'getAvailableAssignmentsForCourse'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\verify-email\page.tsx
+  19:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\orgs\[orgslug]\verify-email\page.tsx:19:13
+  17 |
+  18 |         if (!token) {
+> 19 |             setStatus('error');
+     |             ^^^^^^^^^ Avoid calling setState() directly within an effect
+  20 |             setMessage('Invalid verification link. No token provided.');
+  21 |             return;
+  22 |         }  react-hooks/set-state-in-effect
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\app\payments\stripe\connect\oauth\page.tsx
+  50:9  warning  Unexpected console statement                                                                          no-console
+  60:6  warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Contexts\Assignments\AssignmentContext.tsx
+   2:10  warning  'getAPIUrl' is defined but never used                                                                                                                                                                                                                                                                                                  unused-imports/no-unused-imports
+   3:10  warning  'swrFetcher' is defined but never used                                                                                                                                                                                                                                                                                                 unused-imports/no-unused-imports
+   4:44  warning  'useEffect' is defined but never used                                                                                                                                                                                                                                                                                                  unused-imports/no-unused-imports
+   5:8   warning  'useSWR' is defined but never used                                                                                                                                                                                                                                                                                                     unused-imports/no-unused-imports
+  39:6   warning  React Hook React.useMemo has unnecessary dependencies: 'activity_id', 'activity_object', 'assignment', 'assignment_tasks', 'course_id', and 'course_object'. Either exclude them or remove the dependency array. Outer scope values like 'assignment' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Contexts\Assignments\AssignmentsTaskContext.tsx
+  51:8  warning  React Hook useEffect has a missing dependency: 'fetchAssignmentTask'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Contexts\I18nContext.tsx
+  3:17  warning  'useEffect' is defined but never used  unused-imports/no-unused-imports
+  3:28  warning  'useState' is defined but never used   unused-imports/no-unused-imports
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseCertification\CertificatePreview.tsx
+  48:9  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseCertification\EditCourseCertification.tsx
+  215:6  warning  React Hook useEffect has missing dependencies: 'formik' and 'getInitialValues'. Either include them or remove the dependency array                                  react-hooks/exhaustive-deps
+  247:6  warning  React Hook useEffect has missing dependencies: 'courseStructure', 'dispatchCourse', and 'formik.initialValues'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseGeneral\EditCourseGeneral.tsx
+  201:6  warning  React Hook useEffect has a missing dependency: 'formik.initialValues'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseGeneral\LearningItemsList.tsx
+  110:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseGeneral\UnsplashImagePicker.tsx
+  63:7   warning  Unexpected console statement                                                                                no-console
+  69:32  warning  React Hook useCallback received a function whose dependencies are unknown. Pass an inline function instead  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseStructure\EditCourseStructure.tsx
+  116:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Course\EditCourseStructure\EditCourseStructure.tsx:116:5
+  114 |
+  115 |   useEffect(() => {
+> 116 |     setwinReady(true)
+      |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  117 |   }, [])
+  118 |
+  119 |   if (!course) return <PageLoading></PageLoading>  react-hooks/set-state-in-effect
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Org\OrgAuditLogs\OrgAuditLogs.tsx
+  181:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Org\OrgEditImages\OrgEditImages.tsx
+  335:7   warning  Unused eslint-disable directive (no problems were reported from 'no-useless-escape')
+  337:32  error    Unnecessary escape character: \/                                                      no-useless-escape
+  337:90  error    Unnecessary escape character: \/                                                      no-useless-escape
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Org\OrgEditLanding\OrgEditLanding.tsx
+   273:7  warning  Unexpected console statement  no-console
+  1162:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Org\OrgEditOther\OrgEditOther.tsx
+   89:7  warning  Unexpected console statement  no-console
+  113:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Payments\PaymentsConfigurationPage.tsx
+   74:7  warning  Unexpected console statement  no-console
+   91:7  warning  Unexpected console statement  no-console
+  287:9  warning  Unexpected console statement  no-console
+  307:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Payments\SubComponents\CreateProductForm.tsx
+  73:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\UserAccount\UserEditPassword\UserEditPassword.tsx
+  56:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\UserAccount\UserProfile\UserProfileBuilder.tsx
+  200:15  warning  Unexpected console statement  no-console
+  205:11  warning  Unexpected console statement  no-console
+  333:7   warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Dashboard\Pages\Users\OrgUsers\OrgUsers.tsx
+  13:17  warning  'useEffect' is defined but never used  unused-imports/no-unused-imports
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Hooks\useFeatureFlag.tsx
+  2:10  warning  'useEffect' is defined but never used  unused-imports/no-unused-imports
+  2:21  warning  'useState' is defined but never used   unused-imports/no-unused-imports
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Hooks\useGetAIFeatures.tsx
+  24:6  warning  React Hook React.useEffect has missing dependencies: 'checkAvailableAIFeaturesOnOrg' and 'props.feature'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Landings\LandingCustom.tsx
+  224:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Courses\CourseActions\CourseActionsMobile.tsx
+  156:9  warning  Unexpected console statement                                                                                           no-console
+  176:9  warning  Unexpected console statement                                                                                           no-console
+  184:6  warning  React Hook useEffect has a missing dependency: 'session.data?.user'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  218:7  warning  Unexpected console statement                                                                                           no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Courses\CourseActions\CoursesActions.tsx
+   90:9  warning  Unexpected console statement                                                                                           no-console
+  111:9  warning  Unexpected console statement                                                                                           no-console
+  120:6  warning  React Hook useEffect has a missing dependency: 'session.data?.user'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  158:7  warning  Unexpected console statement                                                                                           no-console
+  189:7  warning  Unexpected console statement                                                                                           no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Courses\CourseProgress\CourseProgress.tsx
+  34:6  warning  React Hook useEffect has a missing dependency: 'isActivityDone'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Editor\EditorWrapper.tsx
+  23:5  error  Error: This value cannot be modified
+
+Modifying component props or hook arguments is not allowed. Consider using a local variable instead.
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Editor\EditorWrapper.tsx:23:5
+  21 |   async function setContent(content: any) {
+  22 |     let activity = props.activity
+> 23 |     activity.content = content
+     |     ^^^^^^^^ `props` cannot be modified
+  24 |
+  25 |     toast.promise(
+  26 |       updateActivity(activity, activity.activity_uuid, access_token).then(res => {  react-hooks/immutability
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Editor\Extensions\EmbedObjects\EmbedObjectsComponent.tsx
+   65:30  error    Unnecessary escape character: \/                                                                                                                                                                                                                                                                                               no-useless-escape
+   65:88  error    Unnecessary escape character: \/                                                                                                                                                                                                                                                                                               no-useless-escape
+  241:6   warning  React Hook useEffect has missing dependencies: 'embedWidth' and 'props'. Either include them or remove the dependency array. However, 'props' will change when *any* prop changes, so the preferred fix is to destructure the 'props' object outside of the useEffect call and refer to those specific props inside useEffect  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Editor\Extensions\Scenarios\ScenariosModal.tsx
+  406:25  warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Editor\Extensions\Users\UserBlockComponent.tsx
+   86:6  warning  React Hook useEffect has a missing dependency: 'fetchUserById'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   99:7  warning  Unexpected console statement                                                                                      no-console
+  123:7  warning  Unexpected console statement                                                                                      no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Editor\Extensions\Video\VideoBlockComponent.tsx
+  206:6  warning  React Hook React.useEffect has missing dependencies: 'blockObject' and 'updateAttributes'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Menus\OrgMenu.tsx
+  27:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Menus\OrgMenu.tsx:27:7
+  25 |     if (typeof window !== 'undefined' && pathname?.includes('/activity/')) {
+  26 |       const saved = localStorage.getItem('globalFocusMode');
+> 27 |       setIsFocusMode(saved === 'true');
+     |       ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |     } else {
+  29 |       setIsFocusMode(false);
+  30 |     }  react-hooks/set-state-in-effect
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Modals\Course\Create\CreateCourse.tsx
+  117:6   warning  React Hook useEffect has a missing dependency: 'getOrgMetadata'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  179:17  warning  img elements must have an alt prop, either with meaningful text, or an empty string for decorative images          jsx-a11y/alt-text
+  184:17  warning  img elements must have an alt prop, either with meaningful text, or an empty string for decorative images          jsx-a11y/alt-text
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Modals\Dash\EditCourseAccess\LinkToUserGroup.tsx
+  11:8   warning  'toast' is defined but never used   unused-imports/no-unused-imports
+  12:18  warning  'mutate' is defined but never used  unused-imports/no-unused-imports
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Onboarding\Onboarding.tsx
+  178:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Onboarding\Onboarding.tsx:178:5
+  176 |     const lastClosedTime = localStorage.getItem('onboardingLastClosedTime');
+  177 |
+> 178 |     setIsOnboardingComplete(isOnboardingCompleted === 'true');
+      |     ^^^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  179 |     setIsTemporarilyClosed(temporarilyClosed === 'true');
+  180 |
+  181 |     // If temporarily closed, check if 24 hours have passed  react-hooks/set-state-in-effect
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\Search\SearchBar.tsx
+  159:9  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\UserAvatar.tsx
+  36:11  warning  Unexpected console statement  no-console
+  43:11  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Objects\UserProfilePopup.tsx
+  62:9  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\OrgScripts\OrgScripts.tsx
+  110:15  warning  Unexpected console statement                                                                                   no-console
+  114:13  warning  Unexpected console statement                                                                                   no-console
+  171:7   warning  Unexpected console statement                                                                                   no-console
+  197:6   warning  React Hook useEffect has a missing dependency: 'loadScript'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Pages\Activity\ActivityNavigation.tsx
+  91:41  warning  The ref value 'bottomNavRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'bottomNavRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Pages\Activity\CourseEndView.tsx
+  105:9  warning  Unexpected console statement                                                                          no-console
+  113:6  warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  365:7  warning  Unexpected console statement                                                                          no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Pages\Certificate\CertificatePage.tsx
+   48:9  warning  Unexpected console statement  no-console
+  310:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Pages\Certificate\CertificateVerificationPage.tsx
+  37:9  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Pages\Trail\TrailCourseElement.tsx
+  67:9  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Security\AdminAuthorization.tsx
+   2:28  warning  'useState' is defined but never used                                                                                                                                                                                                                                           unused-imports/no-unused-imports
+   2:38  warning  'useCallback' is defined but never used                                                                                                                                                                                                                                        unused-imports/no-unused-imports
+   2:51  warning  'useMemo' is defined but never used                                                                                                                                                                                                                                            unused-imports/no-unused-imports
+  63:6   warning  React Hook useEffect has unnecessary dependencies: 'isAdminPath' and 'isUserAuthenticated'. Either exclude them or remove the dependency array. Outer scope values like 'isUserAuthenticated' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\components\Security\AuthenticatedClientElement.tsx
+  77:6  warning  React Hook React.useEffect has missing dependencies: 'check' and 'session.status'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\eslint.config.mjs
+  5:1  warning  Assign array to a variable before exporting as module default  import/no-anonymous-default-export
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\hooks\useContributorStatus.ts
+  44:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\server-wrapper.js
+  25:1  warning  Unexpected console statement  no-console
+  43:5  warning  Unexpected console statement  no-console
+  46:5  warning  Unexpected console statement  no-console
+  51:3  warning  Unexpected console statement  no-console
+  53:3  warning  Unexpected console statement  no-console
+  54:3  warning  Unexpected console statement  no-console
+  70:3  warning  Unexpected console statement  no-console
+  75:7  warning  Unexpected console statement  no-console
+  77:7  warning  Unexpected console statement  no-console
+  78:7  warning  Unexpected console statement  no-console
+  79:7  warning  Unexpected console statement  no-console
+  80:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\services\blocks\Video\video.ts
+  22:23  warning  Unexpected console statement  no-console
+  31:23  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\services\config\config.ts
+  144:7  error    Empty block statement         no-empty
+  161:5  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\services\courses\courses.ts
+  33:7  warning  Unexpected console statement  no-console
+  34:7  warning  Unexpected console statement  no-console
+  35:7  warning  Unexpected console statement  no-console
+
+C:\Users\OLAKUNLE PAUL (OP)\learnhouse\apps\web\services\utils\ts\requests.ts
+  91:3  error  Unnecessary try/catch wrapper  no-useless-catch
+
+Γ£û 125 problems (13 errors, 112 warnings)
+  0 errors and 18 warnings potentially fixable with the `--fix` option.
+
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.

@@ -1,7 +1,13 @@
 'use client'
-import { Input } from "@components/ui/input"
-import { Textarea } from "@components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select"
+import { Input } from '@components/ui/input'
+import { Textarea } from '@components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/ui/select'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -17,21 +23,20 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import {  UploadCloud, Image as ImageIcon } from 'lucide-react'
-import UnsplashImagePicker from "@components/Dashboard/Pages/Course/EditCourseGeneral/UnsplashImagePicker"
-import FormTagInput from "@components/Objects/StyledElements/Form/TagInput"
-import { useTranslation } from "react-i18next"
+import { UploadCloud, Image as ImageIcon } from 'lucide-react'
+import UnsplashImagePicker from '@components/Dashboard/Pages/Course/EditCourseGeneral/UnsplashImagePicker'
+import FormTagInput from '@components/Objects/StyledElements/Form/TagInput'
+import { useTranslation } from 'react-i18next'
 
 const validationSchema = Yup.object().shape({
   name: Yup.string()
     .required('Course name is required')
     .max(100, 'Must be 100 characters or less'),
-  description: Yup.string()
-    .max(1000, 'Must be 1000 characters or less'),
+  description: Yup.string().max(1000, 'Must be 1000 characters or less'),
   learnings: Yup.string(),
   tags: Yup.string(),
   visibility: Yup.boolean(),
-  thumbnail: Yup.mixed().nullable()
+  thumbnail: Yup.mixed().nullable(),
 })
 
 function CreateCourseModal({ closeModal, orgslug }: any) {
@@ -46,12 +51,11 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
     name: Yup.string()
       .required(t('courses.course_name_required'))
       .max(100, 'Must be 100 characters or less'),
-    description: Yup.string()
-      .max(1000, 'Must be 1000 characters or less'),
+    description: Yup.string().max(1000, 'Must be 1000 characters or less'),
     learnings: Yup.string(),
     tags: Yup.string(),
     visibility: Yup.boolean(),
-    thumbnail: Yup.mixed().nullable()
+    thumbnail: Yup.mixed().nullable(),
   })
 
   const formik = useFormik({
@@ -61,7 +65,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       learnings: '',
       visibility: true,
       tags: '',
-      thumbnail: null
+      thumbnail: null,
     },
     validationSchema,
     onSubmit: async (values, { setSubmitting }) => {
@@ -75,7 +79,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
             description: values.description,
             learnings: values.learnings,
             tags: values.tags,
-            visibility: values.visibility
+            visibility: values.visibility,
           },
           values.thumbnail,
           session.data?.tokens?.access_token
@@ -99,24 +103,26 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       } finally {
         setSubmitting(false)
       }
-    }
+    },
   })
 
-  const getOrgMetadata = async () => {
-    const org = await getOrganizationContextInfoWithoutCredentials(orgslug, {
-      revalidate: 360,
-      tags: ['organizations'],
-    })
-    setOrgId(org.id)
-  }
-
   useEffect(() => {
+    const getOrgMetadata = async () => {
+      const org = await getOrganizationContextInfoWithoutCredentials(orgslug, {
+        revalidate: 360,
+        tags: ['organizations'],
+      })
+      setOrgId(org.id)
+    }
+
     if (orgslug) {
       getOrgMetadata()
     }
   }, [orgslug])
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0]
     if (file) {
       formik.setFieldValue('thumbnail', file)
@@ -128,7 +134,9 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
     try {
       const response = await fetch(imageUrl)
       const blob = await response.blob()
-      const file = new File([blob], 'unsplash_image.jpg', { type: 'image/jpeg' })
+      const file = new File([blob], 'unsplash_image.jpg', {
+        type: 'image/jpeg',
+      })
       formik.setFieldValue('thumbnail', file)
     } catch (error) {
       toast.error('Failed to load image from Unsplash')
@@ -137,7 +145,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
   }
 
   return (
-    <FormLayout onSubmit={formik.handleSubmit} >
+    <FormLayout onSubmit={formik.handleSubmit}>
       <FormField name="name">
         <FormLabelAndMessage
           label={t('courses.course_name')}
@@ -162,7 +170,6 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
           <Textarea
             onChange={formik.handleChange}
             value={formik.values.description}
-
           />
         </Form.Control>
       </FormField>
@@ -172,17 +179,19 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
           label={t('courses.course_thumbnail')}
           message={formik.errors.thumbnail}
         />
-        <div className="w-auto bg-gray-50 rounded-xl outline outline-1 outline-gray-200 h-[200px] shadow-sm">
+        <div className="w-auto bg-gray-50 rounded-xl outline-1 outline-gray-200 h-[200px] shadow-sm">
           <div className="flex flex-col justify-center items-center h-full">
             <div className="flex flex-col justify-center items-center">
               {formik.values.thumbnail ? (
                 <img
                   src={URL.createObjectURL(formik.values.thumbnail)}
+                  alt="Course thumbnail preview"
                   className={`${isUploading ? 'animate-pulse' : ''} shadow-sm w-[200px] h-[100px] rounded-md`}
                 />
               ) : (
                 <img
                   src="/empty_thumbnail.png"
+                  alt="Empty thumbnail placeholder"
                   className="shadow-sm w-[200px] h-[100px] rounded-md bg-gray-200"
                 />
               )}
@@ -216,31 +225,31 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
         </div>
       </FormField>
 
-			<FormField name="learnings">
-				<FormLabelAndMessage
-					label={t('courses.course_learnings')}
-					message={formik.errors.learnings}
-				/>
-				<FormTagInput
-					placeholder={t('courses.enter_to_add')}
-					value={formik.values.learnings}
-					onChange={(value) => formik.setFieldValue('learnings', value)}
-					error={formik.errors.learnings}
-				/>
-			</FormField>
+      <FormField name="learnings">
+        <FormLabelAndMessage
+          label={t('courses.course_learnings')}
+          message={formik.errors.learnings}
+        />
+        <FormTagInput
+          placeholder={t('courses.enter_to_add')}
+          value={formik.values.learnings}
+          onChange={(value) => formik.setFieldValue('learnings', value)}
+          error={formik.errors.learnings}
+        />
+      </FormField>
 
-			<FormField name="tags">
-				<FormLabelAndMessage
-					label={t('courses.course_tags')}
-					message={formik.errors.tags}
-				/>
-				<FormTagInput
-					placeholder={t('courses.enter_to_add')}
-					value={formik.values.tags}
-					onChange={(value) => formik.setFieldValue('tags', value)}
-					error={formik.errors.tags}
-				/>
-			</FormField>
+      <FormField name="tags">
+        <FormLabelAndMessage
+          label={t('courses.course_tags')}
+          message={formik.errors.tags}
+        />
+        <FormTagInput
+          placeholder={t('courses.enter_to_add')}
+          value={formik.values.tags}
+          onChange={(value) => formik.setFieldValue('tags', value)}
+          error={formik.errors.tags}
+        />
+      </FormField>
 
       <FormField name="visibility">
         <FormLabelAndMessage
@@ -249,14 +258,20 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
         />
         <Select
           value={formik.values.visibility.toString()}
-          onValueChange={(value) => formik.setFieldValue('visibility', value === 'true')}
+          onValueChange={(value) =>
+            formik.setFieldValue('visibility', value === 'true')
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder={t('courses.select_visibility')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="true">{t('courses.public')} ({t('courses.public_desc')})</SelectItem>
-            <SelectItem value="false">{t('courses.private')} ({t('courses.private_desc')})</SelectItem>
+            <SelectItem value="true">
+              {t('courses.public')} ({t('courses.public_desc')})
+            </SelectItem>
+            <SelectItem value="false">
+              {t('courses.private')} ({t('courses.private_desc')})
+            </SelectItem>
           </SelectContent>
         </Select>
       </FormField>

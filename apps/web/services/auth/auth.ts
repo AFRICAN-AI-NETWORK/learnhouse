@@ -53,7 +53,7 @@ export async function loginWithOAuthToken(
     provider: provider,
     access_token: accessToken,
   }
-  const jsonBody = JSON.stringify(body);
+  const jsonBody = JSON.stringify(body)
 
   const requestOptions: any = {
     method: 'POST',
@@ -127,9 +127,12 @@ export async function getUserInfo(token: string): Promise<any> {
     credentials: 'include',
   }
 
-  return fetch(`${getAPIUrl()}users/profile`, requestOptions)
-    .then((result) => result.json())
-    .catch((error) => console.log('error', error))
+  return (
+    fetch(`${getAPIUrl()}users/profile`, requestOptions)
+      .then((result) => result.json())
+      // eslint-disable-next-line no-console
+      .catch((error) => console.error('error', error))
+  )
 }
 
 export async function getUserSession(token: string): Promise<any> {
@@ -145,15 +148,17 @@ export async function getUserSession(token: string): Promise<any> {
   }
 
   try {
-    const response = await fetch(`${getAPIUrl()}users/session`, requestOptions);
+    const response = await fetch(`${getAPIUrl()}users/session`, requestOptions)
     if (!response.ok) {
-        console.error(`Session fetch failed with status: ${response.status}`);
-        return null;
+      // eslint-disable-next-line no-console
+      console.error(`Session fetch failed with status: ${response.status}`)
+      return null
     }
-    return await response.json();
+    return await response.json()
   } catch (error) {
-    console.error('Error fetching user session:', error);
-    return null;
+    // eslint-disable-next-line no-console
+    console.error('Error fetching user session:', error)
+    return null
   }
 }
 
@@ -164,9 +169,12 @@ export async function getNewAccessTokenUsingRefreshToken(): Promise<any> {
     credentials: 'include',
   }
 
-  return fetch(`${getAPIUrl()}auth/refresh`, requestOptions)
-    .then((result) => result.json())
-    .catch((error) => console.log('error', error))
+  return (
+    fetch(`${getAPIUrl()}auth/refresh`, requestOptions)
+      .then((result) => result.json())
+      // eslint-disable-next-line no-console
+      .catch((error) => console.error('error', error))
+  )
 }
 
 export async function getNewAccessTokenUsingRefreshTokenServer(
@@ -180,9 +188,12 @@ export async function getNewAccessTokenUsingRefreshTokenServer(
     },
     credentials: 'include',
   }
-  return fetch(`${getAPIUrl()}auth/refresh`, requestOptions)
-    .then((result) => result.json())
-    .catch((error) => console.log('error', error))
+  return (
+    fetch(`${getAPIUrl()}auth/refresh`, requestOptions)
+      .then((result) => result.json())
+      // eslint-disable-next-line no-console
+      .catch((error) => console.error('error', error))
+  )
 }
 
 // cookies

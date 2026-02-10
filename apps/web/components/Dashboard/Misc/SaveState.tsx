@@ -17,22 +17,28 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 function SaveState(props: { orgslug: string }) {
   const [isLoading, setIsLoading] = useState(false)
   const course = useCourse() as any
-  const session = useLHSession() as any;
+  const session = useLHSession() as any
   const router = useRouter()
   const saved = course ? course.isSaved : true
   const dispatchCourse = useCourseDispatch() as any
   const course_structure = course.courseStructure
-  const withUnpublishedActivities = course ? course.withUnpublishedActivities : false
+  const withUnpublishedActivities = course
+    ? course.withUnpublishedActivities
+    : false
   const saveCourseState = async () => {
     if (saved || isLoading) return
     setIsLoading(true)
     try {
       // Course  order
       await changeOrderBackend()
-      mutate(`${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+      mutate(
+        `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+      )
       // Course metadata
       await changeMetadataBackend()
-      mutate(`${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+      mutate(
+        `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+      )
       // Certification data (if present)
       await saveCertificationData()
       await revalidateTags(['courses'], props.orgslug)
@@ -45,7 +51,9 @@ function SaveState(props: { orgslug: string }) {
   //
   // Course Order
   const changeOrderBackend = async () => {
-    mutate(`${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+    mutate(
+      `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+    )
     await updateCourseOrderStructure(
       course.courseStructure.course_uuid,
       course.courseOrder,
@@ -58,7 +66,9 @@ function SaveState(props: { orgslug: string }) {
 
   // Course metadata
   const changeMetadataBackend = async () => {
-    mutate(`${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+    mutate(
+      `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+    )
     await updateCourse(
       course.courseStructure.course_uuid,
       course.courseStructure,
@@ -72,16 +82,16 @@ function SaveState(props: { orgslug: string }) {
   // Certification data
   const saveCertificationData = async () => {
     if (course.courseStructure._certificationData) {
-      const certData = course.courseStructure._certificationData;
+      const certData = course.courseStructure._certificationData
       try {
         await updateCertification(
           certData.certification_uuid,
           certData.config,
           session.data?.tokens?.access_token
-        );
-        console.log('Certification data saved successfully');
+        )
       } catch (error) {
-        console.error('Failed to save certification data:', error);
+        // eslint-disable-next-line no-console
+        console.error('Failed to save certification data:', error)
         // Don't throw error to prevent breaking the main save flow
       }
     }
@@ -127,6 +137,7 @@ function SaveState(props: { orgslug: string }) {
     if (course_structure?.chapters && !saved) {
       changeOrderPayload()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course_structure]) // This effect depends on the `course_structure` variable
 
   return (

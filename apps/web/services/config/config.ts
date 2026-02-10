@@ -76,35 +76,16 @@ export const getConfig = (key: string, defaultValue: string = ''): string => {
 
   // 1. Check runtime config (from runtime-config.json or the generated runtime-config.js)
   if (config && config[key]) {
-    if (
-      typeof process !== 'undefined' &&
-      process.env?.NODE_ENV === 'development'
-    ) {
-      console.log(
-        `[getConfig] ${key}: Found in runtimeConfig = "${config[key]}"`
-      )
-    }
     return config[key]
   }
 
   // 2. Fallback to process.env (Server-side only)
   if (typeof process !== 'undefined' && process.env) {
     const envValue = process.env[key]
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `[getConfig] ${key}: process.env = "${envValue || 'undefined'}", defaultValue = "${defaultValue}"`
-      )
-    }
+
     return envValue || defaultValue
   }
-  if (
-    typeof process !== 'undefined' &&
-    process.env?.NODE_ENV === 'development'
-  ) {
-    console.log(
-      `[getConfig] ${key}: No process.env available, using defaultValue = "${defaultValue}"`
-    )
-  }
+
   return defaultValue
 }
 
@@ -135,30 +116,10 @@ const getLEARNHOUSE_HTTP_PROTOCOL = () =>
   getConfig('NEXT_PUBLIC_LEARNHOUSE_HTTPS') === 'true' ? 'https://' : 'http://'
 const getLEARNHOUSE_API_URL = () => {
   // Check for NEXT_PUBLIC_LEARNHOUSE_API_URL first, then fallback to NEXT_PUBLIC_API_URL for backward compatibility
-  if (
-    typeof process !== 'undefined' &&
-    process.env?.NODE_ENV === 'development'
-  ) {
-    console.log(`[getLEARNHOUSE_API_URL] 🔍 Starting API URL resolution...`)
-  }
+
   const learnhouseApiUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_API_URL')
-  if (
-    typeof process !== 'undefined' &&
-    process.env?.NODE_ENV === 'development'
-  ) {
-    console.log(
-      `[getLEARNHOUSE_API_URL] learnhouseApiUrl from getConfig: "${learnhouseApiUrl}"`
-    )
-  }
+
   const apiUrl = learnhouseApiUrl || getConfig('NEXT_PUBLIC_API_URL')
-  if (
-    typeof process !== 'undefined' &&
-    process.env?.NODE_ENV === 'development'
-  ) {
-    console.log(
-      `[getLEARNHOUSE_API_URL] Final apiUrl (after fallback check): "${apiUrl}"`
-    )
-  }
 
   // In production, fail fast if API URL is not configured
   if (
@@ -179,9 +140,7 @@ const getLEARNHOUSE_API_URL = () => {
       typeof process !== 'undefined' &&
       process.env?.NODE_ENV === 'development'
     ) {
-      console.log(
-        `[getLEARNHOUSE_API_URL] ✅ Using env var: "${apiUrl}" -> normalized: "${normalizedUrl}"`
-      )
+      // Development specific logic can go here
     }
     return normalizedUrl
   }
@@ -199,9 +158,6 @@ const getLEARNHOUSE_API_URL = () => {
   ) {
     console.warn(
       `[getLEARNHOUSE_API_URL] ⚠️ No API URL found in env vars, using fallback: "${fallbackUrl}"`
-    )
-    console.log(
-      `[getLEARNHOUSE_API_URL] Debug: learnhouseApiUrl = "${learnhouseApiUrl}", apiUrl = "${apiUrl}"`
     )
   }
 
@@ -249,12 +205,7 @@ export const LEARNHOUSE_TOP_DOMAIN = getLEARNHOUSE_TOP_DOMAIN()
 // For direct usage, these call the getters
 export const getAPIUrl = () => {
   const url = getLEARNHOUSE_API_URL()
-  if (
-    typeof process !== 'undefined' &&
-    process.env?.NODE_ENV === 'development'
-  ) {
-    console.log(`[getAPIUrl] Final API URL: "${url}"`)
-  }
+
   return url
 }
 export const getBackendUrl = () => getLEARNHOUSE_BACKEND_URL()

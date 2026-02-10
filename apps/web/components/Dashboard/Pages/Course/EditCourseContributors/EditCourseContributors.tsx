@@ -166,6 +166,7 @@ function EditCourseContributors() {
           setSearchResults([])
         }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error searching users:', error)
         setSearchResults([])
       }
@@ -226,6 +227,7 @@ function EditCourseContributors() {
         setSearchQuery('')
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error adding contributors:', error)
       toast.error(t('dashboard.courses.contributors.toasts.add_failed'))
     }
@@ -406,8 +408,6 @@ function EditCourseContributors() {
           ?.filter((c) => selectedContributors.includes(c.user_id))
           .map((c) => c.user.username) || []
 
-      console.log('Sending usernames:', selectedUsernames) // Debug log
-
       const response = await bulkRemoveContributors(
         courseStructure.course_uuid,
         selectedUsernames, // Send as raw array, not stringified
@@ -428,6 +428,7 @@ function EditCourseContributors() {
         setSelectedContributors([])
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error removing contributors:', error)
       toast.error(t('dashboard.courses.contributors.toasts.remove_failed'))
     }

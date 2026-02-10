@@ -1542,9 +1542,10 @@ function AssignmentTools(props: {
         return convertNumericToAlphabet(grade, max_grade)
       case 'NUMERIC':
         return `${grade}/${max_grade}`
-      case 'PERCENTAGE':
+      case 'PERCENTAGE': {
         const percentage = (grade / max_grade) * 100
         return `${percentage.toFixed(2)}%`
+      }
       default:
         return 'Unknown grading type'
     }

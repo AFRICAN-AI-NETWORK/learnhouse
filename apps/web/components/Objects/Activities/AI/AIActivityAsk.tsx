@@ -25,15 +25,9 @@ type AIActivityAskProps = {
 
 function AIActivityAsk(props: AIActivityAskProps) {
   const { t } = useTranslation()
-  const is_ai_feature_enabled = useGetAIFeatures({ feature: 'activity_ask' })
-  const [isButtonAvailable, setIsButtonAvailable] = React.useState(false)
   const dispatchAIChatBot = useAIChatBotDispatch() as any
-
-  useEffect(() => {
-    if (is_ai_feature_enabled) {
-      setIsButtonAvailable(true)
-    }
-  }, [is_ai_feature_enabled])
+  const is_ai_feature_enabled = useGetAIFeatures({ feature: 'activity_ask' })
+  const isButtonAvailable = is_ai_feature_enabled
 
   return (
     <>
@@ -51,7 +45,7 @@ function AIActivityAsk(props: AIActivityAskProps) {
             {' '}
             <i>
               <Image
-                className="outline outline-1 outline-neutral-200/20 rounded-md"
+                className="outline-1 outline-neutral-200/20 rounded-md"
                 width={20}
                 src={africanAiSquareLogo}
                 alt=""
@@ -78,7 +72,7 @@ type ActivityChatMessageBoxProps = {
 function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
-  const access_token = session?.data?.tokens?.access_token;
+  const access_token = session?.data?.tokens?.access_token
   const aiChatBotState = useAIChatBot() as AIChatBotStateTypes
   const dispatchAIChatBot = useAIChatBotDispatch() as any
 
@@ -148,9 +142,9 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
       })
       await dispatchAIChatBot({ type: 'setIsWaitingForResponse' })
       const response = await startActivityAIChatSession(
-        message, access_token,
+        message,
+        access_token,
         props.activity.activity_uuid
-
       )
       if (response.success == false) {
         await dispatchAIChatBot({ type: 'setIsNoLongerWaitingForResponse' })
@@ -225,12 +219,14 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
                   />
                 </div>
                 <div
-                  className={`flex space-x-2 items-center -ml-[100px] ${aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
-                    }`}
+                  className={`flex space-x-2 items-center -ml-[100px] ${
+                    aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
+                  }`}
                 >
                   <Image
-                    className={`outline outline-1 outline-neutral-200/20 rounded-lg ${aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
-                      }`}
+                    className={`outline-1 outline-neutral-200/20 rounded-lg ${
+                      aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
+                    }`}
                     width={24}
                     src={africanAiSquareLogo}
                     alt=""
@@ -248,11 +244,12 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
                 </div>
               </div>
               <div
-                className={`w-100 h-0.5 bg-white/5 rounded-full mx-auto mb-3 ${aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
-                  }`}
+                className={`w-100 h-0.5 bg-white/5 rounded-full mx-auto mb-3 ${
+                  aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
+                }`}
               ></div>
               {aiChatBotState.messages.length > 0 &&
-                !aiChatBotState.error.isError ? (
+              !aiChatBotState.error.isError ? (
                 <div className="flex-col h-[237px] w-full space-y-4 overflow-scroll scrollbar-hide">
                   {aiChatBotState.messages.map(
                     (message: AIMessage, index: number) => {
@@ -275,7 +272,7 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
               )}
               {aiChatBotState.error.isError && (
                 <div className="flex items-center h-[237px]">
-                  <div className="flex flex-col mx-auto w-[600px] space-y-2 p-5 rounded-lg bg-red-500/20 outline outline-1 outline-red-500">
+                  <div className="flex flex-col mx-auto w-[600px] space-y-2 p-5 rounded-lg bg-red-500/20 outline-1 outline-red-500">
                     <AlertTriangle size={20} className="text-red-500" />
                     <div className="flex flex-col">
                       <h3 className="font-semibold text-red-200">
@@ -384,9 +381,9 @@ const AIMessagePlaceHolder = (props: {
   const session = useLHSession() as any
   const [feedbackModal, setFeedbackModal] = React.useState(false)
   const aiChatBotState = useAIChatBot() as AIChatBotStateTypes
+  const { t } = useTranslation()
 
   if (!aiChatBotState.error.isError) {
-    const { t } = useTranslation()
     return (
       <div className="flex-col h-[237px] w-full">
         <div className="flex flex-col text-center justify-center pt-12">
@@ -403,12 +400,7 @@ const AIMessagePlaceHolder = (props: {
               delay: 0.17,
             }}
           >
-            <Image
-              width={100}
-              className="mx-auto"
-              src={africanAiLogo}
-              alt=""
-            />
+            <Image width={100} className="mx-auto" src={africanAiLogo} alt="" />
             <p className="pt-3 text-2xl font-semibold text-white/70 flex justify-center space-x-2 items-center">
               <span className="items-center">{t('common.hello')}</span>
               <span className="capitalize flex space-x-2 items-center">
@@ -469,7 +461,7 @@ const AIChatPredefinedQuestion = (props: {
   return (
     <div
       onClick={() => props.sendMessage(getQuestion(props.label))}
-      className="flex space-x-1.5 items-center bg-white/5 cursor-pointer px-4 py-1.5 rounded-xl outline outline-1 outline-neutral-100/10 text-xs font-semibold text-white/40 hover:text-white/60 hover:bg-white/10 hover:outline-neutral-200/40 delay-75 ease-linear transition-all"
+      className="flex space-x-1.5 items-center bg-white/5 cursor-pointer px-4 py-1.5 rounded-xl outline-1 outline-neutral-100/10 text-xs font-semibold text-white/40 hover:text-white/60 hover:bg-white/10 hover:outline-neutral-200/40 delay-75 ease-linear transition-all"
     >
       {props.label === 'about' && <BadgeInfo size={15} />}
       {props.label === 'flashcards' && <NotebookTabs size={15} />}

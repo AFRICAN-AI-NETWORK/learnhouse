@@ -113,6 +113,7 @@ const EditCourseStructure = (props: EditCourseStructureProps) => {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setwinReady(true)
   }, [])
 

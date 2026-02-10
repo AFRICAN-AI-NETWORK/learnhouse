@@ -12,10 +12,10 @@ import { usePathname } from 'next/navigation'
 
 export const OrgMenu = (props: any) => {
   const orgslug = props.orgslug
-  const session = useLHSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
   const [feedbackModal, setFeedbackModal] = React.useState(false)
-  const org = useOrg() as any;
+  const org = useOrg() as any
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const pathname = usePathname()
@@ -23,35 +23,42 @@ export const OrgMenu = (props: any) => {
   useEffect(() => {
     // Only check focus mode if we're in an activity page
     if (typeof window !== 'undefined' && pathname?.includes('/activity/')) {
-      const saved = localStorage.getItem('globalFocusMode');
-      setIsFocusMode(saved === 'true');
+      const saved = localStorage.getItem('globalFocusMode')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsFocusMode(saved === 'true')
     } else {
-      setIsFocusMode(false);
+      setIsFocusMode(false)
     }
 
     // Add storage event listener for cross-window changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'globalFocusMode' && pathname?.includes('/activity/')) {
-        setIsFocusMode(e.newValue === 'true');
+        setIsFocusMode(e.newValue === 'true')
       }
-    };
+    }
 
     // Add custom event listener for same-window changes
     const handleFocusModeChange = (e: CustomEvent) => {
       if (pathname?.includes('/activity/')) {
-        setIsFocusMode(e.detail.isFocusMode);
+        setIsFocusMode(e.detail.isFocusMode)
       }
-    };
+    }
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('focusModeChange', handleFocusModeChange as EventListener);
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener(
+      'focusModeChange',
+      handleFocusModeChange as EventListener
+    )
 
     // Cleanup
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focusModeChange', handleFocusModeChange as EventListener);
-    };
-  }, [pathname]);
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener(
+        'focusModeChange',
+        handleFocusModeChange as EventListener
+      )
+    }
+  }, [pathname])
 
   function closeFeedbackModal() {
     setFeedbackModal(false)
@@ -63,7 +70,7 @@ export const OrgMenu = (props: any) => {
 
   // Only hide menu if we're in an activity page and focus mode is enabled
   if (pathname?.includes('/activity/') && isFocusMode) {
-    return null;
+    return null
   }
 
   return (
@@ -107,12 +114,34 @@ export const OrgMenu = (props: any) => {
               onClick={toggleMenu}
             >
               {isMenuOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 </svg>
               )}
             </button>
@@ -120,15 +149,16 @@ export const OrgMenu = (props: any) => {
         </div>
       </div>
       <div
-        className={`fixed inset-x-0 z-40 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${isMenuOpen ? 'top-[60px] opacity-100' : '-top-full opacity-0'
-          }`}
+        className={`fixed inset-x-0 z-40 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${
+          isMenuOpen ? 'top-[60px] opacity-100' : '-top-full opacity-0'
+        }`}
       >
         <div className="flex flex-col px-4 py-3 space-y-4 justify-center items-center">
           {/* Mobile Search */}
           <div className="w-full px-2">
             <SearchBar orgslug={orgslug} isMobile={true} />
           </div>
-          <div className='py-4'>
+          <div className="py-4">
             <MenuLinks orgslug={orgslug} />
           </div>
           <div className="border-t border-gray-200">
