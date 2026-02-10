@@ -1,10 +1,17 @@
 'use client'
-import React, { use, useEffect } from 'react';
+import React, { use, useEffect } from 'react'
 import { CourseProvider } from '../../../../../../../../components/Contexts/CourseContext'
 import Link from 'next/link'
 import { CourseOverviewTop } from '@components/Dashboard/Misc/CourseOverviewTop'
 import { motion } from 'framer-motion'
-import { GalleryVerticalEnd, Globe, Info, UserPen, Award, Lock } from 'lucide-react'
+import {
+  GalleryVerticalEnd,
+  Globe,
+  Info,
+  UserPen,
+  Award,
+  Lock,
+} from 'lucide-react'
 import EditCourseStructure from '@components/Dashboard/Pages/Course/EditCourseStructure/EditCourseStructure'
 import EditCourseGeneral from '@components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral'
 import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess'
@@ -13,8 +20,8 @@ import EditCourseCertification from '@components/Dashboard/Pages/Course/EditCour
 import { useCourseRights } from '@hooks/useCourseRights'
 import { useRouter } from 'next/navigation'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
-import { getUriWithOrg } from '@services/config/config';
-import { useTranslation } from 'react-i18next';
+import { getUriWithOrg } from '@services/config/config'
+import { useTranslation } from 'react-i18next'
 
 export type CourseOverviewParams = {
   orgslug: string
@@ -24,16 +31,17 @@ export type CourseOverviewParams = {
 
 function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
   const { t } = useTranslation()
-  const params = use(props.params);
-  const router = useRouter();
-  
+  const params = use(props.params)
+  const router = useRouter()
+
   function getEntireCourseUUID(courseuuid: string) {
     // add course_ to uuid
     return `course_${courseuuid}`
   }
 
   const courseuuid = getEntireCourseUUID(params.courseuuid)
-  const { hasPermission, isLoading: rightsLoading } = useCourseRights(courseuuid)
+  const { hasPermission, isLoading: rightsLoading } =
+    useCourseRights(courseuuid)
 
   // Define tab configurations with their required permissions
   const tabs = [
@@ -42,44 +50,48 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
       label: t('dashboard.courses.settings.tabs.general'),
       icon: Info,
       href: `/dash/courses/course/${params.courseuuid}/general`,
-      requiredPermission: 'update' as const
+      requiredPermission: 'update' as const,
     },
     {
       key: 'content',
       label: t('dashboard.courses.settings.tabs.content'),
       icon: GalleryVerticalEnd,
       href: `/dash/courses/course/${params.courseuuid}/content`,
-      requiredPermission: 'update_content' as const
+      requiredPermission: 'update_content' as const,
     },
     {
       key: 'access',
       label: t('dashboard.courses.settings.tabs.access'),
       icon: Globe,
       href: `/dash/courses/course/${params.courseuuid}/access`,
-      requiredPermission: 'manage_access' as const
+      requiredPermission: 'manage_access' as const,
     },
     {
       key: 'contributors',
       label: t('dashboard.courses.settings.tabs.contributors'),
       icon: UserPen,
       href: `/dash/courses/course/${params.courseuuid}/contributors`,
-      requiredPermission: 'manage_contributors' as const
+      requiredPermission: 'manage_contributors' as const,
     },
     {
       key: 'certification',
       label: t('dashboard.courses.settings.tabs.certification'),
       icon: Award,
       href: `/dash/courses/course/${params.courseuuid}/certification`,
-      requiredPermission: 'create_certifications' as const
-    }
+      requiredPermission: 'create_certifications' as const,
+    },
   ]
 
   // Filter tabs based on permissions
-  const visibleTabs = tabs.filter(tab => hasPermission(tab.requiredPermission))
+  const visibleTabs = tabs.filter((tab) =>
+    hasPermission(tab.requiredPermission)
+  )
 
   // Check if current subpage is accessible
-  const currentTab = tabs.find(tab => tab.key === params.subpage)
-  const hasAccessToCurrentPage = currentTab ? hasPermission(currentTab.requiredPermission) : false
+  const currentTab = tabs.find((tab) => tab.key === params.subpage)
+  const hasAccessToCurrentPage = currentTab
+    ? hasPermission(currentTab.requiredPermission)
+    : false
 
   // Redirect to first available tab if current page is not accessible
   useEffect(() => {
@@ -87,7 +99,13 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
       const firstAvailableTab = visibleTabs[0]
       router.replace(getUriWithOrg(params.orgslug, '') + firstAvailableTab.href)
     }
-  }, [rightsLoading, hasAccessToCurrentPage, visibleTabs, router, params.orgslug])
+  }, [
+    rightsLoading,
+    hasAccessToCurrentPage,
+    visibleTabs,
+    router,
+    params.orgslug,
+  ])
 
   // Show loading state while rights are being fetched
   if (rightsLoading) {
@@ -104,8 +122,12 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
       <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center">
         <div className="text-center">
           <Lock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.courses.settings.access_denied.title')}</h3>
-          <p className="text-gray-500">{t('dashboard.courses.settings.access_denied.message')}</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {t('dashboard.courses.settings.access_denied.title')}
+          </h3>
+          <p className="text-gray-500">
+            {t('dashboard.courses.settings.access_denied.message')}
+          </p>
         </div>
       </div>
     )
@@ -121,7 +143,7 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
               const IconComponent = tab.icon
               const isActive = params.subpage.toString() === tab.key
               const hasAccess = hasPermission(tab.requiredPermission)
-              
+
               if (!hasAccess) {
                 // Show disabled tab with subtle visual cues and tooltip
                 return (
@@ -129,9 +151,16 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
                     key={tab.key}
                     content={
                       <div className="text-center">
-                        <div className="font-medium text-gray-900">{t('dashboard.courses.settings.access_restricted.title')}</div>
+                        <div className="font-medium text-gray-900">
+                          {t(
+                            'dashboard.courses.settings.access_restricted.title'
+                          )}
+                        </div>
                         <div className="text-sm text-gray-600">
-                          {t('dashboard.courses.settings.access_restricted.message', { tab: tab.label })}
+                          {t(
+                            'dashboard.courses.settings.access_restricted.message',
+                            { tab: tab.label }
+                          )}
                         </div>
                       </div>
                     }
@@ -145,7 +174,7 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
                   </ToolTip>
                 )
               }
-              
+
               return (
                 <Link
                   key={tab.key}
@@ -181,12 +210,14 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
               <EditCourseGeneral orgslug={params.orgslug} />
             ) : null}
             {params.subpage == 'access' && hasPermission('manage_access') ? (
-              <EditCourseAccess orgslug={params.orgslug} />
+              <EditCourseAccess />
             ) : null}
-            {params.subpage == 'contributors' && hasPermission('manage_contributors') ? (
-              <EditCourseContributors orgslug={params.orgslug} />
+            {params.subpage == 'contributors' &&
+            hasPermission('manage_contributors') ? (
+              <EditCourseContributors />
             ) : null}
-            {params.subpage == 'certification' && hasPermission('create_certifications') ? (
+            {params.subpage == 'certification' &&
+            hasPermission('create_certifications') ? (
               <EditCourseCertification orgslug={params.orgslug} />
             ) : null}
           </div>
