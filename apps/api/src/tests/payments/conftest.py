@@ -1,50 +1,85 @@
 """
 Test fixtures for payment and discount code tests.
 
-This module provides PostgreSQL database fixtures and test data helpers
-for comprehensive discount code testing.
+This module provides database fixtures and test data helpers for comprehensive
+discount code testing.  Tables are auto-created via ``SQLModel.metadata.create_all``
+so the tests work both in CI (PostgreSQL service container) and locally (fallback
+to SQLite in-memory).
 """
-import pytest
 import os
+import pytest
 from datetime import datetime, timedelta
-from sqlmodel import Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 from sqlalchemy.pool import StaticPool
-from src.db.payments.discount_codes import DiscountCode, DiscountCodeUsage, DiscountTypeEnum
+
+# Import ALL table models so SQLModel.metadata registers them for create_all().
 from src.db.organizations import Organization
 from src.db.users import User
 from src.db.courses.courses import Course
+from src.db.roles import Role  # noqa: F401
+from src.db.user_organizations import UserOrganization  # noqa: F401
+from src.db.resource_authors import ResourceAuthor  # noqa: F401
+from src.db.payments.discount_codes import DiscountCode, DiscountCodeUsage, DiscountTypeEnum
+from src.db.payments.payments import PaymentsConfig, PaymentProviderEnum  # noqa: F401
+from src.db.payments.payments_products import PaymentsProduct, PaymentProductTypeEnum, PaymentPriceTypeEnum  # noqa: F401
 from src.db.payments.payments_users import PaymentsUser
 
 
-# PostgreSQL test database configuration
-# Uses the same database as development but with transaction rollback for isolation
+# Use PostgreSQL when available (CI), otherwise fall back to SQLite in-memory.
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql://learnhouse:learnhouse@localhost:5432/learnhouse"
+    os.getenv(
+        "LEARNHOUSE_SQL_CONNECTION_STRING",
+        "sqlite://",           # local fallback – no PG needed
+    ),
 )
-
 
 
 @pytest.fixture(scope="session")
 def test_engine():
     """
     Create a test database engine for the entire test session.
-    Uses PostgreSQL for production-identical behavior.
+    All tables are created automatically via ``create_all`` so neither
+    Alembic migrations nor a pre-existing schema are required.
     """
+    is_sqlite = TEST_DATABASE_URL.startswith("sqlite")
+
+    extra_kwargs = {}
+    if is_sqlite:
+        extra_kwargs["connect_args"] = {"check_same_thread": False}
+
     engine = create_engine(
         TEST_DATABASE_URL,
-        echo=False,  # Set to True for SQL debugging
+        echo=False,
         poolclass=StaticPool,
+        **extra_kwargs,
     )
-    
-    # Note: Tables already exist in database via Alembic migrations
-    # No need to create/drop tables for tests
-    # SQLModel.metadata.create_all(engine)
-    
+
+    if is_sqlite:
+        # SQLite < 3.44 lacks GREATEST(); register it as a user function.
+        from sqlalchemy import event
+
+        @event.listens_for(engine, "connect")
+        def _register_functions(dbapi_conn, connection_record):
+            dbapi_conn.create_function("GREATEST", 2, max)
+
+    # Replace PG_ENUM column type on payments_config.provider with plain String.
+    # The PG_ENUM TypeDecorator uses create_type=False, which means the
+    # PostgreSQL enum type won't exist in a fresh DB and CREATE TABLE would
+    # fail.  Using String() is fine for tests.
+    from sqlalchemy import String
+    table = SQLModel.metadata.tables.get("payments_config")
+    if table is not None:
+        for col in table.columns:
+            if col.name == "provider":
+                col.type = String()
+                break
+
+    SQLModel.metadata.create_all(engine)
+
     yield engine
-    
-    # Cleanup: Not dropping tables since we're using the shared learnhouse database
-    # SQLModel.metadata.drop_all(engine)
+
+    SQLModel.metadata.drop_all(engine)
     engine.dispose()
 
 
@@ -197,7 +232,6 @@ def max_uses_discount_code(db_session: Session, mock_org: Organization) -> Disco
 @pytest.fixture
 def mock_payments_config(db_session: Session, mock_org: Organization):
     """Create a test payments configuration."""
-    from src.db.payments.payments import PaymentsConfig, PaymentProviderEnum
     from datetime import datetime
     
     config = PaymentsConfig(
@@ -219,7 +253,6 @@ def mock_payments_config(db_session: Session, mock_org: Organization):
 @pytest.fixture
 def mock_payments_product(db_session: Session, mock_org: Organization, mock_payments_config):
     """Create a test payments product."""
-    from src.db.payments.payments_products import PaymentsProduct, PaymentProductTypeEnum, PaymentPriceTypeEnum
     from datetime import datetime
     
     product = PaymentsProduct(
