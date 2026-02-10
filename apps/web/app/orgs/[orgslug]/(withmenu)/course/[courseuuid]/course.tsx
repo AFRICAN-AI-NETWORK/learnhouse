@@ -78,66 +78,21 @@ const CourseClient = (props: any) => {
     return learningItems
   }, [course.learnings])
 
-  // State for user overrides of expanded chapters
-  const [userExpandedChapters, setUserExpandedChapters] = React.useState<{
+  // Expanded chapters state with smart defaults via lazy initializer
+  const [expandedChapters, setExpandedChapters] = useState<{
     [key: string]: boolean
-  }>({})
-
-  // Derive final expanded state by merging defaults with user overrides
-  const expandedChapters = React.useMemo(() => {
+  }>(() => {
     if (!course?.chapters) return {}
-
     const totalActivities = course.chapters.reduce(
       (sum: number, chapter: any) => sum + (chapter.activities?.length || 0),
       0
     )
     const defaults: { [key: string]: boolean } = {}
-
     course.chapters.forEach((chapter: any, idx: number) => {
-      // Default: First chapter expanded, others expanded only if total activities <= 5
       defaults[chapter.chapter_uuid] = idx === 0 ? true : totalActivities <= 5
     })
-
-    // Merge defaults with user overrides
-    return { ...defaults, ...userExpandedChapters }
-  }, [course?.chapters, userExpandedChapters])
-
-  // Helper to toggle chapters (updates user overrides)
-  const setExpandedChapters = (newState: any) => {
-    // If newState is a function (functional update), we can't easily support it with this pattern
-    // unless we change how we call it.
-    // Typically setExpandedChapters is called like: setExpandedChapters(prev => ({...prev, [id]: !prev[id]}))
-    // or setExpandedChapters({...expandedChapters, [id]: !expandedChapters[id]})
-
-    // We need to intercept this and update userExpandedChapters instead.
-    // But wait, the existing code probably calls setExpandedChapters with the *new complete state*.
-    // Or it calls it with a functional update based on *current* state.
-
-    // Verification needed: checking how setExpandedChapters is used.
-    // Assuming straightforward usage for now, but will verify in next steps.
-    // For now, let's just expose a way to update it.
-
-    // Actually, to minimize code changes, we can keep the name setExpandedChapters
-    // but make it update userExpandedChapters.
-    // But userExpandedChapters should only store the *difference* or the *override*.
-    // If we blindly set userExpandedChapters to the full new state, it works fine too,
-    // it just means we are "detaching" from defaults for those keys.
-
-    if (typeof newState === 'function') {
-      setUserExpandedChapters((prevUser) => {
-        // We need the *current* full state to calculate the new state?
-        // This is tricky with derived state.
-        // Easier approach: Just use the overrides map.
-        // If the existing code does: setExpandedChapters(prev => ...), 'prev' implies full state.
-
-        // Let's assume passed usage is `setExpandedChapters({...expandedChapters, [id]: ...})`.
-        // We will handle this by checking usage.
-        return newState(expandedChapters)
-      })
-    } else {
-      setUserExpandedChapters(newState)
-    }
-  }
+    return defaults
+  })
 
   const getActivityTypeLabel = (activityType: string) => {
     switch (activityType) {
