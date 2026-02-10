@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
-from sqlmodel import Session, select
+from sqlmodel import Session
 from src.db.payments.discount_codes import DiscountCode, DiscountTypeEnum, DiscountCodeCreate
 from src.services.payments.discount_codes import create_discount_code, validate_discount_code, DiscountValidationError
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum

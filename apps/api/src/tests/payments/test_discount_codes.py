@@ -109,7 +109,7 @@ class TestDiscountCodeValidation:
         User cannot use same code twice for same course.
         """
         # First usage - create usage record
-        usage_record = create_usage_record_helper(
+        create_usage_record_helper(
             db_session=db_session,
             discount_code_id=sample_discount_code.id,
             user_id=mock_user.id,
@@ -679,7 +679,7 @@ class TestRefundHandling:
         db_session.add(payment)
         db_session.commit()
         
-        usage = create_usage_record_helper(
+        create_usage_record_helper(
             db_session=db_session,
             discount_code_id=sample_discount_code.id,
             user_id=mock_user.id,

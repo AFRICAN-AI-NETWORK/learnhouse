@@ -2,14 +2,9 @@
 
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import { getUriWithOrg, getAPIUrl } from '@services/config/config'
-import { getCollectionById } from '@services/courses/collections'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { getOrganizationContextInfo } from '@services/organizations/orgs'
-import { nextAuthOptions } from 'app/auth/options'
-import { Metadata } from 'next'
-import { getServerSession } from 'next-auth'
 import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -27,8 +22,11 @@ const CollectionPage = (props: any) => {
   const org = useOrg() as any
 
   const { data: col, error } = useSWR(
-    collectionid && access_token ? [`collections/collection_${collectionid}`, access_token] : null,
-    ([, token]) => swrFetcher(`${getAPIUrl()}collections/collection_${collectionid}`, token)
+    collectionid && access_token
+      ? [`collections/collection_${collectionid}`, access_token]
+      : null,
+    ([, token]) =>
+      swrFetcher(`${getAPIUrl()}collections/collection_${collectionid}`, token)
   )
 
   const removeCoursePrefix = (courseid: string) => {
@@ -39,7 +37,9 @@ const CollectionPage = (props: any) => {
 
   return (
     <GeneralWrapperStyled>
-      <h2 className="text-sm font-bold text-gray-400">{t('collections.collection')}</h2>
+      <h2 className="text-sm font-bold text-gray-400">
+        {t('collections.collection')}
+      </h2>
       <h1 className="text-3xl font-bold">{col.name}</h1>
       <br />
       <div className="home_courses flex flex-wrap">

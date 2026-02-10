@@ -384,10 +384,8 @@ async def create_discount_code(
         raise HTTPException(status_code=404, detail="Organization not found")
     
     # RBAC check - Org Admins or Instructors (with course_id)
-    is_org_admin = False
     try:
         await rbac_check(request, org.org_uuid, current_user, "create", db_session)
-        is_org_admin = True
     except HTTPException:
         # User is not an org admin, check if they are an instructor for the specific course
         if not discount_data.course_id:
@@ -512,6 +510,7 @@ async def list_discount_codes(
         # For non-admins, only show codes for courses they manage
         # This requires an inner join with ResourceAuthor
         from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
+        from src.db.courses.courses import Course
         query = query.join(
             ResourceAuthor, 
             and_(

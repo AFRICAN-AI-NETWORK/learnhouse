@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import React from 'react'
 import africanAiLogo from '../../../../public/african_ai_horizontal.png'
-import { BookCopy, School, Settings, University, Users } from 'lucide-react'
+import { BookCopy, School, Settings, Users } from 'lucide-react'
 import Link from 'next/link'
 import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useTranslation } from 'react-i18next'
@@ -43,7 +43,6 @@ function DashboardHome() {
         </div>
       </AdminAuthorization>
       <div className="flex flex-col gap-6 sm:gap-10 mt-6 sm:mt-10">
-
         <Link
           href={'/dash/user-account/settings/general'}
           className="flex bg-white shadow-lg p-4 items-center rounded-lg mx-auto hover:scale-105 transition-all ease-linear cursor-pointer max-w-md"
@@ -51,7 +50,9 @@ function DashboardHome() {
           <div className="flex flex-col sm:flex-row mx-auto gap-2 sm:gap-3 items-center text-center sm:text-left">
             <Settings className="text-gray-500/100" size={20} />
             <div>
-              <div className="font-bold text-gray-500/100">{t('dashboard.home.cards.account_settings.title')}</div>
+              <div className="font-bold text-gray-500/100">
+                {t('dashboard.home.cards.account_settings.title')}
+              </div>
               <p className="text-sm text-gray-400/100">
                 {t('dashboard.home.cards.account_settings.description')}
               </p>
@@ -64,7 +65,17 @@ function DashboardHome() {
 }
 
 // New component for dashboard cards
-function DashboardCard({ href, icon, title, description }: { href: string, icon: React.ReactNode, title: string, description: string }) {
+function DashboardCard({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
   return (
     <Link
       href={href}

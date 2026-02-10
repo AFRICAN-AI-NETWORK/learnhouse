@@ -4,7 +4,10 @@ import {
   loginAndGetToken,
   loginWithOAuthToken,
 } from '@services/auth/auth'
-import { getLEARNHOUSE_TOP_DOMAIN_VAL, getUriWithOrg } from '@services/config/config'
+import {
+  getLEARNHOUSE_TOP_DOMAIN_VAL,
+  getUriWithOrg,
+} from '@services/config/config'
 import { getResponseMetadata } from '@services/utils/ts/requests'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
@@ -13,13 +16,14 @@ import GoogleProvider from 'next-auth/providers/google'
 declare global {
   var sessionCache: {
     [key: string]: {
-      data: any;
-      timestamp: number;
-    };
-  };
+      data: any
+      timestamp: number
+    }
+  }
 }
 
-export const isDevEnv = getLEARNHOUSE_TOP_DOMAIN_VAL() == 'localhost' ? true : false
+export const isDevEnv =
+  getLEARNHOUSE_TOP_DOMAIN_VAL() == 'localhost' ? true : false
 
 export const nextAuthOptions = {
   debug: isDevEnv,
@@ -35,7 +39,7 @@ export const nextAuthOptions = {
         email: { label: 'Email', type: 'text', placeholder: 'jsmith' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         // logic to verify if user exists
         let unsanitized_req = await loginAndGetToken(
           credentials?.email,
@@ -96,7 +100,7 @@ export const nextAuthOptions = {
     async jwt({ token, user, account }: any) {
       // First sign in with Credentials provider
       if (account?.provider == 'credentials' && user) {
-        token.user = user;
+        token.user = user
       }
 
       // Sign up with Google
@@ -105,20 +109,20 @@ export const nextAuthOptions = {
           user.email,
           'google',
           account.access_token
-        );
-        let userFromOAuth = await getResponseMetadata(unsanitized_req);
-        token.user = userFromOAuth.data;
+        )
+        let userFromOAuth = await getResponseMetadata(unsanitized_req)
+        token.user = userFromOAuth.data
       }
 
       // Refresh token only if it's close to expiring (1 minute before expiry)
       if (token?.user?.tokens) {
-        const tokenExpiry = token.user.tokens.expiry || 0;
-        const oneMinute = 1 * 60 * 1000;
+        const tokenExpiry = token.user.tokens.expiry || 0
+        const oneMinute = 1 * 60 * 1000
 
         if (Date.now() + oneMinute >= tokenExpiry) {
           const RefreshedToken = await getNewAccessTokenUsingRefreshTokenServer(
             token?.user?.tokens?.refresh_token
-          );
+          )
           token = {
             ...token,
             user: {
@@ -126,69 +130,69 @@ export const nextAuthOptions = {
               tokens: {
                 ...token.user.tokens,
                 access_token: RefreshedToken.access_token,
-                expiry: Date.now() + (60 * 60 * 1000), // 1 hour from now
+                expiry: Date.now() + 60 * 60 * 1000, // 1 hour from now
               },
             },
-          };
+          }
         }
       }
-      return token;
+      return token
     },
     async session({ session, token }: any) {
       // Include user information in the session
       if (token.user) {
         // Cache the session for 1 minute to refresh every minute
-        const cacheKey = `user_session_${token.user.tokens.access_token}`;
+        const cacheKey = `user_session_${token.user.tokens.access_token}`
 
         // Initialize cache if it doesn't exist
         if (!global.sessionCache) {
-          global.sessionCache = {};
+          global.sessionCache = {}
         }
 
         // Prevent memory leak: clear cache if it grows too large
         // With refetchInterval={60000}, one entry per user per hour is added
         // 1000 entries is plenty for a single pod
         if (Object.keys(global.sessionCache).length > 1000) {
-          global.sessionCache = {};
+          global.sessionCache = {}
         }
 
-        let cachedSession = global.sessionCache[cacheKey];
-        const now = Date.now();
+        let cachedSession = global.sessionCache[cacheKey]
+        const now = Date.now()
 
         if (cachedSession && now - cachedSession.timestamp < 1 * 60 * 1000) {
-          return cachedSession.data;
+          return cachedSession.data
         }
 
         try {
-          let api_SESSION = await getUserSession(token.user.tokens.access_token);
+          let api_SESSION = await getUserSession(token.user.tokens.access_token)
 
           if (api_SESSION && api_SESSION.user) {
-            session.user = api_SESSION.user;
-            session.roles = api_SESSION.roles;
-            session.tokens = token.user.tokens;
+            session.user = api_SESSION.user
+            session.roles = api_SESSION.roles
+            session.tokens = token.user.tokens
 
             // Cache the session
             global.sessionCache[cacheKey] = {
               data: session,
-              timestamp: now
-            };
+              timestamp: now,
+            }
           } else {
             // If API session fetch fails, fall back to what we have in token
             if (token.user?.user) {
-              session.user = token.user.user;
+              session.user = token.user.user
             }
-            session.tokens = token.user.tokens;
+            session.tokens = token.user.tokens
           }
         } catch (error) {
-          console.error("Error in session callback:", error);
+          console.error('Error in session callback:', error)
           // Fall back to token data if API fails
           if (token.user?.user) {
-            session.user = token.user.user;
+            session.user = token.user.user
           }
-          session.tokens = token.user.tokens;
+          session.tokens = token.user.tokens
         }
       }
-      return session;
+      return session
     },
   },
 }

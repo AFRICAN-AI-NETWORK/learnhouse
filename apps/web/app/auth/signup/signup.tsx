@@ -1,7 +1,6 @@
 'use client'
 import africanAiLogo from 'public/african_ai_horizontal.png'
 import Image from 'next/image'
-import { getOrgLogoMediaDirectory } from '@services/media/media'
 import Link from 'next/link'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -13,8 +12,6 @@ import OpenSignUpComponent from './OpenSignup'
 import InviteOnlySignUpComponent from './InviteOnlySignUp'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { validateInviteCode } from '@services/organizations/invites'
-import PageLoading from '@components/Objects/Loaders/PageLoading'
-import Toast from '@components/Objects/StyledElements/Toast/Toast'
 import toast from 'react-hot-toast'
 import { BarLoader } from 'react-spinners'
 import { joinOrg } from '@services/organizations/orgs'
@@ -25,26 +22,15 @@ interface SignUpClientProps {
   org: any
 }
 
-
-
 function SignUpClient(props: SignUpClientProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
-  const [joinMethod, setJoinMethod] = React.useState('open')
-  const [inviteCode, setInviteCode] = React.useState('')
+  const joinMethod =
+    props.org?.config?.config?.features.members.signup_mode || 'open'
   const searchParams = useSearchParams()
-  const inviteCodeParam = searchParams.get('inviteCode')
+  const inviteCode = searchParams.get('inviteCode') || ''
 
-  useEffect(() => {
-    if (props.org.config) {
-      setJoinMethod(
-        props.org?.config?.config?.features.members.signup_mode
-      )
-    }
-    if (inviteCodeParam) {
-      setInviteCode(inviteCodeParam)
-    }
-  }, [props.org, inviteCodeParam])
+  useEffect(() => {}, [])
 
   const getSubtitle = () => {
     if (joinMethod === 'open') return t('auth.create_your_account_in_steps')
@@ -74,9 +60,7 @@ function SignUpClient(props: SignUpClientProps) {
               {t('auth.create_account')}
             </h1>
             {getSubtitle() && (
-              <p className="text-sm text-slate-500 italic">
-                {getSubtitle()}
-              </p>
+              <p className="text-sm text-slate-500 italic">{getSubtitle()}</p>
             )}
           </div>
 
@@ -123,7 +107,15 @@ const LoggedInJoinScreen = (props: any) => {
 
   const join = async () => {
     setIsSubmitting(true)
-    const res = await joinOrg({ org_id: org.id, user_id: session?.data?.user?.id, invite_code: props.inviteCode }, null, session.data?.tokens?.access_token)
+    const res = await joinOrg(
+      {
+        org_id: org.id,
+        user_id: session?.data?.user?.id,
+        invite_code: props.inviteCode,
+      },
+      null,
+      session.data?.tokens?.access_token
+    )
     if (res.success) {
       toast.success(res.data)
       setTimeout(() => {
@@ -144,7 +136,10 @@ const LoggedInJoinScreen = (props: any) => {
         </p>
         <div className="flex items-center justify-center gap-4">
           <UserAvatar rounded="rounded-xl" border="border-2" width={48} />
-          <p className="text-slate-600 font-medium">Ready to join <span className="text-black font-bold">{org?.name}</span>?</p>
+          <p className="text-slate-600 font-medium">
+            Ready to join{' '}
+            <span className="text-black font-bold">{org?.name}</span>?
+          </p>
         </div>
       </div>
       <button
@@ -157,7 +152,9 @@ const LoggedInJoinScreen = (props: any) => {
         ) : (
           <>
             <UserPlus size={20} />
-            <span>{t('auth.join')} {org?.name}</span>
+            <span>
+              {t('auth.join')} {org?.name}
+            </span>
           </>
         )}
       </button>
@@ -165,7 +162,7 @@ const LoggedInJoinScreen = (props: any) => {
   )
 }
 
-const NoTokenScreen = (props: any) => {
+const NoTokenScreen = () => {
   const { t } = useTranslation()
   const session = useLHSession() as any
   const org = useOrg() as any
@@ -179,11 +176,19 @@ const NoTokenScreen = (props: any) => {
 
   const validateCode = async () => {
     setIsLoading(true)
-    let res = await validateInviteCode(org?.id, inviteCode, session?.user?.tokens.access_token)
+    let res = await validateInviteCode(
+      org?.id,
+      inviteCode,
+      session?.user?.tokens.access_token
+    )
     if (res.success) {
       toast.success(t('auth.invite_code_valid'))
       setTimeout(() => {
-        router.push(getUriWithoutOrg(`/signup?inviteCode=${inviteCode}&orgslug=${org.slug}`))
+        router.push(
+          getUriWithoutOrg(
+            `/signup?inviteCode=${inviteCode}&orgslug=${org.slug}`
+          )
+        )
       }, 2000)
     } else {
       toast.error(t('auth.invite_code_invalid'))
@@ -197,13 +202,18 @@ const NoTokenScreen = (props: any) => {
         <div className="bg-rose-50 p-4 rounded-2xl inline-flex mb-4">
           <MailWarning size={32} className="text-rose-600" />
         </div>
-        <h3 className="text-xl font-bold text-slate-900">{t('auth.invite_code_required')}</h3>
+        <h3 className="text-xl font-bold text-slate-900">
+          {t('auth.invite_code_required')}
+        </h3>
         <p className="text-slate-500 text-sm italic">{org?.name}</p>
       </div>
 
       <div className="w-full max-w-sm space-y-4">
         <div className="relative group">
-          <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
+          <Ticket
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
+            size={18}
+          />
           <input
             onChange={handleInviteCodeChange}
             className="w-full bg-slate-50 border border-slate-200 focus:border-black focus:ring-4 focus:ring-black/5 rounded-xl px-12 py-4 transition-all outline-none text-slate-900 font-medium"

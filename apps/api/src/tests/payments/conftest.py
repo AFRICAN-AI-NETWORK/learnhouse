@@ -7,7 +7,7 @@ for comprehensive discount code testing.
 import pytest
 import os
 from datetime import datetime, timedelta
-from sqlmodel import Session, create_engine, SQLModel
+from sqlmodel import Session, create_engine
 from sqlalchemy.pool import StaticPool
 from src.db.payments.discount_codes import DiscountCode, DiscountCodeUsage, DiscountTypeEnum
 from src.db.organizations import Organization
