@@ -32,9 +32,6 @@ import { useTranslation } from 'react-i18next'
 
 const CourseClient = (props: any) => {
   const { t } = useTranslation()
-  const [expandedChapters, setExpandedChapters] = useState<{
-    [key: string]: boolean
-  }>({})
   const [activeThumbnailType, setActiveThumbnailType] = useState<
     'image' | 'video'
   >('image')
