@@ -1514,6 +1514,12 @@
           "form": {
             "title": "Form",
             "description": "Fill-in-the-blank forms for students"
+          },
+          "code_editor": {
+            "title": "Code Editor",
+            "description": "Code challenges for students to solve",
+            "coming_soon": "Code Editor is coming soon! Stay tuned.",
+            "badge": "Soon"
           }
         },
         "toasts": {

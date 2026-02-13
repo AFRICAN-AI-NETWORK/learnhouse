@@ -1505,6 +1505,12 @@
           "form": {
             "title": "Formulaire",
             "description": "Formulaires à compléter pour les étudiants"
+          },
+          "code_editor": {
+            "title": "Éditeur de code",
+            "description": "Défis de code pour les étudiants",
+            "coming_soon": "L'éditeur de code arrive bientôt ! Restez à l'écoute.",
+            "badge": "Bientôt"
           }
         },
         "toasts": {
