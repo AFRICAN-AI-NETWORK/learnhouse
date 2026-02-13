@@ -499,7 +499,7 @@ function TaskQuizObject({
                           view === 'student' && chooseOption(qIndex, oIndex)
                         }
                         className={
-                          'answer outline outline-3 outline-white pr-2 shadow-sm w-full flex items-center space-x-2 h-[30px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white text-sm duration-150 cursor-pointer ease-linear nice-shadow ' +
+                          'answer outline-3 outline-white pr-2 shadow-sm w-full flex items-center space-x-2 h-[30px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white text-sm duration-150 cursor-pointer ease-linear nice-shadow ' +
                           (view == 'student' ? 'active:scale-110' : '')
                         }
                       >
@@ -643,10 +643,10 @@ function TaskQuizObject({
                       </div>
                       {view === 'teacher' &&
                         oIndex === question.options.length - 1 &&
-                        questions[qIndex].options.length <= 4 && (
+                        questions[qIndex].options.length <= 99 && (
                           <div className="flex justify-center mx-auto px-2">
                             <div
-                              className="outline text-xs outline-3 outline-white px-2 shadow-sm w-full flex items-center h-[30px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white duration-150 cursor-pointer ease-linear nice-shadow"
+                              className="text-xs outline-3 outline-white px-2 shadow-sm w-full flex items-center h-[30px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white duration-150 cursor-pointer ease-linear nice-shadow"
                               onClick={() => addOption(qIndex)}
                             >
                               <Plus size={14} className="inline-block" />
@@ -660,7 +660,7 @@ function TaskQuizObject({
               </div>
             ))}
         </div>
-        {view === 'teacher' && questions.length <= 5 && (
+        {view === 'teacher' && questions.length <= 99 && (
           <div className="flex justify-center mx-auto px-2">
             <div
               className="flex w-full my-2 py-2 px-4 bg-white text-slate text-xs rounded-md nice-shadow hover:shadow-xs cursor-pointer space-x-3 items-center transition duration-150 ease-linear"

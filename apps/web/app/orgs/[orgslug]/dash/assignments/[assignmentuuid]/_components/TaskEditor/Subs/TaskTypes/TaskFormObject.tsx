@@ -492,7 +492,7 @@ function TaskFormObject({
         type="form"
       >
         {view === 'grading' && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <div className="mb-6 p-4 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
             <h3 className="text-sm font-semibold text-gray-800 mb-2">
               Submission Summary
             </h3>
@@ -774,7 +774,7 @@ function TaskFormObject({
                       </div>
                       {view === 'teacher' &&
                         bIndex === question.blanks.length - 1 &&
-                        question.blanks.length <= 4 && (
+                        question.blanks.length <= 99 && (
                           <div className="flex justify-center mx-auto px-2">
                             <div
                               className="outline-3 outline-white px-2 shadow-sm w-full flex items-center h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white duration-150 cursor-pointer ease-linear nice-shadow"
@@ -791,7 +791,7 @@ function TaskFormObject({
               </div>
             ))}
         </div>
-        {view === 'teacher' && questions.length <= 5 && (
+        {view === 'teacher' && questions.length <= 99 && (
           <div className="flex justify-center mx-auto px-2">
             <div
               className="flex w-full my-2 py-2 px-4 bg-white text-slate text-xs rounded-md nice-shadow hover:shadow-xs cursor-pointer space-x-3 items-center transition duration-150 ease-linear"
