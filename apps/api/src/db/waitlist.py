@@ -1,0 +1,177 @@
+from typing import Optional
+from enum import Enum
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlmodel import Field, SQLModel
+from datetime import datetime
+
+
+class UserStatusEnum(str, Enum):
+    """User account status enumeration"""
+    ACTIVE = "ACTIVE"
+    WAITLIST = "WAITLIST"
+    WAITLIST_ACTIVATED = "WAITLIST_ACTIVATED"
+    SUSPENDED = "SUSPENDED"
+    PENDING_VERIFICATION = "PENDING_VERIFICATION"
+
+
+class WaitlistStatusEnum(str, Enum):
+    """Waitlist campaign status enumeration"""
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    SCHEDULED = "SCHEDULED"
+
+
+# ==================== WaitlistConfig Models ====================
+
+class WaitlistConfigBase(SQLModel):
+    """Base model for waitlist configuration"""
+    name: str
+    description: Optional[str] = None
+    interest_category: str
+    launch_datetime: str  # ISO 8601 format
+    batch_size: int = Field(default=50, ge=1, le=1000)
+    batch_delay_seconds: int = Field(default=2, ge=0, le=60)
+
+
+class WaitlistConfig(WaitlistConfigBase, table=True):
+    """Database model for waitlist configuration"""
+    __tablename__ = "waitlist_config"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    waitlist_uuid: str = Field(unique=True, index=True)
+    org_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
+    )
+    created_by_user_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+    )
+    status: str = Field(default=WaitlistStatusEnum.ACTIVE.value)
+    total_registrations: int = Field(default=0)
+    emails_sent_count: int = Field(default=0)
+    creation_date: str = ""
+    update_date: str = ""
+    activation_date: Optional[str] = None
+
+
+class WaitlistConfigCreate(SQLModel):
+    """Request model for creating a waitlist"""
+    org_id: int
+    name: str
+    interest_category: str
+    launch_datetime: str
+    description: Optional[str] = None
+    batch_size: Optional[int] = 50
+    batch_delay_seconds: Optional[int] = 2
+
+
+class WaitlistConfigUpdate(SQLModel):
+    """Request model for updating a waitlist"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    launch_datetime: Optional[str] = None
+    batch_size: Optional[int] = None
+    batch_delay_seconds: Optional[int] = None
+    status: Optional[str] = None
+
+
+class WaitlistConfigRead(WaitlistConfigBase):
+    """Response model for reading waitlist configuration"""
+    id: int
+    waitlist_uuid: str
+    org_id: int
+    created_by_user_id: Optional[int]
+    status: str
+    total_registrations: int
+    emails_sent_count: int
+    creation_date: str
+    update_date: str
+    activation_date: Optional[str]
+
+
+# ==================== WaitlistEmailLog Models ====================
+
+class WaitlistEmailLogBase(SQLModel):
+    """Base model for email log tracking"""
+    email_sent: bool = False
+    email_error: Optional[str] = None
+    retry_count: int = 0
+
+
+class WaitlistEmailLog(WaitlistEmailLogBase, table=True):
+    """Database model for tracking email delivery"""
+    __tablename__ = "waitlist_email_log"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    waitlist_config_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("waitlist_config.id", ondelete="CASCADE"))
+    )
+    user_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    )
+    email_sent_date: Optional[str] = None
+    creation_date: str = ""
+    update_date: str = ""
+
+
+class WaitlistEmailLogCreate(SQLModel):
+    """Request model for creating email log entry"""
+    waitlist_config_id: int
+    user_id: int
+
+
+class WaitlistEmailLogRead(WaitlistEmailLogBase):
+    """Response model for reading email log"""
+    id: int
+    waitlist_config_id: int
+    user_id: int
+    email_sent_date: Optional[str]
+    creation_date: str
+    update_date: str
+
+
+# ==================== WaitlistCoursePreference Models ====================
+
+class WaitlistCoursePreferenceBase(SQLModel):
+    """Base model for course preference tracking"""
+    pass
+
+
+class WaitlistCoursePreference(WaitlistCoursePreferenceBase, table=True):
+    """Database model for storing user course preferences during waitlist registration"""
+    __tablename__ = "waitlist_course_preference"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    )
+    course_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
+    )
+    waitlist_config_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("waitlist_config.id", ondelete="CASCADE"))
+    )
+    org_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
+    )
+    creation_date: str = ""
+
+
+class WaitlistCoursePreferenceCreate(SQLModel):
+    """Request model for creating course preference"""
+    user_id: int
+    course_id: int
+    waitlist_config_id: int
+    org_id: int
+
+
+class WaitlistCoursePreferenceRead(WaitlistCoursePreferenceBase):
+    """Response model for reading course preference"""
+    id: int
+    user_id: int
+    course_id: int
+    waitlist_config_id: int
+    org_id: int
+    course_name: Optional[str] = None  # Denormalized for display
+    creation_date: str

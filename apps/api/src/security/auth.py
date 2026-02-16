@@ -70,6 +70,44 @@ async def authenticate_user(
             detail="Please verify your email address before logging in. Check your inbox for the verification link."
         )
     
+    # NEW: Check user status for waitlist handling
+    user_status = getattr(user, 'user_status', 'ACTIVE')
+    
+    if user_status == "WAITLIST":
+        # User is on waitlist, cannot login yet
+        # Get waitlist details to show launch date
+        from src.db.waitlist import WaitlistConfig
+        waitlist_interest = getattr(user, 'waitlist_interest', None)
+        if waitlist_interest:
+            waitlist_query = select(WaitlistConfig).where(
+                WaitlistConfig.interest_category == waitlist_interest,
+                WaitlistConfig.status == "ACTIVE"
+            )
+            waitlist = db_session.exec(waitlist_query).first()
+            if waitlist:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Your account is on the waitlist for {waitlist.name}. You can login after {waitlist.launch_datetime}."
+                )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account is on a waitlist. Please wait for the launch date."
+        )
+    
+    elif user_status == "WAITLIST_ACTIVATED":
+        # User received activation email, allow login and transition to ACTIVE
+        user.user_status = "ACTIVE"
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+    
+    elif user_status == "SUSPENDED":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been suspended. Please contact support."
+        )
+    
+    # ACTIVE status or newly transitioned from WAITLIST_ACTIVATED - allow login
     return user
 
 
