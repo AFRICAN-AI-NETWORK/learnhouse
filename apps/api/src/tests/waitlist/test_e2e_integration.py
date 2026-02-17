@@ -74,14 +74,16 @@ class TestCompleteWaitlistFlow:
             course_uuid="python-basics-uuid",
             org_id=sample_org.id,
             author_id=sample_user.id,
-            public=True
+            public=True,
+            open_to_contributors=False
         )
         course2 = Course(
             name="React Advanced",
             course_uuid="react-advanced-uuid",
             org_id=sample_org.id,
             author_id=sample_user.id,
-            public=True
+            public=True,
+            open_to_contributors=False
         )
         db_session.add(course1)
         db_session.add(course2)
@@ -302,7 +304,9 @@ class TestWaitlistAnalytics:
             name="Popular Course",
             course_uuid="popular-uuid",
             org_id=sample_org.id,
-            author_id=sample_user.id
+            author_id=sample_user.id,
+            public=True,
+            open_to_contributors=False
         )
         db_session.add(popular_course)
         db_session.commit()

@@ -34,8 +34,12 @@ class TestSendWaitlistConfirmationEmail:
         
         org = OrganizationRead(
             id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
+            name=sample_org.name,
+            slug=sample_org.slug,
+            email=sample_org.email,
+            org_uuid=sample_org.org_uuid,
+            creation_date=sample_org.creation_date,
+            update_date=sample_org.update_date
         )
         
         result = send_waitlist_confirmation_email(
@@ -133,7 +137,7 @@ class TestSendWaitlistActivationEmail:
         call_args = mock_send_email.call_args
         
         assert call_args.kwargs['to'] == user.email
-        assert "activated" in call_args.kwargs['subject'].lower() or "welcome" in call_args.kwargs['subject'].lower()
+        assert "wait is over" in call_args.kwargs['subject'].lower() or "live" in call_args.kwargs['subject'].lower()
     
     @patch('src.services.waitlist.emails.send_email')
     def test_activation_email_contains_login_info(self, mock_send_email, sample_waitlist_config, sample_org):

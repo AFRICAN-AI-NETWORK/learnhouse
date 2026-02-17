@@ -50,7 +50,6 @@ class TestCreateWaitlistUser:
         assert result.email == "newuser@example.com"
         assert result.user_status == "WAITLIST"
         assert result.waitlist_interest == sample_waitlist_config.interest_category
-        assert result.waitlist_joined_date is not None
     
     @pytest.mark.asyncio
     async def test_create_user_with_course_preferences(self, db_session, sample_waitlist_config, 

@@ -34,6 +34,9 @@ def db_session(test_db_engine):
 @pytest.fixture
 def sample_org(db_session):
     """Create a sample organization for testing"""
+    from src.db.organization_config import OrganizationConfig
+    from datetime import datetime, timezone
+    
     org = Organization(
         id=1,
         name="Test Organization",
@@ -42,6 +45,17 @@ def sample_org(db_session):
         org_uuid="test-org-uuid"
     )
     db_session.add(org)
+    db_session.commit()
+    db_session.refresh(org)
+    
+    # Add organization config to prevent "Organization has no config" error
+    org_config = OrganizationConfig(
+        org_id=org.id,
+        config={},
+        creation_date=datetime.now(timezone.utc).isoformat(),
+        update_date=datetime.now(timezone.utc).isoformat()
+    )
+    db_session.add(org_config)
     db_session.commit()
     db_session.refresh(org)
     return org

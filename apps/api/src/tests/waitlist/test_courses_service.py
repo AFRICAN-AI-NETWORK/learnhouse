@@ -235,7 +235,7 @@ class TestGetCoursePreferenceAnalytics:
             sample_waitlist_config.waitlist_uuid
         )
         
-        course_data = next((c for c in result if c["course_id"] == sample_course.id), None)
+        course_data = next((c for c in result["courses"] if c["course_id"] == sample_course.id), None)
         assert course_data is not None
         assert course_data["selection_count"] >= 3
     
