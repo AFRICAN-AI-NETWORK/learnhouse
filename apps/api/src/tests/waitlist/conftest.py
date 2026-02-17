@@ -51,7 +51,13 @@ def sample_org(db_session):
     # Add organization config to prevent "Organization has no config" error
     org_config = OrganizationConfig(
         org_id=org.id,
-        config={},
+        config={
+            "features": {
+                "members": {"enabled": True, "limit": 1000},
+                "courses": {"enabled": True, "limit": 100},
+                "storage": {"enabled": True, "limit": 10000}
+            }
+        },
         creation_date=datetime.now(timezone.utc).isoformat(),
         update_date=datetime.now(timezone.utc).isoformat()
     )

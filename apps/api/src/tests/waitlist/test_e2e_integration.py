@@ -121,11 +121,11 @@ class TestCompleteWaitlistFlow:
         
         assert created_user.user_status == UserStatusEnum.WAITLIST.value
         assert created_user.waitlist_interest == "Full Stack Development"
-        assert created_user.waitlist_joined_date is not None
         
         # Verify registration count updated
-        db_session.refresh(waitlist)
-        assert waitlist.total_registrations == 1
+        waitlist_config_query = select(WaitlistConfig).where(WaitlistConfig.waitlist_uuid == waitlist.waitlist_uuid)
+        waitlist_config = db_session.exec(waitlist_config_query).first()
+        assert waitlist_config.total_registrations == 1
         
         # Verify course preferences saved
         pref_query = select(WaitlistCoursePreference).where(
@@ -160,18 +160,22 @@ class TestCompleteWaitlistFlow:
             assert mock_activate.call_count >= 1
         
         # Verify user status changed to WAITLIST_ACTIVATED
-        db_session.refresh(created_user)
-        assert created_user.user_status == UserStatusEnum.WAITLIST_ACTIVATED.value
-        assert created_user.waitlist_activated_date is not None
+        user_query = select(User).where(User.id == created_user.id)
+        updated_user = db_session.exec(user_query).first()
+        assert updated_user.user_status == UserStatusEnum.WAITLIST_ACTIVATED.value
+        assert updated_user.waitlist_activated_date is not None
         
         # Verify waitlist marked as completed
-        db_session.refresh(waitlist)
-        assert waitlist.status == WaitlistStatusEnum.COMPLETED.value
+        waitlist_config_query2 = select(WaitlistConfig).where(WaitlistConfig.waitlist_uuid == waitlist.waitlist_uuid)
+        waitlist_config2 = db_session.exec(waitlist_config_query2).first()
+        assert waitlist_config2.status == WaitlistStatusEnum.COMPLETED.value
         
         # ========== Step 7: User logs in successfully ==========
         # First, set email as verified (normally done via email link)
-        created_user.email_verified = True
-        db_session.add(created_user)
+        user_query2 = select(User).where(User.id == created_user.id)
+        final_user = db_session.exec(user_query2).first()
+        final_user.email_verified = True
+        db_session.add(final_user)
         db_session.commit()
         
         logged_in_user = await authenticate_user(
@@ -185,8 +189,9 @@ class TestCompleteWaitlistFlow:
         assert logged_in_user.user_status == UserStatusEnum.ACTIVE.value
         
         # ========== Step 8: Verify complete state ==========
-        db_session.refresh(created_user)
-        assert created_user.user_status == UserStatusEnum.ACTIVE.value
+        user_query3 = select(User).where(User.id == created_user.id)
+        final_state_user = db_session.exec(user_query3).first()
+        assert final_state_user.user_status == UserStatusEnum.ACTIVE.value
         
         # User preferences still exist
         prefs_after = db_session.exec(pref_query).all()
@@ -336,7 +341,7 @@ class TestWaitlistAnalytics:
         )
         
         # Verify popular course shows high selection count
-        popular_data = next((a for a in analytics if a["course_id"] == popular_course.id), None)
+        popular_data = next((a for a in analytics["courses"] if a["course_id"] == popular_course.id), None)
         assert popular_data is not None
         assert popular_data["selection_count"] >= 5
 

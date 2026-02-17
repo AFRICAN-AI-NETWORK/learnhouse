@@ -185,6 +185,7 @@ class TestWaitlistAuthenticationFlow:
             password=security_hash_password("CorrectPassword123!"),
             user_status=UserStatusEnum.ACTIVE.value,
             email_verified=True,
+            user_uuid="test-user-uuid",
             org_id=sample_org.id
         )
         db_session.add(user)
