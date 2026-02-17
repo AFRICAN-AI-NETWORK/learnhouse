@@ -23,6 +23,8 @@ class TestWaitlistAuthenticationFlow:
         active_user = User(
             username="activeuser",
             email="active@example.com",
+            first_name="Active",
+            last_name="User",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.ACTIVE.value,
             email_verified=True,
@@ -52,6 +54,8 @@ class TestWaitlistAuthenticationFlow:
         waitlist_user = User(
             username="waitlistuser",
             email="waitlist@example.com",
+            first_name="Waitlist",
+            last_name="User",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.WAITLIST.value,
             waitlist_interest=sample_waitlist_config.interest_category,
@@ -82,6 +86,8 @@ class TestWaitlistAuthenticationFlow:
         activated_user = User(
             username="activateduser",
             email="activated@example.com",
+            first_name="Activated",
+            last_name="User",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.WAITLIST_ACTIVATED.value,
             email_verified=True,
@@ -115,6 +121,8 @@ class TestWaitlistAuthenticationFlow:
         suspended_user = User(
             username="suspendeduser",
             email="suspended@example.com",
+            first_name="Suspended",
+            last_name="User",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.SUSPENDED.value,
             email_verified=True,
@@ -143,8 +151,8 @@ class TestWaitlistAuthenticationFlow:
         # Create user with unverified email
         unverified_user = User(
             username="unverifieduser",
-            email="unverified@example.com",
-            password=security_hash_password("Password123!"),
+            email="unverified@example.com",            first_name="Unverified",
+            last_name="User",            password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.ACTIVE.value,
             email_verified=False,  # Not verified
             org_id=sample_org.id
@@ -172,6 +180,8 @@ class TestWaitlistAuthenticationFlow:
         user = User(
             username="testuser",
             email="test@example.com",
+            first_name="Test",
+            last_name="User",
             password=security_hash_password("CorrectPassword123!"),
             user_status=UserStatusEnum.ACTIVE.value,
             email_verified=True,
@@ -212,6 +222,8 @@ class TestWaitlistAuthenticationFlow:
         waitlist_user = User(
             username="waitlistwithdate",
             email="waitlistdate@example.com",
+            first_name="Waitlist",
+            last_name="User",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.WAITLIST.value,
             waitlist_interest=sample_waitlist_config.interest_category,
@@ -248,6 +260,8 @@ class TestUserStatusTransitions:
         user = User(
             username="multilogin",
             email="multi@example.com",
+            first_name="Multi",
+            last_name="Login",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.WAITLIST_ACTIVATED.value,
             email_verified=True,
@@ -284,6 +298,8 @@ class TestUserStatusTransitions:
         user = User(
             username="nostatus",
             email="nostatus@example.com",
+            first_name="No",
+            last_name="Status",
             password=security_hash_password("Password123!"),
             email_verified=True,
             org_id=sample_org.id
@@ -318,6 +334,8 @@ class TestWaitlistErrorMessages:
         user = User(
             username="noconfig",
             email="noconfig@example.com",
+            first_name="No",
+            last_name="Config",
             password=security_hash_password("Password123!"),
             user_status=UserStatusEnum.WAITLIST.value,
             waitlist_interest="NonExistentCategory",

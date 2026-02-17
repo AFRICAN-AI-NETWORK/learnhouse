@@ -87,7 +87,8 @@ class TestWaitlistUserRegistrationEndpoint:
             email="new@example.com",
             first_name="New",
             last_name="User",
-            user_status="WAITLIST"
+            user_status="WAITLIST",
+            user_uuid="test-user-uuid"
         )
         mock_create_user.return_value = mock_response
         

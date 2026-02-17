@@ -196,9 +196,11 @@ def sample_course_preference(db_session, waitlist_user, sample_course, sample_wa
 
 
 @pytest.fixture
-def mock_request():
-    """Create a mock request object"""
+def mock_request(sample_user):
+    """Create a mock request object with user"""
     request = Mock()
     request.app = Mock()
     request.app.state = Mock()
+    request.state = Mock()
+    request.state.user = sample_user
     return request
