@@ -228,15 +228,17 @@ class TestWaitlistCoursePreferenceModel:
             id=10,
             name="Course 1",
             course_uuid="course-1-uuid",
-            org_id=waitlist_user.org_id,
-            author_id=1
+            org_id=sample_org.id,
+            public=True,
+            open_to_contributors=False
         )
         course2 = Course(
             id=11,
             name="Course 2",
             course_uuid="course-2-uuid",
-            org_id=waitlist_user.org_id,
-            author_id=1
+            org_id=sample_org.id,
+            public=True,
+            open_to_contributors=False
         )
         db_session.add(course1)
         db_session.add(course2)

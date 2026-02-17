@@ -96,7 +96,8 @@ def sample_course(db_session, sample_org):
         course_uuid="test-course-uuid",
         description="A test course",
         org_id=sample_org.id,
-        author_id=1
+        public=True,
+        open_to_contributors=False
     )
     db_session.add(course)
     db_session.commit()
