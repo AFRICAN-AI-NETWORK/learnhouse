@@ -151,13 +151,13 @@ class TestCompleteWaitlistFlow:
         db_session.commit()
         
         # ========== Step 6: Background job processes activation ==========
-        with patch('src.services.waitlist.emails.send_waitlist_emails_in_batches') as mock_send_batch:
-            mock_send_batch.return_value = (1, 0)  # 1 success, 0 failures
+        with patch('src.services.waitlist.emails.activate_waitlist') as mock_activate:
+            mock_activate.return_value = None
             
             await process_waitlist_activations(db_session)
             
-            # Verify emails were sent
-            assert mock_send_batch.call_count >= 1
+            # Verify activate_waitlist was called
+            assert mock_activate.call_count >= 1
         
         # Verify user status changed to WAITLIST_ACTIVATED
         db_session.refresh(created_user)

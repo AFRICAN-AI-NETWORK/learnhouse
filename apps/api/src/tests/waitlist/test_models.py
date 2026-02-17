@@ -141,10 +141,11 @@ class TestWaitlistEmailLogModel:
         log = WaitlistEmailLog(
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
-            email_type="activation",
             email_sent=True,
-            sent_datetime=datetime.now(timezone.utc).isoformat(),
-            retry_count=0
+            email_sent_date=datetime.now(timezone.utc).isoformat(),
+            retry_count=0,
+            creation_date=datetime.now(timezone.utc).isoformat(),
+            update_date=datetime.now(timezone.utc).isoformat()
         )
         
         db_session.add(log)
@@ -154,7 +155,6 @@ class TestWaitlistEmailLogModel:
         assert log.id is not None
         assert log.user_id == waitlist_user.id
         assert log.waitlist_config_id == sample_waitlist_config.id
-        assert log.email_type == "activation"
         assert log.email_sent is True
         assert log.retry_count == 0
     
@@ -163,7 +163,8 @@ class TestWaitlistEmailLogModel:
         log = WaitlistEmailLog(
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
-            email_type="confirmation"
+            creation_date=datetime.now(timezone.utc).isoformat(),
+            update_date=datetime.now(timezone.utc).isoformat()
         )
         
         db_session.add(log)
@@ -172,18 +173,19 @@ class TestWaitlistEmailLogModel:
         
         assert log.email_sent is False
         assert log.retry_count == 0
-        assert log.sent_datetime is None
-        assert log.error_message is None
+        assert log.email_sent_date is None
+        assert log.email_error is None
     
     def test_email_log_with_error(self, db_session, waitlist_user, sample_waitlist_config):
         """Test creating email log with error"""
         log = WaitlistEmailLog(
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
-            email_type="activation",
             email_sent=False,
             retry_count=1,
-            error_message="SMTP connection failed"
+            email_error="SMTP connection failed",
+            creation_date=datetime.now(timezone.utc).isoformat(),
+            update_date=datetime.now(timezone.utc).isoformat()
         )
         
         db_session.add(log)
@@ -192,19 +194,20 @@ class TestWaitlistEmailLogModel:
         
         assert log.email_sent is False
         assert log.retry_count == 1
-        assert log.error_message == "SMTP connection failed"
+        assert log.email_error == "SMTP connection failed"
 
 
 class TestWaitlistCoursePreferenceModel:
     """Test WaitlistCoursePreference database model"""
     
-    def test_create_course_preference(self, db_session, waitlist_user, sample_course, sample_waitlist_config):
+    def test_create_course_preference(self, db_session, waitlist_user, sample_course, sample_waitlist_config, sample_org):
         """Test creating a course preference"""
         preference = WaitlistCoursePreference(
             user_id=waitlist_user.id,
             course_id=sample_course.id,
             waitlist_config_id=sample_waitlist_config.id,
-            selected_date=datetime.now(timezone.utc).isoformat()
+            org_id=sample_org.id,
+            creation_date=datetime.now(timezone.utc).isoformat()
         )
         
         db_session.add(preference)
@@ -216,9 +219,9 @@ class TestWaitlistCoursePreferenceModel:
         assert preference.course_id == sample_course.id
         assert preference.waitlist_config_id == sample_waitlist_config.id
     
-    def test_multiple_preferences_same_user(self, db_session, waitlist_user, sample_waitlist_config):
+    def test_multiple_preferences_same_user(self, db_session, waitlist_user, sample_waitlist_config, sample_org):
         """Test that a user can have multiple course preferences"""
-        from src.db.courses import Course
+        from src.db.courses.courses import Course
         
         # Create multiple courses
         course1 = Course(
@@ -245,13 +248,15 @@ class TestWaitlistCoursePreferenceModel:
             user_id=waitlist_user.id,
             course_id=course1.id,
             waitlist_config_id=sample_waitlist_config.id,
-            selected_date=now
+            org_id=sample_org.id,
+            creation_date=now
         )
         pref2 = WaitlistCoursePreference(
             user_id=waitlist_user.id,
             course_id=course2.id,
             waitlist_config_id=sample_waitlist_config.id,
-            selected_date=now
+            org_id=sample_org.id,
+            creation_date=now
         )
         
         db_session.add(pref1)

@@ -6,7 +6,7 @@ from unittest.mock import Mock
 from sqlmodel import Session, create_engine, SQLModel
 from src.db.users import User
 from src.db.organizations import Organization
-from src.db.courses import Course
+from src.db.courses.courses import Course
 from src.db.waitlist import (
     WaitlistConfig,
     WaitlistEmailLog,
@@ -36,9 +36,10 @@ def sample_org(db_session):
     """Create a sample organization for testing"""
     org = Organization(
         id=1,
-        org_name="Test Organization",
-        org_uuid="test-org-uuid",
-        org_slug="test-org"
+        name="Test Organization",
+        slug="test-org",
+        email="test@testorg.com",
+        org_uuid="test-org-uuid"
     )
     db_session.add(org)
     db_session.commit()
@@ -164,10 +165,11 @@ def sample_email_log(db_session, waitlist_user, sample_waitlist_config):
         id=1,
         user_id=waitlist_user.id,
         waitlist_config_id=sample_waitlist_config.id,
-        email_type="activation",
         email_sent=True,
-        sent_datetime=datetime.now(timezone.utc).isoformat(),
-        retry_count=0
+        email_sent_date=datetime.now(timezone.utc).isoformat(),
+        retry_count=0,
+        creation_date=datetime.now(timezone.utc).isoformat(),
+        update_date=datetime.now(timezone.utc).isoformat()
     )
     db_session.add(log)
     db_session.commit()
@@ -176,14 +178,15 @@ def sample_email_log(db_session, waitlist_user, sample_waitlist_config):
 
 
 @pytest.fixture
-def sample_course_preference(db_session, waitlist_user, sample_course, sample_waitlist_config):
+def sample_course_preference(db_session, waitlist_user, sample_course, sample_waitlist_config, sample_org):
     """Create a sample course preference for testing"""
     preference = WaitlistCoursePreference(
         id=1,
         user_id=waitlist_user.id,
         course_id=sample_course.id,
         waitlist_config_id=sample_waitlist_config.id,
-        selected_date=datetime.now(timezone.utc).isoformat()
+        org_id=sample_org.id,
+        creation_date=datetime.now(timezone.utc).isoformat()
     )
     db_session.add(preference)
     db_session.commit()

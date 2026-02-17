@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from src.services.waitlist.emails import (
     send_waitlist_confirmation_email,
     send_waitlist_activation_email,
-    send_waitlist_emails_in_batches,
+    activate_waitlist,
 )
 from src.db.users import UserRead
 from src.db.organizations import OrganizationRead
@@ -158,26 +158,28 @@ class TestSendWaitlistActivationEmail:
         assert "login" in body.lower() or "access" in body.lower()
 
 
-class TestSendWaitlistEmailsInBatches:
-    """Test send_waitlist_emails_in_batches function"""
+class TestActivateWaitlist:
+    """Test activate_waitlist function"""
     
     @pytest.mark.asyncio
     @patch('src.services.waitlist.emails.send_waitlist_activation_email')
-    async def test_send_emails_in_batches(self, mock_send_activation, db_session, 
+    async def test_activate_waitlist_sends_emails(self, mock_send_activation, db_session, 
                                          sample_waitlist_config, sample_org, waitlist_user):
-        """Test batch email sending"""
+        """Test that activate_waitlist sends emails to users"""
         mock_send_activation.return_value = True
         
         from src.db.users import User
         
-        # Create additional users
+        # Create additional users with matching interest
         users = [waitlist_user]
-        for i in range(5):
+        for i in range(3):
             user = User(
                 username=f"batchuser{i}",
                 email=f"batch{i}@example.com",
                 hashed_password="hashed",
                 user_status="WAITLIST",
+                waitlist_interest=sample_waitlist_config.interest_category,
+                email_verified=True,
                 org_id=sample_org.id
             )
             db_session.add(user)
@@ -189,48 +191,27 @@ class TestSendWaitlistEmailsInBatches:
         for user in users:
             db_session.refresh(user)
         
-        org = OrganizationRead(
-            id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
-        )
+        # Activate waitlist
+        await activate_waitlist(db_session, sample_waitlist_config)
         
-        # Send emails with batch size of 2
-        success_count, failure_count = await send_waitlist_emails_in_batches(
-            db_session=db_session,
-            user_ids=[u.id for u in users],
-            waitlist_config=sample_waitlist_config,
-            organization=org,
-            batch_size=2,
-            delay_seconds=0  # No delay for testing
-        )
-        
-        # Verify emails were attempted
-        assert success_count + failure_count == len(users)
+        # Verify emails were sent
         assert mock_send_activation.call_count >= 1
     
     @pytest.mark.asyncio
     @patch('src.services.waitlist.emails.send_waitlist_activation_email')
-    async def test_batch_creates_email_logs(self, mock_send_activation, db_session,
+    async def test_activation_creates_email_logs(self, mock_send_activation, db_session,
                                             sample_waitlist_config, sample_org, waitlist_user):
-        """Test that batch sending creates email logs"""
+        """Test that activation creates email logs"""
         mock_send_activation.return_value = True
         
-        org = OrganizationRead(
-            id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
-        )
+        # Ensure user has verified email and matching interest
+        waitlist_user.email_verified = True
+        waitlist_user.waitlist_interest = sample_waitlist_config.interest_category
+        db_session.add(waitlist_user)
+        db_session.commit()
         
-        # Send email to one user
-        await send_waitlist_emails_in_batches(
-            db_session=db_session,
-            user_ids=[waitlist_user.id],
-            waitlist_config=sample_waitlist_config,
-            organization=org,
-            batch_size=1,
-            delay_seconds=0
-        )
+        # Activate waitlist
+        await activate_waitlist(db_session, sample_waitlist_config)
         
         # Check email log was created
         from sqlmodel import select
@@ -241,33 +222,24 @@ class TestSendWaitlistEmailsInBatches:
         logs = db_session.exec(log_query).all()
         
         assert len(logs) >= 1
-        assert logs[0].email_type == "activation"
+        assert logs[0].email_sent is True
     
     @pytest.mark.asyncio
     @patch('src.services.waitlist.emails.send_waitlist_activation_email')
-    async def test_batch_handles_failures(self, mock_send_activation, db_session,
+    async def test_activation_handles_failures(self, mock_send_activation, db_session,
                                          sample_waitlist_config, sample_org, waitlist_user):
-        """Test that batch sending handles email failures"""
+        """Test that activation handles email failures"""
         # Simulate email failure
         mock_send_activation.side_effect = Exception("SMTP error")
         
-        org = OrganizationRead(
-            id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
-        )
+        # Ensure user has verified email and matching interest
+        waitlist_user.email_verified = True
+        waitlist_user.waitlist_interest = sample_waitlist_config.interest_category
+        db_session.add(waitlist_user)
+        db_session.commit()
         
-        success_count, failure_count = await send_waitlist_emails_in_batches(
-            db_session=db_session,
-            user_ids=[waitlist_user.id],
-            waitlist_config=sample_waitlist_config,
-            organization=org,
-            batch_size=1,
-            delay_seconds=0
-        )
-        
-        # Should record failure
-        assert failure_count >= 1
+        # Activate waitlist - should not raise exception
+        await activate_waitlist(db_session, sample_waitlist_config)
         
         # Check email log records failure
         from sqlmodel import select
@@ -279,88 +251,38 @@ class TestSendWaitlistEmailsInBatches:
         
         if len(logs) > 0:
             assert logs[0].email_sent is False
-            assert logs[0].error_message is not None
+            assert logs[0].email_error is not None
     
     @pytest.mark.asyncio
     @patch('src.services.waitlist.emails.send_waitlist_activation_email')
-    async def test_batch_prevents_duplicate_sends(self, mock_send_activation, db_session,
+    async def test_activation_prevents_duplicates(self, mock_send_activation, db_session,
                                                   sample_waitlist_config, sample_org, waitlist_user):
-        """Test that batch sending prevents duplicate emails"""
+        """Test that activation prevents duplicate emails"""
         mock_send_activation.return_value = True
+        
+        # Ensure user has verified email and matching interest
+        waitlist_user.email_verified = True
+        waitlist_user.waitlist_interest = sample_waitlist_config.interest_category
+        db_session.add(waitlist_user)
+        db_session.commit()
         
         # Create existing email log
         existing_log = WaitlistEmailLog(
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
-            email_type="activation",
             email_sent=True,
-            sent_datetime=datetime.now(timezone.utc).isoformat()
+            email_sent_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(timezone.utc).isoformat(),
+            update_date=datetime.now(timezone.utc).isoformat()
         )
         db_session.add(existing_log)
         db_session.commit()
         
-        org = OrganizationRead(
-            id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
-        )
-        
-        # Try to send again
-        success_count, failure_count = await send_waitlist_emails_in_batches(
-            db_session=db_session,
-            user_ids=[waitlist_user.id],
-            waitlist_config=sample_waitlist_config,
-            organization=org,
-            batch_size=1,
-            delay_seconds=0
-        )
+        # Try to activate again
+        await activate_waitlist(db_session, sample_waitlist_config)
         
         # Should skip already sent email
-        # Verify send_email was NOT called again (or minimal calls)
+        # Verify send_email was NOT called again
         call_count_after = mock_send_activation.call_count
         assert call_count_after == 0  # Should not send duplicate
-    
-    @pytest.mark.asyncio
-    async def test_batch_respects_batch_size(self, db_session, sample_waitlist_config, sample_org):
-        """Test that batching respects configured batch size"""
-        from src.db.users import User
-        
-        # Create many users
-        users = []
-        for i in range(10):
-            user = User(
-                username=f"batchuser{i}",
-                email=f"batch{i}@example.com",
-                hashed_password="hashed",
-                user_status="WAITLIST",
-                org_id=sample_org.id
-            )
-            db_session.add(user)
-            users.append(user)
-        
-        db_session.commit()
-        
-        for user in users:
-            db_session.refresh(user)
-        
-        org = OrganizationRead(
-            id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
-        )
-        
-        with patch('src.services.waitlist.emails.send_waitlist_activation_email') as mock_send:
-            mock_send.return_value = True
-            
-            # Send with batch size of 3
-            await send_waitlist_emails_in_batches(
-                db_session=db_session,
-                user_ids=[u.id for u in users],
-                waitlist_config=sample_waitlist_config,
-                organization=org,
-                batch_size=3,
-                delay_seconds=0
-            )
-            
-            # Should have been called for all users
-            assert mock_send.call_count <= len(users)
+

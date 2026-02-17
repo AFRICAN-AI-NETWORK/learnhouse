@@ -115,8 +115,8 @@ class TestWaitlistActivationIntegration:
     """Integration tests for waitlist activation with real data"""
     
     @pytest.mark.asyncio
-    @patch('src.services.waitlist.emails.send_waitlist_emails_in_batches')
-    async def test_process_expired_waitlists(self, mock_send_emails, db_session, sample_org, sample_user):
+    @patch('src.services.waitlist.emails.activate_waitlist')
+    async def test_process_expired_waitlists(self, mock_activate, db_session, sample_org, sample_user):
         """Test processing waitlists that have reached launch date"""
         from src.db.waitlist import WaitlistConfig, WaitlistStatusEnum
         from src.db.users import User
@@ -159,13 +159,13 @@ class TestWaitlistActivationIntegration:
         db_session.add(user2)
         db_session.commit()
         
-        mock_send_emails.return_value = (2, 0)  # 2 success, 0 failures
+        mock_activate.return_value = None
         
         # Process activations
         await process_waitlist_activations(db_session)
         
-        # Verify emails were sent
-        assert mock_send_emails.call_count >= 1
+        # Verify activate_waitlist was called
+        assert mock_activate.call_count >= 1
     
     @pytest.mark.asyncio
     async def test_future_waitlists_not_processed(self, db_session, sample_org, sample_user):
@@ -189,12 +189,11 @@ class TestWaitlistActivationIntegration:
         db_session.add(future_waitlist)
         db_session.commit()
         
-        with patch('src.services.waitlist.emails.send_waitlist_emails_in_batches') as mock_send:
+        with patch('src.services.waitlist.emails.activate_waitlist') as mock_activate:
             # Process activations
             await process_waitlist_activations(db_session)
             
-            # Should not send emails for future waitlists
-            # (May be called 0 times or not called for this specific waitlist)
+            # Should not activate future waitlists
             # Check that the future waitlist status is still ACTIVE
             db_session.refresh(future_waitlist)
             assert future_waitlist.status == WaitlistStatusEnum.ACTIVE.value
