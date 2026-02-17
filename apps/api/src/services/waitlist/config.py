@@ -100,7 +100,7 @@ async def get_waitlist_config(
     Args:
         request: FastAPI request object
         db_session: Database session
-        waitlist_uuid: Unique identifier of the waitlist
+        waitlist_uuid: Unique identifier of the waitlist (UUID string)
         
     Returns:
         WaitlistConfigRead: Waitlist configuration
