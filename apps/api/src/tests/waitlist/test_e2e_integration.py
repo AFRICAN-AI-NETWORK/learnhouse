@@ -146,18 +146,17 @@ class TestCompleteWaitlistFlow:
         # ========== Step 5: Simulate launch date passing ==========
         # Update waitlist to expired launch date
         past_date = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
-        waitlist.launch_datetime = past_date
-        db_session.add(waitlist)
+        waitlist_for_update = db_session.exec(select(WaitlistConfig).where(WaitlistConfig.waitlist_uuid == waitlist.waitlist_uuid)).first()
+        waitlist_for_update.launch_datetime = past_date
+        db_session.add(waitlist_for_update)
         db_session.commit()
         
         # ========== Step 6: Background job processes activation ==========
-        with patch('src.services.waitlist.emails.activate_waitlist') as mock_activate:
-            mock_activate.return_value = None
+        # Call the activation process (this will mark users as WAITLIST_ACTIVATED and send emails)
+        with patch('src.services.waitlist.emails.send_email') as mock_send_email:
+            mock_send_email.return_value = True
             
             await process_waitlist_activations(db_session)
-            
-            # Verify activate_waitlist was called
-            assert mock_activate.call_count >= 1
         
         # Verify user status changed to WAITLIST_ACTIVATED
         user_query = select(User).where(User.id == created_user.id)
