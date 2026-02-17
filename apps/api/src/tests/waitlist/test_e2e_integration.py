@@ -151,6 +151,15 @@ class TestCompleteWaitlistFlow:
         db_session.add(waitlist_for_update)
         db_session.commit()
         
+        # ========== Step 5.5: Verify user email before activation ==========
+        # The activation process requires email_verified == True
+        # In real flow, this happens via email verification link, but for test we set it directly
+        user_query_before = select(User).where(User.id == created_user.id)
+        user_before_activation = db_session.exec(user_query_before).first()
+        user_before_activation.email_verified = True
+        db_session.add(user_before_activation)
+        db_session.commit()
+        
         # ========== Step 6: Background job processes activation ==========
         # Call the activation process (this will mark users as WAITLIST_ACTIVATED and send emails)
         with patch('src.services.waitlist.emails.send_email') as mock_send_email:

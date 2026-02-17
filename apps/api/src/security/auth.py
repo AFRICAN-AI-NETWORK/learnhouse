@@ -59,6 +59,10 @@ async def authenticate_user(
     if not user:
         return False
     
+    # Check if password is empty (should not happen, but handle gracefully)
+    if not user.password:
+        return False
+    
     # Verify password (existing code)
     if not security_verify_password(password, user.password):
         return False

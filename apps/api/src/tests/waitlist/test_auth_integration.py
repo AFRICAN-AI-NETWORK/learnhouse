@@ -177,19 +177,26 @@ class TestWaitlistAuthenticationFlow:
         """Test that wrong password fails authentication"""
         from src.security.security import security_hash_password
         
+        hashed_password = security_hash_password("CorrectPassword123!")
         user = User(
             username="testuser",
             email="test@example.com",
             first_name="Test",
             last_name="User",
-            password=security_hash_password("CorrectPassword123!"),
             user_status=UserStatusEnum.ACTIVE.value,
             email_verified=True,
-            user_uuid="test-user-uuid",
             org_id=sample_org.id
         )
+        # Set password and user_uuid after creating the object to ensure they're stored
+        user.password = hashed_password
+        user.user_uuid = "test-user-uuid"
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
+        
+        # Verify password was stored correctly
+        assert user.password != ""
+        assert user.password == hashed_password
         
         # Attempt login with wrong password
         result = await authenticate_user(
