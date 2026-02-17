@@ -124,7 +124,40 @@
     "resend_verification": "Resend verification email",
     "didnt_receive_email": "Didn't receive the email? Check your spam folder.",
     "email_placeholder": "you@example.com",
-    "password_placeholder": "••••••••"
+    "password_placeholder": "••••••••",
+    "signup": {
+      "step_account": "Account",
+      "step_profile": "Profile",
+      "step_courses": "Courses",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "username": "Username",
+      "bio": "Bio",
+      "next_step": "Next Step",
+      "previous_step": "Previous Step",
+      "password_strength_weak": "Weak",
+      "password_strength_medium": "Medium",
+      "password_strength_strong": "Strong"
+    },
+    "waitlist": {
+      "title": "Join the Waitlist",
+      "subtitle": "Register now and get early access when we launch",
+      "heading": "On Waitlist",
+      "countdown_begins": "The countdown begins!",
+      "joining_waitlist": "You're joining our waitlist",
+      "launch_date": "Launch Date",
+      "email_notification": "Email Notification",
+      "your_interests": "Your Interests",
+      "notification_message": "We'll send you an email when we launch",
+      "celebration_message": "Congratulations! You've secured your spot. You'll be among the first to access the platform when we launch.",
+      "invalid_link": "The waitlist invite link is invalid or has expired",
+      "redirecting": "Redirecting to login...",
+      "go_to_login": "Go to Login",
+      "launching_now": "Launching now!",
+      "support_contact": "Need help? Contact us at",
+      "countdown_header": "Get Ready!",
+      "all_set": "You're all set!"
+    }
   },
   "validation": {
     "required": "Required",
@@ -138,10 +171,14 @@
     "my_courses": "My Courses",
     "courses": "Courses",
     "select_course": "Select Course",
+    "choose_courses": "Choose the courses you're interested in",
     "no_courses": "No courses yet",
+    "no_courses_available": "No courses available",
     "create_courses_placeholder": "Create courses to add content",
     "loading_courses": "Loading courses...",
     "no_featured_courses": "No featured courses selected",
+    "free": "Free",
+    "paid": "Paid",
     "start_course": "Start Course",
     "leave_course": "Leave Course",
     "leave_course_success": "Successfully left the course",
@@ -163,7 +200,6 @@
     "quitting_courses": "Quitting Courses ({{progress}}%)",
     "quit_all_courses_confirm": "Are you sure you want to quit all courses? This action cannot be undone and you will lose all your progress.",
     "quit_all_courses_title": "Quit All Courses?",
-    "no_courses_available": "No courses available yet",
     "new_course": "New Course",
     "create_course": "Create Course",
     "create_new_course": "Create a new course",
@@ -1150,6 +1186,36 @@
           "change_to": "Change to closed",
           "confirmation_message": "Are you sure you want to change the signup mechanism to closed ? This will allow users to join your organization only by invitation.",
           "confirmation_title": "Change to closed ?"
+        },
+        "waitlist": {
+          "title": "Waitlist",
+          "description": "Users join a waitlist and wait for launch",
+          "active": "Active",
+          "change_to": "Change to waitlist",
+          "confirmation_message": "Are you sure you want to change the signup mechanism to waitlist? Users will register with course preferences and wait until launch.",
+          "confirmation_title": "Change to waitlist?",
+          "campaigns": {
+            "title": "Waitlist Campaigns",
+            "subtitle": "Create and manage waitlist campaigns to collect user registrations before launch",
+            "no_campaigns": "No waitlist campaigns yet",
+            "create_first": "Create your first waitlist campaign to get started. Users will register via a shareable link and wait until the launch date.",
+            "create_campaign": "Create Campaign",
+            "table": {
+              "name": "Campaign Name",
+              "status": "Status",
+              "launch_date": "Launch Date",
+              "registrations": "Registrations",
+              "actions": "Actions"
+            },
+            "actions": {
+              "view": "View",
+              "edit": "Edit",
+              "delete": "Delete",
+              "copy_link": "Copy Invite Link",
+              "view_users": "View Registrations",
+              "view_preferences": "View Course Preferences"
+            }
+          }
         },
         "invite_codes": {
           "title": "Invite codes",
