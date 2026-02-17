@@ -33,8 +33,7 @@ class TestCompleteWaitlistFlow:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
-    async def test_complete_waitlist_lifecycle(self, mock_confirm, mock_creation, 
+    async def test_complete_waitlist_lifecycle(self, mock_creation, 
                                                mock_increase, mock_check_limits,
                                                db_session, sample_org, sample_user, mock_request):
         """
@@ -50,7 +49,6 @@ class TestCompleteWaitlistFlow:
         mock_check_limits.return_value = None
         mock_increase.return_value = None
         mock_creation.return_value = True
-        mock_confirm.return_value = True
         
         # ========== Step 1: Admin creates waitlist campaign ==========
         future_date = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
@@ -200,8 +198,7 @@ class TestWaitlistCancellationFlow:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
-    async def test_cancelled_waitlist_prevents_new_registrations(self, mock_confirm, mock_creation,
+    async def test_cancelled_waitlist_prevents_new_registrations(self, mock_creation,
                                                                  mock_increase, mock_check_limits,
                                                                  db_session, sample_org, sample_user, 
                                                                  mock_request):
@@ -212,7 +209,6 @@ class TestWaitlistCancellationFlow:
         mock_check_limits.return_value = None
         mock_increase.return_value = None
         mock_creation.return_value = True
-        mock_confirm.return_value = True
         
         # Create waitlist
         future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
@@ -280,8 +276,7 @@ class TestWaitlistAnalytics:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
-    async def test_course_preference_analytics(self, mock_confirm, mock_creation, mock_increase, 
+    async def test_course_preference_analytics(self, mock_creation, mock_increase, 
                                                mock_check_limits, db_session, sample_org, 
                                                sample_user, mock_request):
         """Test analytics for course preferences"""
@@ -291,7 +286,6 @@ class TestWaitlistAnalytics:
         mock_check_limits.return_value = None
         mock_increase.return_value = None
         mock_creation.return_value = True
-        mock_confirm.return_value = True
         
         # Create waitlist
         future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()

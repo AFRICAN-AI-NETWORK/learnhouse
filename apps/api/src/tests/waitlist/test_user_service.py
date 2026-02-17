@@ -21,15 +21,13 @@ class TestCreateWaitlistUser:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
-    async def test_create_waitlist_user_success(self, mock_confirm_email, mock_creation_email,
+    async def test_create_waitlist_user_success(self, mock_creation_email,
                                                 mock_increase_usage, mock_check_limits,
                                                 db_session, sample_waitlist_config, sample_org, mock_request):
         """Test successfully creating a waitlist user"""
         mock_check_limits.return_value = None
         mock_increase_usage.return_value = None
         mock_creation_email.return_value = True
-        mock_confirm_email.return_value = True
         
         user_data = UserCreate(
             username="newwaitlistuser",
@@ -60,8 +58,7 @@ class TestCreateWaitlistUser:
         """Test creating user with course preferences"""
         with patch('src.services.users.waitlist.check_limits_with_usage'), \
              patch('src.services.users.waitlist.increase_feature_usage'), \
-             patch('src.services.users.waitlist.send_account_creation_email'), \
-             patch('src.services.users.waitlist.send_waitlist_confirmation_email'):
+             patch('src.services.users.waitlist.send_account_creation_email'):
             
             user_data = UserCreate(
                 username="userWithCourses",
@@ -206,8 +203,7 @@ class TestCreateWaitlistUser:
         mock_check_limits.return_value = None
         
         with patch('src.services.users.waitlist.increase_feature_usage'), \
-             patch('src.services.users.waitlist.send_account_creation_email'), \
-             patch('src.services.users.waitlist.send_waitlist_confirmation_email'):
+             patch('src.services.users.waitlist.send_account_creation_email'):
             
             initial_count = sample_waitlist_config.total_registrations
             

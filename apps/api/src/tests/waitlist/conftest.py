@@ -77,7 +77,7 @@ def waitlist_user(db_session, sample_org):
         first_name="Waitlist",
         last_name="User",
         user_status=UserStatusEnum.WAITLIST.value,
-        waitlist_interest="Python Programming",
+        waitlist_interest="Programming",
         waitlist_joined_date=datetime.now(timezone.utc).isoformat(),
         org_id=sample_org.id
     )

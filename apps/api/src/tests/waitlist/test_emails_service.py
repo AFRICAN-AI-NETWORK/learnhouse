@@ -71,8 +71,12 @@ class TestSendWaitlistConfirmationEmail:
         
         org = OrganizationRead(
             id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
+            name=sample_org.name,
+            slug=sample_org.slug,
+            email=sample_org.email,
+            org_uuid=sample_org.org_uuid,
+            creation_date=sample_org.creation_date,
+            update_date=sample_org.update_date
         )
         
         send_waitlist_confirmation_email(
@@ -109,8 +113,12 @@ class TestSendWaitlistActivationEmail:
         
         org = OrganizationRead(
             id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
+            name=sample_org.name,
+            slug=sample_org.slug,
+            email=sample_org.email,
+            org_uuid=sample_org.org_uuid,
+            creation_date=sample_org.creation_date,
+            update_date=sample_org.update_date
         )
         
         result = send_waitlist_activation_email(
@@ -144,8 +152,12 @@ class TestSendWaitlistActivationEmail:
         
         org = OrganizationRead(
             id=sample_org.id,
-            name=sample_org.org_name,
-            org_slug=sample_org.org_slug
+            name=sample_org.name,
+            slug=sample_org.slug,
+            email=sample_org.email,
+            org_uuid=sample_org.org_uuid,
+            creation_date=sample_org.creation_date,
+            update_date=sample_org.update_date
         )
         
         send_waitlist_activation_email(
