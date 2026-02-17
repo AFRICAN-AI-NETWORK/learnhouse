@@ -161,9 +161,10 @@ class TestGetOrgWaitlistConfigs:
         
         # Create org without waitlists
         new_org = Organization(
-            org_name="Empty Org",
-            org_uuid="empty-org-uuid",
-            org_slug="empty-org"
+            name="Empty Org",
+            slug="empty-org",
+            email="empty@example.com",
+            org_uuid="empty-org-uuid"
         )
         db_session.add(new_org)
         db_session.commit()
@@ -310,7 +311,7 @@ class TestCancelWaitlistConfig:
             sample_waitlist_config.waitlist_uuid
         )
         
-        assert result["success"] is True
+        assert result.status == WaitlistStatusEnum.CANCELLED.value
         assert "cancelled" in result["message"].lower()
         
         # Verify status changed in database
@@ -355,4 +356,4 @@ class TestCancelWaitlistConfig:
             cancelled_config.waitlist_uuid
         )
         
-        assert result["success"] is True
+        assert result.status == WaitlistStatusEnum.CANCELLED.value

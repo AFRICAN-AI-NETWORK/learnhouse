@@ -28,6 +28,7 @@ class TestSendWaitlistConfirmationEmail:
             email="test@example.com",
             first_name="Test",
             last_name="User",
+            user_uuid="test-user-uuid",
             user_status="WAITLIST"
         )
         
@@ -64,6 +65,7 @@ class TestSendWaitlistConfirmationEmail:
             email="test@example.com",
             first_name="Test",
             last_name="User",
+            user_uuid="test-user-uuid",
             user_status="WAITLIST"
         )
         
@@ -101,6 +103,7 @@ class TestSendWaitlistActivationEmail:
             email="test@example.com",
             first_name="Test",
             last_name="User",
+            user_uuid="test-user-uuid",
             user_status="WAITLIST_ACTIVATED"
         )
         
@@ -135,6 +138,7 @@ class TestSendWaitlistActivationEmail:
             email="test@example.com",
             first_name="Test",
             last_name="User",
+            user_uuid="test-user-uuid",
             user_status="WAITLIST_ACTIVATED"
         )
         
@@ -176,6 +180,8 @@ class TestActivateWaitlist:
             user = User(
                 username=f"batchuser{i}",
                 email=f"batch{i}@example.com",
+                first_name="Batch",
+                last_name=f"User{i}",
                 hashed_password="hashed",
                 user_status="WAITLIST",
                 waitlist_interest=sample_waitlist_config.interest_category,

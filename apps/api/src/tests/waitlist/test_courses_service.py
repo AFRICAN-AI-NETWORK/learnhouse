@@ -53,7 +53,8 @@ class TestGetOrgCoursesForWaitlist:
             course_uuid="free-course-uuid",
             org_id=sample_org.id,
             author_id=1,
-            public=True
+            public=True,
+            open_to_contributors=False
         )
         db_session.add(free_course)
         db_session.commit()
@@ -78,7 +79,8 @@ class TestGetOrgCoursesForWaitlist:
             course_uuid="paid-course-uuid",
             org_id=sample_org.id,
             author_id=1,
-            public=True
+            public=True,
+            open_to_contributors=False
         )
         db_session.add(paid_course)
         db_session.commit()
@@ -125,7 +127,8 @@ class TestGetOrgCoursesForWaitlist:
             course_uuid="private-course-uuid",
             org_id=sample_org.id,
             author_id=1,
-            public=False
+            public=False,
+            open_to_contributors=False
         )
         db_session.add(private_course)
         db_session.commit()
@@ -167,7 +170,8 @@ class TestGetCoursePreferenceAnalytics:
             user_id=waitlist_user.id,
             course_id=sample_course.id,
             waitlist_config_id=sample_waitlist_config.id,
-            selected_date=datetime.now(timezone.utc).isoformat()
+            org_id=sample_waitlist_config.org_id,
+            creation_date=datetime.now(timezone.utc).isoformat()
         )
         db_session.add(pref1)
         db_session.commit()
@@ -178,10 +182,12 @@ class TestGetCoursePreferenceAnalytics:
             sample_waitlist_config.waitlist_uuid
         )
         
-        assert len(result) >= 1
+        assert isinstance(result, dict)
+        assert "courses" in result
+        assert len(result["courses"]) >= 1
         
         # Check structure
-        first_pref = result[0]
+        first_pref = result["courses"][0]
         assert "course_id" in first_pref
         assert "course_name" in first_pref
         assert "selection_count" in first_pref
@@ -200,6 +206,8 @@ class TestGetCoursePreferenceAnalytics:
             user = User(
                 username=f"user{i}",
                 email=f"user{i}@example.com",
+                first_name="Test",
+                last_name=f"User{i}",
                 hashed_password="hashed",
                 user_status="WAITLIST",
                 org_id=sample_org.id
@@ -240,8 +248,10 @@ class TestGetCoursePreferenceAnalytics:
             sample_waitlist_config.waitlist_uuid
         )
         
-        # Should return empty list or courses with 0 count
-        assert isinstance(result, list)
+        # Should return dict with empty courses list
+        assert isinstance(result, dict)
+        assert "courses" in result
+        assert len(result["courses"]) == 0
 
 
 class TestGetUserCoursePreferences:
@@ -286,7 +296,9 @@ class TestGetUserCoursePreferences:
                 name=f"Course {i}",
                 course_uuid=f"course-{i}-uuid",
                 org_id=sample_org.id,
-                author_id=1
+                author_id=1,
+                public=True,
+                open_to_contributors=False
             )
             db_session.add(course)
             courses.append(course)

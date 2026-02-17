@@ -182,7 +182,7 @@ class TestWaitlistAuthenticationFlow:
             email="test@example.com",
             first_name="Test",
             last_name="User",
-            password=security_hash_password("CorrectPassword123!"),
+            hashed_password=security_hash_password("CorrectPassword123!"),
             user_status=UserStatusEnum.ACTIVE.value,
             email_verified=True,
             org_id=sample_org.id

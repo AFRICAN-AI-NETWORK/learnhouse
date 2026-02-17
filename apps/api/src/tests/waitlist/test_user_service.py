@@ -258,6 +258,8 @@ class TestGetWaitlistUsers:
         waitlist_user1 = User(
             username="waitlistuser1",
             email="waitlist1@example.com",
+            first_name="Waitlist",
+            last_name="User1",
             hashed_password="hashed",
             user_status="WAITLIST",
             org_id=sample_org.id
@@ -266,6 +268,8 @@ class TestGetWaitlistUsers:
         active_user = User(
             username="activeuser",
             email="active@example.com",
+            first_name="Active",
+            last_name="User",
             hashed_password="hashed",
             user_status="ACTIVE",
             org_id=sample_org.id

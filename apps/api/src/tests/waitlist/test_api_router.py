@@ -180,12 +180,18 @@ class TestWaitlistUsersEndpoint:
                 id=1,
                 username="user1",
                 email="user1@example.com",
+                first_name="User",
+                last_name="One",
+                user_uuid="user1-uuid",
                 user_status="WAITLIST"
             ),
             UserRead(
                 id=2,
                 username="user2",
                 email="user2@example.com",
+                first_name="User",
+                last_name="Two",
+                user_uuid="user2-uuid",
                 user_status="WAITLIST"
             )
         ]
