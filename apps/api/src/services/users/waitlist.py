@@ -127,8 +127,11 @@ async def create_waitlist_user(
     # Set email verification status to false (users must verify email)
     user.email_verified = False
     
-    # DO NOT set user_status yet - will be set after email verification
-    # For now, store the waitlist information
+    # Set user_status to WAITLIST (blocks login until countdown ends)
+    # This is set immediately because we know this is a waitlist registration
+    user.user_status = "WAITLIST"
+    
+    # Store waitlist information
     user.waitlist_interest = waitlist.interest_category
     user.waitlist_joined_date = str(datetime.now())
     
