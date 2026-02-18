@@ -11,15 +11,15 @@ export function usePaymentsEnabled() {
 
   const { data: paymentConfigs, error, isLoading } = useSWR(
     org && access_token ? [`/payments/${org.id}/config`, access_token] : null,
-    ([url, token]) => getPaymentConfigs(org.id, token)
+    ([, token]) => getPaymentConfigs(org.id, token)
   );
 
-  const isPaymentEnabled = paymentConfigs?.some(
+  const isPaystackEnabled = paymentConfigs?.some(
     (config: any) => config.provider === 'paystack' && config.active
   );
 
   return {
-    isEnabled: !!isPaymentEnabled,
+    isEnabled: !!isPaystackEnabled,
     isLoading,
     error
   };
