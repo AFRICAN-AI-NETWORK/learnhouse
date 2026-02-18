@@ -52,10 +52,9 @@ export default function RootLayout({
           href="/icons/icon-192x192.png"
           sizes="192x192"
         />
+        <Script src="/runtime-config.js" />
       </head>
       <body suppressHydrationWarning>
-        <Script src="/runtime-config.js" strategy="beforeInteractive" />
-
         {isDevEnv ? (
           ''
         ) : (
