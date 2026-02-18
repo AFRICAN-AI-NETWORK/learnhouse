@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { WaitlistCourseItem } from '@/types/waitlist'
 import { AlertCircle } from 'lucide-react'
 import { getWaitlistCourses } from '@services/waitlist/waitlist'
+import { Badge } from '@/components/ui/badge'
 
 interface CourseSelectorProps {
   waitlistUuid: string
@@ -100,36 +101,48 @@ function CourseSelector({
                       : 'border-slate-100 bg-white hover:border-slate-200'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="font-bold text-sm text-slate-900">
-                        {course.name}
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="mt-1 w-5 h-5 flex-shrink-0"
+                    />
+
+                    {/* Text Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-sm text-slate-900 break-words">
+                          {course.name}
+                        </span>
+
+                        {/* Price Badge */}
+                        {course.is_free ? (
+                          <Badge
+                            variant="secondary"
+                            className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 shrink-0"
+                          >
+                            🟢 FREE
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="secondary"
+                            className="bg-amber-100 text-amber-800 hover:bg-amber-100 shrink-0"
+                          >
+                            💰 {course.currency || '₦'}
+                            {course.price?.toLocaleString()}
+                          </Badge>
+                        )}
                       </div>
+
                       {course.description && (
-                        <div className="text-xs text-slate-500 mt-1 line-clamp-2">
+                        <div className="text-xs text-slate-500 mt-1 break-words">
                           {course.description}
                         </div>
                       )}
                     </div>
-                    <span
-                      className={`shrink-0 px-2.5 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                        course.is_free
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {course.is_free
-                        ? '🟢 FREE'
-                        : `💰 ${course.currency || '₦'}${course.price?.toLocaleString()}`}
-                    </span>
                   </div>
-
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    readOnly
-                    className="absolute top-3 left-3 w-5 h-5 cursor-pointer"
-                  />
                 </button>
               )
             })}
