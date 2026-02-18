@@ -2,6 +2,7 @@ import { useAssignmentSubmission } from '@components/Contexts/Assignments/Assign
 import {
   BookPlus,
   BookUser,
+  Code,
   EllipsisVertical,
   FileUp,
   Forward,
@@ -15,7 +16,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useTranslation } from 'react-i18next'
 
 type AssignmentBoxProps = {
-  type: 'quiz' | 'file' | 'form'
+  type: 'quiz' | 'file' | 'form' | 'code_editor'
   view?: 'teacher' | 'student' | 'grading' | 'custom-grading'
   maxPoints?: number
   currentPoints?: number
@@ -48,7 +49,7 @@ function AssignmentBoxUI({
   const isAuthenticated = session?.status === 'authenticated'
 
   return (
-    <div className="flex flex-col px-3 sm:px-6 py-4 nice-shadow rounded-md bg-slate-100/30">
+    <div className="flex flex-col px-3 sm:px-6 py-4 nice-shadow rounded-md bg-slate-100/30 w-full max-w-full lg:max-w-4xl mx-auto min-w-0">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:space-x-2 pb-2 text-slate-400 sm:items-center">
         {/* Left side with type and badges */}
         <div className="flex flex-wrap gap-2 items-center mb-2 sm:mb-0">
@@ -69,6 +70,12 @@ function AssignmentBoxUI({
               <div className="flex space-x-1.5 items-center">
                 <Type size={17} />
                 <p>{t('activities.form')}</p>
+              </div>
+            )}
+            {type === 'code_editor' && (
+              <div className="flex space-x-1.5 items-center">
+                <Code size={17} />
+                <p>{t('activities.code_editor')}</p>
               </div>
             )}
           </div>

@@ -289,6 +289,7 @@
     "quiz": "Quiz",
     "file_submission": "File Submission",
     "form": "Form",
+    "code_editor": "Code Editor",
     "interactive": "Interactive",
     "activities": "Activities",
     "current_activity": "Current Activity",
@@ -324,7 +325,11 @@
     "size_large": "Large Size",
     "change_color": "Change Color",
     "preview_flip": "Preview Flip",
-    "activities_count": "{{count}} activities"
+    "activities_count": "{{count}} activities",
+    "submission_saved": "Progress saved successfully",
+    "submission_failed": "Failed to save progress",
+    "execution_failed": "Code execution failed",
+    "execution_error": "An error occurred during code execution"
   },
   "assignments": {
     "submit_assignment": "Submit Assignment",
@@ -1530,6 +1535,31 @@
           "task_update_error": "Error updating task, please retry later.",
           "reminder": "When editing/adding your tasks, make sure to Unpublish your Assignment to avoid any issues with students, you can Publish it again when you are ready."
         },
+        "exercise": "Exercise",
+        "title": "Title",
+        "description": "Description",
+        "hint": "Hint",
+        "language": "Programming Language",
+        "starter_code": "Starter Code",
+        "solution_code": "Reference Solution",
+        "hidden_from_students": "hidden from students",
+        "test_cases": "Test Cases",
+        "add_test_case": "Add Test Case",
+        "test_case": "Test Case",
+        "hidden": "Hidden",
+        "test_description_placeholder": "Description (e.g., Tests edge case with empty input)",
+        "input": "Input (stdin)",
+        "expected_output": "Expected Output (stdout)",
+        "add_exercise": "Add Exercise",
+        "save": "Save",
+        "exercise_title_placeholder": "e.g., Print Your Name 10 Times",
+        "exercise_description_placeholder": "Describe the coding problem...",
+        "max_exercises_reached": "Maximum 10 exercises per task",
+        "max_test_cases_reached": "Maximum 20 test cases per exercise",
+        "visible_test_cases": "Visible Test Cases",
+        "student_code": "Student's Code",
+        "reference_solution": "Reference Solution",
+        "task_save_failed": "Failed to save task",
         "task_editor": {
           "general": {
             "title": "Title",
@@ -1560,6 +1590,7 @@
         },
         "submission_label": "Submission",
         "evaluate": "Evaluate",
+        "review": "Review",
         "evaluate_modal": {
           "title": "Evaluate @{{username}}",
           "description": "Evaluate the submission"
@@ -1570,10 +1601,16 @@
         "actions": {
           "reject": "Reject Assignment",
           "set_final_grade": "Set final grade",
+          "grade_and_complete": "Grade & Complete",
           "mark_as_done": "Mark Activity as Done for User"
         },
         "toasts": {
-          "reject_success": "Assignment rejected successfully"
+          "reject_success": "Assignment rejected successfully",
+          "grade_complete_success": "Assignment graded and marked as done",
+          "grade_success_done_failed": "Grading succeeded but failed to mark as done",
+          "grade_failed": "Failed to grade assignment",
+          "graded_success": "Task graded successfully with {{grade}} points",
+          "graded_failed": "Error grading task, please retry later."
         }
       },
       "modals": {
