@@ -155,7 +155,7 @@ async def api_remove_user_from_org(
 async def api_get_org_signup_mechanism(
     request: Request,
     org_id: int,
-    signup_mechanism: Literal["open", "inviteOnly"],
+    signup_mechanism: Literal["open", "inviteOnly", "waitlist"],
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):

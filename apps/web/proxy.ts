@@ -33,10 +33,15 @@ export default async function proxy(req: NextRequest) {
   const fullhost = req.headers ? req.headers.get('host') : ''
   const cookie_orgslug = req.cookies.get('learnhouse_current_orgslug')?.value
 
-
   // Out of orgslug paths & rewrite
   const standard_paths = ['/home']
-  const auth_paths = ['/login', '/signup', '/reset', '/forgot']
+  const auth_paths = [
+    '/login',
+    '/signup',
+    '/reset',
+    '/forgot',
+    '/auth/waitlist/countdown',
+  ]
 
   // Redirect legacy /auth/* routes to current auth routes
   if (pathname === '/auth/signin') {
@@ -72,8 +77,12 @@ export default async function proxy(req: NextRequest) {
   }
 
   if (auth_paths.includes(pathname)) {
+    const targetPath = pathname.startsWith('/auth')
+      ? pathname
+      : `/auth${pathname}`
+
     const response = NextResponse.rewrite(
-      new URL(`/auth${pathname}${search}`, req.url)
+      new URL(`${targetPath}${search}`, req.url)
     )
 
     // Parse the search params
@@ -87,11 +96,11 @@ export default async function proxy(req: NextRequest) {
         value: orgslug,
         domain:
           LEARNHOUSE_TOP_DOMAIN == 'localhost' ? '' : LEARNHOUSE_TOP_DOMAIN,
+        path: '/',
       })
     }
     return response
   }
-
 
   // Dynamic Pages Editor
   if (pathname.match(/^\/course\/[^/]+\/activity\/[^/]+\/edit$/)) {
@@ -145,27 +154,27 @@ export default async function proxy(req: NextRequest) {
   }
 
   if (pathname.startsWith('/sitemap.xml')) {
-    let orgslug: string;
+    let orgslug: string
 
     const LEARNHOUSE_DOMAIN = getLEARNHOUSE_DOMAIN_VAL()
     if (hosting_mode === 'multi') {
       orgslug = fullhost
         ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
-        : (default_org as string);
+        : (default_org as string)
     } else {
       // Single hosting mode
-      orgslug = default_org as string;
+      orgslug = default_org as string
     }
 
-    const sitemapUrl = new URL(`/api/sitemap`, req.url);
+    const sitemapUrl = new URL(`/api/sitemap`, req.url)
 
     // Create a response object
-    const response = NextResponse.rewrite(sitemapUrl);
+    const response = NextResponse.rewrite(sitemapUrl)
 
     // Set the orgslug in a header
-    response.headers.set('X-Sitemap-Orgslug', orgslug);
+    response.headers.set('X-Sitemap-Orgslug', orgslug)
 
-    return response;
+    return response
   }
 
   // Multi Organization Mode

@@ -3,7 +3,7 @@ import PageLoading from '@components/Objects/Loaders/PageLoading'
 import ConfirmationModal from '@components/Objects/StyledElements/ConfirmationModal/ConfirmationModal'
 import { getAPIUrl, getUriWithoutOrg } from '@services/config/config'
 import { swrFetcher } from '@services/utils/ts/requests'
-import { Globe, Ticket, UserSquare, Users, X } from 'lucide-react'
+import { Globe, Ticket, UserSquare, Users, X, Clock } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 import useSWR, { mutate } from 'swr'
@@ -24,16 +24,27 @@ function OrgAccess() {
   const org = useOrg() as any
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
+  const joinMethod =
+    org?.config?.config?.features?.members?.signup_mode || 'open'
+
   const { data: invites } = useSWR(
     org ? `${getAPIUrl()}orgs/${org?.id}/invites` : null,
     (url) => swrFetcher(url, access_token)
   )
+  const { data: waitlistCampaigns } = useSWR(
+    org && joinMethod === 'waitlist'
+      ? `${getAPIUrl()}waitlist/config/org/${org?.id}`
+      : null,
+    (url) => swrFetcher(url, access_token)
+  )
   const isLoading = !invites
-  const joinMethod =
-    org?.config?.config?.features?.members?.signup_mode === 'open'
-      ? 'open'
-      : 'inviteOnly'
   const [invitesModal, setInvitesModal] = React.useState(false)
+  const [campaignFormData, setCampaignFormData] = React.useState({
+    name: '',
+    description: '',
+    interest_category: '',
+    launch_datetime: '',
+  })
   const router = useRouter()
 
   async function deleteInvite(invite: any) {
@@ -59,7 +70,7 @@ function OrgAccess() {
     }
   }
 
-  async function changeJoinMethod(method: 'open' | 'inviteOnly') {
+  async function changeJoinMethod(method: 'open' | 'inviteOnly' | 'waitlist') {
     const toastId = toast.loading(
       t('dashboard.users.signups.invite_codes.toasts.changing_method')
     )
@@ -79,6 +90,80 @@ function OrgAccess() {
         { id: toastId }
       )
     }
+  }
+
+  async function createWaitlistCampaign() {
+    console.log('createWaitlistCampaign called')
+    console.log('campaignFormData:', campaignFormData)
+
+    if (!campaignFormData.launch_datetime) {
+      toast.error('Please provide a launch date and time.')
+      return
+    }
+    const toastId = toast.loading('Creating waitlist campaign...')
+    try {
+      // Convert datetime-local to ISO 8601 format if provided
+      let launchDatetime = null
+      if (campaignFormData.launch_datetime) {
+        launchDatetime = new Date(
+          campaignFormData.launch_datetime
+        ).toISOString()
+      }
+
+      const payload = {
+        org_id: org.id,
+        name: campaignFormData.name,
+        interest_category: campaignFormData.interest_category,
+        description: campaignFormData.description || null,
+        launch_datetime: launchDatetime,
+      }
+
+      console.log('Sending payload:', payload)
+
+      const response = await fetch(`${getAPIUrl()}waitlist/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${access_token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        toast.success('Waitlist campaign created successfully!', {
+          id: toastId,
+        })
+        setCampaignFormData({
+          name: '',
+          description: '',
+          interest_category: '',
+          launch_datetime: '',
+        })
+        mutate(`${getAPIUrl()}waitlist/config/org/${org?.id}`)
+      } else {
+        const errorData = await response.json()
+        // FastAPI returns detail as an array of objects: [{loc, msg, type}]
+        let errorMessage = 'Failed to create campaign'
+        if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail
+        } else if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail
+            .map((err: any) => `${err.loc?.slice(-1)[0]}: ${err.msg}`)
+            .join(' | ')
+        }
+        toast.error(errorMessage, { id: toastId })
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error creating campaign', { id: toastId })
+    }
+  }
+
+  function copyShareableLink(waitlistUuid: string) {
+    const link = getUriWithoutOrg(
+      `/signup?waitlist_uuid=${waitlistUuid}&orgslug=${org.slug}`
+    )
+    navigator.clipboard.writeText(link)
+    toast.success('Shareable link copied to clipboard!')
   }
 
   return (
@@ -108,7 +193,7 @@ function OrgAccess() {
                   'dashboard.users.signups.open.confirmation_title'
                 )}
                 dialogTrigger={
-                  <div className="w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
+                  <div className="relative w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
                     {joinMethod == 'open' ? (
                       <div className="bg-green-200 text-green-600 font-bold w-fit my-3 mx-3 absolute text-sm px-3 py-1 rounded-lg">
                         {t('dashboard.users.signups.open.active')}
@@ -141,7 +226,7 @@ function OrgAccess() {
                   'dashboard.users.signups.closed.confirmation_title'
                 )}
                 dialogTrigger={
-                  <div className="w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
+                  <div className="relative w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
                     {joinMethod == 'inviteOnly' ? (
                       <div className="bg-green-200 text-green-600 font-bold w-fit my-3 mx-3 absolute text-sm px-3 py-1 rounded-lg">
                         {t('dashboard.users.signups.closed.active')}
@@ -163,10 +248,240 @@ function OrgAccess() {
                 }}
                 status="info"
               ></ConfirmationModal>
+              <ConfirmationModal
+                confirmationButtonText={t(
+                  'dashboard.users.signups.waitlist.change_to'
+                )}
+                confirmationMessage={t(
+                  'dashboard.users.signups.waitlist.confirmation_message'
+                )}
+                dialogTitle={t(
+                  'dashboard.users.signups.waitlist.confirmation_title'
+                )}
+                dialogTrigger={
+                  <div className="relative w-full h-[160px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 ease-linear transition-all">
+                    {joinMethod == 'waitlist' ? (
+                      <div className="bg-green-200 text-green-600 font-bold w-fit my-3 mx-3 absolute text-sm px-3 py-1 rounded-lg">
+                        {t('dashboard.users.signups.waitlist.active')}
+                      </div>
+                    ) : null}
+                    <div className="flex flex-col space-y-1 justify-center items-center h-full">
+                      <Clock className="text-slate-400" size={40}></Clock>
+                      <div className="text-2xl text-slate-700 font-bold">
+                        {t('dashboard.users.signups.waitlist.title')}
+                      </div>
+                      <div className="text-gray-400 text-center">
+                        {t('dashboard.users.signups.waitlist.description')}
+                      </div>
+                    </div>
+                  </div>
+                }
+                functionToExecute={() => {
+                  changeJoinMethod('waitlist')
+                }}
+                status="info"
+              ></ConfirmationModal>
             </div>
+
+            {/* Waitlist Campaign Management Section */}
+            {joinMethod === 'waitlist' && (
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200 mt-6">
+                <div className="flex flex-col bg-white -space-y-1 px-5 py-3 rounded-md mb-4">
+                  <h1 className="font-bold text-xl text-gray-800">
+                    {t('dashboard.users.signups.waitlist.campaigns.title')}
+                  </h1>
+                  <h2 className="text-gray-500 text-md">
+                    {t('dashboard.users.signups.waitlist.campaigns.subtitle')}
+                  </h2>
+                </div>
+
+                {waitlistCampaigns && waitlistCampaigns.length > 0 ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-indigo-100 overflow-hidden mb-4">
+                    <table className="w-full">
+                      <thead className="bg-indigo-50 border-b border-indigo-100">
+                        <tr className="text-sm font-semibold text-gray-700">
+                          <th className="px-6 py-3 text-left">Campaign</th>
+                          <th className="px-6 py-3 text-left">Launch Date</th>
+                          <th className="px-6 py-3 text-left">Registrations</th>
+                          <th className="px-6 py-3 text-left">Status</th>
+                          <th className="px-6 py-3 text-left">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {waitlistCampaigns.map((campaign: any) => (
+                          <tr
+                            key={campaign.waitlist_uuid}
+                            className="hover:bg-indigo-50 transition-colors"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-gray-800">
+                                {campaign.name}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {dayjs(campaign.launch_datetime).format(
+                                'MMM DD, YYYY'
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-indigo-600">
+                                {campaign.total_registrations}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                                  campaign.status === 'ACTIVE'
+                                    ? 'bg-green-100 text-green-800'
+                                    : campaign.status === 'COMPLETED'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {campaign.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() =>
+                                  copyShareableLink(campaign.waitlist_uuid)
+                                }
+                                className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors font-semibold"
+                              >
+                                📋 Copy Link
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm p-6 border border-indigo-100 mb-4">
+                    <div className="text-center py-8">
+                      <Clock
+                        className="text-indigo-400 mx-auto mb-3"
+                        size={48}
+                      />
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                        {t(
+                          'dashboard.users.signups.waitlist.campaigns.no_campaigns'
+                        )}
+                      </h3>
+                      <p className="text-gray-500 text-sm">
+                        {t(
+                          'dashboard.users.signups.waitlist.campaigns.create_first'
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Create Campaign Form - Inline matching Invite Codes UI */}
+                <div className="bg-white rounded-lg shadow-sm p-6 border border-indigo-100 mt-4">
+                  <h3 className="font-bold text-lg text-gray-800 mb-4">
+                    Create New Campaign
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Campaign Name
+                      </label>
+                      <input
+                        type="text"
+                        value={campaignFormData.name}
+                        onChange={(e) =>
+                          setCampaignFormData((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g., Python Fundamentals"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Interest Category
+                      </label>
+                      <input
+                        type="text"
+                        value={campaignFormData.interest_category}
+                        onChange={(e) =>
+                          setCampaignFormData((prev) => ({
+                            ...prev,
+                            interest_category: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g., Programming"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Description (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={campaignFormData.description}
+                        onChange={(e) =>
+                          setCampaignFormData((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="What is this waitlist about?"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Launch Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={campaignFormData.launch_datetime}
+                        onChange={(e) =>
+                          setCampaignFormData((prev) => ({
+                            ...prev,
+                            launch_datetime: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() =>
+                        setCampaignFormData({
+                          name: '',
+                          description: '',
+                          interest_category: '',
+                          launch_datetime: '',
+                        })
+                      }
+                      className="px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-700 text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={createWaitlistCampaign}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-colors"
+                    >
+                      <Ticket className="w-4 h-4" />
+                      Create Campaign
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div
               className={
-                joinMethod == 'open'
+                joinMethod == 'open' || joinMethod == 'waitlist'
                   ? 'opacity-20 pointer-events-none'
                   : 'pointer-events-auto'
               }
