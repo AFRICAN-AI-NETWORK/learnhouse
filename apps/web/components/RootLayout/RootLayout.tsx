@@ -23,6 +23,8 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      {/* We intentionally use a raw <head> here for App Router + custom <html> so PWA manifest/icons are detected correctly. */}
+      {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
