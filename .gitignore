@@ -50,8 +50,4 @@ fly.toml
 # Generated runtime config
 apps/web/public/runtime-config.js
 apps/web/runtime-config.json
-
-# md files
-WAITLIST_TESTS_QUICKSTART.md
-WAITLIST_TESTS_SUMMARY.md
-WAITLIST_BACKEND_IMPLEMENTATION.md
+.agent/implementation_plans/coolifylogs.txt
