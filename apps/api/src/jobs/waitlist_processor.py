@@ -11,7 +11,7 @@ Runs periodically via APScheduler to:
 
 import asyncio
 from datetime import datetime
-from sqlmodel import Session, create_engine
+from sqlmodel import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 

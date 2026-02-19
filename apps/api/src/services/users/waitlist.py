@@ -11,7 +11,6 @@ from src.db.waitlist import (
     WaitlistConfig,
     WaitlistStatusEnum,
     WaitlistCoursePreference,
-    WaitlistCoursePreferenceCreate,
     WaitlistEmailLog,
 )
 from src.db.courses.courses import Course
