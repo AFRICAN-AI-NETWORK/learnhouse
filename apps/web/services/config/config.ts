@@ -42,19 +42,41 @@ function loadRuntimeConfig(): Record<string, string> {
         }
 
         // In standalone mode, runtime-config.json is in the same directory as server.js
-        // Try common possible locations relative to the current working directory and module
+        // Try multiple possible paths for standalone mode
+        const cwd = process.cwd()
         const currentDir =
           typeof __dirname !== 'undefined' ? __dirname : process.cwd()
+
         const possiblePaths = [
-          path.join(process.cwd(), 'runtime-config.json'),
+          path.join(cwd, 'runtime-config.json'),
+          path.join(cwd, '.next', 'standalone', 'runtime-config.json'),
           path.join(currentDir, 'runtime-config.json'),
           path.join(currentDir, '..', 'runtime-config.json'),
+          path.join(currentDir, '..', '..', 'runtime-config.json'),
         ]
+
+        if (
+          process.env.NODE_ENV === 'production' &&
+          !(runtimeConfig as any).loaded
+        ) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `[Config] Searching for runtime-config.json in:`,
+            possiblePaths
+          )
+        }
 
         for (const configPath of possiblePaths) {
           try {
             if (fs.existsSync(configPath)) {
               runtimeConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+              ;(runtimeConfig as any).loaded = true
+              if (process.env.NODE_ENV === 'production') {
+                // eslint-disable-next-line no-console
+                console.log(
+                  `[Config] ✅ Loaded runtime-config.json from: ${configPath}`
+                )
+              }
               break
             }
           } catch {
@@ -127,9 +149,13 @@ const getLEARNHOUSE_API_URL = () => {
     process.env?.NODE_ENV === 'production'
   ) {
     if (!apiUrl || !apiUrl.trim()) {
+      const cwd =
+        process.env.PWD ||
+        (typeof process.cwd === 'function' ? process.cwd() : 'unknown')
       throw new Error(
-        'NEXT_PUBLIC_LEARNHOUSE_API_URL is required in production. ' +
-          'Please set it in your environment variables.'
+        `NEXT_PUBLIC_LEARNHOUSE_API_URL is required in production but was not found. ` +
+          `Current working directory: ${cwd}. ` +
+          `Please ensure it is set in your environment variables and that the build used the correct server-wrapper.js.`
       )
     }
   }

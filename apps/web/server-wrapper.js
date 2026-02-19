@@ -24,6 +24,7 @@ Object.keys(env).forEach((key) => {
 const configPath = path.join(__dirname, 'runtime-config.json')
 fs.writeFileSync(configPath, JSON.stringify(runtimeConfig, null, 2), 'utf8')
 console.log(`✅ Wrote runtime-config.json to ${configPath}`)
+console.log(`📋 Variables found: ${Object.keys(runtimeConfig).join(', ')}`)
 
 // Create client-side runtime config script for browser access
 const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`
