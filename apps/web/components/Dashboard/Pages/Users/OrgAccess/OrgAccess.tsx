@@ -283,6 +283,106 @@ function OrgAccess() {
               ></ConfirmationModal>
             </div>
 
+            {/* Create Campaign Form - Inline matching Invite Codes UI */}
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-indigo-100 mt-4">
+              <h3 className="font-bold text-lg text-gray-800 mb-4">
+                Create New Campaign
+              </h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Campaign Name
+                  </label>
+                  <input
+                    type="text"
+                    value={campaignFormData.name}
+                    onChange={(e) =>
+                      setCampaignFormData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., Python Fundamentals"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Interest Category
+                  </label>
+                  <input
+                    type="text"
+                    value={campaignFormData.interest_category}
+                    onChange={(e) =>
+                      setCampaignFormData((prev) => ({
+                        ...prev,
+                        interest_category: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g., Programming"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Description (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={campaignFormData.description}
+                    onChange={(e) =>
+                      setCampaignFormData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    placeholder="What is this waitlist about?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Launch Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={campaignFormData.launch_datetime}
+                    onChange={(e) =>
+                      setCampaignFormData((prev) => ({
+                        ...prev,
+                        launch_datetime: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() =>
+                    setCampaignFormData({
+                      name: '',
+                      description: '',
+                      interest_category: '',
+                      launch_datetime: '',
+                    })
+                  }
+                  className="px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-700 text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={createWaitlistCampaign}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-colors"
+                >
+                  <Ticket className="w-4 h-4" />
+                  Create Campaign
+                </button>
+              </div>
+            </div>
+
             {/* Waitlist Campaign Management Section */}
             {joinMethod === 'waitlist' && (
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200 mt-6">
@@ -376,106 +476,6 @@ function OrgAccess() {
                     </div>
                   </div>
                 )}
-
-                {/* Create Campaign Form - Inline matching Invite Codes UI */}
-                <div className="bg-white rounded-lg shadow-sm p-6 border border-indigo-100 mt-4">
-                  <h3 className="font-bold text-lg text-gray-800 mb-4">
-                    Create New Campaign
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Campaign Name
-                      </label>
-                      <input
-                        type="text"
-                        value={campaignFormData.name}
-                        onChange={(e) =>
-                          setCampaignFormData((prev) => ({
-                            ...prev,
-                            name: e.target.value,
-                          }))
-                        }
-                        placeholder="e.g., Python Fundamentals"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Interest Category
-                      </label>
-                      <input
-                        type="text"
-                        value={campaignFormData.interest_category}
-                        onChange={(e) =>
-                          setCampaignFormData((prev) => ({
-                            ...prev,
-                            interest_category: e.target.value,
-                          }))
-                        }
-                        placeholder="e.g., Programming"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Description (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={campaignFormData.description}
-                        onChange={(e) =>
-                          setCampaignFormData((prev) => ({
-                            ...prev,
-                            description: e.target.value,
-                          }))
-                        }
-                        placeholder="What is this waitlist about?"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Launch Date & Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={campaignFormData.launch_datetime}
-                        onChange={(e) =>
-                          setCampaignFormData((prev) => ({
-                            ...prev,
-                            launch_datetime: e.target.value,
-                          }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() =>
-                        setCampaignFormData({
-                          name: '',
-                          description: '',
-                          interest_category: '',
-                          launch_datetime: '',
-                        })
-                      }
-                      className="px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-700 text-sm hover:bg-gray-50 transition-colors"
-                    >
-                      Clear
-                    </button>
-                    <button
-                      onClick={createWaitlistCampaign}
-                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-colors"
-                    >
-                      <Ticket className="w-4 h-4" />
-                      Create Campaign
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
