@@ -51,3 +51,5 @@ fly.toml
 apps/web/public/runtime-config.js
 apps/web/runtime-config.json
 .agent/implementation_plans/coolifylogs.txt
+
+REFERRAL_SYSTEM_IMPLEMENTATION_PLAN.md
