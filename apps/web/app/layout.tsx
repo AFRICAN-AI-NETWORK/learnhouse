@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import RootLayout from '@components/RootLayout/RootLayout'
 
+import Script from 'next/script'
+
 export const metadata: Metadata = {
   title: 'Learning Management System',
   description:
@@ -36,5 +38,10 @@ export const viewport: Viewport = {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <RootLayout>{children}</RootLayout>
+  return (
+    <>
+      <Script src="/runtime-config.js" strategy="beforeInteractive" />
+      <RootLayout>{children}</RootLayout>
+    </>
+  )
 }

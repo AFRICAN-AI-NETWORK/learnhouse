@@ -49,21 +49,25 @@ function loadRuntimeConfig(): Record<string, string> {
 
         const possiblePaths = [
           path.join(cwd, 'runtime-config.json'),
-          path.join(cwd, '.next', 'standalone', 'runtime-config.json'),
+          path.join(cwd, '..', 'runtime-config.json'),
+          path.join(cwd, '..', '..', 'runtime-config.json'),
           path.join(currentDir, 'runtime-config.json'),
           path.join(currentDir, '..', 'runtime-config.json'),
           path.join(currentDir, '..', '..', 'runtime-config.json'),
+          // Nixpacks root common locations
+          '/app/runtime-config.json',
+          '/app/apps/web/runtime-config.json',
         ]
 
+        // Only log once in production to avoid cluttering logs
         if (
           process.env.NODE_ENV === 'production' &&
           !(runtimeConfig as any).loaded
         ) {
           // eslint-disable-next-line no-console
-          console.log(
-            `[Config] Searching for runtime-config.json in:`,
-            possiblePaths
-          )
+          console.log(`[Config] 📂 PWD: ${cwd}, __dirname: ${currentDir}`)
+          // eslint-disable-next-line no-console
+          console.log(`[Config] 🔍 Searching in:`, possiblePaths)
         }
 
         for (const configPath of possiblePaths) {
@@ -74,7 +78,7 @@ function loadRuntimeConfig(): Record<string, string> {
               if (process.env.NODE_ENV === 'production') {
                 // eslint-disable-next-line no-console
                 console.log(
-                  `[Config] ✅ Loaded runtime-config.json from: ${configPath}`
+                  `[Config] ✅ Loaded successfully from: ${configPath}`
                 )
               }
               break
@@ -94,17 +98,23 @@ function loadRuntimeConfig(): Record<string, string> {
 
 // Helper function to get config value with fallback
 export const getConfig = (key: string, defaultValue: string = ''): string => {
-  const config = loadRuntimeConfig()
+  // 1. Client-side check (fast path)
+  if (typeof window !== 'undefined') {
+    const windowConfig = (window as any).__RUNTIME_CONFIG__
+    if (windowConfig && windowConfig[key]) {
+      return windowConfig[key]
+    }
+  }
 
-  // 1. Check runtime config (from runtime-config.json or the generated runtime-config.js)
+  // 2. Server-side / Hydration check
+  const config = loadRuntimeConfig()
   if (config && config[key]) {
     return config[key]
   }
 
-  // 2. Fallback to process.env (Server-side only)
+  // 3. Fallback to process.env (Server-side only)
   if (typeof process !== 'undefined' && process.env) {
     const envValue = process.env[key]
-
     return envValue || defaultValue
   }
 
@@ -149,9 +159,7 @@ const getLEARNHOUSE_API_URL = () => {
     process.env?.NODE_ENV === 'production'
   ) {
     if (!apiUrl || !apiUrl.trim()) {
-      const cwd =
-        process.env.PWD ||
-        (typeof process.cwd === 'function' ? process.cwd() : 'unknown')
+      const cwd = typeof process.cwd === 'function' ? process.cwd() : 'unknown'
       throw new Error(
         `NEXT_PUBLIC_LEARNHOUSE_API_URL is required in production but was not found. ` +
           `Current working directory: ${cwd}. ` +
