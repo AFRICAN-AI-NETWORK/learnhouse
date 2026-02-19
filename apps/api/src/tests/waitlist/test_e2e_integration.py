@@ -18,12 +18,11 @@ from src.db.waitlist import (
     UserStatusEnum,
 )
 from src.db.courses.courses import Course
-from src.services.waitlist.config import create_waitlist_config, get_waitlist_config
+from src.services.waitlist.config import create_waitlist_config
 from src.services.users.waitlist import create_waitlist_user
 from src.services.waitlist.courses import get_org_courses_for_waitlist
 from src.services.waitlist.emails import process_waitlist_activations
 from src.security.auth import authenticate_user
-from src.security.security import security_hash_password
 
 
 class TestCompleteWaitlistFlow:

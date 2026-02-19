@@ -1,7 +1,7 @@
 """Unit tests for waitlist background job processor"""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from datetime import datetime, timedelta, timezone
 
 from src.jobs.waitlist_processor import (
@@ -193,7 +193,7 @@ class TestWaitlistActivationIntegration:
         db_session.add(future_waitlist)
         db_session.commit()
         
-        with patch('src.services.waitlist.emails.activate_waitlist') as mock_activate:
+        with patch('src.services.waitlist.emails.activate_waitlist'):
             # Process activations
             await process_waitlist_activations(db_session)
             
@@ -255,7 +255,7 @@ class TestEmailRetryIntegration:
         db_session.add(maxed_log)
         db_session.commit()
         
-        with patch('src.services.waitlist.emails.send_waitlist_activation_email') as mock_send:
+        with patch('src.services.waitlist.emails.send_waitlist_activation_email'):
             # Retry failed emails
             await retry_failed_waitlist_emails(db_session)
             
