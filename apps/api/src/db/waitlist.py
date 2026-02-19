@@ -1,8 +1,7 @@
 from typing import Optional
 from enum import Enum
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from datetime import datetime
 
 
 class UserStatusEnum(str, Enum):
