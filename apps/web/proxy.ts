@@ -15,11 +15,16 @@ export const config = {
      * 1. /api routes
      * 2. /_next (Next.js internals)
      * 3. /fonts (inside /public)
-     * 4. Umami Analytics
-     * 4. /examples (inside /public)
-     * 5. all root files inside /public (e.g. /favicon.ico)
+     * 4. /umami Analytics
+     * 5. /examples (inside /public)
+     * 6. /icons (PWA icons - inside /public)
+     * 7. /svg (inside /public)
+     * 8. /activities_types (inside /public)
+     * 9. /onboarding (inside /public)
+     * 10. Static files (sw.js, manifest.json, workbox, favicon, images)
+     * 11. all root files inside /public (e.g. /favicon.ico)
      */
-    '/((?!api|_next|fonts|umami|examples|[\\w-]+\\.\\w+).*)',
+    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
     '/payments/stripe/connect/oauth',
   ],
