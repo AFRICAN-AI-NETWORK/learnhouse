@@ -10,6 +10,8 @@ import {
   handleAssignmentTaskSubmission,
   updateSubFile,
 } from '@services/courses/assignments'
+import { mutate } from 'swr'
+import { getAPIUrl } from '@services/config/config'
 import { getTaskFileSubmissionDir } from '@services/media/media'
 import { Cloud, Download, File, Info, Loader, UploadCloud } from 'lucide-react'
 import Link from 'next/link'
@@ -131,6 +133,12 @@ export default function TaskFileObject({
     } else {
       assignmentTaskStateHook({ type: 'reload' })
       await mutateStudentSub()
+
+      // Mutate task submissions list to update activity-level UI
+      mutate(
+        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+      )
+
       setIsLoading(false)
       setError('')
       setLocalUploadFile(null) // Reset local file after success
@@ -167,6 +175,11 @@ export default function TaskFileObject({
         assignmentTaskStateHook({ type: 'reload' })
         toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
         mutateStudentSub()
+
+        // Mutate task submissions list to update activity-level UI
+        mutate(
+          `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+        )
       } else {
         toast.error(t('dashboard.assignments.editor.toasts.task_save_error'))
       }

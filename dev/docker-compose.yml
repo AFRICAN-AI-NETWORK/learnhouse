@@ -36,7 +36,22 @@ services:
       timeout: 4s
       retries: 5
 
+  piston:
+    image: ghcr.io/engineer-man/piston
+    container_name: learnhouse-piston-dev
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - PISTON_RUN_TIMEOUT=15000
+      - PISTON_COMPILE_TIMEOUT=15000
+      - PISTON_RUN_CPU_TIME=10000
+      - PISTON_COMPILE_CPU_TIME=10000
+    ports:
+      - "2000:2000"
+    volumes:
+      - learnhouse_piston_data:/piston/packages
+
 volumes:
   learnhouse_db_dev_data:
   learnhouse_redis_dev_data:
-
+  learnhouse_piston_data:

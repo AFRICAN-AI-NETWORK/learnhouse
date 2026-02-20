@@ -12,6 +12,8 @@ import {
   handleAssignmentTaskSubmission,
   updateAssignmentTask,
 } from '@services/courses/assignments'
+import { mutate } from 'swr'
+import { getAPIUrl } from '@services/config/config'
 import { Check, Info, Minus, Plus, PlusCircle, X } from 'lucide-react'
 import React, { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -326,6 +328,11 @@ function TaskQuizObject({
         }
         setUserSubmissions(updatedUserSubmissionsWithUUID)
         setInitialUserSubmissions(updatedUserSubmissionsWithUUID)
+
+        // Mutate task submissions list to update activity-level UI
+        mutate(
+          `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+        )
       } else {
         toast.error(t('dashboard.assignments.editor.toasts.task_save_error'))
       }

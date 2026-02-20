@@ -342,7 +342,9 @@
     "points": "points",
     "current_points": "Points : {{points}}",
     "grade": "Noter",
-    "due_date": "Échéance"
+    "due_date": "Échéance",
+    "unsaved_tasks_warning": "Vous avez des tâches non enregistrées",
+    "submit_incomplete_warning": "Vous avez des tâches non enregistrées ! Si vous soumettez maintenant, ces tâches recevront une note de 0%. Êtes-vous sûr de vouloir continuer ?"
   },
   "certificate": {
     "certificate": "Certificat",

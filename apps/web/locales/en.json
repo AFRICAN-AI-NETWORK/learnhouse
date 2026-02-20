@@ -309,6 +309,7 @@
     "teacher_view": "Teacher view",
     "dont_forget_to_save": "Don't forget to save your progress",
     "save_your_progress": "Save your progress",
+    "resubmit": "Resubmit for grading",
     "unmark_tooltip": "Click the checkbox to unmark as complete if needed",
     "mark_tooltip": "Click the checkbox to mark this activity as complete",
     "failed_mark_complete": "Failed to mark activity as complete",
@@ -347,7 +348,9 @@
     "points": "points",
     "current_points": "Current points: {{points}}",
     "grade": "Grade",
-    "due_date": "Due Date"
+    "due_date": "Due Date",
+    "unsaved_tasks_warning": "You have unsaved tasks",
+    "submit_incomplete_warning": "You have unsaved tasks! If you submit now, these tasks will receive a 0% score. Are you sure you want to proceed?"
   },
   "certificate": {
     "certificate": "Certificate",

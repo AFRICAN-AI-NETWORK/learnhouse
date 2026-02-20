@@ -17,28 +17,40 @@ export function AssignmentProvider({
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token
 
+  // Validation: Don't fetch if assignment_uuid contains "undefined" or is falsy
+  const isValidUUID =
+    assignment_uuid &&
+    !assignment_uuid.includes('undefined') &&
+    assignment_uuid !== 'null'
+
   const { data: assignment } = useSWR(
-    `${getAPIUrl()}assignments/${assignment_uuid}`,
-    (url) => swrFetcher(url, accessToken)
+    isValidUUID ? `${getAPIUrl()}assignments/${assignment_uuid}` : null,
+    (url) => swrFetcher(url, accessToken),
+    { keepPreviousData: true }
   )
 
   const { data: assignment_tasks } = useSWR(
-    `${getAPIUrl()}assignments/${assignment_uuid}/tasks`,
-    (url) => swrFetcher(url, accessToken)
+    isValidUUID ? `${getAPIUrl()}assignments/${assignment_uuid}/tasks` : null,
+    (url) => swrFetcher(url, accessToken),
+    { keepPreviousData: true }
   )
 
   const course_id = assignment?.course_id
 
   const { data: course_object } = useSWR(
-    course_id ? `${getAPIUrl()}courses/id/${course_id}` : null,
-    (url) => swrFetcher(url, accessToken)
+    isValidUUID && course_id ? `${getAPIUrl()}courses/id/${course_id}` : null,
+    (url) => swrFetcher(url, accessToken),
+    { keepPreviousData: true }
   )
 
   const activity_id = assignment?.activity_id
 
   const { data: activity_object } = useSWR(
-    activity_id ? `${getAPIUrl()}activities/id/${activity_id}` : null,
-    (url) => swrFetcher(url, accessToken)
+    isValidUUID && activity_id
+      ? `${getAPIUrl()}activities/id/${activity_id}`
+      : null,
+    (url) => swrFetcher(url, accessToken),
+    { keepPreviousData: true }
   )
 
   const assignmentsFull = useMemo(() => {

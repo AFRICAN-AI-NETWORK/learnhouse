@@ -24,12 +24,15 @@ import {
   Terminal,
   AlertCircle,
 } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { debounce } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { v4 as uuidv4 } from 'uuid'
 import { useTranslation } from 'react-i18next'
 import dynamic from 'next/dynamic'
 import AssignmentBoxUI from '@components/Objects/Activities/Assignment/AssignmentBoxUI'
+import { mutate } from 'swr'
+import { getAPIUrl } from '@services/config/config'
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
@@ -68,6 +71,7 @@ type CodeSubmitSchema = {
     code: string
   }[]
   assignment_task_submission_uuid?: string
+  grading_results?: any[]
 }
 
 type TaskCodeEditorObjectProps = {
@@ -92,7 +96,9 @@ function TaskCodeEditorObject({
 
   // For student/grading views: fetch task data directly (like TaskQuizObject)
   const [assignmentTaskDirect, setAssignmentTaskDirect] = useState<any>(null)
-  const initialFetchRef = React.useRef(false)
+  const initialFetchRef = useRef(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [lastSubmissionResult, setLastSubmissionResult] = useState<any>(null)
 
   // STUDENT: Submissions state
   const [studentSubmissions, setStudentSubmissions] = useState<
@@ -169,6 +175,9 @@ function TaskCodeEditorObject({
             if (submissionData.submissions) {
               setStudentSubmissions(submissionData.submissions)
             }
+            if (submissionData.grading_results) {
+              setLastSubmissionResult(submissionData.grading_results)
+            }
           }
         }
       }
@@ -191,19 +200,63 @@ function TaskCodeEditorObject({
     [activeTaskData?.contents?.exercises]
   )
 
-  // Execution Results state
-  const [executionResults, setExecutionResults] = useState<
-    Record<
-      string,
-      {
-        stdout: string
-        stderr: string
-        exit_code: number
-        execution_time_ms: number
-        loading: boolean
-      }
-    >
+  // Console output state — keyed by exerciseUUID
+  type ConsoleResult = {
+    stdout: string
+    stderr: string
+    exit_code: number
+    execution_time_ms: number
+    isRunning: boolean
+    hasRun: boolean
+    error?: string
+    test_results?: any[]
+    passed_count?: number
+    total_count?: number
+  }
+  const [consoleOutput, setConsoleOutput] = useState<
+    Record<string, ConsoleResult>
   >({})
+
+  // Debounced auto-save
+  const debouncedSubmit = useMemo(
+    () =>
+      debounce(
+        async (submissions: { exerciseUUID: string; code: string }[]) => {
+          if (view !== 'student' || !access_token || !assignmentUUID) return
+
+          setIsSaving(true)
+          try {
+            const submissionData: CodeSubmitSchema = {
+              exercises: activeTaskData?.contents?.exercises || [],
+              submissions: submissions,
+            }
+
+            const res = await handleAssignmentTaskSubmission(
+              { task_submission: submissionData },
+              assignmentTaskUUID || activeTaskData?.assignment_task_uuid,
+              assignmentUUID,
+              access_token
+            )
+            if (res?.success) {
+              setLastSubmissionResult(
+                res.data?.task_submission?.grading_results
+              )
+              // Mutate task submissions list to update activity-level UI
+              mutate(
+                `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
+              )
+            }
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error('[AutoSave] Failed:', error)
+          } finally {
+            setIsSaving(false)
+          }
+        },
+        2000
+      ),
+    [view, access_token, assignmentUUID, activeTaskData, assignmentTaskUUID]
+  )
 
   // Create an empty exercise template
   function createEmptyExercise(): CodeExerciseSchema {
@@ -335,23 +388,57 @@ function TaskCodeEditorObject({
     }
   }
 
-  // Submit function (student)
+  // Submit function (student) - used by AssignmentBoxUI save button
   const submitFC = async () => {
+    if (view !== 'student' || !access_token || !assignmentUUID) return
+
+    setIsSaving(true)
     try {
       const submissionData: CodeSubmitSchema = {
         exercises: activeTaskData?.contents?.exercises || [],
         submissions: studentSubmissions,
       }
 
-      await handleAssignmentTaskSubmission(
+      const res = await handleAssignmentTaskSubmission(
         { task_submission: submissionData },
         assignmentTaskUUID || activeTaskData?.assignment_task_uuid,
         assignment.assignment_object.assignment_uuid,
         access_token
       )
-      toast.success(t('activities.submission_saved'))
+      if (res?.success) {
+        const gradingResults = res.data?.task_submission?.grading_results
+        setLastSubmissionResult(gradingResults)
+
+        // Mutate task submissions list to update activity-level UI
+        mutate(
+          `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
+        )
+
+        // Show grade in toast for immediate feedback
+        if (gradingResults && gradingResults.length > 0) {
+          const totalPassed = gradingResults.reduce(
+            (acc: number, r: any) => acc + (r.passed_count || 0),
+            0
+          )
+          const totalTests = gradingResults.reduce(
+            (acc: number, r: any) => acc + (r.total_count || 0),
+            0
+          )
+          const grade = res.data?.grade ?? 0
+          const maxGrade = activeTaskData?.max_grade_value ?? 100
+          toast.success(
+            `Auto-graded: ${totalPassed}/${totalTests} tests passed — Score: ${grade}/${maxGrade}`
+          )
+        } else {
+          toast.success(t('activities.submission_saved'))
+        }
+      }
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[ManualSave] Failed:', error)
       toast.error(t('activities.submission_failed'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -400,65 +487,111 @@ function TaskCodeEditorObject({
     })
   }
 
-  // Run Code function
-  const runCodeFC = async (exercise: CodeExerciseSchema) => {
-    const studentCode =
-      studentSubmissions.find((s) => s.exerciseUUID === exercise.exerciseUUID)
-        ?.code || exercise.starterCode
+  // Run Code — clean implementation
+  const runCode = useCallback(
+    async (exercise: CodeExerciseSchema) => {
+      const studentCode =
+        studentSubmissions.find((s) => s.exerciseUUID === exercise.exerciseUUID)
+          ?.code || exercise.starterCode
 
-    setExecutionResults((prev) => ({
-      ...prev,
-      [exercise.exerciseUUID]: {
-        ...prev[exercise.exerciseUUID],
-        loading: true,
-        stdout: '',
-        stderr: '',
-        exit_code: 0,
-        execution_time_ms: 0,
-      },
-    }))
-
-    try {
-      const res = await executeCode(
-        {
-          language: exercise.language,
-          code: studentCode,
+      // Set running state
+      setConsoleOutput((prev) => ({
+        ...prev,
+        [exercise.exerciseUUID]: {
+          stdout: '',
+          stderr: '',
+          exit_code: 0,
+          execution_time_ms: 0,
+          isRunning: true,
+          hasRun: true,
         },
-        access_token
-      )
+      }))
 
-      if (res.success) {
-        setExecutionResults((prev) => ({
-          ...prev,
-          [exercise.exerciseUUID]: {
-            loading: false,
-            stdout: res.data.stdout,
-            stderr: res.data.stderr,
-            exit_code: res.data.exit_code,
-            execution_time_ms: res.data.execution_time_ms,
+      try {
+        // eslint-disable-next-line no-console
+        console.log('[RunCode] Executing', exercise.language, 'code...')
+
+        const res = await executeCode(
+          {
+            language: exercise.language,
+            code: studentCode,
+            test_cases: exercise.testCases.filter((tc) => !tc.isHidden),
           },
-        }))
-      } else {
-        toast.error(t('activities.execution_failed'))
-        setExecutionResults((prev) => ({
+          access_token
+        )
+
+        // eslint-disable-next-line no-console
+        console.log('[RunCode] Response:', JSON.stringify(res, null, 2))
+
+        if (res.success) {
+          setConsoleOutput((prev) => ({
+            ...prev,
+            [exercise.exerciseUUID]: {
+              stdout: res.data.stdout || '',
+              stderr: res.data.stderr || '',
+              exit_code: res.data.exit_code ?? 0,
+              execution_time_ms: res.data.execution_time_ms ?? 0,
+              isRunning: false,
+              hasRun: true,
+              test_results: res.data.test_results,
+              passed_count: res.data.passed_count,
+              total_count: res.data.total_count,
+            },
+          }))
+
+          // Update grading summary
+          setLastSubmissionResult((prev: any) => {
+            const current = Array.isArray(prev) ? prev : []
+            const newRes = {
+              exerciseUUID: exercise.exerciseUUID,
+              passed_count: res.data.passed_count,
+              total_count: res.data.total_count,
+            }
+            const idx = current.findIndex(
+              (r: any) => r.exerciseUUID === exercise.exerciseUUID
+            )
+            if (idx > -1) {
+              const next = [...current]
+              next[idx] = newRes
+              return next
+            }
+            return [...current, newRes]
+          })
+        } else {
+          // API returned success:false
+          setConsoleOutput((prev) => ({
+            ...prev,
+            [exercise.exerciseUUID]: {
+              stdout: '',
+              stderr: '',
+              exit_code: 1,
+              execution_time_ms: 0,
+              isRunning: false,
+              hasRun: true,
+              error:
+                res.data?.detail || 'Code execution failed. Please try again.',
+            },
+          }))
+        }
+      } catch (err: any) {
+        // eslint-disable-next-line no-console
+        console.error('[RunCode] Exception:', err)
+        setConsoleOutput((prev) => ({
           ...prev,
           [exercise.exerciseUUID]: {
-            ...prev[exercise.exerciseUUID],
-            loading: false,
+            stdout: '',
+            stderr: '',
+            exit_code: 1,
+            execution_time_ms: 0,
+            isRunning: false,
+            hasRun: true,
+            error: err?.message || 'An unexpected error occurred.',
           },
         }))
       }
-    } catch (error) {
-      toast.error(t('activities.execution_error'))
-      setExecutionResults((prev) => ({
-        ...prev,
-        [exercise.exerciseUUID]: {
-          ...prev[exercise.exerciseUUID],
-          loading: false,
-        },
-      }))
-    }
-  }
+    },
+    [studentSubmissions, access_token, setLastSubmissionResult]
+  )
 
   // TEACHER VIEW
   if (view === 'teacher') {
@@ -760,226 +893,363 @@ function TaskCodeEditorObject({
               </p>
             </div>
           ) : (
-            exercisesData.map((exercise: CodeExerciseSchema, index: number) => {
-              const studentCode =
-                studentSubmissions.find(
-                  (s) => s.exerciseUUID === exercise.exerciseUUID
-                )?.code || exercise.starterCode
-
-              return (
-                <div
-                  key={exercise.exerciseUUID}
-                  className="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
-                >
-                  {/* Exercise Title & Description */}
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-                      {exercise.title ||
-                        `${t('dashboard.assignments.editor.exercise')} ${index + 1}`}
-                    </h3>
-
-                    {exercise.description && (
-                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                          {exercise.description}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Code Editor Container */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-2.5">
-                          <div className="p-1 bg-slate-100 rounded-md">
-                            <Code className="w-4 h-4 text-slate-600" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">
-                            Code Editor ({exercise.language})
-                          </span>
-                        </div>
-                        <div className="h-4 w-px bg-slate-200 mx-2"></div>
-                        <div className="flex items-center space-x-2 px-2.5 py-1 bg-slate-50 rounded-full border border-slate-100">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                          <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
-                            Auto-Saving
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => runCodeFC(exercise)}
-                        disabled={
-                          executionResults[exercise.exerciseUUID]?.loading
-                        }
-                        className={`flex items-center space-x-2 px-5 py-2 rounded-2xl font-bold text-[11px] transition-all duration-200 shadow-lg active:scale-95 ${
-                          executionResults[exercise.exerciseUUID]?.loading
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-200'
-                        }`}
-                      >
-                        {executionResults[exercise.exerciseUUID]?.loading ? (
-                          <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin"></div>
-                        ) : (
-                          <Play size={14} fill="currentColor" />
-                        )}
-                        <span>
-                          {executionResults[exercise.exerciseUUID]?.loading
-                            ? 'RUNNING...'
-                            : 'RUN CODE'}
-                        </span>
-                      </button>
-                    </div>
-                    <div className="border border-slate-200 rounded-3xl overflow-hidden h-[450px] relative w-full shadow-lg shadow-slate-100 bg-white ring-4 ring-slate-50">
-                      <div className="absolute inset-0">
-                        <Editor
-                          height="100%"
-                          width="100%"
-                          language={exercise.language}
-                          value={studentCode}
-                          onChange={(value) =>
-                            updateStudentCode(
-                              exercise.exerciseUUID,
-                              value || ''
-                            )
-                          }
-                          theme="vs-light"
-                          options={{
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            automaticLayout: true,
-                            scrollBeyondLastLine: false,
-                            lineNumbers: 'on',
-                            roundedSelection: true,
-                            padding: { top: 20, bottom: 20 },
-                            cursorBlinking: 'smooth',
-                            cursorSmoothCaretAnimation: 'on',
-                            renderLineHighlight: 'all',
-                            fontFamily:
-                              'JetBrains Mono, Menlo, Monaco, Courier New, monospace',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Console Output */}
-                    {(executionResults[exercise.exerciseUUID]?.stdout ||
-                      executionResults[exercise.exerciseUUID]?.stderr ||
-                      executionResults[exercise.exerciseUUID]?.loading) && (
-                      <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
-                          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-900/50">
-                            <div className="flex items-center space-x-2.5">
-                              <Terminal className="w-4 h-4 text-emerald-400" />
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Console Output
-                              </span>
-                            </div>
-                            {executionResults[exercise.exerciseUUID]
-                              ?.execution_time_ms > 0 && (
-                              <span className="text-[9px] font-mono text-slate-500">
-                                {
-                                  executionResults[exercise.exerciseUUID]
-                                    .execution_time_ms
-                                }
-                                ms
-                              </span>
-                            )}
-                          </div>
-                          <div className="p-5 min-h-[100px] max-h-[300px] overflow-auto font-mono text-sm leading-relaxed">
-                            {executionResults[exercise.exerciseUUID]
-                              ?.loading ? (
-                              <div className="flex items-center space-x-2 text-slate-500 italic">
-                                <span className="animate-pulse text-xs uppercase tracking-widest font-bold">
-                                  Execution in progress...
-                                </span>
-                              </div>
-                            ) : (
-                              <>
-                                {executionResults[exercise.exerciseUUID]
-                                  ?.stdout && (
-                                  <div className="text-emerald-400 whitespace-pre-wrap">
-                                    {
-                                      executionResults[exercise.exerciseUUID]
-                                        .stdout
-                                    }
-                                  </div>
-                                )}
-                                {executionResults[exercise.exerciseUUID]
-                                  ?.stderr && (
-                                  <div className="text-rose-400 whitespace-pre-wrap mt-2">
-                                    <div className="flex items-center space-x-1.5 mb-1 opacity-80">
-                                      <AlertCircle size={14} />
-                                      <span className="uppercase text-[10px] font-bold tracking-tight">
-                                        Execution Error:
-                                      </span>
-                                    </div>
-                                    {
-                                      executionResults[exercise.exerciseUUID]
-                                        .stderr
-                                    }
-                                  </div>
-                                )}
-                                {!executionResults[exercise.exerciseUUID]
-                                  ?.stdout &&
-                                  !executionResults[exercise.exerciseUUID]
-                                    ?.stderr && (
-                                    <div className="text-slate-500 italic opacity-50">
-                                      Program finished with no output.
-                                    </div>
-                                  )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Visible Test Cases */}
-                  {exercise.testCases.filter((tc) => !tc.isHidden).length >
-                    0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">
-                        <span>Visible Test Cases:</span>
-                      </div>
-                      <div className="space-y-3">
-                        {exercise.testCases
-                          .filter((tc) => !tc.isHidden)
-                          .map((testCase, tcIndex) => (
-                            <div
-                              key={testCase.testUUID}
-                              className="bg-white border border-slate-200 rounded-2xl p-4 flex items-start space-x-4 shadow-sm hover:border-slate-300 transition-colors"
-                            >
-                              <div className="p-2 bg-amber-100 rounded-full shrink-0">
-                                <Lightbulb className="w-4 h-4 text-amber-600" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs font-bold text-slate-800 truncate mb-1">
-                                  Test {tcIndex + 1}:{' '}
-                                  {testCase.description || 'General Scenario'}
-                                </div>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  <div className="bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 text-[10px] text-slate-500 font-mono">
-                                    Expected: {testCase.expectedOutput}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Separator for multiple exercises */}
-                  {index < exercisesData.length - 1 && (
-                    <div className="py-4">
-                      <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent"></div>
-                    </div>
-                  )}
+            <>
+              {/* Exercises Header */}
+              <div className="flex items-center space-x-2.5 mb-2 px-1">
+                <div className="p-1.5 bg-slate-100 rounded-lg">
+                  <Terminal className="w-4 h-4 text-slate-500" />
                 </div>
-              )
-            })
+                <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                  Exercises & Challenges
+                </h4>
+              </div>
+
+              {/* Grading Summary (if available) */}
+              {(lastSubmissionResult ||
+                submission?.submission?.task_submission?.grading_results) && (
+                <div className="bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-800 animate-in fade-in zoom-in duration-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-emerald-500/10 rounded-xl">
+                        <Terminal className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white uppercase tracking-widest">
+                        Auto-Grading Summary
+                      </h4>
+                    </div>
+                    <div className="px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30">
+                      <span className="text-xs font-bold text-emerald-400">
+                        {(() => {
+                          const results =
+                            lastSubmissionResult ||
+                            submission?.submission?.task_submission
+                              ?.grading_results ||
+                            []
+                          const totalPassed = results.reduce(
+                            (acc: number, r: any) =>
+                              acc + (r.passed_count || 0),
+                            0
+                          )
+                          const totalTests = results.reduce(
+                            (acc: number, r: any) => acc + (r.total_count || 0),
+                            0
+                          )
+                          return `${totalPassed} / ${totalTests} Tests Passed`
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Your code is automatically evaluated against predefined test
+                    cases. Each successful test contributes to your final grade.
+                  </p>
+                </div>
+              )}
+              {exercisesData.map(
+                (exercise: CodeExerciseSchema, index: number) => {
+                  const exResults = consoleOutput[exercise.exerciseUUID]
+                  const studentCode =
+                    studentSubmissions.find(
+                      (s) => s.exerciseUUID === exercise.exerciseUUID
+                    )?.code || exercise.starterCode
+
+                  return (
+                    <div
+                      key={exercise.exerciseUUID}
+                      className="flex flex-col space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    >
+                      {/* Exercise Title & Description */}
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                          {exercise.title ||
+                            `${t('dashboard.assignments.editor.exercise')} ${index + 1}`}
+                        </h3>
+
+                        {exercise.description && (
+                          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                            <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                              {exercise.description}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Code Editor Container */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="p-1 bg-slate-100 rounded-md">
+                                <Code className="w-4 h-4 text-slate-600" />
+                              </div>
+                              <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">
+                                Code Editor ({exercise.language})
+                              </span>
+                            </div>
+                            <div className="h-4 w-px bg-slate-200 mx-2"></div>
+                            <div className="flex items-center space-x-2 px-2.5 py-1 bg-slate-50 rounded-full border border-slate-100">
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-[0_0_8px_rgba(16,185,129,0.5)]`}
+                              ></div>
+                              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                {isSaving ? 'Saving...' : 'Saved'}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => runCode(exercise)}
+                            disabled={exResults?.isRunning}
+                            className={`flex items-center space-x-2 px-5 py-2 rounded-2xl font-bold text-[11px] transition-all duration-200 shadow-lg active:scale-95 ${
+                              exResults?.isRunning
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-200'
+                            }`}
+                          >
+                            {exResults?.isRunning ? (
+                              <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin"></div>
+                            ) : (
+                              <Play size={14} fill="currentColor" />
+                            )}
+                            <span>
+                              {exResults?.isRunning ? 'RUNNING...' : 'RUN CODE'}
+                            </span>
+                          </button>
+                        </div>
+                        <div className="border border-slate-200 rounded-3xl overflow-hidden h-[450px] relative w-full shadow-lg shadow-slate-100 bg-white ring-4 ring-slate-50">
+                          <div className="absolute inset-0">
+                            <Editor
+                              height="100%"
+                              width="100%"
+                              language={exercise.language}
+                              value={studentCode}
+                              onChange={(value) =>
+                                updateStudentCode(
+                                  exercise.exerciseUUID,
+                                  value || ''
+                                )
+                              }
+                              theme="vs-light"
+                              options={{
+                                minimap: { enabled: false },
+                                fontSize: 14,
+                                automaticLayout: true,
+                                scrollBeyondLastLine: false,
+                                lineNumbers: 'on',
+                                roundedSelection: true,
+                                padding: { top: 20, bottom: 20 },
+                                cursorBlinking: 'smooth',
+                                cursorSmoothCaretAnimation: 'on',
+                                renderLineHighlight: 'all',
+                                fontFamily:
+                                  'JetBrains Mono, Menlo, Monaco, Courier New, monospace',
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Console Output — always visible after first run */}
+                        {exResults?.hasRun && (
+                          <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+                              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-900/50">
+                                <div className="flex items-center space-x-2.5">
+                                  <Terminal className="w-4 h-4 text-emerald-400" />
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Console Output
+                                  </span>
+                                </div>
+                                {!exResults.isRunning &&
+                                  (exResults.execution_time_ms ?? 0) > 0 && (
+                                    <span className="text-[9px] font-mono text-slate-500">
+                                      {exResults.execution_time_ms}ms
+                                    </span>
+                                  )}
+                              </div>
+                              <div className="p-5 min-h-[80px] max-h-[300px] overflow-auto font-mono text-sm leading-relaxed">
+                                {exResults.isRunning ? (
+                                  <div className="flex items-center space-x-3 text-slate-400">
+                                    <div className="w-4 h-4 border-2 border-slate-600 border-t-emerald-400 rounded-full animate-spin"></div>
+                                    <span className="text-xs uppercase tracking-widest font-bold animate-pulse">
+                                      Executing...
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    {/* Error from the API/network */}
+                                    {exResults.error && (
+                                      <div className="text-rose-400 whitespace-pre-wrap">
+                                        <div className="flex items-center space-x-1.5 mb-2 opacity-80">
+                                          <AlertCircle size={14} />
+                                          <span className="uppercase text-[10px] font-bold tracking-tight">
+                                            Error
+                                          </span>
+                                        </div>
+                                        {exResults.error}
+                                      </div>
+                                    )}
+                                    {/* stdout */}
+                                    {exResults.stdout && (
+                                      <div className="text-emerald-400 whitespace-pre-wrap">
+                                        {exResults.stdout}
+                                      </div>
+                                    )}
+                                    {/* stderr */}
+                                    {exResults.stderr &&
+                                      (() => {
+                                        // Detect stdin-related errors (program needs input but none was provided)
+                                        const isInputError =
+                                          exResults.stderr.includes(
+                                            'EOFError'
+                                          ) ||
+                                          exResults.stderr.includes(
+                                            'invalid literal for int()'
+                                          ) ||
+                                          exResults.stderr.includes(
+                                            "invalid literal for int() with base 10: ''"
+                                          ) ||
+                                          exResults.stderr.includes(
+                                            'No such device or address'
+                                          ) ||
+                                          (exResults.stderr.includes('scanf') &&
+                                            exResults.stderr.includes('EOF'))
+
+                                        if (isInputError) {
+                                          return (
+                                            <div className="text-amber-400 italic">
+                                              <div className="flex items-center space-x-1.5 mb-1 opacity-80">
+                                                <AlertCircle size={14} />
+                                                <span className="uppercase text-[10px] font-bold tracking-tight">
+                                                  Note
+                                                </span>
+                                              </div>
+                                              This program requires input. Check
+                                              the test case results below.
+                                            </div>
+                                          )
+                                        }
+
+                                        return (
+                                          <div className="text-rose-400 whitespace-pre-wrap mt-2">
+                                            <div className="flex items-center space-x-1.5 mb-1 opacity-80">
+                                              <AlertCircle size={14} />
+                                              <span className="uppercase text-[10px] font-bold tracking-tight">
+                                                Stderr:
+                                              </span>
+                                            </div>
+                                            {exResults.stderr}
+                                          </div>
+                                        )
+                                      })()}
+                                    {/* No output */}
+                                    {!exResults.error &&
+                                      !exResults.stdout &&
+                                      !exResults.stderr && (
+                                        <div className="text-slate-500 italic opacity-50">
+                                          Program finished with no output.
+                                        </div>
+                                      )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visible Test Cases */}
+                      {exercise.testCases.filter((tc) => !tc.isHidden).length >
+                        0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                            <span>Visible Test Cases:</span>
+                          </div>
+                          <div className="space-y-3">
+                            {exercise.testCases
+                              .filter((tc) => !tc.isHidden)
+                              .map((testCase, tcIndex) => {
+                                const runResult = exResults?.test_results?.find(
+                                  (r: any) => r.testUUID === testCase.testUUID
+                                )
+                                const isPassed = runResult?.passed
+
+                                return (
+                                  <div
+                                    key={testCase.testUUID}
+                                    className={`bg-white border rounded-2xl p-4 flex items-start space-x-4 shadow-sm transition-colors ${
+                                      isPassed === true
+                                        ? 'border-emerald-200 bg-emerald-50/30'
+                                        : isPassed === false
+                                          ? 'border-rose-200 bg-rose-50/30'
+                                          : 'border-slate-200 hover:border-slate-300'
+                                    }`}
+                                  >
+                                    <div
+                                      className={`p-2 rounded-full shrink-0 ${
+                                        isPassed === true
+                                          ? 'bg-emerald-100'
+                                          : isPassed === false
+                                            ? 'bg-rose-100'
+                                            : 'bg-amber-100'
+                                      }`}
+                                    >
+                                      {isPassed === true ? (
+                                        <Plus
+                                          size={16}
+                                          className="text-emerald-600"
+                                        />
+                                      ) : isPassed === false ? (
+                                        <X
+                                          size={16}
+                                          className="text-rose-600"
+                                        />
+                                      ) : (
+                                        <Lightbulb className="w-4 h-4 text-amber-600" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between">
+                                        <div className="text-xs font-bold text-slate-800 truncate mb-1">
+                                          Test {tcIndex + 1}:{' '}
+                                          {testCase.description ||
+                                            'General Scenario'}
+                                        </div>
+                                        {isPassed !== undefined && (
+                                          <span
+                                            className={`text-[9px] font-bold uppercase tracking-widest ${isPassed ? 'text-emerald-600' : 'text-rose-600'}`}
+                                          >
+                                            {isPassed ? 'Passed' : 'Failed'}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        <div className="bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 text-[10px] text-slate-500 font-mono">
+                                          Expected: {testCase.expectedOutput}
+                                        </div>
+                                        {runResult && !isPassed && (
+                                          <div className="bg-rose-50 px-2 py-1 rounded-lg border border-rose-100 text-[10px] text-rose-600 font-mono">
+                                            Actual: {runResult.actual_output}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Separator for multiple exercises */}
+                      {index < exercisesData.length - 1 && (
+                        <div className="py-4">
+                          <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent"></div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+              )}
+            </>
           )}
         </div>
       </AssignmentBoxUI>

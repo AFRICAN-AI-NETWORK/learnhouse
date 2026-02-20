@@ -40,6 +40,7 @@ from src.services.courses.activities.assignments import (
     update_assignment,
     update_assignment_submission,
     update_assignment_task,
+    read_user_assignment_all_tasks_submissions_me,
 )
 
 router = APIRouter()
@@ -282,6 +283,21 @@ async def api_read_user_assignment_task_submissions(
     """
     return await read_user_assignment_task_submissions(
         request, assignment_task_uuid, user_id, current_user, db_session
+    )
+
+
+@router.get("/{assignment_uuid}/tasks/submissions/me")
+async def api_read_user_assignment_all_tasks_submissions_me(
+    request: Request,
+    assignment_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session=Depends(get_db_session),
+):
+    """
+    Read all task submissions for an assignment from the current user
+    """
+    return await read_user_assignment_all_tasks_submissions_me(
+        request, assignment_uuid, current_user, db_session
     )
 
 

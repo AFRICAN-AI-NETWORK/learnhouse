@@ -10,6 +10,7 @@ import {
   Edit2,
   Maximize2,
   Minimize2,
+  Info,
 } from 'lucide-react'
 import {
   markActivityAsComplete,
@@ -288,7 +289,9 @@ function ActivityClient(props: ActivityClientProps) {
           </Suspense>
         )
       case 'TYPE_ASSIGNMENT':
-        return assignment ? (
+        return assignment &&
+          assignment?.assignment_uuid &&
+          assignment?.assignment_uuid !== 'undefined' ? (
           <Suspense fallback={<LoadingFallback />}>
             <AssignmentProvider assignment_uuid={assignment?.assignment_uuid}>
               <AssignmentsTaskProvider>
@@ -300,7 +303,9 @@ function ActivityClient(props: ActivityClientProps) {
               </AssignmentsTaskProvider>
             </AssignmentProvider>
           </Suspense>
-        ) : null
+        ) : (
+          <LoadingFallback />
+        )
       default:
         return null
     }
@@ -1481,8 +1486,36 @@ function AssignmentTools(props: {
   const { t } = useTranslation()
   const submission = useAssignmentSubmission() as any
   const session = useLHSession() as any
-  // Final grade is now derived from SWR
-  // const [finalGrade, setFinalGrade] = useState(null) as any;
+  const access_token = session?.data?.tokens?.access_token
+
+  // Fetch task submissions to check for completeness
+  const { data: taskSubmissionsRes } = useSWR(
+    props.assignment?.assignment_uuid && access_token
+      ? `${getAPIUrl()}assignments/${props.assignment.assignment_uuid}/tasks/submissions/me`
+      : null,
+    (url) => swrFetcher(url, access_token)
+  )
+
+  const taskSubmissions = React.useMemo(
+    () => (Array.isArray(taskSubmissionsRes) ? taskSubmissionsRes : []),
+    [taskSubmissionsRes]
+  )
+
+  // Fetch assignment tasks accurately
+  const { data: assignmentTasksRes } = useSWR(
+    props.assignment?.assignment_uuid && access_token
+      ? `${getAPIUrl()}assignments/${props.assignment.assignment_uuid}/tasks`
+      : null,
+    (url) => swrFetcher(url, access_token)
+  )
+
+  const assignmentTasks = React.useMemo(
+    () => (Array.isArray(assignmentTasksRes) ? assignmentTasksRes : []),
+    [assignmentTasksRes]
+  )
+  const totalTasks = assignmentTasks.length || 0
+
+  const isComplete = taskSubmissions.length >= totalTasks && totalTasks > 0
 
   const submitForGradingUI = async () => {
     if (props.assignment) {
@@ -1553,26 +1586,42 @@ function AssignmentTools(props: {
 
   if (!submission || submission.length === 0) {
     return (
-      <ConfirmationModal
-        confirmationButtonText={t('assignments.submit_assignment')}
-        confirmationMessage={t('assignments.submit_assignment_confirm')}
-        dialogTitle={t('assignments.submit_assignment_title')}
-        dialogTrigger={
-          <div className="bg-cyan-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
-            <span className="text-[10px] font-bold mb-1 uppercase">
-              {t('common.status')}
-            </span>
-            <div className="flex items-center space-x-2">
-              <BookOpenCheck size={17} />
-              <span className="text-xs font-bold">
-                {t('assignments.submit_for_grading')}
-              </span>
-            </div>
+      <div className="flex flex-col items-end gap-2">
+        {!isComplete && totalTasks > 0 && (
+          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 animate-pulse">
+            <Info size={14} />
+            <p className="text-[10px] font-bold uppercase tracking-tight">
+              {t('assignments.unsaved_tasks_warning')}
+            </p>
           </div>
-        }
-        functionToExecute={submitForGradingUI}
-        status="info"
-      />
+        )}
+        <ConfirmationModal
+          confirmationButtonText={t('assignments.submit_assignment')}
+          confirmationMessage={
+            !isComplete
+              ? t('assignments.submit_incomplete_warning')
+              : t('assignments.submit_assignment_confirm')
+          }
+          dialogTitle={t('assignments.submit_assignment_title')}
+          dialogTrigger={
+            <div
+              className={`${!isComplete ? 'bg-amber-600 hover:bg-amber-700' : 'bg-cyan-800 hover:bg-cyan-900'} rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition-all duration-300 ease-in-out`}
+            >
+              <span className="text-[10px] font-bold mb-1 uppercase opacity-80">
+                {t('common.status')}
+              </span>
+              <div className="flex items-center space-x-2">
+                <BookOpenCheck size={17} />
+                <span className="text-xs font-bold">
+                  {t('assignments.submit_for_grading')}
+                </span>
+              </div>
+            </div>
+          }
+          functionToExecute={submitForGradingUI}
+          status={!isComplete ? 'warning' : 'info'}
+        />
+      </div>
     )
   }
 

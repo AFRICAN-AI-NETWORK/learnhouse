@@ -120,20 +120,19 @@ function AssignmentBoxUI({
           )}
 
           {/* Student button - only show if authenticated */}
-          {view === 'student' &&
-            isAuthenticated &&
-            submission &&
-            submission.length <= 0 && (
-              <div
-                onClick={() => submitFC && submitFC()}
-                className="flex px-2 py-1 cursor-pointer rounded-md space-x-2 items-center justify-center mx-auto w-full sm:w-auto bg-linear-to-bl text-emerald-700 bg-emerald-300/20 hover:bg-emerald-300/10 hover:outline-offset-4 active:outline-offset-1 linear transition-all outline-offset-2 outline-dashed outline-emerald-500/60"
-              >
-                <Forward size={14} />
-                <p className="text-xs font-semibold">
-                  {t('activities.save_your_progress')}
-                </p>
-              </div>
-            )}
+          {view === 'student' && isAuthenticated && (
+            <div
+              onClick={() => submitFC && submitFC()}
+              className="flex px-2 py-1 cursor-pointer rounded-md space-x-2 items-center justify-center mx-auto w-full sm:w-auto bg-linear-to-bl text-emerald-700 bg-emerald-300/20 hover:bg-emerald-300/10 hover:outline-offset-4 active:outline-offset-1 linear transition-all outline-offset-2 outline-dashed outline-emerald-500/60"
+            >
+              <Forward size={14} />
+              <p className="text-xs font-semibold">
+                {submission && submission.length > 0
+                  ? t('activities.resubmit')
+                  : t('activities.save_your_progress')}
+              </p>
+            </div>
+          )}
 
           {/* Grading button */}
           {view === 'grading' && (
