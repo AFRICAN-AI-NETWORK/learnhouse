@@ -1,7 +1,20 @@
 'use client'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { signOut } from 'next-auth/react'
-import { Backpack, BadgeDollarSign, BookCopy, ChevronLeft, ChevronRight, HelpCircle, Home, LogOut, Package2, School, Settings, Users } from 'lucide-react'
+import {
+  Backpack,
+  BadgeDollarSign,
+  BookCopy,
+  ChevronLeft,
+  ChevronRight,
+  HelpCircle,
+  Home,
+  LogOut,
+  Package2,
+  School,
+  Settings,
+  Users,
+} from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import UserAvatar from '../../Objects/UserAvatar'
@@ -21,7 +34,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
-} from "@components/ui/dropdown-menu"
+} from '@components/ui/dropdown-menu'
 import { Check, Languages } from 'lucide-react'
 import { AVAILABLE_LANGUAGES } from '@/lib/languages'
 import { cn } from '@/lib/utils'
@@ -54,10 +67,16 @@ function DashLeftMenu() {
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng)
   }
-  const isPaymentsEnabled = useFeatureFlag({ path: ['features', 'payments', 'enabled'], defaultValue: true })
+  const isPaymentsEnabled = useFeatureFlag({
+    path: ['features', 'payments', 'enabled'],
+    defaultValue: true,
+  })
 
   async function logOutUI() {
-    const res = await signOut({ redirect: true, callbackUrl: getUriWithoutOrg('/login?orgslug=' + org.slug) })
+    const res = await signOut({
+      redirect: true,
+      callbackUrl: getUriWithoutOrg('/login?orgslug=' + org.slug),
+    })
     if (res) {
       getUriWithOrg(org.slug, '/')
     }
@@ -72,8 +91,8 @@ function DashLeftMenu() {
           'linear-gradient(180deg, rgba(20, 19, 19, 1) 0%, rgba(10, 10, 10, 1) 100%)',
       }}
       className={cn(
-        "flex flex-col text-white shadow-2xl h-screen sticky top-0 border-r border-white/5 transition-all duration-500 ease-in-out z-50",
-        isCollapsed ? "w-20" : "w-64"
+        'flex flex-col text-white shadow-2xl h-screen sticky top-0 border-r border-white/5 transition-all duration-500 ease-in-out z-50',
+        isCollapsed ? 'w-20' : 'w-64'
       )}
     >
       <div className="flex flex-col h-full px-4 relative">
@@ -85,7 +104,12 @@ function DashLeftMenu() {
           {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
         </button>
 
-        <div className={cn("flex h-24 items-center transition-all duration-500", isCollapsed ? "justify-center" : "px-3")}>
+        <div
+          className={cn(
+            'flex h-24 items-center transition-all duration-500',
+            isCollapsed ? 'justify-center' : 'px-3'
+          )}
+        >
           <Link
             className="flex items-center space-x-4 transition-all hover:opacity-80 group"
             href={'/'}
@@ -158,10 +182,12 @@ function DashLeftMenu() {
         <div className="flex flex-col pb-6 pt-2 mt-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className={cn(
-                "flex items-center space-x-3 cursor-pointer rounded-xl hover:bg-white/5 transition-all group duration-300 mx-2",
-                isCollapsed ? "justify-center px-0 py-2" : "px-3 py-2.5"
-              )}>
+              <div
+                className={cn(
+                  'flex items-center space-x-3 cursor-pointer rounded-xl hover:bg-white/5 transition-all group duration-300 mx-2',
+                  isCollapsed ? 'justify-center px-0 py-2' : 'px-3 py-2.5'
+                )}
+              >
                 <UserAvatar
                   width={isCollapsed ? 32 : 28}
                   rounded="rounded-full"
@@ -182,8 +208,12 @@ function DashLeftMenu() {
             <DropdownMenuContent side="right" align="end" className="w-56 ml-2">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <p className="text-sm font-medium">{session?.data?.user?.username}</p>
-                  <p className="text-xs text-gray-500">{session?.data?.user?.email}</p>
+                  <p className="text-sm font-medium">
+                    {session?.data?.user?.username}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {session?.data?.user?.email}
+                  </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -200,7 +230,9 @@ function DashLeftMenu() {
                         onClick={() => changeLanguage(language.code)}
                         className="flex items-center justify-between"
                       >
-                        <span>{t(language.translationKey)} ({language.nativeName})</span>
+                        <span>
+                          {t(language.translationKey)} ({language.nativeName})
+                        </span>
                         {i18n.language === language.code && <Check size={14} />}
                       </DropdownMenuItem>
                     ))}
@@ -209,13 +241,19 @@ function DashLeftMenu() {
               </DropdownMenuSub>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/dash/user-account/settings/general" className="flex items-center space-x-2 w-full">
+                <Link
+                  href="/dash/user-account/settings/general"
+                  className="flex items-center space-x-2 w-full"
+                >
                   <Settings size={16} />
                   <span>{t('common.settings')}</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dash/user-account/owned" className="flex items-center space-x-2 w-full">
+                <Link
+                  href="/dash/user-account/owned"
+                  className="flex items-center space-x-2 w-full"
+                >
                   <Package2 size={16} />
                   <span>{t('courses.my_courses')}</span>
                 </Link>
@@ -240,11 +278,20 @@ function DashLeftMenu() {
                   <div className="flex items-center space-x-1.5">
                     <span>AFRICAN AI</span>
                     {isEE ? (
-                      <ToolTip content="ENTERPRISE EDITION" side="top" slateBlack sideOffset={10}>
-                        <span className="bg-purple-500/10 text-purple-400/40 px-1 py-0.5 rounded-[3px] border border-purple-500/10 cursor-help transition-colors hover:text-purple-300">EE</span>
+                      <ToolTip
+                        content="ENTERPRISE EDITION"
+                        side="top"
+                        slateBlack
+                        sideOffset={10}
+                      >
+                        <span className="bg-purple-500/10 text-purple-400/40 px-1 py-0.5 rounded-[3px] border border-purple-500/10 cursor-help transition-colors hover:text-purple-300">
+                          EE
+                        </span>
                       </ToolTip>
                     ) : (
-                      <span className="border border-white/5 px-1 py-0.5 rounded-[3px]">CE</span>
+                      <span className="border border-white/5 px-1 py-0.5 rounded-[3px]">
+                        CE
+                      </span>
                     )}
                   </div>
                   <span>V0.1.0</span>
@@ -258,12 +305,24 @@ function DashLeftMenu() {
   )
 }
 
-const MenuLink = ({ href, icon, label, isCollapsed, isExternal }: { href: string, icon: React.ReactNode, label: string, isCollapsed: boolean, isExternal?: boolean }) => {
+const MenuLink = ({
+  href,
+  icon,
+  label,
+  isCollapsed,
+  isExternal,
+}: {
+  href: string
+  icon: React.ReactNode
+  label: string
+  isCollapsed: boolean
+  isExternal?: boolean
+}) => {
   const content = (
     <div
       className={cn(
-        "flex items-center px-3 py-2.5 rounded-xl transition-all duration-300 text-white/50 hover:text-white group relative hover:bg-white/5",
-        isCollapsed ? "justify-center space-x-0" : "space-x-3"
+        'flex items-center px-3 py-2.5 rounded-xl transition-all duration-300 text-white/50 hover:text-white group relative hover:bg-white/5',
+        isCollapsed ? 'justify-center space-x-0' : 'space-x-3'
       )}
     >
       <div className="group-hover:scale-110 transition-transform duration-300">
@@ -284,7 +343,12 @@ const MenuLink = ({ href, icon, label, isCollapsed, isExternal }: { href: string
 
   if (isExternal) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+      >
         {content}
       </a>
     )

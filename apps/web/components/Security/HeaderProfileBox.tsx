@@ -35,6 +35,13 @@ import { useTranslation } from 'react-i18next'
 import { Languages, Check } from 'lucide-react'
 import { AVAILABLE_LANGUAGES } from '@/lib/languages'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from '@components/ui/sheet'
 
 interface RoleInfo {
   name: string
@@ -296,30 +303,73 @@ export const HeaderProfileBox = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className="flex items-center space-x-2">
-                    <Languages size={14} />
-                    <span>{t('common.language')}</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      {AVAILABLE_LANGUAGES.map((language) => (
-                        <DropdownMenuItem
-                          key={language.code}
-                          onClick={() => changeLanguage(language.code)}
-                          className="flex items-center justify-between"
-                        >
-                          <span>
-                            {t(language.translationKey)} ({language.nativeName})
-                          </span>
-                          {i18n.language === language.code && (
-                            <Check size={14} />
-                          )}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
+                {/* ================= DESKTOP LANGUAGE ================= */}
+                <div className="hidden md:block">
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="flex items-center space-x-2">
+                      <Languages size={14} />
+                      <span>{t('common.language')}</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        {AVAILABLE_LANGUAGES.map((language) => (
+                          <DropdownMenuItem
+                            key={language.code}
+                            onClick={() => changeLanguage(language.code)}
+                            className="flex items-center justify-between"
+                          >
+                            <span>
+                              {t(language.translationKey)} (
+                              {language.nativeName})
+                            </span>
+                            {i18n.language === language.code && (
+                              <Check size={14} />
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                </div>
+
+                {/* ================= MOBILE LANGUAGE ================= */}
+                <div className="md:hidden">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="flex items-center space-x-2"
+                      >
+                        <Languages size={14} />
+                        <span>{t('common.language')}</span>
+                      </DropdownMenuItem>
+                    </SheetTrigger>
+
+                    <SheetContent side="right" className="w-[260px]">
+                      <SheetHeader>
+                        <SheetTitle>{t('common.language')}</SheetTitle>
+                      </SheetHeader>
+
+                      <div className="mt-6 space-y-2">
+                        {AVAILABLE_LANGUAGES.map((language) => (
+                          <button
+                            key={language.code}
+                            onClick={() => changeLanguage(language.code)}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 text-left"
+                          >
+                            <span>
+                              {t(language.translationKey)} (
+                              {language.nativeName})
+                            </span>
+                            {i18n.language === language.code && (
+                              <Check size={16} />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => signOut({ callbackUrl: '/' })}
