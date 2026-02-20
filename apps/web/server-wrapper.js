@@ -20,10 +20,26 @@ Object.keys(env).forEach((key) => {
   }
 })
 
-// Write runtime config JSON file
-const configPath = path.join(__dirname, 'runtime-config.json')
-fs.writeFileSync(configPath, JSON.stringify(runtimeConfig, null, 2), 'utf8')
-console.log(`✅ Wrote runtime-config.json to ${configPath}`)
+// Write runtime config JSON file to multiple possible search locations
+const configPaths = [
+  path.join(__dirname, 'runtime-config.json'),
+  path.join(__dirname, '.next', 'standalone', 'runtime-config.json'),
+]
+
+configPaths.forEach((cp) => {
+  try {
+    const dir = path.dirname(cp)
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(cp, JSON.stringify(runtimeConfig, null, 2), 'utf8')
+    console.log(`✅ Wrote runtime-config.json to ${cp}`)
+  } catch (error) {
+    console.warn(
+      `⚠️ Could not write runtime-config.json to ${cp}: ${error.message}`
+    )
+  }
+})
+
+console.log(`📋 Variables found: ${Object.keys(runtimeConfig).join(', ')}`)
 
 // Create client-side runtime config script for browser access
 const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`
