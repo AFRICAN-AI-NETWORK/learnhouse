@@ -93,9 +93,6 @@ function OrgAccess() {
   }
 
   async function createWaitlistCampaign() {
-    console.log('createWaitlistCampaign called')
-    console.log('campaignFormData:', campaignFormData)
-
     if (!campaignFormData.launch_datetime) {
       toast.error('Please provide a launch date and time.')
       return
@@ -117,8 +114,6 @@ function OrgAccess() {
         description: campaignFormData.description || null,
         launch_datetime: launchDatetime,
       }
-
-      console.log('Sending payload:', payload)
 
       const response = await fetch(`${getAPIUrl()}waitlist/config`, {
         method: 'POST',
