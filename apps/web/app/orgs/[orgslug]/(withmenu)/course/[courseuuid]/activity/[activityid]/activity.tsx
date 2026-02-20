@@ -919,10 +919,10 @@ function ActivityClient(props: ActivityClientProps) {
                               activity.published == true &&
                               activity.content.paid_access != false && (
                                 <AuthenticatedClientElement checkMethod="authentication">
+                                  <AIActivityAsk activity={activity} />
                                   {activity.activity_type !=
                                     'TYPE_ASSIGNMENT' && (
                                     <>
-                                      <AIActivityAsk activity={activity} />
                                       <ActivityChapterDropdown
                                         course={course}
                                         currentActivityId={
