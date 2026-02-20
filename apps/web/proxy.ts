@@ -15,11 +15,16 @@ export const config = {
      * 1. /api routes
      * 2. /_next (Next.js internals)
      * 3. /fonts (inside /public)
-     * 4. Umami Analytics
-     * 4. /examples (inside /public)
-     * 5. all root files inside /public (e.g. /favicon.ico)
+     * 4. /umami Analytics
+     * 5. /examples (inside /public)
+     * 6. /icons (PWA icons - inside /public)
+     * 7. /svg (inside /public)
+     * 8. /activities_types (inside /public)
+     * 9. /onboarding (inside /public)
+     * 10. Static files (sw.js, manifest.json, workbox, favicon, images)
+     * 11. all root files inside /public (e.g. /favicon.ico)
      */
-    '/((?!api|_next|fonts|umami|examples|[\\w-]+\\.\\w+).*)',
+    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
     '/payments/stripe/connect/oauth',
   ],
@@ -32,7 +37,6 @@ export default async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl
   const fullhost = req.headers ? req.headers.get('host') : ''
   const cookie_orgslug = req.cookies.get('learnhouse_current_orgslug')?.value
-
 
   // Out of orgslug paths & rewrite
   const standard_paths = ['/home']
@@ -92,7 +96,6 @@ export default async function proxy(req: NextRequest) {
     return response
   }
 
-
   // Dynamic Pages Editor
   if (pathname.match(/^\/course\/[^/]+\/activity\/[^/]+\/edit$/)) {
     return NextResponse.rewrite(new URL(`/editor${pathname}`, req.url))
@@ -145,27 +148,27 @@ export default async function proxy(req: NextRequest) {
   }
 
   if (pathname.startsWith('/sitemap.xml')) {
-    let orgslug: string;
+    let orgslug: string
 
     const LEARNHOUSE_DOMAIN = getLEARNHOUSE_DOMAIN_VAL()
     if (hosting_mode === 'multi') {
       orgslug = fullhost
         ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
-        : (default_org as string);
+        : (default_org as string)
     } else {
       // Single hosting mode
-      orgslug = default_org as string;
+      orgslug = default_org as string
     }
 
-    const sitemapUrl = new URL(`/api/sitemap`, req.url);
+    const sitemapUrl = new URL(`/api/sitemap`, req.url)
 
     // Create a response object
-    const response = NextResponse.rewrite(sitemapUrl);
+    const response = NextResponse.rewrite(sitemapUrl)
 
     // Set the orgslug in a header
-    response.headers.set('X-Sitemap-Orgslug', orgslug);
+    response.headers.set('X-Sitemap-Orgslug', orgslug)
 
-    return response;
+    return response
   }
 
   // Multi Organization Mode

@@ -1,4 +1,15 @@
 /** @type {import('common.next').NextConfig} */
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  // disable: process.env.NODE_ENV === 'development',
+  // Only disable if explicitly set to true
+  disable: process.env.DISABLE_PWA === 'true',
+  publicExcludes: ['!runtime-config.js', '!umami/**/*'],
+  buildExcludes: [/middleware-manifest\.json$/, /middleware-runtime\.js$/],
+})
+
 const nextConfig = {
   async rewrites() {
     return [
@@ -51,4 +62,4 @@ if (process.env.NODE_ENV === 'development') {
   )
 }
 
-module.exports = nextConfig
+module.exports = withPWA(nextConfig)
