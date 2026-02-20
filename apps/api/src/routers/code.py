@@ -1,13 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import List, Dict
 import httpx
 import time
 from config.config import LearnHouseConfig, get_learnhouse_config
+from src.services.code_execution import execute_and_grade, run_python_locally, TestCaseResult, CodeExecutionResponse, PISTON_URL
 
 router = APIRouter()
-
-from src.services.code_execution import execute_and_grade, run_python_locally, TestCaseResult, CodeExecutionResponse, PISTON_URL
 
 class CodeExecutionRequest(BaseModel):
     language: str
@@ -80,7 +79,7 @@ async def execute_code(
         # If not Python or not dev mode and Piston is down
         raise HTTPException(
             status_code=503,
-            detail=f"Code execution service unavailable. Piston is not running and local fallback only supports Python."
+            detail="Code execution service unavailable. Piston is not running and local fallback only supports Python."
         )
     except HTTPException:
         raise

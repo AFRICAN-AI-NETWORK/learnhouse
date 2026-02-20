@@ -78,7 +78,8 @@ async def run_piston_execution(language: str, version: str, code: str, stdin: st
                 response = await client.post(f"{PISTON_URL}/api/v2/execute", json=piston_payload, timeout=35.0)
                 if response.status_code != 200:
                     print(f"[Piston] Non-200 response ({response.status_code}) on attempt {attempt + 1}: {response.text}")
-                    if attempt < max_retries - 1: continue
+                    if attempt < max_retries - 1:
+                        continue
                     return None
                 return response.json()
             except Exception as e:
@@ -125,7 +126,8 @@ async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [
                     actual = tc_run.get("stdout", "").strip()
                     expected = tc.get("expectedOutput", "").strip()
                     passed = actual == expected
-                    if passed: response.passed_count += 1
+                    if passed:
+                        response.passed_count += 1
                     
                     response.test_results.append(TestCaseResult(
                         testUUID=tc.get("testUUID", ""),
