@@ -277,22 +277,38 @@ def _record_circuit_breaker_success() -> None:
     _circuit_breaker["state"] = "closed"
 
 
-def _record_circuit_breaker_failure() -> None:
-    """Record failed API call, update circuit breaker state"""
+def _record_circuit_breaker_failure(exception: Optional[Exception] = None) -> None:
+    """Record failed API call, update circuit breaker state
+    
+    Args:
+        exception: Optional exception object for detailed logging
+    """
     _circuit_breaker["failures"] += 1
     _circuit_breaker["last_failure_time"] = datetime.utcnow()
+    
+    # Log exception details for debugging (distinguish timeout vs 500 vs rate limit, etc.)
+    exception_details = ""
+    if exception:
+        exception_type = type(exception).__name__
+        exception_msg = str(exception)
+        exception_details = f" ({exception_type}: {exception_msg})"
     
     if _circuit_breaker["failures"] >= CIRCUIT_BREAKER_THRESHOLD:
         if _circuit_breaker["state"] != "open":
             logger.warning(
-                f"Circuit breaker opened after {_circuit_breaker['failures']} failures. "
+                f"Circuit breaker opened after {_circuit_breaker['failures']} failures{exception_details}. "
                 f"External API calls blocked for {CIRCUIT_BREAKER_TIMEOUT}s"
             )
         _circuit_breaker["state"] = "open"
     elif _circuit_breaker["state"] == "half_open":
         # Half-open test failed, back to open
-        logger.warning("Circuit breaker test request failed, returning to open state")
+        logger.warning(f"Circuit breaker test request failed{exception_details}, returning to open state")
         _circuit_breaker["state"] = "open"
+    else:
+        # Log intermediate failures for monitoring
+        logger.warning(
+            f"Circuit breaker failure {_circuit_breaker['failures']}/{CIRCUIT_BREAKER_THRESHOLD}{exception_details}"
+        )
 
 
 async def fetch_disposable_domains_from_github() -> Set[str]:
@@ -336,11 +352,11 @@ async def fetch_disposable_domains_from_github() -> Set[str]:
             return domains
             
     except Exception as e:
-        # Record failure in circuit breaker
-        _record_circuit_breaker_failure()
+        # Record failure in circuit breaker with exception details
+        _record_circuit_breaker_failure(exception=e)
         
         logger.error(
-            f"Failed to fetch disposable domains from GitHub: {e}. "
+            f"Failed to fetch disposable domains from GitHub: {type(e).__name__}: {e}. "
             f"Circuit breaker failures: {_circuit_breaker['failures']}/{CIRCUIT_BREAKER_THRESHOLD}"
         )
         raise
