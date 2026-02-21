@@ -160,8 +160,7 @@ async def create_referral_code_for_user(
     Raises:
         HTTPException: If user already has a code or code generation fails
     """
-    # RBAC check
-    await rbac_check(request, org_id, current_user, db_session)
+    # Note: No RBAC check - all authenticated users can generate referral codes
     
     # Check if user already has a referral code
     existing_code = await get_referral_code_by_user(user_id, org_id, db_session)
@@ -234,8 +233,7 @@ async def get_my_referral_code(
     Returns:
         ReferralCodeRead or None
     """
-    # RBAC check
-    await rbac_check(request, org_id, current_user, db_session)
+    # Note: No RBAC check - all authenticated users can view their referral codes
     
     referral_code = await get_referral_code_by_user(current_user.id, org_id, db_session)
     

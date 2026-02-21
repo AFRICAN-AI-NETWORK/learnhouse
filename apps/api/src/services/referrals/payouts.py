@@ -201,8 +201,7 @@ async def create_payout_request(
     Raises:
         HTTPException: If validation fails
     """
-    # RBAC check
-    await rbac_check(request, org_id, current_user, db_session)
+    # Note: No RBAC check - all authenticated users can request payouts
     
     # Validate amount
     await validate_payout_amount(current_user.id, amount, db_session)
@@ -364,8 +363,7 @@ async def get_payout_history(
     Returns:
         List of payout requests
     """
-    # RBAC check
-    await rbac_check(request, org_id, current_user, db_session)
+    # Note: No RBAC check - all authenticated users can view their payout history
     
     statement = select(ReferrerPayoutRequest).where(
         ReferrerPayoutRequest.referrer_user_id == current_user.id

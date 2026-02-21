@@ -190,7 +190,7 @@ async def create_user(
     # Referral system: Validate disposable email
     if user_object.referral_code:
         from src.services.referrals.fraud_prevention import validate_email_for_referral
-        is_valid, error_msg = validate_email_for_referral(user.email)
+        is_valid, error_msg = await validate_email_for_referral(user.email, db_session)
         if not is_valid:
             raise HTTPException(
                 status_code=400,

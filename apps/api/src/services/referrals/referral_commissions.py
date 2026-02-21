@@ -233,8 +233,7 @@ async def get_commission_balance(
     Returns:
         Dict with balance breakdown
     """
-    # RBAC check
-    await rbac_check(request, org_id, current_user, db_session)
+    # Note: No RBAC check - all authenticated users can view their commission balance
     
     # Get user
     user_statement = select(User).where(User.id == current_user.id)
@@ -292,8 +291,7 @@ async def get_commission_history(
     Returns:
         List of commission records
     """
-    # RBAC check
-    await rbac_check(request, org_id, current_user, db_session)
+    # Note: No RBAC check - all authenticated users can view their commission history
     
     # Query commissions
     statement = select(ReferralCommission).where(
