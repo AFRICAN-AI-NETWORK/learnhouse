@@ -2,9 +2,13 @@
 Payout Service - Manages referrer payout requests with Paystack integration
 Implements safe two-phase commit pattern to prevent balance loss
 """
+import os
+import json
+import base64
 import logging
 from datetime import datetime
 from typing import Optional
+from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select, and_
 from src.db.referrals.payout_requests import (
@@ -24,6 +28,99 @@ logger = logging.getLogger(__name__)
 
 # Configuration constants
 MINIMUM_PAYOUT_AMOUNT = 1.00  # Minimum $1 USD
+
+# Encryption configuration
+# CRITICAL: Set BANK_DATA_ENCRYPTION_KEY environment variable in production
+# Generate key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+_ENCRYPTION_KEY = os.getenv("BANK_DATA_ENCRYPTION_KEY")
+if not _ENCRYPTION_KEY:
+    logger.warning(
+        "BANK_DATA_ENCRYPTION_KEY not set! Using fallback key. "
+        "THIS IS INSECURE - SET ENCRYPTION KEY IN PRODUCTION!"
+    )
+    # Fallback key for development only - NEVER use in production
+    _ENCRYPTION_KEY = "dev-fallback-key-REPLACE-IN-PRODUCTION-12345678901234567890123="
+
+try:
+    _cipher_suite = Fernet(_ENCRYPTION_KEY.encode() if isinstance(_ENCRYPTION_KEY, str) else _ENCRYPTION_KEY)
+except Exception as e:
+    logger.error(f"Failed to initialize encryption: {e}. Generate key with: Fernet.generate_key()")
+    raise
+
+
+def encrypt_bank_data(bank_data: dict) -> str:
+    """
+    Encrypt sensitive bank account data (Production security)
+    
+    Args:
+        bank_data: Bank account information dict
+        
+    Returns:
+        Base64-encoded encrypted string
+        
+    Raises:
+        HTTPException: If encryption fails
+    """
+    try:
+        # Convert dict to JSON string
+        json_data = json.dumps(bank_data)
+        
+        # Encrypt
+        encrypted_bytes = _cipher_suite.encrypt(json_data.encode('utf-8'))
+        
+        # Return as base64 string for database storage
+        encrypted_str = base64.b64encode(encrypted_bytes).decode('utf-8')
+        
+        logger.debug("Successfully encrypted bank data")
+        return encrypted_str
+        
+    except Exception as e:
+        logger.error(f"Failed to encrypt bank data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to secure bank account information"
+        )
+
+
+def decrypt_bank_data(encrypted_data: str) -> dict:
+    """
+    Decrypt bank account data (Production security)
+    
+    Args:
+        encrypted_data: Base64-encoded encrypted string
+        
+    Returns:
+        Decrypted bank account information dict
+        
+    Raises:
+        HTTPException: If decryption fails
+    """
+    try:
+        # Decode from base64
+        encrypted_bytes = base64.b64decode(encrypted_data.encode('utf-8'))
+        
+        # Decrypt
+        decrypted_bytes = _cipher_suite.decrypt(encrypted_bytes)
+        
+        # Parse JSON
+        json_data = decrypted_bytes.decode('utf-8')
+        bank_data = json.loads(json_data)
+        
+        logger.debug("Successfully decrypted bank data")
+        return bank_data
+        
+    except InvalidToken:
+        logger.error("Invalid encryption key or corrupted data")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to decrypt bank account information - invalid key"
+        )
+    except Exception as e:
+        logger.error(f"Failed to decrypt bank data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to access bank account information"
+        )
 
 
 async def validate_payout_amount(
@@ -214,6 +311,9 @@ async def create_payout_request(
             detail="You already have a pending payout request"
         )
     
+    # Encrypt sensitive bank account data (Production security)
+    encrypted_bank_info = encrypt_bank_data(bank_details.model_dump())
+    
     # Create payout request (REQUESTED status - no balance deduction yet)
     payout = ReferrerPayoutRequest(
         org_id=org_id,
@@ -221,7 +321,7 @@ async def create_payout_request(
         total_amount=amount,
         currency="USD",  # Base currency
         status=PayoutStatus.REQUESTED,
-        bank_account_info=bank_details.model_dump(),  # TODO: Encrypt in production
+        bank_account_info=encrypted_bank_info,  # Encrypted for security
         request_date=datetime.now(),
         creation_date=datetime.now(),
         update_date=datetime.now()
@@ -278,11 +378,14 @@ async def process_payout_request(
         if not user:
             raise ValueError(f"User {payout.referrer_user_id} not found")
         
+        # Decrypt bank account information (Production security)
+        decrypted_bank_info = decrypt_bank_data(payout.bank_account_info)
+        
         # Create Paystack transfer recipient
         recipient_result = await create_paystack_transfer_recipient(
             email=user.email,
             name=f"{user.first_name} {user.last_name}",
-            bank_account_info=payout.bank_account_info,
+            bank_account_info=decrypted_bank_info,
             currency="NGN"  # TODO: Determine from user's country
         )
         
