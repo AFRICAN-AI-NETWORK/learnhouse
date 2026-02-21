@@ -2,6 +2,7 @@
 Fraud Prevention Utilities for Referral System
 Implements disposable email detection and domain validation with dynamic domain lists
 """
+import asyncio
 import logging
 import re
 import httpx
@@ -21,15 +22,33 @@ _domain_cache = {
 }
 CACHE_TTL_SECONDS = 3600  # 1 hour
 
-# Minimal fallback sets (used only if database is unavailable)
-FALLBACK_DISPOSABLE_DOMAINS: Set[str] = {
-    "10minutemail.com", "guerrillamail.com", "mailinator.com", 
+# Thread-safe lock for cache refresh (prevents concurrent DB queries)
+_cache_refresh_lock = asyncio.Lock()
+
+# Circuit breaker state for external API calls
+_circuit_breaker = {
+    "failures": 0,
+    "last_failure_time": None,
+    "state": "closed",  # closed, open, half_open
+}
+CIRCUIT_BREAKER_THRESHOLD = 3  # Open circuit after 3 consecutive failures
+CIRCUIT_BREAKER_TIMEOUT = 300  # Try again after 5 minutes
+CIRCUIT_BREAKER_HALF_OPEN_TIMEOUT = 60  # In half-open state, try after 1 minute
     "tempmail.com", "throwaway.email"
 }
 
 FALLBACK_LEGITIMATE_DOMAINS: Set[str] = {
     "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"
 }
+
+# Pre-compiled regex patterns for disposable email detection (performance optimization)
+DISPOSABLE_PATTERNS = [
+    re.compile(r"^temp.*"),  # temp*, tempmail*, etc.
+    re.compile(r"^trash.*"),  # trashmail*, etc.
+    re.compile(r"^fake.*"),  # fakemail*, etc.
+    re.compile(r"^throwaway.*"),  # throwaway*, etc.
+    re.compile(r".*\d{5,}\..*"),  # Domains with many digits
+]
 
 
 def extract_email_domain(email: str) -> str:
@@ -50,40 +69,43 @@ def extract_email_domain(email: str) -> str:
 
 async def load_domain_lists_from_db(db_session: Session) -> None:
     """
-    Load domain lists from database into memory cache
+    Load domain lists from database into memory cache (thread-safe)
+    Uses asyncio.Lock to prevent concurrent cache refreshes
     
     Args:
         db_session: Database session
     """
-    try:
-        # Load disposable domains
-        disposable_stmt = select(EmailDomainList).where(
-            EmailDomainList.list_type == DomainListType.DISPOSABLE,
-            EmailDomainList.is_active == True
-        )
-        disposable_domains = db_session.exec(disposable_stmt).all()
-        _domain_cache["disposable"] = {d.domain for d in disposable_domains}
+    # Acquire lock to prevent concurrent refreshes (performance + consistency)
+    async with _cache_refresh_lock:
+        # Double-check if another coroutine already refreshed the cache
+        if not is_cache_expired():
+            return
         
-        # Load legitimate domains
-        legitimate_stmt = select(EmailDomainList).where(
-            EmailDomainList.list_type == DomainListType.LEGITIMATE,
-            EmailDomainList.is_active == True
-        )
-        legitimate_domains = db_session.exec(legitimate_stmt).all()
-        _domain_cache["legitimate"] = {d.domain for d in legitimate_domains}
-        
-        _domain_cache["last_updated"] = datetime.utcnow()
-        
-        logger.info(
-            f"Loaded {len(_domain_cache['disposable'])} disposable and "
-            f"{len(_domain_cache['legitimate'])} legitimate domains from database"
-        )
-    except Exception as e:
-        logger.error(f"Failed to load domain lists from database: {e}")
-        # Use fallback sets
-        _domain_cache["disposable"] = FALLBACK_DISPOSABLE_DOMAINS.copy()
-        _domain_cache["legitimate"] = FALLBACK_LEGITIMATE_DOMAINS.copy()
-        _domain_cache["last_updated"] = datetime.utcnow()
+        try:
+            # Fetch all active domains in one query (performance optimization)
+            stmt = select(EmailDomainList).where(EmailDomainList.is_active == True)
+            all_domains = db_session.exec(stmt).all()
+            
+            # Sort by type in Python (more efficient than two DB queries)
+            _domain_cache["disposable"] = {
+                d.domain for d in all_domains if d.list_type == DomainListType.DISPOSABLE
+            }
+            _domain_cache["legitimate"] = {
+                d.domain for d in all_domains if d.list_type == DomainListType.LEGITIMATE
+            }
+            
+            _domain_cache["last_updated"] = datetime.utcnow()
+            
+            logger.info(
+                f"Loaded {len(_domain_cache['disposable'])} disposable and "
+                f"{len(_domain_cache['legitimate'])} legitimate domains from database"
+            )
+        except Exception as e:
+            logger.error(f"Failed to load domain lists from database: {e}")
+            # Use fallback sets
+            _domain_cache["disposable"] = FALLBACK_DISPOSABLE_DOMAINS.copy()
+            _domain_cache["legitimate"] = FALLBACK_LEGITIMATE_DOMAINS.copy()
+            _domain_cache["last_updated"] = datetime.utcnow()
 
 
 def is_cache_expired() -> bool:
@@ -151,17 +173,9 @@ async def is_disposable_email(email: str, db_session: Session) -> bool:
         logger.warning(f"Disposable email detected: {email}")
         return True
     
-    # Pattern-based detection (common patterns)
-    disposable_patterns = [
-        r"^temp.*",  # temp*, tempmail*, etc.
-        r"^trash.*",  # trashmail*, etc.
-        r"^fake.*",  # fakemail*, etc.
-        r"^throwaway.*",  # throwaway*, etc.
-        r".*\d{5,}\..*",  # Domains with many digits
-    ]
-    
-    for pattern in disposable_patterns:
-        if re.match(pattern, domain):
+    # Pattern-based detection using pre-compiled patterns (performance optimization)
+    for pattern in DISPOSABLE_PATTERNS:
+        if pattern.match(domain):
             logger.warning(f"Disposable email pattern detected: {email}")
             return True
     
@@ -214,16 +228,81 @@ async def validate_email_for_referral(email: str, db_session: Session) -> tuple[
     return True, ""
 
 
+def _check_circuit_breaker() -> bool:
+    """
+    Check if circuit breaker allows API call
+    
+    Returns:
+        True if call is allowed, False if circuit is open
+    """
+    state = _circuit_breaker["state"]
+    
+    if state == "closed":
+        return True
+    
+    if state == "open":
+        # Check if timeout has passed
+        last_failure = _circuit_breaker["last_failure_time"]
+        if last_failure and (datetime.utcnow() - last_failure).total_seconds() > CIRCUIT_BREAKER_TIMEOUT:
+            # Move to half-open state
+            _circuit_breaker["state"] = "half_open"
+            logger.info("Circuit breaker moved to half-open state, allowing test request")
+            return True
+        return False
+    
+    if state == "half_open":
+        # Allow one test request
+        return True
+    
+    return False
+
+
+def _record_circuit_breaker_success() -> None:
+    """Record successful API call, reset circuit breaker"""
+    _circuit_breaker["failures"] = 0
+    _circuit_breaker["last_failure_time"] = None
+    if _circuit_breaker["state"] != "closed":
+        logger.info("Circuit breaker reset to closed state after successful request")
+    _circuit_breaker["state"] = "closed"
+
+
+def _record_circuit_breaker_failure() -> None:
+    """Record failed API call, update circuit breaker state"""
+    _circuit_breaker["failures"] += 1
+    _circuit_breaker["last_failure_time"] = datetime.utcnow()
+    
+    if _circuit_breaker["failures"] >= CIRCUIT_BREAKER_THRESHOLD:
+        if _circuit_breaker["state"] != "open":
+            logger.warning(
+                f"Circuit breaker opened after {_circuit_breaker['failures']} failures. "
+                f"External API calls blocked for {CIRCUIT_BREAKER_TIMEOUT}s"
+            )
+        _circuit_breaker["state"] = "open"
+    elif _circuit_breaker["state"] == "half_open":
+        # Half-open test failed, back to open
+        logger.warning("Circuit breaker test request failed, returning to open state")
+        _circuit_breaker["state"] = "open"
+
+
 async def fetch_disposable_domains_from_github() -> Set[str]:
     """
-    Fetch disposable email domains from GitHub repository
+    Fetch disposable email domains from GitHub repository with circuit breaker pattern
     
     Returns:
         Set of disposable domains
         
     Raises:
-        Exception if fetch fails
+        Exception if fetch fails or circuit is open
     """
+    # Check circuit breaker before attempting call
+    if not _check_circuit_breaker():
+        failures = _circuit_breaker["failures"]
+        logger.warning(
+            f"Circuit breaker is open ({failures} failures). "
+            f"Skipping GitHub API call, using cached/fallback data"
+        )
+        raise Exception(f"Circuit breaker open after {failures} failures")
+    
     # Primary source: disposable-email-domains repository
     url = "https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt"
     
@@ -239,11 +318,20 @@ async def fetch_disposable_domains_from_github() -> Set[str]:
                 if line and not line.startswith("#"):
                     domains.add(line)
             
+            # Success - reset circuit breaker
+            _record_circuit_breaker_success()
+            
             logger.info(f"Fetched {len(domains)} disposable domains from GitHub")
             return domains
             
     except Exception as e:
-        logger.error(f"Failed to fetch disposable domains from GitHub: {e}")
+        # Record failure in circuit breaker
+        _record_circuit_breaker_failure()
+        
+        logger.error(
+            f"Failed to fetch disposable domains from GitHub: {e}. "
+            f"Circuit breaker failures: {_circuit_breaker['failures']}/{CIRCUIT_BREAKER_THRESHOLD}"
+        )
         raise
 
 
@@ -391,6 +479,9 @@ def detect_sequential_emails(emails: list[str]) -> bool:
     if len(emails) < 3:
         return False
     
+    # Regex to extract trailing digits from username (handles multi-digit numbers)
+    trailing_digits_pattern = re.compile(r"^(.+?)(\d+)$")
+    
     # Group by domain
     by_domain = {}
     for email in emails:
@@ -408,21 +499,29 @@ def detect_sequential_emails(emails: list[str]) -> bool:
         # Extract usernames
         usernames = [e.split("@")[0] for e in domain_emails]
         
-        # Check if usernames follow pattern: user1, user2, user3
+        # Check if usernames follow pattern: user1, user2, user3 (or user9, user10, user11)
         sequential_count = 0
         for i in range(len(usernames) - 1):
             curr = usernames[i]
             next_user = usernames[i + 1]
             
-            # Simple pattern: ends with incrementing numbers
-            if curr[:-1] == next_user[:-1]:
-                try:
-                    curr_num = int(curr[-1])
-                    next_num = int(next_user[-1])
-                    if next_num == curr_num + 1:
-                        sequential_count += 1
-                except ValueError:
-                    continue
+            # Extract base and number using regex (handles multi-digit numbers)
+            curr_match = trailing_digits_pattern.match(curr)
+            next_match = trailing_digits_pattern.match(next_user)
+            
+            if curr_match and next_match:
+                curr_base, curr_num_str = curr_match.groups()
+                next_base, next_num_str = next_match.groups()
+                
+                # Check if base matches and numbers are sequential
+                if curr_base == next_base:
+                    try:
+                        curr_num = int(curr_num_str)
+                        next_num = int(next_num_str)
+                        if next_num == curr_num + 1:
+                            sequential_count += 1
+                    except ValueError:
+                        continue
         
         if sequential_count >= 2:
             logger.warning(f"Sequential email pattern detected for domain {domain}")
