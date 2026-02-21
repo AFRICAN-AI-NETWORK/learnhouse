@@ -464,7 +464,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               </Form.Control>
             </FormField>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-6">
+            <div className="flex sm:flex-row gap-3 pt-6">
               <button
                 type="button"
                 onClick={() => setStep(1)}
@@ -494,7 +494,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               onChange={setSelectedCourses}
             />
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-6">
+            <div className="flex  sm:flex-row gap-3 pt-6">
               <button
                 type="button"
                 onClick={() => setStep(2)}
@@ -515,7 +515,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                     <UserPlus size={20} />
                   )}
                   <span>
-                    {isSubmitting ? t('common.loading') : 'Join Waitlist 🚀'}
+                    {isSubmitting ? t('common.loading') : 'Join Waitlist'}
                   </span>
                 </button>
               </Form.Submit>
