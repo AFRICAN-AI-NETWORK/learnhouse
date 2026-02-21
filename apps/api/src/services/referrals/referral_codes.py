@@ -8,6 +8,7 @@ import string
 from datetime import datetime
 from typing import Optional
 from fastapi import HTTPException, Request, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select, and_
 from config.config import get_learnhouse_config
 from src.db.referrals.referral_codes import (
@@ -148,8 +149,7 @@ async def create_referral_code_for_user(
     db_session: Session
 ) -> ReferralCode:
     """
-    Create a permanent referral code for a user (Core logic - DRY)
-    Enforces one code per user
+    Create a permanent referral code for a user
     
     Args:
         request: FastAPI request
@@ -164,7 +164,6 @@ async def create_referral_code_for_user(
     Raises:
         HTTPException: If user already has a code or code generation fails
     """
-    # Note: No RBAC check - all authenticated users can generate referral codes
     
     # Check if user already has a referral code
     existing_code = await get_referral_code_by_user(user_id, org_id, db_session)
@@ -188,8 +187,12 @@ async def create_referral_code_for_user(
             detail="Failed to generate unique referral code. Please try again."
         )
     
+    # Get base URL once for efficiency (avoid repeated config reads)
+    config = get_learnhouse_config()
+    base_url = config.hosting_config.app_base_url
+    
     # Build referral link
-    referral_link = build_referral_link(code)
+    referral_link = build_referral_link(code, base_url)
     
     # Create referral code
     referral_code = ReferralCode(
@@ -211,8 +214,16 @@ async def create_referral_code_for_user(
         user.has_referral_code = True
         db_session.add(user)
     
-    db_session.commit()
-    db_session.refresh(referral_code)
+    try:
+        db_session.commit()
+        db_session.refresh(referral_code)
+    except IntegrityError as e:
+        db_session.rollback()
+        logger.error(f"Database integrity error creating referral code: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create referral code due to uniqueness constraint. Please try again."
+        )
     
     logger.info(f"Created referral code {code} for user {user_id}")
     
@@ -237,7 +248,6 @@ async def get_my_referral_code(
     Returns:
         ReferralCodeRead or None
     """
-    # Note: No RBAC check - all authenticated users can view their referral codes
     
     referral_code = await get_referral_code_by_user(current_user.id, org_id, db_session)
     
