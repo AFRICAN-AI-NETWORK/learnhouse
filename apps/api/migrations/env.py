@@ -17,6 +17,13 @@ lh_config = get_learnhouse_config()
 # access to the values within the .ini file in use.
 config = context.config
 
+# Override sqlalchemy.url with the app's configured connection string
+if lh_config.database_config and lh_config.database_config.sql_connection_string:
+    config.set_main_option(
+        "sqlalchemy.url",
+        lh_config.database_config.sql_connection_string,
+    )
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
