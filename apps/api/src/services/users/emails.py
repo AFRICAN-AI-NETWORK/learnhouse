@@ -78,11 +78,11 @@ def send_account_creation_email(
                 
                 <p style="margin-top: 20px;">
                     Best regards,<br>
-                    <strong>The African AI Network Team</strong>
+                    <strong>The {org_name} Team</strong>
                 </p>
             </div>
             <div class="footer">
-                <p>&copy; 2026 African AI Network. All rights reserved.</p>
+                <p>&copy; 2026 {org_name}. All rights reserved.</p>
                 <p style="margin-top: 10px;">
                     <a href="https://africanainetwork.com">Visit our website</a> | 
                     <a href="https://lms.africanainetwork.com">LMS Platform</a>
@@ -157,7 +157,7 @@ def send_password_reset_email(
                 </p>
             </div>
             <div class="footer">
-                <p>&copy; 2026 African AI Network. All rights reserved.</p>
+                <p>&copy; 2026 {organization.name}. All rights reserved.</p>
             </div>
         </div>
     </body>

@@ -21,6 +21,7 @@ from src.security.features_utils.usage import (
 )
 from src.services.users.users import generate_verification_token
 from src.services.users.emails import send_account_creation_email
+from src.services.waitlist.emails import send_waitlist_confirmation_email
 
 
 async def create_waitlist_user(
@@ -200,13 +201,19 @@ async def create_waitlist_user(
     )
     
     # Send account creation email with verification link
-    # Note: This sends the standard verification email
-    # A separate waitlist confirmation email could be sent here
     send_account_creation_email(
         user=UserRead.model_validate(user),
         email=user.email,
         organization=OrganizationRead.model_validate(org),
         verification_token=verification_token,
+    )
+    
+    # Send waitlist confirmation email with proper organization details
+    send_waitlist_confirmation_email(
+        user=UserRead.model_validate(user),
+        email=user.email,
+        organization=OrganizationRead.model_validate(org),
+        waitlist_config=waitlist,
     )
     
     # ========== 6. DATABASE TRACKING PHASE ==========
