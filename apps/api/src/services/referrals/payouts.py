@@ -198,11 +198,6 @@ async def get_payout_currency(
             f"Using default currency: {DEFAULT_PAYOUT_CURRENCY}"
         )
     
-    # Option 2: Check organization settings (future enhancement)
-    # if org_id and db_session:
-    #     org_config = get_org_payout_config(org_id, db_session)
-    #     if org_config and org_config.payout_currency:
-    #         return org_config.payout_currency
     
     # Option 3: Fallback to default
     return DEFAULT_PAYOUT_CURRENCY

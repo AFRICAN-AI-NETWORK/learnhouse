@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select, and_
+from config.config import get_learnhouse_config
 from src.db.referrals.referral_codes import (
     ReferralCode,
     ReferralCodeCreate,
@@ -42,17 +43,20 @@ def generate_unique_code(length: int = REFERRAL_CODE_LENGTH) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-def build_referral_link(code: str, base_url: str = "https://app.learnhouse.com") -> str:
+def build_referral_link(code: str, base_url: Optional[str] = None) -> str:
     """
     Build referral link from code (DRY utility)
     
     Args:
         code: Referral code
-        base_url: Base application URL
+        base_url: Base application URL (optional, reads from config if not provided)
         
     Returns:
         Full referral link
     """
+    if base_url is None:
+        config = get_learnhouse_config()
+        base_url = config.hosting_config.app_base_url
     return f"{base_url}/ref/{code}"
 
 

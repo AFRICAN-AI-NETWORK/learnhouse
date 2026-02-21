@@ -16,7 +16,7 @@ class ReferralCodeStatus(str, Enum):
 
 class ReferralCodeBase(SQLModel):
     """Base model for referral codes"""
-    code: str = Field(max_length=50, unique=True, index=True)
+    code: str = Field(max_length=50, sa_column_kwargs={"unique": True}, index=True)
     referral_link: str = Field(max_length=255)
     status: ReferralCodeStatus = Field(default=ReferralCodeStatus.ACTIVE)
 
