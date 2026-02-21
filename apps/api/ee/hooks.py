@@ -34,6 +34,14 @@ def register_routers(v1_router: APIRouter):
         tags=["payments"]
     )
     
+    # Referrals
+    from ee.routers import referrals
+    v1_router.include_router(
+        referrals.router, 
+        prefix="/referrals", 
+        tags=["referrals"]
+    )
+    
     # EE Info
     v1_router.include_router(
         info.router,

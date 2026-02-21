@@ -187,6 +187,16 @@ async def create_user(
             detail="Email already exists",
         )
 
+    # Referral system: Validate disposable email
+    if user_object.referral_code:
+        from src.services.referrals.fraud_prevention import validate_email_for_referral
+        is_valid, error_msg = validate_email_for_referral(user.email)
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail=error_msg,
+            )
+
     # Exclude unset values
     user_data = user.dict(exclude_unset=True)
     for key, value in user_data.items():
@@ -196,6 +206,38 @@ async def create_user(
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+
+    # Referral system: Track referral if code provided
+    referral_code_id = None
+    if user_object.referral_code:
+        try:
+            from src.services.referrals.referral_tracking import validate_and_track_referral
+            
+            referral_code_obj, fraud_score = await validate_and_track_referral(
+                request=request,
+                referred_user_id=user.id,
+                referral_code=user_object.referral_code,
+                device_id=user_object.device_id,
+                browser_fingerprint=user_object.browser_fingerprint or {},
+                db_session=db_session
+            )
+            referral_code_id = referral_code_obj.id
+            
+            # Log fraud score
+            if fraud_score >= 75:
+                from src.services.referrals.referral_tracking import logger
+                logger.warning(
+                    f"High fraud risk score {fraud_score} for user {user.id} "
+                    f"with referral code {user_object.referral_code}"
+                )
+        except HTTPException as e:
+            # Log referral validation error but allow signup to continue
+            from src.services.referrals.referral_tracking import logger
+            logger.warning(f"Referral validation failed for user {user.id}: {e.detail}")
+        except Exception as e:
+            # Log unexpected errors but don't block signup
+            from src.services.referrals.referral_tracking import logger
+            logger.error(f"Unexpected error tracking referral for user {user.id}: {str(e)}")
 
     # Link user and organization
     user_organization = UserOrganization(

@@ -357,6 +357,23 @@ async def initialize_transaction(
         
         # Create initial payment user with pending status
         # Include discount information if discount code was validated
+        # REFERRAL SYSTEM: Check if user has referral tracking
+        referral_code_id = None
+        try:
+            from sqlmodel import and_
+            from src.db.referrals.referral_tracking import ReferralTracking
+            
+            tracking_statement = select(ReferralTracking).where(
+                ReferralTracking.referred_user_id == current_user.id
+            )
+            tracking = db_session.exec(tracking_statement).first()
+            
+            if tracking:
+                referral_code_id = tracking.referral_code_id
+                logger.info(f"User {current_user.id} has referral tracking with code {referral_code_id}")
+        except Exception as e:
+            logger.warning(f"Error checking referral tracking: {str(e)}")
+        
         payment_user = await create_payment_user(
             request=request,
             org_id=org_id,
@@ -369,6 +386,7 @@ async def initialize_transaction(
             },
             current_user=InternalUser(),
             db_session=db_session,
+            referral_code_id=referral_code_id,  # Pass referral code if exists
         )
         
         if not payment_user:
