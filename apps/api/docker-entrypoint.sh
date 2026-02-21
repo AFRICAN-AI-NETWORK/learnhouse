@@ -77,8 +77,7 @@ export PYTHONIOENCODING=utf-8
 PORT=${LEARNHOUSE_PORT:-9000}
 HOST=0.0.0.0  # Bind to all interfaces for healthcheck
 
-echo "Running database migrations..."
-uv run alembic upgrade head
+echo "Starting LearnHouse backend on ${HOST}:${PORT}..."
 
 # Start the FastAPI application
 exec uv run uvicorn app:app --host "$HOST" --port "$PORT"

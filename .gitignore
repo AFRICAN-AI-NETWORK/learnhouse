@@ -54,3 +54,7 @@ apps/web/runtime-config.json
 
 REFERRAL_SYSTEM_IMPLEMENTATION_PLAN.md
 .agent/implementation_plans/code-editor-task-type.md
+.agent/implementation_plans/check.txt
+.gitignore
+.agent/implementation_plans/coolifyfrontenddeploymentlogs.txt
+.agent/implementation_plans/coolifybackenddeploymentlogs.txt
