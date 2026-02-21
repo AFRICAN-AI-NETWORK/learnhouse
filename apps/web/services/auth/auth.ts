@@ -215,6 +215,9 @@ interface NewAccountBody {
   password: string
   org_slug: string
   org_id: string
+  referral_code?: string
+  device_id?: string
+  browser_fingerprint?: string
 }
 
 export async function signup(body: NewAccountBody): Promise<any> {

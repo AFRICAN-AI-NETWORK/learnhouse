@@ -1,0 +1,110 @@
+'use client'
+import React, { useState } from 'react'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
+import useSWR from 'swr'
+import ReferralCodeCard from '@components/Referrals/ReferralCodeCard'
+import CommissionBalanceCard from '@components/Referrals/CommissionBalanceCard'
+import CommissionHistoryList from '@components/Referrals/CommissionHistoryList'
+import RequestPayoutModal from '@components/Referrals/RequestPayoutModal'
+import {
+  getMyReferralCode,
+  generateReferralCode,
+  getCommissionBalance,
+  getCommissionHistory,
+} from '@services/referral/referral.service'
+import type {
+  ReferralCode,
+  CommissionBalance,
+  CommissionRecord,
+} from 'types/referral'
+
+function ReferralsPage() {
+  const session = useLHSession() as any
+  const access_token: string = session?.data?.tokens?.access_token ?? ''
+
+  const [payoutOpen, setPayoutOpen] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  // ── Data fetching with SWR ──────────────────────────────────────────────────
+  const {
+    data: codeData,
+    isLoading: codeLoading,
+    mutate: mutateCode,
+  } = useSWR(
+    access_token ? ['referral-code', access_token] : null,
+    ([, token]) => getMyReferralCode(token)
+  )
+
+  const { data: balanceData, isLoading: balanceLoading } = useSWR(
+    access_token ? ['referral-balance', access_token] : null,
+    ([, token]) => getCommissionBalance(token)
+  )
+
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    error: historyError,
+  } = useSWR(
+    access_token ? ['referral-history', access_token] : null,
+    ([, token]) => getCommissionHistory(token)
+  )
+
+  // ── Derived values ──────────────────────────────────────────────────────────
+  const referralCode: ReferralCode | null = codeData?.data ?? null
+  const balance: CommissionBalance | null = balanceData?.data ?? null
+  const records: CommissionRecord[] = historyData?.data ?? []
+  const historyErr =
+    historyData?.error ?? (historyError ? 'Failed to load history' : undefined)
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handleGenerate = async () => {
+    if (!access_token) return
+    setIsGenerating(true)
+    const result = await generateReferralCode(access_token)
+    if (result.success) {
+      mutateCode({ success: true, data: result.data })
+    }
+    setIsGenerating(false)
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  return (
+    <div className="ml-10 mr-10 mx-auto space-y-6 py-6">
+      <div className="flex flex-col bg-white nice-shadow rounded-xl px-6 py-4 mb-2">
+        <h1 className="font-bold text-2xl text-gray-800">Referrals</h1>
+        <p className="text-gray-500 text-sm">
+          Earn commissions by referring new users to the platform.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ReferralCodeCard
+          referralCode={referralCode}
+          isLoading={codeLoading}
+          onGenerate={handleGenerate}
+          isGenerating={isGenerating}
+        />
+        <CommissionBalanceCard
+          balance={balance}
+          isLoading={balanceLoading}
+          onRequestPayout={() => setPayoutOpen(true)}
+        />
+      </div>
+
+      <CommissionHistoryList
+        records={records}
+        isLoading={historyLoading}
+        error={historyErr}
+      />
+
+      <RequestPayoutModal
+        open={payoutOpen}
+        onOpenChange={setPayoutOpen}
+        balance={balance}
+        access_token={access_token}
+      />
+    </div>
+  )
+}
+
+export default ReferralsPage
