@@ -24,6 +24,7 @@ class ReferralCommissionBase(SQLModel):
     payment_completion_date: Optional[datetime] = None
     refund_period_expiration_date: Optional[datetime] = None
     payout_date: Optional[datetime] = None
+    payout_request_id: Optional[int] = None  # Links to ReferrerPayoutRequest when paid
 
 
 class ReferralCommission(ReferralCommissionBase, table=True):
