@@ -11,7 +11,6 @@ Runs periodically via APScheduler to:
 
 import asyncio
 from datetime import datetime
-import os
 
 from src.services.waitlist.emails import (
     process_waitlist_activations,
