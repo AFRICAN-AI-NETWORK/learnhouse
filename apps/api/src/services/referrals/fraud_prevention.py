@@ -71,12 +71,15 @@ def extract_email_domain(email: str) -> str:
 
 async def load_domain_lists_from_db(db_session: Session) -> None:
     """
-    Load domain lists from database into memory cache (thread-safe)
+    Load domain lists from database into memory cache (thread-safe, atomic updates)
     Uses asyncio.Lock to prevent concurrent cache refreshes
+    Builds new cache dict locally and swaps reference atomically to prevent partial reads
     
     Args:
         db_session: Database session
     """
+    global _domain_cache
+    
     # Acquire lock to prevent concurrent refreshes (performance + consistency)
     async with _cache_refresh_lock:
         # Double-check if another coroutine already refreshed the cache
@@ -88,15 +91,19 @@ async def load_domain_lists_from_db(db_session: Session) -> None:
             stmt = select(EmailDomainList).where(EmailDomainList.is_active == True)
             all_domains = db_session.exec(stmt).all()
             
-            # Sort by type in Python (more efficient than two DB queries)
-            _domain_cache["disposable"] = {
-                d.domain for d in all_domains if d.list_type == DomainListType.DISPOSABLE
-            }
-            _domain_cache["legitimate"] = {
-                d.domain for d in all_domains if d.list_type == DomainListType.LEGITIMATE
+            # Build new cache dict locally (atomic update preparation)
+            new_cache = {
+                "disposable": {
+                    d.domain for d in all_domains if d.list_type == DomainListType.DISPOSABLE
+                },
+                "legitimate": {
+                    d.domain for d in all_domains if d.list_type == DomainListType.LEGITIMATE
+                },
+                "last_updated": datetime.utcnow()
             }
             
-            _domain_cache["last_updated"] = datetime.utcnow()
+            # Atomic update: replace entire cache reference at once (fully atomic, prevents partial reads)
+            _domain_cache = new_cache
             
             logger.info(
                 f"Loaded {len(_domain_cache['disposable'])} disposable and "
@@ -104,10 +111,12 @@ async def load_domain_lists_from_db(db_session: Session) -> None:
             )
         except Exception as e:
             logger.error(f"Failed to load domain lists from database: {e}")
-            # Use fallback sets
-            _domain_cache["disposable"] = FALLBACK_DISPOSABLE_DOMAINS.copy()
-            _domain_cache["legitimate"] = FALLBACK_LEGITIMATE_DOMAINS.copy()
-            _domain_cache["last_updated"] = datetime.utcnow()
+            # Use fallback sets (atomic update)
+            _domain_cache = {
+                "disposable": FALLBACK_DISPOSABLE_DOMAINS.copy(),
+                "legitimate": FALLBACK_LEGITIMATE_DOMAINS.copy(),
+                "last_updated": datetime.utcnow()
+            }
 
 
 def is_cache_expired() -> bool:
