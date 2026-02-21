@@ -73,50 +73,84 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Register EE Middlewares if available
 register_ee_middlewares(app)
 
-# Waitlist Background Jobs Scheduler
+# Background Jobs Scheduler
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.interval import IntervalTrigger
+    from apscheduler.triggers.cron import CronTrigger
     from src.jobs.waitlist_processor import (
         sync_run_waitlist_activation_job,
         sync_run_retry_failed_emails_job,
     )
+    from src.jobs.referral_jobs import (
+        process_commission_eligibility_job,
+        process_payout_requests_job,
+    )
     import os
     
-    # Check if waitlist processor is enabled
+    # Waitlist processor configuration
     WAITLIST_PROCESSOR_ENABLED = os.getenv("WAITLIST_PROCESSOR_ENABLED", "true").lower() == "true"
     WAITLIST_PROCESSOR_INTERVAL = int(os.getenv("WAITLIST_PROCESSOR_INTERVAL", "300"))  # Default: 5 minutes
     WAITLIST_RETRY_INTERVAL = int(os.getenv("WAITLIST_RETRY_INTERVAL", "3600"))  # Default: 1 hour
     
-    if WAITLIST_PROCESSOR_ENABLED:
+    # Referral processor configuration
+    REFERRAL_PROCESSOR_ENABLED = os.getenv("REFERRAL_PROCESSOR_ENABLED", "true").lower() == "true"
+    REFERRAL_COMMISSION_CHECK_HOUR = int(os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0"))  # Default: midnight
+    REFERRAL_PAYOUT_INTERVAL = int(os.getenv("REFERRAL_PAYOUT_INTERVAL", "300"))  # Default: 5 minutes
+    
+    jobs_enabled = WAITLIST_PROCESSOR_ENABLED or REFERRAL_PROCESSOR_ENABLED
+    
+    if jobs_enabled:
         scheduler = AsyncIOScheduler()
         
-        # Add waitlist activation job (runs every 5 minutes by default)
-        scheduler.add_job(
-            sync_run_waitlist_activation_job,
-            trigger=IntervalTrigger(seconds=WAITLIST_PROCESSOR_INTERVAL),
-            id="waitlist_activation",
-            name="Process Waitlist Activations",
-            replace_existing=True,
-        )
+        # Waitlist jobs
+        if WAITLIST_PROCESSOR_ENABLED:
+            scheduler.add_job(
+                sync_run_waitlist_activation_job,
+                trigger=IntervalTrigger(seconds=WAITLIST_PROCESSOR_INTERVAL),
+                id="waitlist_activation",
+                name="Process Waitlist Activations",
+                replace_existing=True,
+            )
+            
+            scheduler.add_job(
+                sync_run_retry_failed_emails_job,
+                trigger=IntervalTrigger(seconds=WAITLIST_RETRY_INTERVAL),
+                id="waitlist_retry",
+                name="Retry Failed Waitlist Emails",
+                replace_existing=True,
+            )
+            
+            print(f"✓ Waitlist jobs scheduled (activation: {WAITLIST_PROCESSOR_INTERVAL}s, retry: {WAITLIST_RETRY_INTERVAL}s)")
         
-        # Add retry failed emails job (runs every hour by default)
-        scheduler.add_job(
-            sync_run_retry_failed_emails_job,
-            trigger=IntervalTrigger(seconds=WAITLIST_RETRY_INTERVAL),
-            id="waitlist_retry",
-            name="Retry Failed Waitlist Emails",
-            replace_existing=True,
-        )
-        
-        print(f"✓ Waitlist background jobs scheduled (activation: {WAITLIST_PROCESSOR_INTERVAL}s, retry: {WAITLIST_RETRY_INTERVAL}s)")
+        # Referral jobs
+        if REFERRAL_PROCESSOR_ENABLED:
+            # Commission eligibility job (runs daily at specified hour)
+            scheduler.add_job(
+                process_commission_eligibility_job,
+                trigger=CronTrigger(hour=REFERRAL_COMMISSION_CHECK_HOUR, minute=0),
+                id="referral_commission_eligibility",
+                name="Update Pending Commissions to Eligible",
+                replace_existing=True,
+            )
+            
+            # Payout processing job (runs every 5 minutes by default)
+            scheduler.add_job(
+                process_payout_requests_job,
+                trigger=IntervalTrigger(seconds=REFERRAL_PAYOUT_INTERVAL),
+                id="referral_payout_processing",
+                name="Process Payout Requests",
+                replace_existing=True,
+            )
+            
+            print(f"✓ Referral jobs scheduled (commission check: {REFERRAL_COMMISSION_CHECK_HOUR}:00, payouts: {REFERRAL_PAYOUT_INTERVAL}s)")
     else:
         scheduler = None
-        print("✗ Waitlist background jobs disabled")
+        print("✗ Background jobs disabled")
         
-except ImportError:
+except ImportError as e:
     scheduler = None
-    print("✗ APScheduler not installed. Waitlist background jobs will not run.")
+    print(f"✗ APScheduler not installed. Background jobs will not run. Error: {e}")
 
 # Events
 app.add_event_handler("startup", startup_app(app))
@@ -128,7 +162,7 @@ async def start_scheduler():
     """Start APScheduler on application startup"""
     if scheduler is not None:
         scheduler.start()
-        print("✓ Waitlist background scheduler started")
+        print("✓ Background job scheduler started")
 
 # Stop scheduler on app shutdown
 @app.on_event("shutdown")
@@ -136,7 +170,7 @@ async def stop_scheduler():
     """Stop APScheduler on application shutdown"""
     if scheduler is not None:
         scheduler.shutdown()
-        print("✓ Waitlist background scheduler stopped")
+        print("✓ Background job scheduler stopped")
 
 # JWT Exception Handler
 @app.exception_handler(AuthJWTException)
