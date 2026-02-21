@@ -15,15 +15,12 @@ import redis
 from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
 from src.db.referrals.payout_requests import (
     ReferrerPayoutRequest,
-    ReferrerPayoutRequestCreate,
     ReferrerPayoutRequestRead,
-    ReferrerPayoutRequestUpdate,
     PayoutStatus,
     BankDetails,
 )
 from src.db.referrals.referral_commissions import ReferralCommission, CommissionStatus
 from src.db.users import User, PublicUser
-from src.services.orgs.orgs import rbac_check
 from src.services.payments.payments_paystack import make_paystack_request
 
 logger = logging.getLogger(__name__)
@@ -361,8 +358,6 @@ async def validate_payout_amount(
         )
     
     # Get user's eligible balance
-    from src.services.referrals.referral_commissions import get_commission_balance
-    from src.db.users import PublicUser
     
     # Calculate eligible amount from commissions
     from sqlmodel import func

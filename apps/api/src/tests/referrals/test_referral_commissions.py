@@ -5,7 +5,7 @@ Tests commission creation, forfeiture, balance updates, and temporal checks
 
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from fastapi import HTTPException
 
 from src.services.referrals.referral_commissions import (
@@ -61,7 +61,7 @@ class TestCreateCommissionForPayment:
         
         payment_date = datetime.now(timezone.utc)
         
-        result = await create_commission_for_payment(
+        await create_commission_for_payment(
             org_id=100,
             referrer_user_id=500,
             referred_user_id=600,
@@ -190,7 +190,7 @@ class TestForfeitCommissionForRefund:
         
         mock_session.exec.return_value.first.return_value = mock_commission
         
-        result = await forfeit_commission_for_refund(1, mock_session)
+        await forfeit_commission_for_refund(1, mock_session)
         
         assert mock_commission.status == CommissionStatus.FORFEITED
         assert mock_session.commit.called
@@ -213,7 +213,7 @@ class TestForfeitCommissionForRefund:
         # First call returns commission, second returns user
         mock_session.exec.return_value.first.side_effect = [mock_commission, mock_user]
         
-        result = await forfeit_commission_for_refund(1, mock_session)
+        await forfeit_commission_for_refund(1, mock_session)
         
         assert mock_user.referral_commission_balance == 16.0
         assert mock_commission.status == CommissionStatus.FORFEITED

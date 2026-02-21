@@ -144,7 +144,6 @@ async def handle_paystack_webhook(
                         try:
                             from datetime import datetime
                             from src.services.referrals.referral_commissions import create_commission_for_payment
-                            from src.services.referrals.referral_tracking import get_referral_tracking_by_user
                             from sqlmodel import and_
                             from src.db.referrals.referral_tracking import ReferralTracking
                             

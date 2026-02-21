@@ -61,7 +61,7 @@ async def process_payout_requests_job():
     logger.info("Starting payout request processing job")
     
     try:
-        from sqlmodel import select, and_
+        from sqlmodel import select
         from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
         from src.services.referrals.payouts import process_payout_request
         

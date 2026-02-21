@@ -360,7 +360,6 @@ async def initialize_transaction(
         # REFERRAL SYSTEM: Check if user has referral tracking
         referral_code_id = None
         try:
-            from sqlmodel import and_
             from src.db.referrals.referral_tracking import ReferralTracking
             
             tracking_statement = select(ReferralTracking).where(

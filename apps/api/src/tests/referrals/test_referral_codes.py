@@ -5,9 +5,9 @@ Tests code generation, validation, uniqueness, and CRUD operations
 
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, patch
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from src.services.referrals.referral_codes import (
     generate_unique_code,
@@ -260,7 +260,7 @@ class TestCreateReferralCodeForUser:
         with patch('src.services.referrals.referral_codes.get_learnhouse_config') as mock_config:
             mock_config.return_value.hosting_config.app_base_url = "http://localhost:3000"
             
-            result = await create_referral_code_for_user(
+            await create_referral_code_for_user(
                 mock_request, 100, 500, mock_user, mock_session
             )
         
@@ -319,7 +319,7 @@ class TestCreateReferralCodeForUser:
         with patch('src.services.referrals.referral_codes.get_learnhouse_config') as mock_config:
             mock_config.return_value.hosting_config.app_base_url = "http://localhost:3000"
             
-            result = await create_referral_code_for_user(
+            await create_referral_code_for_user(
                 mock_request, 100, 500, mock_user, mock_session
             )
         

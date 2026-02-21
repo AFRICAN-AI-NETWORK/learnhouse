@@ -13,12 +13,10 @@ from sqlmodel import Session, select, and_
 from config.config import get_learnhouse_config
 from src.db.referrals.referral_codes import (
     ReferralCode,
-    ReferralCodeCreate,
     ReferralCodeRead,
     ReferralCodeStatus,
 )
 from src.db.users import PublicUser, User
-from src.services.orgs.orgs import rbac_check
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,6 @@
 """Unit tests for waitlist courses service"""
 
 import pytest
-from unittest.mock import Mock
 from fastapi import HTTPException
 
 from src.services.waitlist.courses import (

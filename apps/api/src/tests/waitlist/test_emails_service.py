@@ -1,7 +1,7 @@
 """Unit tests for waitlist email service"""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch
 from datetime import datetime, timezone
 
 from src.services.waitlist.emails import (
@@ -42,7 +42,7 @@ class TestSendWaitlistConfirmationEmail:
             update_date=sample_org.update_date
         )
         
-        result = send_waitlist_confirmation_email(
+        send_waitlist_confirmation_email(
             user=user,
             email=user.email,
             organization=org,
@@ -125,7 +125,7 @@ class TestSendWaitlistActivationEmail:
             update_date=sample_org.update_date
         )
         
-        result = send_waitlist_activation_email(
+        send_waitlist_activation_email(
             user=user,
             email=user.email,
             organization=org,

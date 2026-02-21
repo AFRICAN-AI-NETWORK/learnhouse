@@ -9,7 +9,6 @@ from unittest.mock import Mock, patch
 
 from src.services.referrals.referral_codes import (
     create_referral_code_for_user,
-    validate_referral_code_exists,
 )
 from src.services.referrals.referral_tracking import validate_and_track_referral
 from src.services.referrals.referral_commissions import (
@@ -43,7 +42,7 @@ class TestReferralE2EFlow:
         referrer = Mock(spec=PublicUser)
         referrer.id = 500
         
-        mock_code = ReferralCode(
+        ReferralCode(
             id=1,
             org_id=100,
             referrer_user_id=500,
@@ -61,13 +60,12 @@ class TestReferralE2EFlow:
                 mock_config.return_value.hosting_config.app_base_url = "http://localhost:3000"
                 
                 # Step 2: Validate and track referral (user signs up)
-                referred_user_id = 600
                 
                 # Step 3: Create commission for payment
                 payment_date = datetime.now(timezone.utc)
                 
                 # Mock commission creation
-                commission = await create_commission_for_payment(
+                await create_commission_for_payment(
                     org_id=100,
                     referrer_user_id=500,
                     referred_user_id=600,
@@ -107,7 +105,7 @@ class TestReferralE2EFlow:
         mock_session.exec.return_value.first.side_effect = [mock_commission, mock_user]
         
         # Forfeit commission
-        result = await forfeit_commission_for_refund(1, mock_session, refund_reason="Customer request")
+        await forfeit_commission_for_refund(1, mock_session, refund_reason="Customer request")
         
         # Verify balance was deducted
         assert mock_user.referral_commission_balance == 16.0
@@ -134,12 +132,13 @@ class TestReferralE2EFlow:
             update_date=datetime.now(timezone.utc)
         )
         
-        # High fraud indicators
-        mock_session.exec.return_value.first.side_effect = [
-            mock_code,
+        # High fraud indicators - handle chained calls
+        mock_exec_result = Mock()
+        mock_exec_result.first.side_effect = [
             (5, 10, 8),  # Very high fraud
-            None,  # Tracking
+            None,  # Tracking check
         ]
+        mock_session.exec.return_value = mock_exec_result
         
         with patch('src.services.referrals.referral_tracking.validate_referral_code_exists',
                    return_value=mock_code):
@@ -217,11 +216,13 @@ class TestReferralE2EFlow:
         from src.db.referrals.referral_tracking import ReferralTracking
         existing_tracking = Mock(spec=ReferralTracking)
         
-        mock_session.exec.return_value.first.side_effect = [
-            mock_code,
+        # Handle chained calls properly
+        mock_exec_result = Mock()
+        mock_exec_result.first.side_effect = [
             (0, 0, 0),  # Fraud check
             existing_tracking,  # Already tracked
         ]
+        mock_session.exec.return_value = mock_exec_result
         
         with patch('src.services.referrals.referral_tracking.validate_referral_code_exists',
                    return_value=mock_code):
@@ -263,7 +264,7 @@ class TestConcurrencyAndRaceConditions:
         with patch('src.services.referrals.referral_codes.get_learnhouse_config') as mock_config:
             mock_config.return_value.hosting_config.app_base_url = "http://localhost:3000"
             
-            result = await create_referral_code_for_user(
+            await create_referral_code_for_user(
                 mock_request, 100, 500, mock_user, mock_session
             )
         
@@ -316,7 +317,7 @@ class TestEdgeCases:
         
         payment_date = datetime.now(timezone.utc)
         
-        result = await create_commission_for_payment(
+        await create_commission_for_payment(
             org_id=100,
             referrer_user_id=500,
             referred_user_id=600,

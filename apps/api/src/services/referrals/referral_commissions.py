@@ -5,19 +5,14 @@ Follows DRY principles with reusable utilities
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, List, Tuple
-from fastapi import HTTPException, Request, status
+from typing import Optional, List
+from fastapi import HTTPException, Request
 from sqlmodel import Session, select, and_, func
 from src.db.referrals.referral_commissions import (
     ReferralCommission,
-    ReferralCommissionCreate,
-    ReferralCommissionRead,
     CommissionStatus,
 )
-from src.db.referrals.referral_codes import ReferralCode
 from src.db.users import User, PublicUser
-from src.db.payments.payments_users import PaymentsUser
-from src.services.orgs.orgs import rbac_check
 
 logger = logging.getLogger(__name__)
 

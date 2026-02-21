@@ -1,7 +1,6 @@
 """Waitlist Email Service - Email templates and batch processing"""
 
 from datetime import datetime
-from typing import List
 import asyncio
 from pydantic import EmailStr
 from sqlmodel import Session, select
@@ -32,7 +31,7 @@ def send_waitlist_confirmation_email(
         # Format the datetime nicely
         dt = datetime.fromisoformat(launch_date.replace('Z', '+00:00'))
         formatted_date = dt.strftime("%B %d, %Y at %I:%M %p %Z")
-    except:
+    except Exception:
         formatted_date = launch_date
     
     return send_email(

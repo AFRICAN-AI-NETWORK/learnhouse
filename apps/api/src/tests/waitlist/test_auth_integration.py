@@ -1,10 +1,7 @@
 """Integration tests for waitlist authentication flow"""
 
 import pytest
-from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
 from fastapi import HTTPException
-from sqlmodel import select
 
 from src.security.auth import authenticate_user
 from src.db.users import User
