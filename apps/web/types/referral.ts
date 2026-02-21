@@ -24,6 +24,7 @@ export interface ReferralCode {
   referral_link: string
   created_at: string
   total_referrals: number
+  org_id: string
 }
 
 export interface CommissionBalance {
@@ -31,6 +32,7 @@ export interface CommissionBalance {
   eligible_balance: number
   pending_balance: number
   currency: string
+  org_id: string
 }
 
 export interface CommissionRecord {
@@ -44,6 +46,7 @@ export interface CommissionRecord {
   completion_date: string | null
   eligible_date: string | null
   created_at: string
+  org_id: string
 }
 
 // ─── Payout Types ─────────────────────────────────────────────────────────────

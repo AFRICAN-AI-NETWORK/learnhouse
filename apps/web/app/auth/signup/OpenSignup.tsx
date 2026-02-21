@@ -137,24 +137,23 @@ function OpenSignUpComponent() {
       setMessage('')
       setIsSubmitting(true)
 
-      // ── Device fingerprinting (fail-silent) ────────────────────────────────
+      // ── Device fingerprinting (fail-silent)
       let device_id: string | undefined
-      let browser_fingerprint: string | undefined
+      let browser_fingerprint: { visitor_id: string } | undefined
       try {
         const FingerprintJS = await import('@fingerprintjs/fingerprintjs')
         const agent = await FingerprintJS.load()
         const result = await agent.get()
-        browser_fingerprint = result.visitorId
+        browser_fingerprint = { visitor_id: result.visitorId }
         device_id = result.visitorId
       } catch {
         /* fingerprint unavailable — proceed without it */
       }
 
-      // ── Build signup payload ───────────────────────────────────────────────
       const payload: typeof values & {
         referral_code?: string
         device_id?: string
-        browser_fingerprint?: string
+        browser_fingerprint?: { visitor_id: string }
       } = {
         ...values,
         ...(device_id ? { device_id } : {}),

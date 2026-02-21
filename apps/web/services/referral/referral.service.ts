@@ -78,7 +78,7 @@ export async function getCommissionBalance(
 }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/commision-balance`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/commission-balance`,
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
     const res = await getResponseMetadata(result)
@@ -108,7 +108,7 @@ export async function getCommissionHistory(
 }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/commissions-history`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/commission-history`,
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
     const res = await getResponseMetadata(result)
