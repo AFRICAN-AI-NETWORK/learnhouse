@@ -147,7 +147,7 @@ async def get_payout_currency(
     db_session: Optional[Session] = None
 ) -> str:
     """
-    Determine payout currency from user's country or organization settings (✅ TODO Resolved)
+    Determine payout currency from user's country or organization settings
     
     Users can set their country in profile.country to automatically determine payout currency.
     
