@@ -17,11 +17,12 @@ const REFERRAL_BASE = 'referrals'
  * Generate a new referral code for the authenticated user.
  */
 export async function generateReferralCode(
-  access_token: string
+  access_token: string,
+  org_id: string
 ): Promise<{ success: boolean; data: ReferralCode | null; error?: string }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/generate`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/generate-code`,
       RequestBodyWithAuthHeader('POST', null, null, access_token)
     )
     const res = await getResponseMetadata(result)
@@ -42,11 +43,12 @@ export async function generateReferralCode(
  * Get the authenticated user's existing referral code.
  */
 export async function getMyReferralCode(
-  access_token: string
+  access_token: string,
+  org_id: string
 ): Promise<{ success: boolean; data: ReferralCode | null; error?: string }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/my-code`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/my-code`,
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
     const res = await getResponseMetadata(result)
@@ -66,14 +68,17 @@ export async function getMyReferralCode(
 /**
  * Get the authenticated user's commission balance.
  */
-export async function getCommissionBalance(access_token: string): Promise<{
+export async function getCommissionBalance(
+  access_token: string,
+  org_id: string
+): Promise<{
   success: boolean
   data: CommissionBalance | null
   error?: string
 }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/balance`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/commision-balance`,
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
     const res = await getResponseMetadata(result)
@@ -93,14 +98,17 @@ export async function getCommissionBalance(access_token: string): Promise<{
 /**
  * Get the authenticated user's commission history.
  */
-export async function getCommissionHistory(access_token: string): Promise<{
+export async function getCommissionHistory(
+  access_token: string,
+  org_id: string
+): Promise<{
   success: boolean
   data: CommissionRecord[]
   error?: string
 }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/commissions`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/commissions-history`,
       RequestBodyWithAuthHeader('GET', null, null, access_token)
     )
     const res = await getResponseMetadata(result)
@@ -122,11 +130,12 @@ export async function getCommissionHistory(access_token: string): Promise<{
  */
 export async function requestPayout(
   payload: PayoutRequestPayload,
-  access_token: string
+  access_token: string,
+  org_id: string
 ): Promise<{ success: boolean; data: PayoutResponse | null; error?: string }> {
   try {
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/payout`,
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/payout`,
       RequestBodyWithAuthHeader('POST', payload, null, access_token)
     )
     const res = await getResponseMetadata(result)
