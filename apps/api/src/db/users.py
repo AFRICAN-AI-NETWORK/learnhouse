@@ -20,6 +20,8 @@ class UserCreate(UserBase):
     first_name: str = ""
     last_name: str = ""
     password: str
+    is_waitlist: Optional[bool] = False
+    waitlist_interest: Optional[str] = None
 
 
 class UserUpdate(UserBase):
@@ -41,6 +43,8 @@ class UserUpdatePassword(SQLModel):
 class UserRead(UserBase):
     id: int
     user_uuid: str
+    user_status: Optional[str] = "ACTIVE"
+    waitlist_interest: Optional[str] = None
 
 
 class PublicUser(UserRead):
@@ -74,5 +78,9 @@ class User(UserBase, table=True):
     password: str = ""
     user_uuid: str = ""
     email_verified: bool = False
+    user_status: str = Field(default="ACTIVE", index=True)
+    waitlist_interest: Optional[str] = None
+    waitlist_joined_date: Optional[str] = None
+    waitlist_activated_date: Optional[str] = None
     creation_date: str = ""
     update_date: str = ""

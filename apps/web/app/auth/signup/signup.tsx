@@ -10,6 +10,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import UserAvatar from '@components/Objects/UserAvatar'
 import OpenSignUpComponent from './OpenSignup'
 import InviteOnlySignUpComponent from './InviteOnlySignUp'
+import WaitlistSignUpComponent from './WaitlistSignUp'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { validateInviteCode } from '@services/organizations/invites'
 import toast from 'react-hot-toast'
@@ -26,9 +27,10 @@ function SignUpClient(props: SignUpClientProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
   const joinMethod =
-    props.org?.config?.config?.features.members.signup_mode || 'open'
+    props.org?.config?.config?.features?.members?.signup_mode || 'open'
   const searchParams = useSearchParams()
   const inviteCode = searchParams.get('inviteCode') || ''
+  const waitlistUuid = searchParams.get('waitlist_uuid') || ''
 
   useEffect(() => {}, [])
 
@@ -80,6 +82,12 @@ function SignUpClient(props: SignUpClientProps) {
                 )
               ) : (
                 <NoTokenScreen />
+              ))}
+            {joinMethod === 'waitlist' &&
+              (waitlistUuid ? (
+                <WaitlistSignUpComponent waitlistUuid={waitlistUuid} />
+              ) : (
+                <WaitlistNotFoundScreen />
               ))}
           </div>
 
@@ -237,6 +245,31 @@ const NoTokenScreen = () => {
           )}
         </button>
       </div>
+    </div>
+  )
+}
+
+const WaitlistNotFoundScreen = () => {
+  const { t } = useTranslation()
+
+  return (
+    <div className="flex flex-col items-center justify-center space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center space-y-2">
+        <div className="bg-rose-50 p-4 rounded-2xl inline-flex mb-4">
+          <MailWarning size={32} className="text-rose-600" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-900">
+          Waitlist Invite Not Found
+        </h3>
+        <p className="text-slate-500 text-sm">
+          The waitlist invite link is invalid or has expired
+        </p>
+      </div>
+
+      <p className="text-center text-sm text-slate-600 max-w-sm">
+        Please request a new invite from your organization or contact support
+        for assistance.
+      </p>
     </div>
   )
 }

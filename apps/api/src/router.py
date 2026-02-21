@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from src.routers import health
 from src.routers import usergroups
-from src.routers import dev, trail, users, auth, orgs, roles, search
+from src.routers import dev, trail, users, auth, orgs, roles, search, waitlist
 from src.routers.ai import ai
 from src.routers.courses import chapters, collections, courses, assignments, certifications
 from src.routers.courses.activities import activities, blocks
@@ -35,6 +35,7 @@ v1_router.include_router(
 )
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 
 # Register EE Routers if available
 register_ee_routers(v1_router)
