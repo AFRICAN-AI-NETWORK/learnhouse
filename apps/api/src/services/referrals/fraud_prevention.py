@@ -34,6 +34,8 @@ _circuit_breaker = {
 CIRCUIT_BREAKER_THRESHOLD = 3  # Open circuit after 3 consecutive failures
 CIRCUIT_BREAKER_TIMEOUT = 300  # Try again after 5 minutes
 CIRCUIT_BREAKER_HALF_OPEN_TIMEOUT = 60  # In half-open state, try after 1 minute
+
+FALLBACK_DISPOSABLE_DOMAINS: Set[str] = {
     "tempmail.com", "throwaway.email"
 }
 
