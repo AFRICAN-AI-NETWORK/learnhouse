@@ -1,7 +1,7 @@
 'use client'
 import { useFormik } from 'formik'
 import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -30,6 +30,7 @@ import {
 } from '@services/waitlist/waitlist'
 import { WaitlistConfig } from '@/types/waitlist'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
@@ -116,7 +117,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           setWaitlistDetails(res.data)
         }
       } catch (err) {
-        console.error('Failed to fetch waitlist details:', err)
+        toast.error('Failed to fetch waitlist details:')
       } finally {
         setLoadingDetails(false)
       }
