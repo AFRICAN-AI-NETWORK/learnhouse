@@ -77,6 +77,11 @@ export PYTHONIOENCODING=utf-8
 PORT=${LEARNHOUSE_PORT:-9000}
 HOST=0.0.0.0  # Bind to all interfaces for healthcheck
 
+echo "Running database migrations..."
+uv run alembic upgrade head || {
+    echo "Warning: Database migrations failed, attempting to continue..."
+}
+
 echo "Starting LearnHouse backend on ${HOST}:${PORT}..."
 
 # Start the FastAPI application
