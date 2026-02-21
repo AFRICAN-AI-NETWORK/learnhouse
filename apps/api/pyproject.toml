@@ -37,6 +37,7 @@ dependencies = [
     "beautifulsoup4>=4.13.4",
     "pytest-asyncio>=1.1.0",
     "grpcio>=1.76.0",
+    "apscheduler>=3.11.2",
 ]
 
 [tool.ruff]

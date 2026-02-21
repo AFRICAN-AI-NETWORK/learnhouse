@@ -40,7 +40,13 @@ export default async function proxy(req: NextRequest) {
 
   // Out of orgslug paths & rewrite
   const standard_paths = ['/home']
-  const auth_paths = ['/login', '/signup', '/reset', '/forgot']
+  const auth_paths = [
+    '/login',
+    '/signup',
+    '/reset',
+    '/forgot',
+    '/auth/waitlist/countdown',
+  ]
 
   // Redirect legacy /auth/* routes to current auth routes
   if (pathname === '/auth/signin') {
@@ -76,8 +82,12 @@ export default async function proxy(req: NextRequest) {
   }
 
   if (auth_paths.includes(pathname)) {
+    const targetPath = pathname.startsWith('/auth')
+      ? pathname
+      : `/auth${pathname}`
+
     const response = NextResponse.rewrite(
-      new URL(`/auth${pathname}${search}`, req.url)
+      new URL(`${targetPath}${search}`, req.url)
     )
 
     // Parse the search params
@@ -91,6 +101,7 @@ export default async function proxy(req: NextRequest) {
         value: orgslug,
         domain:
           LEARNHOUSE_TOP_DOMAIN == 'localhost' ? '' : LEARNHOUSE_TOP_DOMAIN,
+        path: '/',
       })
     }
     return response

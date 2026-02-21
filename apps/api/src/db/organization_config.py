@@ -12,7 +12,7 @@ class CourseOrgConfig(BaseModel):
 
 class MemberOrgConfig(BaseModel):
     enabled: bool = True
-    signup_mode: Literal["open", "inviteOnly"] = "open"
+    signup_mode: Literal["open", "inviteOnly", "waitlist"] = "open"
     admin_limit: int = 1
     limit: int = 10
 
