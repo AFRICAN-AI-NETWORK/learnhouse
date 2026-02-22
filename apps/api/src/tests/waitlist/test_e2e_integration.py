@@ -32,7 +32,8 @@ class TestCompleteWaitlistFlow:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    async def test_complete_waitlist_lifecycle(self, mock_creation, 
+    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
+    async def test_complete_waitlist_lifecycle(self, mock_confirmation, mock_creation, 
                                                mock_increase, mock_check_limits,
                                                db_session, sample_org, sample_user, mock_request):
         """
@@ -48,6 +49,7 @@ class TestCompleteWaitlistFlow:
         mock_check_limits.return_value = None
         mock_increase.return_value = None
         mock_creation.return_value = True
+        mock_confirmation.return_value = True
         
         # ========== Step 1: Admin creates waitlist campaign ==========
         future_date = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
@@ -67,7 +69,10 @@ class TestCompleteWaitlistFlow:
         assert waitlist.status == WaitlistStatusEnum.ACTIVE.value
         assert waitlist.total_registrations == 0
         
-        # ========== Step 2: Create courses for selection ==========
+        # ========== Step 2: Create products for selection ==========
+        from src.db.payments.payments_products import PaymentsProduct
+        from src.db.payments.payments_courses import PaymentsCourse
+        
         course1 = Course(
             name="Python Basics",
             course_uuid="python-basics-uuid",
@@ -89,6 +94,38 @@ class TestCompleteWaitlistFlow:
         db_session.commit()
         db_session.refresh(course1)
         db_session.refresh(course2)
+        
+        product1 = PaymentsProduct(
+            name="Python Basics Package",
+            amount=5000,
+            currency="USD",
+            org_id=sample_org.id
+        )
+        product2 = PaymentsProduct(
+            name="React Advanced Package",
+            amount=8000,
+            currency="USD",
+            org_id=sample_org.id
+        )
+        db_session.add(product1)
+        db_session.add(product2)
+        db_session.commit()
+        db_session.refresh(product1)
+        db_session.refresh(product2)
+        
+        payment_course1 = PaymentsCourse(
+            course_id=course1.id,
+            payment_product_id=product1.id,
+            org_id=sample_org.id
+        )
+        payment_course2 = PaymentsCourse(
+            course_id=course2.id,
+            payment_product_id=product2.id,
+            org_id=sample_org.id
+        )
+        db_session.add(payment_course1)
+        db_session.add(payment_course2)
+        db_session.commit()
         
         # Verify courses are available
         courses = await get_org_courses_for_waitlist(
@@ -115,7 +152,7 @@ class TestCompleteWaitlistFlow:
             db_session=db_session,
             user_object=user_data,
             waitlist_uuid=waitlist.waitlist_uuid,
-            selected_course_ids=[course1.id, course2.id]
+            selected_product_ids=[product1.id, product2.id]
         )
         
         assert created_user.user_status == UserStatusEnum.WAITLIST.value
@@ -212,7 +249,8 @@ class TestWaitlistCancellationFlow:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    async def test_cancelled_waitlist_prevents_new_registrations(self, mock_creation,
+    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
+    async def test_cancelled_waitlist_prevents_new_registrations(self, mock_confirmation, mock_creation,
                                                                  mock_increase, mock_check_limits,
                                                                  db_session, sample_org, sample_user, 
                                                                  mock_request):
@@ -223,6 +261,7 @@ class TestWaitlistCancellationFlow:
         mock_check_limits.return_value = None
         mock_increase.return_value = None
         mock_creation.return_value = True
+        mock_confirmation.return_value = True
         
         # Create waitlist
         future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
@@ -252,7 +291,7 @@ class TestWaitlistCancellationFlow:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=waitlist.waitlist_uuid,
-                selected_course_ids=[]
+                selected_product_ids=[]
             )
 
 
@@ -290,7 +329,8 @@ class TestWaitlistAnalytics:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    async def test_course_preference_analytics(self, mock_creation, mock_increase, 
+    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
+    async def test_course_preference_analytics(self, mock_confirmation, mock_creation, mock_increase, 
                                                mock_check_limits, db_session, sample_org, 
                                                sample_user, mock_request):
         """Test analytics for course preferences"""
@@ -300,6 +340,7 @@ class TestWaitlistAnalytics:
         mock_check_limits.return_value = None
         mock_increase.return_value = None
         mock_creation.return_value = True
+        mock_confirmation.return_value = True
         
         # Create waitlist
         future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
@@ -311,18 +352,17 @@ class TestWaitlistAnalytics:
         )
         waitlist = await create_waitlist_config(mock_request, db_session, config_data)
         
-        # Create course
-        popular_course = Course(
-            name="Popular Course",
-            course_uuid="popular-uuid",
-            org_id=sample_org.id,
-            author_id=sample_user.id,
-            public=True,
-            open_to_contributors=False
+        # Create product
+        from src.db.payments.payments_products import PaymentsProduct
+        popular_product = PaymentsProduct(
+            name="Popular Product Package",
+            amount=9900,
+            currency="USD",
+            org_id=sample_org.id
         )
-        db_session.add(popular_course)
+        db_session.add(popular_product)
         db_session.commit()
-        db_session.refresh(popular_course)
+        db_session.refresh(popular_product)
         
         # Register multiple users selecting same course
         for i in range(5):
@@ -337,7 +377,7 @@ class TestWaitlistAnalytics:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=waitlist.waitlist_uuid,
-                selected_course_ids=[popular_course.id]
+                selected_product_ids=[popular_product.id]
             )
         
         # Get analytics
@@ -347,8 +387,8 @@ class TestWaitlistAnalytics:
             waitlist.waitlist_uuid
         )
         
-        # Verify popular course shows high selection count
-        popular_data = next((a for a in analytics["courses"] if a["course_id"] == popular_course.id), None)
+        # Verify popular product shows high selection count
+        popular_data = next((a for a in analytics["courses"] if a["product_id"] == popular_product.id), None)
         assert popular_data is not None
         assert popular_data["selection_count"] >= 5
 

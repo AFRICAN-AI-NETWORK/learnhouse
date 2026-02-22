@@ -29,6 +29,11 @@ if lh_config.database_config and lh_config.database_config.sql_connection_string
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+if lh_config and lh_config.database_config and lh_config.database_config.sql_connection_string:
+    config.set_main_option(
+        "sqlalchemy.url", str(lh_config.database_config.sql_connection_string)
+    )
+
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel

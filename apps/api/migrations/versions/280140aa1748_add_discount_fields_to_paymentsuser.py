@@ -21,20 +21,33 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Add discount-related columns to paymentsuser table
-    op.add_column('paymentsuser', sa.Column('discount_code_id', sa.BigInteger(), nullable=True))
-    op.add_column('paymentsuser', sa.Column('original_amount', sa.Float(), nullable=True))
-    op.add_column('paymentsuser', sa.Column('discount_amount', sa.Float(), nullable=True))
-    op.add_column('paymentsuser', sa.Column('final_amount', sa.Float(), nullable=True))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    paymentsuser_cols = [c['name'] for c in inspector.get_columns('paymentsuser')]
     
-    # Add foreign key constraint to discount_code table
-    op.create_foreign_key(
-        'fk_paymentsuser_discount_code',
-        'paymentsuser', 
-        'discountcode',
-        ['discount_code_id'], 
-        ['id'],
-        ondelete='SET NULL'
-    )
+    if 'discount_code_id' not in paymentsuser_cols:
+        op.add_column('paymentsuser', sa.Column('discount_code_id', sa.BigInteger(), nullable=True))
+    if 'original_amount' not in paymentsuser_cols:
+        op.add_column('paymentsuser', sa.Column('original_amount', sa.Float(), nullable=True))
+    if 'discount_amount' not in paymentsuser_cols:
+        op.add_column('paymentsuser', sa.Column('discount_amount', sa.Float(), nullable=True))
+    if 'final_amount' not in paymentsuser_cols:
+        op.add_column('paymentsuser', sa.Column('final_amount', sa.Float(), nullable=True))
+        
+    # Check foreign keys
+    fks = inspector.get_foreign_keys('paymentsuser')
+    fk_names = [fk['name'] for fk in fks if fk['name'] is not None]
+    
+    if 'fk_paymentsuser_discount_code' not in fk_names:
+        # Add foreign key constraint to discount_code table
+        op.create_foreign_key(
+            'fk_paymentsuser_discount_code',
+            'paymentsuser', 
+            'discountcode',
+            ['discount_code_id'], 
+            ['id'],
+            ondelete='SET NULL'
+        )
 
 
 def downgrade() -> None:

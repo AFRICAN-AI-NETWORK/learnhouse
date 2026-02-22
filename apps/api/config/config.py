@@ -236,9 +236,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
     ).get("system_email_address")
 
     # Payments config - Paystack
-    env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY")
-    env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY")
-    env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET")
+    env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY") or os.environ.get("PAYSTACK_SECRET_KEY")
+    env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY") or os.environ.get("PAYSTACK_PUBLIC_KEY")
+    env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET") or os.environ.get("PAYSTACK_WEBHOOK_SECRET")
     
     # Safely get Paystack config from YAML
     payments_config = yaml_config.get("payments_config", {}) if yaml_config else {}

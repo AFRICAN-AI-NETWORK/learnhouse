@@ -31,7 +31,7 @@ def send_waitlist_confirmation_email(
         # Format the datetime nicely
         dt = datetime.fromisoformat(launch_date.replace('Z', '+00:00'))
         formatted_date = dt.strftime("%B %d, %Y at %I:%M %p %Z")
-    except Exception:
+    except Exception ValueError:
         formatted_date = launch_date
     
     return send_email(

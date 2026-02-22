@@ -200,11 +200,23 @@ class TestWaitlistEmailLogModel:
 class TestWaitlistCoursePreferenceModel:
     """Test WaitlistCoursePreference database model"""
     
-    def test_create_course_preference(self, db_session, waitlist_user, sample_course, sample_waitlist_config, sample_org):
+    def test_create_course_preference(self, db_session, waitlist_user, sample_waitlist_config, sample_org):
         """Test creating a course preference"""
+        from src.db.payments.payments_products import PaymentsProduct
+        
+        product = PaymentsProduct(
+            name="Test Product",
+            amount=1500,
+            currency="USD",
+            org_id=sample_org.id
+        )
+        db_session.add(product)
+        db_session.commit()
+        db_session.refresh(product)
+
         preference = WaitlistCoursePreference(
             user_id=waitlist_user.id,
-            course_id=sample_course.id,
+            payments_product_id=product.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_org.id,
             creation_date=datetime.now(timezone.utc).isoformat()
@@ -216,46 +228,44 @@ class TestWaitlistCoursePreferenceModel:
         
         assert preference.id is not None
         assert preference.user_id == waitlist_user.id
-        assert preference.course_id == sample_course.id
+        assert preference.payments_product_id == product.id
         assert preference.waitlist_config_id == sample_waitlist_config.id
     
     def test_multiple_preferences_same_user(self, db_session, waitlist_user, sample_waitlist_config, sample_org):
         """Test that a user can have multiple course preferences"""
-        from src.db.courses.courses import Course
+        from src.db.payments.payments_products import PaymentsProduct
         
-        # Create multiple courses
-        course1 = Course(
-            id=10,
-            name="Course 1",
-            course_uuid="course-1-uuid",
-            org_id=sample_org.id,
-            public=True,
-            open_to_contributors=False
+        # Create multiple products
+        product1 = PaymentsProduct(
+            name="Product 1",
+            amount=1000,
+            currency="USD",
+            org_id=sample_org.id
         )
-        course2 = Course(
-            id=11,
-            name="Course 2",
-            course_uuid="course-2-uuid",
-            org_id=sample_org.id,
-            public=True,
-            open_to_contributors=False
+        product2 = PaymentsProduct(
+            name="Product 2",
+            amount=2000,
+            currency="USD",
+            org_id=sample_org.id
         )
-        db_session.add(course1)
-        db_session.add(course2)
+        db_session.add(product1)
+        db_session.add(product2)
         db_session.commit()
+        db_session.refresh(product1)
+        db_session.refresh(product2)
         
         now = datetime.now(timezone.utc).isoformat()
         
         pref1 = WaitlistCoursePreference(
             user_id=waitlist_user.id,
-            course_id=course1.id,
+            payments_product_id=product1.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_org.id,
             creation_date=now
         )
         pref2 = WaitlistCoursePreference(
             user_id=waitlist_user.id,
-            course_id=course2.id,
+            payments_product_id=product2.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_org.id,
             creation_date=now
@@ -269,8 +279,8 @@ class TestWaitlistCoursePreferenceModel:
         db_session.refresh(pref2)
         
         assert pref1.id != pref2.id
-        assert pref1.course_id == course1.id
-        assert pref2.course_id == course2.id
+        assert pref1.payments_product_id == product1.id
+        assert pref2.payments_product_id == product2.id
 
 
 class TestWaitlistConfigCreate:

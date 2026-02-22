@@ -199,12 +199,29 @@ def sample_email_log(db_session, waitlist_user, sample_waitlist_config):
 
 
 @pytest.fixture
-def sample_course_preference(db_session, waitlist_user, sample_course, sample_waitlist_config, sample_org):
+def sample_payment_product(db_session, sample_org):
+    """Create a sample payment product for testing"""
+    from src.db.payments.payments_products import PaymentsProduct
+    product = PaymentsProduct(
+        id=100,
+        name="Test Package",
+        amount=1000,
+        currency="USD",
+        org_id=sample_org.id
+    )
+    db_session.add(product)
+    db_session.commit()
+    db_session.refresh(product)
+    return product
+
+
+@pytest.fixture
+def sample_course_preference(db_session, waitlist_user, sample_payment_product, sample_waitlist_config, sample_org):
     """Create a sample course preference for testing"""
     preference = WaitlistCoursePreference(
         id=1,
         user_id=waitlist_user.id,
-        course_id=sample_course.id,
+        payments_product_id=sample_payment_product.id,
         waitlist_config_id=sample_waitlist_config.id,
         org_id=sample_org.id,
         creation_date=datetime.now(timezone.utc).isoformat()
