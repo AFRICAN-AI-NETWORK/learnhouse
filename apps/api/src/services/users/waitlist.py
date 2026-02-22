@@ -13,14 +13,12 @@ from src.db.waitlist import (
     WaitlistCoursePreference,
     WaitlistEmailLog,
 )
-from src.db.courses.courses import Course
 from src.security.security import security_hash_password
 from src.security.features_utils.usage import (
     check_limits_with_usage,
     increase_feature_usage,
 )
 from src.services.users.users import generate_verification_token
-from src.services.users.emails import send_account_creation_email
 from src.services.users.emails import send_account_creation_email
 from src.services.waitlist.emails import send_waitlist_confirmation_email
 from src.db.payments.payments_products import PaymentsProduct
