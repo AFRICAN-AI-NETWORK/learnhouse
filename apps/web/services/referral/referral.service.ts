@@ -134,9 +134,12 @@ export async function requestPayout(
   org_id: string
 ): Promise<{ success: boolean; data: PayoutResponse | null; error?: string }> {
   try {
+    const params = new URLSearchParams({ amount: payload.amount.toString() })
+    const { amount, ...bodyWithoutAmount } = payload
+
     const result = await fetch(
-      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/payout`,
-      RequestBodyWithAuthHeader('POST', payload, null, access_token)
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/request-payout?${params}`,
+      RequestBodyWithAuthHeader('POST', bodyWithoutAmount, null, access_token)
     )
     const res = await getResponseMetadata(result)
     if (res.success) {

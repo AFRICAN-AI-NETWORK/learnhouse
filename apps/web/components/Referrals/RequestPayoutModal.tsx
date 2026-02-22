@@ -24,6 +24,7 @@ interface RequestPayoutModalProps {
   onOpenChange: (open: boolean) => void
   balance: CommissionBalance | null
   access_token: string
+  org_id: string
 }
 
 interface PayoutFormValues {
@@ -72,6 +73,7 @@ function RequestPayoutModal({
   onOpenChange,
   balance,
   access_token,
+  org_id,
 }: RequestPayoutModalProps) {
   const [serverError, setServerError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -99,7 +101,7 @@ function RequestPayoutModal({
         account_type: values.account_type,
         country_code: values.country_code.toUpperCase(),
       }
-      const result = await requestPayout(payload, access_token)
+      const result = await requestPayout(payload, access_token, org_id)
       if (result.success) {
         setSuccess(true)
         helpers.resetForm()
