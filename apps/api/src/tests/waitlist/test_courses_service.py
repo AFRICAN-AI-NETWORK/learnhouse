@@ -164,10 +164,21 @@ class TestGetCoursePreferenceAnalytics:
         """Test getting course preference analytics"""
         from datetime import datetime, timezone
         
+        # Create payment product for preference
+        product = PaymentsProduct(
+            name="Test Product",
+            amount=1000,
+            currency="USD",
+            org_id=sample_waitlist_config.org_id
+        )
+        db_session.add(product)
+        db_session.commit()
+        db_session.refresh(product)
+
         # Create preferences
         pref1 = WaitlistCoursePreference(
             user_id=waitlist_user.id,
-            course_id=sample_course.id,
+            payments_product_id=product.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_waitlist_config.org_id,
             creation_date=datetime.now(timezone.utc).isoformat()
@@ -187,8 +198,8 @@ class TestGetCoursePreferenceAnalytics:
         
         # Check structure
         first_pref = result["courses"][0]
-        assert "course_id" in first_pref
-        assert "course_name" in first_pref
+        assert "product_id" in first_pref
+        assert "product_name" in first_pref
         assert "selection_count" in first_pref
         assert first_pref["selection_count"] >= 1
     
@@ -216,13 +227,25 @@ class TestGetCoursePreferenceAnalytics:
         
         db_session.commit()
         
+        # Create product
+        product = PaymentsProduct(
+            name="Popular Product",
+            amount=5000,
+            currency="USD",
+            org_id=sample_org.id
+        )
+        db_session.add(product)
+        db_session.commit()
+        db_session.refresh(product)
+        
         # Create preferences for all users
         for user in users:
             pref = WaitlistCoursePreference(
                 user_id=user.id,
-                course_id=sample_course.id,
+                payments_product_id=product.id,
                 waitlist_config_id=sample_waitlist_config.id,
-                selected_date=datetime.now(timezone.utc).isoformat()
+                org_id=sample_org.id,
+                creation_date=datetime.now(timezone.utc).isoformat()
             )
             db_session.add(pref)
         
@@ -234,7 +257,7 @@ class TestGetCoursePreferenceAnalytics:
             sample_waitlist_config.waitlist_uuid
         )
         
-        course_data = next((c for c in result["courses"] if c["course_id"] == sample_course.id), None)
+        course_data = next((c for c in result["courses"] if c["product_id"] == product.id), None)
         assert course_data is not None
         assert course_data["selection_count"] >= 3
     
@@ -262,12 +285,24 @@ class TestGetUserCoursePreferences:
         """Test getting a specific user's course preferences"""
         from datetime import datetime, timezone
         
+        # Create product
+        product = PaymentsProduct(
+            name="Preference Product",
+            amount=1500,
+            currency="USD",
+            org_id=sample_waitlist_config.org_id
+        )
+        db_session.add(product)
+        db_session.commit()
+        db_session.refresh(product)
+
         # Create preference
         pref = WaitlistCoursePreference(
             user_id=waitlist_user.id,
-            course_id=sample_course.id,
+            payments_product_id=product.id,
             waitlist_config_id=sample_waitlist_config.id,
-            selected_date=datetime.now(timezone.utc).isoformat()
+            org_id=sample_waitlist_config.org_id,
+            creation_date=datetime.now(timezone.utc).isoformat()
         )
         db_session.add(pref)
         db_session.commit()
@@ -280,7 +315,7 @@ class TestGetUserCoursePreferences:
         )
         
         assert len(result) >= 1
-        assert any(p["course_id"] == sample_course.id for p in result)
+        assert any(p["product_id"] == product.id for p in result)
     
     @pytest.mark.asyncio
     async def test_get_multiple_user_preferences(self, db_session, sample_waitlist_config, 
@@ -288,29 +323,28 @@ class TestGetUserCoursePreferences:
         """Test user with multiple course preferences"""
         from datetime import datetime, timezone
         
-        # Create multiple courses
-        courses = []
+        # Create multiple products
+        products = []
         for i in range(3):
-            course = Course(
-                name=f"Course {i}",
-                course_uuid=f"course-{i}-uuid",
-                org_id=sample_org.id,
-                author_id=1,
-                public=True,
-                open_to_contributors=False
+            product = PaymentsProduct(
+                name=f"Product {i}",
+                amount=2000,
+                currency="USD",
+                org_id=sample_org.id
             )
-            db_session.add(course)
-            courses.append(course)
+            db_session.add(product)
+            products.append(product)
         
         db_session.commit()
         
-        # Create preferences for all courses
-        for course in courses:
+        # Create preferences for all products
+        for product in products:
             pref = WaitlistCoursePreference(
                 user_id=waitlist_user.id,
-                course_id=course.id,
+                payments_product_id=product.id,
                 waitlist_config_id=sample_waitlist_config.id,
-                selected_date=datetime.now(timezone.utc).isoformat()
+                org_id=sample_org.id,
+                creation_date=datetime.now(timezone.utc).isoformat()
             )
             db_session.add(pref)
         

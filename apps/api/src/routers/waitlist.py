@@ -45,7 +45,7 @@ class WaitlistUserRegistration(BaseModel):
     first_name: str = ""
     last_name: str = ""
     bio: Optional[str] = ""
-    selected_course_ids: List[int] = []
+    selected_product_ids: List[int] = []
 
 
 # ==================== Waitlist Configuration Endpoints (Admin) ====================
@@ -245,7 +245,7 @@ async def join_waitlist(
         db_session,
         user_create,
         waitlist_uuid,
-        user_data.selected_course_ids
+        user_data.selected_product_ids
     )
 
 

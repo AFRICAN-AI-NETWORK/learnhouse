@@ -26,6 +26,7 @@ import CoursesActions from '@components/Objects/Courses/CourseActions/CoursesAct
 import CourseActionsMobile from '@components/Objects/Courses/CourseActions/CourseActionsMobile'
 import CourseAuthors from '@components/Objects/Courses/CourseAuthors/CourseAuthors'
 import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs'
+import BundleUpsellBanner from '@components/Objects/BundleUpsellBanner'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 import { useTranslation } from 'react-i18next'
@@ -137,6 +138,14 @@ const CourseClient = (props: any) => {
         <>
           <GeneralWrapperStyled>
             <CourseBreadcrumbs course={course} orgslug={orgslug} />
+
+            {/* Upsell Banner for Bundles */}
+            <BundleUpsellBanner
+              course={course}
+              orgslug={orgslug}
+              orgId={org?.id}
+            />
+
             <div className="pb-2 pt-3 flex flex-col md:flex-row justify-between items-start md:items-center">
               <div>
                 <h1 className="text-3xl md:text-3xl  font-bold">
