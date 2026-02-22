@@ -10,7 +10,6 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from sqlmodel import Session, select
 from src.core.events.database import engine
 from src.services.referrals.referral_commissions import update_pending_commissions_to_eligible

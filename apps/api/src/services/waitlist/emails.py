@@ -1,12 +1,11 @@
 """Waitlist Email Service - Email templates and batch processing"""
 
+import asyncio
 import logging
 from datetime import datetime
-import asyncio
+
 from pydantic import EmailStr
 from sqlmodel import Session, select
-
-logger = logging.getLogger(__name__)
 
 from src.db.users import User, UserRead
 from src.db.organizations import Organization, OrganizationRead
@@ -16,6 +15,8 @@ from src.db.waitlist import (
     WaitlistEmailLog,
 )
 from src.services.email.utils import send_email
+
+logger = logging.getLogger(__name__)
 
 
 def send_waitlist_confirmation_email(
