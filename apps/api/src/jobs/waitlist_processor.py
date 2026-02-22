@@ -10,7 +10,7 @@ Runs periodically via APScheduler to:
 """
 
 import asyncio
-from datetime import datetime
+import logging
 
 from src.services.waitlist.emails import (
     process_waitlist_activations,
@@ -19,36 +19,37 @@ from src.services.waitlist.emails import (
 from sqlmodel import Session
 from src.core.events.database import engine
 
+logger = logging.getLogger(__name__)
+
 
 async def run_waitlist_activation_job():
     """
     Main job that processes waitlist activations.
-    Runs periodically (every 5 minutes recommended).
+    Runs every minute (cron) for near-real-time delivery.
     """
-    print(f"[{datetime.now()}] Running waitlist activation job...")
+    logger.info("Running waitlist activation job")
     
     with Session(engine) as db_session:
         try:
             await process_waitlist_activations(db_session)
-            print(f"[{datetime.now()}] Waitlist activation job completed")
+            logger.info("Waitlist activation job completed")
         except Exception as e:
-            print(f"[{datetime.now()}] Error in waitlist activation job: {str(e)}")
+            logger.error(f"Error in waitlist activation job: {e}", exc_info=True)
 
 
 async def run_retry_failed_emails_job():
     """
     Retry job for failed email deliveries.
-    Runs less frequently (every hour recommended).
+    Runs every 15 minutes to avoid blacklisting by mail providers.
     """
-    print(f"[{datetime.now()}] Running retry failed emails job...")
+    logger.info("Running retry failed emails job")
     
     with Session(engine) as db_session:
         try:
             await retry_failed_waitlist_emails(db_session)
-            print(f"[{datetime.now()}] Retry failed emails job completed")
+            logger.info("Retry failed emails job completed")
         except Exception as e:
-            print(f"[{datetime.now()}] Error in retry failed emails job: {str(e)}")
-
+            logger.error(f"Error in retry failed emails job: {e}", exc_info=True)
 
 
 def sync_run_waitlist_activation_job():

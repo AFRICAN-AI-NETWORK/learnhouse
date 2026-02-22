@@ -74,9 +74,11 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 register_ee_middlewares(app)
 
 # Background Jobs Scheduler
+# Uses cron-based triggers with jitter to prevent thundering-herd spikes,
+# max_instances=1 for overlap protection, and coalesce=True so missed runs
+# collapse into a single execution on recovery.
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
-    from apscheduler.triggers.interval import IntervalTrigger
     from apscheduler.triggers.cron import CronTrigger
     from src.jobs.waitlist_processor import (
         sync_run_waitlist_activation_job,
@@ -87,70 +89,91 @@ try:
         process_payout_requests_job,
     )
     import os
-    
+    import logging as _logging
+
+    _scheduler_log = _logging.getLogger("scheduler")
+
     # Waitlist processor configuration
     WAITLIST_PROCESSOR_ENABLED = os.getenv("WAITLIST_PROCESSOR_ENABLED", "true").lower() == "true"
-    WAITLIST_PROCESSOR_INTERVAL = int(os.getenv("WAITLIST_PROCESSOR_INTERVAL", "300"))  # Default: 5 minutes
-    WAITLIST_RETRY_INTERVAL = int(os.getenv("WAITLIST_RETRY_INTERVAL", "3600"))  # Default: 1 hour
-    
+
     # Referral processor configuration
     REFERRAL_PROCESSOR_ENABLED = os.getenv("REFERRAL_PROCESSOR_ENABLED", "true").lower() == "true"
     REFERRAL_COMMISSION_CHECK_HOUR = int(os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0"))  # Default: midnight
-    REFERRAL_PAYOUT_INTERVAL = int(os.getenv("REFERRAL_PAYOUT_INTERVAL", "300"))  # Default: 5 minutes
-    
+
     jobs_enabled = WAITLIST_PROCESSOR_ENABLED or REFERRAL_PROCESSOR_ENABLED
-    
+
     if jobs_enabled:
         scheduler = AsyncIOScheduler()
-        
-        # Waitlist jobs
+
+        # ── Waitlist jobs ──────────────────────────────────────────────
         if WAITLIST_PROCESSOR_ENABLED:
+            # Activation: every 1 minute — UX priority for near-real-time delivery
             scheduler.add_job(
                 sync_run_waitlist_activation_job,
-                trigger=IntervalTrigger(seconds=WAITLIST_PROCESSOR_INTERVAL),
+                trigger=CronTrigger.from_crontab("*/1 * * * *"),
                 id="waitlist_activation",
                 name="Process Waitlist Activations",
                 replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                jitter=5,
             )
-            
+
+            # Retry: every 15 minutes — gives mail providers time to recover
             scheduler.add_job(
                 sync_run_retry_failed_emails_job,
-                trigger=IntervalTrigger(seconds=WAITLIST_RETRY_INTERVAL),
+                trigger=CronTrigger.from_crontab("*/15 * * * *"),
                 id="waitlist_retry",
                 name="Retry Failed Waitlist Emails",
                 replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                jitter=10,
             )
-            
-            print(f"✓ Waitlist jobs scheduled (activation: {WAITLIST_PROCESSOR_INTERVAL}s, retry: {WAITLIST_RETRY_INTERVAL}s)")
-        
-        # Referral jobs
+
+            _scheduler_log.info(
+                "Waitlist jobs scheduled (activation: */1min, retry: */15min)"
+            )
+
+        # ── Referral jobs ──────────────────────────────────────────────
         if REFERRAL_PROCESSOR_ENABLED:
-            # Commission eligibility job (runs daily at specified hour)
+            # Commission eligibility: daily at configured hour
             scheduler.add_job(
                 process_commission_eligibility_job,
                 trigger=CronTrigger(hour=REFERRAL_COMMISSION_CHECK_HOUR, minute=0),
                 id="referral_commission_eligibility",
                 name="Update Pending Commissions to Eligible",
                 replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                jitter=15,
             )
-            
-            # Payout processing job (runs every 5 minutes by default)
+
+            # Payout processing: every 5 minutes
             scheduler.add_job(
                 process_payout_requests_job,
-                trigger=IntervalTrigger(seconds=REFERRAL_PAYOUT_INTERVAL),
+                trigger=CronTrigger.from_crontab("*/5 * * * *"),
                 id="referral_payout_processing",
                 name="Process Payout Requests",
                 replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+                jitter=10,
             )
-            
-            print(f"✓ Referral jobs scheduled (commission check: {REFERRAL_COMMISSION_CHECK_HOUR}:00, payouts: {REFERRAL_PAYOUT_INTERVAL}s)")
+
+            _scheduler_log.info(
+                "Referral jobs scheduled (commission: daily@%02d:00, payouts: */5min)",
+                REFERRAL_COMMISSION_CHECK_HOUR,
+            )
     else:
         scheduler = None
-        print("✗ Background jobs disabled")
-        
+        _scheduler_log.warning("Background jobs disabled")
+
 except ImportError as e:
     scheduler = None
-    print(f"✗ APScheduler not installed. Background jobs will not run. Error: {e}")
+    _logging.getLogger("scheduler").error(
+        "APScheduler not installed — background jobs will not run: %s", e
+    )
 
 # Events
 app.add_event_handler("startup", startup_app(app))
@@ -162,7 +185,7 @@ async def start_scheduler():
     """Start APScheduler on application startup"""
     if scheduler is not None:
         scheduler.start()
-        print("✓ Background job scheduler started")
+        _logging.getLogger("scheduler").info("Background job scheduler started")
 
 # Stop scheduler on app shutdown
 @app.on_event("shutdown")
