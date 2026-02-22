@@ -2,12 +2,12 @@ import { getAPIUrl } from '@services/config/config'
 
 export const getPublicProducts = async (orgId: string | number) => {
   const response = await fetch(
-    `${getAPIUrl()}/payments/${orgId}/public-products`,
+    `${getAPIUrl()}payments/${orgId}/public-products`,
     {
       headers: {
         'Content-Type': 'application/json',
       },
-      next: { tags: ['public-products'], revalidate: 60 }, // Cache for 1 minute
+      cache: 'no-store', // Always fetch fresh pricing data
     }
   )
 

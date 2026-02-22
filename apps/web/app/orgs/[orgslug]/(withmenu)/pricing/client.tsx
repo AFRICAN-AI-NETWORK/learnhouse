@@ -4,10 +4,12 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, Info } from 'lucide-react'
+import { Check, Info, Loader2 } from 'lucide-react'
 import { getUriWithOrg } from '@services/config/config'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
+import { getStripeProductCheckoutSession } from '@services/payments/products'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 type PaymentsProduct = {
   id: number
@@ -31,9 +33,48 @@ const parseBenefits = (benefitsString?: string) => {
 
 export default function PricingPageClient({ orgslug, initialProducts }: Props) {
   const { t } = useTranslation()
+  const router = useRouter()
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>(
     'monthly'
   )
+  const [loadingProductId, setLoadingProductId] = useState<number | null>(null)
+
+  const handleCheckout = async (productId: number) => {
+    if (!access_token) {
+      // Redirect to login if not authenticated
+      router.push('/login?orgslug=' + orgslug)
+      return
+    }
+
+    try {
+      setLoadingProductId(productId)
+      const redirectUri =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}${getUriWithOrg(orgslug, '/courses')}`
+          : ''
+
+      // orgId is required for the checkout session API
+      // We'll extract it from the first product or use a robust method if available
+      const orgId = session?.data?.user?.current_org_id || 1 // Fallback if missing
+
+      const checkoutResponse = (await getStripeProductCheckoutSession(
+        orgId,
+        productId,
+        redirectUri,
+        access_token
+      )) as any
+
+      if (checkoutResponse && checkoutResponse.checkout_url) {
+        window.location.href = checkoutResponse.checkout_url
+      }
+    } catch (error) {
+      // Failed to initialize checkout
+    } finally {
+      setLoadingProductId(null)
+    }
+  }
 
   // In a real scenario, you'd define rules for categorization (e.g., by name string matching or a new DB field).
   // For now, we render all active products dynamically. You can filter/group them based on your business logic.
@@ -61,18 +102,8 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl mb-4">
-            Simple, Transparent Pricing
-          </h1>
-          <p className="text-xl text-gray-500">
-            Choose the perfect package to accelerate your journey in the AAN
-            Ecosystem. From foundational knowledge to tech specialization.
-          </p>
-        </div>
-
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto w-full">
         {initialProducts.length === 0 ? (
           <div className="text-center py-20">
             <Info className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -100,38 +131,42 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
                 <motion.div
                   key={product.id}
                   variants={itemVariants}
-                  className={`relative flex flex-col bg-white rounded-2xl p-8 nice-shadow border ${
+                  className={`relative flex flex-col bg-white rounded-xl p-6 sm:p-8 transition-all duration-200 ${
                     isPopular
-                      ? 'border-primary shadow-xl scale-105 z-10'
-                      : 'border-gray-200'
+                      ? 'border-2 border-gray-900 shadow-[0_8px_30px_rgb(0,0,0,0.06)] sm:scale-[1.02] z-10'
+                      : 'border border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   {isPopular && (
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase bg-primary text-white shadow-sm">
+                    <div className="absolute top-0 right-4 sm:right-6 -translate-y-1/2">
+                      <span className="inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase bg-gray-900 text-white shadow-sm whitespace-nowrap">
                         Most Popular
                       </span>
                     </div>
                   )}
 
-                  <div className="mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <div className="mb-8">
+                    <h3 className="text-xl font-extrabold text-[#111827] uppercase tracking-tight mb-2 leading-tight">
                       {product.name}
                     </h3>
-                    <p className="text-sm text-gray-500 min-h-[40px]">
+                    <p className="text-[15px] font-medium text-gray-400 min-h-[40px]">
                       {product.description}
                     </p>
                   </div>
 
-                  <div className="mb-6">
-                    <div className="flex items-baseline text-5xl font-extrabold text-gray-900">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: product.currency,
-                        minimumFractionDigits: 0,
-                      }).format(product.amount)}
+                  <div className="mb-8">
+                    <div className="flex items-start text-gray-900">
+                      <span className="text-5xl font-black tracking-tighter mt-1">
+                        $
+                      </span>
+                      <span className="text-6xl sm:text-7xl font-black tracking-tighter ml-1">
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'decimal',
+                          minimumFractionDigits: 0,
+                        }).format(product.amount)}
+                      </span>
                       {product.product_type === 'subscription' && (
-                        <span className="ml-1 text-xl font-medium text-gray-500">
+                        <span className="ml-1 text-lg font-medium text-gray-500 self-end mb-2">
                           /mo
                         </span>
                       )}
@@ -140,25 +175,30 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
 
                   <ul className="flex-1 space-y-4 mb-8">
                     {benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-start">
-                        <div className="shrink-0">
-                          <Check className="h-5 w-5 text-green-500" />
-                        </div>
-                        <p className="ml-3 text-sm text-gray-700">{benefit}</p>
+                      <li key={i} className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5 stroke-3" />
+                        <p className="text-[15px] leading-relaxed text-[#4B5563]">
+                          {benefit}
+                        </p>
                       </li>
                     ))}
                   </ul>
 
-                  <Link
-                    href={getUriWithOrg(orgslug, `/checkout/${product.id}`)}
-                    className={`block w-full text-center px-6 py-3 border border-transparent text-base font-medium rounded-xl transition-colors duration-200 ${
+                  <button
+                    onClick={() => handleCheckout(product.id)}
+                    disabled={loadingProductId === product.id}
+                    className={`w-full flex justify-center items-center px-6 py-3.5 border border-transparent text-base font-bold rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
                       isPopular
-                        ? 'bg-primary text-white hover:bg-primary/90 shadow-md'
-                        : 'bg-primary/10 text-primary hover:bg-primary/20'
+                        ? 'bg-[#111827] text-white hover:bg-black shadow-[0_4px_14px_0_rgb(0,0,0,0.25)]'
+                        : 'bg-white text-[#111827] border-gray-300 hover:bg-gray-50 shadow-sm'
                     }`}
                   >
-                    Get Started
-                  </Link>
+                    {loadingProductId === product.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      'Get Started'
+                    )}
+                  </button>
                 </motion.div>
               )
             })}

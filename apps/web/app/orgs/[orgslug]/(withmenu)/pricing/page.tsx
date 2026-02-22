@@ -1,5 +1,5 @@
 import PricingPageClient from './client'
-import { getOrgFromSlug } from '@services/orgs/orgs'
+import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { getPublicProducts } from '@services/payments/public-products'
 import { notFound } from 'next/navigation'
 
@@ -13,7 +13,10 @@ export default async function PricingPage(props: {
   params: Promise<{ orgslug: string }>
 }) {
   const params = await props.params
-  const org = await getOrgFromSlug(params.orgslug)
+  const org = await getOrganizationContextInfo(params.orgslug, {
+    revalidate: 1800,
+    tags: ['organizations'],
+  })
 
   if (!org) {
     return notFound()
