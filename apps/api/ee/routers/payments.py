@@ -12,7 +12,7 @@ from src.services.payments.payments_config import (
     delete_payments_config,
 )
 from src.db.payments.payments_products import PaymentsProductCreate, PaymentsProductRead, PaymentsProductUpdate
-from src.services.payments.payments_products import create_payments_product, delete_payments_product, get_payments_product, get_products_by_course, list_payments_products, update_payments_product
+from src.services.payments.payments_products import create_payments_product, delete_payments_product, get_payments_product, get_products_by_course, list_payments_products, update_payments_product, list_public_payments_products
 from src.services.payments.payments_courses import (
     link_course_to_product,
     unlink_course_from_product,
@@ -116,6 +116,14 @@ async def api_get_payments_products(
     db_session: Session = Depends(get_db_session),
 ) -> list[PaymentsProductRead]:
     return await list_payments_products(request, org_id, current_user, db_session)
+
+@router.get("/{org_id}/public-products")
+async def api_get_public_payments_products(
+    request: Request,
+    org_id: int,
+    db_session: Session = Depends(get_db_session),
+) -> list[PaymentsProductRead]:
+    return await list_public_payments_products(request, org_id, db_session)
 
 @router.get("/{org_id}/products/{product_id}")
 async def api_get_payments_product(

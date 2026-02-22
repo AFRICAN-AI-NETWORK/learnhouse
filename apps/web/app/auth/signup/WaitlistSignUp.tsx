@@ -22,7 +22,7 @@ import {
   User,
   UserPlus,
 } from 'lucide-react'
-import CourseSelector from '@components/Objects/CourseSelector'
+import ProductSelector from '@components/Objects/ProductSelector'
 import CountdownTimer from '@components/Utils/CountdownTimer'
 import {
   registerWaitlistUser,
@@ -98,7 +98,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -171,7 +171,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       try {
         const payload = {
           ...values,
-          selected_course_ids: selectedCourses,
+          selected_product_ids: selectedProducts,
         }
 
         const res = await registerWaitlistUser(waitlistUuid, payload)
@@ -239,10 +239,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       {/* Progress Bar Container */}
       <div className="w-full max-w-md mx-auto mb-10 px-4">
         <div className="relative flex justify-between">
-          <div className="absolute top-[38px] left-0 w-full h-[1px] bg-slate-200" />
+          <div className="absolute top-[38px] left-0 w-full h-px bg-slate-200" />
 
           <div
-            className="absolute top-[38px] left-0 h-[1px] bg-black transition-all duration-500"
+            className="absolute top-[38px] left-0 h-px bg-black transition-all duration-500"
             style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
           />
 
@@ -276,7 +276,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             <span
               className={`text-[10px] font-bold uppercase mb-3 transition-colors duration-300 ${step === 3 ? 'text-black' : 'text-slate-300'}`}
             >
-              Courses
+              Packages
             </span>
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${step >= 3 ? 'bg-black text-white border-black' : 'bg-white text-slate-300 border-slate-100'}`}
@@ -488,10 +488,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-            <CourseSelector
-              waitlistUuid={waitlistUuid}
-              selected={selectedCourses}
-              onChange={setSelectedCourses}
+            <ProductSelector
+              orgId={waitlistDetails?.org_id || 0}
+              selected={selectedProducts}
+              onChange={setSelectedProducts}
             />
 
             <div className="flex  sm:flex-row gap-3 pt-6">
