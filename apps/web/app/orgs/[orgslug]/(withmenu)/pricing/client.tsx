@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { getStripeProductCheckoutSession } from '@services/payments/products'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import toast from 'react-hot-toast'
 
 type PaymentsProduct = {
   id: number
@@ -68,9 +69,15 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
 
       if (checkoutResponse && checkoutResponse.checkout_url) {
         window.location.href = checkoutResponse.checkout_url
+      } else {
+        toast.error(
+          checkoutResponse?.error ||
+            checkoutResponse?.detail ||
+            'Failed to initialize checkout session'
+        )
       }
-    } catch (error) {
-      // Failed to initialize checkout
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to initialize checkout')
     } finally {
       setLoadingProductId(null)
     }
