@@ -73,10 +73,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Register EE Middlewares if available
 register_ee_middlewares(app)
 
-# Background Jobs Scheduler
-# Uses cron-based triggers with jitter to prevent thundering-herd spikes,
-# max_instances=1 for overlap protection, and coalesce=True so missed runs
-# collapse into a single execution on recovery.
+
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
