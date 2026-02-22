@@ -36,6 +36,7 @@ function SignUpClient(props: SignUpClientProps) {
 
   const getSubtitle = () => {
     if (joinMethod === 'open') return t('auth.create_your_account_in_steps')
+    if (joinMethod === 'waitlist') return 'Join the waitlist'
     if (inviteCode) return t('auth.invited_to_join')
     return t('auth.invite_code_required')
   }

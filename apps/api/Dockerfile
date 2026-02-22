@@ -18,14 +18,14 @@ RUN uv sync --frozen
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
+RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 # Expose port
 EXPOSE 9000
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:9000/api/v1/health || exit 1
+  CMD curl -f http://0.0.0.0:9000/api/v1/health || exit 1
 
 # Use entrypoint script
 ENTRYPOINT ["./docker-entrypoint.sh"]

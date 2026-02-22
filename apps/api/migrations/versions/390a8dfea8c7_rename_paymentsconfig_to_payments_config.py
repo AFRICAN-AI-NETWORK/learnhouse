@@ -28,8 +28,9 @@ def upgrade() -> None:
     tables = inspector.get_table_names()
     
     if 'paymentsconfig' in tables:
-        # Table exists, rename it to payments_config
-        op.rename_table('paymentsconfig', 'payments_config')
+        # Table exists, check if target already exists before renaming
+        if 'payments_config' not in tables:
+            op.rename_table('paymentsconfig', 'payments_config')
         
         # Add 'paystack' to the enum if it doesn't exist
         # Check if enum exists and if 'paystack' value is already in it

@@ -1,11 +1,11 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import CountdownTimer from '@components/Utils/CountdownTimer'
 import { getWaitlistDetails } from '@services/waitlist/waitlist'
 import { WaitlistConfig } from '@/types/waitlist'
 import { CheckCircle2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 function CountdownPage() {
   const searchParams = useSearchParams()
@@ -25,7 +25,7 @@ function CountdownPage() {
           }
         }
       } catch (err) {
-        console.error('Failed to fetch waitlist:', err)
+        toast.error('Failed to fetch waitlist:')
       } finally {
         setLoading(false)
       }

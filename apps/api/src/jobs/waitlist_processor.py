@@ -11,31 +11,16 @@ Runs periodically via APScheduler to:
 
 import asyncio
 from datetime import datetime
-from sqlmodel import create_engine
-from sqlalchemy.orm import sessionmaker
-import os
 
 from src.services.waitlist.emails import (
     process_waitlist_activations,
     retry_failed_waitlist_emails,
 )
+from sqlmodel import Session
+from src.core.events.database import engine
 
-
-# Database connection setup
-def get_database_url():
-    """Get database URL from environment variables"""
-    db_host = os.getenv("DB_HOST", "localhost")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_user = os.getenv("DB_USER", "postgres")
-    db_password = os.getenv("DB_PASSWORD", "postgres")
-    db_name = os.getenv("DB_NAME", "learnhouse")
-    
-    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-
-
-# Create engine and session maker
-engine = create_engine(get_database_url())
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def get_session():
+    return Session(engine)
 
 
 async def run_waitlist_activation_job():
@@ -45,7 +30,7 @@ async def run_waitlist_activation_job():
     """
     print(f"[{datetime.now()}] Running waitlist activation job...")
     
-    db_session = SessionLocal()
+    db_session = get_session()
     try:
         await process_waitlist_activations(db_session)
         print(f"[{datetime.now()}] Waitlist activation job completed")
@@ -62,7 +47,7 @@ async def run_retry_failed_emails_job():
     """
     print(f"[{datetime.now()}] Running retry failed emails job...")
     
-    db_session = SessionLocal()
+    db_session = get_session()
     try:
         await retry_failed_waitlist_emails(db_session)
         print(f"[{datetime.now()}] Retry failed emails job completed")
