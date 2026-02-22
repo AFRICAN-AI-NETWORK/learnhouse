@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import React from 'react'
 import africanAiLogo from '../../../../public/african_ai_horizontal.png'
-import { BookCopy, School, Settings, Users } from 'lucide-react'
+import { BookCopy, School, Settings, Users, GitMerge } from 'lucide-react'
 import Link from 'next/link'
 import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useTranslation } from 'react-i18next'
@@ -39,6 +39,12 @@ function DashboardHome() {
             icon={<Users className="mx-auto text-gray-500/100" size={50} />}
             title={t('dashboard.home.cards.users.title')}
             description={t('dashboard.home.cards.users.description')}
+          />
+          <DashboardCard
+            href="/dash/referrals"
+            icon={<GitMerge className="mx-auto text-gray-500/100" size={50} />}
+            title="Referrals"
+            description="Earn commissions by referring new users"
           />
         </div>
       </AdminAuthorization>

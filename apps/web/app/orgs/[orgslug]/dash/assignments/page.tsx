@@ -60,7 +60,7 @@ function AssignmentsHome() {
 
   return (
     <div className="flex w-full">
-      <div className="pl-4 sm:pl-10 mr-4 sm:mr-10 tracking-tighter flex flex-col space-y-5 w-full">
+      <div className="pl-4 sm:pl-10 mr-4 sm:mr-10 tracking-tighter flex flex-col space-y-5 w-full mb-8 md:mb-0">
         <div className="flex flex-col space-y-2">
           <BreadCrumbs type="assignments" />
           <h1 className="pt-3 flex font-bold text-4xl">

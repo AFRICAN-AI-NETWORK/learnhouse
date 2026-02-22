@@ -1,7 +1,7 @@
 'use client'
 import { useFormik } from 'formik'
-import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import React, { useState, useEffect } from 'react'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -21,6 +21,7 @@ import {
   LucideLock,
   Mail,
   RefreshCw,
+  Tag,
   User,
   UserPlus,
 } from 'lucide-react'
@@ -80,10 +81,32 @@ function OpenSignUpComponent() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const org = useOrg() as any
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1)
+  const [referralCode, setReferralCode] = useState('')
+  const [referralCodeError, setReferralCodeError] = useState('')
+
+  // Auto-fill referral code from URL (?ref=CODE)
+  useEffect(() => {
+    const urlCode = searchParams?.get('ref')
+    if (urlCode && urlCode !== 'undefined') {
+      setReferralCode(urlCode)
+      return
+    }
+
+    // Fallback: read from localStorage (set by /ref/[code] page)
+    try {
+      const stored = localStorage.getItem('referral_code')
+      if (stored) {
+        setReferralCode(stored)
+      }
+    } catch {
+      // localStorage unavailable
+    }
+  }, [searchParams?.toString()])
 
   const handleNextStep = async () => {
     const errors = await formik.validateForm()
@@ -114,13 +137,44 @@ function OpenSignUpComponent() {
     enableReinitialize: true,
     onSubmit: async (values) => {
       setError('')
+      setReferralCodeError('')
       setMessage('')
       setIsSubmitting(true)
 
-      const res = await signup(values)
+      // ── Device fingerprinting (fail-silent)
+      let device_id: string | undefined
+      let browser_fingerprint: { visitor_id: string } | undefined
+      try {
+        const FingerprintJS = await import('@fingerprintjs/fingerprintjs')
+        const agent = await FingerprintJS.load()
+        const result = await agent.get()
+        browser_fingerprint = { visitor_id: result.visitorId }
+        device_id = result.visitorId
+      } catch {
+        /* fingerprint unavailable — proceed without it */
+      }
+
+      const payload: typeof values & {
+        referral_code?: string
+        device_id?: string
+        browser_fingerprint?: { visitor_id: string }
+      } = {
+        ...values,
+        ...(device_id ? { device_id } : {}),
+        ...(browser_fingerprint ? { browser_fingerprint } : {}),
+        ...(referralCode.trim() ? { referral_code: referralCode.trim() } : {}),
+      }
+
+      const res = await signup(payload)
       const response = await res.json()
 
       if (res.status === 200) {
+        // Clear stored referral code after successful signup
+        try {
+          localStorage.removeItem('referral_code')
+        } catch {
+          /* ignore */
+        }
         setMessage(
           'Account created successfully! Please check your email to verify your account before logging in.'
         )
@@ -134,7 +188,43 @@ function OpenSignUpComponent() {
         res.status === 404 ||
         res.status === 409
       ) {
-        setError(response.detail)
+        // If error is referral-related, surface inline without blocking signup
+        const detail: string = response.detail ?? ''
+        if (
+          referralCode.trim() &&
+          (detail.toLowerCase().includes('referral') ||
+            detail.toLowerCase().includes('code'))
+        ) {
+          setReferralCodeError(
+            'Invalid referral code — your account was created without it.'
+          )
+          // Retry without referral code
+          const payloadWithoutRef = {
+            ...values,
+            device_id,
+            browser_fingerprint,
+          }
+          const retryRes = await signup(payloadWithoutRef)
+          if (retryRes.status === 200) {
+            try {
+              localStorage.removeItem('referral_code')
+            } catch {
+              /* ignore */
+            }
+            setMessage(
+              'Account created successfully! Please check your email to verify your account before logging in.'
+            )
+            setTimeout(() => {
+              const orgSlug = org?.slug || 'default'
+              router.push(`/login?orgslug=${orgSlug}`)
+            }, 3000)
+          } else {
+            const retryRes_json = await retryRes.json()
+            setError(retryRes_json.detail ?? t('common.something_went_wrong'))
+          }
+        } else {
+          setError(detail || t('common.something_went_wrong'))
+        }
       } else {
         setError(t('common.something_went_wrong'))
       }
@@ -403,6 +493,35 @@ function OpenSignUpComponent() {
                 />
               </Form.Control>
             </FormField>
+
+            {/* Referral Code — optional */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Referral Code{' '}
+                <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <div className="relative">
+                <Tag className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  id="referral_code"
+                  name="referral_code"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => {
+                    setReferralCode(e.target.value)
+                    setReferralCodeError('')
+                  }}
+                  placeholder="Enter a referral code"
+                  autoComplete="off"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                />
+              </div>
+              {referralCodeError && (
+                <p className="mt-1 text-xs text-amber-600 font-medium">
+                  {referralCodeError}
+                </p>
+              )}
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-6">
               <button

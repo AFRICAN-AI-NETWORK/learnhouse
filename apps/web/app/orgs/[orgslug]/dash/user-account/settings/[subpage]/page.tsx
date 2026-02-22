@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, use } from 'react';
+import React, { useEffect, use } from 'react'
 import { motion } from 'framer-motion'
 import UserEditGeneral from '@components/Dashboard/Pages/UserAccount/UserEditGeneral/UserEditGeneral'
 import UserEditPassword from '@components/Dashboard/Pages/UserAccount/UserEditPassword/UserEditPassword'
@@ -8,16 +8,16 @@ import { getUriWithOrg } from '@services/config/config'
 import { Info, Lock, LucideIcon, User } from 'lucide-react'
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import UserProfile from '@components/Dashboard/Pages/UserAccount/UserProfile/UserProfile';
-import { useTranslation } from 'react-i18next';
+import UserProfile from '@components/Dashboard/Pages/UserAccount/UserProfile/UserProfile'
+import { useTranslation } from 'react-i18next'
 
 interface User {
-  username: string;
+  username: string
   // Add other user properties as needed
 }
 
 interface Session {
-  user?: User;
+  user?: User
   // Add other session properties as needed
 }
 
@@ -38,38 +38,41 @@ const navigationItems: NavigationItem[] = [
     id: 'general',
     labelKey: 'user.settings.tabs.general',
     icon: Info,
-    component: UserEditGeneral
+    component: UserEditGeneral,
   },
   {
     id: 'profile',
     labelKey: 'user.settings.tabs.profile',
     icon: User,
-    component: UserProfile
+    component: UserProfile,
   },
   {
     id: 'security',
     labelKey: 'user.settings.tabs.security',
     icon: Lock,
-    component: UserEditPassword
+    component: UserEditPassword,
   },
 ]
 
-const SettingsNavigation = ({ 
-  items, 
-  currentPage, 
-  orgslug 
-}: { 
+const SettingsNavigation = ({
+  items,
+  currentPage,
+  orgslug,
+}: {
   items: NavigationItem[]
   currentPage: string
-  orgslug: string 
+  orgslug: string
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation()
   return (
     <div className="flex space-x-5 font-black text-sm">
       {items.map((item) => (
         <Link
           key={item.id}
-          href={getUriWithOrg(orgslug, `/dash/user-account/settings/${item.id}`)}
+          href={getUriWithOrg(
+            orgslug,
+            `/dash/user-account/settings/${item.id}`
+          )}
         >
           <div
             className={`py-2 w-fit text-center border-black transition-all ease-linear ${
@@ -84,31 +87,32 @@ const SettingsNavigation = ({
         </Link>
       ))}
     </div>
-  );
+  )
 }
 
 function SettingsPage({ params }: { params: Promise<SettingsParams> }) {
-  const { subpage, orgslug } = use(params);
-  const session = useLHSession() as Session;
-  const { t } = useTranslation();
+  const { subpage, orgslug } = use(params)
+  const session = useLHSession() as Session
+  const { t } = useTranslation()
 
   useEffect(() => {}, [session])
 
-  const CurrentComponent = navigationItems.find(item => item.id === subpage)?.component;
+  const CurrentComponent = navigationItems.find(
+    (item) => item.id === subpage
+  )?.component
 
   return (
-    <div className="h-full w-full bg-[#f8f8f8] flex flex-col">
+    <div className="m-h-full w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden mb-10 md:mb-0">
       <div className="pl-10 pr-10 tracking-tight bg-[#fcfbfc] z-10 nice-shadow flex-shrink-0">
-        <BreadCrumbs
-          type="user"
-          last_breadcrumb={session?.user?.username}
-        />
+        <BreadCrumbs type="user" last_breadcrumb={session?.user?.username} />
         <div className="my-2 tracking-tighter">
           <div className="w-100 flex justify-between">
-            <div className="pt-3 flex font-bold text-4xl">{t('user.settings.title')}</div>
+            <div className="pt-3 flex font-bold text-4xl">
+              {t('user.settings.title')}
+            </div>
           </div>
         </div>
-        <SettingsNavigation 
+        <SettingsNavigation
           items={navigationItems}
           currentPage={subpage}
           orgslug={orgslug}
