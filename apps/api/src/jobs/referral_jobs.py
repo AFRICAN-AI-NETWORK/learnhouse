@@ -7,7 +7,9 @@ asyncio.to_thread() so the event loop is never blocked.
 """
 import asyncio
 import logging
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from sqlmodel import Session, select
 from src.core.events.database import engine
@@ -15,19 +17,48 @@ from src.services.referrals.referral_commissions import update_pending_commissio
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Capped thread pool – mirrors the waitlist processor strategy.
+# Prevents unbounded thread growth under heavy payout volume.
+# ---------------------------------------------------------------------------
+_JOB_MAX_WORKERS = int(os.getenv("JOB_THREAD_POOL_SIZE", "4"))
+_job_executor = ThreadPoolExecutor(
+    max_workers=_JOB_MAX_WORKERS,
+    thread_name_prefix="referral-job",
+)
+
+
+def _safe_asyncio_run(coro):
+    """
+    Call asyncio.run() only when there is NO running event loop.
+
+    """
+    # get_running_loop() returns the loop if one is active, otherwise raises
+    # RuntimeError.  We *want* the RuntimeError (= no loop = safe to proceed).
+    has_loop = True
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        has_loop = False
+
+    if has_loop:
+        raise RuntimeError(
+            "_safe_asyncio_run() must be called from a worker thread, "
+            "never from the main async event loop."
+        )
+
+    return asyncio.run(coro)
+
 
 # ---------------------------------------------------------------------------
-# Sync helpers – run inside a worker thread via asyncio.to_thread()
+# Sync helpers – run inside _job_executor via loop.run_in_executor()
 # ---------------------------------------------------------------------------
 
 def _sync_process_commissions() -> dict:
     """Process commission eligibility on a worker thread."""
     start = time.monotonic()
     with Session(engine) as db_session:
-        # update_pending_commissions_to_eligible is declared async but all its
-        # work is synchronous DB operations, so run it with asyncio.run()
-        # inside the thread.
-        updated_count = asyncio.run(
+        updated_count = _safe_asyncio_run(
             update_pending_commissions_to_eligible(db_session)
         )
     elapsed = time.monotonic() - start
@@ -52,8 +83,7 @@ def _sync_process_payouts() -> dict:
 
         for payout in payouts:
             try:
-                # process_payout_request has real async Paystack HTTP calls
-                asyncio.run(process_payout_request(payout.id, db_session))
+                _safe_asyncio_run(process_payout_request(payout.id, db_session))
                 processed_count += 1
             except Exception as e:
                 logger.error(
@@ -71,16 +101,19 @@ def _sync_process_payouts() -> dict:
 
 # ---------------------------------------------------------------------------
 # Async job entry-points (called by APScheduler)
+# Uses loop.run_in_executor with the capped _job_executor.
 # ---------------------------------------------------------------------------
 
 async def process_commission_eligibility_job():
     """
     Daily job to update pending commissions to eligible after 14-day refund period.
-    DB work is offloaded to a thread so the event loop stays responsive.
     """
     logger.info("Commission eligibility job started")
     try:
-        result = await asyncio.to_thread(_sync_process_commissions)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            _job_executor, _sync_process_commissions
+        )
         logger.info(
             "Commission eligibility job completed in %.2fs — "
             "updated %d commissions to eligible",
@@ -94,11 +127,14 @@ async def process_commission_eligibility_job():
 async def process_payout_requests_job():
     """
     Background job to process pending payout requests.
-    Runs every 5 minutes. DB + Paystack work offloaded to a thread.
+    Runs every 5 minutes. DB + Paystack work offloaded to a capped thread pool.
     """
     logger.info("Payout processing job started")
     try:
-        result = await asyncio.to_thread(_sync_process_payouts)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            _job_executor, _sync_process_payouts
+        )
         logger.info(
             "Payout processing job completed in %.2fs — "
             "processed: %d, failed: %d",

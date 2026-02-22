@@ -8,13 +8,13 @@ Runs periodically via APScheduler to:
 2. Send batch activation emails to waitlist users
 3. Retry failed email deliveries with exponential backoff
 
-All synchronous DB work is offloaded to a thread via asyncio.to_thread()
-so the event loop is never blocked by long-running queries.
 """
 
 import asyncio
 import logging
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from src.services.waitlist.emails import (
     process_waitlist_activations,
@@ -26,8 +26,36 @@ from src.core.events.database import engine
 logger = logging.getLogger(__name__)
 
 
+_JOB_MAX_WORKERS = int(os.getenv("JOB_THREAD_POOL_SIZE", "4"))
+_job_executor = ThreadPoolExecutor(
+    max_workers=_JOB_MAX_WORKERS,
+    thread_name_prefix="waitlist-job",
+)
+
+
+def _safe_asyncio_run(coro):
+    """
+    Call asyncio.run() only when there is NO running event loop.
+
+    
+    """
+    has_loop = True
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        has_loop = False
+
+    if has_loop:
+        raise RuntimeError(
+            "_safe_asyncio_run() must be called from a worker thread, "
+            "never from the main async event loop."
+        )
+
+    return asyncio.run(coro)
+
+
 # ---------------------------------------------------------------------------
-# Sync helpers – these run inside a worker thread via asyncio.to_thread()
+# Sync helpers – these run inside _job_executor via loop.run_in_executor()
 # ---------------------------------------------------------------------------
 
 def _sync_process_activations() -> dict:
@@ -41,7 +69,7 @@ def _sync_process_activations() -> dict:
         # async operation is asyncio.sleep() between batches (rate-limiting).
         # Running it through asyncio.run() inside the thread keeps the sleep
         # working while keeping the sync DB calls off the main event loop.
-        asyncio.run(process_waitlist_activations(db_session))
+        _safe_asyncio_run(process_waitlist_activations(db_session))
     elapsed = time.monotonic() - start
     return {"elapsed_s": round(elapsed, 2)}
 
@@ -53,24 +81,21 @@ def _sync_retry_failed_emails() -> dict:
     """
     start = time.monotonic()
     with Session(engine) as db_session:
-        asyncio.run(retry_failed_waitlist_emails(db_session))
+        _safe_asyncio_run(retry_failed_waitlist_emails(db_session))
     elapsed = time.monotonic() - start
     return {"elapsed_s": round(elapsed, 2)}
 
 
-# ---------------------------------------------------------------------------
-# Async job entry-points (called by APScheduler)
-# ---------------------------------------------------------------------------
-
 async def run_waitlist_activation_job():
     """
     Main job that processes waitlist activations.
-    Runs every minute (cron) for near-real-time delivery.
-    DB work is offloaded to a thread so the event loop stays responsive.
     """
     logger.info("Waitlist activation job started")
     try:
-        result = await asyncio.to_thread(_sync_process_activations)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            _job_executor, _sync_process_activations
+        )
         logger.info(
             "Waitlist activation job completed in %.2fs",
             result["elapsed_s"],
@@ -82,12 +107,14 @@ async def run_waitlist_activation_job():
 async def run_retry_failed_emails_job():
     """
     Retry job for failed email deliveries.
-    Runs every 15 minutes to avoid blacklisting by mail providers.
-    DB work is offloaded to a thread so the event loop stays responsive.
+
     """
     logger.info("Retry failed emails job started")
     try:
-        result = await asyncio.to_thread(_sync_retry_failed_emails)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            _job_executor, _sync_retry_failed_emails
+        )
         logger.info(
             "Retry failed emails job completed in %.2fs",
             result["elapsed_s"],
@@ -95,10 +122,6 @@ async def run_retry_failed_emails_job():
     except Exception as e:
         logger.error("Retry failed emails job failed: %s", e, exc_info=True)
 
-
-# ---------------------------------------------------------------------------
-# Synchronous wrappers (APScheduler calls these from its own thread pool)
-# ---------------------------------------------------------------------------
 
 def sync_run_waitlist_activation_job():
     """Synchronous wrapper for APScheduler"""
