@@ -121,8 +121,8 @@ class TestWaitlistCoursesEndpoints:
         """Test GET /api/v1/waitlist/config/{uuid}/preferences endpoint"""
         mock_get_analytics.return_value = [
             {
-                "course_id": 1,
-                "course_name": "Test Course",
+                "product_id": 1,
+                "product_name": "Test Course",
                 "selection_count": 10
             }
         ]

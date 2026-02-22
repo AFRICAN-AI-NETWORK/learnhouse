@@ -159,17 +159,16 @@ async def get_course_preference_analytics(
     # Get all course preferences for this waitlist
     prefs_query = (
         select(
-            Course.id,
-            Course.name,
-            Course.course_uuid,
+            PaymentsProduct.id,
+            PaymentsProduct.name,
             func.count(WaitlistCoursePreference.id).label('selection_count')
         )
         .join(
             WaitlistCoursePreference,
-            Course.id == WaitlistCoursePreference.course_id
+            PaymentsProduct.id == WaitlistCoursePreference.payments_product_id
         )
         .where(WaitlistCoursePreference.waitlist_config_id == waitlist.id)
-        .group_by(Course.id, Course.name, Course.course_uuid)
+        .group_by(PaymentsProduct.id, PaymentsProduct.name)
         .order_by(func.count(WaitlistCoursePreference.id).desc())
     )
     
@@ -184,12 +183,11 @@ async def get_course_preference_analytics(
     
     # Format analytics data
     courses_data = []
-    for course_id, course_name, course_uuid, count in results:
+    for product_id, product_name, count in results:
         percentage = (count / total_with_prefs * 100) if total_with_prefs > 0 else 0
         courses_data.append({
-            "course_id": course_id,
-            "course_name": course_name,
-            "course_uuid": course_uuid,
+            "product_id": product_id,
+            "product_name": product_name,
             "selection_count": count,
             "percentage": round(percentage, 2)
         })
@@ -197,20 +195,12 @@ async def get_course_preference_analytics(
     # Get free vs paid breakdown
     free_paid_query = (
         select(
-            Course.id,
+            PaymentsProduct.id,
             PaymentsProduct.amount
         )
         .join(
             WaitlistCoursePreference,
-            Course.id == WaitlistCoursePreference.course_id
-        )
-        .outerjoin(
-            PaymentsCourse,
-            Course.id == PaymentsCourse.course_id
-        )
-        .outerjoin(
-            PaymentsProduct,
-            PaymentsCourse.payment_product_id == PaymentsProduct.id
+            PaymentsProduct.id == WaitlistCoursePreference.payments_product_id
         )
         .where(WaitlistCoursePreference.waitlist_config_id == waitlist.id)
     )
@@ -269,16 +259,8 @@ async def get_user_course_preferences(
     
     # Get user's preferences
     prefs_query = (
-        select(WaitlistCoursePreference, Course, PaymentsProduct)
-        .join(Course, WaitlistCoursePreference.course_id == Course.id)
-        .outerjoin(
-            PaymentsCourse,
-            Course.id == PaymentsCourse.course_id
-        )
-        .outerjoin(
-            PaymentsProduct,
-            PaymentsCourse.payment_product_id == PaymentsProduct.id
-        )
+        select(WaitlistCoursePreference, PaymentsProduct)
+        .join(PaymentsProduct, WaitlistCoursePreference.payments_product_id == PaymentsProduct.id)
         .where(
             WaitlistCoursePreference.waitlist_config_id == waitlist.id,
             WaitlistCoursePreference.user_id == user_id
@@ -289,7 +271,7 @@ async def get_user_course_preferences(
     
     # Format response
     preferences = []
-    for pref, course, payment_product in results:
+    for pref, payment_product in results:
         is_free = True
         price = None
         currency = None
@@ -301,9 +283,8 @@ async def get_user_course_preferences(
         
         preferences.append({
             "preference_id": pref.id,
-            "course_id": course.id,
-            "course_uuid": course.course_uuid,
-            "course_name": course.name,
+            "product_id": payment_product.id,
+            "product_name": payment_product.name,
             "is_free": is_free,
             "price": price,
             "currency": currency,
