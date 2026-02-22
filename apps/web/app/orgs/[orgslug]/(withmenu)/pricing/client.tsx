@@ -71,8 +71,9 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
         window.location.href = checkoutResponse.checkout_url
       } else {
         toast.error(
-          checkoutResponse?.error ||
-            checkoutResponse?.detail ||
+          checkoutResponse?.data?.detail ||
+            checkoutResponse?.data?.error ||
+            checkoutResponse?.HTTPmessage ||
             'Failed to initialize checkout session'
         )
       }
