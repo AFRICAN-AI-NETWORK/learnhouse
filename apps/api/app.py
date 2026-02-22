@@ -184,6 +184,27 @@ app.add_event_handler("shutdown", shutdown_app(app))
 async def start_scheduler():
     """Start APScheduler on application startup"""
     if scheduler is not None:
+        # Log every job execution as a heartbeat for health monitoring
+        def _job_heartbeat(event):
+            """APScheduler listener — logs a heartbeat after every job run."""
+            _log = _logging.getLogger("scheduler.heartbeat")
+            job_id = event.job_id
+            if event.exception:
+                _log.error(
+                    "HEARTBEAT | job=%s | status=FAILED | error=%s",
+                    job_id, event.exception,
+                )
+            else:
+                _log.info(
+                    "HEARTBEAT | job=%s | status=OK | return=%s",
+                    job_id, event.retval,
+                )
+
+        from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+        scheduler.add_listener(
+            _job_heartbeat, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
+        )
+
         scheduler.start()
         _logging.getLogger("scheduler").info("Background job scheduler started")
 
@@ -193,7 +214,7 @@ async def stop_scheduler():
     """Stop APScheduler on application shutdown"""
     if scheduler is not None:
         scheduler.shutdown()
-        print("✓ Background job scheduler stopped")
+        _logging.getLogger("scheduler").info("Background job scheduler stopped")
 
 # JWT Exception Handler
 @app.exception_handler(AuthJWTException)
