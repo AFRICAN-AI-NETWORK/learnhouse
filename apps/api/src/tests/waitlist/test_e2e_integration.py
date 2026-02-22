@@ -71,6 +71,30 @@ class TestCompleteWaitlistFlow:
         
         # ========== Step 2: Create products for selection ==========
         from src.db.payments.payments_products import PaymentsProduct
+        from src.db.payments.payments_courses import PaymentsCourse
+        
+        course1 = Course(
+            name="Python Basics",
+            course_uuid="python-basics-uuid",
+            org_id=sample_org.id,
+            author_id=sample_user.id,
+            public=True,
+            open_to_contributors=False
+        )
+        course2 = Course(
+            name="React Advanced",
+            course_uuid="react-advanced-uuid",
+            org_id=sample_org.id,
+            author_id=sample_user.id,
+            public=True,
+            open_to_contributors=False
+        )
+        db_session.add(course1)
+        db_session.add(course2)
+        db_session.commit()
+        db_session.refresh(course1)
+        db_session.refresh(course2)
+        
         product1 = PaymentsProduct(
             name="Python Basics Package",
             amount=5000,
@@ -88,6 +112,20 @@ class TestCompleteWaitlistFlow:
         db_session.commit()
         db_session.refresh(product1)
         db_session.refresh(product2)
+        
+        payment_course1 = PaymentsCourse(
+            course_id=course1.id,
+            payment_product_id=product1.id,
+            org_id=sample_org.id
+        )
+        payment_course2 = PaymentsCourse(
+            course_id=course2.id,
+            payment_product_id=product2.id,
+            org_id=sample_org.id
+        )
+        db_session.add(payment_course1)
+        db_session.add(payment_course2)
+        db_session.commit()
         
         # Verify courses are available
         courses = await get_org_courses_for_waitlist(
