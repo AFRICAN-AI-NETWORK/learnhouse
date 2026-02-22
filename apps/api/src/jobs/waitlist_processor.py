@@ -19,9 +19,6 @@ from src.services.waitlist.emails import (
 from sqlmodel import Session
 from src.core.events.database import engine
 
-def get_session():
-    return Session(engine)
-
 
 async def run_waitlist_activation_job():
     """
@@ -30,14 +27,12 @@ async def run_waitlist_activation_job():
     """
     print(f"[{datetime.now()}] Running waitlist activation job...")
     
-    db_session = get_session()
-    try:
-        await process_waitlist_activations(db_session)
-        print(f"[{datetime.now()}] Waitlist activation job completed")
-    except Exception as e:
-        print(f"[{datetime.now()}] Error in waitlist activation job: {str(e)}")
-    finally:
-        db_session.close()
+    with Session(engine) as db_session:
+        try:
+            await process_waitlist_activations(db_session)
+            print(f"[{datetime.now()}] Waitlist activation job completed")
+        except Exception as e:
+            print(f"[{datetime.now()}] Error in waitlist activation job: {str(e)}")
 
 
 async def run_retry_failed_emails_job():
@@ -47,14 +42,13 @@ async def run_retry_failed_emails_job():
     """
     print(f"[{datetime.now()}] Running retry failed emails job...")
     
-    db_session = get_session()
-    try:
-        await retry_failed_waitlist_emails(db_session)
-        print(f"[{datetime.now()}] Retry failed emails job completed")
-    except Exception as e:
-        print(f"[{datetime.now()}] Error in retry failed emails job: {str(e)}")
-    finally:
-        db_session.close()
+    with Session(engine) as db_session:
+        try:
+            await retry_failed_waitlist_emails(db_session)
+            print(f"[{datetime.now()}] Retry failed emails job completed")
+        except Exception as e:
+            print(f"[{datetime.now()}] Error in retry failed emails job: {str(e)}")
+
 
 
 def sync_run_waitlist_activation_job():

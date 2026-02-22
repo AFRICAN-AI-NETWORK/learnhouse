@@ -4,8 +4,8 @@ Background tasks that run periodically
 """
 import logging
 from datetime import datetime
-from sqlmodel import Session
-from src.core.events.database import get_db_session
+from sqlmodel import Session, select
+from src.core.events.database import engine
 from src.services.referrals.referral_commissions import update_pending_commissions_to_eligible
 
 logger = logging.getLogger(__name__)
@@ -18,13 +18,8 @@ async def process_commission_eligibility_job():
     """
     logger.info("Starting commission eligibility processing job")
     
-    try:
-        # Get database session
-        db_session_generator = get_db_session()
-        db_session: Session = next(db_session_generator)
-        
+    with Session(engine) as db_session:
         try:
-            # Update commissions
             updated_count = await update_pending_commissions_to_eligible(db_session)
             
             logger.info(
@@ -37,20 +32,13 @@ async def process_commission_eligibility_job():
                 "updated_count": updated_count,
                 "timestamp": datetime.now().isoformat()
             }
-        finally:
-            # Close session
-            try:
-                next(db_session_generator)
-            except StopIteration:
-                pass
-    
-    except Exception as e:
-        logger.error(f"Error in commission eligibility job: {str(e)}", exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        except Exception as e:
+            logger.error(f"Error in commission eligibility job: {str(e)}", exc_info=True)
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
 
 
 async def process_payout_requests_job():
@@ -60,20 +48,14 @@ async def process_payout_requests_job():
     """
     logger.info("Starting payout request processing job")
     
-    try:
-        from sqlmodel import select
-        from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
-        from src.services.referrals.payouts import process_payout_request
-        
-        # Get database session
-        db_session_generator = get_db_session()
-        db_session: Session = next(db_session_generator)
-        
+    with Session(engine) as db_session:
         try:
-            # Get all requested payouts
+            from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
+            from src.services.referrals.payouts import process_payout_request
+            
             statement = select(ReferrerPayoutRequest).where(
                 ReferrerPayoutRequest.status == PayoutStatus.REQUESTED
-            ).limit(10)  # Process in batches
+            ).limit(10)
             
             payouts = db_session.exec(statement).all()
             
@@ -99,20 +81,13 @@ async def process_payout_requests_job():
                 "failed_count": failed_count,
                 "timestamp": datetime.now().isoformat()
             }
-        finally:
-            # Close session
-            try:
-                next(db_session_generator)
-            except StopIteration:
-                pass
-    
-    except Exception as e:
-        logger.error(f"Error in payout processing job: {str(e)}", exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        except Exception as e:
+            logger.error(f"Error in payout processing job: {str(e)}", exc_info=True)
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
 
 
 # Schedule configuration for external scheduler (e.g., APScheduler, Celery)
