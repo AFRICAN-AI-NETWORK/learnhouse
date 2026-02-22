@@ -1,32 +1,27 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface RefPageProps {
-  params: {
-    code: string
-  }
+  params: Promise<{ code: string }>
 }
 
-/**
- * Referral link page: /ref/[code]
- *
- * Stores the referral code in localStorage, then immediately
- * redirects to the signup page. No API calls are made here.
- */
 function ReferralRedirectPage({ params }: RefPageProps) {
-  const { code } = params
+  const { code } = use(params)
   const router = useRouter()
 
   useEffect(() => {
-    if (code) {
-      try {
-        localStorage.setItem('referral_code', code)
-      } catch {
-        // localStorage unavailable (incognito, etc.) — proceed without storing
-      }
+    console.log('effect running, code:', code)
+    if (!code) return
+
+    try {
+      localStorage.setItem('referral_code', code)
+      console.log('stored:', localStorage.getItem('referral_code'))
+    } catch (e) {
+      console.error('localStorage error:', e)
     }
-    router.replace('/auth/signup')
+
+    router.replace(`/auth/signup`)
   }, [code, router])
 
   return (

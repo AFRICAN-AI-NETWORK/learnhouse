@@ -72,20 +72,23 @@ function ReferralCodeCard({
         <div className="animate-pulse h-16 bg-gray-100 rounded-lg" />
       ) : referralCode ? (
         <div className="space-y-4">
-          {/* Code display */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-              <span className="font-mono font-bold text-xl tracking-widest text-gray-800">
+          <div className="flex flex-col md:flex-row md:items-stretch gap-3">
+            {/* Code Display */}
+            <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 min-w-0">
+              <span className="font-mono font-bold text-lg md:text-xl tracking-widest text-gray-800 truncate">
                 {referralCode.code}
               </span>
-              <Badge variant="outline" className="text-xs">
+
+              <Badge variant="outline" className="text-xs ml-2 shrink-0">
                 {referralCode.total_referrals} referral
                 {referralCode.total_referrals !== 1 ? 's' : ''}
               </Badge>
             </div>
+
+            {/* Copy Button */}
             <button
               onClick={handleCopyCode}
-              className="flex items-center gap-2 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-lg whitespace-nowrap shrink-0 transition-colors hover:bg-gray-800 text-sm font-medium"
             >
               {copied ? <Check size={16} /> : <Copy size={16} />}
               {copied ? 'Copied!' : 'Copy'}
@@ -93,7 +96,7 @@ function ReferralCodeCard({
           </div>
 
           {/* Referral link */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 overflow-hidden">
               <Link2 size={14} className="text-gray-400 shrink-0" />
               <span className="text-sm text-gray-500 truncate">

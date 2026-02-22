@@ -11,6 +11,7 @@ import {
   LogOut,
   User as UserIcon,
   ChevronDown,
+  Link2,
 } from 'lucide-react'
 import UserAvatar from '@components/Objects/UserAvatar'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
@@ -300,6 +301,15 @@ export const HeaderProfileBox = () => {
                   >
                     <Package2 size={16} />
                     <span>{t('courses.my_courses')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/dash/referrals"
+                    className="flex items-center space-x-2"
+                  >
+                    <Link2 size={16} />
+                    <span>Referals</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

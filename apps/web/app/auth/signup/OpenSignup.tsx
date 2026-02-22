@@ -89,20 +89,24 @@ function OpenSignUpComponent() {
   const [referralCode, setReferralCode] = useState('')
   const [referralCodeError, setReferralCodeError] = useState('')
 
-  // Auto-fill referral code from URL (?ref=CODE) or localStorage
+  // Auto-fill referral code from URL (?ref=CODE)
   useEffect(() => {
     const urlCode = searchParams?.get('ref')
-    if (urlCode) {
+    if (urlCode && urlCode !== 'undefined') {
       setReferralCode(urlCode)
       return
     }
+
+    // Fallback: read from localStorage (set by /ref/[code] page)
     try {
       const stored = localStorage.getItem('referral_code')
-      if (stored) setReferralCode(stored)
+      if (stored) {
+        setReferralCode(stored)
+      }
     } catch {
-      /* localStorage unavailable */
+      // localStorage unavailable
     }
-  }, [searchParams])
+  }, [searchParams?.toString()])
 
   const handleNextStep = async () => {
     const errors = await formik.validateForm()

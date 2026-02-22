@@ -214,6 +214,10 @@ export default async function proxy(req: NextRequest) {
       new URL(`/orgs/${orgslug}${pathname}`, req.url)
     )
 
+    if (pathname.startsWith('/ref/')) {
+      return NextResponse.next()
+    }
+
     // Set the cookie with the orgslug value
     response.cookies.set({
       name: 'learnhouse_current_orgslug',

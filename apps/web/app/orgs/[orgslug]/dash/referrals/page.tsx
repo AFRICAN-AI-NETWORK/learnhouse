@@ -97,15 +97,19 @@ function ReferralsPage() {
   }
 
   return (
-    <div className="ml-10 mr-10 mx-auto space-y-6 py-6">
-      <div className="flex flex-col bg-white nice-shadow rounded-xl px-6 py-4 mb-2">
-        <h1 className="font-bold text-2xl text-gray-800">Referrals</h1>
-        <p className="text-gray-500 text-sm">
+    <div className="w-full px-4 py-4 md:px-10 md:py-6 mx-auto space-y-6">
+      {/* Header */}
+      <div className="bg-white nice-shadow rounded-xl px-4 py-4 md:px-6 md:py-5">
+        <h1 className="font-bold text-xl md:text-2xl text-gray-800">
+          Referrals
+        </h1>
+        <p className="text-gray-500 text-xs md:text-sm mt-1">
           Earn commissions by referring new users to the platform.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
         <ReferralCodeCard
           referralCode={referralCode}
           isLoading={codeLoading}
@@ -120,11 +124,14 @@ function ReferralsPage() {
         />
       </div>
 
-      <CommissionHistoryList
-        records={records}
-        isLoading={historyLoading}
-        error={historyErr}
-      />
+      {/* History */}
+      <div className="w-full overflow-hidden">
+        <CommissionHistoryList
+          records={records}
+          isLoading={historyLoading}
+          error={historyErr}
+        />
+      </div>
 
       <RequestPayoutModal
         open={payoutOpen}
