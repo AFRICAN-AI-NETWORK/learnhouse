@@ -203,7 +203,21 @@ async def start_scheduler():
         )
 
         scheduler.start()
-        _logging.getLogger("scheduler").info("Background job scheduler started")
+
+        # ── Startup banner ────────────────────────────────────────────
+        print("")
+        print("=" * 60)
+        print("  ✓ Background job scheduler started")
+        print("=" * 60)
+        jobs = scheduler.get_jobs()
+        for job in jobs:
+            next_run = job.next_run_time
+            next_str = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "PAUSED"
+            print(f"  ✓ {job.name:<40}  next: {next_str}")
+        print("-" * 60)
+        print(f"  Total: {len(jobs)} job(s) running")
+        print("=" * 60)
+        print("")
 
 # Stop scheduler on app shutdown
 @app.on_event("shutdown")
