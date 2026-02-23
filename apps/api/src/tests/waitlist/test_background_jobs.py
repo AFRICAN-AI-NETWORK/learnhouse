@@ -1,7 +1,7 @@
 """Unit tests for waitlist background job processor"""
 
 import pytest
-from unittest.mock import Mock, MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 from datetime import datetime, timedelta, timezone
 
 from src.jobs.waitlist_processor import (

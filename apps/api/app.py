@@ -1,3 +1,6 @@
+import os
+import logging as _logging
+
 import uvicorn
 import logfire
 from fastapi import FastAPI, Request
@@ -76,9 +79,6 @@ register_ee_middlewares(app)
 
 # Background Jobs — imports only at module level; scheduler is built at startup
 # so that CronTrigger computes its first next_run_time from now, not from import time.
-import os
-import logging as _logging
-
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
