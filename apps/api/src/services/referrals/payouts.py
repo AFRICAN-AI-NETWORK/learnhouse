@@ -95,7 +95,7 @@ if not _ENCRYPTION_KEY:
             "THIS IS INSECURE - SET ENCRYPTION KEY IN PRODUCTION!"
         )
         # Fallback key for development only - NEVER use in production
-        _ENCRYPTION_KEY = "dev-fallback-key-REPLACE-IN-PRODUCTION-12345678901234567890123="
+        _ENCRYPTION_KEY = "pT3sRsrKoraEo6Z7BozcSmqKtc84Uvf7owG_N7t5ix0="
 
 try:
     _cipher_suite = Fernet(_ENCRYPTION_KEY.encode() if isinstance(_ENCRYPTION_KEY, str) else _ENCRYPTION_KEY)
