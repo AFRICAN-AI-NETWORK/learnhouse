@@ -27,6 +27,20 @@ type Props = {
   initialProducts: PaymentsProduct[]
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  NGN: '₦',
+  USD: '$',
+  GHS: '₵',
+  ZAR: 'R',
+  KES: 'Ksh',
+  XOF: 'CFA',
+}
+
+const getCurrencySymbol = (currency?: string) => {
+  if (!currency) return '$'
+  return CURRENCY_SYMBOLS[currency.toUpperCase()] || currency
+}
+
 const parseBenefits = (benefitsString?: string) => {
   if (!benefitsString) return []
   return benefitsString.split('\n').filter((b) => b.trim() !== '')
@@ -67,8 +81,10 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
         access_token
       )) as any
 
-      if (checkoutResponse && checkoutResponse.checkout_url) {
-        window.location.href = checkoutResponse.checkout_url
+      if (checkoutResponse?.success && checkoutResponse?.data?.checkout_url) {
+        window.location.href = checkoutResponse.data.checkout_url
+      } else if (checkoutResponse?.data?.checkout_url) {
+        window.location.href = checkoutResponse.data.checkout_url
       } else {
         toast.error(
           checkoutResponse?.data?.detail ||
@@ -165,7 +181,7 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
                   <div className="mb-8">
                     <div className="flex items-start text-gray-900">
                       <span className="text-5xl font-black tracking-tighter mt-1">
-                        $
+                        {getCurrencySymbol(product.currency)}
                       </span>
                       <span className="text-6xl sm:text-7xl font-black tracking-tighter ml-1">
                         {new Intl.NumberFormat('en-US', {
