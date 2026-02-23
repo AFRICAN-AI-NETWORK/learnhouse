@@ -1,7 +1,7 @@
 """Unit tests for waitlist background job processor"""
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, MagicMock, AsyncMock, patch
 from datetime import datetime, timedelta, timezone
 
 from src.jobs.waitlist_processor import (
@@ -16,87 +16,75 @@ class TestWaitlistActivationJob:
     """Test waitlist activation background job"""
     
     @pytest.mark.asyncio
-    @patch('src.jobs.waitlist_processor.process_waitlist_activations')
-    @patch('src.jobs.waitlist_processor.get_session')
-    async def test_activation_job_runs_successfully(self, mock_get_session, mock_process):
+    @patch('src.jobs.waitlist_processor._sync_process_activations')
+    async def test_activation_job_runs_successfully(self, mock_sync_process):
         """Test that activation job executes without errors"""
-        mock_session = Mock()
-        mock_get_session.return_value = mock_session
-        mock_process.return_value = None
+        mock_sync_process.return_value = {"elapsed_s": 0.12}
         
         # Run the job
         await run_waitlist_activation_job()
         
-        # Verify process_waitlist_activations was called
-        mock_process.assert_called_once()
-        mock_session.close.assert_called_once()
+        # Verify sync wrapper was called
+        mock_sync_process.assert_called_once()
     
     @pytest.mark.asyncio
-    @patch('src.jobs.waitlist_processor.process_waitlist_activations')
-    @patch('src.jobs.waitlist_processor.get_session')
-    async def test_activation_job_handles_errors(self, mock_get_session, mock_process):
+    @patch('src.jobs.waitlist_processor._sync_process_activations')
+    async def test_activation_job_handles_errors(self, mock_sync_process):
         """Test that activation job handles errors gracefully"""
-        mock_session = Mock()
-        mock_get_session.return_value = mock_session
-        mock_process.side_effect = Exception("Database error")
+        mock_sync_process.side_effect = Exception("Database error")
         
         # Should not raise exception
         await run_waitlist_activation_job()
         
-        # Session should still be closed
-        mock_session.close.assert_called_once()
+        # Sync wrapper was still called
+        mock_sync_process.assert_called_once()
     
-    @pytest.mark.asyncio
-    @patch('src.jobs.waitlist_processor.process_waitlist_activations')
-    @patch('src.jobs.waitlist_processor.get_session')
-    async def test_activation_job_closes_session_on_error(self, mock_get_session, mock_process):
-        """Test that session is closed even when errors occur"""
-        mock_session = Mock()
-        mock_get_session.return_value = mock_session
-        mock_process.side_effect = RuntimeError("Test error")
+    @patch('src.jobs.waitlist_processor._safe_asyncio_run')
+    @patch('src.jobs.waitlist_processor.Session')
+    def test_activation_job_closes_session_on_error(self, mock_session_class, mock_safe_run):
+        """Test that session context is cleaned up when errors occur"""
+        from src.jobs.waitlist_processor import _sync_process_activations
         
-        await run_waitlist_activation_job()
+        mock_session_instance = MagicMock()
+        mock_session_class.return_value.__enter__.return_value = mock_session_instance
+        mock_safe_run.side_effect = RuntimeError("Test error")
         
-        # Verify session cleanup
-        mock_session.close.assert_called_once()
+        with pytest.raises(RuntimeError):
+            _sync_process_activations()
+        
+        # Verify session context manager was cleanly exited
+        mock_session_class.return_value.__exit__.assert_called()
 
 
 class TestRetryFailedEmailsJob:
     """Test retry failed emails background job"""
     
     @pytest.mark.asyncio
-    @patch('src.jobs.waitlist_processor.retry_failed_waitlist_emails')
-    @patch('src.jobs.waitlist_processor.get_session')
-    async def test_retry_job_runs_successfully(self, mock_get_session, mock_retry):
+    @patch('src.jobs.waitlist_processor._sync_retry_failed_emails')
+    async def test_retry_job_runs_successfully(self, mock_sync_retry):
         """Test that retry job executes without errors"""
-        mock_session = Mock()
-        mock_get_session.return_value = mock_session
-        mock_retry.return_value = None
+        mock_sync_retry.return_value = {"elapsed_s": 0.1}
         
         await run_retry_failed_emails_job()
         
-        mock_retry.assert_called_once()
-        mock_session.close.assert_called_once()
+        mock_sync_retry.assert_called_once()
     
     @pytest.mark.asyncio
-    @patch('src.jobs.waitlist_processor.retry_failed_waitlist_emails')
-    @patch('src.jobs.waitlist_processor.get_session')
-    async def test_retry_job_handles_errors(self, mock_get_session, mock_retry):
+    @patch('src.jobs.waitlist_processor._sync_retry_failed_emails')
+    async def test_retry_job_handles_errors(self, mock_sync_retry):
         """Test that retry job handles errors gracefully"""
-        mock_session = Mock()
-        mock_get_session.return_value = mock_session
-        mock_retry.side_effect = Exception("SMTP error")
+        mock_sync_retry.side_effect = Exception("SMTP error")
         
         # Should not raise exception
         await run_retry_failed_emails_job()
         
-        mock_session.close.assert_called_once()
+        mock_sync_retry.assert_called_once()
 
 
 class TestSynchronousWrappers:
     """Test synchronous wrappers for APScheduler"""
     
-    @patch('src.jobs.waitlist_processor.run_waitlist_activation_job')
+    @patch('src.jobs.waitlist_processor.run_waitlist_activation_job', new_callable=AsyncMock)
     @patch('src.jobs.waitlist_processor.asyncio.run')
     def test_sync_activation_job_wrapper(self, mock_asyncio_run, mock_run_job):
         """Test synchronous wrapper for activation job"""
@@ -104,7 +92,7 @@ class TestSynchronousWrappers:
         
         mock_asyncio_run.assert_called_once()
     
-    @patch('src.jobs.waitlist_processor.run_retry_failed_emails_job')
+    @patch('src.jobs.waitlist_processor.run_retry_failed_emails_job', new_callable=AsyncMock)
     @patch('src.jobs.waitlist_processor.asyncio.run')
     def test_sync_retry_job_wrapper(self, mock_asyncio_run, mock_run_job):
         """Test synchronous wrapper for retry job"""
