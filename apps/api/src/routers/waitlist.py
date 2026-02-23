@@ -46,6 +46,14 @@ class WaitlistUserRegistration(BaseModel):
     last_name: str = ""
     bio: Optional[str] = ""
     selected_product_ids: List[int] = []
+    # Referral tracking fields
+    referral_code: Optional[str] = None
+    device_id: Optional[str] = None
+    browser_fingerprint: Optional[dict] = None
+    # Referral system fields
+    referral_code: Optional[str] = None
+    device_id: Optional[str] = None
+    browser_fingerprint: Optional[dict] = None
 
 
 # ==================== Waitlist Configuration Endpoints (Admin) ====================
@@ -212,7 +220,7 @@ async def cancel_waitlist(
 
 # ==================== Waitlist User Registration Endpoints ====================
 
-@router.post("/join", response_model=UserRead, tags=["waitlist"])
+@router.post("/join", response_model=UserRead)
 async def join_waitlist(
     request: Request,
     waitlist_uuid: str,
@@ -224,11 +232,11 @@ async def join_waitlist(
     Public endpoint - anyone with valid waitlist link can register.
     
     Query parameter: waitlist_uuid identifies the waitlist campaign.
-    Request body includes user details and selected_course_ids.
+    Request body includes user details, select_course_ids, and referral details.
     """
     from src.db.users import UserCreate
     
-    # Convert registration data to UserCreate
+    # Convert registration payload to UserCreate object
     user_create = UserCreate(
         username=user_data.username,
         email=user_data.email,
@@ -236,16 +244,20 @@ async def join_waitlist(
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         bio=user_data.bio,
-        avatar_image="",
         is_waitlist=True,
+        referral_code=user_data.referral_code,
+        device_id=user_data.device_id,
+        browser_fingerprint=user_data.browser_fingerprint
     )
     
+    # Pass request object as user creation now utilizes request variables
+    # e.g for fetching IP for referrals tracking
     return await create_waitlist_user(
-        request,
-        db_session,
-        user_create,
-        waitlist_uuid,
-        user_data.selected_product_ids
+        request=request,
+        db_session=db_session,
+        user_object=user_create,
+        waitlist_uuid=waitlist_uuid,
+        selected_product_ids=user_data.selected_product_ids
     )
 
 
