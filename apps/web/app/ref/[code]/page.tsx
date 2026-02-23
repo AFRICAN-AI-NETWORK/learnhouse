@@ -11,14 +11,12 @@ function ReferralRedirectPage({ params }: RefPageProps) {
   const router = useRouter()
 
   useEffect(() => {
-    console.log('effect running, code:', code)
     if (!code) return
 
     try {
       localStorage.setItem('referral_code', code)
-      console.log('stored:', localStorage.getItem('referral_code'))
     } catch (e) {
-      console.error('localStorage error:', e)
+      // localStorage error fallback
     }
 
     router.replace(`/auth/signup`)
