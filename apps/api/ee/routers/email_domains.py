@@ -3,14 +3,14 @@ API Endpoints for Email Domain Management (Admin only)
 Allows manual triggering of domain list updates
 """
 import logging
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlmodel import Session
 
-from src.db.db import get_session
-from src.security.rbac.rbac import rbac_check
+from src.core.events.database import get_db_session
+from src.services.orgs.orgs import rbac_check
 from src.security.auth import get_current_user
 from src.db.users import User
+from src.db.organizations import Organization
 from src.services.referrals.fraud_prevention import (
     update_disposable_email_list,
     seed_initial_domain_lists,
@@ -24,8 +24,9 @@ router = APIRouter()
 @router.post("/{org_id}/update-domain-lists")
 async def trigger_domain_list_update(
     org_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db_session: Session = Depends(get_session)
+    db_session: Session = Depends(get_db_session)
 ):
     """
     Manually trigger email domain list update from external source
@@ -33,8 +34,13 @@ async def trigger_domain_list_update(
     
     Returns update statistics
     """
-    # Check admin permissions (adjust role as needed)
-    await rbac_check(None, org_id, current_user, db_session)
+    # Get organization to get UUID
+    org = db_session.get(Organization, org_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    # Check admin permissions
+    await rbac_check(request, org.org_uuid, current_user, "update", db_session)
     
     try:
         stats = await update_disposable_email_list(db_session)
@@ -66,16 +72,22 @@ async def trigger_domain_list_update(
 @router.post("/{org_id}/seed-domain-lists")
 async def trigger_domain_list_seed(
     org_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
-    db_session: Session = Depends(get_session)
+    db_session: Session = Depends(get_db_session)
 ):
     """
     Manually trigger initial seeding of domain lists
     Use only once during setup
     Requires admin permissions
     """
+    # Get organization to get UUID
+    org = db_session.get(Organization, org_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
     # Check admin permissions
-    await rbac_check(None, org_id, current_user, db_session)
+    await rbac_check(request, org.org_uuid, current_user, "update", db_session)
     
     try:
         await seed_initial_domain_lists(db_session)

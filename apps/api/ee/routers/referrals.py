@@ -4,7 +4,7 @@ Handles all referral-related endpoints following RESTful principles
 """
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, Request, HTTPException, status
+from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 from src.core.events.database import get_db_session
 from src.db.users import PublicUser

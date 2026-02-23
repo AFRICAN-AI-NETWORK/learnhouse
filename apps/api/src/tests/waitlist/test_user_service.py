@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from fastapi import HTTPException
 
 from src.services.users.waitlist import (
@@ -21,13 +21,15 @@ class TestCreateWaitlistUser:
     @patch('src.services.users.waitlist.check_limits_with_usage')
     @patch('src.services.users.waitlist.increase_feature_usage')
     @patch('src.services.users.waitlist.send_account_creation_email')
-    async def test_create_waitlist_user_success(self, mock_creation_email,
+    @patch('src.services.users.waitlist.send_waitlist_confirmation_email')
+    async def test_create_waitlist_user_success(self, mock_confirmation_email, mock_creation_email,
                                                 mock_increase_usage, mock_check_limits,
                                                 db_session, sample_waitlist_config, sample_org, mock_request):
         """Test successfully creating a waitlist user"""
         mock_check_limits.return_value = None
         mock_increase_usage.return_value = None
         mock_creation_email.return_value = True
+        mock_confirmation_email.return_value = True
         
         user_data = UserCreate(
             username="newwaitlistuser",
@@ -43,7 +45,7 @@ class TestCreateWaitlistUser:
             db_session=db_session,
             user_object=user_data,
             waitlist_uuid=sample_waitlist_config.waitlist_uuid,
-            selected_course_ids=[]
+            selected_product_ids=[]
         )
         
         assert result.username == "newwaitlistuser"
@@ -53,11 +55,25 @@ class TestCreateWaitlistUser:
     
     @pytest.mark.asyncio
     async def test_create_user_with_course_preferences(self, db_session, sample_waitlist_config, 
-                                                       sample_org, sample_course, mock_request):
+                                                       sample_org, mock_request):
         """Test creating user with course preferences"""
+        from src.db.payments.payments_products import PaymentsProduct
+        
+        # Create product
+        product = PaymentsProduct(
+            name="Preference Product",
+            amount=1000,
+            currency="USD",
+            org_id=sample_org.id
+        )
+        db_session.add(product)
+        db_session.commit()
+        db_session.refresh(product)
+        
         with patch('src.services.users.waitlist.check_limits_with_usage'), \
              patch('src.services.users.waitlist.increase_feature_usage'), \
-             patch('src.services.users.waitlist.send_account_creation_email'):
+             patch('src.services.users.waitlist.send_account_creation_email'), \
+             patch('src.services.users.waitlist.send_waitlist_confirmation_email'):
             
             user_data = UserCreate(
                 username="userWithCourses",
@@ -73,13 +89,13 @@ class TestCreateWaitlistUser:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=sample_waitlist_config.waitlist_uuid,
-                selected_course_ids=[sample_course.id]
+                selected_product_ids=[product.id]
             )
             
             # Verify course preference was created
             pref_query = select(WaitlistCoursePreference).where(
                 WaitlistCoursePreference.user_id == result.id,
-                WaitlistCoursePreference.course_id == sample_course.id
+                WaitlistCoursePreference.payments_product_id == product.id
             )
             prefs = db_session.exec(pref_query).all()
             
@@ -101,7 +117,7 @@ class TestCreateWaitlistUser:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid="invalid-uuid",
-                selected_course_ids=[]
+                selected_product_ids=[]
             )
         
         assert exc_info.value.status_code == 404
@@ -141,7 +157,7 @@ class TestCreateWaitlistUser:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=expired_waitlist.waitlist_uuid,
-                selected_course_ids=[]
+                selected_product_ids=[]
             )
         
         assert exc_info.value.status_code == 400
@@ -164,7 +180,7 @@ class TestCreateWaitlistUser:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=sample_waitlist_config.waitlist_uuid,
-                selected_course_ids=[]
+                selected_product_ids=[]
             )
         
         assert exc_info.value.status_code == 400
@@ -187,7 +203,7 @@ class TestCreateWaitlistUser:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=sample_waitlist_config.waitlist_uuid,
-                selected_course_ids=[]
+                selected_product_ids=[]
             )
         
         assert exc_info.value.status_code == 400
@@ -202,7 +218,8 @@ class TestCreateWaitlistUser:
         mock_check_limits.return_value = None
         
         with patch('src.services.users.waitlist.increase_feature_usage'), \
-             patch('src.services.users.waitlist.send_account_creation_email'):
+             patch('src.services.users.waitlist.send_account_creation_email'), \
+             patch('src.services.users.waitlist.send_waitlist_confirmation_email'):
             
             initial_count = sample_waitlist_config.total_registrations
             
@@ -218,7 +235,7 @@ class TestCreateWaitlistUser:
                 db_session=db_session,
                 user_object=user_data,
                 waitlist_uuid=sample_waitlist_config.waitlist_uuid,
-                selected_course_ids=[]
+                selected_product_ids=[]
             )
             
             # Refresh waitlist config

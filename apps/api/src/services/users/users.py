@@ -208,7 +208,6 @@ async def create_user(
     db_session.refresh(user)
 
     # Referral system: Track referral if code provided
-    referral_code_id = None
     if user_object.referral_code:
         try:
             from src.services.referrals.referral_tracking import validate_and_track_referral
@@ -221,7 +220,6 @@ async def create_user(
                 browser_fingerprint=user_object.browser_fingerprint or {},
                 db_session=db_session
             )
-            referral_code_id = referral_code_obj.id
             
             # Log fraud score
             if fraud_score >= 75:

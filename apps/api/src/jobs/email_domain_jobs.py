@@ -3,7 +3,6 @@ Scheduled Jobs for Domain List Management
 Run these jobs to keep email domain lists up-to-date
 """
 import logging
-from datetime import datetime
 from sqlmodel import Session
 
 from src.db.db import engine

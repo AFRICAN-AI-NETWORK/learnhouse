@@ -1,7 +1,7 @@
 'use client'
 import { useFormik } from 'formik'
 import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -22,7 +22,7 @@ import {
   User,
   UserPlus,
 } from 'lucide-react'
-import CourseSelector from '@components/Objects/CourseSelector'
+import ProductSelector from '@components/Objects/ProductSelector'
 import CountdownTimer from '@components/Utils/CountdownTimer'
 import {
   registerWaitlistUser,
@@ -30,6 +30,7 @@ import {
 } from '@services/waitlist/waitlist'
 import { WaitlistConfig } from '@/types/waitlist'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
@@ -97,7 +98,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -116,7 +117,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           setWaitlistDetails(res.data)
         }
       } catch (err) {
-        console.error('Failed to fetch waitlist details:', err)
+        toast.error('Failed to fetch waitlist details:')
       } finally {
         setLoadingDetails(false)
       }
@@ -170,7 +171,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       try {
         const payload = {
           ...values,
-          selected_course_ids: selectedCourses,
+          selected_product_ids: selectedProducts,
         }
 
         const res = await registerWaitlistUser(waitlistUuid, payload)
@@ -235,53 +236,54 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
   return (
     <div className="space-y-6">
-      {/* Progress Bar */}
-      <div className="flex items-center justify-between mb-8 px-2">
-        <div className="flex items-center gap-3">
+      {/* Progress Bar Container */}
+      <div className="w-full max-w-md mx-auto mb-10 px-4">
+        <div className="relative flex justify-between">
+          <div className="absolute top-[38px] left-0 w-full h-px bg-slate-200" />
+
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step >= 1 ? 'bg-black text-white' : 'bg-slate-100 text-slate-400'}`}
-          >
-            1
-          </div>
-          <span
-            className={`text-sm font-medium ${step === 1 ? 'text-black' : 'text-slate-400'}`}
-          >
-            Account
-          </span>
-        </div>
-        <div className="flex-1 h-[2px] mx-4 bg-slate-100 relative">
-          <div
-            className={`absolute top-0 left-0 h-full bg-black transition-all duration-500 ${step === 2 ? 'w-full' : step === 3 ? 'w-full' : 'w-0'}`}
+            className="absolute top-[38px] left-0 h-px bg-black transition-all duration-500"
+            style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
           />
-        </div>
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step >= 2 ? 'bg-black text-white' : 'bg-slate-100 text-slate-400'}`}
-          >
-            2
+
+          <div className="relative z-10 flex flex-col items-center">
+            <span
+              className={`text-[10px] font-bold uppercase mb-3 transition-colors duration-300 ${step === 1 ? 'text-black' : 'text-slate-300'}`}
+            >
+              Account
+            </span>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${step >= 1 ? 'bg-black text-white border-black' : 'bg-white text-slate-300 border-slate-100'}`}
+            >
+              1
+            </div>
           </div>
-          <span
-            className={`text-sm font-medium ${step === 2 ? 'text-black' : 'text-slate-400'}`}
-          >
-            Profile
-          </span>
-        </div>
-        <div className="flex-1 h-[2px] mx-4 bg-slate-100 relative">
-          <div
-            className={`absolute top-0 left-0 h-full bg-black transition-all duration-500 ${step === 3 ? 'w-full' : 'w-0'}`}
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${step >= 3 ? 'bg-black text-white' : 'bg-slate-100 text-slate-400'}`}
-          >
-            3
+
+          <div className="relative z-10 flex flex-col items-center">
+            <span
+              className={`text-[10px] font-bold uppercase mb-3 transition-colors duration-300 ${step === 2 ? 'text-black' : 'text-slate-300'}`}
+            >
+              Profile
+            </span>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${step >= 2 ? 'bg-black text-white border-black' : 'bg-white text-slate-300 border-slate-100'}`}
+            >
+              2
+            </div>
           </div>
-          <span
-            className={`text-sm font-medium ${step === 3 ? 'text-black' : 'text-slate-400'}`}
-          >
-            Courses
-          </span>
+
+          <div className="relative z-10 flex flex-col items-center">
+            <span
+              className={`text-[10px] font-bold uppercase mb-3 transition-colors duration-300 ${step === 3 ? 'text-black' : 'text-slate-300'}`}
+            >
+              Packages
+            </span>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${step >= 3 ? 'bg-black text-white border-black' : 'bg-white text-slate-300 border-slate-100'}`}
+            >
+              3
+            </div>
+          </div>
         </div>
       </div>
 
@@ -462,7 +464,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               </Form.Control>
             </FormField>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-6">
+            <div className="flex sm:flex-row gap-3 pt-6">
               <button
                 type="button"
                 onClick={() => setStep(1)}
@@ -486,13 +488,13 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-            <CourseSelector
-              waitlistUuid={waitlistUuid}
-              selected={selectedCourses}
-              onChange={setSelectedCourses}
+            <ProductSelector
+              orgId={waitlistDetails?.org_id || 0}
+              selected={selectedProducts}
+              onChange={setSelectedProducts}
             />
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-6">
+            <div className="flex  sm:flex-row gap-3 pt-6">
               <button
                 type="button"
                 onClick={() => setStep(2)}
@@ -513,7 +515,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                     <UserPlus size={20} />
                   )}
                   <span>
-                    {isSubmitting ? t('common.loading') : 'Join Waitlist 🚀'}
+                    {isSubmitting ? t('common.loading') : 'Join Waitlist'}
                   </span>
                 </button>
               </Form.Submit>

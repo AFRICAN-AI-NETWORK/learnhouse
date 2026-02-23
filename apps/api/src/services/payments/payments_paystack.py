@@ -290,6 +290,15 @@ async def initialize_transaction(
     
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+        
+    # Get organization payment config to check for subaccount
+    from src.db.payments.payments import PaymentsConfig
+    config_statement = select(PaymentsConfig).where(
+        PaymentsConfig.org_id == org_id, 
+        PaymentsConfig.active == True,
+        PaymentsConfig.provider == "paystack"
+    )
+    org_payment_config = db_session.exec(config_statement).first()
     
     # Determine currency to use
     selected_currency = currency.upper() if currency else product.currency.upper()
@@ -360,7 +369,6 @@ async def initialize_transaction(
         # REFERRAL SYSTEM: Check if user has referral tracking
         referral_code_id = None
         try:
-            from sqlmodel import and_
             from src.db.referrals.referral_tracking import ReferralTracking
             
             tracking_statement = select(ReferralTracking).where(
@@ -436,6 +444,27 @@ async def initialize_transaction(
         metadata_dict["final_amount"] = str(final_amount)
         if course_id:
             metadata_dict["course_id"] = str(course_id)
+            
+    # CRITICAL: Bypassing Paystack for Free Products ($0)
+    if amount_in_subunit == 0:
+        logger.info(f"Amount is 0 for product {product_id}. Bypassing Paystack checkout.")
+        payment_user.status = PaymentStatusEnum.COMPLETED
+        payment_user.provider_specific_data.update({
+            "bypass_reason": "free_product_or_100_percent_discount",
+            "selected_currency": selected_currency,
+            "product_currency": product.currency,
+        })
+        db_session.add(payment_user)
+        db_session.commit()
+        
+        # Return the redirect_uri directly
+        separator = "&" if "?" in redirect_uri else "?"
+        success_url = f"{redirect_uri}{separator}payment_success=true&reference=free_{payment_user.id}"
+        return {
+            "checkout_url": success_url,
+            "reference": f"free_{payment_user.id}",
+            "access_code": "free_bypass",
+        }
     
     transaction_data = {
         "email": current_user.email,
@@ -444,6 +473,10 @@ async def initialize_transaction(
         "callback_url": redirect_uri,
         "metadata": json.dumps(metadata_dict),  # Paystack expects metadata as JSON string
     }
+    
+    # Add Paystack Subaccount if configured by the Organization
+    if org_payment_config and org_payment_config.provider_specific_id:
+        transaction_data["subaccount"] = org_payment_config.provider_specific_id
     
     # For subscriptions, add plan code
     if product.product_type == PaymentProductTypeEnum.SUBSCRIPTION:

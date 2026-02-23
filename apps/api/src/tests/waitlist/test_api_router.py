@@ -1,12 +1,11 @@
 """Unit tests for waitlist API router endpoints"""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch
 from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
 
 from src.routers.waitlist import router
-from src.db.users import PublicUser, AnonymousUser
 
 
 class TestWaitlistConfigEndpoints:
@@ -36,7 +35,7 @@ class TestWaitlistConfigEndpoints:
         mock_create.return_value = mock_response
         
         # Create request data
-        config_data = WaitlistConfigCreate(
+        WaitlistConfigCreate(
             org_id=sample_org.id,
             name="Test Waitlist",
             interest_category="Programming",
@@ -122,8 +121,8 @@ class TestWaitlistCoursesEndpoints:
         """Test GET /api/v1/waitlist/config/{uuid}/preferences endpoint"""
         mock_get_analytics.return_value = [
             {
-                "course_id": 1,
-                "course_name": "Test Course",
+                "product_id": 1,
+                "product_name": "Test Course",
                 "selection_count": 10
             }
         ]
@@ -138,7 +137,7 @@ class TestWaitlistUpdateEndpoints:
     @patch('src.routers.waitlist.update_waitlist_config')
     async def test_update_waitlist_endpoint(self, mock_update, mock_request):
         """Test PUT /api/v1/waitlist/config/{uuid} endpoint"""
-        from src.db.waitlist import WaitlistConfigUpdate, WaitlistConfigRead
+        from src.db.waitlist import WaitlistConfigRead
         
         mock_response = WaitlistConfigRead(
             id=1,
@@ -216,7 +215,7 @@ class TestEndpointAuthorization:
     
     def test_public_endpoints_available(self):
         """Test that public endpoints are accessible"""
-        route_paths = [route.path for route in router.routes]
+        [route.path for route in router.routes]
         
         # Public endpoints like course listing
         # (May need to adjust based on actual implementation)

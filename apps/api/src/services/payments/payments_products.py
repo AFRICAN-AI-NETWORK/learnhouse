@@ -255,6 +255,27 @@ async def list_payments_products(
 
     return [PaymentsProductRead.model_validate(product) for product in products]
 
+async def list_public_payments_products(
+    request: Request,
+    org_id: int,
+    db_session: Session,
+) -> list[PaymentsProductRead]:
+    # Check if payments feature is enabled
+    check_limits_with_usage("payments", org_id, db_session)
+    
+    # Check if organization exists
+    statement = select(Organization).where(Organization.id == org_id)
+    org = db_session.exec(statement).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Get payments products ordered by id (no RBAC check for public pricing page)
+    # Note: We filter for 'active' or valid products if such a field existed. Currently we return all for this org.
+    statement = select(PaymentsProduct).where(PaymentsProduct.org_id == org_id).order_by(PaymentsProduct.id.desc()) # type: ignore
+    products = db_session.exec(statement).all()
+
+    return [PaymentsProductRead.model_validate(product) for product in products]
+
 async def get_products_by_course(
     request: Request,
     org_id: int,

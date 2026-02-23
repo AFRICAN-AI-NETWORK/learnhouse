@@ -1,8 +1,7 @@
 from typing import Optional
 from enum import Enum
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from datetime import datetime
 
 
 class UserStatusEnum(str, Enum):
@@ -146,8 +145,8 @@ class WaitlistCoursePreference(WaitlistCoursePreferenceBase, table=True):
     user_id: int = Field(
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     )
-    course_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
+    payments_product_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("paymentsproduct.id", ondelete="CASCADE"))
     )
     waitlist_config_id: int = Field(
         sa_column=Column(Integer, ForeignKey("waitlist_config.id", ondelete="CASCADE"))
@@ -161,7 +160,7 @@ class WaitlistCoursePreference(WaitlistCoursePreferenceBase, table=True):
 class WaitlistCoursePreferenceCreate(SQLModel):
     """Request model for creating course preference"""
     user_id: int
-    course_id: int
+    payments_product_id: int
     waitlist_config_id: int
     org_id: int
 
@@ -170,8 +169,8 @@ class WaitlistCoursePreferenceRead(WaitlistCoursePreferenceBase):
     """Response model for reading course preference"""
     id: int
     user_id: int
-    course_id: int
+    payments_product_id: int
     waitlist_config_id: int
     org_id: int
-    course_name: Optional[str] = None  # Denormalized for display
+    product_name: Optional[str] = None  # Denormalized for display
     creation_date: str

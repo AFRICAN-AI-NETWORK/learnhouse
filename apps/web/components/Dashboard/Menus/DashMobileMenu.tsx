@@ -10,7 +10,6 @@ import {
   Users,
 } from 'lucide-react'
 import Link from 'next/link'
-import React from 'react'
 import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
@@ -19,8 +18,8 @@ function DashMobileMenu() {
   const session = useLHSession() as any
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg text-white shadow-xl">
-      <div className="flex justify-around items-center h-16 px-2">
+    <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg text-white shadow-xl z-50">
+      <div className="flex justify-around items-center h-16 px-2 overflow-x-auto">
         <AdminAuthorization authorizationMode="component">
           <ToolTip content={'Home'} slateBlack sideOffset={8} side="top">
             <Link

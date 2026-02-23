@@ -2,7 +2,6 @@
 
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, AsyncMock, patch
 from fastapi import HTTPException
 from sqlmodel import select
 

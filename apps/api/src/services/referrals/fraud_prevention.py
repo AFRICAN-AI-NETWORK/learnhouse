@@ -7,7 +7,7 @@ import logging
 import re
 import httpx
 from typing import Set, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlmodel import Session, select
 
 from src.db.referrals.email_domain_lists import EmailDomainList, DomainListType
