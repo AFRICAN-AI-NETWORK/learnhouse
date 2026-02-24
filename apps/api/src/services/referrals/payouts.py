@@ -22,6 +22,7 @@ from src.db.referrals.payout_requests import (
 from src.db.referrals.referral_commissions import ReferralCommission, CommissionStatus
 from src.db.users import User, PublicUser
 from src.services.payments.payments_paystack import make_paystack_request
+from config.config import get_learnhouse_config
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ COUNTRY_TO_CURRENCY = {
 }
 
 # Redis configuration for distributed caching (multi-worker support)
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+_config = get_learnhouse_config()
+REDIS_URL = os.getenv("REDIS_URL") or _config.redis_config.redis_connection_string or "redis://localhost:6379/0"
 REDIS_ENABLED = os.getenv("REDIS_ENABLED", "true").lower() in ("true", "1", "yes")
 
 # Initialize Redis client with connection pooling
