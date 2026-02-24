@@ -112,7 +112,7 @@ async def check_course_paid_access(
             )
             if is_course_author:
                 return True
-        except Exception as e:
+        except Exception:
             # If authorization check fails, continue with payment check
             pass
 

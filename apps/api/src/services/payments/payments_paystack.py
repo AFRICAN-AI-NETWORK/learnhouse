@@ -10,6 +10,7 @@ from src.db.payments.payments_products import (
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
+from src.db.courses.courses import Course
 from src.db.organizations import Organization
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.payments.payments_users import (

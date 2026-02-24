@@ -382,10 +382,11 @@ async def api_check_course_paid_access(
     is_author = False
     if request and not isinstance(current_user, AnonymousUser):
         try:
+            from src.security.rbac.rbac import authorization_verify_if_user_is_author
             is_author = await authorization_verify_if_user_is_author(
                 request, int(current_user.id), "read", course.course_uuid, db_session
             )
-        except:
+        except Exception:
             pass
 
     is_admin = isinstance(current_user, InternalUser) or (not isinstance(current_user, AnonymousUser) and current_user.id in [1, 2])
