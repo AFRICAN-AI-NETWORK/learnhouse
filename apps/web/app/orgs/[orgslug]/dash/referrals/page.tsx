@@ -26,6 +26,7 @@ import type {
   CommissionRecord,
 } from 'types/referral'
 import { useOrg } from '@components/Contexts/OrgContext'
+import AdminAuthorization from '@components/Security/AdminAuthorization'
 import toast from 'react-hot-toast'
 import {
   AlertTriangle,
@@ -241,323 +242,326 @@ function ReferralsPage() {
         org_id={org_id}
       />
 
-      {/* ══════════════ Admin Section ══════════════ */}
-      <div className="border-t border-gray-200 pt-6 mt-8">
-        <div className="bg-white nice-shadow rounded-xl overflow-hidden">
-          <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <Award size={20} className="text-amber-500" />
-              <h2 className="font-bold text-lg text-gray-800">
-                Admin Dashboard
-              </h2>
+      {/* ══════════════ Admin Section (admin-only) ══════════════ */}
+      <AdminAuthorization authorizationMode="component">
+        <div className="border-t border-gray-200 pt-6 mt-8">
+          <div className="bg-white nice-shadow rounded-xl overflow-hidden">
+            <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Award size={20} className="text-amber-500" />
+                <h2 className="font-bold text-lg text-gray-800">
+                  Admin Dashboard
+                </h2>
+              </div>
+              <p className="text-gray-400 text-xs mt-1">
+                Manage referral payouts, track performance, and review flagged
+                signups.
+              </p>
             </div>
-            <p className="text-gray-400 text-xs mt-1">
-              Manage referral payouts, track performance, and review flagged
-              signups.
-            </p>
-          </div>
 
-          {/* Admin Tabs */}
-          <div className="flex border-b border-gray-100">
-            {adminTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveAdminTab(tab.key)}
-                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all border-b-2 ${
-                  activeAdminTab === tab.key
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-                {tab.key === 'payouts' && pendingPayouts?.pending_count > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {pendingPayouts.pending_count}
-                  </span>
-                )}
-                {tab.key === 'fraud' && flagged?.flagged_count > 0 && (
-                  <span className="ml-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {flagged.flagged_count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Content */}
-          <div className="p-4 md:p-6">
-            {/* ── Leaderboard ── */}
-            {activeAdminTab === 'leaderboard' && (
-              <div className="space-y-4">
-                {statsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  </div>
-                ) : stats ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 rounded-xl p-4 text-center">
-                        <p className="text-3xl font-black text-gray-800">
-                          {stats.total_referrals}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1 font-medium">
-                          Total Referrals
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-xl p-4 text-center">
-                        <p className="text-3xl font-black text-gray-800">
-                          {stats.total_referrers}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1 font-medium">
-                          Active Referrers
-                        </p>
-                      </div>
-                    </div>
-
-                    {stats.leaderboard.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-100">
-                              <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                                Rank
-                              </th>
-                              <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                                User
-                              </th>
-                              <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                                Referrals
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {stats.leaderboard.map(
-                              (entry: any, index: number) => (
-                                <tr
-                                  key={entry.user_id}
-                                  className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
-                                >
-                                  <td className="py-3 px-4">
-                                    <span
-                                      className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                                        index === 0
-                                          ? 'bg-amber-100 text-amber-700'
-                                          : index === 1
-                                            ? 'bg-gray-200 text-gray-600'
-                                            : index === 2
-                                              ? 'bg-orange-100 text-orange-600'
-                                              : 'bg-gray-50 text-gray-400'
-                                      }`}
-                                    >
-                                      {index + 1}
-                                    </span>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <p className="font-semibold text-gray-800">
-                                      {entry.username}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                      {entry.email}
-                                    </p>
-                                  </td>
-                                  <td className="py-3 px-4 text-right">
-                                    <span className="font-bold text-gray-700">
-                                      {entry.referral_count}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="text-center text-gray-400 py-8 text-sm">
-                        No referrals yet
-                      </p>
+            {/* Admin Tabs */}
+            <div className="flex border-b border-gray-100">
+              {adminTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveAdminTab(tab.key)}
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all border-b-2 ${
+                    activeAdminTab === tab.key
+                      ? 'border-black text-black'
+                      : 'border-transparent text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                  {tab.key === 'payouts' &&
+                    pendingPayouts?.pending_count > 0 && (
+                      <span className="ml-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {pendingPayouts.pending_count}
+                      </span>
                     )}
-                  </>
-                ) : (
-                  <p className="text-center text-gray-400 py-8 text-sm">
-                    Unable to load stats
-                  </p>
-                )}
-              </div>
-            )}
+                  {tab.key === 'fraud' && flagged?.flagged_count > 0 && (
+                    <span className="ml-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {flagged.flagged_count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-            {/* ── Payout Approvals ── */}
-            {activeAdminTab === 'payouts' && (
-              <div className="space-y-4">
-                {payoutsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  </div>
-                ) : pendingPayouts?.payouts?.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            User
-                          </th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingPayouts.payouts.map((p: any) => (
-                          <tr
-                            key={p.id}
-                            className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
-                          >
-                            <td className="py-3 px-4">
-                              <p className="font-semibold text-gray-800">
-                                {p.referrer?.username}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {p.referrer?.email}
-                              </p>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <span className="font-bold text-gray-700">
-                                ${p.amount?.toFixed(2)}{' '}
-                                <span className="text-xs text-gray-400">
-                                  {p.currency}
+            {/* Tab Content */}
+            <div className="p-4 md:p-6">
+              {/* ── Leaderboard ── */}
+              {activeAdminTab === 'leaderboard' && (
+                <div className="space-y-4">
+                  {statsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : stats ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                          <p className="text-3xl font-black text-gray-800">
+                            {stats.total_referrals}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1 font-medium">
+                            Total Referrals
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                          <p className="text-3xl font-black text-gray-800">
+                            {stats.total_referrers}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1 font-medium">
+                            Active Referrers
+                          </p>
+                        </div>
+                      </div>
+
+                      {stats.leaderboard.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-100">
+                                <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                                  Rank
+                                </th>
+                                <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                                  User
+                                </th>
+                                <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                                  Referrals
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {stats.leaderboard.map(
+                                (entry: any, index: number) => (
+                                  <tr
+                                    key={entry.user_id}
+                                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                                  >
+                                    <td className="py-3 px-4">
+                                      <span
+                                        className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                                          index === 0
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : index === 1
+                                              ? 'bg-gray-200 text-gray-600'
+                                              : index === 2
+                                                ? 'bg-orange-100 text-orange-600'
+                                                : 'bg-gray-50 text-gray-400'
+                                        }`}
+                                      >
+                                        {index + 1}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <p className="font-semibold text-gray-800">
+                                        {entry.username}
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        {entry.email}
+                                      </p>
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+                                      <span className="font-bold text-gray-700">
+                                        {entry.referral_count}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-center text-gray-400 py-8 text-sm">
+                          No referrals yet
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-center text-gray-400 py-8 text-sm">
+                      Unable to load stats
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── Payout Approvals ── */}
+              {activeAdminTab === 'payouts' && (
+                <div className="space-y-4">
+                  {payoutsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : pendingPayouts?.payouts?.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              User
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Date
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pendingPayouts.payouts.map((p: any) => (
+                            <tr
+                              key={p.id}
+                              className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <p className="font-semibold text-gray-800">
+                                  {p.referrer?.username}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {p.referrer?.email}
+                                </p>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <span className="font-bold text-gray-700">
+                                  ${p.amount?.toFixed(2)}{' '}
+                                  <span className="text-xs text-gray-400">
+                                    {p.currency}
+                                  </span>
                                 </span>
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-gray-500 text-xs">
-                              {new Date(p.request_date).toLocaleDateString()}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleApprovePayout(p.id)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg hover:bg-emerald-100 transition-colors"
-                                >
-                                  <CheckCircle2 size={14} />
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRejectPayout(p.id)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors"
-                                >
-                                  <XCircle size={14} />
-                                  Reject
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-300 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">
-                      No pending payout requests
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+                              </td>
+                              <td className="py-3 px-4 text-gray-500 text-xs">
+                                {new Date(p.request_date).toLocaleDateString()}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleApprovePayout(p.id)}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg hover:bg-emerald-100 transition-colors"
+                                  >
+                                    <CheckCircle2 size={14} />
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectPayout(p.id)}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors"
+                                  >
+                                    <XCircle size={14} />
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <CheckCircle2 className="w-10 h-10 text-emerald-300 mx-auto mb-3" />
+                      <p className="text-gray-400 text-sm">
+                        No pending payout requests
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* ── Fraud Review ── */}
-            {activeAdminTab === 'fraud' && (
-              <div className="space-y-4">
-                {flaggedLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  </div>
-                ) : flagged?.records?.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Referred User
-                          </th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Referrer
-                          </th>
-                          <th className="text-center py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Fraud Score
-                          </th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            IP Address
-                          </th>
-                          <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
-                            Date
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {flagged.records.map((r: any) => (
-                          <tr
-                            key={r.id}
-                            className="border-b border-gray-50 hover:bg-red-50/30 transition-colors"
-                          >
-                            <td className="py-3 px-4">
-                              <p className="font-semibold text-gray-800">
-                                {r.referred_user?.username}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {r.referred_user?.email}
-                              </p>
-                            </td>
-                            <td className="py-3 px-4">
-                              <p className="font-semibold text-gray-800">
-                                {r.referrer_user?.username}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {r.referrer_user?.email}
-                              </p>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-                                  r.fraud_score >= 90
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-amber-100 text-amber-700'
-                                }`}
-                              >
-                                <AlertTriangle size={12} />
-                                {r.fraud_score}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-gray-500 text-xs font-mono">
-                              {r.ip_address}
-                            </td>
-                            <td className="py-3 px-4 text-gray-500 text-xs">
-                              {new Date(r.signup_date).toLocaleDateString()}
-                            </td>
+              {/* ── Fraud Review ── */}
+              {activeAdminTab === 'fraud' && (
+                <div className="space-y-4">
+                  {flaggedLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : flagged?.records?.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Referred User
+                            </th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Referrer
+                            </th>
+                            <th className="text-center py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Fraud Score
+                            </th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              IP Address
+                            </th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Date
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <ShieldAlert className="w-10 h-10 text-emerald-300 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">
-                      No flagged signups — all clear!
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+                        </thead>
+                        <tbody>
+                          {flagged.records.map((r: any) => (
+                            <tr
+                              key={r.id}
+                              className="border-b border-gray-50 hover:bg-red-50/30 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <p className="font-semibold text-gray-800">
+                                  {r.referred_user?.username}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {r.referred_user?.email}
+                                </p>
+                              </td>
+                              <td className="py-3 px-4">
+                                <p className="font-semibold text-gray-800">
+                                  {r.referrer_user?.username}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {r.referrer_user?.email}
+                                </p>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                    r.fraud_score >= 90
+                                      ? 'bg-red-100 text-red-700'
+                                      : 'bg-amber-100 text-amber-700'
+                                  }`}
+                                >
+                                  <AlertTriangle size={12} />
+                                  {r.fraud_score}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-gray-500 text-xs font-mono">
+                                {r.ip_address}
+                              </td>
+                              <td className="py-3 px-4 text-gray-500 text-xs">
+                                {new Date(r.signup_date).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <ShieldAlert className="w-10 h-10 text-emerald-300 mx-auto mb-3" />
+                      <p className="text-gray-400 text-sm">
+                        No flagged signups — all clear!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </AdminAuthorization>
     </div>
   )
 }

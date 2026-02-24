@@ -20,7 +20,7 @@ function DashboardHome() {
         />
       </div>
       <AdminAuthorization authorizationMode="component">
-        <div className="flex flex-col sm:flex-row gap-4 lg:gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 max-w-2xl w-full">
           {/* Card components */}
           <DashboardCard
             href="/dash/courses"
@@ -85,7 +85,7 @@ function DashboardCard({
   return (
     <Link
       href={href}
-      className="flex bg-white shadow-lg p-6 w-full sm:w-[250px] rounded-lg items-center mx-auto hover:scale-105 transition-all ease-linear cursor-pointer"
+      className="flex bg-white shadow-lg p-6 w-full rounded-lg items-center mx-auto hover:scale-105 transition-all ease-linear cursor-pointer"
     >
       <div className="flex flex-col mx-auto gap-2">
         {icon}
