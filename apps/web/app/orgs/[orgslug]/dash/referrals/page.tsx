@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 
@@ -26,7 +26,7 @@ import type {
   CommissionRecord,
 } from 'types/referral'
 import { useOrg } from '@components/Contexts/OrgContext'
-import AdminAuthorization from '@components/Security/AdminAuthorization'
+
 import toast from 'react-hot-toast'
 import {
   AlertTriangle,
@@ -48,6 +48,15 @@ function ReferralsPage() {
 
   const org = useOrg() as any
   const org_id = org.id
+
+  // Strict admin check: only role_id 1 (Admin) or 2 (Maintainer)
+  const isStrictAdmin = useMemo(() => {
+    const roles = session?.data?.roles || []
+    return roles.some(
+      (r: any) =>
+        r.org?.id === org?.id && (r.role?.id === 1 || r.role?.id === 2)
+    )
+  }, [session?.data?.roles, org?.id])
 
   const [payoutOpen, setPayoutOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -243,7 +252,7 @@ function ReferralsPage() {
       />
 
       {/* ══════════════ Admin Section (admin-only) ══════════════ */}
-      <AdminAuthorization authorizationMode="component">
+      {isStrictAdmin && (
         <div className="border-t border-gray-200 pt-6 mt-8">
           <div className="bg-white nice-shadow rounded-xl overflow-hidden">
             <div className="px-4 py-4 md:px-6 md:py-5 border-b border-gray-100">
@@ -561,7 +570,7 @@ function ReferralsPage() {
             </div>
           </div>
         </div>
-      </AdminAuthorization>
+      )}
     </div>
   )
 }
