@@ -51,8 +51,10 @@ def restore_docs():
                                 found_path = os.path.join(root, f)
                                 found_filename = f
                                 break
-                        if found_path: break
-                if found_path: break
+                        if found_path: 
+                            break
+                if found_path: 
+                    break
             
             if found_path:
                 print(f"  Source file found: {found_filename}")
@@ -69,7 +71,7 @@ def restore_docs():
                 # 3. Copy file
                 try:
                     shutil.copy2(found_path, new_path)
-                    print(f"  File copied to new course structure.")
+                    print("  File copied to new course structure.")
                 except Exception as e:
                     print(f"  Copy failed: {e}")
                     continue
@@ -104,9 +106,9 @@ def restore_docs():
                 })
                 
                 restored_count += 1
-                print(f"  BLOCK RESTORED.")
+                print("  BLOCK RESTORED.")
             else:
-                print(f"  No source file found for this activity.")
+                print("  No source file found for this activity.")
         
         session.commit()
         print(f"\nFINISH: Successfully restored {restored_count} PDF lessons.")

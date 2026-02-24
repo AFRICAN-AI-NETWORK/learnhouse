@@ -36,7 +36,7 @@ def find_missing_content():
                     found = True
                     break
             if not found:
-                 print(f"  NOT FOUND on disk.")
+                 print("  NOT FOUND on disk.")
 
         print("\n--- SUMMARY OF DISCOVERIES ---")
         for aid, (c_uuid, path, files) in matches.items():

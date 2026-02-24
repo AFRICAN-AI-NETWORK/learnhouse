@@ -23,7 +23,7 @@ def check_loss():
             res = session.execute(text("SELECT id, title, course_id, chapter_id, activity_id FROM assignment")).all()
             for r in res:
                 print(f"ID {r[0]}: {r[1]} (Course={r[2]}, Chap={r[3]}, Act={r[4]})")
-        except:
+        except Exception:
              print("Error or no records in assignment.")
 
     print("\n--- PHYSICAL DISK CHECK ---")

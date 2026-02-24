@@ -1,6 +1,6 @@
 
-from sqlmodel import Session, create_engine, select, text
-from src.db.courses.courses import Course
+from sqlmodel import Session, create_engine, select
+
 from src.db.courses.chapters import Chapter
 from src.db.courses.activities import Activity
 from src.db.courses.chapter_activities import ChapterActivity

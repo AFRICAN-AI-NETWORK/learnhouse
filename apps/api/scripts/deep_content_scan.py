@@ -1,5 +1,5 @@
 
-from sqlmodel import Session, create_engine, text
+from sqlmodel import create_engine, text
 from config.config import get_learnhouse_config
 
 def deep_scan():
@@ -15,7 +15,7 @@ def deep_scan():
             try:
                 count = conn.execute(text(f"SELECT COUNT(*) FROM \"{table}\"")).scalar()
                 print(f"{table}: {count}")
-            except:
+            except Exception:
                 print(f"{table}: Table not found or error")
 
         print("\n--- Orphan Check (Searching by Chapter ID) ---")

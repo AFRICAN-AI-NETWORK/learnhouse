@@ -1,5 +1,5 @@
 
-from sqlmodel import Session, create_engine, select, text
+from sqlmodel import Session, create_engine, text
 from config.config import get_learnhouse_config
 
 def fix_migration_links():

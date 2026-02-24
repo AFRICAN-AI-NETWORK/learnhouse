@@ -10,7 +10,7 @@ def fix_pdf_paths():
     engine = create_engine(config.database_config.sql_connection_string)
     
     org_uuid = "org_daaf379c-ab58-466f-b729-e2ff6327790f"
-    target_id = 15
+
     target_uuid = "course_3ef9cfef-c271-448f-be18-703ac4f17f05"
     base_path = f"/app/content/orgs/{org_uuid}/courses"
     target_course_path = os.path.join(base_path, target_uuid)
@@ -56,8 +56,10 @@ def fix_pdf_paths():
                                     found_path = os.path.join(root, file)
                                     found_filename = file
                                     break
-                            if found_path: break
-                    if found_path: break
+                            if found_path: 
+                                break
+                    if found_path: 
+                        break
 
             if found_path:
                 # Move to the expected location if it's not there
