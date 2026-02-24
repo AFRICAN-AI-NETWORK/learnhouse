@@ -71,7 +71,8 @@
     "active": "Actif",
     "actions": "Actions",
     "filter": "Filtrer",
-    "saving": "Enregistrement..."
+    "saving": "Enregistrement...",
+    "apply": "Appliquer"
   },
   "auth": {
     "login": "Connexion",
@@ -137,6 +138,8 @@
     "create_courses_placeholder": "Créez des cours pour ajouter du contenu",
     "loading_courses": "Chargement des cours...",
     "no_featured_courses": "Aucun cours mis en avant",
+    "free": "Gratuit",
+    "paid": "Payant",
     "start_course": "Commencer",
     "leave_course": "Quitter le cours",
     "leave_course_success": "Vous avez quitté le cours",
@@ -144,7 +147,11 @@
     "leave_course_error": "Erreur lors de la sortie du cours",
     "start_course_error": "Erreur lors du lancement du cours",
     "you_own_this_course": "Cours possédé",
-    "you_own_this_course_description": "Vous avez un accès complet à ce contenu.",
+    "you_own_this_course_description": "Vous avez un accès complet à tous les supports et activités du cours.",
+    "admin_preview": "Mode Aperçu Administrateur",
+    "admin_preview_description": "Vous avez accès au contenu de ce cours en raison de votre rôle administratif.",
+    "instructor_access": "Accès Instructeur",
+    "instructor_access_description": "Vous avez accès à ce cours car vous êtes un contributeur.",
     "paid_course": "Cours payant",
     "paid_course_description": "Ce cours nécessite un achat préalable.",
     "purchase_course_title": "Acheter le cours",

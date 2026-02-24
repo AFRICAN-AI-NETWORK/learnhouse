@@ -10,6 +10,8 @@ from src.db.payments.payments_products import (
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
+from src.db.courses.courses import Course
+from src.db.organizations import Organization
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.payments.payments_users import (
     create_payment_user,
@@ -458,8 +460,28 @@ async def initialize_transaction(
         db_session.commit()
         
         # Return the redirect_uri directly
-        separator = "&" if "?" in redirect_uri else "?"
-        success_url = f"{redirect_uri}{separator}payment_success=true&reference=free_{payment_user.id}"
+        # If it's a single-course product, redirect to that course page instead of the general dashboard
+        target_redirect = redirect_uri
+        
+        # Check if product is linked to exactly one course
+        statement = select(PaymentsCourse).where(PaymentsCourse.payment_product_id == product_id)
+        linked_courses = db_session.exec(statement).all()
+        
+        if len(linked_courses) == 1:
+            course = db_session.get(Course, linked_courses[0].course_id)
+            if course:
+                # Get org slug for URL construction
+                statement = select(Organization).where(Organization.id == org_id)
+                org = db_session.exec(statement).first()
+                if org:
+                    config = get_learnhouse_config()
+                    base_url = config.hosting_config.app_base_url.rstrip('/')
+                    
+                    # Constructing absolute URL manually
+                    target_redirect = f"{base_url}/orgs/{org.slug}/course/{course.course_uuid.replace('course_', '')}"
+
+        separator = "&" if "?" in target_redirect else "?"
+        success_url = f"{target_redirect}{separator}payment_success=true&reference=free_{payment_user.id}"
         return {
             "checkout_url": success_url,
             "reference": f"free_{payment_user.id}",

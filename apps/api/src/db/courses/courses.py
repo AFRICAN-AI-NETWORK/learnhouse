@@ -76,6 +76,7 @@ class CourseRead(CourseBase):
     thumbnail_type: Optional[ThumbnailType] = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: Optional[str] = Field(default="")
     thumbnail_video: Optional[str] = Field(default="")
+    is_paid: bool = False
     pass
 
 

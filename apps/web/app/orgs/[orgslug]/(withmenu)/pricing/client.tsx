@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Info, Loader2 } from 'lucide-react'
@@ -24,6 +22,7 @@ type PaymentsProduct = {
 
 type Props = {
   orgslug: string
+  orgId: number
   initialProducts: PaymentsProduct[]
 }
 
@@ -46,7 +45,11 @@ const parseBenefits = (benefitsString?: string) => {
   return benefitsString.split('\n').filter((b) => b.trim() !== '')
 }
 
-export default function PricingPageClient({ orgslug, initialProducts }: Props) {
+export default function PricingPageClient({
+  orgslug,
+  orgId,
+  initialProducts,
+}: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const session = useLHSession() as any
@@ -65,14 +68,7 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
 
     try {
       setLoadingProductId(productId)
-      const redirectUri =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}${getUriWithOrg(orgslug, '/courses')}`
-          : ''
-
-      // orgId is required for the checkout session API
-      // We'll extract it from the first product or use a robust method if available
-      const orgId = session?.data?.user?.current_org_id || 1 // Fallback if missing
+      const redirectUri = getUriWithOrg(orgslug, '/courses')
 
       const checkoutResponse = (await getStripeProductCheckoutSession(
         orgId,
@@ -81,15 +77,12 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
         access_token
       )) as any
 
-      if (checkoutResponse?.success && checkoutResponse?.data?.checkout_url) {
-        window.location.href = checkoutResponse.data.checkout_url
-      } else if (checkoutResponse?.data?.checkout_url) {
+      if (checkoutResponse?.data?.checkout_url) {
         window.location.href = checkoutResponse.data.checkout_url
       } else {
         toast.error(
           checkoutResponse?.data?.detail ||
             checkoutResponse?.data?.error ||
-            checkoutResponse?.HTTPmessage ||
             'Failed to initialize checkout session'
         )
       }
@@ -149,7 +142,8 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
               const benefits = parseBenefits(product.benefits)
               const isPopular =
                 product.name.toLowerCase().includes('bundle') ||
-                product.name.toLowerCase().includes('fundamentals')
+                product.name.toLowerCase().includes('fundamentals') ||
+                product.name.toLowerCase().includes('foundations')
 
               return (
                 <motion.div
@@ -211,11 +205,7 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
                   <button
                     onClick={() => handleCheckout(product.id)}
                     disabled={loadingProductId === product.id}
-                    className={`w-full flex justify-center items-center px-6 py-3.5 border border-transparent text-base font-bold rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
-                      isPopular
-                        ? 'bg-[#111827] text-white hover:bg-black shadow-[0_4px_14px_0_rgb(0,0,0,0.25)]'
-                        : 'bg-white text-[#111827] border-gray-300 hover:bg-gray-50 shadow-sm'
-                    }`}
+                    className="w-full flex justify-center items-center px-6 py-3.5 bg-[#111827] text-white hover:bg-black shadow-[0_4px_14px_0_rgb(0,0,0,0.25)] text-base font-bold rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {loadingProductId === product.id ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
