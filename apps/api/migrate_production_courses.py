@@ -6,11 +6,9 @@ from src.db.courses.activities import Activity
 from src.db.courses.blocks import Block
 from src.db.courses.course_chapters import CourseChapter
 from config.config import get_learnhouse_config
-import datetime
-
 def run_migration():
     config = get_learnhouse_config()
-    print(f"Connecting to database to perform migration...")
+    print("Connecting to database to perform migration...")
     engine = create_engine(config.database_config.sql_connection_string)
     
     source_ids = [9, 6, 8, 11, 13, 14, 10]
