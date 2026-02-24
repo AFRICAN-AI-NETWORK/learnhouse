@@ -65,6 +65,8 @@ for root, dirs, files in os.walk(base_dir):
 # IMPORTING ALL SCHEMAS
 
 target_metadata = SQLModel.metadata
+for _t in target_metadata.tables.keys():
+    print(f"DEBUG: Found table '{_t}'")
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
