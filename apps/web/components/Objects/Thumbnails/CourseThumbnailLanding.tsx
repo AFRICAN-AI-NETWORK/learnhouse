@@ -195,7 +195,7 @@ const CourseThumbnailLanding: React.FC<PropsType> = ({
         >
           {/* Price Badge */}
           <div
-            className={`absolute top-2 right-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm border ${
+            className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm border ${
               course.is_paid
                 ? 'bg-blue-500/90 text-white border-blue-400/50'
                 : 'bg-emerald-500/90 text-white border-emerald-400/50'

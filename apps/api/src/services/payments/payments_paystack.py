@@ -476,17 +476,8 @@ async def initialize_transaction(
                     config = get_learnhouse_config()
                     base_url = config.hosting_config.app_base_url.rstrip('/')
                     
-                    # If multi-org is enabled, we might need a different domain construction
-                    # But for now, using the configured app_base_url is the safest bet for redirect
-                    # Or constructing it based on the current origin if possible
-                    clean_uuid = course.course_uuid.replace('course_', '')
-                    
-                    # Check if we should use subdomain or path based on self_hosted/multi_org
-                    # For simplicity and reliability, we can just use a relative path if the frontend handles it,
-                    # but the backend return here expects a full URL.
-                    
                     # Constructing absolute URL manually
-                    target_redirect = f"{base_url}/org/{org.org_slug}/course/{clean_uuid}"
+                    target_redirect = f"{base_url}/orgs/{org.slug}/course/{course.course_uuid.replace('course_', '')}"
 
         separator = "&" if "?" in target_redirect else "?"
         success_url = f"{target_redirect}{separator}payment_success=true&reference=free_{payment_user.id}"

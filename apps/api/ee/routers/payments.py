@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlmodel import Session
 from src.core.events.database import get_db_session
 from src.db.payments.payments import PaymentsConfig, PaymentsConfigRead, PaymentsConfigUpdate
-from src.db.users import PublicUser
+from src.db.users import PublicUser, AnonymousUser
 from src.security.auth import get_current_user
 from src.services.payments.payments_config import (
     init_payments_config,
