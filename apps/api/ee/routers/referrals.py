@@ -161,7 +161,7 @@ def _require_admin(current_user, org_id, db_session):
     """Helper to enforce admin/maintainer role for an org."""
     from src.db.user_organizations import UserOrganization
     from sqlmodel import select
-    from fastapi import HTTPException, status as http_status
+    from fastapi import HTTPException
 
     if not current_user or not current_user.id:
         raise HTTPException(status_code=401, detail="Authentication required")
