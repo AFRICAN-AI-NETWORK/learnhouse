@@ -65,18 +65,6 @@ function ReferralsPage() {
   const balance: CommissionBalance | null = balanceData?.data ?? null
   const records: CommissionRecord[] = historyData?.data ?? []
 
-  // TO-DO This commented section below is for testing using mockup Eligible Balance
-
-  // const realBalance: CommissionBalance | null = balanceData?.data ?? null
-
-  // const balance: CommissionBalance | null =
-  //   process.env.NODE_ENV === 'development' && realBalance
-  //     ? {
-  //         ...realBalance,
-  //         eligible_balance: 80, // force eligibility
-  //       }
-  //     : realBalance
-
   const historyErr = (() => {
     const backendError = historyData?.error
 

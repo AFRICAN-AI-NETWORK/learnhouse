@@ -22,6 +22,7 @@ function StatBox({
   icon: React.ReactNode
   highlight?: boolean
 }) {
+  const safeValue = Number(value) >= 1 ? Number(value) : 0
   return (
     <div
       className={`flex flex-col gap-1 p-4 rounded-lg border ${highlight ? 'bg-black text-white border-black' : 'bg-gray-50 border-gray-200'}`}
@@ -34,7 +35,7 @@ function StatBox({
         {new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: currency || 'USD',
-        }).format(value)}
+        }).format(safeValue)}
       </div>
     </div>
   )
