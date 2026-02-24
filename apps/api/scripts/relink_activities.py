@@ -1,5 +1,5 @@
 
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine, select, text
 from src.db.courses.chapter_activities import ChapterActivity
 from config.config import get_learnhouse_config
 import datetime
