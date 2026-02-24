@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, Info, Loader2 } from 'lucide-react'
@@ -24,6 +22,7 @@ type PaymentsProduct = {
 
 type Props = {
   orgslug: string
+  orgId: number
   initialProducts: PaymentsProduct[]
 }
 
@@ -46,7 +45,11 @@ const parseBenefits = (benefitsString?: string) => {
   return benefitsString.split('\n').filter((b) => b.trim() !== '')
 }
 
-export default function PricingPageClient({ orgslug, initialProducts }: Props) {
+export default function PricingPageClient({
+  orgslug,
+  orgId,
+  initialProducts,
+}: Props) {
   const { t } = useTranslation()
   const router = useRouter()
   const session = useLHSession() as any
@@ -65,14 +68,7 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
 
     try {
       setLoadingProductId(productId)
-      const redirectUri =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}${getUriWithOrg(orgslug, '/courses')}`
-          : ''
-
-      // orgId is required for the checkout session API
-      // We'll extract it from the first product or use a robust method if available
-      const orgId = session?.data?.user?.current_org_id || 1 // Fallback if missing
+      const redirectUri = getUriWithOrg(orgslug, '/courses')
 
       const checkoutResponse = (await getStripeProductCheckoutSession(
         orgId,

@@ -30,6 +30,10 @@ export default async function PricingPage(props: {
   }
 
   return (
-    <PricingPageClient orgslug={params.orgslug} initialProducts={products} />
+    <PricingPageClient
+      orgslug={params.orgslug}
+      orgId={org.id}
+      initialProducts={products}
+    />
   )
 }
