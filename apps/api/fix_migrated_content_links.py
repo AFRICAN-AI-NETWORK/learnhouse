@@ -11,12 +11,13 @@ def fix_migration_links():
     target_id = 15
     
     # List of tables that have a course_id column and might need fixing
+    # Based on inspection: certifications is plural
     tables_to_fix = [
         "chapteractivity",
         "assignment",
         "assignmenttask",
         "assignmenttasksubmission",
-        "certification",
+        "certifications",
         "courseupdate",
         "block",
         "trailstep",
@@ -24,23 +25,25 @@ def fix_migration_links():
         "collectioncourse"
     ]
     
-    with Session(engine) as session:
-        for table_name in tables_to_fix:
+    for table_name in tables_to_fix:
+        with Session(engine) as session:
             print(f"Checking table: {table_name}...")
             # Using raw SQL to be safe and avoid model import issues
             try:
                 # Update course_id for records pointing to sources
+                # Note: We use individual sessions per table so one failure doesn't abort the rest
                 result = session.execute(text(f"""
                     UPDATE "{table_name}" 
                     SET course_id = :target 
                     WHERE course_id IN :sources
                 """), {"target": target_id, "sources": tuple(source_ids)})
+                session.commit()
                 print(f"   Updated {result.rowcount} records in {table_name}.")
             except Exception as e:
-                print(f"   Table {table_name} skipped or error: {e}")
-        
-        session.commit()
-        print("\nSUCCESS: All missing content links have been fixed.")
+                session.rollback()
+                print(f"   Table {table_name} skipped or error: {str(e).splitlines()[0]}")
+    
+    print("\nSUCCESS: All missing content links have been checked.")
 
 if __name__ == "__main__":
     fix_migration_links()
