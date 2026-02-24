@@ -44,26 +44,31 @@ def relink():
         added = 0
         for chap_id, act_ids in mapping.items():
             for i, act_id in enumerate(act_ids):
-                # Ensure it doesn't already exist
-                existing = session.exec(select(ChapterActivity).where(
-                    ChapterActivity.chapter_id == chap_id,
-                    ChapterActivity.activity_id == act_id
-                )).first()
-                if not existing:
-                    new_link = ChapterActivity(
-                        chapter_id=chap_id,
-                        activity_id=act_id,
-                        course_id=target_id,
-                        org_id=org_id,
-                        order=i + 1,
-                        creation_date=now,
-                        update_date=now
-                    )
-                    session.add(new_link)
+                # Check for existing link using raw SQL
+                check_stmt = text("""
+                    SELECT 1 FROM "chapteractivity" 
+                    WHERE chapter_id = :cid AND activity_id = :aid
+                """)
+                exists = session.execute(check_stmt, {"cid": chap_id, "aid": act_id}).first()
+                
+                if not exists:
+                    insert_stmt = text("""
+                        INSERT INTO "chapteractivity" 
+                        (chapter_id, activity_id, course_id, org_id, "order", creation_date, update_date)
+                        VALUES (:cid, :aid, :tid, :oid, :ord, :now, :now)
+                    """)
+                    session.execute(insert_stmt, {
+                        "cid": chap_id,
+                        "aid": act_id,
+                        "tid": target_id,
+                        "oid": org_id,
+                        "ord": i + 1,
+                        "now": now
+                    })
                     added += 1
         
         session.commit()
-        print(f"SUCCESS: Re-linked {added} activities to their chapters.")
+        print(f"SUCCESS: Re-linked {added} activities to their chapters using raw SQL.")
 
 if __name__ == "__main__":
     relink()
