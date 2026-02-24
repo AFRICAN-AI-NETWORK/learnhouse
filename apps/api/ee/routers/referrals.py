@@ -153,3 +153,279 @@ async def api_get_payout_history(
     Returns list of payout requests with status and dates
     """
     return await get_payout_history(request, org_id, current_user, db_session, limit)
+
+
+# ==================== Admin Endpoints ====================
+
+def _require_admin(current_user, org_id, db_session):
+    """Helper to enforce admin/maintainer role for an org."""
+    from src.db.user_organizations import UserOrganization
+    from sqlmodel import select
+    from fastapi import HTTPException, status as http_status
+
+    if not current_user or not current_user.id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    statement = select(UserOrganization).where(
+        UserOrganization.user_id == current_user.id,
+        UserOrganization.org_id == org_id,
+        UserOrganization.role_id.in_([1, 2]),  # Admin, Maintainer
+    )
+    user_org = db_session.exec(statement).first()
+    if not user_org:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin or Maintainer role required",
+        )
+
+
+@router.get("/{org_id}/admin/flagged")
+async def api_get_flagged_referrals(
+    request: Request,
+    org_id: int,
+    min_score: int = 75,
+    limit: int = 50,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Get referral signups flagged for fraud review.
+    Returns ReferralTracking records with fraud_score >= min_score.
+    Admin-only endpoint.
+    """
+    from sqlmodel import select
+    from src.db.referrals.referral_tracking import ReferralTracking
+    from src.db.referrals.referral_codes import ReferralCode
+    from src.db.users import User
+
+    _require_admin(current_user, org_id, db_session)
+
+    statement = (
+        select(ReferralTracking)
+        .join(ReferralCode, ReferralTracking.referral_code_id == ReferralCode.id)
+        .where(
+            ReferralCode.org_id == org_id,
+            ReferralTracking.fraud_score >= min_score,
+        )
+        .order_by(ReferralTracking.fraud_score.desc())
+        .limit(limit)
+    )
+    records = db_session.exec(statement).all()
+
+    results = []
+    for r in records:
+        # Fetch referred user info
+        referred = db_session.get(User, r.referred_user_id)
+        referrer = db_session.get(User, r.referrer_user_id)
+        results.append({
+            "id": r.id,
+            "referred_user": {
+                "id": r.referred_user_id,
+                "username": referred.username if referred else "unknown",
+                "email": referred.email if referred else "unknown",
+            },
+            "referrer_user": {
+                "id": r.referrer_user_id,
+                "username": referrer.username if referrer else "unknown",
+                "email": referrer.email if referrer else "unknown",
+            },
+            "fraud_score": r.fraud_score,
+            "ip_address": r.ip_address,
+            "device_id": r.device_id,
+            "signup_date": str(r.signup_date),
+        })
+
+    return {"flagged_count": len(results), "records": results}
+
+
+@router.get("/{org_id}/admin/payouts")
+async def api_get_pending_payouts(
+    request: Request,
+    org_id: int,
+    limit: int = 50,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Get all REQUESTED payout requests awaiting admin approval.
+    Admin-only endpoint.
+    """
+    from sqlmodel import select
+    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
+    from src.db.users import User
+
+    _require_admin(current_user, org_id, db_session)
+
+    statement = (
+        select(ReferrerPayoutRequest)
+        .where(
+            ReferrerPayoutRequest.org_id == org_id,
+            ReferrerPayoutRequest.status == PayoutStatus.REQUESTED,
+        )
+        .order_by(ReferrerPayoutRequest.request_date.desc())
+        .limit(limit)
+    )
+    payouts = db_session.exec(statement).all()
+
+    results = []
+    for p in payouts:
+        user = db_session.get(User, p.referrer_user_id)
+        results.append({
+            "id": p.id,
+            "referrer": {
+                "id": p.referrer_user_id,
+                "username": user.username if user else "unknown",
+                "email": user.email if user else "unknown",
+            },
+            "amount": p.total_amount,
+            "currency": p.currency,
+            "status": p.status,
+            "request_date": str(p.request_date),
+        })
+
+    return {"pending_count": len(results), "payouts": results}
+
+
+@router.post("/{org_id}/admin/payouts/{payout_id}/approve")
+async def api_approve_payout(
+    request: Request,
+    org_id: int,
+    payout_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Approve a payout request. Moves status from REQUESTED -> APPROVED.
+    The background worker will then process APPROVED payouts.
+    Admin-only endpoint.
+    """
+    from fastapi import HTTPException
+    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
+    from datetime import datetime
+
+    _require_admin(current_user, org_id, db_session)
+
+    payout = db_session.get(ReferrerPayoutRequest, payout_id)
+    if not payout or payout.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Payout request not found")
+    if payout.status != PayoutStatus.REQUESTED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot approve payout with status '{payout.status}'"
+        )
+
+    payout.status = PayoutStatus.APPROVED
+    payout.update_date = datetime.now()
+    db_session.add(payout)
+    db_session.commit()
+
+    logger.info(
+        "Payout %d approved by admin %d for org %d",
+        payout_id, current_user.id, org_id,
+    )
+    return {"message": "Payout approved", "payout_id": payout_id, "status": "approved"}
+
+
+@router.post("/{org_id}/admin/payouts/{payout_id}/reject")
+async def api_reject_payout(
+    request: Request,
+    org_id: int,
+    payout_id: int,
+    reason: str = "Rejected by admin",
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Reject a payout request. Moves status to FAILED with a reason.
+    Admin-only endpoint.
+    """
+    from fastapi import HTTPException
+    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
+    from datetime import datetime
+
+    _require_admin(current_user, org_id, db_session)
+
+    payout = db_session.get(ReferrerPayoutRequest, payout_id)
+    if not payout or payout.org_id != org_id:
+        raise HTTPException(status_code=404, detail="Payout request not found")
+    if payout.status not in (PayoutStatus.REQUESTED, PayoutStatus.APPROVED):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot reject payout with status '{payout.status}'"
+        )
+
+    payout.status = PayoutStatus.FAILED
+    payout.failure_reason = reason
+    payout.update_date = datetime.now()
+    db_session.add(payout)
+    db_session.commit()
+
+    logger.info(
+        "Payout %d rejected by admin %d for org %d: %s",
+        payout_id, current_user.id, org_id, reason,
+    )
+    return {"message": "Payout rejected", "payout_id": payout_id, "reason": reason}
+
+
+@router.get("/{org_id}/admin/stats")
+async def api_get_referral_stats(
+    request: Request,
+    org_id: int,
+    limit: int = 20,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Get referral leaderboard and summary stats for the organization.
+    Admin-only endpoint.
+
+    Returns:
+        - total_referrals: Total successful referrals
+        - total_referrers: Number of users who have referred others
+        - leaderboard: Top referrers ranked by referral count
+    """
+    from sqlmodel import select, func
+    from src.db.referrals.referral_tracking import ReferralTracking
+    from src.db.referrals.referral_codes import ReferralCode
+    from src.db.users import User
+
+    _require_admin(current_user, org_id, db_session)
+
+    # Total referrals for this org
+    total_stmt = (
+        select(func.count())
+        .select_from(ReferralTracking)
+        .join(ReferralCode, ReferralTracking.referral_code_id == ReferralCode.id)
+        .where(ReferralCode.org_id == org_id)
+    )
+    total_referrals = db_session.exec(total_stmt).one() or 0
+
+    # Leaderboard: top referrers by count
+    leaderboard_stmt = (
+        select(
+            ReferralTracking.referrer_user_id,
+            func.count().label("referral_count"),
+        )
+        .join(ReferralCode, ReferralTracking.referral_code_id == ReferralCode.id)
+        .where(ReferralCode.org_id == org_id)
+        .group_by(ReferralTracking.referrer_user_id)
+        .order_by(func.count().desc())
+        .limit(limit)
+    )
+    rows = db_session.exec(leaderboard_stmt).all()
+
+    leaderboard = []
+    for referrer_id, count in rows:
+        user = db_session.get(User, referrer_id)
+        leaderboard.append({
+            "user_id": referrer_id,
+            "username": user.username if user else "unknown",
+            "email": user.email if user else "unknown",
+            "referral_count": count,
+        })
+
+    return {
+        "total_referrals": total_referrals,
+        "total_referrers": len(leaderboard),
+        "leaderboard": leaderboard,
+    }
