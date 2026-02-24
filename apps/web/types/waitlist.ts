@@ -74,4 +74,8 @@ export interface WaitlistRegistrationPayload {
   selected_course_ids: number[]
   is_waitlist: boolean
   waitlist_interest: string
+  // Referral System fields
+  referral_code?: string
+  device_id?: string
+  browser_fingerprint?: { visitor_id: string }
 }

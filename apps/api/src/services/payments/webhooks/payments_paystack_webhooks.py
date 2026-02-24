@@ -134,6 +134,59 @@ async def handle_paystack_webhook(
                                 logger.error(f"Error recording discount usage: {str(e)}")
                                 # Don't fail the webhook - payment was successful
                     
+                    # REFERRAL SYSTEM: Create commission if payment has referral code
+                    # Get payment user for referral tracking
+                    payment_user = db_session.exec(
+                        select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
+                    ).first()
+                    
+                    if payment_user and payment_user.referral_code_id:
+                        try:
+                            from datetime import datetime
+                            from src.services.referrals.referral_commissions import create_commission_for_payment
+                            from sqlmodel import and_
+                            from src.db.referrals.referral_tracking import ReferralTracking
+                            
+                            # Get referral tracking to find referrer
+                            tracking_statement = select(ReferralTracking).where(
+                                and_(
+                                    ReferralTracking.referred_user_id == payment_user.user_id,
+                                    ReferralTracking.referral_code_id == payment_user.referral_code_id
+                                )
+                            )
+                            tracking = db_session.exec(tracking_statement).first()
+                            
+                            if tracking:
+                                # Create commission (implements idempotency check internally)
+                                commission = await create_commission_for_payment(
+                                    org_id=payment_user.org_id,
+                                    referrer_user_id=tracking.referrer_user_id,
+                                    referred_user_id=payment_user.user_id,
+                                    payment_user_id=payment_user.id,
+                                    course_id=int(course_id) if course_id else None,
+                                    referral_code_id=payment_user.referral_code_id,
+                                    payment_completion_date=datetime.now(),
+                                    db_session=db_session
+                                )
+                                
+                                if commission:
+                                    logger.info(
+                                        f"Created referral commission ${commission.commission_amount} "
+                                        f"for referrer {tracking.referrer_user_id} from payment {payment_user_id}"
+                                    )
+                                else:
+                                    logger.info(
+                                        f"Commission already exists for payment {payment_user_id} - idempotent response"
+                                    )
+                            else:
+                                logger.warning(
+                                    f"No referral tracking found for payment {payment_user_id} "
+                                    f"with referral_code_id {payment_user.referral_code_id}"
+                                )
+                        except Exception as e:
+                            logger.error(f"Error creating referral commission: {str(e)}")
+                            # Don't fail the webhook - payment was successful
+                    
                     logger.info(f"Payment completed for payment_user_id: {payment_user_id}")
                     return {"status": "success", "message": "Payment processed successfully"}
                 else:
@@ -266,6 +319,25 @@ async def handle_paystack_webhook(
                         )
                 except Exception as e:
                     logger.error(f"Error processing refund discount usage: {str(e)}")
+                    # Don't fail the webhook - refund was processed
+            
+            # REFERRAL SYSTEM: Forfeit commission if refund within refund period
+            if payment_user and payment_user.referral_code_id:
+                try:
+                    from src.services.referrals.referral_commissions import forfeit_commission_for_refund
+                    
+                    commission = await forfeit_commission_for_refund(
+                        payment_user_id=int(payment_user_id),
+                        db_session=db_session
+                    )
+                    
+                    if commission:
+                        logger.info(
+                            f"Forfeited referral commission ${commission.commission_amount} "
+                            f"for payment {payment_user_id} due to refund"
+                        )
+                except Exception as e:
+                    logger.error(f"Error forfeiting referral commission: {str(e)}")
                     # Don't fail the webhook - refund was processed
             
             logger.info(f"Refund processed for payment_user_id: {payment_user_id}")

@@ -74,7 +74,7 @@ def upgrade() -> None:
         try:
             with op.get_bind().begin_nested():
                 stmt()
-        except Exception as e:
+        except Exception:
             pass
 
     # ### end Alembic commands ###

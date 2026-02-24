@@ -1,7 +1,9 @@
 """Waitlist Email Service - Email templates and batch processing"""
 
-from datetime import datetime
 import asyncio
+import logging
+from datetime import datetime
+
 from pydantic import EmailStr
 from sqlmodel import Session, select
 
@@ -13,6 +15,8 @@ from src.db.waitlist import (
     WaitlistEmailLog,
 )
 from src.services.email.utils import send_email
+
+logger = logging.getLogger(__name__)
 
 
 def send_waitlist_confirmation_email(
@@ -234,7 +238,10 @@ async def process_waitlist_activations(db_session: Session):
         try:
             await activate_waitlist(db_session, waitlist)
         except Exception as e:
-            print(f"Error activating waitlist {waitlist.waitlist_uuid}: {str(e)}")
+            logger.error(
+                "Error activating waitlist %s: %s",
+                waitlist.waitlist_uuid, e, exc_info=True,
+            )
             # Continue with other waitlists even if one fails
             continue
 
@@ -245,14 +252,17 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
     Sends batch emails and updates user statuses.
     """
     
-    print(f"Activating waitlist: {waitlist.name} ({waitlist.waitlist_uuid})")
+    logger.info("Activating waitlist: %s (%s)", waitlist.name, waitlist.waitlist_uuid)
     
     # Get organization details for emails
     org_query = select(Organization).where(Organization.id == waitlist.org_id)
     org = db_session.exec(org_query).first()
     
     if not org:
-        print(f"Organization {waitlist.org_id} not found for waitlist {waitlist.waitlist_uuid}")
+        logger.warning(
+            "Organization %s not found for waitlist %s",
+            waitlist.org_id, waitlist.waitlist_uuid,
+        )
         return
     
     # Get all users with WAITLIST status matching this waitlist's interest
@@ -265,7 +275,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
     users = db_session.exec(users_query).all()
     
     if not users:
-        print(f"No users found for waitlist {waitlist.waitlist_uuid}")
+        logger.info("No users found for waitlist %s", waitlist.waitlist_uuid)
         # Mark as completed anyway
         waitlist.status = WaitlistStatusEnum.COMPLETED.value
         waitlist.activation_date = str(datetime.now())
@@ -273,7 +283,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
         db_session.commit()
         return
     
-    print(f"Found {len(users)} users to activate")
+    logger.info("Found %d users to activate for waitlist %s", len(users), waitlist.waitlist_uuid)
     
     # Process in batches
     batch_size = waitlist.batch_size
@@ -294,7 +304,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
             existing_log = db_session.exec(log_query).first()
             
             if existing_log:
-                print(f"Email already sent to user {user.id}, skipping")
+                logger.debug("Email already sent to user %d, skipping", user.id)
                 continue
             
             try:
@@ -323,7 +333,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
                 db_session.add(email_log)
                 
                 emails_sent += 1
-                print(f"Activated user {user.id} ({user.email})")
+                logger.info("Activated user %d (%s)", user.id, user.email)
                 
             except Exception as e:
                 # Log error but continue with other users
@@ -338,7 +348,9 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
                 )
                 db_session.add(email_log)
                 emails_failed += 1
-                print(f"Failed to activate user {user.id}: {str(e)}")
+                logger.error(
+                    "Failed to activate user %d: %s", user.id, e, exc_info=True,
+                )
         
         # Commit batch
         db_session.commit()
@@ -354,7 +366,9 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
     db_session.add(waitlist)
     db_session.commit()
     
-    print(f"Waitlist activation complete: {emails_sent} emails sent, {emails_failed} failed")
+    logger.info(
+        "Waitlist activation complete: %d sent, %d failed", emails_sent, emails_failed,
+    )
 
 
 async def retry_failed_waitlist_emails(db_session: Session):
@@ -402,14 +416,14 @@ async def retry_failed_waitlist_emails(db_session: Session):
             user.waitlist_activated_date = str(datetime.now())
             db_session.add(user)
             
-            print(f"Retry successful for user {user.id}")
+            logger.info("Retry successful for user %d", user.id)
             
         except Exception as e:
             # Increment retry count
             log.retry_count += 1
             log.email_error = str(e)
             log.update_date = str(datetime.now())
-            print(f"Retry failed for user {user.id}: {str(e)}")
+            logger.warning("Retry failed for user %d: %s", user.id, e)
         
         db_session.add(log)
     

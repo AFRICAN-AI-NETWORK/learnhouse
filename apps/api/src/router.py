@@ -8,6 +8,7 @@ from src.routers.courses.activities import activities, blocks
 from src.core.ee_hooks import register_ee_routers
 from src.services.dev.dev import isDevModeEnabledOrRaise
 from src.routers.utils import router as utils_router
+from ee.routers import referrals
 
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -36,6 +37,7 @@ v1_router.include_router(
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
+v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
 
 # Register EE Routers if available
 register_ee_routers(v1_router)

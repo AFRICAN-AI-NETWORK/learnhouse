@@ -114,6 +114,16 @@ async def create_waitlist_user(
             detail="Password must be at least 8 characters long"
         )
     
+    # Referral system: Validate disposable email
+    if user_object.referral_code:
+        from src.services.referrals.fraud_prevention import validate_email_for_referral
+        is_valid, error_msg = await validate_email_for_referral(user_object.email, db_session)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg,
+            )
+
     # ========== 2. USER CREATION PHASE ==========
     
     user = User.model_validate(user_object)
@@ -144,6 +154,36 @@ async def create_waitlist_user(
     db_session.commit()
     db_session.refresh(user)
     
+    # Referral system: Track referral if code provided
+    if user_object.referral_code:
+        try:
+            from src.services.referrals.referral_tracking import validate_and_track_referral
+            
+            referral_code_obj, fraud_score = await validate_and_track_referral(
+                request=request,
+                referred_user_id=user.id,
+                referral_code=user_object.referral_code,
+                device_id=user_object.device_id,
+                browser_fingerprint=user_object.browser_fingerprint or {},
+                db_session=db_session
+            )
+            
+            # Log fraud score
+            if fraud_score >= 75:
+                from src.services.referrals.referral_tracking import logger
+                logger.warning(
+                    f"High fraud risk score {fraud_score} for user {user.id} "
+                    f"with referral code {user_object.referral_code}"
+                )
+        except HTTPException as e:
+            # Log referral validation error but allow signup to continue
+            from src.services.referrals.referral_tracking import logger
+            logger.warning(f"Referral validation failed for user {user.id}: {e.detail}")
+        except Exception as e:
+            # Log unexpected errors but don't block signup
+            from src.services.referrals.referral_tracking import logger
+            logger.error(f"Unexpected error tracking referral for user {user.id}: {str(e)}")
+
     # ========== 3. COURSE PREFERENCE STORAGE PHASE ==========
     
     if selected_product_ids:

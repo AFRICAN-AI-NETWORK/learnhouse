@@ -17,6 +17,13 @@ lh_config = get_learnhouse_config()
 # access to the values within the .ini file in use.
 config = context.config
 
+# Override sqlalchemy.url with the app's configured connection string
+if lh_config.database_config and lh_config.database_config.sql_connection_string:
+    config.set_main_option(
+        "sqlalchemy.url",
+        lh_config.database_config.sql_connection_string,
+    )
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
@@ -58,6 +65,8 @@ for root, dirs, files in os.walk(base_dir):
 # IMPORTING ALL SCHEMAS
 
 target_metadata = SQLModel.metadata
+for _t in target_metadata.tables.keys():
+    print(f"DEBUG: Found table '{_t}'")
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

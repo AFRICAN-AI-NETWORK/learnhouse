@@ -215,6 +215,8 @@ class TestEndpointAuthorization:
     
     def test_public_endpoints_available(self):
         """Test that public endpoints are accessible"""
+        [route.path for route in router.routes]
+        
         # Public endpoints like course listing
         # (May need to adjust based on actual implementation)
         assert router.routes is not None
