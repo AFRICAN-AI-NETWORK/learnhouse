@@ -23,7 +23,7 @@ const validationSchema = Yup.object().shape({
   name: Yup.string().required('Name is required'),
   description: Yup.string().required('Description is required'),
   amount: Yup.number()
-    .min(1, 'Amount must be greater than zero')
+    .min(0, 'Amount must be zero or greater')
     .required('Amount is required'),
   benefits: Yup.string(),
   currency: Yup.string().required('Currency is required'),
