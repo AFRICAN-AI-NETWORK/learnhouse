@@ -2,7 +2,7 @@
 from sqlmodel import Session, create_engine, select
 from src.db.courses.courses import Course
 from config.config import get_learnhouse_config
-import os
+
 
 def list_courses():
     config = get_learnhouse_config()
