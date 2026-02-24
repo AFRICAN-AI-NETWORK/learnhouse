@@ -53,10 +53,9 @@ function ReferralsPage() {
   const isStrictAdmin = useMemo(() => {
     const roles = session?.data?.roles || []
     return roles.some(
-      (r: any) =>
-        r.org?.id === org?.id && (r.role?.id === 1 || r.role?.id === 2)
+      (r: any) => r.org?.id === org_id && (r.role?.id === 1 || r.role?.id === 2)
     )
-  }, [session?.data?.roles, org?.id])
+  }, [session?.data?.roles, org_id])
 
   const [payoutOpen, setPayoutOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)

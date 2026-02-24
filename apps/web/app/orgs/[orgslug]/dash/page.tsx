@@ -24,25 +24,25 @@ function DashboardHome() {
           {/* Card components */}
           <DashboardCard
             href="/dash/courses"
-            icon={<BookCopy className="mx-auto text-gray-500/100" size={50} />}
+            icon={<BookCopy className="mx-auto text-gray-500" size={50} />}
             title={t('dashboard.home.cards.courses.title')}
             description={t('dashboard.home.cards.courses.description')}
           />
           <DashboardCard
             href="/dash/org/settings/general"
-            icon={<School className="mx-auto text-gray-500/100" size={50} />}
+            icon={<School className="mx-auto text-gray-500" size={50} />}
             title={t('dashboard.home.cards.organization.title')}
             description={t('dashboard.home.cards.organization.description')}
           />
           <DashboardCard
             href="/dash/users/settings/users"
-            icon={<Users className="mx-auto text-gray-500/100" size={50} />}
+            icon={<Users className="mx-auto text-gray-500" size={50} />}
             title={t('dashboard.home.cards.users.title')}
             description={t('dashboard.home.cards.users.description')}
           />
           <DashboardCard
             href="/dash/referrals"
-            icon={<GitMerge className="mx-auto text-gray-500/100" size={50} />}
+            icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
             title="Referrals"
             description="Earn commissions by referring new users"
           />
@@ -54,12 +54,12 @@ function DashboardHome() {
           className="flex bg-white shadow-lg p-4 items-center rounded-lg mx-auto hover:scale-105 transition-all ease-linear cursor-pointer max-w-md"
         >
           <div className="flex flex-col sm:flex-row mx-auto gap-2 sm:gap-3 items-center text-center sm:text-left">
-            <Settings className="text-gray-500/100" size={20} />
+            <Settings className="text-gray-500" size={20} />
             <div>
-              <div className="font-bold text-gray-500/100">
+              <div className="font-bold text-gray-500">
                 {t('dashboard.home.cards.account_settings.title')}
               </div>
-              <p className="text-sm text-gray-400/100">
+              <p className="text-sm text-gray-400">
                 {t('dashboard.home.cards.account_settings.description')}
               </p>
             </div>
@@ -89,8 +89,8 @@ function DashboardCard({
     >
       <div className="flex flex-col mx-auto gap-2">
         {icon}
-        <div className="text-center font-bold text-gray-500/100">{title}</div>
-        <p className="text-center text-sm text-gray-400/100">{description}</p>
+        <div className="text-center font-bold text-gray-500">{title}</div>
+        <p className="text-center text-sm text-gray-400">{description}</p>
       </div>
     </Link>
   )
