@@ -77,25 +77,16 @@ _exchange_rate_cache = {}
 # Generate key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 _ENCRYPTION_KEY = os.getenv("BANK_DATA_ENCRYPTION_KEY")
 
-# Strict validation: Fail fast in production environments
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+# Strict validation: Fail fast if encryption key is missing
 if not _ENCRYPTION_KEY:
-    if ENVIRONMENT in ["production", "prod"]:
-        logger.critical(
-            "BANK_DATA_ENCRYPTION_KEY is REQUIRED in production! "
-            "Generate with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
-        )
-        raise RuntimeError(
-            "BANK_DATA_ENCRYPTION_KEY environment variable is required in production. "
-            "Application cannot start without proper encryption configuration."
-        )
-    else:
-        logger.warning(
-            "BANK_DATA_ENCRYPTION_KEY not set! Using fallback key for development. "
-            "THIS IS INSECURE - SET ENCRYPTION KEY IN PRODUCTION!"
-        )
-        # Fallback key for development only - NEVER use in production
-        _ENCRYPTION_KEY = "dev-fallback-key-REPLACE-IN-PRODUCTION-12345678901234567890123="
+    logger.critical(
+        "BANK_DATA_ENCRYPTION_KEY is REQUIRED! "
+        "Generate with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
+    raise RuntimeError(
+        "BANK_DATA_ENCRYPTION_KEY environment variable is required. "
+        "Application cannot start without proper encryption configuration."
+    )
 
 try:
     _cipher_suite = Fernet(_ENCRYPTION_KEY.encode() if isinstance(_ENCRYPTION_KEY, str) else _ENCRYPTION_KEY)

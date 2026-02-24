@@ -106,20 +106,7 @@ function OpenSignUpComponent() {
     } catch {
       // localStorage unavailable
     }
-  }, [searchParams?.toString()])
-
-  const handleNextStep = async () => {
-    const errors = await formik.validateForm()
-    // Only check for errors related to current step fields
-    if (step === 1) {
-      if (!errors.email && !errors.password) {
-        setStep(2)
-      } else {
-        formik.setFieldTouched('email', true)
-        formik.setFieldTouched('password', true)
-      }
-    }
-  }
+  }, [searchParams])
 
   const formik = useFormik({
     initialValues: {
@@ -232,6 +219,19 @@ function OpenSignUpComponent() {
       setIsSubmitting(false)
     },
   })
+
+  const handleNextStep = async () => {
+    const errors = await formik.validateForm()
+    // Only check for errors related to current step fields
+    if (step === 1) {
+      if (!errors.email && !errors.password) {
+        setStep(2)
+      } else {
+        formik.setFieldTouched('email', true)
+        formik.setFieldTouched('password', true)
+      }
+    }
+  }
 
   if (message) {
     return (

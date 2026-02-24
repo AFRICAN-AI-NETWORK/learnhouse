@@ -129,7 +129,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
     } catch {
       // localStorage unavailable
     }
-  }, [searchParams?.toString()])
+  }, [searchParams])
 
   useEffect(() => {
     const fetchWaitlistDetails = async () => {
@@ -138,7 +138,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
         if (res.success && res.data) {
           setWaitlistDetails(res.data)
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to fetch waitlist details:')
       } finally {
         setLoadingDetails(false)
@@ -149,26 +149,6 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       fetchWaitlistDetails()
     }
   }, [waitlistUuid])
-
-  const handleNextStep = async () => {
-    const errors = await formik.validateForm()
-    if (step === 1) {
-      if (!errors.email && !errors.password) {
-        setStep(2)
-      } else {
-        formik.setFieldTouched('email', true)
-        formik.setFieldTouched('password', true)
-      }
-    } else if (step === 2) {
-      const profileErrors = ['username', 'first_name', 'last_name', 'bio']
-      const hasProfileError = profileErrors.some((f) => (errors as any)[f])
-      if (!hasProfileError) {
-        setStep(3)
-      } else {
-        profileErrors.forEach((f) => formik.setFieldTouched(f, true))
-      }
-    }
-  }
 
   const formik = useFormik({
     initialValues: {
@@ -282,6 +262,26 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       }
     },
   })
+
+  const handleNextStep = async () => {
+    const errors = await formik.validateForm()
+    if (step === 1) {
+      if (!errors.email && !errors.password) {
+        setStep(2)
+      } else {
+        formik.setFieldTouched('email', true)
+        formik.setFieldTouched('password', true)
+      }
+    } else if (step === 2) {
+      const profileErrors = ['username', 'first_name', 'last_name', 'bio']
+      const hasProfileError = profileErrors.some((f) => (errors as any)[f])
+      if (!hasProfileError) {
+        setStep(3)
+      } else {
+        profileErrors.forEach((f) => formik.setFieldTouched(f, true))
+      }
+    }
+  }
 
   if (loadingDetails) {
     return (

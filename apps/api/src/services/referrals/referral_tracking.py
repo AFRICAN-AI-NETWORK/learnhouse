@@ -160,7 +160,8 @@ async def create_referral_tracking(
     ip_address: str,
     device_id: Optional[str],
     browser_fingerprint: dict,
-    db_session: Session
+    db_session: Session,
+    fraud_score: int = 0,
 ) -> ReferralTracking:
     """
     One referred user can only use ONE referral code (prevents gaming the system)
@@ -204,6 +205,7 @@ async def create_referral_tracking(
         ip_address=ip_address,
         device_id=device_id,
         browser_fingerprint=browser_fingerprint,
+        fraud_score=fraud_score,
         registration_complete=True,
         signup_date=datetime.now(),
         creation_date=datetime.now()
@@ -278,7 +280,8 @@ async def validate_and_track_referral(
             ip_address=ip_address,
             device_id=device_id,
             browser_fingerprint=browser_fingerprint,
-            db_session=db_session
+            db_session=db_session,
+            fraud_score=fraud_score,
         )
     except HTTPException:
         # User already has referral tracking - allow signup to continue

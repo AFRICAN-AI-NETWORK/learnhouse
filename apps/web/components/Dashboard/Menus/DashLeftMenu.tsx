@@ -9,6 +9,7 @@ import {
   ChevronRight,
   HelpCircle,
   Home,
+  Link2,
   LogOut,
   Package2,
   School,
@@ -160,6 +161,12 @@ function DashLeftMenu() {
                 isCollapsed={isCollapsed}
               />
             )}
+            <MenuLink
+              href="/dash/referrals"
+              icon={<Link2 size={18} />}
+              label="Referrals"
+              isCollapsed={isCollapsed}
+            />
             <MenuLink
               href="/dash/org/settings/general"
               icon={<School size={18} />}

@@ -154,3 +154,127 @@ export async function requestPayout(
     return { success: false, data: null, error: 'Network error' }
   }
 }
+
+// ==================== Admin Endpoints ====================
+
+/**
+ * Get referral leaderboard and summary stats (admin only).
+ */
+export async function getAdminReferralStats(
+  access_token: string,
+  org_id: string
+): Promise<{ success: boolean; data: any; error?: string }> {
+  try {
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/stats`,
+      RequestBodyWithAuthHeader('GET', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success) return { success: true, data: res.data }
+    return {
+      success: false,
+      data: null,
+      error: res.data?.detail ?? 'Failed to load stats',
+    }
+  } catch {
+    return { success: false, data: null, error: 'Network error' }
+  }
+}
+
+/**
+ * Get flagged referral signups (admin only).
+ */
+export async function getAdminFlaggedReferrals(
+  access_token: string,
+  org_id: string
+): Promise<{ success: boolean; data: any; error?: string }> {
+  try {
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/flagged`,
+      RequestBodyWithAuthHeader('GET', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success) return { success: true, data: res.data }
+    return {
+      success: false,
+      data: null,
+      error: res.data?.detail ?? 'Failed to load flagged referrals',
+    }
+  } catch {
+    return { success: false, data: null, error: 'Network error' }
+  }
+}
+
+/**
+ * Get pending payout requests (admin only).
+ */
+export async function getAdminPendingPayouts(
+  access_token: string,
+  org_id: string
+): Promise<{ success: boolean; data: any; error?: string }> {
+  try {
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/payouts`,
+      RequestBodyWithAuthHeader('GET', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success) return { success: true, data: res.data }
+    return {
+      success: false,
+      data: null,
+      error: res.data?.detail ?? 'Failed to load payouts',
+    }
+  } catch {
+    return { success: false, data: null, error: 'Network error' }
+  }
+}
+
+/**
+ * Approve a payout request (admin only).
+ */
+export async function approvePayoutRequest(
+  access_token: string,
+  org_id: string,
+  payout_id: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/payouts/${payout_id}/approve`,
+      RequestBodyWithAuthHeader('POST', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success) return { success: true }
+    return {
+      success: false,
+      error: res.data?.detail ?? 'Failed to approve payout',
+    }
+  } catch {
+    return { success: false, error: 'Network error' }
+  }
+}
+
+/**
+ * Reject a payout request (admin only).
+ */
+export async function rejectPayoutRequest(
+  access_token: string,
+  org_id: string,
+  payout_id: number,
+  reason: string = 'Rejected by admin'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const params = new URLSearchParams({ reason })
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/payouts/${payout_id}/reject?${params}`,
+      RequestBodyWithAuthHeader('POST', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success) return { success: true }
+    return {
+      success: false,
+      error: res.data?.detail ?? 'Failed to reject payout',
+    }
+  } catch {
+    return { success: false, error: 'Network error' }
+  }
+}

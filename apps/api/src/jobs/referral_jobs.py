@@ -75,7 +75,7 @@ def _sync_process_payouts() -> dict:
 
     with Session(engine) as db_session:
         statement = select(ReferrerPayoutRequest).where(
-            ReferrerPayoutRequest.status == PayoutStatus.REQUESTED
+            ReferrerPayoutRequest.status == PayoutStatus.APPROVED
         ).limit(10)  # Process in batches
 
         payouts = db_session.exec(statement).all()

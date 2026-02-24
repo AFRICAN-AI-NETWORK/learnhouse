@@ -12,6 +12,7 @@ class ReferralTrackingBase(SQLModel):
     ip_address: str = Field(max_length=50, index=True)
     device_id: Optional[str] = Field(default=None, max_length=64, index=True)  # SHA-256 hash
     browser_fingerprint: dict = Field(default={}, sa_column=Column(JSON))
+    fraud_score: int = Field(default=0)
     registration_complete: bool = Field(default=False)
 
 
@@ -59,3 +60,4 @@ class ReferralTrackingCreate(SQLModel):
     ip_address: str
     device_id: Optional[str] = None
     browser_fingerprint: dict = {}
+    fraud_score: int = 0
