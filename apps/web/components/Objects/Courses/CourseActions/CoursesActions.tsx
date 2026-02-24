@@ -8,7 +8,10 @@ import {
   getUriWithOrg,
   getUriWithoutOrg,
 } from '@services/config/config'
-import { getProductsByCourse } from '@services/payments/products'
+import {
+  getProductsByCourse,
+  getStripeProductCheckoutSession,
+} from '@services/payments/products'
 import {
   ShoppingCart,
   AlertCircle,
@@ -140,6 +143,38 @@ function CoursesActions({
     session.data?.user,
     linkedProducts,
   ])
+
+  const isFreeCourse =
+    linkedProducts.length > 0 && linkedProducts.some((p) => p.amount === 0)
+
+  const handleFreeEnrollment = async (productId: number) => {
+    if (!session.data?.user) {
+      router.push(getUriWithoutOrg(`/signup?orgslug=${orgslug}`))
+      return
+    }
+
+    try {
+      setIsActionLoading(true)
+      const redirectUri = `${window.location.origin}${getUriWithOrg(orgslug, '/courses')}?payment_success=true`
+
+      const res = (await getStripeProductCheckoutSession(
+        course.org_id,
+        productId,
+        redirectUri,
+        session.data?.tokens?.access_token
+      )) as any
+
+      if (res?.data?.checkout_url) {
+        window.location.href = res.data.checkout_url
+      } else {
+        toast.error(res?.data?.detail || 'Failed to enroll')
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Error during enrollment')
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
 
   const handleCourseAction = async () => {
     if (!session.data?.user) {
@@ -525,17 +560,19 @@ function CoursesActions({
             </>
           ) : (
             <>
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg nice-shadow">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-800" />
-                  <h3 className="text-amber-800 font-semibold">
-                    {t('courses.paid_course')}
-                  </h3>
+              {!isFreeCourse && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg nice-shadow">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-800" />
+                    <h3 className="text-amber-800 font-semibold">
+                      {t('courses.paid_course')}
+                    </h3>
+                  </div>
+                  <p className="text-amber-700 text-sm mt-1">
+                    {t('courses.paid_course_description')}
+                  </p>
                 </div>
-                <p className="text-amber-700 text-sm mt-1">
-                  {t('courses.paid_course_description')}
-                </p>
-              </div>
+              )}
               <Modal
                 isDialogOpen={isModalOpen}
                 onOpenChange={setIsModalOpen}
@@ -546,11 +583,36 @@ function CoursesActions({
               />
               <button
                 className="w-full bg-neutral-900 text-white py-3 rounded-lg nice-shadow font-semibold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
-                onClick={() => setIsModalOpen(true)}
-                aria-label={t('courses.purchase_course_title')}
+                onClick={() => {
+                  if (isFreeCourse) {
+                    const freeProduct = linkedProducts.find(
+                      (p) => p.amount === 0
+                    )
+                    if (freeProduct) handleFreeEnrollment(freeProduct.id)
+                  } else {
+                    setIsModalOpen(true)
+                  }
+                }}
+                disabled={isActionLoading}
+                aria-label={
+                  isFreeCourse
+                    ? t('courses.enroll_for_free')
+                    : t('courses.purchase_course_title')
+                }
               >
-                <ShoppingCart className="w-5 h-5" />
-                {t('courses.purchase_course_title')}
+                {isActionLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : isFreeCourse ? (
+                  <>
+                    <BookOpen className="w-5 h-5" />
+                    {t('courses.enroll_for_free')}
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-5 h-5" />
+                    {t('courses.purchase_course_title')}
+                  </>
+                )}
               </button>
               {renderContributorButton()}
             </>

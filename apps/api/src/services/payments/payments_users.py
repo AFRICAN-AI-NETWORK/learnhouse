@@ -74,6 +74,10 @@ async def create_payment_user(
             db_session.delete(existing_payment_user)
             db_session.commit()
         else:
+            # If it's a free product, allow "re-purchase" by returning existing
+            # This handles cases where users click "Get Started" multiple times for free courses
+            if product.amount == 0:
+                return existing_payment_user
             raise HTTPException(status_code=400, detail="User already has purchase for this product")
 
     # Create new payment user

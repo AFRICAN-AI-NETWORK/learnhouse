@@ -149,7 +149,8 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
               const benefits = parseBenefits(product.benefits)
               const isPopular =
                 product.name.toLowerCase().includes('bundle') ||
-                product.name.toLowerCase().includes('fundamentals')
+                product.name.toLowerCase().includes('fundamentals') ||
+                product.name.toLowerCase().includes('foundations')
 
               return (
                 <motion.div
@@ -211,11 +212,7 @@ export default function PricingPageClient({ orgslug, initialProducts }: Props) {
                   <button
                     onClick={() => handleCheckout(product.id)}
                     disabled={loadingProductId === product.id}
-                    className={`w-full flex justify-center items-center px-6 py-3.5 border border-transparent text-base font-bold rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
-                      isPopular
-                        ? 'bg-[#111827] text-white hover:bg-black shadow-[0_4px_14px_0_rgb(0,0,0,0.25)]'
-                        : 'bg-white text-[#111827] border-gray-300 hover:bg-gray-50 shadow-sm'
-                    }`}
+                    className="w-full flex justify-center items-center px-6 py-3.5 bg-[#111827] text-white hover:bg-black shadow-[0_4px_14px_0_rgb(0,0,0,0.25)] text-base font-bold rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {loadingProductId === product.id ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
