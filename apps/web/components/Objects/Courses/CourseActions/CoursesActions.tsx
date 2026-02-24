@@ -82,6 +82,9 @@ function CoursesActions({
   const [isContributeLoading, setIsContributeLoading] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [accessReason, setAccessReason] = useState<
+    'PURCHASED' | 'ADMIN' | 'AUTHOR' | 'FREE' | null
+  >(null)
   const { contributorStatus, refetch } = useContributorStatus(courseuuid)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const org = useOrg() as any
@@ -125,6 +128,21 @@ function CoursesActions({
           session.data?.tokens?.access_token
         )
         setHasAccess(response.has_access)
+
+        if (response.has_access) {
+          if (response.diagnostics?.is_admin) {
+            setAccessReason('ADMIN')
+          } else if (response.diagnostics?.is_author) {
+            setAccessReason('AUTHOR')
+          } else if (
+            response.diagnostics?.user_has_payment &&
+            response.diagnostics?.payment_status === 'COMPLETED'
+          ) {
+            setAccessReason('PURCHASED')
+          } else if (!response.diagnostics?.course_linked_to_product) {
+            setAccessReason('FREE')
+          }
+        }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to check course access')
@@ -525,17 +543,45 @@ function CoursesActions({
         <div className="space-y-4">
           {hasAccess ? (
             <>
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg nice-shadow">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <h3 className="text-green-800 font-semibold">
-                    {t('courses.you_own_this_course')}
-                  </h3>
+              {accessReason === 'ADMIN' && (
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg nice-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+                    <h3 className="text-indigo-800 font-semibold">
+                      {t('courses.admin_preview')}
+                    </h3>
+                  </div>
+                  <p className="text-indigo-700 text-sm mt-1">
+                    {t('courses.admin_preview_description')}
+                  </p>
                 </div>
-                <p className="text-green-700 text-sm mt-1">
-                  {t('courses.you_own_this_course_description')}
-                </p>
-              </div>
+              )}
+              {accessReason === 'AUTHOR' && (
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg nice-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                    <h3 className="text-purple-800 font-semibold">
+                      {t('courses.instructor_access')}
+                    </h3>
+                  </div>
+                  <p className="text-purple-700 text-sm mt-1">
+                    {t('courses.instructor_access_description')}
+                  </p>
+                </div>
+              )}
+              {accessReason === 'PURCHASED' && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg nice-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <h3 className="text-green-800 font-semibold">
+                      {t('courses.you_own_this_course')}
+                    </h3>
+                  </div>
+                  <p className="text-green-700 text-sm mt-1">
+                    {t('courses.you_own_this_course_description')}
+                  </p>
+                </div>
+              )}
               <button
                 onClick={handleCourseAction}
                 disabled={isActionLoading}

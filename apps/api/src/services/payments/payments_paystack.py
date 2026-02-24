@@ -473,7 +473,6 @@ async def initialize_transaction(
                 statement = select(Organization).where(Organization.id == org_id)
                 org = db_session.exec(statement).first()
                 if org:
-                    from src.config.config import get_learnhouse_config
                     config = get_learnhouse_config()
                     base_url = config.hosting_config.app_base_url.rstrip('/')
                     

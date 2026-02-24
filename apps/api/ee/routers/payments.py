@@ -379,6 +379,17 @@ async def api_check_course_paid_access(
         )
         payment_user = db_session.exec(payment_user_statement).first()
     
+    is_author = False
+    if request and not isinstance(current_user, AnonymousUser):
+        try:
+            is_author = await authorization_verify_if_user_is_author(
+                request, int(current_user.id), "read", course.course_uuid, db_session
+            )
+        except:
+            pass
+
+    is_admin = isinstance(current_user, InternalUser) or (not isinstance(current_user, AnonymousUser) and current_user.id in [1, 2])
+    
     has_access = await check_course_paid_access(
         course_id=course_id,
         user=current_user,
@@ -395,6 +406,8 @@ async def api_check_course_paid_access(
             "user_has_payment": payment_user is not None,
             "payment_status": payment_user.status.value if payment_user else None,
             "payment_user_id": payment_user.id if payment_user else None,
+            "is_admin": is_admin,
+            "is_author": is_author
         }
     }
 

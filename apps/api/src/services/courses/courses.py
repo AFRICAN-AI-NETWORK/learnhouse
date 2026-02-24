@@ -4,6 +4,7 @@ from sqlmodel import Session, select, or_, and_, text
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.organizations import Organization
+from src.db.payments.payments_courses import PaymentsCourse
 from src.security.features_utils.usage import (
     check_limits_with_usage,
     decrease_feature_usage,
@@ -262,6 +263,10 @@ async def get_courses_orgslug(
             )
         )
     
+    # Get all linked products for all courses to check if they are paid
+    payments_query = select(PaymentsCourse.course_id).where(PaymentsCourse.course_id.in_([c.id for c in courses if c.id is not None])) # type: ignore
+    paid_course_ids = set(db_session.exec(payments_query).all())
+
     # Create CourseRead objects with authors
     course_reads = []
     for course in courses:
@@ -279,7 +284,8 @@ async def get_courses_orgslug(
             "course_uuid": course.course_uuid,
             "creation_date": course.creation_date,
             "update_date": course.update_date,
-            "authors": course_authors.get(course.course_uuid, [])
+            "authors": course_authors.get(course.course_uuid, []),
+            "is_paid": course.id in paid_course_ids
         })
         course_reads.append(course_read)
 
@@ -369,6 +375,10 @@ async def search_courses(
             for resource_author, user in author_results
         ]
         
+        # Check if course is paid
+        payment_statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
+        is_paid = db_session.exec(payment_statement).first() is not None
+
         course_read = CourseRead.model_validate({
             "id": course.id or 0,  # Ensure id is never None
             "org_id": course.org_id,
@@ -383,7 +393,8 @@ async def search_courses(
             "course_uuid": course.course_uuid,
             "creation_date": course.creation_date,
             "update_date": course.update_date,
-            "authors": authors
+            "authors": authors,
+            "is_paid": is_paid
         })
         course_reads.append(course_read)
 

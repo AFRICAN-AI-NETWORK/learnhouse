@@ -77,15 +77,12 @@ export default function PricingPageClient({
         access_token
       )) as any
 
-      if (checkoutResponse?.success && checkoutResponse?.data?.checkout_url) {
-        window.location.href = checkoutResponse.data.checkout_url
-      } else if (checkoutResponse?.data?.checkout_url) {
+      if (checkoutResponse?.data?.checkout_url) {
         window.location.href = checkoutResponse.data.checkout_url
       } else {
         toast.error(
           checkoutResponse?.data?.detail ||
             checkoutResponse?.data?.error ||
-            checkoutResponse?.HTTPmessage ||
             'Failed to initialize checkout session'
         )
       }
