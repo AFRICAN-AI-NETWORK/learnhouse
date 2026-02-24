@@ -50,11 +50,6 @@ class WaitlistUserRegistration(BaseModel):
     referral_code: Optional[str] = None
     device_id: Optional[str] = None
     browser_fingerprint: Optional[dict] = None
-    # Referral system fields
-    referral_code: Optional[str] = None
-    device_id: Optional[str] = None
-    browser_fingerprint: Optional[dict] = None
-
 
 # ==================== Waitlist Configuration Endpoints (Admin) ====================
 
