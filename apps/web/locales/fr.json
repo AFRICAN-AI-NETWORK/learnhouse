@@ -72,7 +72,9 @@
     "actions": "Actions",
     "filter": "Filtrer",
     "saving": "Enregistrement...",
-    "apply": "Appliquer"
+    "apply": "Appliquer",
+    "remove": "Supprimer",
+    "original_price": "Prix d'origine"
   },
   "auth": {
     "login": "Connexion",
@@ -120,7 +122,9 @@
     "resend_verification": "Renvoyer l'e-mail de vérification",
     "didnt_receive_email": "Vous n'avez pas reçu l'e-mail ? Vérifiez votre dossier de spam.",
     "email_placeholder": "vous@exemple.com",
-    "password_placeholder": "••••••••"
+    "password_placeholder": "••••••••",
+    "login_to_purchase": "Se connecter pour acheter",
+    "authenticate_to_purchase": "Veuillez vous connecter pour appliquer la réduction"
   },
   "validation": {
     "required": "Requis",
@@ -250,7 +254,8 @@
     "submitting_contributor_application": "Envoi de la candidature...",
     "contributor_application_success": "Candidature envoyée avec succès",
     "contributor_application_error": "Erreur lors de l'envoi",
-    "contribute": "Contribuer"
+    "contribute": "Contribuer",
+    "enroll_for_free": "S'inscrire gratuitement"
   },
   "collections": {
     "collections": "Collections",
@@ -446,7 +451,14 @@
     "unlimited": "Illimité",
     "value_percentage_hint": "Valeur en pourcentage (ex. 10 pour 10 %)",
     "value_fixed_hint": "Valeur dans la devise de votre organisation",
-    "global_admin_only_tooltip": "Vous n'avez pas accès à cette fonctionnalité. Seuls les administrateurs peuvent créer des remises globales."
+    "global_admin_only_tooltip": "Vous n'avez pas accès à cette fonctionnalité. Seuls les administrateurs peuvent créer des remises globales.",
+    "complete_purchase": "Finaliser l'achat",
+    "apply_discount_desc": "Appliquez un code de réduction si vous en avez un ou passez à la caisse.",
+    "have_discount_code": "Vous avez un code de réduction ?",
+    "discount": "Réduction",
+    "total_to_pay": "Total à payer",
+    "enroll_now": "S'inscrire maintenant",
+    "proceed_to_checkout": "Passer à la caisse"
   },
   "user": {
     "user_settings": "Profil",

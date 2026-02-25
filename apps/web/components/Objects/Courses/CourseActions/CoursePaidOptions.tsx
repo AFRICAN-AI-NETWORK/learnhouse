@@ -62,9 +62,9 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
       const response = (await validateDiscountCode(
         course.org_id,
         discountCode,
-        parseInt(course.id),
         amount,
-        session.data?.tokens?.access_token
+        session.data?.tokens?.access_token,
+        parseInt(course.id)
       )) as any
 
       if (response.valid) {
