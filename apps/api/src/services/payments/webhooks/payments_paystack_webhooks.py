@@ -99,8 +99,9 @@ async def handle_paystack_webhook(
                     # Implements idempotency check to prevent duplicate webhook processing
                     discount_code_id = metadata.get("discount_code_id")
                     course_id = metadata.get("course_id")
+                    product_id = metadata.get("product_id")
                     
-                    if discount_code_id and course_id:
+                    if discount_code_id and (course_id or product_id):
                         # Get payment user to retrieve discount information
                         payment_user = db_session.exec(
                             select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
@@ -120,7 +121,8 @@ async def handle_paystack_webhook(
                                     await record_discount_usage(
                                         discount_code_id=int(discount_code_id),
                                         user_id=int(metadata.get("user_id")),
-                                        course_id=int(course_id),
+                                        course_id=int(course_id) if course_id else None,
+                                        product_id=int(product_id) if product_id else None,
                                         payment_user_id=int(payment_user_id),
                                         original_amount=payment_user.original_amount,
                                         discount_amount=payment_user.discount_amount,

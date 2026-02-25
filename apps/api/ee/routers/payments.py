@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlmodel import Session
 from src.core.events.database import get_db_session
@@ -526,8 +526,9 @@ async def api_validate_discount_code(
     request: Request,
     org_id: int,
     code: str,
-    course_id: int,
     amount: float,
+    course_id: Optional[int] = None,
+    product_id: Optional[int] = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> dict:
@@ -541,6 +542,7 @@ async def api_validate_discount_code(
             org_id=org_id,
             user_id=current_user.id,
             course_id=course_id,
+            product_id=product_id,
             original_amount=amount,
             db_session=db_session,
             check_usage=True

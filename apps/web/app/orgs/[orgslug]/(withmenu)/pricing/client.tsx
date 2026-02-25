@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { getStripeProductCheckoutSession } from '@services/payments/products'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
+import DiscountCodeModal from '@components/Objects/Modals/Payments/DiscountCodeModal'
 
 type PaymentsProduct = {
   id: number
@@ -58,11 +59,14 @@ export default function PricingPageClient({
     'monthly'
   )
   const [loadingProductId, setLoadingProductId] = useState<number | null>(null)
+  const [selectedProduct, setSelectedProduct] =
+    useState<PaymentsProduct | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const handleCheckout = async (productId: number) => {
+  const handleCheckout = async (productId: number, discountCode?: string) => {
     if (!access_token) {
       // Redirect to login if not authenticated
-      router.push('/login?orgslug=' + orgslug)
+      router.push(`/login?orgslug=${orgslug}&redirect=/pricing`)
       return
     }
 
@@ -74,7 +78,8 @@ export default function PricingPageClient({
         orgId,
         productId,
         redirectUri,
-        access_token
+        access_token,
+        discountCode
       )) as any
 
       if (checkoutResponse?.data?.checkout_url) {
@@ -203,7 +208,14 @@ export default function PricingPageClient({
                   </ul>
 
                   <button
-                    onClick={() => handleCheckout(product.id)}
+                    onClick={() => {
+                      if (product.amount > 0) {
+                        setSelectedProduct(product)
+                        setIsModalOpen(true)
+                      } else {
+                        handleCheckout(product.id)
+                      }
+                    }}
                     disabled={loadingProductId === product.id}
                     className="w-full flex justify-center items-center px-6 py-3.5 bg-[#111827] text-white hover:bg-black shadow-[0_4px_14px_0_rgb(0,0,0,0.25)] text-base font-bold rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
@@ -219,6 +231,22 @@ export default function PricingPageClient({
           </motion.div>
         )}
       </div>
+      {selectedProduct && (
+        <DiscountCodeModal
+          isOpen={isModalOpen}
+          onOpenChange={(open) => {
+            setIsModalOpen(open)
+            if (!open) setSelectedProduct(null)
+          }}
+          product={selectedProduct}
+          orgId={orgId}
+          orgSlug={orgslug}
+          onCheckout={(pid, code) => {
+            setIsModalOpen(false)
+            handleCheckout(pid, code)
+          }}
+        />
+      )}
     </div>
   )
 }

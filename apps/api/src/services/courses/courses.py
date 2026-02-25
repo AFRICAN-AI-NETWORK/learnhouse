@@ -5,6 +5,7 @@ from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.organizations import Organization
 from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import PaymentsProduct
 from src.security.features_utils.usage import (
     check_limits_with_usage,
     decrease_feature_usage,
@@ -263,8 +264,15 @@ async def get_courses_orgslug(
             )
         )
     
-    # Get all linked products for all courses to check if they are paid
-    payments_query = select(PaymentsCourse.course_id).where(PaymentsCourse.course_id.in_([c.id for c in courses if c.id is not None])) # type: ignore
+    # Get all linked products for all courses to check if they are paid (amount > 0)
+    payments_query = (
+        select(PaymentsCourse.course_id)
+        .join(PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id)
+        .where(
+            PaymentsCourse.course_id.in_([c.id for c in courses if c.id is not None]),
+            PaymentsProduct.amount > 0
+        )
+    ) # type: ignore
     paid_course_ids = set(db_session.exec(payments_query).all())
 
     # Create CourseRead objects with authors
@@ -375,8 +383,15 @@ async def search_courses(
             for resource_author, user in author_results
         ]
         
-        # Check if course is paid
-        payment_statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
+        # Check if course is paid (amount > 0)
+        payment_statement = (
+            select(PaymentsCourse)
+            .join(PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id)
+            .where(
+                PaymentsCourse.course_id == course.id,
+                PaymentsProduct.amount > 0
+            )
+        )
         is_paid = db_session.exec(payment_statement).first() is not None
 
         course_read = CourseRead.model_validate({
