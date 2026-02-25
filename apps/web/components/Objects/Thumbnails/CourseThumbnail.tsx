@@ -39,6 +39,7 @@ type Course = {
   thumbnail_image: string
   org_id: string | number
   update_date: string
+  is_paid: boolean
   authors?: Array<{
     user: {
       id: string
@@ -116,22 +117,26 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
         deleteCourse={deleteCourse}
       />
 
-      {isAdmin && course.id && (
-        <div className="absolute top-2 left-2 z-20 flex items-center bg-black/75 backdrop-blur-sm text-white text-[10px] font-mono px-2 py-1 rounded-md shadow-sm border border-white/10">
-          <Hash size={10} className="mr-1 text-gray-400" />
-          ID: {course.id}
-        </div>
-      )}
-
       <Link
         prefetch
         href={courseLink}
         className="block relative aspect-video overflow-hidden bg-gray-50"
       >
         <div
-          className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+          className="relative ring-1 ring-inset ring-black/10 rounded-t-xl w-full aspect-video bg-cover bg-center overflow-hidden"
           style={{ backgroundImage: `url(${thumbnailImage})` }}
-        />
+        >
+          {/* Price Badge */}
+          <div
+            className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm border ${
+              course.is_paid
+                ? 'bg-blue-500/90 text-white border-blue-400/50'
+                : 'bg-emerald-500/90 text-white border-emerald-400/50'
+            }`}
+          >
+            {course.is_paid ? t('courses.paid') : t('courses.free')}
+          </div>
+        </div>
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
       </Link>
 

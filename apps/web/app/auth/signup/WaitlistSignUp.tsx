@@ -21,8 +21,9 @@ import {
   Mail,
   User,
   UserPlus,
+  Tag,
 } from 'lucide-react'
-import CourseSelector from '@components/Objects/CourseSelector'
+import ProductSelector from '@components/Objects/ProductSelector'
 import CountdownTimer from '@components/Utils/CountdownTimer'
 import {
   registerWaitlistUser,
@@ -98,7 +99,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -106,8 +107,29 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
     null
   )
   const [loadingDetails, setLoadingDetails] = useState(true)
+  const [referralCode, setReferralCode] = useState('')
+  const [referralCodeError, setReferralCodeError] = useState('')
 
   const launchDate = waitlistDetails?.launch_datetime
+
+  // Auto-fill referral code from URL (?ref=CODE)
+  useEffect(() => {
+    const urlCode = searchParams?.get('ref')
+    if (urlCode && urlCode !== 'undefined') {
+      setReferralCode(urlCode)
+      return
+    }
+
+    // Fallback: read from localStorage (set by /ref/[code] page)
+    try {
+      const stored = localStorage.getItem('referral_code')
+      if (stored) {
+        setReferralCode(stored)
+      }
+    } catch {
+      // localStorage unavailable
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const fetchWaitlistDetails = async () => {
@@ -116,7 +138,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
         if (res.success && res.data) {
           setWaitlistDetails(res.data)
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to fetch waitlist details:')
       } finally {
         setLoadingDetails(false)
@@ -127,6 +149,119 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       fetchWaitlistDetails()
     }
   }, [waitlistUuid])
+
+  const formik = useFormik({
+    initialValues: {
+      username: '',
+      email: '',
+      password: '',
+      first_name: '',
+      last_name: '',
+      bio: '',
+      org_slug: orgSlug,
+      org_id: waitlistDetails?.org_id || 0,
+      is_waitlist: true,
+      waitlist_interest: waitlistDetails?.interest_category || '',
+    },
+    validate: (values) => validate(values, t),
+    enableReinitialize: true,
+    onSubmit: async (values) => {
+      setError('')
+      setReferralCodeError('')
+      setMessage('')
+      setIsSubmitting(true)
+
+      // ── Device fingerprinting (fail-silent)
+      let device_id: string | undefined
+      let browser_fingerprint: { visitor_id: string } | undefined
+      try {
+        const FingerprintJS = await import('@fingerprintjs/fingerprintjs')
+        const agent = await FingerprintJS.load()
+        const result = await agent.get()
+        browser_fingerprint = { visitor_id: result.visitorId }
+        device_id = result.visitorId
+      } catch {
+        /* fingerprint unavailable — proceed without it */
+      }
+
+      try {
+        const payload = {
+          ...values,
+          selected_product_ids: selectedProducts,
+          ...(device_id ? { device_id } : {}),
+          ...(browser_fingerprint ? { browser_fingerprint } : {}),
+          ...(referralCode.trim()
+            ? { referral_code: referralCode.trim() }
+            : {}),
+        }
+
+        const res = await registerWaitlistUser(waitlistUuid, payload)
+
+        if (res.ok) {
+          // Clear stored referral code after successful signup
+          try {
+            localStorage.removeItem('referral_code')
+          } catch {
+            /* ignore */
+          }
+          setMessage('success')
+          setTimeout(() => {
+            router.push(
+              `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
+            )
+          }, 2000)
+        } else {
+          const data = await res.json()
+
+          // If error is referral-related, surface inline without blocking waitlist signup
+          const detail: string = data.detail ?? ''
+          if (
+            referralCode.trim() &&
+            (detail.toLowerCase().includes('referral') ||
+              detail.toLowerCase().includes('code'))
+          ) {
+            setReferralCodeError(
+              'Invalid referral code — your account was created without it.'
+            )
+            // Retry without referral code
+            const payloadWithoutRef = {
+              ...values,
+              selected_product_ids: selectedProducts,
+              device_id,
+              browser_fingerprint,
+            }
+            const retryRes = await registerWaitlistUser(
+              waitlistUuid,
+              payloadWithoutRef
+            )
+
+            if (retryRes.ok) {
+              try {
+                localStorage.removeItem('referral_code')
+              } catch {
+                /* ignore */
+              }
+              setMessage('success')
+              setTimeout(() => {
+                router.push(
+                  `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
+                )
+              }, 2000)
+            } else {
+              const retryData = await retryRes.json()
+              setError(retryData.detail || 'Registration failed')
+            }
+          } else {
+            setError(detail || 'Registration failed')
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || 'Something went wrong')
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+  })
 
   const handleNextStep = async () => {
     const errors = await formik.validateForm()
@@ -147,53 +282,6 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       }
     }
   }
-
-  const formik = useFormik({
-    initialValues: {
-      username: '',
-      email: '',
-      password: '',
-      first_name: '',
-      last_name: '',
-      bio: '',
-      org_slug: orgSlug,
-      org_id: waitlistDetails?.org_id || 0,
-      is_waitlist: true,
-      waitlist_interest: waitlistDetails?.interest_category || '',
-    },
-    validate: (values) => validate(values, t),
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      setError('')
-      setMessage('')
-      setIsSubmitting(true)
-
-      try {
-        const payload = {
-          ...values,
-          selected_course_ids: selectedCourses,
-        }
-
-        const res = await registerWaitlistUser(waitlistUuid, payload)
-
-        if (res.ok) {
-          setMessage('success')
-          setTimeout(() => {
-            router.push(
-              `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-            )
-          }, 2000)
-        } else {
-          const data = await res.json()
-          setError(data.detail || 'Registration failed')
-        }
-      } catch (err: any) {
-        setError(err.message || 'Something went wrong')
-      } finally {
-        setIsSubmitting(false)
-      }
-    },
-  })
 
   if (loadingDetails) {
     return (
@@ -239,10 +327,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       {/* Progress Bar Container */}
       <div className="w-full max-w-md mx-auto mb-10 px-4">
         <div className="relative flex justify-between">
-          <div className="absolute top-[38px] left-0 w-full h-[1px] bg-slate-200" />
+          <div className="absolute top-[38px] left-0 w-full h-px bg-slate-200" />
 
           <div
-            className="absolute top-[38px] left-0 h-[1px] bg-black transition-all duration-500"
+            className="absolute top-[38px] left-0 h-px bg-black transition-all duration-500"
             style={{ width: step === 1 ? '0%' : step === 2 ? '50%' : '100%' }}
           />
 
@@ -276,7 +364,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             <span
               className={`text-[10px] font-bold uppercase mb-3 transition-colors duration-300 ${step === 3 ? 'text-black' : 'text-slate-300'}`}
             >
-              Courses
+              Packages
             </span>
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-300 ${step >= 3 ? 'bg-black text-white border-black' : 'bg-white text-slate-300 border-slate-100'}`}
@@ -464,6 +552,35 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               </Form.Control>
             </FormField>
 
+            {/* Referral Code — optional */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Referral Code{' '}
+                <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <div className="relative">
+                <Tag className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  id="referral_code"
+                  name="referral_code"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => {
+                    setReferralCode(e.target.value)
+                    setReferralCodeError('')
+                  }}
+                  placeholder="Enter a referral code"
+                  autoComplete="off"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                />
+              </div>
+              {referralCodeError && (
+                <p className="mt-1 text-xs text-amber-600 font-medium">
+                  {referralCodeError}
+                </p>
+              )}
+            </div>
+
             <div className="flex sm:flex-row gap-3 pt-6">
               <button
                 type="button"
@@ -488,10 +605,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
 
         {step === 3 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-            <CourseSelector
-              waitlistUuid={waitlistUuid}
-              selected={selectedCourses}
-              onChange={setSelectedCourses}
+            <ProductSelector
+              orgId={waitlistDetails?.org_id || 0}
+              selected={selectedProducts}
+              onChange={setSelectedProducts}
             />
 
             <div className="flex  sm:flex-row gap-3 pt-6">

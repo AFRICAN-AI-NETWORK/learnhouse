@@ -12,12 +12,17 @@ import {
 export async function validateDiscountCode(
   orgId: number,
   code: string,
-  courseId: number,
   amount: number,
-  access_token: string
+  access_token: string,
+  courseId?: number,
+  productId?: number
 ) {
+  let url = `${getAPIUrl()}payments/${orgId}/validate-discount?code=${encodeURIComponent(code)}&amount=${amount}`
+  if (courseId) url += `&course_id=${courseId}`
+  if (productId) url += `&product_id=${productId}`
+
   const result = await fetch(
-    `${getAPIUrl()}payments/${orgId}/validate-discount?code=${encodeURIComponent(code)}&course_id=${courseId}&amount=${amount}`,
+    url,
     RequestBodyWithAuthHeader('POST', null, null, access_token)
   )
   const res = await getResponseMetadata(result)

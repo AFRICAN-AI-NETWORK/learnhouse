@@ -34,6 +34,22 @@ def register_routers(v1_router: APIRouter):
         tags=["payments"]
     )
     
+    # Referrals
+    from ee.routers import referrals
+    v1_router.include_router(
+        referrals.router, 
+        prefix="/referrals", 
+        tags=["referrals"]
+    )
+    
+    # Email Domains (Admin)
+    from ee.routers import email_domains
+    v1_router.include_router(
+        email_domains.router, 
+        prefix="/email-domains", 
+        tags=["email_domains", "admin"]
+    )
+    
     # EE Info
     v1_router.include_router(
         info.router,

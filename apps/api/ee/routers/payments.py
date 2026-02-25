@@ -1,9 +1,9 @@
-from typing import Literal
+from typing import Literal, Optional
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlmodel import Session
 from src.core.events.database import get_db_session
 from src.db.payments.payments import PaymentsConfig, PaymentsConfigRead, PaymentsConfigUpdate
-from src.db.users import PublicUser
+from src.db.users import PublicUser, AnonymousUser
 from src.security.auth import get_current_user
 from src.services.payments.payments_config import (
     init_payments_config,
@@ -12,7 +12,7 @@ from src.services.payments.payments_config import (
     delete_payments_config,
 )
 from src.db.payments.payments_products import PaymentsProductCreate, PaymentsProductRead, PaymentsProductUpdate
-from src.services.payments.payments_products import create_payments_product, delete_payments_product, get_payments_product, get_products_by_course, list_payments_products, update_payments_product
+from src.services.payments.payments_products import create_payments_product, delete_payments_product, get_payments_product, get_products_by_course, list_payments_products, update_payments_product, list_public_payments_products
 from src.services.payments.payments_courses import (
     link_course_to_product,
     unlink_course_from_product,
@@ -116,6 +116,14 @@ async def api_get_payments_products(
     db_session: Session = Depends(get_db_session),
 ) -> list[PaymentsProductRead]:
     return await list_payments_products(request, org_id, current_user, db_session)
+
+@router.get("/{org_id}/public-products")
+async def api_get_public_payments_products(
+    request: Request,
+    org_id: int,
+    db_session: Session = Depends(get_db_session),
+) -> list[PaymentsProductRead]:
+    return await list_public_payments_products(request, org_id, db_session)
 
 @router.get("/{org_id}/products/{product_id}")
 async def api_get_payments_product(
@@ -371,6 +379,18 @@ async def api_check_course_paid_access(
         )
         payment_user = db_session.exec(payment_user_statement).first()
     
+    is_author = False
+    if request and not isinstance(current_user, AnonymousUser):
+        try:
+            from src.security.rbac.rbac import authorization_verify_if_user_is_author
+            is_author = await authorization_verify_if_user_is_author(
+                request, int(current_user.id), "read", course.course_uuid, db_session
+            )
+        except Exception:
+            pass
+
+    is_admin = isinstance(current_user, InternalUser) or (not isinstance(current_user, AnonymousUser) and current_user.id in [1, 2])
+    
     has_access = await check_course_paid_access(
         course_id=course_id,
         user=current_user,
@@ -387,6 +407,8 @@ async def api_check_course_paid_access(
             "user_has_payment": payment_user is not None,
             "payment_status": payment_user.status.value if payment_user else None,
             "payment_user_id": payment_user.id if payment_user else None,
+            "is_admin": is_admin,
+            "is_author": is_author
         }
     }
 
@@ -504,8 +526,9 @@ async def api_validate_discount_code(
     request: Request,
     org_id: int,
     code: str,
-    course_id: int,
     amount: float,
+    course_id: Optional[int] = None,
+    product_id: Optional[int] = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> dict:
@@ -519,6 +542,7 @@ async def api_validate_discount_code(
             org_id=org_id,
             user_id=current_user.id,
             course_id=course_id,
+            product_id=product_id,
             original_amount=amount,
             db_session=db_session,
             check_usage=True

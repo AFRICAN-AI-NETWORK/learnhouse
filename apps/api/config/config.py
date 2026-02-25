@@ -41,6 +41,7 @@ class HostingConfig(BaseModel):
     allowed_origins: list
     allowed_regexp: str
     self_hosted: bool
+    app_base_url: str
     cookie_config: CookieConfig
     content_delivery: ContentDeliveryConfig
 
@@ -135,6 +136,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
     env_use_default_org = os.environ.get("LEARNHOUSE_USE_DEFAULT_ORG")
     env_allowed_origins = os.environ.get("LEARNHOUSE_ALLOWED_ORIGINS")
     env_cookie_domain = os.environ.get("LEARNHOUSE_COOKIE_DOMAIN")
+    env_app_base_url = os.environ.get("LEARNHOUSE_APP_BASE_URL")
 
     # Allowed origins should be a comma separated string
     if env_allowed_origins:
@@ -165,6 +167,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
     self_hosted = env_self_hosted or yaml_config.get("hosting_config", {}).get(
         "self_hosted"
     )
+    app_base_url = env_app_base_url or "http://localhost:3000"  # Read from env or use default
 
     cookies_domain = env_cookie_domain or yaml_config.get("hosting_config", {}).get(
         "cookies_config", {}
@@ -233,9 +236,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
     ).get("system_email_address")
 
     # Payments config - Paystack
-    env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY")
-    env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY")
-    env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET")
+    env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY") or os.environ.get("PAYSTACK_SECRET_KEY")
+    env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY") or os.environ.get("PAYSTACK_PUBLIC_KEY")
+    env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET") or os.environ.get("PAYSTACK_WEBHOOK_SECRET")
     
     # Safely get Paystack config from YAML
     payments_config = yaml_config.get("payments_config", {}) if yaml_config else {}
@@ -254,6 +257,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
         allowed_origins=list(allowed_origins),
         allowed_regexp=allowed_regexp,
         self_hosted=bool(self_hosted),
+        app_base_url=app_base_url,
         cookie_config=cookie_config,
         content_delivery=content_delivery,
     )

@@ -121,8 +121,8 @@ class TestWaitlistCoursesEndpoints:
         """Test GET /api/v1/waitlist/config/{uuid}/preferences endpoint"""
         mock_get_analytics.return_value = [
             {
-                "course_id": 1,
-                "course_name": "Test Course",
+                "product_id": 1,
+                "product_name": "Test Course",
                 "selection_count": 10
             }
         ]
@@ -215,6 +215,8 @@ class TestEndpointAuthorization:
     
     def test_public_endpoints_available(self):
         """Test that public endpoints are accessible"""
+        [route.path for route in router.routes]
+        
         # Public endpoints like course listing
         # (May need to adjust based on actual implementation)
         assert router.routes is not None

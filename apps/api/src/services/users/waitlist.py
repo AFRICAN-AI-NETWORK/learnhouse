@@ -13,7 +13,6 @@ from src.db.waitlist import (
     WaitlistCoursePreference,
     WaitlistEmailLog,
 )
-from src.db.courses.courses import Course
 from src.security.security import security_hash_password
 from src.security.features_utils.usage import (
     check_limits_with_usage,
@@ -22,6 +21,7 @@ from src.security.features_utils.usage import (
 from src.services.users.users import generate_verification_token
 from src.services.users.emails import send_account_creation_email
 from src.services.waitlist.emails import send_waitlist_confirmation_email
+from src.db.payments.payments_products import PaymentsProduct
 
 
 async def create_waitlist_user(
@@ -29,7 +29,7 @@ async def create_waitlist_user(
     db_session: Session,
     user_object: UserCreate,
     waitlist_uuid: str,
-    selected_course_ids: List[int] = [],
+    selected_product_ids: List[int] = [],
 ) -> UserRead:
     """
     Create a new user who joins via waitlist invite link.
@@ -40,7 +40,7 @@ async def create_waitlist_user(
         db_session: Database session
         user_object: User creation data
         waitlist_uuid: UUID of the waitlist campaign
-        selected_course_ids: List of course IDs the user is interested in
+        selected_product_ids: List of product IDs the user is interested in
         
     Returns:
         UserRead: Created user object
@@ -114,6 +114,16 @@ async def create_waitlist_user(
             detail="Password must be at least 8 characters long"
         )
     
+    # Referral system: Validate disposable email
+    if user_object.referral_code:
+        from src.services.referrals.fraud_prevention import validate_email_for_referral
+        is_valid, error_msg = await validate_email_for_referral(user_object.email, db_session)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_msg,
+            )
+
     # ========== 2. USER CREATION PHASE ==========
     
     user = User.model_validate(user_object)
@@ -144,26 +154,56 @@ async def create_waitlist_user(
     db_session.commit()
     db_session.refresh(user)
     
+    # Referral system: Track referral if code provided
+    if user_object.referral_code:
+        try:
+            from src.services.referrals.referral_tracking import validate_and_track_referral
+            
+            referral_code_obj, fraud_score = await validate_and_track_referral(
+                request=request,
+                referred_user_id=user.id,
+                referral_code=user_object.referral_code,
+                device_id=user_object.device_id,
+                browser_fingerprint=user_object.browser_fingerprint or {},
+                db_session=db_session
+            )
+            
+            # Log fraud score
+            if fraud_score >= 75:
+                from src.services.referrals.referral_tracking import logger
+                logger.warning(
+                    f"High fraud risk score {fraud_score} for user {user.id} "
+                    f"with referral code {user_object.referral_code}"
+                )
+        except HTTPException as e:
+            # Log referral validation error but allow signup to continue
+            from src.services.referrals.referral_tracking import logger
+            logger.warning(f"Referral validation failed for user {user.id}: {e.detail}")
+        except Exception as e:
+            # Log unexpected errors but don't block signup
+            from src.services.referrals.referral_tracking import logger
+            logger.error(f"Unexpected error tracking referral for user {user.id}: {str(e)}")
+
     # ========== 3. COURSE PREFERENCE STORAGE PHASE ==========
     
-    if selected_course_ids:
-        for course_id in selected_course_ids:
-            # Validate course exists and belongs to same organization
-            course_query = select(Course).where(
-                Course.id == course_id,
-                Course.org_id == org_id
+    if selected_product_ids:
+        for product_id in selected_product_ids:
+            # Validate product exists and belongs to same organization
+            product_query = select(PaymentsProduct).where(
+                PaymentsProduct.id == product_id,
+                PaymentsProduct.org_id == org_id
             )
-            course = db_session.exec(course_query).first()
+            product = db_session.exec(product_query).first()
             
-            if not course:
+            if not product:
                 # Log warning but don't fail - continue with other preferences
-                print(f"Warning: Course {course_id} not found or doesn't belong to org {org_id}")
+                print(f"Warning: Product {product_id} not found or doesn't belong to org {org_id}")
                 continue
             
-            # Create course preference record
+            # Create product preference record
             preference = WaitlistCoursePreference(
                 user_id=user.id,
-                course_id=course_id,
+                payments_product_id=product_id,
                 waitlist_config_id=waitlist.id,
                 org_id=org_id,
                 creation_date=str(datetime.now())
@@ -324,8 +364,8 @@ async def get_waitlist_user_course_preferences(
     if user_id:
         # Get preferences for specific user
         prefs_query = (
-            select(WaitlistCoursePreference, Course)
-            .join(Course, WaitlistCoursePreference.course_id == Course.id)
+            select(WaitlistCoursePreference, PaymentsProduct)
+            .join(PaymentsProduct, WaitlistCoursePreference.payments_product_id == PaymentsProduct.id)
             .where(
                 WaitlistCoursePreference.waitlist_config_id == waitlist.id,
                 WaitlistCoursePreference.user_id == user_id
@@ -334,8 +374,8 @@ async def get_waitlist_user_course_preferences(
     else:
         # Get all preferences for this waitlist (aggregated)
         prefs_query = (
-            select(WaitlistCoursePreference, Course)
-            .join(Course, WaitlistCoursePreference.course_id == Course.id)
+            select(WaitlistCoursePreference, PaymentsProduct)
+            .join(PaymentsProduct, WaitlistCoursePreference.payments_product_id == PaymentsProduct.id)
             .where(WaitlistCoursePreference.waitlist_config_id == waitlist.id)
         )
     
@@ -343,13 +383,12 @@ async def get_waitlist_user_course_preferences(
     
     # Format response
     result = []
-    for pref, course in preferences:
+    for pref, product in preferences:
         result.append({
             "preference_id": pref.id,
             "user_id": pref.user_id,
-            "course_id": pref.course_id,
-            "course_name": course.name,
-            "course_uuid": course.course_uuid,
+            "payments_product_id": pref.payments_product_id,
+            "product_name": product.name,
             "creation_date": pref.creation_date
         })
     

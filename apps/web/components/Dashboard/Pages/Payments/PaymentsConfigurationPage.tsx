@@ -27,6 +27,7 @@ import {
   Trash2,
   UnplugIcon,
   Wallet,
+  Edit,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useSWR, { mutate } from 'swr'
@@ -209,6 +210,18 @@ const PaymentsConfigurationPage: React.FC = () => {
                     <span className="font-semibold">Connect with Paystack</span>
                   </Button>
                 )}
+
+                {paystackConfig.provider_specific_id &&
+                  paystackConfig.active && (
+                    <Button
+                      onClick={editConfig}
+                      className="flex items-center space-x-2 bg-blue-500 text-white text-sm rounded-full hover:bg-blue-600 transition duration-300 shadow-md border-2 border-blue-400"
+                    >
+                      <Edit size={16} />
+                      <span>Edit Link</span>
+                    </Button>
+                  )}
+
                 <ConfirmationModal
                   confirmationButtonText="Remove Connection"
                   confirmationMessage="Are you sure you want to remove the Paystack connection? This action cannot be undone."
