@@ -2,19 +2,23 @@
 import React from 'react'
 import { Form, Formik } from 'formik'
 import * as Yup from 'yup'
-import {
-  updateOrganization,
-} from '@services/settings/org'
+import { updateOrganization } from '@services/settings/org'
 import { revalidateTags } from '@services/utils/ts/requests'
 import { useRouter } from 'next/navigation'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { toast } from 'react-hot-toast'
-import { Input } from "@components/ui/input"
-import { Textarea } from "@components/ui/textarea"
-import { Button } from "@components/ui/button"
-import { Label } from "@components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select"
+import { Input } from '@components/ui/input'
+import { Textarea } from '@components/ui/textarea'
+import { Button } from '@components/ui/button'
+import { Label } from '@components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/ui/select'
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
@@ -86,14 +90,20 @@ const OrgEditGeneral: React.FC = () => {
   }
 
   const updateOrg = async (values: OrganizationValues) => {
-    const loadingToast = toast.loading(t('dashboard.organization.settings.updating'))
+    const loadingToast = toast.loading(
+      t('dashboard.organization.settings.updating')
+    )
     try {
       await updateOrganization(org.id, values, access_token)
       await revalidateTags(['organizations'], org.slug)
       mutate(`${getAPIUrl()}orgs/slug/${org.slug}`)
-      toast.success(t('dashboard.organization.settings.update_success'), { id: loadingToast })
+      toast.success(t('dashboard.organization.settings.update_success'), {
+        id: loadingToast,
+      })
     } catch (err) {
-      toast.error(t('dashboard.organization.settings.update_error'), { id: loadingToast })
+      toast.error(t('dashboard.organization.settings.update_error'), {
+        id: loadingToast,
+      })
     }
   }
 
@@ -110,7 +120,14 @@ const OrgEditGeneral: React.FC = () => {
           }, 400)
         }}
       >
-        {({ isSubmitting, values, handleChange, errors, touched, setFieldValue }) => (
+        {({
+          isSubmitting,
+          values,
+          handleChange,
+          errors,
+          touched,
+          setFieldValue,
+        }) => (
           <Form>
             <div className="flex flex-col gap-0">
               <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mx-3 my-3 rounded-md">
@@ -137,11 +154,15 @@ const OrgEditGeneral: React.FC = () => {
                         name="name"
                         value={values.name}
                         onChange={handleChange}
-                        placeholder={t('dashboard.organization.settings.name_placeholder')}
+                        placeholder={t(
+                          'dashboard.organization.settings.name_placeholder'
+                        )}
                         maxLength={60}
                       />
                       {touched.name && errors.name && (
-                        <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.name}
+                        </p>
                       )}
                     </div>
 
@@ -149,7 +170,8 @@ const OrgEditGeneral: React.FC = () => {
                       <Label htmlFor="description">
                         {t('dashboard.organization.settings.short_description')}
                         <span className="text-gray-500 text-sm ml-2">
-                          ({100 - (values.description?.length || 0)} characters left)
+                          ({100 - (values.description?.length || 0)} characters
+                          left)
                         </span>
                       </Label>
                       <Input
@@ -157,22 +179,32 @@ const OrgEditGeneral: React.FC = () => {
                         name="description"
                         value={values.description}
                         onChange={handleChange}
-                        placeholder={t('dashboard.organization.settings.short_description_placeholder')}
+                        placeholder={t(
+                          'dashboard.organization.settings.short_description_placeholder'
+                        )}
                         maxLength={100}
                       />
                       {touched.description && errors.description && (
-                        <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.description}
+                        </p>
                       )}
                     </div>
 
                     <div>
-                      <Label htmlFor="label">{t('dashboard.organization.settings.label')}</Label>
+                      <Label htmlFor="label">
+                        {t('dashboard.organization.settings.label')}
+                      </Label>
                       <Select
                         value={values.label}
                         onValueChange={(value) => setFieldValue('label', value)}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={t('dashboard.organization.settings.label_placeholder')} />
+                          <SelectValue
+                            placeholder={t(
+                              'dashboard.organization.settings.label_placeholder'
+                            )}
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {ORG_LABELS.map((type) => (
@@ -183,7 +215,9 @@ const OrgEditGeneral: React.FC = () => {
                         </SelectContent>
                       </Select>
                       {touched.label && errors.label && (
-                        <p className="text-red-500 text-sm mt-1">{errors.label}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.label}
+                        </p>
                       )}
                     </div>
 
@@ -199,12 +233,16 @@ const OrgEditGeneral: React.FC = () => {
                         name="about"
                         value={values.about}
                         onChange={handleChange}
-                        placeholder={t('dashboard.organization.settings.about_placeholder')}
+                        placeholder={t(
+                          'dashboard.organization.settings.about_placeholder'
+                        )}
                         className="min-h-[250px]"
                         maxLength={400}
                       />
                       {touched.about && errors.about && (
-                        <p className="text-red-500 text-sm mt-1">{errors.about}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.about}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -216,7 +254,9 @@ const OrgEditGeneral: React.FC = () => {
                   disabled={isSubmitting}
                   className="bg-black text-white hover:bg-black/90"
                 >
-                  {isSubmitting ? t('dashboard.organization.settings.saving') : t('dashboard.organization.settings.save_changes')}
+                  {isSubmitting
+                    ? t('dashboard.organization.settings.saving')
+                    : t('dashboard.organization.settings.save_changes')}
                 </Button>
               </div>
             </div>

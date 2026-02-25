@@ -27,6 +27,10 @@ class PaymentsUserBase(SQLModel):
         default=None,
         sa_column=Column(BigInteger, ForeignKey("discountcode.id", ondelete="SET NULL"))
     )
+    referral_code_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("referralcode.id", ondelete="SET NULL"))
+    )
     original_amount: Optional[float] = None
     discount_amount: Optional[float] = None
     final_amount: Optional[float] = None

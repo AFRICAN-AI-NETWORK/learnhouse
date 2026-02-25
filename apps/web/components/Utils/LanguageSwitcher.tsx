@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@components/ui/dropdown-menu"
+} from '@components/ui/dropdown-menu'
 
 const LanguageSwitcher = () => {
   const { i18n, t } = useTranslation()
@@ -30,10 +30,7 @@ const LanguageSwitcher = () => {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        className="min-w-[180px] z-[100]"
-        align="end"
-      >
+      <DropdownMenuContent className="min-w-[180px] z-[100]" align="end">
         {AVAILABLE_LANGUAGES.map((language) => (
           <DropdownMenuItem
             key={language.code}
@@ -41,10 +38,14 @@ const LanguageSwitcher = () => {
             onClick={() => changeLanguage(language.code)}
           >
             <span className="flex items-center space-x-2">
-              <span className="text-xs font-mono text-gray-400 w-5">{language.code.toUpperCase()}</span>
+              <span className="text-xs font-mono text-gray-400 w-5">
+                {language.code.toUpperCase()}
+              </span>
               <span>{language.nativeName}</span>
             </span>
-            {i18n.language === language.code && <Check size={14} className="text-black" />}
+            {i18n.language === language.code && (
+              <Check size={14} className="text-black" />
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -53,4 +54,3 @@ const LanguageSwitcher = () => {
 }
 
 export default LanguageSwitcher
-

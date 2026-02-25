@@ -119,12 +119,12 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
   const { h1: H1Label, h2: H2Label } = getLabels()
 
   return (
-    <div className="h-full w-full bg-[#f8f8f8] flex flex-col">
-      <div className="pl-10 pr-10 tracking-tight bg-[#fcfbfc] nice-shadow shrink-0">
+    <div className="min-h-full w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden">
+      <div className="px-4 sm:px-6 lg:px-10 tracking-tight bg-[#fcfbfc] nice-shadow shrink-0">
         <BreadCrumbs type="org"></BreadCrumbs>
         <div className="my-2  py-2">
           <div className="w-100 flex flex-col space-y-1">
-            <div className="pt-3 flex font-bold text-4xl tracking-tighter">
+            <div className="pt-3 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tighter break-words">
               {H1Label}
             </div>
             <div className="flex font-medium text-gray-400 text-md">
@@ -132,7 +132,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
             </div>
           </div>
         </div>
-        <div className="flex space-x-0.5 font-black text-sm">
+        <div className="flex space-x-0.5 font-black text-sm overflow-x-auto">
           {getSettingTabs(t).map((tab) => (
             <TabLink
               key={tab.id}

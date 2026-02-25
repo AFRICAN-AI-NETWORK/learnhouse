@@ -10,6 +10,8 @@ from src.db.payments.payments_products import (
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
+from src.db.courses.courses import Course
+from src.db.organizations import Organization
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.payments.payments_users import (
     create_payment_user,
@@ -290,6 +292,15 @@ async def initialize_transaction(
     
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+        
+    # Get organization payment config to check for subaccount
+    from src.db.payments.payments import PaymentsConfig
+    config_statement = select(PaymentsConfig).where(
+        PaymentsConfig.org_id == org_id, 
+        PaymentsConfig.active == True,
+        PaymentsConfig.provider == "paystack"
+    )
+    org_payment_config = db_session.exec(config_statement).first()
     
     # Determine currency to use
     selected_currency = currency.upper() if currency else product.currency.upper()
@@ -312,13 +323,14 @@ async def initialize_transaction(
     final_amount = product.amount
     
     # CRITICAL: Validate discount code if provided (prevents race conditions)
-    if discount_code and course_id:
+    if discount_code:
         try:
             discount_code_obj, discount_amount, final_amount = await validate_discount_code(
                 code=discount_code,
                 org_id=org_id,
                 user_id=current_user.id,
                 course_id=course_id,
+                product_id=product_id,
                 original_amount=original_amount,
                 db_session=db_session,
                 check_usage=True
@@ -330,15 +342,111 @@ async def initialize_transaction(
         except Exception as e:
             logger.error(f"Error validating discount code: {str(e)}")
             raise HTTPException(status_code=400, detail=f"Error validating discount code: {str(e)}")
-    elif discount_code and not course_id:
-        # Explicit rejection - discount codes only work for courses
-        raise HTTPException(
-            status_code=400,
-            detail="Discount codes can only be applied to course purchases. "
-                   "This product is not a course and is not eligible for discount codes."
-        )
     
-    # Create or get Paystack customer
+    # REFERRAL SYSTEM: Check if user has referral tracking
+    referral_code_id = None
+    try:
+        from src.db.referrals.referral_tracking import ReferralTracking
+        
+        tracking_statement = select(ReferralTracking).where(
+            ReferralTracking.referred_user_id == current_user.id
+        )
+        tracking = db_session.exec(tracking_statement).first()
+        
+        if tracking:
+            referral_code_id = tracking.referral_code_id
+            logger.info(f"User {current_user.id} has referral tracking with code {referral_code_id}")
+    except Exception as e:
+        logger.warning(f"Error checking referral tracking: {str(e)}")
+
+    # Prepare transaction metadata template
+    metadata_dict = {
+        "product_id": str(product.id),
+        "user_id": str(current_user.id),
+        "org_id": str(org_id),
+        "selected_currency": selected_currency,
+        "product_currency": product.currency,
+        "product_amount": str(product.amount),
+    }
+    
+    if discount_code_obj:
+        metadata_dict["discount_code_id"] = str(discount_code_obj.id)
+        metadata_dict["discount_code"] = discount_code_obj.code
+        metadata_dict["original_amount"] = str(original_amount)
+        metadata_dict["discount_amount"] = str(discount_amount)
+        metadata_dict["final_amount"] = str(final_amount)
+        if course_id:
+            metadata_dict["course_id"] = str(course_id)
+
+    # Calculate amount in subunit
+    amount_to_charge = final_amount if discount_code_obj else product.amount
+    amount_in_subunit = int(amount_to_charge * 100)
+
+    # CRITICAL: Bypassing Paystack for Free Products ($0)
+    if amount_in_subunit == 0:
+        logger.info(f"Amount is 0 for product {product_id}. Bypassing Paystack checkout.")
+        
+        # Create payment user without Paystack customer data
+        payment_user = await create_payment_user(
+            request=request,
+            org_id=org_id,
+            user_id=current_user.id,
+            product_id=product_id,
+            status=PaymentStatusEnum.COMPLETED,
+            provider_data={
+                "bypass_reason": "free_product_or_100_percent_discount",
+                "selected_currency": selected_currency,
+                "product_currency": product.currency,
+            },
+            current_user=InternalUser(),
+            db_session=db_session,
+            referral_code_id=referral_code_id,
+        )
+
+        if not payment_user:
+            raise HTTPException(status_code=400, detail="Error creating payment user")
+
+        # Update metadata for redirect construction
+        # If it's a single-course product, redirect to that course page instead of the general dashboard
+        target_redirect = redirect_uri
+        
+        # Check if product is linked to exactly one course
+        statement = select(PaymentsCourse).where(PaymentsCourse.payment_product_id == product_id)
+        linked_courses = db_session.exec(statement).all()
+        
+        if len(linked_courses) == 1:
+            course = db_session.get(Course, linked_courses[0].course_id)
+            if course:
+                # Get org slug for URL construction
+                statement = select(Organization).where(Organization.id == org_id)
+                org = db_session.exec(statement).first()
+                if org:
+                    # Robust base URL detection
+                    config = get_learnhouse_config()
+                    base_url = config.hosting_config.app_base_url.rstrip('/')
+                    
+                    if request:
+                        origin = request.headers.get("origin")
+                        referer = request.headers.get("referer")
+                        
+                        if origin:
+                            base_url = origin.rstrip('/')
+                        elif referer:
+                            from urllib.parse import urlparse
+                            parsed = urlparse(referer)
+                            base_url = f"{parsed.scheme}://{parsed.netloc}"
+
+                    target_redirect = f"{base_url}/course/{course.course_uuid.replace('course_', '')}"
+
+        separator = "&" if "?" in target_redirect else "?"
+        success_url = f"{target_redirect}{separator}payment_success=true&reference=free_{payment_user.id}"
+        return {
+            "checkout_url": success_url,
+            "reference": f"free_{payment_user.id}",
+            "access_code": "free_bypass",
+        }
+
+    # FOR PAID PRODUCTS ONLY: Create or get Paystack customer
     try:
         try:
             customer = await get_paystack_customer(current_user.email)
@@ -355,8 +463,7 @@ async def initialize_transaction(
             else:
                 raise
         
-        # Create initial payment user with pending status
-        # Include discount information if discount code was validated
+        # Create payment_user for paid product
         payment_user = await create_payment_user(
             request=request,
             org_id=org_id,
@@ -369,6 +476,7 @@ async def initialize_transaction(
             },
             current_user=InternalUser(),
             db_session=db_session,
+            referral_code_id=referral_code_id,
         )
         
         if not payment_user:
@@ -383,49 +491,28 @@ async def initialize_transaction(
             db_session.add(payment_user)
             db_session.commit()
             db_session.refresh(payment_user)
-        
+            
     except Exception as e:
         logger.error(f"Error creating/retrieving customer: {str(e)}")
         raise HTTPException(
             status_code=400, detail=f"Error creating/retrieving customer: {str(e)}"
         )
     
-    # Prepare transaction initialization data
-    # Paystack metadata needs to be a JSON string
+    # Prepare PAID transaction initialization data
     import json
-    metadata_dict = {
-        "product_id": str(product.id),
-        "payment_user_id": str(payment_user.id),
-        "user_id": str(current_user.id),
-        "org_id": str(org_id),
-    }
-    
-    # Calculate amount in selected currency
-    # Use final_amount if discount was applied, otherwise use product amount
-    amount_to_charge = final_amount if discount_code_obj else product.amount
-    amount_in_subunit = int(amount_to_charge * 100)
-    
-    # Store selected currency and discount info in metadata for reference
-    metadata_dict["selected_currency"] = selected_currency
-    metadata_dict["product_currency"] = product.currency
-    metadata_dict["product_amount"] = str(product.amount)
-    
-    if discount_code_obj:
-        metadata_dict["discount_code_id"] = str(discount_code_obj.id)
-        metadata_dict["discount_code"] = discount_code_obj.code
-        metadata_dict["original_amount"] = str(original_amount)
-        metadata_dict["discount_amount"] = str(discount_amount)
-        metadata_dict["final_amount"] = str(final_amount)
-        if course_id:
-            metadata_dict["course_id"] = str(course_id)
+    metadata_dict["payment_user_id"] = str(payment_user.id)
     
     transaction_data = {
         "email": current_user.email,
-        "amount": amount_in_subunit,  # Convert to subunit (kobo for NGN, cents for USD, etc.)
+        "amount": amount_in_subunit,
         "currency": selected_currency,
         "callback_url": redirect_uri,
-        "metadata": json.dumps(metadata_dict),  # Paystack expects metadata as JSON string
+        "metadata": json.dumps(metadata_dict),
     }
+    
+    # Add Paystack Subaccount if configured by the Organization
+    if org_payment_config and org_payment_config.provider_specific_id:
+        transaction_data["subaccount"] = org_payment_config.provider_specific_id
     
     # For subscriptions, add plan code
     if product.product_type == PaymentProductTypeEnum.SUBSCRIPTION:

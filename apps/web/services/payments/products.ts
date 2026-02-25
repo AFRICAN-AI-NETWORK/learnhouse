@@ -128,7 +128,7 @@ export async function getStripeProductCheckoutSession(
   access_token: string,
   discountCode?: string
 ) {
-  let url = `${getAPIUrl()}payments/${orgId}/checkout/product/${productId}?redirect_uri=${redirect_uri}`
+  let url = `${getAPIUrl()}payments/${orgId}/checkout/product/${productId}?redirect_uri=${encodeURIComponent(redirect_uri)}`
 
   if (discountCode) {
     url += `&discount_code=${encodeURIComponent(discountCode)}`
