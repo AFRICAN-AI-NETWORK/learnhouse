@@ -596,7 +596,7 @@ async def get_orgs_by_user(
 # Config related
 async def update_org_signup_mechanism(
     request: Request,
-    signup_mechanism: Literal["open", "inviteOnly"],
+    signup_mechanism: Literal["open", "inviteOnly", "waitlist"],
     org_id: int,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,

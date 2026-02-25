@@ -19,53 +19,59 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    tables = inspector.get_table_names()
+
     # Create discount_code table
-    op.create_table(
-        'discountcode',
-        sa.Column('id', sa.BigInteger(), nullable=False),
-        sa.Column('org_id', sa.BigInteger(), nullable=False),
-        sa.Column('code', sa.String(length=50), nullable=False),
-        sa.Column('discount_type', sa.String(), nullable=False),
-        sa.Column('discount_value', sa.Float(), nullable=False),
-        sa.Column('max_uses', sa.Integer(), nullable=True),
-        sa.Column('current_uses', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('valid_from', sa.DateTime(), nullable=False),
-        sa.Column('valid_until', sa.DateTime(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('description', sa.String(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.ForeignKeyConstraint(['org_id'], ['organization.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_discountcode_code'), 'discountcode', ['code'], unique=False)
+    if 'discountcode' not in tables:
+        op.create_table(
+            'discountcode',
+            sa.Column('id', sa.BigInteger(), nullable=False),
+            sa.Column('org_id', sa.BigInteger(), nullable=False),
+            sa.Column('code', sa.String(length=50), nullable=False),
+            sa.Column('discount_type', sa.String(), nullable=False),
+            sa.Column('discount_value', sa.Float(), nullable=False),
+            sa.Column('max_uses', sa.Integer(), nullable=True),
+            sa.Column('current_uses', sa.Integer(), nullable=False, server_default='0'),
+            sa.Column('valid_from', sa.DateTime(), nullable=False),
+            sa.Column('valid_until', sa.DateTime(), nullable=True),
+            sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+            sa.Column('description', sa.String(), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+            sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+            sa.ForeignKeyConstraint(['org_id'], ['organization.id'], ondelete='CASCADE'),
+            sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_discountcode_code'), 'discountcode', ['code'], unique=False)
     
     # Create discount_code_usage table
-    op.create_table(
-        'discountcodeusage',
-        sa.Column('id', sa.BigInteger(), nullable=False),
-        sa.Column('discount_code_id', sa.BigInteger(), nullable=False),
-        sa.Column('user_id', sa.BigInteger(), nullable=False),
-        sa.Column('course_id', sa.BigInteger(), nullable=False),
-        sa.Column('payment_user_id', sa.BigInteger(), nullable=False),
-        sa.Column('original_amount', sa.Float(), nullable=False),
-        sa.Column('discount_amount', sa.Float(), nullable=False),
-        sa.Column('final_amount', sa.Float(), nullable=False),
-        sa.Column('used_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.ForeignKeyConstraint(['discount_code_id'], ['discountcode.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['course_id'], ['course.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['payment_user_id'], ['paymentsuser.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
-    )
-    
-    # Create unique constraint to prevent duplicate usage per user per course
-    op.create_index(
-        'ix_discountcodeusage_user_course_unique',
-        'discountcodeusage',
-        ['user_id', 'course_id', 'discount_code_id'],
-        unique=True
-    )
+    if 'discountcodeusage' not in tables:
+        op.create_table(
+            'discountcodeusage',
+            sa.Column('id', sa.BigInteger(), nullable=False),
+            sa.Column('discount_code_id', sa.BigInteger(), nullable=False),
+            sa.Column('user_id', sa.BigInteger(), nullable=False),
+            sa.Column('course_id', sa.BigInteger(), nullable=False),
+            sa.Column('payment_user_id', sa.BigInteger(), nullable=False),
+            sa.Column('original_amount', sa.Float(), nullable=False),
+            sa.Column('discount_amount', sa.Float(), nullable=False),
+            sa.Column('final_amount', sa.Float(), nullable=False),
+            sa.Column('used_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+            sa.ForeignKeyConstraint(['discount_code_id'], ['discountcode.id'], ondelete='CASCADE'),
+            sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
+            sa.ForeignKeyConstraint(['course_id'], ['course.id'], ondelete='CASCADE'),
+            sa.ForeignKeyConstraint(['payment_user_id'], ['paymentsuser.id'], ondelete='CASCADE'),
+            sa.PrimaryKeyConstraint('id')
+        )
+        
+        # Create unique constraint to prevent duplicate usage per user per course
+        op.create_index(
+            'ix_discountcodeusage_user_course_unique',
+            'discountcodeusage',
+            ['user_id', 'course_id', 'discount_code_id'],
+            unique=True
+        )
     
     # Add discount fields to paymentsuser table (if not already added)
     # These columns already exist based on the model, but we need to add the foreign key

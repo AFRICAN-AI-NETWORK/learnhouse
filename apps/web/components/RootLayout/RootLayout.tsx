@@ -26,6 +26,9 @@ export default function RootLayout({
       {/* We intentionally use a raw <head> here for App Router + custom <html> so PWA manifest/icons are detected correctly. */}
       {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="/runtime-config.js" />
+
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />

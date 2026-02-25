@@ -57,15 +57,25 @@ if is_testing:
         connect_args={"check_same_thread": False}
     )
 else:
-    # Use configured database for production/development
+
+    _pool_size = int(os.getenv("DB_POOL_SIZE", "20"))
+    _max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+    _pool_recycle = int(os.getenv("DB_POOL_RECYCLE", "300"))
+    _pool_timeout = int(os.getenv("DB_POOL_TIMEOUT", "30"))
+
     engine = create_engine(
         learnhouse_config.database_config.sql_connection_string,  # type: ignore
-        echo=False, 
+        echo=False,
         pool_pre_ping=True,  # type: ignore
-        pool_size=20,  # Increased from 5 to handle more concurrent requests
-        max_overflow=10,  # Allow 10 additional connections beyond pool_size
-        pool_recycle=300,  # Recycle connections after 5 minutes
-        pool_timeout=30
+        pool_size=_pool_size,
+        max_overflow=_max_overflow,
+        pool_recycle=_pool_recycle,  # Recycle connections after N seconds
+        pool_timeout=_pool_timeout,
+    )
+
+    logging.info(
+        "Database pool configured: size=%d, overflow=%d, recycle=%ds, timeout=%ds",
+        _pool_size, _max_overflow, _pool_recycle, _pool_timeout,
     )
     
     # Add connection pool monitoring for debugging

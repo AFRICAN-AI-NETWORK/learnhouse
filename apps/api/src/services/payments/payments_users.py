@@ -21,6 +21,7 @@ async def create_payment_user(
     provider_data: Any,
     current_user: PublicUser | AnonymousUser | InternalUser,
     db_session: Session,
+    referral_code_id: int | None = None,  # Added for referral system
 ) -> PaymentsUser:
     # Check if payments feature is enabled (skip for InternalUser to allow webhook processing)
     if not isinstance(current_user, InternalUser):
@@ -73,6 +74,10 @@ async def create_payment_user(
             db_session.delete(existing_payment_user)
             db_session.commit()
         else:
+            # If it's a free product, allow "re-purchase" by returning existing
+            # This handles cases where users click "Get Started" multiple times for free courses
+            if product.amount == 0:
+                return existing_payment_user
             raise HTTPException(status_code=400, detail="User already has purchase for this product")
 
     # Create new payment user
@@ -81,7 +86,8 @@ async def create_payment_user(
         org_id=org_id,
         payment_product_id=product_id,
         provider_specific_data=provider_specific_data.model_dump(),
-        status=status
+        status=status,
+        referral_code_id=referral_code_id  # Added for referral system
     )
 
     db_session.add(payment_user)

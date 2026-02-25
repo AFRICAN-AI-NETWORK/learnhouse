@@ -389,7 +389,7 @@ const UserProfileBuilder = () => {
   }
 
   return (
-    <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow">
+    <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow mb-8 md:mb-0">
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between border-b pb-4">
@@ -417,9 +417,9 @@ const UserProfileBuilder = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Sections Panel */}
-          <div className="col-span-1 border-r pr-4">
+          <div className="md:col-span-1 border-r md:pr-4">
             <h3 className="font-medium mb-4">
               {t('user.settings.profile_builder.sections')}
             </h3>
@@ -564,7 +564,7 @@ const UserProfileBuilder = () => {
           </div>
 
           {/* Editor Panel */}
-          <div className="col-span-3">
+          <div className="md:col-span-3">
             {selectedSection !== null ? (
               <SectionEditor
                 section={profileData.sections[selectedSection]}

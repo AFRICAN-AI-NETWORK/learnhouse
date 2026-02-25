@@ -448,7 +448,7 @@ function EditCourseContributors() {
                 {t('dashboard.courses.contributors.subtitle')}
               </h2>
             </div>
-            <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mx-auto mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mx-auto mb-6">
               <ConfirmationModal
                 confirmationButtonText={t(
                   'dashboard.courses.contributors.open_to_contributors.confirmation_button'
@@ -460,7 +460,7 @@ function EditCourseContributors() {
                   'dashboard.courses.contributors.open_to_contributors.confirmation_title'
                 )}
                 dialogTrigger={
-                  <div className="w-full h-[200px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 transition-all">
+                  <div className="relative w-full h-[200px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 transition-all">
                     {isOpenToContributors && (
                       <div className="bg-green-200 text-green-600 font-bold w-fit my-3 mx-3 absolute text-sm px-3 py-1 rounded-lg">
                         {t(
@@ -497,7 +497,7 @@ function EditCourseContributors() {
                   'dashboard.courses.contributors.closed_to_contributors.confirmation_title'
                 )}
                 dialogTrigger={
-                  <div className="w-full h-[200px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 transition-all">
+                  <div className="relative w-full h-[200px] bg-slate-100 rounded-lg cursor-pointer hover:bg-slate-200 transition-all">
                     {!isOpenToContributors && (
                       <div className="bg-green-200 text-green-600 font-bold w-fit my-3 mx-3 absolute text-sm px-3 py-1 rounded-lg">
                         {t(

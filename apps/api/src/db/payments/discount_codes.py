@@ -26,6 +26,10 @@ class DiscountCodeBase(SQLModel):
         default=None,
         sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True)
     )
+    product_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE"), nullable=True)
+    )
 
 
 class DiscountCode(DiscountCodeBase, table=True):
@@ -43,6 +47,7 @@ class DiscountCodeCreate(SQLModel):
     valid_until: Optional[datetime] = None
     description: Optional[str] = None
     course_id: Optional[int] = None
+    product_id: Optional[int] = None
 
 
 class DiscountCodeRead(DiscountCodeBase):
@@ -58,6 +63,7 @@ class DiscountCodeUpdate(SQLModel):
     is_active: Optional[bool] = None
     description: Optional[str] = None
     course_id: Optional[int] = None
+    product_id: Optional[int] = None
 
 
 class DiscountCodeUsageBase(SQLModel):
@@ -67,8 +73,13 @@ class DiscountCodeUsageBase(SQLModel):
     user_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("user.id", ondelete="CASCADE"))
     )
-    course_id: int = Field(
-        sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="CASCADE"))
+    course_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True)
+    )
+    product_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE"), nullable=True)
     )
     payment_user_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("paymentsuser.id", ondelete="CASCADE"))

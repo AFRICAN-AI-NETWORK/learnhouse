@@ -4,7 +4,7 @@ Implements critical security measures for race condition prevention.
 """
 import logging
 from datetime import datetime
-from typing import Tuple, Literal
+from typing import Tuple, Literal, Optional
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select, and_
 from src.db.payments.discount_codes import (
@@ -70,9 +70,10 @@ async def validate_discount_code(
     code: str,
     org_id: int,
     user_id: int,
-    course_id: int,
-    original_amount: float,
-    db_session: Session,
+    course_id: Optional[int] = None,
+    product_id: Optional[int] = None,
+    original_amount: float = 0.0,
+    db_session: Session = None,
     check_usage: bool = True
 ) -> Tuple[DiscountCode, float, float]:
     """
@@ -100,11 +101,11 @@ async def validate_discount_code(
     Raises:
         DiscountValidationError: If validation fails
     """
-    # Discount codes only work for course products
-    if not course_id or course_id <= 0:
+    # Discount codes only work for course or product purchases
+    if not course_id and not product_id:
         raise DiscountValidationError(
-            "Discount codes can only be applied to course purchases. "
-            "This product is not eligible for discount codes."
+            "Discount codes can only be applied to course or product purchases. "
+            "This item is not eligible for discount codes."
         )
     
     # Ensure this is a paid product/course
@@ -138,10 +139,15 @@ async def validate_discount_code(
         )
     
     # Course-Specific Restriction Enforcement
-    # If a code is linked to a specific course, it must match the current purchase
     if discount_code.course_id and discount_code.course_id != course_id:
         raise DiscountValidationError(
             f"Discount code '{discount_code.code}' is not valid for this course."
+        )
+    
+    # Product-Specific Restriction Enforcement
+    if discount_code.product_id and discount_code.product_id != product_id:
+        raise DiscountValidationError(
+            f"Discount code '{discount_code.code}' is not valid for this package."
         )
     
     # Max Uses Enforcement
@@ -162,7 +168,8 @@ async def validate_discount_code(
                 and_(
                     DiscountCodeUsage.discount_code_id == discount_code.id,
                     DiscountCodeUsage.user_id == user_id,
-                    DiscountCodeUsage.course_id == course_id
+                    DiscountCodeUsage.course_id == course_id,
+                    DiscountCodeUsage.product_id == product_id
                 )
             )
         ).first()
@@ -235,12 +242,13 @@ async def increment_discount_usage_atomic(
 async def record_discount_usage(
     discount_code_id: int,
     user_id: int,
-    course_id: int,
+    course_id: Optional[int],
     payment_user_id: int,
     original_amount: float,
     discount_amount: float,
     final_amount: float,
-    db_session: Session
+    db_session: Session,
+    product_id: Optional[int] = None
 ) -> DiscountCodeUsage:
     """
     Record a discount code usage after successful payment.
@@ -283,6 +291,7 @@ async def record_discount_usage(
         discount_code_id=discount_code_id,
         user_id=user_id,
         course_id=course_id,
+        product_id=product_id,
         payment_user_id=payment_user_id,
         original_amount=original_amount,
         discount_amount=discount_amount,

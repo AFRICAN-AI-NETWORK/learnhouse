@@ -20,6 +20,12 @@ class UserCreate(UserBase):
     first_name: str = ""
     last_name: str = ""
     password: str
+    is_waitlist: Optional[bool] = False
+    waitlist_interest: Optional[str] = None
+    # Referral system fields
+    referral_code: Optional[str] = None  # Optional referral code during signup
+    device_id: Optional[str] = None  # Device fingerprint hash
+    browser_fingerprint: Optional[dict] = None  # Full browser fingerprint
 
 
 class UserUpdate(UserBase):
@@ -41,6 +47,8 @@ class UserUpdatePassword(SQLModel):
 class UserRead(UserBase):
     id: int
     user_uuid: str
+    user_status: Optional[str] = "ACTIVE"
+    waitlist_interest: Optional[str] = None
 
 
 class PublicUser(UserRead):
@@ -74,5 +82,12 @@ class User(UserBase, table=True):
     password: str = ""
     user_uuid: str = ""
     email_verified: bool = False
+    user_status: str = Field(default="ACTIVE", index=True)
+    waitlist_interest: Optional[str] = None
+    waitlist_joined_date: Optional[str] = None
+    waitlist_activated_date: Optional[str] = None
+    # Referral system fields
+    referral_commission_balance: float = Field(default=0.0)
+    has_referral_code: bool = Field(default=False)
     creation_date: str = ""
     update_date: str = ""

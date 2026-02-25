@@ -62,9 +62,9 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
       const response = (await validateDiscountCode(
         course.org_id,
         discountCode,
-        parseInt(course.id),
         amount,
-        session.data?.tokens?.access_token
+        session.data?.tokens?.access_token,
+        parseInt(course.id)
       )) as any
 
       if (response.valid) {
@@ -98,15 +98,15 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
     try {
       setIsProcessing((prev) => ({ ...prev, [productId]: true }))
       const redirect_uri = getUriWithOrg(org.slug, '/courses')
-      const response = await getStripeProductCheckoutSession(
+      const response = (await getStripeProductCheckoutSession(
         course.org_id,
         productId,
         redirect_uri,
         session.data?.tokens?.access_token,
         appliedDiscount?.code
-      )
+      )) as any
 
-      if (response.success) {
+      if (response && response.data?.checkout_url) {
         router.push(response.data.checkout_url)
       } else {
         toast.error(t('payments.failed_checkout'))

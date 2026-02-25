@@ -134,11 +134,11 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
   }
 
   return (
-    <div className="h-screen w-full bg-[#f8f8f8] grid grid-rows-[auto_1fr]">
+    <div className="min-h-screen w-full bg-[#f8f8f8] grid grid-rows-[auto_1fr] overflow-x-hidden">
       <CourseProvider courseuuid={courseuuid} withUnpublishedActivities={true}>
-        <div className="pl-10 pr-10 text-sm tracking-tight bg-[#fcfbfc] z-10 nice-shadow">
+        <div className="px-4 sm:px-6 lg:px-10 text-sm tracking-tight bg-[#fcfbfc] z-10 nice-shadow">
           <CourseOverviewTop params={params} />
-          <div className="flex space-x-3 font-black text-sm">
+          <div className="flex flex-wrap gap-2 font-black text-sm overflow-x-auto">
             {tabs.map((tab) => {
               const IconComponent = tab.icon
               const isActive = params.subpage.toString() === tab.key
@@ -165,8 +165,8 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
                       </div>
                     }
                   >
-                    <div className="flex space-x-4 py-2 w-fit text-center border-black transition-all ease-linear opacity-30 cursor-not-allowed">
-                      <div className="flex items-center space-x-2.5 mx-2">
+                    <div className="py-2 px-2 whitespace-nowrap text-center border-black transition-all ease-linear opacity-30 cursor-not-allowed">
+                      <div className="flex items-center gap-2">
                         <IconComponent size={16} />
                         <div>{tab.label}</div>
                       </div>
@@ -181,11 +181,11 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
                   href={getUriWithOrg(params.orgslug, '') + tab.href}
                 >
                   <div
-                    className={`flex space-x-4 py-2 w-fit text-center border-black transition-all ease-linear ${
+                    className={`py-2 px-2 whitespace-nowrap text-center border-black transition-all ease-linear ${
                       isActive ? 'border-b-4' : 'opacity-50 hover:opacity-75'
                     } cursor-pointer`}
                   >
-                    <div className="flex items-center space-x-2.5 mx-2">
+                    <div className="flex items-center gap-2">
                       <IconComponent size={16} />
                       <div>{tab.label}</div>
                     </div>

@@ -1,13 +1,13 @@
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import { getUriWithOrg } from '@services/config/config'
-import { BookCopy, Signpost, SquareLibrary } from 'lucide-react'
+import { BookCopy, Signpost, SquareLibrary, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 function MenuLinks(props: { orgslug: string }) {
   return (
-    <div className='pl-1'>
+    <div className="pl-1">
       <ul className="flex space-x-5">
         <LinkItem
           link="/courses"
@@ -17,6 +17,11 @@ function MenuLinks(props: { orgslug: string }) {
         <LinkItem
           link="/collections"
           type="collections"
+          orgslug={props.orgslug}
+        ></LinkItem>
+        <LinkItem
+          link="/pricing"
+          type="pricing"
           orgslug={props.orgslug}
         ></LinkItem>
         <AuthenticatedClientElement checkMethod="authentication">
@@ -39,8 +44,7 @@ const LinkItem = (props: any) => {
       <li className="flex space-x-2 items-center text-[#909192] font-medium">
         {props.type == 'courses' && (
           <>
-            <BookCopy size={20}  />{' '}
-            <span>{t('courses.courses')}</span>
+            <BookCopy size={20} /> <span>{t('courses.courses')}</span>
           </>
         )}
 
@@ -53,8 +57,13 @@ const LinkItem = (props: any) => {
 
         {props.type == 'trail' && (
           <>
-            <Signpost size={20} />{' '}
-            <span>{t('courses.progress')}</span>
+            <Signpost size={20} /> <span>{t('courses.progress')}</span>
+          </>
+        )}
+
+        {props.type == 'pricing' && (
+          <>
+            <CreditCard size={20} /> <span>Pricing</span>
           </>
         )}
       </li>
