@@ -8,7 +8,7 @@ from src.routers.courses.activities import activities, blocks
 from src.core.ee_hooks import register_ee_routers
 from src.services.dev.dev import isDevModeEnabledOrRaise
 from src.routers.utils import router as utils_router
-from src.routers import code
+from src.routers.code import router as code_router
 
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -50,5 +50,5 @@ v1_router.include_router(
     dependencies=[Depends(isDevModeEnabledOrRaise)],
 )
 
-v1_router.include_router(code.router, prefix="/code", tags=["code"])
+v1_router.include_router(code_router, prefix="/code", tags=["code"])
 v1_router.include_router(utils_router, prefix="/utils", tags=["utils"])

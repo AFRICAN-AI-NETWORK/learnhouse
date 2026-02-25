@@ -51,3 +51,6 @@ fly.toml
 apps/web/public/runtime-config.js
 apps/web/runtime-config.json
 .agent/implementation_plans/code-editor-task-type.md
+.agent/implementation_plans/check.txt
+.agent/implementation_plans/coolifybackenddeploymentlogs.txt
+.agent/implementation_plans/coolifyfrontenddeploymentlogs.txt
