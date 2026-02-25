@@ -99,12 +99,12 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
             label="Products & Subscriptions"
             isActive={subpage === 'paid-products'}
           />
-          <TabLink
+          {/* <TabLink
             href={getUriWithOrg(params.orgslug, '/dash/payments/configuration')}
             icon={<Settings size={16} />}
             label="Configuration"
             isActive={subpage === 'configuration'}
-          />
+          /> */}
           <TabLink
             href={getUriWithOrg(params.orgslug, '/dash/payments/discounts')}
             icon={<Ticket size={16} />}
