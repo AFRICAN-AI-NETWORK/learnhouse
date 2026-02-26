@@ -41,16 +41,21 @@ function SignUpClient(props: SignUpClientProps) {
   const waitlistUuid = searchParams.get('waitlist_uuid') || ''
   const [resolvedWaitlistUuid, setResolvedWaitlistUuid] =
     React.useState(waitlistUuid)
+  const [selectedCampaignName, setSelectedCampaignName] = React.useState('')
 
   const handleWaitlistSelect = React.useCallback(
-    (selectedWaitlistUuid: string) => {
+    (selectedWaitlistUuid: string, campaignName?: string) => {
       setResolvedWaitlistUuid(selectedWaitlistUuid)
+      setSelectedCampaignName(campaignName || '')
     },
     []
   )
 
   useEffect(() => {
     setResolvedWaitlistUuid(waitlistUuid)
+    if (waitlistUuid) {
+      setSelectedCampaignName('')
+    }
   }, [waitlistUuid])
 
   const getSubtitle = () => {
@@ -105,7 +110,12 @@ function SignUpClient(props: SignUpClientProps) {
               ))}
             {joinMethod === 'waitlist' &&
               (resolvedWaitlistUuid ? (
-                <WaitlistSignUpComponent waitlistUuid={resolvedWaitlistUuid} />
+                <>
+                  <SelectedWaitlistNotice campaignName={selectedCampaignName} />
+                  <WaitlistSignUpComponent
+                    waitlistUuid={resolvedWaitlistUuid}
+                  />
+                </>
               ) : (
                 <WaitlistCampaignSelector
                   orgId={props.org?.id}
@@ -306,7 +316,7 @@ const WaitlistCampaignSelector = ({
   orgId: number | undefined
   orgSlug: string | undefined
   accessToken?: string
-  onSelect: (waitlistUuid: string) => void
+  onSelect: (waitlistUuid: string, campaignName?: string) => void
 }) => {
   const [isLoadingCampaigns, setIsLoadingCampaigns] = React.useState(true)
   const [campaigns, setCampaigns] = React.useState<WaitlistCampaign[]>([])
@@ -331,7 +341,10 @@ const WaitlistCampaignSelector = ({
           )
 
           if (activeCampaigns.length === 1) {
-            onSelect(activeCampaigns[0].waitlist_uuid)
+            onSelect(
+              activeCampaigns[0].waitlist_uuid,
+              activeCampaigns[0].name || 'Waitlist Campaign'
+            )
             return
           }
 
@@ -406,13 +419,31 @@ const WaitlistCampaignSelector = ({
       </div>
 
       <button
-        onClick={() => selectedUuid && onSelect(selectedUuid)}
+        onClick={() => {
+          if (!selectedUuid) return
+          const selectedCampaign = campaigns.find(
+            (campaign) => campaign.waitlist_uuid === selectedUuid
+          )
+          onSelect(selectedUuid, selectedCampaign?.name || 'Waitlist Campaign')
+        }}
         disabled={!selectedUuid}
         className="flex w-full justify-center items-center gap-3 bg-black text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
         type="button"
       >
         Continue to waitlist signup
       </button>
+    </div>
+  )
+}
+
+const SelectedWaitlistNotice = ({ campaignName }: { campaignName: string }) => {
+  if (!campaignName) {
+    return null
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+      You&apos;re joining <span className="font-semibold">{campaignName}</span>.
     </div>
   )
 }
