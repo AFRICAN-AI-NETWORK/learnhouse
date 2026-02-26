@@ -51,18 +51,19 @@ const DiscountTable = ({
   }
 
   const getDiscountDisplay = (discount: any) => {
+    const discountValue = discount.discount_value ?? discount.value
+
     if (discount.discount_type === 'percentage') {
       return (
         <div className="flex items-center gap-1 text-teal-600 font-bold">
-          <Percent size={14} />
-          <span>{discount.value}%</span>
+          <span>{discountValue}%</span>
         </div>
       )
     }
     return (
       <div className="flex items-center gap-1 text-blue-600 font-bold">
         <DollarSign size={14} />
-        <span>{discount.value}</span>
+        <span>{discountValue}</span>
       </div>
     )
   }
@@ -93,116 +94,122 @@ const DiscountTable = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {discounts.map((discount) => (
-            <tr
-              key={discount.id}
-              className="hover:bg-gray-50/50 transition-colors"
-            >
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex flex-col">
-                  <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded w-fit">
-                    {discount.code}
-                  </span>
-                  {discount.description && (
-                    <span className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
-                      {discount.description}
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getDiscountDisplay(discount)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {discount.course_id ? (
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <GraduationCap size={14} className="text-gray-400" />
-                    <span>
-                      {t('payments.course_restricted') || 'Course Specific'}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs text-teal-600">
-                    <Globe size={14} />
-                    <span>{t('payments.global_code') || 'Global'}</span>
-                  </div>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                    <span>
-                      {discount.current_usage} / {discount.max_uses || '∞'}
-                    </span>
-                    <span>
-                      {discount.max_uses
-                        ? Math.round(
-                            (discount.current_usage / discount.max_uses) * 100
-                          )
-                        : 0}
-                      %
-                    </span>
-                  </div>
-                  <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${discount.current_usage >= (discount.max_uses || Infinity) ? 'bg-red-400' : 'bg-teal-500'}`}
-                      style={{
-                        width: `${discount.max_uses ? Math.min((discount.current_usage / discount.max_uses) * 100, 100) : 0}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {discount.is_active ? (
-                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1 w-fit">
-                    <CheckCircle size={12} />
-                    {t('common.active')}
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="text-gray-400 flex items-center gap-1 w-fit"
-                  >
-                    <XCircle size={12} />
-                    {t('common.inactive')}
-                  </Badge>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEdit(discount)}
-                    className="h-8 w-8 text-gray-400 hover:text-blue-600"
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                  <ConfirmationModal
-                    confirmationButtonText={
-                      t('common.deactivate') || 'Deactivate'
-                    }
-                    confirmationMessage={
-                      t('payments.deactivate_discount_confirm') ||
-                      'Are you sure you want to deactivate this discount code? It will no longer be applicable at checkout.'
-                    }
-                    dialogTitle={
-                      t('payments.deactivate_discount_title') ||
-                      `Deactivate ${discount.code}?`
-                    }
-                    dialogTrigger={
-                      <button className="h-8 w-8 flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                        <Trash2 size={14} />
-                      </button>
-                    }
-                    functionToExecute={() => handleDeactivate(discount.id)}
-                    status="warning"
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
+          {discounts.map((discount) =>
+            (() => {
+              const currentUsage =
+                discount.current_uses ?? discount.current_usage ?? 0
+              const usagePercent = discount.max_uses
+                ? Math.min(
+                    Math.round((currentUsage / discount.max_uses) * 100),
+                    100
+                  )
+                : 0
+
+              return (
+                <tr
+                  key={discount.id}
+                  className="hover:bg-gray-50/50 transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded w-fit">
+                        {discount.code}
+                      </span>
+                      {discount.description && (
+                        <span className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
+                          {discount.description}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getDiscountDisplay(discount)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {discount.course_id ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <GraduationCap size={14} className="text-gray-400" />
+                        <span>
+                          {t('payments.course_restricted') || 'Course Specific'}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-teal-600">
+                        <Globe size={14} />
+                        <span>{t('payments.global_code') || 'Global'}</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                        <span>
+                          {currentUsage} / {discount.max_uses || '∞'}
+                        </span>
+                        <span>{usagePercent}%</span>
+                      </div>
+                      <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${currentUsage >= (discount.max_uses || Infinity) ? 'bg-red-400' : 'bg-teal-500'}`}
+                          style={{
+                            width: `${usagePercent}%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {discount.is_active ? (
+                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1 w-fit">
+                        <CheckCircle size={12} />
+                        {t('common.active')}
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-gray-400 flex items-center gap-1 w-fit"
+                      >
+                        <XCircle size={12} />
+                        {t('common.inactive')}
+                      </Badge>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEdit(discount)}
+                        className="h-8 w-8 text-gray-400 hover:text-blue-600"
+                      >
+                        <Pencil size={14} />
+                      </Button>
+                      <ConfirmationModal
+                        confirmationButtonText={
+                          t('common.deactivate') || 'Deactivate'
+                        }
+                        confirmationMessage={
+                          t('payments.deactivate_discount_confirm') ||
+                          'Are you sure you want to deactivate this discount code? It will no longer be applicable at checkout.'
+                        }
+                        dialogTitle={
+                          t('payments.deactivate_discount_title') ||
+                          `Deactivate ${discount.code}?`
+                        }
+                        dialogTrigger={
+                          <button className="h-8 w-8 flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        }
+                        functionToExecute={() => handleDeactivate(discount.id)}
+                        status="warning"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              )
+            })()
+          )}
         </tbody>
       </table>
     </div>
