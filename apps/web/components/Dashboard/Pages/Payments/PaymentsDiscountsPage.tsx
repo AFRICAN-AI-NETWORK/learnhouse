@@ -34,7 +34,13 @@ const PaymentsDiscountsPage = () => {
     ([, token]) => listDiscountCodes(org.id, token)
   )
 
-  const filteredDiscounts = (discounts as any)?.data?.filter(
+  const discountsList = Array.isArray(discounts)
+    ? discounts
+    : Array.isArray((discounts as any)?.data)
+      ? (discounts as any).data
+      : []
+
+  const filteredDiscounts = discountsList.filter(
     (d: any) =>
       d.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (d.description &&
