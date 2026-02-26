@@ -39,24 +39,19 @@ function SignUpClient(props: SignUpClientProps) {
   const searchParams = useSearchParams()
   const inviteCode = searchParams.get('inviteCode') || ''
   const waitlistUuid = searchParams.get('waitlist_uuid') || ''
-  const [resolvedWaitlistUuid, setResolvedWaitlistUuid] =
-    React.useState(waitlistUuid)
+  const [selectedWaitlistUuid, setSelectedWaitlistUuid] = React.useState('')
   const [selectedCampaignName, setSelectedCampaignName] = React.useState('')
+
+  const resolvedWaitlistUuid = waitlistUuid || selectedWaitlistUuid
+  const resolvedCampaignName = waitlistUuid ? '' : selectedCampaignName
 
   const handleWaitlistSelect = React.useCallback(
     (selectedWaitlistUuid: string, campaignName?: string) => {
-      setResolvedWaitlistUuid(selectedWaitlistUuid)
+      setSelectedWaitlistUuid(selectedWaitlistUuid)
       setSelectedCampaignName(campaignName || '')
     },
     []
   )
-
-  useEffect(() => {
-    setResolvedWaitlistUuid(waitlistUuid)
-    if (waitlistUuid) {
-      setSelectedCampaignName('')
-    }
-  }, [waitlistUuid])
 
   const getSubtitle = () => {
     if (joinMethod === 'open') return t('auth.create_your_account_in_steps')
@@ -111,7 +106,7 @@ function SignUpClient(props: SignUpClientProps) {
             {joinMethod === 'waitlist' &&
               (resolvedWaitlistUuid ? (
                 <>
-                  <SelectedWaitlistNotice campaignName={selectedCampaignName} />
+                  <SelectedWaitlistNotice campaignName={resolvedCampaignName} />
                   <WaitlistSignUpComponent
                     waitlistUuid={resolvedWaitlistUuid}
                   />
