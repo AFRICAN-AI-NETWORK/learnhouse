@@ -13,6 +13,7 @@ import InviteOnlySignUpComponent from './InviteOnlySignUp'
 import WaitlistSignUpComponent from './WaitlistSignUp'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { validateInviteCode } from '@services/organizations/invites'
+import { getOrgWaitlists } from '@services/waitlist/waitlist'
 import toast from 'react-hot-toast'
 import { BarLoader } from 'react-spinners'
 import { joinOrg } from '@services/organizations/orgs'
@@ -23,6 +24,13 @@ interface SignUpClientProps {
   org: any
 }
 
+interface WaitlistCampaign {
+  waitlist_uuid: string
+  name?: string
+  description?: string | null
+  status?: string
+}
+
 function SignUpClient(props: SignUpClientProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -31,8 +39,24 @@ function SignUpClient(props: SignUpClientProps) {
   const searchParams = useSearchParams()
   const inviteCode = searchParams.get('inviteCode') || ''
   const waitlistUuid = searchParams.get('waitlist_uuid') || ''
+  const [resolvedWaitlistUuid, setResolvedWaitlistUuid] =
+    React.useState(waitlistUuid)
+  const [selectedCampaignName, setSelectedCampaignName] = React.useState('')
 
-  useEffect(() => {}, [])
+  const handleWaitlistSelect = React.useCallback(
+    (selectedWaitlistUuid: string, campaignName?: string) => {
+      setResolvedWaitlistUuid(selectedWaitlistUuid)
+      setSelectedCampaignName(campaignName || '')
+    },
+    []
+  )
+
+  useEffect(() => {
+    setResolvedWaitlistUuid(waitlistUuid)
+    if (waitlistUuid) {
+      setSelectedCampaignName('')
+    }
+  }, [waitlistUuid])
 
   const getSubtitle = () => {
     if (joinMethod === 'open') return t('auth.create_your_account_in_steps')
@@ -85,10 +109,20 @@ function SignUpClient(props: SignUpClientProps) {
                 <NoTokenScreen />
               ))}
             {joinMethod === 'waitlist' &&
-              (waitlistUuid ? (
-                <WaitlistSignUpComponent waitlistUuid={waitlistUuid} />
+              (resolvedWaitlistUuid ? (
+                <>
+                  <SelectedWaitlistNotice campaignName={selectedCampaignName} />
+                  <WaitlistSignUpComponent
+                    waitlistUuid={resolvedWaitlistUuid}
+                  />
+                </>
               ) : (
-                <WaitlistNotFoundScreen />
+                <WaitlistCampaignSelector
+                  orgId={props.org?.id}
+                  orgSlug={props.org?.slug}
+                  accessToken={session?.data?.tokens?.access_token}
+                  onSelect={handleWaitlistSelect}
+                />
               ))}
           </div>
 
@@ -251,26 +285,165 @@ const NoTokenScreen = () => {
 }
 
 const WaitlistNotFoundScreen = () => {
-  const { t } = useTranslation()
-
   return (
-    <div className="flex flex-col items-center justify-center space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex flex-col items-center justify-center space-y-6 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
-        <div className="bg-rose-50 p-4 rounded-2xl inline-flex mb-4">
-          <MailWarning size={32} className="text-rose-600" />
+        <div className="bg-amber-50 p-4 rounded-2xl inline-flex mb-2">
+          <MailWarning size={32} className="text-amber-600" />
         </div>
         <h3 className="text-xl font-bold text-slate-900">
-          Waitlist Invite Not Found
+          Waitlist is temporarily unavailable
         </h3>
-        <p className="text-slate-500 text-sm">
-          The waitlist invite link is invalid or has expired
+        <p className="text-slate-500 text-sm max-w-sm">
+          We couldn&apos;t find an active waitlist campaign right now.
         </p>
       </div>
 
       <p className="text-center text-sm text-slate-600 max-w-sm">
-        Please request a new invite from your organization or contact support
-        for assistance.
+        Please check back shortly, or contact the organization for a direct
+        invite link.
       </p>
+    </div>
+  )
+}
+
+const WaitlistCampaignSelector = ({
+  orgId,
+  orgSlug,
+  accessToken,
+  onSelect,
+}: {
+  orgId: number | undefined
+  orgSlug: string | undefined
+  accessToken?: string
+  onSelect: (waitlistUuid: string, campaignName?: string) => void
+}) => {
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = React.useState(true)
+  const [campaigns, setCampaigns] = React.useState<WaitlistCampaign[]>([])
+  const [selectedUuid, setSelectedUuid] = React.useState('')
+  const [loadFailed, setLoadFailed] = React.useState(false)
+
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      if (!orgId) {
+        setLoadFailed(true)
+        setIsLoadingCampaigns(false)
+        return
+      }
+
+      try {
+        const res = await getOrgWaitlists(orgId, accessToken)
+        if (res.success && Array.isArray(res.data)) {
+          const activeCampaigns = res.data.filter(
+            (campaign: WaitlistCampaign) =>
+              campaign?.waitlist_uuid &&
+              (campaign?.status || '').toUpperCase() === 'ACTIVE'
+          )
+
+          if (activeCampaigns.length === 1) {
+            onSelect(
+              activeCampaigns[0].waitlist_uuid,
+              activeCampaigns[0].name || 'Waitlist Campaign'
+            )
+            return
+          }
+
+          if (activeCampaigns.length > 1) {
+            setCampaigns(activeCampaigns)
+            setSelectedUuid(activeCampaigns[0].waitlist_uuid)
+            return
+          }
+        }
+
+        setLoadFailed(true)
+      } catch {
+        setLoadFailed(true)
+      } finally {
+        setIsLoadingCampaigns(false)
+      }
+    }
+
+    loadCampaigns()
+  }, [orgId, accessToken, onSelect])
+
+  if (isLoadingCampaigns) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-4 py-8">
+        <p className="text-sm text-slate-500">Preparing waitlist options...</p>
+        <BarLoader width={80} color="#111827" />
+      </div>
+    )
+  }
+
+  if (loadFailed || campaigns.length === 0) {
+    return <WaitlistNotFoundScreen />
+  }
+
+  return (
+    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-bold text-slate-900">
+          Choose a waitlist campaign
+        </h3>
+        <p className="text-slate-500 text-sm">
+          Select the campaign you want to join for{' '}
+          {orgSlug || 'this organization'}.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {campaigns.map((campaign) => {
+          const isSelected = selectedUuid === campaign.waitlist_uuid
+          return (
+            <button
+              key={campaign.waitlist_uuid}
+              onClick={() => setSelectedUuid(campaign.waitlist_uuid)}
+              className={`w-full text-left border rounded-xl p-4 transition-all ${
+                isSelected
+                  ? 'border-black bg-slate-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+              type="button"
+            >
+              <p className="font-semibold text-slate-900">
+                {campaign.name || 'Waitlist Campaign'}
+              </p>
+              {campaign.description ? (
+                <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                  {campaign.description}
+                </p>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
+
+      <button
+        onClick={() => {
+          if (!selectedUuid) return
+          const selectedCampaign = campaigns.find(
+            (campaign) => campaign.waitlist_uuid === selectedUuid
+          )
+          onSelect(selectedUuid, selectedCampaign?.name || 'Waitlist Campaign')
+        }}
+        disabled={!selectedUuid}
+        className="flex w-full justify-center items-center gap-3 bg-black text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-black/10 hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+        type="button"
+      >
+        Continue to waitlist signup
+      </button>
+    </div>
+  )
+}
+
+const SelectedWaitlistNotice = ({ campaignName }: { campaignName: string }) => {
+  if (!campaignName) {
+    return null
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+      You&apos;re joining <span className="font-semibold">{campaignName}</span>.
     </div>
   )
 }

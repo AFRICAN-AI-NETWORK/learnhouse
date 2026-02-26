@@ -34,20 +34,18 @@ const PaymentsDiscountsPage = () => {
     ([, token]) => listDiscountCodes(org.id, token)
   )
 
-  const discountsData = (discounts as any)?.data
-  const discountList = Array.isArray(discountsData)
-    ? discountsData
-    : Array.isArray(discountsData?.data)
-      ? discountsData.data
+  const discountsList = Array.isArray(discounts)
+    ? discounts
+    : Array.isArray((discounts as any)?.data)
+      ? (discounts as any).data
       : []
 
-  const filteredDiscounts = discountList.filter((discount: any) => {
-    const code = String(discount?.code ?? '').toLowerCase()
-    const description = String(discount?.description ?? '').toLowerCase()
-    const query = searchQuery.toLowerCase()
-
-    return code.includes(query) || description.includes(query)
-  })
+  const filteredDiscounts = discountsList.filter(
+    (d: any) =>
+      d.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (d.description &&
+        d.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
 
   const handleCreate = () => {
     setSelectedDiscount(null)
