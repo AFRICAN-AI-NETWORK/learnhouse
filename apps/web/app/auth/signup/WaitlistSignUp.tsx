@@ -250,13 +250,31 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             } else {
               const retryData = await retryRes.json()
               setError(retryData.detail || 'Registration failed')
+              // Clear stored referral code after failed signup attempt
+              try {
+                localStorage.removeItem('referral_code')
+              } catch {
+                /* ignore */
+              }
             }
           } else {
             setError(detail || 'Registration failed')
+            // Clear stored referral code after failed signup attempt
+            try {
+              localStorage.removeItem('referral_code')
+            } catch {
+              /* ignore */
+            }
           }
         }
       } catch (err: any) {
         setError(err.message || 'Something went wrong')
+        // Clear stored referral code after exception during signup
+        try {
+          localStorage.removeItem('referral_code')
+        } catch {
+          /* ignore */
+        }
       } finally {
         setIsSubmitting(false)
       }

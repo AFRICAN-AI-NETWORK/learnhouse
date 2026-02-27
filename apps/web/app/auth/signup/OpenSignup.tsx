@@ -208,12 +208,30 @@ function OpenSignUpComponent() {
           } else {
             const retryRes_json = await retryRes.json()
             setError(retryRes_json.detail ?? t('common.something_went_wrong'))
+            // Clear stored referral code after failed signup attempt
+            try {
+              localStorage.removeItem('referral_code')
+            } catch {
+              /* ignore */
+            }
           }
         } else {
           setError(detail || t('common.something_went_wrong'))
+          // Clear stored referral code after failed signup attempt
+          try {
+            localStorage.removeItem('referral_code')
+          } catch {
+            /* ignore */
+          }
         }
       } else {
         setError(t('common.something_went_wrong'))
+        // Clear stored referral code after failed signup attempt
+        try {
+          localStorage.removeItem('referral_code')
+        } catch {
+          /* ignore */
+        }
       }
 
       setIsSubmitting(false)

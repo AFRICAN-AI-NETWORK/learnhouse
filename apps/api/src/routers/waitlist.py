@@ -110,15 +110,17 @@ async def list_org_waitlists(
 ):
     """
     Get all waitlist configurations for an organization.
-    Admin-only endpoint.
+    Admins/Maintainers can view all campaigns.
+    Non-admin and anonymous users can view ACTIVE campaigns only.
     """
-    # RBAC check
     if isinstance(current_user, AnonymousUser):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+        return await get_org_waitlist_configs(
+            request,
+            db_session,
+            org_id,
+            "ACTIVE",
         )
-    
+
     # Verify user is admin or maintainer of the organization
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
@@ -126,13 +128,18 @@ async def list_org_waitlists(
         UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
-    if not user_org:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to view waitlists for this organization. Admin or Maintainer role required."
-        )
-    
-    return await get_org_waitlist_configs(request, db_session, org_id, status_filter)
+
+    # Admins/Maintainers: can apply status_filter and view all campaigns
+    if user_org:
+        return await get_org_waitlist_configs(request, db_session, org_id, status_filter)
+
+    # Authenticated non-admin users: only ACTIVE campaigns
+    return await get_org_waitlist_configs(
+        request,
+        db_session,
+        org_id,
+        "ACTIVE",
+    )
 
 
 @router.put("/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"])
