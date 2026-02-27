@@ -217,6 +217,12 @@ function TaskCodeEditorObject({
     Record<string, ConsoleResult>
   >({})
 
+  // Custom stdin for students testing their own code
+  const [customInputs, setCustomInputs] = useState<Record<string, string>>({})
+  const [showCustomInput, setShowCustomInput] = useState<
+    Record<string, boolean>
+  >({})
+
   // Debounced auto-save
   const debouncedSubmit = useMemo(
     () =>
@@ -515,6 +521,7 @@ function TaskCodeEditorObject({
           {
             language: exercise.language,
             code: studentCode,
+            stdin: customInputs[exercise.exerciseUUID] || '',
             test_cases: exercise.testCases.filter((tc) => !tc.isHidden),
           },
           access_token
@@ -590,7 +597,7 @@ function TaskCodeEditorObject({
         }))
       }
     },
-    [studentSubmissions, access_token, setLastSubmissionResult]
+    [studentSubmissions, access_token, setLastSubmissionResult, customInputs]
   )
 
   // TEACHER VIEW
@@ -1045,6 +1052,52 @@ function TaskCodeEditorObject({
                               }}
                             />
                           </div>
+                        </div>
+
+                        {/* Custom Input Section */}
+                        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                          <button
+                            onClick={() =>
+                              setShowCustomInput((prev) => ({
+                                ...prev,
+                                [exercise.exerciseUUID]:
+                                  !prev[exercise.exerciseUUID],
+                              }))
+                            }
+                            className="flex items-center justify-between w-full px-5 py-3 hover:bg-slate-50 transition-colors"
+                          >
+                            <div className="flex items-center space-x-2.5">
+                              <Terminal className="w-4 h-4 text-slate-500" />
+                              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                                Custom Test Input (stdin)
+                              </span>
+                            </div>
+                            <Plus
+                              size={14}
+                              className={`text-slate-400 transition-transform duration-200 ${showCustomInput[exercise.exerciseUUID] ? 'rotate-45' : ''}`}
+                            />
+                          </button>
+                          {showCustomInput[exercise.exerciseUUID] && (
+                            <div className="px-5 pb-5 animate-in slide-in-from-top-2 duration-200">
+                              <textarea
+                                value={
+                                  customInputs[exercise.exerciseUUID] || ''
+                                }
+                                onChange={(e) =>
+                                  setCustomInputs((prev) => ({
+                                    ...prev,
+                                    [exercise.exerciseUUID]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Enter input here (one line per prompt)..."
+                                className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
+                              />
+                              <p className="mt-2 text-[10px] text-slate-400 font-medium">
+                                Provided input will be sent to your program's
+                                standard input.
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Console Output — always visible after first run */}
