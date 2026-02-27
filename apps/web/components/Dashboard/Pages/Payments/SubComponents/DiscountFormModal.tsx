@@ -124,22 +124,39 @@ const DiscountFormModal = ({
 
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
     try {
-      const data = {
-        ...values,
-        code: values.code?.trim().toUpperCase(),
-        discount_value: values.value,
-        course_id: values.is_global ? null : values.course_id,
-        max_uses: values.max_uses === '' ? null : values.max_uses,
-        valid_from: values.valid_from
-          ? new Date(values.valid_from).toISOString()
-          : null,
-        valid_until: values.valid_until
-          ? new Date(values.valid_until).toISOString()
-          : null,
-      }
+      let data: any
 
-      delete data.is_global
-      delete data.value
+      if (discount) {
+        // For updates, only send fields that are allowed in DiscountCodeUpdate schema
+        data = {
+          discount_value: values.value,
+          course_id: values.is_global ? null : values.course_id,
+          max_uses: values.max_uses === '' ? null : values.max_uses,
+          valid_until: values.valid_until
+            ? new Date(values.valid_until).toISOString()
+            : null,
+          is_active: values.is_active,
+          description: values.description || null,
+        }
+      } else {
+        // For creation, send all fields
+        data = {
+          ...values,
+          code: values.code?.trim().toUpperCase(),
+          discount_value: values.value,
+          course_id: values.is_global ? null : values.course_id,
+          max_uses: values.max_uses === '' ? null : values.max_uses,
+          valid_from: values.valid_from
+            ? new Date(values.valid_from).toISOString()
+            : null,
+          valid_until: values.valid_until
+            ? new Date(values.valid_until).toISOString()
+            : null,
+        }
+
+        delete data.is_global
+        delete data.value
+      }
 
       if (discount) {
         const response = await updateDiscountCode(
@@ -177,7 +194,24 @@ const DiscountFormModal = ({
       }
       onSuccess()
     } catch (err: any) {
-      toast.error(err.message || t('common.error_request'))
+      // Handle structured validation errors from FastAPI
+      let errorMessage = err.message || t('common.error_request')
+
+      // If error message looks like [object Object], try to extract details
+      if (
+        errorMessage.includes('[object') ||
+        typeof errorMessage === 'object'
+      ) {
+        if (err.response?.data?.detail) {
+          errorMessage = Array.isArray(err.response.data.detail)
+            ? err.response.data.detail.map((e: any) => e.msg).join(', ')
+            : err.response.data.detail
+        } else if (typeof err.message === 'object') {
+          errorMessage = t('common.error_request')
+        }
+      }
+
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
