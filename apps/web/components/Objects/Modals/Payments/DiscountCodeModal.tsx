@@ -66,11 +66,13 @@ const DiscountCodeModal = ({
         product.id // productId
       )) as any
 
-      if (result.valid) {
-        setAppliedDiscount(result)
+      const validationResult = result?.data ?? result
+
+      if (result?.success && validationResult?.valid) {
+        setAppliedDiscount(validationResult)
         toast.success(t('payments.discount_applied'))
       } else {
-        setError(result.error || t('payments.invalid_discount_code'))
+        setError(validationResult?.error || t('payments.invalid_discount_code'))
       }
     } catch (err) {
       setError(t('common.error_request'))

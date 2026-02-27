@@ -309,7 +309,7 @@ export const HeaderProfileBox = () => {
                     className="flex items-center space-x-2"
                   >
                     <Link2 size={16} />
-                    <span>Referals</span>
+                    <span>Referrals</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

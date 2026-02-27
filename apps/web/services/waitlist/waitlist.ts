@@ -83,7 +83,7 @@ export async function cancelWaitlistConfig(uuid: string, accessToken: string) {
   return res
 }
 
-export async function getOrgWaitlists(orgId: number, accessToken: string) {
+export async function getOrgWaitlists(orgId: number, accessToken?: string) {
   const result = await fetch(
     `${getAPIUrl()}waitlist/config/org/${orgId}`,
     RequestBodyWithAuthHeader('GET', null, null, accessToken)

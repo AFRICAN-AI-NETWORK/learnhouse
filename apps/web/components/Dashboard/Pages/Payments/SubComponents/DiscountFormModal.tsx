@@ -38,6 +38,9 @@ interface DiscountFormModalProps {
 
 const validationSchema = Yup.object().shape({
   code: Yup.string()
+    .transform((value) =>
+      typeof value === 'string' ? value.trim().toUpperCase() : value
+    )
     .required('Code is required')
     .matches(
       /^[A-Z0-9_-]+$/,
@@ -53,7 +56,10 @@ const validationSchema = Yup.object().shape({
       is: 'percentage',
       then: (schema) => schema.max(100, 'Percentage cannot exceed 100'),
     }),
-  max_uses: Yup.number().min(1, 'Max uses must be at least 1').nullable(),
+  max_uses: Yup.number()
+    .transform((val, originalVal) => (originalVal === '' ? null : val))
+    .min(1, 'Max uses must be at least 1')
+    .nullable(),
   valid_from: Yup.date().nullable(),
   valid_until: Yup.date()
     .nullable()
@@ -103,7 +109,7 @@ const DiscountFormModal = ({
     description: discount?.description || '',
     discount_type: discount?.discount_type || 'percentage',
     value: discount?.value || 0,
-    max_uses: discount?.max_uses || null,
+    max_uses: discount?.max_uses ?? '',
     valid_from: discount?.valid_from
       ? new Date(discount.valid_from).toISOString().split('T')[0]
       : '',
@@ -120,7 +126,10 @@ const DiscountFormModal = ({
     try {
       const data = {
         ...values,
+        code: values.code?.trim().toUpperCase(),
+        discount_value: values.value,
         course_id: values.is_global ? null : values.course_id,
+        max_uses: values.max_uses === '' ? null : values.max_uses,
         valid_from: values.valid_from
           ? new Date(values.valid_from).toISOString()
           : null,
@@ -130,23 +139,38 @@ const DiscountFormModal = ({
       }
 
       delete data.is_global
+      delete data.value
 
       if (discount) {
-        await updateDiscountCode(
+        const response = await updateDiscountCode(
           org.id,
           discount.id,
           data,
           session.data?.tokens?.access_token
         )
+        if (!(response as any)?.success) {
+          throw new Error(
+            (response as any)?.data?.detail ||
+              t('common.error_request') ||
+              'Request failed'
+          )
+        }
         toast.success(
           t('payments.discount_updated') || 'Discount updated successfully'
         )
       } else {
-        await createDiscountCode(
+        const response = await createDiscountCode(
           org.id,
           data,
           session.data?.tokens?.access_token
         )
+        if (!(response as any)?.success) {
+          throw new Error(
+            (response as any)?.data?.detail ||
+              t('common.error_request') ||
+              'Request failed'
+          )
+        }
         toast.success(
           t('payments.discount_created') || 'Discount created successfully'
         )
@@ -189,11 +213,14 @@ const DiscountFormModal = ({
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                       size={16}
                     />
-                    <Field
+                    <Input
                       name="code"
-                      as={Input}
                       placeholder="SUMMER2026"
                       className="pl-10 uppercase font-mono"
+                      value={values.code}
+                      onChange={(e) =>
+                        setFieldValue('code', e.target.value.toUpperCase())
+                      }
                     />
                   </div>
                   <ErrorMessage

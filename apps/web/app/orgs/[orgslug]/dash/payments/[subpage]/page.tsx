@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
-import { Settings, Users, Gem } from 'lucide-react'
+import { Users, Gem } from 'lucide-react'
 import PaymentsConfigurationPage from '@components/Dashboard/Pages/Payments/PaymentsConfigurationPage'
 import PaymentsProductPage from '@components/Dashboard/Pages/Payments/PaymentsProductPage'
 import PaymentsCustomersPage from '@components/Dashboard/Pages/Payments/PaymentsCustomersPage'
@@ -99,12 +99,12 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
             label="Products & Subscriptions"
             isActive={subpage === 'paid-products'}
           />
-          <TabLink
+          {/* <TabLink
             href={getUriWithOrg(params.orgslug, '/dash/payments/configuration')}
             icon={<Settings size={16} />}
             label="Configuration"
             isActive={subpage === 'configuration'}
-          />
+          /> */}
           <TabLink
             href={getUriWithOrg(params.orgslug, '/dash/payments/discounts')}
             icon={<Ticket size={16} />}

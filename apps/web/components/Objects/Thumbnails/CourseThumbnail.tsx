@@ -9,13 +9,7 @@ import {
   getUserAvatarMediaDirectory,
 } from '@services/media/media'
 import { revalidateTags } from '@services/utils/ts/requests'
-import {
-  BookMinus,
-  FilePenLine,
-  Settings2,
-  MoreVertical,
-  Hash,
-} from 'lucide-react'
+import { BookMinus, FilePenLine, Settings2, MoreVertical } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
