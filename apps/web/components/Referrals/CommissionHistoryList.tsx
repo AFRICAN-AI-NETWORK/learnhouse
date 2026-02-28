@@ -14,6 +14,7 @@ import type { CommissionRecord } from 'types/referral'
 
 interface CommissionHistoryListProps {
   records: CommissionRecord[]
+  displayCurrency?: string
   isLoading: boolean
   error: string | undefined
 }
@@ -39,9 +40,11 @@ function formatDate(dateStr: string | null): string {
 
 function CommissionHistoryList({
   records,
+  displayCurrency,
   isLoading,
   error,
 }: CommissionHistoryListProps) {
+  const widgetCurrency = displayCurrency || 'USD'
   return (
     <div className="bg-white rounded-xl nice-shadow px-6 py-5">
       <div className="flex flex-col bg-gray-50 -space-y-1 px-4 py-3 rounded-md mb-4">
@@ -91,7 +94,7 @@ function CommissionHistoryList({
                   <TableCell>
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
-                      currency: record.currency || 'USD',
+                      currency: widgetCurrency,
                     }).format(record.amount)}
                   </TableCell>
                   <TableCell>
