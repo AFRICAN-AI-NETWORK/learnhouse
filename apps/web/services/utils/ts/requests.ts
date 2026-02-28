@@ -33,7 +33,10 @@ export const RequestBodyWithAuthHeader = (
     redirect: 'follow',
     credentials: 'include',
     body:
-      (method === 'POST' || method === 'PUT' || method === 'DELETE') &&
+      (method === 'POST' ||
+        method === 'PUT' ||
+        method === 'PATCH' ||
+        method === 'DELETE') &&
       data !== null
         ? JSON.stringify(data)
         : null,
