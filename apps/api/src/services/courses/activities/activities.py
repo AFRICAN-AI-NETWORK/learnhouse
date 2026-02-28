@@ -8,8 +8,12 @@ from fastapi import HTTPException, Request
 from uuid import uuid4
 from datetime import datetime
 
-from src.services.payments.payments_access import check_activity_paid_access
+import src.services.payments.payments_access as payments_access
 from src.security.courses_security import courses_rbac_check_for_activities
+import sys
+import inspect
+
+print("[ACTIVITIES_SERVICE] Module loaded!", file=sys.stderr, flush=True)
 
 
 ####################################################
@@ -116,7 +120,7 @@ async def get_activity(
     await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "read", db_session)
 
     # Paid access check
-    has_paid_access = await check_activity_paid_access(
+    has_paid_access = await payments_access.check_activity_paid_access(
         request=request,
         activity_id=activity.id if activity.id else 0,
         user=current_user,

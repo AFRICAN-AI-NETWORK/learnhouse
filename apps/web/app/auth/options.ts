@@ -26,6 +26,7 @@ export const isDevEnv =
   getLEARNHOUSE_TOP_DOMAIN_VAL() == 'localhost' ? true : false
 
 export const nextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || 'learnhouse-local-dev-secret-key-123',
   debug: isDevEnv,
   providers: [
     CredentialsProvider({

@@ -123,7 +123,7 @@ async def start_scheduler():
     REFERRAL_COMMISSION_CHECK_HOUR = int(os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0"))
 
     if not (WAITLIST_PROCESSOR_ENABLED or REFERRAL_PROCESSOR_ENABLED):
-        print("  ✗ Background jobs disabled by environment config")
+        print("  [X] Background jobs disabled by environment config")
         return
 
     scheduler = AsyncIOScheduler()
@@ -196,12 +196,12 @@ async def start_scheduler():
     jobs = scheduler.get_jobs()
     print("")
     print("=" * 60)
-    print("  ✓ Background job scheduler started")
+    print("  🚀 Background job scheduler started")
     print("=" * 60)
     for job in jobs:
         next_run = job.next_run_time
         next_str = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "PAUSED"
-        print(f"  ✓ {job.name:<40}  next: {next_str}")
+        print(f"  ✨ {job.name:<40}  next: {next_str}")
     print("-" * 60)
     print(f"  Total: {len(jobs)} job(s) running")
     print("=" * 60)
@@ -255,4 +255,4 @@ if __name__ == "__main__":
 # General Routes
 @app.get("/")
 async def root():
-    return {"Message": "Welcome to LearnHouse ✨"}
+    return {"Message": "Welcome to LearnHouse"}
