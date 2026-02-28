@@ -78,7 +78,9 @@
     "saving": "Saving...",
     "apply": "Apply",
     "remove": "Remove",
-    "original_price": "Original Price"
+    "original_price": "Original Price",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate"
   },
   "auth": {
     "login": "Login",
