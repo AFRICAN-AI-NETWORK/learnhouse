@@ -1,12 +1,37 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Dict
 import httpx
 import time
+from collections import defaultdict
 from config.config import LearnHouseConfig, get_learnhouse_config
 from src.services.code_execution import execute_and_grade, run_python_locally, TestCaseResult, CodeExecutionResponse, PISTON_URL
 
 router = APIRouter()
+
+# Simple in-memory rate limiter
+_rate_limit_store = defaultdict(list)
+RATE_LIMIT_MAX_REQUESTS = 20
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+def rate_limit_dependency(request: Request) -> str:
+    client_ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+        
+    current_time = time.time()
+    
+    timestamps = _rate_limit_store[client_ip]
+    timestamps = [ts for ts in timestamps if current_time - ts < RATE_LIMIT_WINDOW_SECONDS]
+    
+    if len(timestamps) >= RATE_LIMIT_MAX_REQUESTS:
+        _rate_limit_store[client_ip] = timestamps
+        raise HTTPException(status_code=429, detail="Too many code execution requests. Limit is 20 per minute.")
+        
+    timestamps.append(current_time)
+    _rate_limit_store[client_ip] = timestamps
+    return client_ip
 
 class CodeExecutionRequest(BaseModel):
     language: str
@@ -18,6 +43,7 @@ class CodeExecutionRequest(BaseModel):
 @router.post("/execute", response_model=CodeExecutionResponse)
 async def execute_code(
     request: CodeExecutionRequest,
+    client_ip: str = Depends(rate_limit_dependency),
     config: LearnHouseConfig = Depends(get_learnhouse_config)
 ):
     try:
@@ -32,7 +58,7 @@ async def execute_code(
 
         # If Piston is available, use it
         if piston_available:
-            res = await execute_and_grade(request.language, request.code, request.test_cases, request.stdin)
+            res = await execute_and_grade(request.language, request.code, request.test_cases, request.stdin, client_ip)
             if res:
                 return res
 

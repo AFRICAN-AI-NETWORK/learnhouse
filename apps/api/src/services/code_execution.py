@@ -53,7 +53,7 @@ def run_python_locally(code: str, stdin: str = "", timeout: int = 10) -> dict:
         os.unlink(tmp_path)
 
 
-async def run_piston_execution(language: str, version: str, code: str, stdin: str = ""):
+async def run_piston_execution(language: str, version: str, code: str, stdin: str = "", client_ip: str = "unknown"):
     # Map language to proper file extension
     ext_map = {
         "python": "py", "javascript": "js", "java": "java",
@@ -72,10 +72,11 @@ async def run_piston_execution(language: str, version: str, code: str, stdin: st
     
     # Retry logic for network flakiness
     max_retries = 2
+    headers = {"X-Forwarded-For": client_ip, "X-LearnHouse-Client": client_ip}
     for attempt in range(max_retries):
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.post(f"{PISTON_URL}/api/v2/execute", json=piston_payload, timeout=35.0)
+                response = await client.post(f"{PISTON_URL}/api/v2/execute", json=piston_payload, headers=headers, timeout=35.0)
                 if response.status_code != 200:
                     print(f"[Piston] Non-200 response ({response.status_code}) on attempt {attempt + 1}: {response.text}")
                     if attempt < max_retries - 1:
@@ -90,7 +91,7 @@ async def run_piston_execution(language: str, version: str, code: str, stdin: st
                 return None
 
 
-async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [], stdin: str = ""):
+async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [], stdin: str = "", client_ip: str = "unknown"):
     version_map = {
         "python": "3.10.0",
         "javascript": "*",
@@ -103,7 +104,7 @@ async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [
     version = version_map.get(language, "*")
 
     # 1. Main execution via Piston
-    main_res = await run_piston_execution(language, version, code, stdin)
+    main_res = await run_piston_execution(language, version, code, stdin, client_ip)
     
     # Piston succeeded
     if main_res:
@@ -120,7 +121,7 @@ async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [
         # 2. Run Test Cases via Piston
         if test_cases:
             for tc in test_cases:
-                tc_res = await run_piston_execution(language, version, code, tc.get("input", ""))
+                tc_res = await run_piston_execution(language, version, code, tc.get("input", ""), client_ip)
                 if tc_res:
                     tc_run = tc_res.get("run", {})
                     actual = tc_run.get("stdout", "").strip()

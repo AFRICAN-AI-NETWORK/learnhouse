@@ -36,6 +36,10 @@ import { getAPIUrl } from '@services/config/config'
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
+const DiffEditor = dynamic(
+  () => import('@monaco-editor/react').then((mod) => mod.DiffEditor),
+  { ssr: false }
+)
 
 // Language options for code editor
 const SUPPORTED_LANGUAGES = [
@@ -69,6 +73,13 @@ type CodeSubmitSchema = {
   submissions: {
     exerciseUUID: string
     code: string
+  }[]
+  history?: {
+    timestamp: string
+    submissions: {
+      exerciseUUID: string
+      code: string
+    }[]
   }[]
   assignment_task_submission_uuid?: string
   grading_results?: any[]
@@ -178,6 +189,9 @@ function TaskCodeEditorObject({
             if (submissionData.grading_results) {
               setLastSubmissionResult(submissionData.grading_results)
             }
+            if (submissionData.history) {
+              setHistoryTimeline(submissionData.history)
+            }
           }
         }
       }
@@ -223,6 +237,68 @@ function TaskCodeEditorObject({
     Record<string, boolean>
   >({})
 
+  // Theme state
+  const [editorTheme, setEditorTheme] = useState<string>('vs-light')
+  useEffect(() => {
+    const saved = localStorage.getItem('learnhouse_editor_theme')
+    if (saved) setEditorTheme(saved)
+  }, [])
+  const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value
+    setEditorTheme(val)
+    localStorage.setItem('learnhouse_editor_theme', val)
+  }
+
+  // History tracking state
+  const [historyTimeline, setHistoryTimeline] = useState<any[]>([])
+  const [viewingHistoryIdx, setViewingHistoryIdx] = useState<
+    Record<string, number | null>
+  >({})
+
+  // Watch for history in loaded submission
+  useEffect(() => {
+    if (submission?.submission?.task_submission?.history) {
+      setHistoryTimeline(submission.submission.task_submission.history)
+    } else if (lastSubmissionResult && activeTaskData) {
+      // If we just saved and the server responded, it might not be in the initial load context yet,
+      // but standard mutate() re-fetches it.
+    }
+  }, [submission, activeTaskData, lastSubmissionResult])
+
+  // Restore history snapshot
+  const restoreHistory = (
+    exerciseUUID: string,
+    historyIndex: number | null
+  ) => {
+    setViewingHistoryIdx((prev) => ({ ...prev, [exerciseUUID]: historyIndex }))
+
+    if (historyIndex === null) {
+      // Revert to current (most recently saved/staged)
+      const currentSub = studentSubmissions.find(
+        (s) => s.exerciseUUID === exerciseUUID
+      )
+      if (currentSub) {
+        // Force re-render of editor with current code
+        setStudentSubmissions([...studentSubmissions])
+      }
+      toast.success(
+        t('activities.restored_current', 'Restored current workspace')
+      )
+    } else {
+      // Load from history
+      const historyItem = historyTimeline[historyIndex]
+      const historicSub = historyItem?.submissions?.find(
+        (s: any) => s.exerciseUUID === exerciseUUID
+      )
+      if (historicSub) {
+        updateStudentCode(exerciseUUID, historicSub.code)
+        toast.success(
+          `Loaded code from ${new Date(historyItem.timestamp).toLocaleTimeString()}`
+        )
+      }
+    }
+  }
+
   // Debounced auto-save
   const debouncedSubmit = useMemo(
     () =>
@@ -247,6 +323,9 @@ function TaskCodeEditorObject({
               setLastSubmissionResult(
                 res.data?.task_submission?.grading_results
               )
+              if (res.data?.task_submission?.history) {
+                setHistoryTimeline(res.data.task_submission.history)
+              }
               // Mutate task submissions list to update activity-level UI
               mutate(
                 `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
@@ -414,6 +493,9 @@ function TaskCodeEditorObject({
       if (res?.success) {
         const gradingResults = res.data?.task_submission?.grading_results
         setLastSubmissionResult(gradingResults)
+        if (res.data?.task_submission?.history) {
+          setHistoryTimeline(res.data.task_submission.history)
+        }
 
         // Mutate task submissions list to update activity-level UI
         mutate(
@@ -701,7 +783,7 @@ function TaskCodeEditorObject({
                       onChange={(value) =>
                         updateExercise(exIndex, 'starterCode', value || '')
                       }
-                      theme="vs-light"
+                      theme={editorTheme}
                       options={{
                         minimap: { enabled: false },
                         fontSize: 14,
@@ -731,7 +813,7 @@ function TaskCodeEditorObject({
                       onChange={(value) =>
                         updateExercise(exIndex, 'solutionCode', value || '')
                       }
-                      theme="vs-light"
+                      theme={editorTheme}
                       options={{
                         minimap: { enabled: false },
                         fontSize: 14,
@@ -983,9 +1065,9 @@ function TaskCodeEditorObject({
 
                       {/* Code Editor Container */}
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2.5">
+                        <div className="flex flex-wrap items-center justify-between px-1 gap-2">
+                          <div className="flex items-center space-x-3 grow">
+                            <div className="flex items-center space-x-2.5 whitespace-nowrap">
                               <div className="p-1 bg-slate-100 rounded-md">
                                 <Code className="w-4 h-4 text-slate-600" />
                               </div>
@@ -993,14 +1075,92 @@ function TaskCodeEditorObject({
                                 Code Editor ({exercise.language})
                               </span>
                             </div>
-                            <div className="h-4 w-px bg-slate-200 mx-2"></div>
-                            <div className="flex items-center space-x-2 px-2.5 py-1 bg-slate-50 rounded-full border border-slate-100">
-                              <div
-                                className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-[0_0_8px_rgba(16,185,129,0.5)]`}
-                              ></div>
-                              <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
-                                {isSaving ? 'Saving...' : 'Saved'}
-                              </span>
+                            <div className="h-4 w-px bg-slate-200 mx-2 hidden sm:block"></div>
+
+                            {/* Version History Dropdown */}
+                            {historyTimeline.length > 0 ? (
+                              <div className="relative group min-w-[180px]">
+                                <select
+                                  value={
+                                    viewingHistoryIdx[exercise.exerciseUUID] ??
+                                    'current'
+                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    restoreHistory(
+                                      exercise.exerciseUUID,
+                                      val === 'current'
+                                        ? null
+                                        : parseInt(val, 10)
+                                    )
+                                  }}
+                                  className={`appearance-none bg-slate-50 border ${viewingHistoryIdx[exercise.exerciseUUID] !== null && viewingHistoryIdx[exercise.exerciseUUID] !== undefined ? 'border-amber-400 bg-amber-50 text-amber-900 shadow-[0_0_10px_rgba(251,191,36,0.2)]' : 'border-slate-200 text-slate-600'} rounded-full py-1.5 pl-3 pr-8 text-[11px] font-bold tracking-wider outline-none cursor-pointer hover:border-indigo-300 transition-colors shadow-sm`}
+                                >
+                                  <option value="current">
+                                    CURRENT WORKSPACE{' '}
+                                    {isSaving ? '(Saving...)' : '(Saved)'}
+                                  </option>
+                                  {historyTimeline
+                                    .map((h, i) => (
+                                      <option key={i} value={i}>
+                                        {new Date(
+                                          h.timestamp
+                                        ).toLocaleDateString()}{' '}
+                                        at{' '}
+                                        {new Date(
+                                          h.timestamp
+                                        ).toLocaleTimeString()}
+                                      </option>
+                                    ))
+                                    .reverse()}{' '}
+                                  {/* Show newest history first */}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                  <svg
+                                    className="fill-current h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2 px-2.5 py-1 bg-slate-50 rounded-full border border-slate-100">
+                                <div
+                                  className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-[0_0_8px_rgba(16,185,129,0.5)]`}
+                                ></div>
+                                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                  {isSaving ? 'Saving...' : 'Saved'}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Theme Selector Dropdown */}
+                            <div className="relative group min-w-[130px]">
+                              <select
+                                value={editorTheme}
+                                onChange={handleThemeChange}
+                                className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 rounded-full py-1.5 pl-3 pr-8 text-[11px] font-bold tracking-wider outline-none cursor-pointer hover:border-indigo-300 transition-colors shadow-sm w-full"
+                              >
+                                <option value="vs-light">Light Theme</option>
+                                <option value="vs-dark">Dark Theme</option>
+                                <option value="hc-black">
+                                  High Contrast Dark
+                                </option>
+                                <option value="hc-light">
+                                  High Contrast Light
+                                </option>
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                <svg
+                                  className="fill-current h-4 w-4"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                </svg>
+                              </div>
                             </div>
                           </div>
                           <button
@@ -1035,7 +1195,7 @@ function TaskCodeEditorObject({
                                   value || ''
                                 )
                               }
-                              theme="vs-light"
+                              theme={editorTheme}
                               options={{
                                 minimap: { enabled: false },
                                 fontSize: 14,
@@ -1339,52 +1499,34 @@ function TaskCodeEditorObject({
                       `${t('dashboard.assignments.editor.exercise')} ${index + 1}`}
                   </h3>
 
-                  {/* Side-by-side view */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        {t('dashboard.assignments.editor.student_code')}
-                      </h4>
-                      <div className="border border-gray-300 rounded-md overflow-hidden h-[300px] relative w-full">
-                        <div className="absolute inset-0">
-                          <Editor
-                            height="100%"
-                            width="100%"
-                            language={exercise.language}
-                            value={studentCode}
-                            theme="vs-light"
-                            options={{
-                              readOnly: true,
-                              minimap: { enabled: false },
-                              fontSize: 14,
-                              automaticLayout: true,
-                              scrollBeyondLastLine: false,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  {/* Diff view using Monaco DiffEditor */}
+                  <div className="w-full min-w-0 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-700">
+                        {t('dashboard.assignments.editor.student_code')}{' '}
+                        <span className="text-gray-400 mx-2">vs</span>{' '}
                         {t('dashboard.assignments.editor.reference_solution')}
                       </h4>
-                      <div className="border border-gray-300 rounded-md overflow-hidden h-[300px] relative w-full">
-                        <div className="absolute inset-0">
-                          <Editor
-                            height="100%"
-                            width="100%"
-                            language={exercise.language}
-                            value={exercise.solutionCode}
-                            theme="vs-light"
-                            options={{
-                              readOnly: true,
-                              minimap: { enabled: false },
-                              fontSize: 14,
-                              automaticLayout: true,
-                              scrollBeyondLastLine: false,
-                            }}
-                          />
-                        </div>
+                    </div>
+                    <div className="border border-gray-300 rounded-md overflow-hidden h-[400px] relative w-full shadow-inner">
+                      <div className="absolute inset-0">
+                        <DiffEditor
+                          height="100%"
+                          width="100%"
+                          language={exercise.language}
+                          original={studentCode}
+                          modified={exercise.solutionCode}
+                          theme={editorTheme}
+                          options={{
+                            readOnly: true,
+                            minimap: { enabled: false },
+                            fontSize: 14,
+                            automaticLayout: true,
+                            scrollBeyondLastLine: false,
+                            renderSideBySide: true,
+                            ignoreTrimWhitespace: false,
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

@@ -859,6 +859,27 @@ async def handle_assignment_task_submission(
         # Update only the fields that were passed in
         for var, value in vars(assignment_task_submission_object).items():
             if value is not None:
+                # Capture history for CODE_EDITOR tasks
+                if var == "task_submission" and assignment_task.assignment_type == "CODE_EDITOR":
+                    # Get existing history
+                    existing_history = assignment_task_submission.task_submission.get("history", []) if assignment_task_submission.task_submission else []
+                    
+                    # Ensure value is a dict and has submissions
+                    if isinstance(value, dict) and "submissions" in value:
+                        # Append the new attempt with timestamp
+                        attempt = {
+                            "timestamp": str(datetime.now()),
+                            "submissions": value.get("submissions", [])
+                        }
+                        existing_history.append(attempt)
+                        
+                        # Keep only the last 30 attempts to avoid bloating the JSON
+                        if len(existing_history) > 30:
+                            existing_history = existing_history[-30:]
+                            
+                        # Put history back into the new value Dictionary
+                        value["history"] = existing_history
+
                 setattr(assignment_task_submission, var, value)
         assignment_task_submission.update_date = str(datetime.now())
 
@@ -881,10 +902,20 @@ async def handle_assignment_task_submission(
 
         # Assuming model_dump() returns a dictionary
         model_data = assignment_task_submission_object.model_dump()
+        
+        task_submission_json = model_data.get("task_submission", {})
+        
+        # Initialize history for CODE_EDITOR tasks
+        if assignment_task.assignment_type == "CODE_EDITOR":
+            if isinstance(task_submission_json, dict) and "submissions" in task_submission_json:
+                task_submission_json["history"] = [{
+                    "timestamp": current_time,
+                    "submissions": task_submission_json.get("submissions", [])
+                }]
 
         assignment_task_submission = AssignmentTaskSubmission(
             assignment_task_submission_uuid=assignment_task_submission_uuid or f"assignmenttasksubmission_{uuid4()}",
-            task_submission=model_data["task_submission"],
+            task_submission=task_submission_json,
             grade=0,  # Always start with 0 for new submissions
             task_submission_grade_feedback="",  # Start with empty feedback
             assignment_task_id=int(assignment_task.id),  # type: ignore
