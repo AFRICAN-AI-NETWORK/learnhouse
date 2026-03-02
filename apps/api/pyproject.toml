@@ -39,6 +39,8 @@ dependencies = [
     "grpcio>=1.76.0",
     "apscheduler>=3.11.2",
     "cryptography>=46.0.5",
+    "pypdf>=6.7.5",
+    "google-generativeai>=0.8.6",
 ]
 
 [tool.ruff]

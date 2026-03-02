@@ -73,6 +73,10 @@ const VideoActivity = lazy(
 const DocumentPdfActivity = lazy(
   () => import('@components/Objects/Activities/DocumentPdf/DocumentPdf')
 )
+const SmartArticleActivity = lazy(
+  () =>
+    import('@components/Objects/Activities/SmartArticle/SmartArticleActivity')
+)
 const AssignmentStudentActivity = lazy(
   () =>
     import(
@@ -286,6 +290,12 @@ function ActivityClient(props: ActivityClientProps) {
         return (
           <Suspense fallback={<LoadingFallback />}>
             <DocumentPdfActivity course={course} activity={activity} />
+          </Suspense>
+        )
+      case 'TYPE_SMART_ARTICLE':
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <SmartArticleActivity course={course} activity={activity} />
           </Suspense>
         )
       case 'TYPE_ASSIGNMENT':

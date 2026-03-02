@@ -21,7 +21,12 @@ interface LandingClassicProps {
   org_id: string | number
 }
 
-function LandingClassic({ courses, collections, orgslug, org_id }: LandingClassicProps) {
+function LandingClassic({
+  courses,
+  collections,
+  orgslug,
+  org_id,
+}: LandingClassicProps) {
   const { t } = useTranslation()
 
   return (
@@ -30,7 +35,10 @@ function LandingClassic({ courses, collections, orgslug, org_id }: LandingClassi
         {/* Collections */}
         <div className="flex flex-col space-y-2 mb-6">
           <div className="flex items-center justify-between">
-            <TypeOfContentTitle title={t('collections.collections')} type="col" />
+            <TypeOfContentTitle
+              title={t('collections.collections')}
+              type="col"
+            />
             <AuthenticatedClientElement
               checkMethod="roles"
               ressourceType="collections"
@@ -53,14 +61,17 @@ function LandingClassic({ courses, collections, orgslug, org_id }: LandingClassi
               </div>
             ))}
             {collections.length === 0 && (
-              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                <div className="p-4 bg-white rounded-full nice-shadow mb-4">
-                  <SquareLibrary className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
+              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-border rounded-2xl bg-muted/30">
+                <div className="p-4 bg-card rounded-full nice-shadow mb-4">
+                  <SquareLibrary
+                    className="w-8 h-8 text-muted-foreground"
+                    strokeWidth={1.5}
+                  />
                 </div>
-                <h3 className="text-lg font-bold text-gray-600 mb-1">
+                <h3 className="text-lg font-bold text-card-foreground mb-1">
                   {t('collections.no_collections')}
                 </h3>
-                <p className="text-sm text-gray-400 max-w-xs text-center">
+                <p className="text-sm text-muted-foreground max-w-xs text-center">
                   <ContentPlaceHolderIfUserIsNotAdmin
                     text={t('collections.create_collections_placeholder')}
                   />
@@ -92,15 +103,20 @@ function LandingClassic({ courses, collections, orgslug, org_id }: LandingClassi
               </div>
             ))}
             {courses.length === 0 && (
-              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
-                <div className="p-4 bg-white rounded-full nice-shadow mb-4">
-                  <BookCopy className="w-8 h-8 text-gray-300" strokeWidth={1.5} />
+              <div className="col-span-full flex flex-col justify-center items-center py-12 px-4 border-2 border-dashed border-border rounded-2xl bg-muted/30">
+                <div className="p-4 bg-card rounded-full nice-shadow mb-4">
+                  <BookCopy
+                    className="w-8 h-8 text-muted-foreground"
+                    strokeWidth={1.5}
+                  />
                 </div>
-                <h1 className="text-xl font-bold text-gray-600 mb-2">
+                <h1 className="text-xl font-bold text-card-foreground mb-2">
                   {t('courses.no_courses')}
                 </h1>
-                <p className="text-md text-gray-400 mb-6 text-center max-w-xs">
-                  <ContentPlaceHolderIfUserIsNotAdmin text={t('courses.create_courses_placeholder')} />
+                <p className="text-md text-muted-foreground mb-6 text-center max-w-xs">
+                  <ContentPlaceHolderIfUserIsNotAdmin
+                    text={t('courses.create_courses_placeholder')}
+                  />
                 </p>
               </div>
             )}
