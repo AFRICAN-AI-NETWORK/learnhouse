@@ -5,8 +5,7 @@ from src.db.users import PublicUser, AnonymousUser, InternalUser
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
-from src.db.organization_config import OrganizationConfig
-from fastapi import HTTPException, Request
+from fastapi import Request
 import logging
 
 logger = logging.getLogger(__name__)
