@@ -10,6 +10,8 @@ import {
   Edit2,
   Maximize2,
   Minimize2,
+  Info,
+  Loader2,
 } from 'lucide-react'
 import {
   markActivityAsComplete,
@@ -71,6 +73,10 @@ const VideoActivity = lazy(
 )
 const DocumentPdfActivity = lazy(
   () => import('@components/Objects/Activities/DocumentPdf/DocumentPdf')
+)
+const SmartArticleActivity = lazy(
+  () =>
+    import('@components/Objects/Activities/SmartArticle/SmartArticleActivity')
 )
 const AssignmentStudentActivity = lazy(
   () =>
@@ -234,7 +240,7 @@ function ActivityClient(props: ActivityClientProps) {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
   const [assignment, setAssignment] = useState(null) as any
-  const [isFocusMode, setIsFocusMode] = useState(false)
+  const [isFocusMode, setIsFocusMode] = useState(true)
   const [hasMounted, setHasMounted] = useState(false)
   const { contributorStatus } = useContributorStatus(courseuuid)
   const router = useRouter()
@@ -243,6 +249,66 @@ function ActivityClient(props: ActivityClientProps) {
   const { data: trailData } = useSWR(
     `${getAPIUrl()}trail/org/${org?.id}/trail`,
     (url) => swrFetcher(url, access_token)
+  )
+  const [loadingMarkComplete, setLoadingMarkComplete] = useState(false)
+
+  const isActivityComplete = useCallback(
+    (aId: string, cId: string, tData: any) => {
+      const cleanCourseUuid = cId?.replace('course_', '')
+      let run = tData?.runs?.find((run: any) => {
+        const cleanRunCourseUuid = run.course?.course_uuid?.replace(
+          'course_',
+          ''
+        )
+        return cleanRunCourseUuid === cleanCourseUuid
+      })
+
+      if (run) {
+        return run.steps.find(
+          (step: any) =>
+            (step.activity_id === aId ||
+              step.activity_uuid === aId ||
+              step.activity_uuid === `activity_${aId}`) &&
+            step.complete === true
+        )
+      }
+      return false
+    },
+    []
+  )
+
+  const handleMarkAsComplete = useCallback(
+    async (aUuid: string, mark: boolean) => {
+      try {
+        setLoadingMarkComplete(true)
+        if (mark) {
+          await markActivityAsComplete(
+            orgslug,
+            courseuuid,
+            aUuid,
+            session.data?.tokens?.access_token
+          )
+        } else {
+          await unmarkActivityAsComplete(
+            orgslug,
+            courseuuid,
+            aUuid,
+            session.data?.tokens?.access_token
+          )
+        }
+        await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
+        toast.success(
+          mark
+            ? t('activities.submission_saved')
+            : t('activities.unmark_success')
+        )
+      } catch (err) {
+        toast.error(t('activities.submission_failed'))
+      } finally {
+        setLoadingMarkComplete(false)
+      }
+    },
+    [orgslug, courseuuid, session.data?.tokens?.access_token, org?.id, t]
   )
 
   // Memoize activity position calculation
@@ -287,24 +353,56 @@ function ActivityClient(props: ActivityClientProps) {
             <DocumentPdfActivity course={course} activity={activity} />
           </Suspense>
         )
+      case 'TYPE_SMART_ARTICLE':
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <SmartArticleActivity
+              course={course}
+              activity={activity}
+              isFocusMode={isFocusMode}
+              onComplete={() =>
+                handleMarkAsComplete(activity.activity_uuid, true)
+              }
+              isCompleted={
+                !!isActivityComplete(
+                  activity.activity_uuid,
+                  course.course_uuid,
+                  trailData
+                )
+              }
+            />
+          </Suspense>
+        )
       case 'TYPE_ASSIGNMENT':
-        return assignment ? (
+        return assignment &&
+          assignment?.assignment_uuid &&
+          assignment?.assignment_uuid !== 'undefined' ? (
           <Suspense fallback={<LoadingFallback />}>
             <AssignmentProvider assignment_uuid={assignment?.assignment_uuid}>
               <AssignmentsTaskProvider>
                 <AssignmentSubmissionProvider
                   assignment_uuid={assignment?.assignment_uuid}
                 >
-                  <AssignmentStudentActivity />
+                  <AssignmentStudentActivity isFocusMode={isFocusMode} />
                 </AssignmentSubmissionProvider>
               </AssignmentsTaskProvider>
             </AssignmentProvider>
           </Suspense>
-        ) : null
+        ) : (
+          <LoadingFallback />
+        )
       default:
         return null
     }
-  }, [activity, course, assignment])
+  }, [
+    activity,
+    course,
+    assignment,
+    isFocusMode,
+    handleMarkAsComplete,
+    isActivityComplete,
+    trailData,
+  ])
 
   // Navigate to an activity
   const navigateToActivity = (activity: any) => {
@@ -317,12 +415,11 @@ function ActivityClient(props: ActivityClientProps) {
     )
   }
 
-  // Initialize focus mode from localStorage
+  // Initialize focus mode - always default to true for a consistent start
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('globalFocusMode')
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsFocusMode(saved === 'true')
+      // Always start in focus mode by default as requested
+      setIsFocusMode(true)
       setHasMounted(true)
     }
   }, [])
@@ -346,7 +443,12 @@ function ActivityClient(props: ActivityClientProps) {
       for (let j = 0; j < chapter.activities.length; j++) {
         let activity = chapter.activities[j]
         if (activity.id === activity_id) {
-          return `${t('courses.chapter')} ${i + 1} : ${chapter.name}`
+          // Check if chapter name already starts with "Chapter" to avoid redundant "Chapter 1 : Chapter 1: ..."
+          const cleanChapterName = chapter.name.replace(
+            /^(Chapter|CHAPTER|chapter)\s*\d+\s*[:-]*\s*/,
+            ''
+          )
+          return `${t('courses.chapter')} ${i + 1} : ${cleanChapterName}`
         }
       }
     }
@@ -363,18 +465,23 @@ function ActivityClient(props: ActivityClientProps) {
 
   // Derive bgColor based on activity type and focus mode
   const bgColor = useMemo(() => {
+    if (isFocusMode) {
+      if (activity.activity_type == 'TYPE_SMART_ARTICLE')
+        return 'bg-transparent'
+      return 'bg-zinc-900/50 backdrop-blur-xl border border-white/10'
+    }
+
     if (activity.activity_type == 'TYPE_DYNAMIC') {
-      return isFocusMode ? 'bg-white' : 'bg-white nice-shadow'
+      return 'bg-white nice-shadow'
     } else if (activity.activity_type == 'TYPE_ASSIGNMENT') {
-      return isFocusMode ? 'bg-white' : 'bg-white nice-shadow'
+      return 'bg-white nice-shadow'
     } else {
-      return isFocusMode ? 'bg-zinc-950' : 'bg-zinc-950 nice-shadow'
+      return 'bg-zinc-950 nice-shadow'
     }
   }, [activity.activity_type, isFocusMode])
 
   useEffect(() => {
     if (activity.activity_type == 'TYPE_ASSIGNMENT') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       getAssignmentUI()
     }
   }, [activity.activity_type, getAssignmentUI])
@@ -386,295 +493,403 @@ function ActivityClient(props: ActivityClientProps) {
           <AIChatBotProvider>
             {isFocusMode ? (
               <AnimatePresence>
-                <motion.div
-                  initial={!hasMounted ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="fixed inset-0 bg-white z-50"
-                >
-                  {/* Focus Mode Top Bar */}
-                  <motion.div
-                    initial={!hasMounted ? false : { y: -100 }}
-                    animate={{ y: 0 }}
-                    exit={{ y: -100 }}
-                    transition={{ duration: 0.3 }}
-                    className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-100"
-                  >
-                    <div className="container mx-auto px-4 py-2">
-                      <div className="flex items-center justify-between h-14">
-                        {/* Progress Indicator - Moved to left */}
+                {/* Check if it's a Smart Article to hide standard Focus Mode bars */}
+                {(() => {
+                  const isSmartArticle =
+                    activity?.activity_type === 'TYPE_SMART_ARTICLE'
+                  return (
+                    <motion.div
+                      initial={!hasMounted ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="fixed inset-0 bg-zinc-900 z-50 overflow-hidden"
+                    >
+                      {/* Premium Doodle Background Overlay */}
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(24,24,27,0.5)_100%)]" />
+                        <div
+                          className="absolute inset-0 opacity-5"
+                          style={{
+                            backgroundImage: "url('/edu_bg.png')",
+                            backgroundSize: '350px',
+                            backgroundRepeat: 'repeat',
+                            mixBlendMode: 'screen',
+                          }}
+                        />
+                      </div>
+                      {/* Only show standard Top Bar if NOT a Smart Article */}
+                      {!isSmartArticle && (
                         <motion.div
-                          initial={!hasMounted ? false : { opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="flex items-center space-x-2"
+                          initial={!hasMounted ? false : { y: -100 }}
+                          animate={{ y: 0 }}
+                          exit={{ y: -100 }}
+                          transition={{ duration: 0.3 }}
+                          className="fixed top-0 left-0 right-0 z-50 bg-zinc-900/80 backdrop-blur-xl border-b border-white/5"
                         >
-                          <div className="relative w-8 h-8">
-                            <svg className="w-full h-full transform -rotate-90">
-                              <circle
-                                cx="16"
-                                cy="16"
-                                r="14"
-                                stroke="#e5e7eb"
-                                strokeWidth="3"
-                                fill="none"
-                              />
-                              <circle
-                                cx="16"
-                                cy="16"
-                                r="14"
-                                stroke="#10b981"
-                                strokeWidth="3"
-                                fill="none"
-                                strokeLinecap="round"
-                                strokeDasharray={2 * Math.PI * 14}
-                                strokeDashoffset={
-                                  2 *
-                                  Math.PI *
-                                  14 *
-                                  (1 -
-                                    (trailData?.runs
-                                      ?.find(
-                                        (run: any) =>
-                                          run.course_uuid === course.course_uuid
-                                      )
-                                      ?.steps?.filter(
-                                        (step: any) => step.complete
-                                      )?.length || 0) /
-                                      (course.chapters?.reduce(
-                                        (acc: number, chapter: any) =>
-                                          acc + chapter.activities.length,
-                                        0
-                                      ) || 1))
+                          <div className="container mx-auto px-4 py-2">
+                            <div className="flex items-center justify-between h-14">
+                              {/* Progress Indicator - Moved to left */}
+                              <motion.div
+                                initial={
+                                  !hasMounted ? false : { opacity: 0, x: -20 }
                                 }
-                              />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs font-bold text-gray-800">
-                                {Math.round(
-                                  ((trailData?.runs
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="flex items-center space-x-2"
+                              >
+                                <div className="relative w-8 h-8">
+                                  <svg className="w-full h-full transform -rotate-90">
+                                    <circle
+                                      cx="16"
+                                      cy="16"
+                                      r="14"
+                                      stroke="#27272a"
+                                      strokeWidth="3"
+                                      fill="none"
+                                    />
+                                    <circle
+                                      cx="16"
+                                      cy="16"
+                                      r="14"
+                                      stroke="#10b981"
+                                      strokeWidth="3"
+                                      fill="none"
+                                      strokeLinecap="round"
+                                      strokeDasharray={2 * Math.PI * 14}
+                                      strokeDashoffset={
+                                        2 *
+                                        Math.PI *
+                                        14 *
+                                        (1 -
+                                          (trailData?.runs
+                                            ?.find(
+                                              (run: any) =>
+                                                run.course_uuid ===
+                                                course.course_uuid
+                                            )
+                                            ?.steps?.filter(
+                                              (step: any) => step.complete
+                                            )?.length || 0) /
+                                            (course.chapters?.reduce(
+                                              (acc: number, chapter: any) =>
+                                                acc + chapter.activities.length,
+                                              0
+                                            ) || 1))
+                                      }
+                                    />
+                                  </svg>
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-xs font-bold text-zinc-400">
+                                      {Math.round(
+                                        ((trailData?.runs
+                                          ?.find(
+                                            (run: any) =>
+                                              run.course_uuid ===
+                                              course.course_uuid
+                                          )
+                                          ?.steps?.filter(
+                                            (step: any) => step.complete
+                                          )?.length || 0) /
+                                          (course.chapters?.reduce(
+                                            (acc: number, chapter: any) =>
+                                              acc + chapter.activities.length,
+                                            0
+                                          ) || 1)) *
+                                          100
+                                      )}
+                                      %
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-zinc-500">
+                                  {trailData?.runs
                                     ?.find(
                                       (run: any) =>
                                         run.course_uuid === course.course_uuid
                                     )
                                     ?.steps?.filter(
                                       (step: any) => step.complete
-                                    )?.length || 0) /
-                                    (course.chapters?.reduce(
-                                      (acc: number, chapter: any) =>
-                                        acc + chapter.activities.length,
-                                      0
-                                    ) || 1)) *
-                                    100
-                                )}
-                                %
-                              </span>
+                                    )?.length || 0}{' '}
+                                  {t('common.of')}{' '}
+                                  {course.chapters?.reduce(
+                                    (acc: number, chapter: any) =>
+                                      acc + chapter.activities.length,
+                                    0
+                                  ) || 0}
+                                </div>
+                              </motion.div>
+
+                              {/* Center Course Info */}
+                              <motion.div
+                                initial={
+                                  !hasMounted ? false : { opacity: 0, y: -20 }
+                                }
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                                className="flex items-center space-x-4"
+                              >
+                                <div className="flex">
+                                  <Link
+                                    href={
+                                      getUriWithOrg(orgslug, '') +
+                                      `/course/${courseuuid}`
+                                    }
+                                  >
+                                    <img
+                                      className="w-[60px] h-[34px] rounded-md drop-shadow-md"
+                                      src={`${getCourseThumbnailMediaDirectory(
+                                        org?.org_uuid,
+                                        course.course_uuid,
+                                        course.thumbnail_image
+                                      )}`}
+                                      alt=""
+                                    />
+                                  </Link>
+                                </div>
+                                <div className="flex flex-col min-w-0 -space-y-0.5">
+                                  <p className="font-bold text-zinc-500 text-[9px] md:text-[10px] uppercase tracking-wider truncate">
+                                    {t('search.course')}
+                                  </p>
+                                  <h1 className="font-bold text-white text-sm md:text-md first-letter:uppercase truncate max-w-[120px] md:max-w-xs">
+                                    {course.name}
+                                  </h1>
+                                </div>
+                              </motion.div>
+
+                              {/* Completion & Navigation - Moved to right */}
+                              <motion.div
+                                initial={
+                                  !hasMounted ? false : { opacity: 0, x: 20 }
+                                }
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="flex items-center space-x-3"
+                              >
+                                <ActivityStatusBadge
+                                  activity={activity}
+                                  course={course}
+                                  trailData={trailData}
+                                />
+
+                                <button
+                                  onClick={() =>
+                                    handleMarkAsComplete(
+                                      activity.activity_uuid,
+                                      !isActivityComplete(
+                                        activity.activity_uuid,
+                                        course.course_uuid,
+                                        trailData
+                                      )
+                                    )
+                                  }
+                                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all h-[36px] flex items-center shadow-lg ${
+                                    isActivityComplete(
+                                      activity.activity_uuid,
+                                      course.course_uuid,
+                                      trailData
+                                    )
+                                      ? 'bg-zinc-800 text-teal-400 border border-teal-500/20'
+                                      : 'bg-white text-zinc-950 hover:bg-zinc-100 hover:scale-105 active:scale-95'
+                                  }`}
+                                >
+                                  {loadingMarkComplete ? (
+                                    <Loader2
+                                      size={14}
+                                      className="animate-spin"
+                                    />
+                                  ) : isActivityComplete(
+                                      activity.activity_uuid,
+                                      course.course_uuid,
+                                      trailData
+                                    ) ? (
+                                    <span className="flex items-center gap-2">
+                                      <CheckCircle size={14} />
+                                      {t('activities.completed')}
+                                    </span>
+                                  ) : (
+                                    t('activities.mark_as_complete')
+                                  )}
+                                </button>
+
+                                <div className="h-4 w-px bg-white/10 mx-1 hidden sm:block" />
+
+                                <ActivityChapterDropdown
+                                  course={course}
+                                  currentActivityId={
+                                    activity.activity_uuid
+                                      ? activity.activity_uuid.replace(
+                                          'activity_',
+                                          ''
+                                        )
+                                      : activityid.replace('activity_', '')
+                                  }
+                                  orgslug={orgslug}
+                                  trailData={trailData}
+                                />
+
+                                {/* Exit Focus Mode button */}
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => setIsFocusMode(false)}
+                                  className="bg-white/5 border border-white/10 p-2 rounded-full cursor-pointer hover:bg-white/10 transition-colors"
+                                  title={t('activities.exit_focus_mode')}
+                                >
+                                  <Minimize2 size={16} className="text-white" />
+                                </motion.button>
+                              </motion.div>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-600">
-                            {trailData?.runs
-                              ?.find(
-                                (run: any) =>
-                                  run.course_uuid === course.course_uuid
-                              )
-                              ?.steps?.filter((step: any) => step.complete)
-                              ?.length || 0}{' '}
-                            {t('common.of')}{' '}
-                            {course.chapters?.reduce(
-                              (acc: number, chapter: any) =>
-                                acc + chapter.activities.length,
-                              0
-                            ) || 0}
-                          </div>
                         </motion.div>
-
-                        {/* Center Course Info */}
-                        <motion.div
-                          initial={!hasMounted ? false : { opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 }}
-                          className="flex items-center space-x-4"
-                        >
-                          <div className="flex">
-                            <Link
-                              href={
-                                getUriWithOrg(orgslug, '') +
-                                `/course/${courseuuid}`
-                              }
-                            >
-                              <img
-                                className="w-[60px] h-[34px] rounded-md drop-shadow-md"
-                                src={`${getCourseThumbnailMediaDirectory(
-                                  org?.org_uuid,
-                                  course.course_uuid,
-                                  course.thumbnail_image
-                                )}`}
-                                alt=""
-                              />
-                            </Link>
-                          </div>
-                          <div className="flex flex-col -space-y-1">
-                            <p className="font-bold text-gray-700 text-sm">
-                              {t('search.course')}{' '}
-                            </p>
-                            <h1 className="font-bold text-gray-950 text-lg first-letter:uppercase">
-                              {course.name}
-                            </h1>
-                          </div>
-                        </motion.div>
-
-                        {/* Minimize and Chapters - Moved to right */}
-                        <motion.div
-                          initial={!hasMounted ? false : { opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="flex items-center space-x-2"
-                        >
-                          <ActivityChapterDropdown
-                            course={course}
-                            currentActivityId={
-                              activity.activity_uuid
-                                ? activity.activity_uuid.replace(
-                                    'activity_',
-                                    ''
-                                  )
-                                : activityid.replace('activity_', '')
-                            }
-                            orgslug={orgslug}
-                            trailData={trailData}
-                          />
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setIsFocusMode(false)}
-                            className="bg-white nice-shadow p-2 rounded-full cursor-pointer hover:bg-gray-50"
-                            title={t('activities.exit_focus_mode')}
-                          >
-                            <Minimize2 size={16} className="text-gray-700" />
-                          </motion.button>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Focus Mode Content */}
-                  <div className="pt-16 pb-20 h-full overflow-auto">
-                    <div
-                      className={`${activity?.activity_type === 'TYPE_VIDEO' ? 'max-w-5xl' : 'max-w-(--breakpoint-xl)'} mx-auto px-4`}
-                    >
-                      {activity && activity.published == true && (
-                        <>
-                          {activity.content.paid_access == false ? (
-                            <PaidCourseActivityDisclaimer course={course} />
-                          ) : (
-                            <motion.div
-                              initial={
-                                !hasMounted
-                                  ? false
-                                  : { scale: 0.95, opacity: 0 }
-                              }
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ delay: 0.3 }}
-                              className={`p-4 md:p-6 rounded-lg ${bgColor} mt-4`}
-                            >
-                              {/* Activity Types */}
-                              <div>{activityContent}</div>
-                            </motion.div>
-                          )}
-                        </>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Focus Mode Bottom Bar */}
-                  {activity &&
-                    activity.published == true &&
-                    activity.content.paid_access != false && (
-                      <motion.div
-                        initial={!hasMounted ? false : { y: 100 }}
-                        animate={{ y: 0 }}
-                        exit={{ y: 100 }}
-                        transition={{ duration: 0.3 }}
-                        className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-100"
+                      {/* Floating Minimize Button for Smart Articles */}
+                      {isSmartArticle && (
+                        <motion.button
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setIsFocusMode(false)}
+                          className="fixed top-6 left-6 z-60 p-3 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 text-white shadow-2xl hover:bg-zinc-800 transition-all flex items-center group overflow-hidden"
+                          title={t('activities.exit_focus_mode')}
+                        >
+                          <Minimize2 size={18} />
+                          <span className="max-w-0 group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 ease-in-out whitespace-nowrap text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100">
+                            {t('activities.exit_focus_mode')}
+                          </span>
+                        </motion.button>
+                      )}
+
+                      {/* Focus Mode Content */}
+                      <div
+                        className={`${isSmartArticle ? 'pt-0 pb-0 h-screen' : 'pt-16 pb-24 md:pb-16 h-full'} overflow-x-hidden overflow-y-auto relative scrollbar-hide`}
                       >
-                        <div className="container mx-auto px-4">
-                          <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => navigateToActivity(prevActivity)}
-                                className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
-                                  prevActivity
-                                    ? 'text-gray-700'
-                                    : 'opacity-50 text-gray-400 cursor-not-allowed'
-                                }`}
-                                disabled={!prevActivity}
-                                title={
-                                  prevActivity
-                                    ? `${t('common.previous')}: ${prevActivity.name}`
-                                    : t('activities.no_previous_activity')
-                                }
-                              >
-                                <ChevronLeft
-                                  size={20}
-                                  className="text-gray-800 shrink-0"
-                                />
-                                <div className="flex flex-col items-start">
-                                  <span className="text-xs text-gray-500">
-                                    {t('common.previous')}
-                                  </span>
-                                  <span className="text-sm capitalize font-semibold text-left">
-                                    {prevActivity
-                                      ? prevActivity.name
-                                      : t('activities.no_previous_activity')}
-                                  </span>
-                                </div>
-                              </button>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <ActivityActions
-                                activity={activity}
-                                activityid={activityid}
-                                course={course}
-                                orgslug={orgslug}
-                                assignment={assignment}
-                                showNavigation={false}
-                              />
-                              <button
-                                onClick={() => navigateToActivity(nextActivity)}
-                                className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
-                                  nextActivity
-                                    ? 'text-gray-700'
-                                    : 'opacity-50 text-gray-400 cursor-not-allowed'
-                                }`}
-                                disabled={!nextActivity}
-                                title={
-                                  nextActivity
-                                    ? `${t('common.next')}: ${nextActivity.name}`
-                                    : t('activities.no_next_activity')
-                                }
-                              >
-                                <div className="flex flex-col items-end">
-                                  <span className="text-xs text-gray-500">
-                                    {t('common.next')}
-                                  </span>
-                                  <span className="text-sm capitalize font-semibold text-right">
-                                    {nextActivity
-                                      ? nextActivity.name
-                                      : t('activities.no_next_activity')}
-                                  </span>
-                                </div>
-                                <ChevronRight
-                                  size={20}
-                                  className="text-gray-800 shrink-0"
-                                />
-                              </button>
-                            </div>
+                        {/* Floating Navigation Arrows - Hidden on Mobile */}
+                        {!isSmartArticle && (
+                          <div className="hidden md:block">
+                            <motion.button
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: prevActivity ? 1 : 0, x: 0 }}
+                              whileHover={{ x: -2 }}
+                              onClick={() => navigateToActivity(prevActivity)}
+                              disabled={!prevActivity}
+                              className={`fixed left-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl ${
+                                prevActivity
+                                  ? 'hover:bg-zinc-800 hover:scale-110'
+                                  : 'hidden'
+                              }`}
+                              title={
+                                prevActivity
+                                  ? `${t('common.previous')}: ${prevActivity.name}`
+                                  : ''
+                              }
+                            >
+                              <ChevronLeft size={24} />
+                            </motion.button>
+
+                            <motion.button
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: nextActivity ? 1 : 0, x: 0 }}
+                              whileHover={{ x: 2 }}
+                              onClick={() => navigateToActivity(nextActivity)}
+                              disabled={!nextActivity}
+                              className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl ${
+                                nextActivity
+                                  ? 'hover:bg-zinc-800 hover:scale-110'
+                                  : 'hidden'
+                              }`}
+                              title={
+                                nextActivity
+                                  ? `${t('common.next')}: ${nextActivity.name}`
+                                  : ''
+                              }
+                            >
+                              <ChevronRight size={24} />
+                            </motion.button>
                           </div>
+                        )}
+
+                        <div
+                          className={`${activity?.activity_type === 'TYPE_VIDEO' ? 'max-w-5xl' : isSmartArticle ? 'max-w-full' : 'max-w-(--breakpoint-xl)'} mx-auto ${isSmartArticle ? 'px-0' : 'px-4 mb-20'}`}
+                        >
+                          {activity && activity.published == true && (
+                            <>
+                              {activity.content.paid_access == false ? (
+                                <PaidCourseActivityDisclaimer course={course} />
+                              ) : (
+                                <motion.div
+                                  initial={
+                                    !hasMounted
+                                      ? false
+                                      : { scale: 0.95, opacity: 0, y: 20 }
+                                  }
+                                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                                  transition={{
+                                    delay: 0.3,
+                                    type: 'spring',
+                                    stiffness: 100,
+                                    damping: 20,
+                                  }}
+                                  className={`rounded-2xl ${bgColor} ${isSmartArticle ? 'mt-0' : 'mt-4 md:mt-8 p-3 md:p-8 shadow-2xl border border-white/5'}`}
+                                >
+                                  {/* Activity Types */}
+                                  <div className="relative z-10 w-full overflow-visible">
+                                    {activityContent}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </>
+                          )}
                         </div>
-                      </motion.div>
-                    )}
-                </motion.div>
+                      </div>
+
+                      {/* Mobile Navigation Bar - Visible only on Mobile */}
+                      {!isSmartArticle && (
+                        <motion.div
+                          initial={{ y: 100 }}
+                          animate={{ y: 0 }}
+                          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/90 backdrop-blur-xl border-t border-white/5 py-3 px-6 flex items-center justify-between"
+                        >
+                          <button
+                            onClick={() => navigateToActivity(prevActivity)}
+                            disabled={!prevActivity}
+                            className={`flex flex-col items-center gap-1 transition-all ${
+                              prevActivity
+                                ? 'text-white'
+                                : 'text-zinc-600 opacity-50'
+                            }`}
+                          >
+                            <ChevronLeft size={20} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                              {t('common.previous')}
+                            </span>
+                          </button>
+
+                          <div className="h-8 w-px bg-white/10" />
+
+                          <button
+                            onClick={() => navigateToActivity(nextActivity)}
+                            disabled={!nextActivity}
+                            className={`flex flex-col items-center gap-1 transition-all ${
+                              nextActivity
+                                ? 'text-white'
+                                : 'text-zinc-600 opacity-50'
+                            }`}
+                          >
+                            <ChevronRight size={20} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                              {t('common.next')}
+                            </span>
+                          </button>
+                        </motion.div>
+                      )}
+
+                      {/* Bottom actions removed to avoid video occlusion */}
+                    </motion.div>
+                  )
+                })()}
               </AnimatePresence>
             ) : (
               <GeneralWrapperStyled
@@ -713,7 +928,7 @@ function ActivityClient(props: ActivityClientProps) {
                                 }
                               >
                                 <img
-                                  className="w-[80px] md:w-[100px] h-[45px] md:h-[57px] rounded-md drop-shadow-md"
+                                  className="w-[70px] md:w-[90px] h-[40px] md:h-[52px] rounded-lg shadow-md border border-white/20 object-cover"
                                   src={`${getCourseThumbnailMediaDirectory(
                                     org?.org_uuid,
                                     course.course_uuid,
@@ -723,13 +938,11 @@ function ActivityClient(props: ActivityClientProps) {
                                 />
                               </Link>
                             </div>
-                            <div className="flex flex-col -space-y-0.5 md:-space-y-1">
-                              <p className="font-bold text-gray-700 text-sm md:text-md">
+                            <div className="flex flex-col justify-center">
+                              <p className="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em] mb-0.5">
                                 {t('search.course')}{' '}
                               </p>
-                              <h1 className="font-bold text-gray-950 text-xl md:text-3xl first-letter:uppercase line-clamp-1">
-                                {course.name}
-                              </h1>
+                              <h1 className="font-black text-zinc-950 text-xl md:text-2xl tracking-tight line-clamp-1"></h1>
                             </div>
                           </div>
                         </div>
@@ -744,23 +957,26 @@ function ActivityClient(props: ActivityClientProps) {
                         />
 
                         <div className="flex justify-between items-center w-full">
-                          <div className="flex flex-1/3 items-center space-x-3">
-                            <div className="flex flex-col -space-y-0.5 md:-space-y-1">
-                              <p className="font-bold text-gray-700 text-sm md:text-md">
+                          <div className="flex flex-col items-start gap-4 grow">
+                            <div className="flex flex-col">
+                              <p className="font-bold text-zinc-500 text-[11px] uppercase tracking-wider mb-1">
                                 {getChapterNameByActivityId(
                                   course,
                                   activity.id
                                 )}
                               </p>
-                              <h1 className="font-bold text-gray-950 text-lg md:text-2xl first-letter:uppercase">
+                              <h1 className="font-black text-zinc-950 text-2xl md:text-3xl tracking-tight leading-tight">
                                 {activity.name}
                               </h1>
-                              {/* Authors and Dates Section - Hidden on mobile */}
-                              <div className="hidden sm:flex flex-wrap items-center gap-3 mt-2">
+                            </div>
+
+                            {/* Authors and Dates Section - Hidden on mobile */}
+                            <div className="hidden sm:flex flex-wrap items-center gap-4 py-2 px-4 bg-zinc-50 border border-zinc-200/50 rounded-2xl">
+                              <div className="flex items-center gap-3">
                                 {/* Avatars */}
                                 {course.authors &&
                                   course.authors.length > 0 && (
-                                    <div className="flex -space-x-3">
+                                    <div className="flex -space-x-2.5">
                                       {course.authors
                                         .filter(
                                           (a: any) =>
@@ -770,7 +986,7 @@ function ActivityClient(props: ActivityClientProps) {
                                         .map((author: any) => (
                                           <div
                                             key={author.user.user_uuid}
-                                            className="relative z-10"
+                                            className="relative z-10 transition-transform hover:scale-110 hover:z-20"
                                           >
                                             <UserAvatar
                                               border="border-2"
@@ -788,7 +1004,7 @@ function ActivityClient(props: ActivityClientProps) {
                                                   ? undefined
                                                   : 'empty'
                                               }
-                                              width={26}
+                                              width={24}
                                               showProfilePopup={true}
                                               userId={author.user.id}
                                             />
@@ -798,7 +1014,7 @@ function ActivityClient(props: ActivityClientProps) {
                                         (a: any) =>
                                           a.authorship_status === 'ACTIVE'
                                       ).length > 3 && (
-                                        <div className="flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-2 border-white shadow-sm w-9 h-9 text-xs z-0">
+                                        <div className="flex items-center justify-center bg-zinc-100 text-zinc-600 font-bold rounded-full border-2 border-white shadow-sm w-7 h-7 text-[10px] z-0">
                                           +
                                           {course.authors.filter(
                                             (a: any) =>
@@ -811,12 +1027,12 @@ function ActivityClient(props: ActivityClientProps) {
                                 {/* Author names */}
                                 {course.authors &&
                                   course.authors.length > 0 && (
-                                    <div className="text-xs text-gray-700 font-medium flex items-center gap-1">
+                                    <div className="text-[11px] text-zinc-900 font-bold flex items-center gap-1">
                                       {course.authors.filter(
                                         (a: any) =>
                                           a.authorship_status === 'ACTIVE'
                                       ).length > 1 && (
-                                        <span>
+                                        <span className="text-zinc-500 font-medium">
                                           {t('courses.co_created_by')}{' '}
                                         </span>
                                       )}
@@ -871,7 +1087,7 @@ function ActivityClient(props: ActivityClientProps) {
                                             </div>
                                           }
                                         >
-                                          <div className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md cursor-pointer text-xs font-medium transition-colors duration-200">
+                                          <div className="bg-zinc-200 hover:bg-zinc-300 text-zinc-700 px-2 py-0.5 rounded-md cursor-pointer text-[10px] font-bold transition-colors duration-200">
                                             +
                                             {course.authors.filter(
                                               (a: any) =>
@@ -882,21 +1098,32 @@ function ActivityClient(props: ActivityClientProps) {
                                       )}
                                     </div>
                                   )}
-                                {/* Dates */}
-                                <div className="flex items-center text-xs text-gray-500 gap-2">
-                                  <span>
-                                    {t('courses.created_on')}{' '}
+                              </div>
+
+                              <div className="h-3 w-px bg-zinc-200 hidden md:block"></div>
+
+                              {/* Dates */}
+                              <div className="flex items-center text-[11px] text-zinc-500 font-medium gap-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-zinc-400 capitalize">
+                                    {t('courses.created_on')}
+                                  </span>
+                                  <span className="font-bold text-zinc-600">
                                     {new Date(
                                       course.creation_date
                                     ).toLocaleDateString(undefined, {
                                       year: 'numeric',
-                                      month: 'long',
+                                      month: 'short',
                                       day: 'numeric',
                                     })}
                                   </span>
-                                  <span className="mx-1">•</span>
-                                  <span>
-                                    {t('courses.last_updated')}{' '}
+                                </div>
+                                <div className="w-1 h-1 rounded-full bg-zinc-300"></div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-zinc-400 capitalize">
+                                    {t('courses.last_updated')}
+                                  </span>
+                                  <span className="font-bold text-zinc-600">
                                     {getRelativeTime(
                                       new Date(
                                         course.updated_at ||
@@ -914,10 +1141,13 @@ function ActivityClient(props: ActivityClientProps) {
                               activity.published == true &&
                               activity.content.paid_access != false && (
                                 <AuthenticatedClientElement checkMethod="authentication">
+                                  {activity.activity_type !==
+                                    'TYPE_SMART_ARTICLE' && (
+                                    <AIActivityAsk activity={activity} />
+                                  )}
                                   {activity.activity_type !=
                                     'TYPE_ASSIGNMENT' && (
                                     <>
-                                      <AIActivityAsk activity={activity} />
                                       <ActivityChapterDropdown
                                         course={course}
                                         currentActivityId={
@@ -1481,8 +1711,36 @@ function AssignmentTools(props: {
   const { t } = useTranslation()
   const submission = useAssignmentSubmission() as any
   const session = useLHSession() as any
-  // Final grade is now derived from SWR
-  // const [finalGrade, setFinalGrade] = useState(null) as any;
+  const access_token = session?.data?.tokens?.access_token
+
+  // Fetch task submissions to check for completeness
+  const { data: taskSubmissionsRes } = useSWR(
+    props.assignment?.assignment_uuid && access_token
+      ? `${getAPIUrl()}assignments/${props.assignment.assignment_uuid}/tasks/submissions/me`
+      : null,
+    (url) => swrFetcher(url, access_token)
+  )
+
+  const taskSubmissions = React.useMemo(
+    () => (Array.isArray(taskSubmissionsRes) ? taskSubmissionsRes : []),
+    [taskSubmissionsRes]
+  )
+
+  // Fetch assignment tasks accurately
+  const { data: assignmentTasksRes } = useSWR(
+    props.assignment?.assignment_uuid && access_token
+      ? `${getAPIUrl()}assignments/${props.assignment.assignment_uuid}/tasks`
+      : null,
+    (url) => swrFetcher(url, access_token)
+  )
+
+  const assignmentTasks = React.useMemo(
+    () => (Array.isArray(assignmentTasksRes) ? assignmentTasksRes : []),
+    [assignmentTasksRes]
+  )
+  const totalTasks = assignmentTasks.length || 0
+
+  const isComplete = taskSubmissions.length >= totalTasks && totalTasks > 0
 
   const submitForGradingUI = async () => {
     if (props.assignment) {
@@ -1553,26 +1811,42 @@ function AssignmentTools(props: {
 
   if (!submission || submission.length === 0) {
     return (
-      <ConfirmationModal
-        confirmationButtonText={t('assignments.submit_assignment')}
-        confirmationMessage={t('assignments.submit_assignment_confirm')}
-        dialogTitle={t('assignments.submit_assignment_title')}
-        dialogTrigger={
-          <div className="bg-cyan-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
-            <span className="text-[10px] font-bold mb-1 uppercase">
-              {t('common.status')}
-            </span>
-            <div className="flex items-center space-x-2">
-              <BookOpenCheck size={17} />
-              <span className="text-xs font-bold">
-                {t('assignments.submit_for_grading')}
-              </span>
-            </div>
+      <div className="flex flex-col items-end gap-2">
+        {!isComplete && totalTasks > 0 && (
+          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 animate-pulse">
+            <Info size={14} />
+            <p className="text-[10px] font-bold uppercase tracking-tight">
+              {t('assignments.unsaved_tasks_warning')}
+            </p>
           </div>
-        }
-        functionToExecute={submitForGradingUI}
-        status="info"
-      />
+        )}
+        <ConfirmationModal
+          confirmationButtonText={t('assignments.submit_assignment')}
+          confirmationMessage={
+            !isComplete
+              ? t('assignments.submit_incomplete_warning')
+              : t('assignments.submit_assignment_confirm')
+          }
+          dialogTitle={t('assignments.submit_assignment_title')}
+          dialogTrigger={
+            <div
+              className={`${!isComplete ? 'bg-amber-600 hover:bg-amber-700' : 'bg-cyan-800 hover:bg-cyan-900'} rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition-all duration-300 ease-in-out`}
+            >
+              <span className="text-[10px] font-bold mb-1 uppercase opacity-80">
+                {t('common.status')}
+              </span>
+              <div className="flex items-center space-x-2">
+                <BookOpenCheck size={17} />
+                <span className="text-xs font-bold">
+                  {t('assignments.submit_for_grading')}
+                </span>
+              </div>
+            </div>
+          }
+          functionToExecute={submitForGradingUI}
+          status={!isComplete ? 'warning' : 'info'}
+        />
+      </div>
     )
   }
 
@@ -1613,6 +1887,50 @@ function AssignmentTools(props: {
 
   // Default return in case none of the conditions are met
   return null
+}
+
+function ActivityStatusBadge({
+  activity,
+  course,
+  trailData,
+}: {
+  activity: any
+  course: any
+  trailData: any
+}) {
+  const { t } = useTranslation()
+  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const run = trailData?.runs?.find(
+    (run: any) =>
+      run.course?.course_uuid?.replace('course_', '') === cleanCourseUuid
+  )
+  const isDone = run?.steps.find(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid) &&
+      step.complete === true
+  )
+
+  return (
+    <div
+      className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+        isDone
+          ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+          : 'bg-zinc-800/50 text-zinc-500 border-white/5'
+      }`}
+    >
+      <div
+        className={`w-1.5 h-1.5 rounded-full ${
+          isDone
+            ? 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]'
+            : 'bg-zinc-600'
+        }`}
+      />
+      <span>
+        {isDone ? t('common.completed') : t('activities.not_started')}
+      </span>
+    </div>
+  )
 }
 
 export default ActivityClient

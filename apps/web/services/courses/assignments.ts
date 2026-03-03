@@ -290,3 +290,20 @@ export async function getAssignmentsFromACourse(
   const res = await getResponseMetadata(result)
   return res
 }
+
+export async function executeCode(
+  body: {
+    language: string
+    code: string
+    stdin?: string
+    test_cases?: any[]
+  },
+  access_token: string
+) {
+  const result: any = await fetch(
+    `${getAPIUrl()}code/execute`,
+    RequestBodyWithAuthHeader('POST', body, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}

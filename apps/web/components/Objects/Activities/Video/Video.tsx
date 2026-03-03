@@ -54,7 +54,7 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
         <>
           {activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' && (
             <div className="my-3 md:my-5 w-full">
-              <div className="relative w-full max-h-[75vh] aspect-video rounded-lg overflow-hidden ring-1 ring-gray-300/30 dark:ring-gray-600/30 sm:ring-gray-200/10 sm:dark:ring-gray-700/20 shadow-xs sm:shadow-none">
+              <div className="relative w-full max-h-[80vh] aspect-video rounded-lg ring-1 ring-gray-300/30 dark:ring-gray-600/30 sm:ring-gray-200/10 sm:dark:ring-gray-700/20 shadow-xs sm:shadow-none">
                 {(() => {
                   const src = getVideoSrc()
                   return src ? (
@@ -66,7 +66,7 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
           )}
           {activity.activity_sub_type === 'SUBTYPE_VIDEO_YOUTUBE' && (
             <div className="my-3 md:my-5 w-full">
-              <div className="relative w-full max-h-[75vh] aspect-video rounded-lg overflow-hidden ring-1 ring-gray-300/30 dark:ring-gray-600/30 sm:ring-gray-200/10 sm:dark:ring-gray-700/20 shadow-xs sm:shadow-none">
+              <div className="relative w-full max-h-[80vh] aspect-video rounded-lg ring-1 ring-gray-300/30 dark:ring-gray-600/30 sm:ring-gray-200/10 sm:dark:ring-gray-700/20 shadow-xs sm:shadow-none">
                 <YouTube
                   className="w-full h-full"
                   opts={{

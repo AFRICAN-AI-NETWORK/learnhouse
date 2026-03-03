@@ -19,7 +19,20 @@ import {
 } from '@services/courses/assignments'
 import { getTaskRefFileDir } from '@services/media/media'
 import { useFormik } from 'formik'
-import { Cloud, File, Info, Loader, UploadCloud } from 'lucide-react'
+import {
+  AlignLeft,
+  Award,
+  Check,
+  ClipboardList,
+  Download,
+  FileCheck,
+  FileUp,
+  FolderOpen,
+  Info,
+  Lightbulb,
+  Loader,
+  Type,
+} from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 import toast from 'react-hot-toast'
@@ -62,7 +75,7 @@ export function AssignmentTaskGeneralEdit() {
       max_grade_value: assignmentTaskState.assignmentTask.max_grade_value,
     },
     validate,
-    onSubmit: async (values) => {
+    onSubmit: async (values: any) => {
       const res = await updateAssignmentTask(
         values,
         assignmentTaskState.assignmentTask.assignment_task_uuid,
@@ -81,93 +94,175 @@ export function AssignmentTaskGeneralEdit() {
 
   return (
     <FormLayout onSubmit={formik.handleSubmit}>
-      <FormField name="title">
-        <FormLabelAndMessage
-          label={t('dashboard.assignments.editor.task_editor.general.title')}
-          message={formik.errors.title}
-        />
-        <Form.Control asChild>
-          <Input
-            onChange={formik.handleChange}
-            value={formik.values.title}
-            type="text"
-          />
-        </Form.Control>
-      </FormField>
-
-      <FormField name="description">
-        <FormLabelAndMessage
-          label={t(
-            'dashboard.assignments.editor.task_editor.general.description'
-          )}
-          message={formik.errors.description}
-        />
-        <Form.Control asChild>
-          <Input
-            onChange={formik.handleChange}
-            value={formik.values.description}
-            type="text"
-          />
-        </Form.Control>
-      </FormField>
-
-      <FormField name="hint">
-        <FormLabelAndMessage
-          label={t('dashboard.assignments.editor.task_editor.general.hint')}
-          message={formik.errors.hint}
-        />
-        <Form.Control asChild>
-          <Textarea onChange={formik.handleChange} value={formik.values.hint} />
-        </Form.Control>
-      </FormField>
-
-      <FormField name="hint">
-        <div className="flex space-x-3 justify-between items-center">
-          <FormLabelAndMessage
-            label={t(
-              'dashboard.assignments.editor.task_editor.general.reference_file'
-            )}
-            message={formik.errors.hint}
-          />
-          <div className="flex space-x-1.5 text-xs items-center text-gray-500 ">
-            <Info size={16} />
-            <p>
+      <div className="space-y-8">
+        {/* Section 1: Basic Information */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-200 flex items-center space-x-2.5">
+            <div className="p-1.5 bg-blue-100 rounded-lg">
+              <ClipboardList className="w-4 h-4 text-blue-600" />
+            </div>
+            <h3 className="font-bold text-slate-800 tracking-tight text-sm uppercase">
               {t(
-                'dashboard.assignments.editor.task_editor.general.reference_file_info'
+                'dashboard.assignments.editor.task_editor.general.basic_info',
+                'Task Configuration'
               )}
-            </p>
+            </h3>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="md:col-span-3">
+                <FormField name="title">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Type className="w-3.5 h-3.5 text-slate-400" />
+                    <FormLabelAndMessage
+                      label={t(
+                        'dashboard.assignments.editor.task_editor.general.title'
+                      )}
+                      message={formik.errors.title}
+                    />
+                  </div>
+                  <Form.Control asChild>
+                    <Input
+                      onChange={formik.handleChange}
+                      value={formik.values.title}
+                      type="text"
+                      className="font-medium"
+                      placeholder={t(
+                        'dashboard.assignments.editor.task_editor.general.title_placeholder',
+                        'e.g., Introduction to Python'
+                      )}
+                    />
+                  </Form.Control>
+                </FormField>
+              </div>
+              <div className="md:col-span-1">
+                <FormField name="max_grade_value">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Award className="w-3.5 h-3.5 text-slate-400" />
+                    <FormLabelAndMessage
+                      label={t(
+                        'dashboard.assignments.editor.task_editor.general.max_grade_value'
+                      )}
+                      message={formik.errors.max_grade_value}
+                    />
+                  </div>
+                  <Form.Control asChild>
+                    <Input
+                      onChange={formik.handleChange}
+                      value={formik.values.max_grade_value}
+                      type="number"
+                      className="text-center font-bold text-blue-600 bg-blue-50/30"
+                    />
+                  </Form.Control>
+                </FormField>
+              </div>
+            </div>
+
+            <FormField name="description">
+              <div className="flex items-center space-x-2 mb-2">
+                <AlignLeft className="w-3.5 h-3.5 text-slate-400" />
+                <FormLabelAndMessage
+                  label={t(
+                    'dashboard.assignments.editor.task_editor.general.description'
+                  )}
+                  message={formik.errors.description}
+                />
+              </div>
+              <Form.Control asChild>
+                <Input
+                  onChange={formik.handleChange}
+                  value={formik.values.description}
+                  type="text"
+                  placeholder={t(
+                    'dashboard.assignments.editor.task_editor.general.description_placeholder',
+                    'Briefly describe this task...'
+                  )}
+                />
+              </Form.Control>
+            </FormField>
+
+            <FormField name="hint">
+              <div className="flex items-center space-x-2 mb-2">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                <FormLabelAndMessage
+                  label={t(
+                    'dashboard.assignments.editor.task_editor.general.hint'
+                  )}
+                  message={formik.errors.hint}
+                />
+              </div>
+              <Form.Control asChild>
+                <Textarea
+                  onChange={formik.handleChange}
+                  value={formik.values.hint}
+                  placeholder={t(
+                    'dashboard.assignments.editor.task_editor.general.hint_placeholder',
+                    'Provide a hint for students...'
+                  )}
+                  className="min-h-[100px] resize-none pb-8"
+                />
+              </Form.Control>
+            </FormField>
           </div>
         </div>
-        <Form.Control asChild>
-          <UpdateTaskRef />
-        </Form.Control>
-      </FormField>
 
-      <FormField name="max_grade_value">
-        <FormLabelAndMessage
-          label={t(
-            'dashboard.assignments.editor.task_editor.general.max_grade_value'
-          )}
-          message={formik.errors.max_grade_value}
-        />
-        <Form.Control asChild>
-          <Input
-            onChange={formik.handleChange}
-            value={formik.values.max_grade_value}
-            type="number"
-          />
-        </Form.Control>
-      </FormField>
+        {/* Section 2: Resources */}
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 bg-indigo-100 rounded-lg">
+                <FolderOpen className="w-4 h-4 text-indigo-600" />
+              </div>
+              <h3 className="font-bold text-slate-800 tracking-tight text-sm uppercase">
+                {t(
+                  'dashboard.assignments.editor.task_editor.general.resources',
+                  'Support Material'
+                )}
+              </h3>
+            </div>
+          </div>
+          <div className="p-6">
+            <FormField name="reference_file">
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="flex items-center space-x-2.5">
+                    <Info className="w-4 h-4 text-slate-400" />
+                    <span>
+                      {t(
+                        'dashboard.assignments.editor.task_editor.general.reference_file_info'
+                      )}
+                    </span>
+                  </div>
+                  <span className="font-bold text-slate-400">
+                    {t(
+                      'dashboard.assignments.editor.task_editor.general.max_size',
+                      'MAX 10MB'
+                    )}
+                  </span>
+                </div>
+              </div>
+              <Form.Control asChild>
+                <UpdateTaskRef />
+              </Form.Control>
+            </FormField>
+          </div>
+        </div>
 
-      {/* Submit button */}
-      <Form.Submit>
-        <button
-          type="submit"
-          className="flex items-center justify-center w-full px-4 py-2 mt-4 font-semibold text-white bg-green-500 rounded-md hover:bg-green-600"
-        >
-          {t('dashboard.assignments.editor.task_editor.general.submit')}
-        </button>
-      </Form.Submit>
+        {/* Submit button */}
+        <div className="flex justify-end pt-4">
+          <Form.Submit asChild>
+            <button className="group flex items-center justify-center space-x-2.5 px-10 py-3.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold transition-all shadow-xl shadow-slate-200 active:scale-95">
+              <Check className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-400" />
+              <span>
+                {t(
+                  'dashboard.assignments.editor.task_editor.general.submit',
+                  'Save Changes'
+                )}
+              </span>
+            </button>
+          </Form.Submit>
+        </div>
+      </div>
     </FormLayout>
   )
 }
@@ -221,84 +316,106 @@ function UpdateTaskRef() {
   }
 
   return (
-    <div className="w-auto bg-gray-50 rounded-xl outline-1 outline-gray-200 h-[200px] shadow-sm">
-      <div className="flex flex-col justify-center items-center h-full">
-        <div className="flex flex-col justify-center items-center">
+    <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl min-h-[160px] transition-all hover:border-blue-400 group overflow-hidden">
+      <div className="flex flex-col justify-center items-center h-full p-8">
+        <div className="flex flex-col justify-center items-center space-y-4">
           <div className="flex flex-col justify-center items-center">
             {error && (
-              <div className="flex justify-center bg-red-200 rounded-md text-red-950 space-x-2 items-center p-2 transition-all shadow-xs">
-                <div className="text-sm font-semibold">{error}</div>
+              <div className="mb-4 flex justify-center bg-rose-50 border border-rose-100 rounded-xl text-rose-900 px-4 py-2.5 space-x-2 items-center transition-all shadow-sm">
+                <Info size={14} className="text-rose-500 shrink-0" />
+                <div className="text-[11px] font-bold">{error}</div>
               </div>
             )}
           </div>
+
           {assignmentTaskState.assignmentTask.reference_file && !isLoading && (
-            <div className="flex flex-col rounded-lg bg-white text-gray-400 shadow-lg nice-shadow px-5 py-3 space-y-1 items-center relative">
-              <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-green-500 rounded-full px-1.5 py-1.5 text-white flex justify-center items-center">
-                <Cloud size={15} />
-              </div>
-              <File size={20} className="" />
-              <div className="font-semibold text-sm uppercase">
-                {assignmentTaskState.assignmentTask.reference_file
-                  .split('.')
-                  .pop()}
-              </div>
-              <div className="flex space-x-2 mt-2">
-                <Link
-                  href={getTaskRefDirUI()}
-                  download
-                  target="_blank"
-                  className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold"
-                >
-                  {t(
-                    'dashboard.assignments.editor.task_editor.general.download'
-                  )}
-                </Link>
-                {/** <button onClick={() => deleteReferenceFile()}
-                                    className='bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold'>Delete</button> */}
+            <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
+              <div className="relative flex flex-col items-center p-6 bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 w-[250px]">
+                <div className="absolute -top-3 -right-3 bg-emerald-500 rounded-full p-2 text-white shadow-lg border-4 border-slate-50">
+                  <FileCheck size={18} />
+                </div>
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:rotate-3">
+                  <FolderOpen size={32} className="text-blue-500" />
+                </div>
+                <div className="font-bold text-slate-800 text-xs mb-1 truncate w-full text-center px-4">
+                  {assignmentTaskState.assignmentTask.reference_file
+                    .split('/')
+                    .pop()}
+                </div>
+                <div className="text-[9px] font-black uppercase text-slate-400 tracking-wider">
+                  {assignmentTaskState.assignmentTask.reference_file
+                    .split('.')
+                    .pop()}{' '}
+                  RESOURCES
+                </div>
+
+                <div className="flex space-x-2 mt-6 w-full">
+                  <Link
+                    href={getTaskRefDirUI()}
+                    download
+                    target="_blank"
+                    className="flex-[1.2] bg-slate-900 hover:bg-black text-white py-2.5 rounded-xl text-[9px] font-bold text-center transition-all flex items-center justify-center space-x-1 whitespace-nowrap"
+                  >
+                    <Download size={12} />
+                    <span>DOWNLOAD</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById('fileInput')?.click()
+                    }
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-xl text-[9px] font-bold transition-colors flex items-center justify-center space-x-1 whitespace-nowrap"
+                  >
+                    <FileUp size={12} />
+                    <span>CHANGE</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
           {isLoading ? (
-            <div className="flex justify-center items-center">
-              <input
-                type="file"
-                accept={SUPPORTED_FILES}
-                id="fileInput"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-              <div className="font-bold  animate-pulse antialiased items-center bg-slate-200 text-gray text-sm rounded-md px-4 py-2 mt-4 flex">
-                <Loader size={16} className="mr-2" />
-                <span>
-                  {t(
-                    'dashboard.assignments.editor.task_editor.general.loading'
-                  )}
-                </span>
+            <div className="flex flex-col items-center space-y-4">
+              <div className="p-4 bg-slate-900 rounded-full shadow-lg">
+                <Loader className="w-6 h-6 text-white animate-spin" />
+              </div>
+              <div className="font-bold text-slate-900 text-[11px] uppercase tracking-widest animate-pulse">
+                Syncing Assets...
               </div>
             </div>
           ) : (
-            <div className="flex justify-center items-center">
-              <input
-                type="file"
-                accept={SUPPORTED_FILES}
-                id="fileInput"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
-              <button
-                className="font-bold antialiased items-center  text-gray text-sm rounded-md px-4  mt-6 flex"
-                onClick={() => document.getElementById('fileInput')?.click()}
-              >
-                <UploadCloud size={16} className="mr-2" />
-                <span>
-                  {t(
-                    'dashboard.assignments.editor.task_editor.general.change_reference_file'
-                  )}
-                </span>
-              </button>
-            </div>
+            <>
+              {!assignmentTaskState.assignmentTask.reference_file && (
+                <div className="flex flex-col items-center space-y-4 py-4">
+                  <div className="p-6 bg-white rounded-3xl shadow-lg border border-slate-50 text-slate-200 group-hover:text-blue-500 group-hover:scale-105 transition-all duration-500 group-hover:border-blue-100">
+                    <FileUp className="w-10 h-10" />
+                  </div>
+                  <div className="flex flex-col items-center text-center">
+                    <button
+                      type="button"
+                      className="px-8 py-3 bg-slate-900 hover:bg-black text-white rounded-full font-bold text-[11px] uppercase tracking-wider shadow-lg transition-all active:scale-95"
+                      onClick={() =>
+                        document.getElementById('fileInput')?.click()
+                      }
+                    >
+                      Attach Resource
+                    </button>
+                    <p className="mt-3 text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                      Standard formats supported (PDF, DOCX, ZIP)
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
+
+          <input
+            type="file"
+            accept={SUPPORTED_FILES}
+            id="fileInput"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
       </div>
     </div>

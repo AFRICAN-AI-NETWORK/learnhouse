@@ -104,7 +104,7 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
       )
 
   return (
-    <div className="group relative flex flex-col bg-white rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01]">
+    <div className="group relative flex flex-col bg-card text-card-foreground rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01]">
       <AdminEditOptions
         course={course}
         orgSlug={orgslug}
@@ -114,7 +114,7 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
       <Link
         prefetch
         href={courseLink}
-        className="block relative aspect-video overflow-hidden bg-gray-50"
+        className="block relative aspect-video overflow-hidden bg-muted"
       >
         <div
           className="relative ring-1 ring-inset ring-black/10 rounded-t-xl w-full aspect-video bg-cover bg-center overflow-hidden"
@@ -138,19 +138,19 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
         <div className="flex items-start justify-between">
           <Link
             href={courseLink}
-            className="text-base font-bold text-gray-900 leading-tight hover:text-black transition-colors line-clamp-1"
+            className="text-base font-bold text-card-foreground leading-tight hover:text-primary transition-colors line-clamp-1"
           >
             {course.name}
           </Link>
         </div>
 
         {course.description && (
-          <p className="text-[11px] text-gray-500 line-clamp-2 min-h-6">
+          <p className="text-[11px] text-muted-foreground line-clamp-2 min-h-6">
             {course.description}
           </p>
         )}
 
-        <div className="pt-1.5 flex flex-col space-y-2 border-t border-gray-100">
+        <div className="pt-1.5 flex flex-col space-y-2 border-t border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {displayedAuthors.length > 0 && (
@@ -183,7 +183,7 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
                   ))}
                   {hasMoreAuthors && (
                     <div className="relative z-0">
-                      <div className="flex items-center justify-center w-[20px] h-[20px] text-[8px] font-bold text-gray-600 bg-gray-100 border-2 border-white rounded-full">
+                      <div className="flex items-center justify-center w-[20px] h-[20px] text-[8px] font-bold text-muted-foreground bg-muted border-2 border-background rounded-full">
                         +{remainingAuthorsCount}
                       </div>
                     </div>
@@ -192,7 +192,7 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
               )}
 
               {course.update_date && (
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
                   {new Date(course.update_date).toLocaleDateString(
                     i18n.language === 'fr' ? 'fr-FR' : 'en-US',
                     { month: 'short', day: 'numeric' }
@@ -203,7 +203,7 @@ function CourseThumbnail({ course, orgslug, customLink }: PropsType) {
 
             <Link
               href={courseLink}
-              className="text-[10px] font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-wider"
+              className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
             >
               {t('courses.start_learning')}
             </Link>

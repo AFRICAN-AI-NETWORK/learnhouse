@@ -86,7 +86,8 @@ class Assignment(AssignmentBase, table=True):
 class AssignmentTaskTypeEnum(str, Enum):
     FILE_SUBMISSION = "FILE_SUBMISSION"
     QUIZ = "QUIZ"
-    FORM = "FORM"  # soon to be implemented
+    FORM = "FORM"
+    CODE_EDITOR = "CODE_EDITOR"
     OTHER = "OTHER"
 
 

@@ -137,7 +137,7 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
                   submission_id: submission.submission_uuid,
                 })
               }
-              minHeight="lg"
+              minHeight="no-min"
               minWidth="lg"
               dialogContent={
                 <AssignmentProvider
@@ -161,7 +161,9 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
               )}
               dialogTrigger={
                 <div className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded text-xs cursor-pointer">
-                  {t('dashboard.assignments.submissions.evaluate')}
+                  {submission.submission_status === 'GRADED'
+                    ? t('dashboard.assignments.submissions.review')
+                    : t('dashboard.assignments.submissions.evaluate')}
                 </div>
               }
             />
