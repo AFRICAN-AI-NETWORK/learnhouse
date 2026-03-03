@@ -5,6 +5,10 @@ from src.routers import dev, trail, users, auth, orgs, roles, search, waitlist
 from src.routers.ai import ai
 from src.routers.courses import chapters, collections, courses, assignments, certifications
 from src.routers.courses.activities import activities, blocks
+from src.routers.chat import conversations as chat_conversations
+from src.routers.chat import messages as chat_messages
+from src.routers.chat import websocket as chat_websocket
+from src.routers.chat import admin as chat_admin
 from src.core.ee_hooks import register_ee_routers
 from src.services.dev.dev import isDevModeEnabledOrRaise
 from src.routers.utils import router as utils_router
@@ -39,6 +43,12 @@ v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+
+# Chat Routes
+v1_router.include_router(chat_conversations.router, prefix="/chat/conversations", tags=["chat"])
+v1_router.include_router(chat_messages.router, prefix="/chat/messages", tags=["chat"])
+v1_router.include_router(chat_websocket.router, prefix="/chat", tags=["chat"])
+v1_router.include_router(chat_admin.router, prefix="/chat/admin", tags=["chat-admin"])
 
 # Register EE Routers if available
 register_ee_routers(v1_router)
