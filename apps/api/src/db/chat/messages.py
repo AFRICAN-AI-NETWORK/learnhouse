@@ -30,7 +30,7 @@ class Message(MessageBase, table=True):
         default=None,
         sa_column=Column(Integer, ForeignKey("message.id", ondelete="SET NULL"))
     )
-    metadata: dict = Field(default={}, sa_column=Column(JSON))
+    message_metadata: dict = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     

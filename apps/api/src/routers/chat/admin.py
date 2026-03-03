@@ -264,7 +264,7 @@ async def get_chat_audit_logs(
             "action": log.action,
             "resource_type": log.resource_type,
             "resource_id": log.resource_id,
-            "metadata": log.metadata,
+            "metadata": log.action_metadata,
             "ip_address": log.ip_address,
             "user_agent": log.user_agent,
             "created_at": log.created_at.isoformat()
