@@ -18,8 +18,8 @@ async def verify_chat_permission(
     Rules:
     - Regular users can ONLY chat with instructors
     - Instructors can chat with users, other instructors, admins, maintainers
-    - Admins can chat with instructors, other admins, maintainers
-    - Maintainers can chat with instructors, admins, other maintainers
+    - Admins can chat with ANYONE (students, instructors, other admins, maintainers)
+    - Maintainers can chat with ANYONE (students, instructors, admins, other maintainers)
     - All chats must be within same organization
     """
     
@@ -43,8 +43,8 @@ async def verify_chat_permission(
         "learner": ["instructor"],
         "user": ["instructor"],
         "instructor": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-        "admin": ["instructor", "admin", "maintainer"],
-        "maintainer": ["instructor", "admin", "maintainer"],
+        "admin": ["student", "learner", "user", "instructor", "admin", "maintainer"],
+        "maintainer": ["student", "learner", "user", "instructor", "admin", "maintainer"],
     }
     
     # Check if current user's role allows chatting with target user's role
@@ -96,8 +96,8 @@ async def get_chatable_users_for_user(
         "learner": ["instructor"],
         "user": ["instructor"],
         "instructor": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-        "admin": ["instructor", "admin", "maintainer"],
-        "maintainer": ["instructor", "admin", "maintainer"],
+        "admin": ["student", "learner", "user", "instructor", "admin", "maintainer"],
+        "maintainer": ["student", "learner", "user", "instructor", "admin", "maintainer"],
     }.get(current_role_name, [])
     
     # Query users with target roles in the organization

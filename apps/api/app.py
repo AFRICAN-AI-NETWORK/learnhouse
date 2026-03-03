@@ -64,7 +64,12 @@ app.add_middleware(
 
 # Only enable logfire if explicitly configured
 if learnhouse_config.general_config.logfire_enabled:
-    logfire.configure(console=False, service_name=learnhouse_config.site_name,)
+    logfire.configure(
+        console=False,
+        service_name=learnhouse_config.site_name,
+        scrubbing_patterns=['token', 'password', 'authorization', 'jwt'],
+        scrubbing_callback=lambda key, value: '***REDACTED***'
+    )
     logfire.instrument_fastapi(app)
     # Instrument database after logfire is configured
     from src.core.events.database import engine
