@@ -10,6 +10,9 @@ from datetime import datetime
 
 import src.services.payments.payments_access as payments_access
 from src.security.courses_security import courses_rbac_check_for_activities
+import sys
+
+print("[ACTIVITIES_SERVICE] Module loaded!", file=sys.stderr, flush=True)
 
 
 ####################################################
