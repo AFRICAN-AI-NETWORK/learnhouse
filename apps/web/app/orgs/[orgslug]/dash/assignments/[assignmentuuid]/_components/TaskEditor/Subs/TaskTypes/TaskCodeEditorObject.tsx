@@ -23,6 +23,8 @@ import {
   Play,
   Terminal,
   AlertCircle,
+  Wand2,
+  ShieldAlert,
 } from 'lucide-react'
 import {
   Select,
@@ -66,6 +68,7 @@ type CodeExerciseSchema = {
   language: string
   starterCode: string
   solutionCode: string
+  strictMode?: boolean
   testCases: {
     testUUID: string
     input: string
@@ -256,6 +259,54 @@ function TaskCodeEditorObject({
     setEditorTheme(val)
     localStorage.setItem('learnhouse_editor_theme', val)
   }
+
+  // Editor refs for formatting/actions
+  const editorRefs = useRef<Record<string, any>>({})
+
+  const formatCode = useCallback(
+    (exerciseUUID: string, language: string) => {
+      const editor = editorRefs.current[exerciseUUID]
+      if (!editor) return
+
+      if (language === 'python') {
+        // Basic Python cleaner since Monaco doesn't have a built-in one out-of-the-box
+        const currentValue = editor.getValue()
+        const cleaned =
+          currentValue
+            .split('\n')
+            .map((line: string) => line.trimEnd())
+            .join('\n')
+            .replace(/\n{3,}/g, '\n\n') // Max 2 newlines
+            .trim() + '\n'
+
+        if (cleaned !== currentValue) {
+          editor.setValue(cleaned)
+          toast.success(
+            t('activities.code_formatted', 'Code cleaned and formatted')
+          )
+        } else {
+          toast.success(t('activities.already_formatted', 'Code already clean'))
+        }
+      } else {
+        // Trigger Monaco's native formatter (works for JS, TS, CSS, JSON, etc.)
+        editor
+          .getAction('editor.action.formatDocument')
+          .run()
+          .then(() =>
+            toast.success(t('activities.code_formatted', 'Code formatted'))
+          )
+          .catch(() =>
+            toast.error(
+              t(
+                'activities.format_not_supported',
+                'Formatting not supported for this language'
+              )
+            )
+          )
+      }
+    },
+    [t]
+  )
 
   // History tracking state
   const [historyTimeline, setHistoryTimeline] = useState<any[]>([])
@@ -790,8 +841,19 @@ function TaskCodeEditorObject({
 
               {/* Starter Code */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
                   {t('dashboard.assignments.editor.starter_code')}
+                  <button
+                    onClick={() =>
+                      formatCode(
+                        `starter-${exercise.exerciseUUID || exIndex}`,
+                        exercise.language
+                      )
+                    }
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                  >
+                    Format
+                  </button>
                 </label>
                 <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
                   <div className="absolute inset-0">
@@ -803,6 +865,11 @@ function TaskCodeEditorObject({
                       onChange={(value) =>
                         updateExercise(exIndex, 'starterCode', value || '')
                       }
+                      onMount={(editor) => {
+                        editorRefs.current[
+                          `starter-${exercise.exerciseUUID || exIndex}`
+                        ] = editor
+                      }}
                       theme={editorTheme}
                       options={{
                         minimap: { enabled: false },
@@ -817,11 +884,24 @@ function TaskCodeEditorObject({
 
               {/* Solution Code */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
-                  {t('dashboard.assignments.editor.solution_code')}
-                  <span className="text-xs text-gray-500 ml-2">
-                    ({t('dashboard.assignments.editor.hidden_from_students')})
-                  </span>
+                <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                  <div className="flex items-center">
+                    {t('dashboard.assignments.editor.solution_code')}
+                    <span className="text-xs text-gray-500 ml-2">
+                      ({t('dashboard.assignments.editor.hidden_from_students')})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      formatCode(
+                        `solution-${exercise.exerciseUUID || exIndex}`,
+                        exercise.language
+                      )
+                    }
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                  >
+                    Format
+                  </button>
                 </label>
                 <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
                   <div className="absolute inset-0">
@@ -833,6 +913,11 @@ function TaskCodeEditorObject({
                       onChange={(value) =>
                         updateExercise(exIndex, 'solutionCode', value || '')
                       }
+                      onMount={(editor) => {
+                        editorRefs.current[
+                          `solution-${exercise.exerciseUUID || exIndex}`
+                        ] = editor
+                      }}
                       theme={editorTheme}
                       options={{
                         minimap: { enabled: false },
@@ -959,6 +1044,38 @@ function TaskCodeEditorObject({
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Strict Mode Toggle */}
+              <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id={`strict-mode-${exIndex}`}
+                  checked={exercise.strictMode || false}
+                  onChange={(e) =>
+                    updateExercise(
+                      exIndex,
+                      'strictMode' as any,
+                      e.target.checked
+                    )
+                  }
+                  className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                <label
+                  htmlFor={`strict-mode-${exIndex}`}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <ShieldAlert size={16} className="text-amber-600" />
+                  <div>
+                    <span className="text-sm font-semibold text-amber-800">
+                      Strict Mode (Exam)
+                    </span>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Disables copy/paste in the student editor to prevent
+                      external code injection.
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
           ))}
@@ -1221,6 +1338,25 @@ function TaskCodeEditorObject({
                               </Select>
                             </div>
                           </div>
+
+                          <button
+                            onClick={() =>
+                              formatCode(
+                                exercise.exerciseUUID,
+                                exercise.language
+                              )
+                            }
+                            className={`flex items-center space-x-2 px-4 py-2 rounded-2xl font-bold text-[11px] transition-all duration-200 shadow-md active:scale-95 ${
+                              isFocusMode
+                                ? 'bg-white/10 text-zinc-300 hover:bg-white/20'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600'
+                            }`}
+                            title="Format Code"
+                          >
+                            <Wand2 size={14} className="text-indigo-500" />
+                            <span className="hidden sm:inline">FORMAT</span>
+                          </button>
+
                           <button
                             onClick={() => runCode(exercise)}
                             disabled={exResults?.isRunning}
@@ -1240,8 +1376,21 @@ function TaskCodeEditorObject({
                             </span>
                           </button>
                         </div>
+
+                        {/* Strict Mode Warning Banner */}
+                        {exercise.strictMode && (
+                          <div
+                            className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-[11px] font-bold tracking-wider ${isFocusMode ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}
+                          >
+                            <ShieldAlert size={14} />
+                            <span>
+                              STRICT MODE — Paste is disabled for this exercise
+                            </span>
+                          </div>
+                        )}
+
                         <div
-                          className={`border rounded-3xl overflow-hidden h-[450px] relative w-full shadow-lg ring-4 ${isFocusMode ? 'border-white/10 ring-white/5 shadow-white/5 bg-[#1e1e1e]' : 'border-slate-200 ring-slate-50 shadow-slate-100 bg-white'}`}
+                          className={`border rounded-3xl overflow-hidden h-[450px] relative w-full shadow-lg ring-4 ${isFocusMode ? 'border-white/10 ring-white/5 shadow-white/5 bg-[#1e1e1e]' : 'border-slate-200 ring-slate-50 shadow-slate-100 bg-white'} ${exercise.strictMode ? 'ring-amber-200/50 border-amber-300/50' : ''}`}
                         >
                           <div className="absolute inset-0">
                             <Editor
@@ -1255,6 +1404,33 @@ function TaskCodeEditorObject({
                                   value || ''
                                 )
                               }
+                              onMount={(editor) => {
+                                editorRefs.current[exercise.exerciseUUID] =
+                                  editor
+
+                                // Strict Mode: block paste
+                                if (exercise.strictMode) {
+                                  // Override Ctrl/Cmd+V keybinding
+                                  editor.addCommand(
+                                    // Monaco KeyMod.CtrlCmd | KeyCode.KeyV
+                                    2048 | 52, // CtrlCmd=2048, KeyV=52
+                                    () => {
+                                      toast.error(
+                                        'Pasting is disabled in Strict Mode (Exam).'
+                                      )
+                                    }
+                                  )
+
+                                  // Also intercept context-menu paste / programmatic paste via onDidPaste
+                                  editor.onDidPaste(() => {
+                                    // Undo the paste that just happened
+                                    editor.trigger('strict-mode', 'undo', null)
+                                    toast.error(
+                                      'Pasting is disabled in Strict Mode (Exam).'
+                                    )
+                                  })
+                                }
+                              }}
                               theme={editorTheme}
                               options={{
                                 minimap: { enabled: false },
