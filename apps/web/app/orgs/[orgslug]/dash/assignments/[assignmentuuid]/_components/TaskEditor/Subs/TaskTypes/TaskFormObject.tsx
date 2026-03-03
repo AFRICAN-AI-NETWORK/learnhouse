@@ -45,12 +45,14 @@ type TaskFormObjectProps = {
   view: 'teacher' | 'student' | 'grading'
   assignmentTaskUUID: string
   user_id?: string
+  isFocusMode?: boolean
 }
 
 function TaskFormObject({
   view,
   assignmentTaskUUID,
   user_id,
+  isFocusMode = false,
 }: TaskFormObjectProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -497,6 +499,7 @@ function TaskFormObject({
         maxPoints={assignmentTaskOutsideProvider?.max_grade_value}
         showSavingDisclaimer={showSavingDisclaimer}
         type="form"
+        isFocusMode={isFocusMode}
       >
         {view === 'grading' && (
           <div className="mb-6 p-4 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
@@ -562,10 +565,12 @@ function TaskFormObject({
                         handleQuestionChange(qIndex, e.target.value)
                       }
                       placeholder="Enter your question with blanks (use ___ for blanks)"
-                      className="w-full px-3 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold"
+                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
                     />
                   ) : (
-                    <p className="w-full px-3 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold">
+                    <p
+                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
+                    >
                       {question.questionText}
                     </p>
                   )}
@@ -585,11 +590,13 @@ function TaskFormObject({
                     <div key={bIndex} className="flex">
                       <div
                         className={
-                          'blank-item outline-3 outline-white pr-2 shadow-sm w-full flex items-center space-x-2 min-h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white text-sm duration-150 ease-linear nice-shadow ' +
+                          `blank-item outline-3 pr-2 shadow-sm w-full flex items-center space-x-2 min-h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg text-sm duration-150 ease-linear nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10 outline-white/10' : 'bg-white outline-white'} ` +
                           (view == 'student' ? 'active:scale-105' : '')
                         }
                       >
-                        <div className="font-bold text-base flex items-center justify-center h-full w-[40px] rounded-l-md text-slate-800 bg-slate-100/80">
+                        <div
+                          className={`font-bold text-base flex items-center justify-center h-full w-[40px] rounded-l-md ${isFocusMode ? 'text-zinc-100 bg-white/10' : 'text-slate-800 bg-slate-100/80'}`}
+                        >
                           <Type size={14} />
                         </div>
                         {view === 'teacher' ? (
@@ -689,7 +696,7 @@ function TaskFormObject({
                               }
                               placeholder={blank.placeholder}
                               data-blank-id={blank.blankUUID}
-                              className="w-full mx-2 px-3 pr-6 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm font-bold transition-all"
+                              className={`w-full mx-2 px-3 pr-6 bg-[#00008b00] border-2 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm font-bold transition-all ${isFocusMode ? 'text-zinc-100 border-white/10' : 'text-neutral-600 border-gray-200'}`}
                             />
                             {blank.hint && (
                               <div className="mx-2 text-xs text-blue-600 italic">

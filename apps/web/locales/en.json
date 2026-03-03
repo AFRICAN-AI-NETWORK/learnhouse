@@ -378,7 +378,10 @@
     "submission_saved": "Progress saved successfully",
     "submission_failed": "Failed to save progress",
     "execution_failed": "Code execution failed",
-    "execution_error": "An error occurred during code execution"
+    "execution_error": "An error occurred during code execution",
+    "next_step": "Next Step",
+    "back": "Back",
+    "complete_lesson": "Complete Lesson"
   },
   "assignments": {
     "submit_assignment": "Submit Assignment",
@@ -441,7 +444,7 @@
     "user": "User"
   },
   "ai": {
-    "ask_ai": "Ask AI",
+    "ask_ai": "AI Learning Companion",
     "ask_ai_placeholder": "Ask AI About this Lecture",
     "experimental": "Experimental",
     "how_can_we_help": "how can we help today ?",

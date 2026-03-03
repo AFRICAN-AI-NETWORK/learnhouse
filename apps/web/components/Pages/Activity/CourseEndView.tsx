@@ -467,7 +467,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
           />
         </div>
 
-        <div className="bg-white rounded-2xl p-8 nice-shadow max-w-4xl w-full space-y-6 relative z-10">
+        <div className="bg-card rounded-2xl p-8 nice-shadow max-w-4xl w-full space-y-6 relative z-10">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage && (
               <img
@@ -486,16 +486,21 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-gray-900">
+          <h1 className="text-4xl font-bold text-card-foreground">
             {t('courses.congratulations')}
           </h1>
 
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-muted-foreground">
             {t('courses.successfully_completed')}
-            <span className="font-semibold text-gray-900"> {courseName}</span>
+            <span className="font-semibold text-card-foreground">
+              {' '}
+              {courseName}
+            </span>
           </p>
 
-          <p className="text-gray-500">{t('certificate.dedication_message')}</p>
+          <p className="text-muted-foreground/80">
+            {t('certificate.dedication_message')}
+          </p>
 
           {isLoadingCertificate ? (
             <div className="flex items-center justify-center py-8">
@@ -510,7 +515,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           ) : userCertificate ? (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <h2 className="text-2xl font-semibold text-card-foreground">
                 {t('certificate.your_certificate')}
               </h2>
               <div className="max-w-2xl mx-auto" id="certificate-preview">
@@ -573,8 +578,8 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
               </div>
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-6">
-              <p className="text-gray-600">
+            <div className="bg-muted rounded-lg p-6">
+              <p className="text-muted-foreground">
                 {t('certificate.no_certificate_available')}
               </p>
             </div>
@@ -599,7 +604,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
     // Show progress and encouragement for incomplete course
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="bg-white rounded-2xl p-8 nice-shadow max-w-2xl w-full space-y-6">
+        <div className="bg-card rounded-2xl p-8 nice-shadow max-w-2xl w-full space-y-6">
           <div className="flex flex-col items-center space-y-6">
             {thumbnailImage && (
               <img
@@ -618,40 +623,45 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-gray-900">
+          <h1 className="text-4xl font-bold text-card-foreground">
             {t('courses.keep_going')}
           </h1>
 
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-muted-foreground">
             {t('courses.making_great_progress')}
-            <span className="font-semibold text-gray-900"> {courseName}</span>
+            <span className="font-semibold text-card-foreground">
+              {' '}
+              {courseName}
+            </span>
           </p>
 
           {progressInfo && (
-            <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <div className="bg-muted rounded-lg p-6 space-y-4">
               <div className="flex items-center justify-center space-x-2">
-                <BookOpen className="w-5 h-5 text-gray-600" />
-                <span className="text-lg font-semibold text-gray-700">
+                <BookOpen className="w-5 h-5 text-muted-foreground" />
+                <span className="text-lg font-semibold text-foreground">
                   {t('courses.course_progress')}
                 </span>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">{t('courses.progress')}</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="text-muted-foreground">
+                    {t('courses.progress')}
+                  </span>
+                  <span className="font-semibold text-card-foreground">
                     {progressInfo.percentage}%
                   </span>
                 </div>
 
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-background rounded-full h-3">
                   <div
                     className="bg-blue-600 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${progressInfo.percentage}%` }}
                   ></div>
                 </div>
 
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   {t('courses.completed_of', {
                     completed: progressInfo.completed,
                     total: progressInfo.total,
@@ -661,7 +671,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           )}
 
-          <p className="text-gray-500">{t('courses.keep_going_description')}</p>
+          <p className="text-muted-foreground/80">
+            {t('courses.keep_going_description')}
+          </p>
 
           <div className="pt-6">
             <Link

@@ -13,6 +13,7 @@ from src.services.courses.activities.activities import (
 )
 from src.security.auth import get_current_user
 from src.services.courses.activities.pdf import create_documentpdf_activity
+from src.services.courses.activities.smart_article import create_smart_article_activity
 from src.services.courses.activities.video import (
     ExternalVideo,
     create_external_video_activity,
@@ -162,3 +163,136 @@ async def api_create_documentpdf_activity(
     return await create_documentpdf_activity(
         request, name, chapter_id, current_user, db_session, pdf_file
     )
+
+
+# Smart Article activity
+
+
+@router.post("/smart_article")
+async def api_create_smart_article_activity(
+    request: Request,
+    name: str = Form(),
+    chapter_id: str = Form(),
+    current_user: PublicUser = Depends(get_current_user),
+    pdf_file: UploadFile | None = None,
+    db_session=Depends(get_db_session),
+) -> ActivityRead:
+    """
+    Create a Smart Article activity from a PDF.
+    The PDF text is extracted and chunked by AI into sequential steps.
+    """
+    return await create_smart_article_activity(
+        request, name, chapter_id, current_user, db_session, pdf_file
+    )
+
+
+# AI Interact endpoint (translate / ask AI)
+
+
+@router.post("/ai_interact")
+async def api_ai_interact(
+    request: Request,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session=Depends(get_db_session),
+):
+    """
+    AI interaction endpoint for Smart Article features.
+    Supports 'translate' and 'ask' actions.
+    """
+    import json
+    import os
+    import httpx
+    from config.config import get_learnhouse_config
+
+    body = await request.json()
+    action = body.get("action")  # 'translate' or 'ask'
+    text = body.get("text", "")
+    title = body.get("title", "")
+    language = body.get("language", "")
+    question = body.get("question", "")
+
+    config = get_learnhouse_config()
+    gemini_key = os.environ.get("LEARNHOUSE_GEMINI_API_KEY")
+    openai_key = config.ai_config.openai_api_key
+
+    if action == "translate":
+        # If title is provided, translate both as JSON
+        if title:
+            prompt = (
+                f"Translate the following JSON object into {language}. "
+                f"Preserve the JSON structure exactly. Return ONLY the JSON object, nothing else.\n\n"
+                f'{{ "title": "{title}", "content": "{text}" }}'
+            )
+        else:
+            prompt = f"Translate the following text to {language}. Return ONLY the translated text, nothing else.\n\n{text}"
+    elif action == "ask":
+        lang_instruction = f" Please respond in {language}." if language else ""
+        prompt = (
+            f"You are a helpful learning assistant.{lang_instruction} "
+            f"The student is reading the following content:\n\n---\n{text}\n---\n\n"
+            f"The student asks: {question}\n\nProvide a clear, concise, and helpful answer."
+        )
+    else:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Invalid action. Use 'translate' or 'ask'.")
+
+    # Try Gemini first, then OpenAI
+    result_text = None
+
+    if gemini_key:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.3, "maxOutputTokens": 4000},
+            }
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                result_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception:
+            pass
+
+    if result_text is None and openai_key:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=4000,
+            )
+            result_text = response.choices[0].message.content
+        except Exception:
+            pass
+
+    if result_text is None:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=502,
+            detail="AI service unavailable. Check your API keys.",
+        )
+
+    # Handle JSON parsing for combined translation
+    if action == "translate" and title:
+        try:
+            cleaned_text = result_text.strip()
+            if "```" in cleaned_text:
+                # Extract content between ```json and ``` or just ```
+                import re
+                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_text, re.DOTALL)
+                if match:
+                    cleaned_text = match.group(1)
+            
+            import json
+            translated_data = json.loads(cleaned_text)
+            return {
+                "result": translated_data.get("content", result_text),
+                "title": translated_data.get("title", "")
+            }
+        except Exception:
+            return {"result": result_text, "title": ""}
+
+    return {"result": result_text}

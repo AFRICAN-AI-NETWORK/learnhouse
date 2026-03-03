@@ -12,6 +12,7 @@ import {
   Lock,
   Pencil,
   Save,
+  Layers,
   Sparkles,
   Video,
   X,
@@ -318,6 +319,10 @@ const ACTIVITIES = {
     Icon: Backpack,
   },
   TYPE_DYNAMIC: {
+    displayNameKey: 'dynamic',
+    Icon: Layers,
+  },
+  TYPE_SMART_ARTICLE: {
     displayNameKey: 'dynamic',
     Icon: Sparkles,
   },

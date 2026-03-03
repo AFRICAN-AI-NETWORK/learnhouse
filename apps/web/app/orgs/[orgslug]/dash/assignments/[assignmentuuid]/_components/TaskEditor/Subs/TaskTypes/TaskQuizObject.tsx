@@ -46,6 +46,7 @@ type TaskQuizObjectProps = {
   view: 'teacher' | 'student' | 'grading'
   user_id?: string // Only for read-only view
   assignmentTaskUUID?: string
+  isFocusMode?: boolean
 }
 
 type Submission = {
@@ -58,6 +59,7 @@ function TaskQuizObject({
   view,
   assignmentTaskUUID,
   user_id,
+  isFocusMode = false,
 }: TaskQuizObjectProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -469,6 +471,7 @@ function TaskQuizObject({
         maxPoints={assignmentTaskOutsideProvider?.max_grade_value}
         showSavingDisclaimer={showSavingDisclaimer}
         type="quiz"
+        isFocusMode={isFocusMode}
       >
         <div className="flex flex-col space-y-6">
           {questions &&
@@ -482,10 +485,12 @@ function TaskQuizObject({
                         handleQuestionChange(qIndex, e.target.value)
                       }
                       placeholder="Question"
-                      className="w-full px-3 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold"
+                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
                     />
                   ) : (
-                    <p className="w-full px-3 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold">
+                    <p
+                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
+                    >
                       {question.questionText}
                     </p>
                   )}
@@ -506,11 +511,13 @@ function TaskQuizObject({
                           view === 'student' && chooseOption(qIndex, oIndex)
                         }
                         className={
-                          'answer outline-3 outline-white pr-2 shadow-sm w-full flex items-center space-x-2 h-[30px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white text-sm duration-150 cursor-pointer ease-linear nice-shadow ' +
-                          (view == 'student' ? 'active:scale-110' : '')
+                          `answer outline-3 pr-2 shadow-sm w-full flex items-center space-x-2 h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg text-sm duration-150 cursor-pointer ease-linear nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10 outline-white/10' : 'bg-white outline-white'} ` +
+                          (view == 'student' ? 'active:scale-105' : '')
                         }
                       >
-                        <div className="font-bold text-base flex items-center h-full w-[40px] rounded-l-md text-slate-800 bg-slate-100/80">
+                        <div
+                          className={`font-bold text-base flex items-center h-full w-[40px] rounded-l-md ${isFocusMode ? 'text-zinc-100 bg-white/10' : 'text-slate-800 bg-slate-100/80'}`}
+                        >
                           <p className="mx-auto font-bold text-sm">
                             {String.fromCharCode(65 + oIndex)}
                           </p>
@@ -523,10 +530,12 @@ function TaskQuizObject({
                               handleOptionChange(qIndex, oIndex, e.target.value)
                             }
                             placeholder="Option"
-                            className="w-full mx-2 px-3 pr-6 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold"
+                            className={`w-full mx-2 px-3 pr-6 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-200 border-white/10' : 'text-neutral-600 border-gray-200'}`}
                           />
                         ) : (
-                          <p className="w-full mx-2 px-3 pr-6 text-neutral-600 bg-[#00008b00] text-sm font-bold">
+                          <p
+                            className={`w-full mx-2 px-3 pr-6 text-sm font-bold ${isFocusMode ? 'text-zinc-200' : 'text-neutral-600'}`}
+                          >
                             {option.text}
                           </p>
                         )}

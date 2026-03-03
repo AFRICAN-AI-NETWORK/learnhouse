@@ -336,7 +336,10 @@
     "submission_saved": "Progression enregistrée avec succès",
     "submission_failed": "Échec de l'enregistrement de la progression",
     "execution_failed": "L'exécution du code a échoué",
-    "execution_error": "Une erreur est survenue lors de l'exécution du code"
+    "execution_error": "Une erreur est survenue lors de l'exécution du code",
+    "next_step": "Étape Suivante",
+    "back": "Retour",
+    "complete_lesson": "Terminer la leçon"
   },
   "assignments": {
     "submit_assignment": "Rendre le devoir",
@@ -399,7 +402,7 @@
     "user": "Membre"
   },
   "ai": {
-    "ask_ai": "Demander à l'IA",
+    "ask_ai": "Assistant d'apprentissage IA",
     "ask_ai_placeholder": "Posez une question sur ce cours",
     "experimental": "Expérimental",
     "how_can_we_help": "Comment puis-je vous aider ?",

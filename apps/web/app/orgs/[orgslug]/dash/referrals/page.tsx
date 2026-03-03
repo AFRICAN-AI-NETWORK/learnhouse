@@ -19,6 +19,7 @@ import {
   approvePayoutRequest,
   rejectPayoutRequest,
 } from '@services/referral/referral.service'
+import { getPublicProducts } from '@services/payments/public-products'
 
 import type {
   ReferralCode,
@@ -91,9 +92,31 @@ function ReferralsPage() {
     getCommissionHistory(token as string, org as string)
   )
 
+  const productsKey = org_id ? ['public-products', org_id] : null
+  const { data: productsData } = useSWR(productsKey, ([, org]) =>
+    getPublicProducts(org as string)
+  )
+
   const referralCode: ReferralCode | null = codeData?.data ?? null
   const balance: CommissionBalance | null = balanceData?.data ?? null
   const records: CommissionRecord[] = historyData?.data ?? []
+
+  const packageCurrency = useMemo(() => {
+    const products = Array.isArray(productsData) ? productsData : []
+
+    const paidProduct = products.find(
+      (product: any) =>
+        Number(product?.amount ?? 0) > 0 &&
+        typeof product?.currency === 'string'
+    )
+
+    return (
+      paidProduct?.currency ??
+      products.find((product: any) => typeof product?.currency === 'string')
+        ?.currency ??
+      ''
+    )
+  }, [productsData])
 
   const historyErr = (() => {
     const backendError = historyData?.error
@@ -228,6 +251,7 @@ function ReferralsPage() {
 
         <CommissionBalanceCard
           balance={balance}
+          displayCurrency={packageCurrency || balance?.currency || 'USD'}
           isLoading={balanceLoading}
           onRequestPayout={() => setPayoutOpen(true)}
         />
@@ -237,6 +261,7 @@ function ReferralsPage() {
       <div className="w-full overflow-hidden">
         <CommissionHistoryList
           records={records}
+          displayCurrency={packageCurrency || balance?.currency || 'USD'}
           isLoading={historyLoading}
           error={historyErr}
         />
