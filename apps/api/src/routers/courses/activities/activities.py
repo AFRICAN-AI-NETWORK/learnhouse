@@ -207,6 +207,7 @@ async def api_ai_interact(
     body = await request.json()
     action = body.get("action")  # 'translate' or 'ask'
     text = body.get("text", "")
+    title = body.get("title", "")
     language = body.get("language", "")
     question = body.get("question", "")
 
@@ -215,9 +216,22 @@ async def api_ai_interact(
     openai_key = config.ai_config.openai_api_key
 
     if action == "translate":
-        prompt = f"Translate the following text to {language}. Return ONLY the translated text, nothing else.\n\n{text}"
+        # If title is provided, translate both as JSON
+        if title:
+            prompt = (
+                f"Translate the following JSON object into {language}. "
+                f"Preserve the JSON structure exactly. Return ONLY the JSON object, nothing else.\n\n"
+                f'{{ "title": "{title}", "content": "{text}" }}'
+            )
+        else:
+            prompt = f"Translate the following text to {language}. Return ONLY the translated text, nothing else.\n\n{text}"
     elif action == "ask":
-        prompt = f"You are a helpful learning assistant. The student is reading the following content:\n\n---\n{text}\n---\n\nThe student asks: {question}\n\nProvide a clear, concise, and helpful answer."
+        lang_instruction = f" Please respond in {language}." if language else ""
+        prompt = (
+            f"You are a helpful learning assistant.{lang_instruction} "
+            f"The student is reading the following content:\n\n---\n{text}\n---\n\n"
+            f"The student asks: {question}\n\nProvide a clear, concise, and helpful answer."
+        )
     else:
         from fastapi import HTTPException
         from starlette import status
@@ -262,5 +276,25 @@ async def api_ai_interact(
             status_code=502,
             detail="AI service unavailable. Check your API keys.",
         )
+
+    # Handle JSON parsing for combined translation
+    if action == "translate" and title:
+        try:
+            cleaned_text = result_text.strip()
+            if "```" in cleaned_text:
+                # Extract content between ```json and ``` or just ```
+                import re
+                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_text, re.DOTALL)
+                if match:
+                    cleaned_text = match.group(1)
+            
+            import json
+            translated_data = json.loads(cleaned_text)
+            return {
+                "result": translated_data.get("content", result_text),
+                "title": translated_data.get("title", "")
+            }
+        except Exception:
+            return {"result": result_text, "title": ""}
 
     return {"result": result_text}

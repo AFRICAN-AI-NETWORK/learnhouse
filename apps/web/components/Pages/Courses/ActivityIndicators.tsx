@@ -227,9 +227,11 @@ function ActivityIndicators(props: Props) {
   const enableNavigation = props.enableNavigation || false
   const router = useRouter()
 
-  const done_activity_style = 'bg-teal-600 hover:bg-teal-700'
-  const black_activity_style = 'bg-zinc-300 hover:bg-zinc-400'
-  const current_activity_style = 'bg-gray-600 animate-pulse hover:bg-gray-700'
+  const done_activity_style =
+    'bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+  const black_activity_style = 'bg-zinc-200 border border-zinc-300'
+  const current_activity_style =
+    'bg-zinc-900 shadow-[0_0_10px_rgba(24,24,27,0.2)]'
 
   // Flatten all activities for navigation and rendering
   const allActivities = useMemo(() => {
@@ -294,7 +296,7 @@ function ActivityIndicators(props: Props) {
         return `${done_activity_style}`
       }
       if (isCurrent) {
-        return `${current_activity_style} border-2 border-gray-800 animate-pulse`
+        return `${current_activity_style}`
       }
       return `${black_activity_style}`
     },
@@ -344,19 +346,19 @@ function ActivityIndicators(props: Props) {
   }, [allActivities, isActivityDone])
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3 py-6">
       {enableNavigation && (
         <button
           onClick={navigateToPrevious}
           disabled={currentActivityIndex <= 0}
-          className="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+          className="p-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm shrink-0 active:scale-95"
           aria-label={t('activities.previous_activity')}
         >
-          <ChevronLeft size={20} className="text-gray-600" />
+          <ChevronLeft size={18} className="text-zinc-600" />
         </button>
       )}
 
-      <div className="flex items-center w-full">
+      <div className="flex items-center w-full bg-zinc-50 p-1.5 rounded-2xl border border-zinc-200/60 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
         {course.chapters.map((chapter: any, chapterIndex: number) => {
           const completedActivities = getChapterProgress(chapter.activities)
           const isChapterComplete =
@@ -374,7 +376,7 @@ function ActivityIndicators(props: Props) {
           return (
             <React.Fragment key={chapter.id}>
               <ToolTip
-                sideOffset={8}
+                sideOffset={12}
                 unstyled
                 content={
                   <ChapterTooltipContent
@@ -389,25 +391,25 @@ function ActivityIndicators(props: Props) {
                   <Link
                     href={chapterLinkHref}
                     prefetch={false}
-                    className="mx-2 h-[20px] flex items-center cursor-pointer focus:outline-none"
+                    className="mx-1.5 h-[28px] flex items-center cursor-pointer focus:outline-none group"
                   >
                     <div
-                      className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                      className={`w-[28px] h-[28px] rounded-xl flex items-center justify-center text-[11px] font-black transition-all ${
                         isChapterComplete
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'bg-teal-500 text-white shadow-[0_4px_10px_rgba(20,184,166,0.3)] scale-105'
+                          : 'bg-white border border-zinc-200 text-zinc-500 group-hover:border-zinc-300 group-hover:text-zinc-700'
                       }`}
                     >
                       {chapterIndex + 1}
                     </div>
                   </Link>
                 ) : (
-                  <div className="mx-2 h-[20px] flex items-center cursor-not-allowed">
+                  <div className="mx-1.5 h-[28px] flex items-center cursor-not-allowed">
                     <div
-                      className={`w-[20px] h-[20px] rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                      className={`w-[28px] h-[28px] rounded-xl flex items-center justify-center text-[11px] font-black transition-all ${
                         isChapterComplete
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'bg-teal-500 text-white'
+                          : 'bg-zinc-100/50 border border-zinc-200 text-zinc-400'
                       }`}
                     >
                       {chapterIndex + 1}
@@ -415,13 +417,13 @@ function ActivityIndicators(props: Props) {
                   </div>
                 )}
               </ToolTip>
-              <div className="flex-1 flex items-center">
+              <div className="flex-1 flex items-center px-1">
                 {chapter.activities.map((activity: any) => {
                   const isDone = isActivityDone(activity)
                   const isCurrent = isActivityCurrent(activity)
                   return (
                     <ToolTip
-                      sideOffset={8}
+                      sideOffset={12}
                       unstyled
                       content={
                         <ActivityTooltipContent
@@ -441,10 +443,10 @@ function ActivityIndicators(props: Props) {
                             ''
                           )}`
                         }
-                        className={`${isCurrent ? 'flex-2' : 'flex-1'} mx-1`}
+                        className={`${isCurrent ? 'flex-2' : 'flex-1'} mx-0.5 group`}
                       >
                         <div
-                          className={`h-[7px] ${getActivityClass(activity)} rounded-lg transition-all`}
+                          className={`h-[6px] ${getActivityClass(activity)} rounded-full transition-all duration-300 ${isCurrent ? 'h-[8px] bg-zinc-900' : 'group-hover:opacity-80'}`}
                         ></div>
                       </Link>
                     </ToolTip>
@@ -467,10 +469,10 @@ function ActivityIndicators(props: Props) {
         <button
           onClick={navigateToNext}
           disabled={currentActivityIndex >= allActivities.length - 1}
-          className="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+          className="p-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm shrink-0 active:scale-95"
           aria-label={t('activities.next_activity')}
         >
-          <ChevronRight size={20} className="text-gray-600" />
+          <ChevronRight size={18} className="text-zinc-600" />
         </button>
       )}
     </div>

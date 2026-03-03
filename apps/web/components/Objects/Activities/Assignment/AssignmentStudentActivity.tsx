@@ -17,7 +17,11 @@ import Link from 'next/link'
 import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
-function AssignmentStudentActivity() {
+function AssignmentStudentActivity({
+  isFocusMode = false,
+}: {
+  isFocusMode?: boolean
+}) {
   const { t } = useTranslation()
   const assignments = useAssignments() as any
   const course = useCourse() as any
@@ -29,7 +33,9 @@ function AssignmentStudentActivity() {
     <div className="flex flex-col space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0 items-center">
         <div className="text-xs h-fit flex space-x-3 items-center">
-          <div className="flex gap-2 py-2 px-4 md:px-5 h-fit text-sm text-slate-700 bg-slate-100/5 rounded-full nice-shadow items-center">
+          <div
+            className={`flex gap-2 py-2 px-4 md:px-5 h-fit text-sm rounded-full nice-shadow items-center ${isFocusMode ? 'bg-white/5 text-zinc-300 border border-white/10' : 'text-slate-700 bg-slate-100/5'}`}
+          >
             <Backpack size={14} className="md:size-[14px]" />
             <p className="font-semibold">{t('activities.assignment')}</p>
           </div>
@@ -41,10 +47,18 @@ function AssignmentStudentActivity() {
               size={18}
             />
             <div className="flex gap-2 items-center">
-              <div className="flex gap-1 md:space-x-2 text-xs items-center text-slate-400">
+              <div
+                className={`flex gap-1 md:space-x-2 text-xs items-center ${isFocusMode ? 'text-zinc-300' : 'text-slate-400'}`}
+              >
                 <Calendar size={14} />
-                <p className="font-semibold">{t('assignments.due_date')}</p>
-                <p className="font-semibold">
+                <p
+                  className={`font-semibold ${isFocusMode ? 'text-zinc-300' : 'text-slate-400'}`}
+                >
+                  {t('assignments.due_date')}
+                </p>
+                <p
+                  className={`font-semibold ${isFocusMode ? 'text-zinc-100' : 'text-slate-400'}`}
+                >
                   {assignments?.assignment_object?.due_date}
                 </p>
               </div>
@@ -54,16 +68,27 @@ function AssignmentStudentActivity() {
       </div>
 
       {assignments?.assignment_object?.description && (
-        <div className="flex flex-col space-y-2 p-4 md:p-6 bg-slate-100/30 rounded-md nice-shadow">
+        <div
+          className={`flex flex-col space-y-2 p-4 md:p-6 rounded-md nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10' : 'bg-slate-100/30'}`}
+        >
           <div className="flex flex-col space-y-3">
-            <div className="flex items-center gap-2 text-slate-700">
-              <Info size={16} className="text-slate-500" />
-              <h3 className="text-sm font-semibold">
+            <div
+              className={`flex items-center gap-2 ${isFocusMode ? 'text-white' : 'text-slate-700'}`}
+            >
+              <Info
+                size={16}
+                className={`${isFocusMode ? 'text-zinc-300' : 'text-slate-500'}`}
+              />
+              <h3
+                className={`text-sm font-semibold ${isFocusMode ? 'text-white' : 'text-slate-700'}`}
+              >
                 {t('assignments.assignment_description')}
               </h3>
             </div>
             <div className="pl-6">
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p
+                className={`text-sm leading-relaxed font-medium ${isFocusMode ? 'text-zinc-100' : 'text-slate-600'}`}
+              >
                 {assignments.assignment_object.description}
               </p>
             </div>
@@ -81,21 +106,27 @@ function AssignmentStudentActivity() {
                 key={task.assignment_task_uuid}
               >
                 <div className="flex flex-col md:flex-row md:justify-between py-2 space-y-2 md:space-y-0">
-                  <div className="flex flex-wrap space-x-2 font-semibold text-slate-800">
-                    <p>
+                  <div
+                    className={`flex flex-wrap space-x-2 font-semibold ${isFocusMode ? 'text-white' : 'text-slate-800'}`}
+                  >
+                    <p
+                      className={`${isFocusMode ? 'text-white' : 'text-slate-700'} transition-colors`}
+                    >
                       {t('assignments.task')} {index + 1} :{' '}
                     </p>
-                    <p className="text-slate-500 wrap-break-word">
+                    <p
+                      className={`${isFocusMode ? 'text-zinc-100' : 'text-slate-500'} wrap-break-word transition-colors`}
+                    >
                       {task.description}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div
                       onClick={() => alert(task.hint)}
-                      className="px-3 py-1 flex items-center nice-shadow bg-amber-50/40 text-amber-900 rounded-full space-x-2 cursor-pointer"
+                      className={`px-3 py-1 flex items-center nice-shadow rounded-full space-x-2 cursor-pointer transition-all hover:scale-105 active:scale-95 ${isFocusMode ? 'bg-amber-400/10 border border-amber-400/20 text-amber-300' : 'bg-amber-50/40 text-amber-900'}`}
                     >
                       <Info size={13} />
-                      <p className="text-xs font-semibold">
+                      <p className="text-xs font-bold uppercase tracking-wider">
                         {t('assignments.hint')}
                       </p>
                     </div>
@@ -110,16 +141,18 @@ function AssignmentStudentActivity() {
                       )}
                       target="_blank"
                       download={true}
-                      className="px-3 py-1 flex items-center nice-shadow bg-cyan-50/40 text-cyan-900 rounded-full space-x-1 md:space-x-2 cursor-pointer"
+                      className={`px-3 py-1 flex items-center nice-shadow rounded-full space-x-1 md:space-x-2 cursor-pointer transition-all hover:scale-105 active:scale-95 ${isFocusMode ? 'bg-cyan-400/10 border border-cyan-400/20 text-cyan-300' : 'bg-cyan-50/40 text-cyan-900'}`}
                     >
                       <Download size={13} />
                       <div className="flex items-center space-x-1 md:space-x-2">
                         {task.reference_file && (
                           <span className="relative">
-                            <span className="absolute right-0 top-0 block h-2 w-2 rounded-full ring-2 ring-white bg-green-400"></span>
+                            <span
+                              className={`absolute right-0 top-0 block h-2 w-2 rounded-full ring-2 ${isFocusMode ? 'ring-cyan-900/50' : 'ring-white'} bg-green-400`}
+                            ></span>
                           </span>
                         )}
-                        <p className="text-xs font-semibold">
+                        <p className="text-xs font-bold uppercase tracking-wider">
                           {t('assignments.reference_document')}
                         </p>
                       </div>
@@ -132,6 +165,7 @@ function AssignmentStudentActivity() {
                       key={task.assignment_task_uuid}
                       view="student"
                       assignmentTaskUUID={task.assignment_task_uuid}
+                      isFocusMode={isFocusMode}
                     />
                   )}
                   {task.assignment_type === 'FILE_SUBMISSION' && (
@@ -139,6 +173,7 @@ function AssignmentStudentActivity() {
                       key={task.assignment_task_uuid}
                       view="student"
                       assignmentTaskUUID={task.assignment_task_uuid}
+                      isFocusMode={isFocusMode}
                     />
                   )}
                   {task.assignment_type === 'FORM' && (
@@ -146,6 +181,7 @@ function AssignmentStudentActivity() {
                       key={task.assignment_task_uuid}
                       view="student"
                       assignmentTaskUUID={task.assignment_task_uuid}
+                      isFocusMode={isFocusMode}
                     />
                   )}
                   {task.assignment_type === 'CODE_EDITOR' && (
@@ -153,6 +189,7 @@ function AssignmentStudentActivity() {
                       key={task.assignment_task_uuid}
                       view="student"
                       assignmentTaskUUID={task.assignment_task_uuid}
+                      isFocusMode={isFocusMode}
                     />
                   )}
                 </div>
