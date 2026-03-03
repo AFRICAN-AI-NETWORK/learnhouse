@@ -1,9 +1,11 @@
 """List available Gemini models."""
 import os
-from dotenv import load_dotenv
-load_dotenv()
 
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
+
 genai.configure(api_key=os.environ.get("LEARNHOUSE_GEMINI_API_KEY"))
 
 for m in genai.list_models():

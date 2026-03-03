@@ -9,7 +9,6 @@ from uuid import uuid4
 from datetime import datetime
 
 from src.db.courses.courses import Course
-from src.db.organizations import Organization
 from src.db.courses.chapters import Chapter
 from src.db.courses.activities import (
     Activity,

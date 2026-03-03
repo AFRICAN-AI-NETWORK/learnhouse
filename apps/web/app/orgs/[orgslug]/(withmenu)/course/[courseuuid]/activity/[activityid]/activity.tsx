@@ -728,12 +728,12 @@ function ActivityClient(props: ActivityClientProps) {
                                   trailData={trailData}
                                 />
 
-                                {/* Exit button hidden per user request on Desktop and Tablet */}
+                                {/* Exit Focus Mode button */}
                                 <motion.button
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
                                   onClick={() => setIsFocusMode(false)}
-                                  className="bg-white/5 border border-white/10 p-2 rounded-full cursor-pointer hover:bg-white/10 transition-colors md:hidden"
+                                  className="bg-white/5 border border-white/10 p-2 rounded-full cursor-pointer hover:bg-white/10 transition-colors"
                                   title={t('activities.exit_focus_mode')}
                                 >
                                   <Minimize2 size={16} className="text-white" />

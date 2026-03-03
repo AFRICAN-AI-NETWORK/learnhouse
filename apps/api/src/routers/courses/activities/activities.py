@@ -234,7 +234,6 @@ async def api_ai_interact(
         )
     else:
         from fastapi import HTTPException
-        from starlette import status
         raise HTTPException(status_code=400, detail="Invalid action. Use 'translate' or 'ask'.")
 
     # Try Gemini first, then OpenAI
@@ -271,7 +270,6 @@ async def api_ai_interact(
 
     if result_text is None:
         from fastapi import HTTPException
-        from starlette import status
         raise HTTPException(
             status_code=502,
             detail="AI service unavailable. Check your API keys.",
