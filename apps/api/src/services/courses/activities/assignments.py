@@ -79,10 +79,12 @@ async def perform_auto_grading(assignment_task: AssignmentTask, submission: Assi
         total_tests += len(test_cases)
         
         # Execute and grade
+        dataset_files = exercise.get("datasetFiles", [])
         exec_res = await execute_and_grade(
             language=exercise.get("language", "python"),
             code=sub.get("code", ""),
-            test_cases=test_cases
+            test_cases=test_cases,
+            dataset_files=dataset_files
         )
         
         if exec_res:
