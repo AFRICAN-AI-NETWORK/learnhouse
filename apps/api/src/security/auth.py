@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlmodel import Session, select  # Added 'select' here
 from src.core.events.database import get_db_session
 from src.db.users import AnonymousUser, PublicUser, User, UserRead

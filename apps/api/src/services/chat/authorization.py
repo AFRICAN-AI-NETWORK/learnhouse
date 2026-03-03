@@ -1,6 +1,6 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from src.db.users import User
 from src.db.user_organizations import UserOrganization
 from src.db.roles import Role
@@ -90,23 +90,28 @@ async def get_chatable_users_for_user(
     
     current_role_name = current_user_role.name.lower()
     
-    # Define target roles based on current user's role
-    target_role_names = {
+    # Define target roles based on current user's role (case-insensitive)
+    target_role_names_map = {
         "student": ["instructor"],
         "learner": ["instructor"],
         "user": ["instructor"],
         "instructor": ["student", "learner", "user", "instructor", "admin", "maintainer"],
         "admin": ["student", "learner", "user", "instructor", "admin", "maintainer"],
         "maintainer": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-    }.get(current_role_name, [])
+    }
     
-    # Query users with target roles in the organization
+    target_role_names = target_role_names_map.get(current_role_name, [])
+    
+    if not target_role_names:
+        return []
+    
+    # Query users with target roles in the organization (case-insensitive role matching)
     statement = (
         select(User)
         .join(UserOrganization, UserOrganization.user_id == User.id)
         .join(Role, Role.id == UserOrganization.role_id)
         .where(UserOrganization.org_id == org_id)
-        .where(Role.name.in_(target_role_names))
+        .where(func.lower(Role.name).in_(target_role_names))
         .where(User.id != current_user_id)
     )
     

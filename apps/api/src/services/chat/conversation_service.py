@@ -5,7 +5,7 @@ from sqlmodel import Session, select, and_, or_, func
 from fastapi import HTTPException, status
 
 from src.db.chat.conversations import (
-    Conversation, ConversationWithLastMessage
+    Conversation, ConversationRead, ConversationWithLastMessage
 )
 from src.db.chat.messages import Message, MessageReadReceipt
 from src.db.users import User
@@ -24,10 +24,11 @@ class ConversationService:
         current_user_id: int,
         target_user_id: int,
         org_id: int
-    ) -> Conversation:
+    ) -> ConversationRead:
         """
         Create a new conversation or return existing one.
         Enforces bidirectional uniqueness.
+        Returns enriched conversation with other_participant details.
         """
         
         # Verify permission
@@ -47,25 +48,75 @@ class ConversationService:
         existing_conversation = db.exec(statement).first()
         
         if existing_conversation:
-            return existing_conversation
+            conversation = existing_conversation
+        else:
+            # Create new conversation
+            conversation = Conversation(
+                conversation_uuid=f"conv_{uuid4()}",
+                org_id=org_id,
+                participant_one_id=participant_one,
+                participant_two_id=participant_two,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            
+            db.add(conversation)
+            db.commit()
+            db.refresh(conversation)
+            
+            logger.info(f"Created conversation {conversation.conversation_uuid} between users {current_user_id} and {target_user_id}")
         
-        # Create new conversation
-        new_conversation = Conversation(
-            conversation_uuid=f"conv_{uuid4()}",
-            org_id=org_id,
-            participant_one_id=participant_one,
-            participant_two_id=participant_two,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+        # Get the other participant details
+        other_user_id = target_user_id
+        other_user = db.get(User, other_user_id)
+        
+        if not other_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with ID {other_user_id} not found"
+            )
+        
+        # Count unread messages for current user
+        unread_count_query = (
+            select(func.count(Message.id))
+            .outerjoin(
+                MessageReadReceipt,
+                and_(
+                    MessageReadReceipt.message_id == Message.id,
+                    MessageReadReceipt.user_id == current_user_id,
+                    MessageReadReceipt.read_at.isnot(None)
+                )
+            )
+            .where(
+                Message.conversation_id == conversation.id,
+                Message.receiver_id == current_user_id,
+                Message.is_deleted == False,
+                MessageReadReceipt.id.is_(None)  # Not read
+            )
         )
+        unread_count = db.exec(unread_count_query).one()
         
-        db.add(new_conversation)
-        db.commit()
-        db.refresh(new_conversation)
-        
-        logger.info(f"Created conversation {new_conversation.conversation_uuid} between users {current_user_id} and {target_user_id}")
-        
-        return new_conversation
+        # Return enriched conversation
+        return ConversationRead(
+            id=conversation.id,
+            conversation_uuid=conversation.conversation_uuid,
+            org_id=conversation.org_id,
+            participant_one_id=conversation.participant_one_id,
+            participant_two_id=conversation.participant_two_id,
+            last_message_at=conversation.last_message_at,
+            is_archived=conversation.is_archived,
+            created_at=conversation.created_at,
+            updated_at=conversation.updated_at,
+            unread_count=int(unread_count),
+            other_participant={
+                "id": other_user.id,
+                "user_uuid": other_user.user_uuid,
+                "username": other_user.username,
+                "first_name": other_user.first_name,
+                "last_name": other_user.last_name,
+                "avatar_image": other_user.avatar_image
+            }
+        )
     
     @staticmethod
     async def get_user_conversations(
