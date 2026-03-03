@@ -63,12 +63,17 @@ function AISidebar({
         thinking: 'Thinking...',
         placeholder: 'Ask AI about this step...',
       })
-      setChatMessages([
-        {
-          role: 'ai',
-          text: "I'm here to help you understand this chapter! Need me to explain a concept in simpler terms? Just ask.",
-        },
-      ])
+      setChatMessages((prev) => {
+        if (prev.length <= 1) {
+          return [
+            {
+              role: 'ai',
+              text: "I'm here to help you understand this chapter! Need me to explain a concept in simpler terms? Just ask.",
+            },
+          ]
+        }
+        return prev
+      })
       return
     }
 
@@ -98,12 +103,17 @@ function AISidebar({
                 thinking: translated[1],
                 placeholder: translated[2],
               })
-              setChatMessages([
-                {
-                  role: 'ai',
-                  text: translated[0],
-                },
-              ])
+              setChatMessages((prev) => {
+                if (prev.length <= 1) {
+                  return [
+                    {
+                      role: 'ai',
+                      text: translated[0],
+                    },
+                  ]
+                }
+                return prev
+              })
             }
           } catch (e) {
             // Fallback if AI doesn't return clean JSON array
