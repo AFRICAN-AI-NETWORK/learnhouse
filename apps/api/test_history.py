@@ -1,10 +1,11 @@
-import sys
 import json
-import requests
-from sqlalchemy import create_engine, text
+import sys
 from datetime import datetime
 
-# Authenticate
+import requests
+from sqlalchemy import create_engine, text
+
+# We will need the auth token again. You should grab the current admin token from a previous run or authenticate.
 URL = 'http://127.0.0.1:8000/api/v1/auth/login'
 data = {'username': 'admin@school.dev', 'password': 'change_this_password'}
 response = requests.post(URL, data=data)
