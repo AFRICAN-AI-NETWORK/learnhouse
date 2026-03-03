@@ -18,6 +18,7 @@ import {
   Square,
   Image as ImageIcon,
   Layers,
+  Sparkles,
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
@@ -105,6 +106,8 @@ const CourseClient = (props: any) => {
         return t('activities.page')
       case 'TYPE_ASSIGNMENT':
         return t('activities.assignment')
+      case 'TYPE_SMART_ARTICLE':
+        return 'Interactive Article'
       default:
         return t('activities.learning_material')
     }
@@ -311,7 +314,7 @@ const CourseClient = (props: any) => {
                 />
 
                 {/* Authors & Updates Box */}
-                <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
+                <div className="bg-card text-card-foreground shadow-md shadow-black/25 outline-1 outline-border/40 rounded-lg overflow-hidden p-4">
                   <CourseProvider courseuuid={course.course_uuid}>
                     <CourseAuthors authors={course.authors} />
                   </CourseProvider>
@@ -324,7 +327,7 @@ const CourseClient = (props: any) => {
                 <h2 className="py-5 text-xl md:text-2xl font-bold">
                   {t('courses.what_you_will_learn')}
                 </h2>
-                <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden px-5 py-5 space-y-2">
+                <div className="bg-card text-card-foreground shadow-md shadow-black/25 outline-1 outline-border/40 rounded-lg overflow-hidden px-5 py-5 space-y-2">
                   {learnings.map((learning: any) => {
                     // Handle both new format (object with text and emoji) and legacy format (string)
                     const learningText =
@@ -341,7 +344,7 @@ const CourseClient = (props: any) => {
                     return (
                       <div
                         key={learningId}
-                        className="flex space-x-2 items-center font-semibold text-gray-500"
+                        className="flex space-x-2 items-center font-semibold text-muted-foreground"
                       >
                         <div className="px-2 py-2 rounded-full">
                           {learningEmoji ? (
@@ -375,7 +378,7 @@ const CourseClient = (props: any) => {
               <h2 className="py-5 text-xl md:text-2xl font-bold">
                 {t('courses.course_lessons')}
               </h2>
-              <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden">
+              <div className="bg-card text-card-foreground shadow-md shadow-black/25 outline-1 outline-border/40 rounded-lg overflow-hidden">
                 {course.chapters.map((chapter: any, idx: number) => {
                   const isExpanded =
                     expandedChapters[chapter.chapter_uuid] ?? idx === 0 // Default to expanded for first chapter
@@ -385,7 +388,7 @@ const CourseClient = (props: any) => {
                       className=""
                     >
                       <div
-                        className="flex items-start py-4 px-4 outline-1 outline-neutral-200/40 font-bold bg-neutral-50 text-neutral-600 cursor-pointer hover:bg-neutral-100 transition-colors"
+                        className="flex items-start py-4 px-4 outline-1 outline-border/40 font-bold bg-muted/50 text-foreground cursor-pointer hover:bg-muted transition-colors"
                         onClick={() =>
                           setExpandedChapters((prev) => ({
                             ...prev,
@@ -413,7 +416,7 @@ const CourseClient = (props: any) => {
                         <div className="flex flex-col items-start w-full">
                           <div className="flex items-center flex-wrap mb-1 w-full min-w-0">
                             {/* Numbered badge */}
-                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 text-xs font-semibold mr-2 border border-neutral-300 shrink-0">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold mr-2 border border-border shrink-0">
                               {idx + 1}
                             </span>
                             <h3
@@ -423,7 +426,7 @@ const CourseClient = (props: any) => {
                               {chapter.name}
                             </h3>
                           </div>
-                          <div className="flex items-center space-x-1 text-sm text-neutral-400 font-normal">
+                          <div className="flex items-center space-x-1 text-sm text-muted-foreground font-normal">
                             <Layers size={16} className="mr-1" />
                             <span>
                               {chapter.activities.length}{' '}
@@ -462,7 +465,7 @@ const CourseClient = (props: any) => {
                                         />
                                       </div>
                                     ) : (
-                                      <div className="text-neutral-300 cursor-pointer">
+                                      <div className="text-muted-foreground/50 cursor-pointer">
                                         <Square
                                           size={16}
                                           className="stroke-2"
@@ -472,7 +475,7 @@ const CourseClient = (props: any) => {
                                   </div>
                                   <div className="flex flex-col grow">
                                     <div className="flex items-center space-x-2 w-full">
-                                      <p className="font-semibold text-neutral-600 group-hover:text-neutral-800 transition-colors">
+                                      <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
                                         {activity.name}
                                       </p>
                                       {isActivityCurrent(activity) && (
@@ -481,7 +484,7 @@ const CourseClient = (props: any) => {
                                         </div>
                                       )}
                                     </div>
-                                    <div className="flex items-center space-x-1.5 mt-0.5 text-neutral-400">
+                                    <div className="flex items-center space-x-1.5 mt-0.5 text-muted-foreground">
                                       {activity.activity_type ===
                                         'TYPE_DYNAMIC' && (
                                         <StickyNote size={10} />
@@ -494,6 +497,10 @@ const CourseClient = (props: any) => {
                                         'TYPE_ASSIGNMENT' && (
                                         <Backpack size={10} />
                                       )}
+                                      {activity.activity_type ===
+                                        'TYPE_SMART_ARTICLE' && (
+                                        <Sparkles size={10} />
+                                      )}
                                       <span className="text-xs font-medium">
                                         {getActivityTypeLabel(
                                           activity.activity_type
@@ -501,7 +508,7 @@ const CourseClient = (props: any) => {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-neutral-300 group-hover:text-neutral-400 transition-colors cursor-pointer">
+                                  <div className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors cursor-pointer">
                                     <ArrowRight size={14} />
                                   </div>
                                 </div>

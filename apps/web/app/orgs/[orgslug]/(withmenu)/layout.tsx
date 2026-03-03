@@ -13,11 +13,11 @@ export default function RootLayout(props: {
   const { children } = props
 
   return (
-    <>
+    <div className="theme-landing min-h-screen bg-background text-foreground flex flex-col">
       <SessionProvider>
         <OrgMenu orgslug={params?.orgslug}></OrgMenu>
-        {children}
+        <main className="flex-1 w-full">{children}</main>
       </SessionProvider>
-    </>
+    </div>
   )
 }

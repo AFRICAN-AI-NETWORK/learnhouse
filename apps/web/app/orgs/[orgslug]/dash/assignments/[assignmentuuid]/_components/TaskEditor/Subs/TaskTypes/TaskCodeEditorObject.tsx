@@ -23,7 +23,16 @@ import {
   Play,
   Terminal,
   AlertCircle,
+  Wand2,
+  ShieldAlert,
 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@components/ui/select'
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { debounce } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -59,6 +68,7 @@ type CodeExerciseSchema = {
   language: string
   starterCode: string
   solutionCode: string
+  strictMode?: boolean
   testCases: {
     testUUID: string
     input: string
@@ -89,12 +99,14 @@ type TaskCodeEditorObjectProps = {
   view?: 'teacher' | 'student' | 'grading' | 'custom-grading'
   user_id?: string
   assignmentTaskUUID?: string
+  isFocusMode?: boolean
 }
 
 function TaskCodeEditorObject({
   view,
   assignmentTaskUUID,
   user_id,
+  isFocusMode = false,
 }: TaskCodeEditorObjectProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -243,11 +255,58 @@ function TaskCodeEditorObject({
     const saved = localStorage.getItem('learnhouse_editor_theme')
     if (saved) setEditorTheme(saved)
   }, [])
-  const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value
+  const handleThemeChange = (val: string) => {
     setEditorTheme(val)
     localStorage.setItem('learnhouse_editor_theme', val)
   }
+
+  // Editor refs for formatting/actions
+  const editorRefs = useRef<Record<string, any>>({})
+
+  const formatCode = useCallback(
+    (exerciseUUID: string, language: string) => {
+      const editor = editorRefs.current[exerciseUUID]
+      if (!editor) return
+
+      if (language === 'python') {
+        // Basic Python cleaner since Monaco doesn't have a built-in one out-of-the-box
+        const currentValue = editor.getValue()
+        const cleaned =
+          currentValue
+            .split('\n')
+            .map((line: string) => line.trimEnd())
+            .join('\n')
+            .replace(/\n{3,}/g, '\n\n') // Max 2 newlines
+            .trim() + '\n'
+
+        if (cleaned !== currentValue) {
+          editor.setValue(cleaned)
+          toast.success(
+            t('activities.code_formatted', 'Code cleaned and formatted')
+          )
+        } else {
+          toast.success(t('activities.already_formatted', 'Code already clean'))
+        }
+      } else {
+        // Trigger Monaco's native formatter (works for JS, TS, CSS, JSON, etc.)
+        editor
+          .getAction('editor.action.formatDocument')
+          .run()
+          .then(() =>
+            toast.success(t('activities.code_formatted', 'Code formatted'))
+          )
+          .catch(() =>
+            toast.error(
+              t(
+                'activities.format_not_supported',
+                'Formatting not supported for this language'
+              )
+            )
+          )
+      }
+    },
+    [t]
+  )
 
   // History tracking state
   const [historyTimeline, setHistoryTimeline] = useState<any[]>([])
@@ -735,19 +794,31 @@ function TaskCodeEditorObject({
                 <label className="text-sm font-medium text-gray-700">
                   {t('dashboard.assignments.editor.language')}
                 </label>
-                <select
+                <Select
                   value={exercise.language}
-                  onChange={(e) =>
-                    updateExercise(exIndex, 'language', e.target.value)
+                  onValueChange={(val) =>
+                    updateExercise(exIndex, 'language', val)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <option key={lang.id} value={lang.id}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    className={`w-full px-3 py-2 border rounded-md h-auto ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-300' : 'bg-white border-gray-300 text-gray-900'}`}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    className={
+                      isFocusMode
+                        ? 'bg-zinc-900 border-white/10 text-zinc-300'
+                        : ''
+                    }
+                  >
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.id} value={lang.id}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Description */}
@@ -770,8 +841,19 @@ function TaskCodeEditorObject({
 
               {/* Starter Code */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
                   {t('dashboard.assignments.editor.starter_code')}
+                  <button
+                    onClick={() =>
+                      formatCode(
+                        `starter-${exercise.exerciseUUID || exIndex}`,
+                        exercise.language
+                      )
+                    }
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                  >
+                    Format
+                  </button>
                 </label>
                 <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
                   <div className="absolute inset-0">
@@ -783,6 +865,11 @@ function TaskCodeEditorObject({
                       onChange={(value) =>
                         updateExercise(exIndex, 'starterCode', value || '')
                       }
+                      onMount={(editor) => {
+                        editorRefs.current[
+                          `starter-${exercise.exerciseUUID || exIndex}`
+                        ] = editor
+                      }}
                       theme={editorTheme}
                       options={{
                         minimap: { enabled: false },
@@ -797,11 +884,24 @@ function TaskCodeEditorObject({
 
               {/* Solution Code */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
-                  {t('dashboard.assignments.editor.solution_code')}
-                  <span className="text-xs text-gray-500 ml-2">
-                    ({t('dashboard.assignments.editor.hidden_from_students')})
-                  </span>
+                <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                  <div className="flex items-center">
+                    {t('dashboard.assignments.editor.solution_code')}
+                    <span className="text-xs text-gray-500 ml-2">
+                      ({t('dashboard.assignments.editor.hidden_from_students')})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      formatCode(
+                        `solution-${exercise.exerciseUUID || exIndex}`,
+                        exercise.language
+                      )
+                    }
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                  >
+                    Format
+                  </button>
                 </label>
                 <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
                   <div className="absolute inset-0">
@@ -813,6 +913,11 @@ function TaskCodeEditorObject({
                       onChange={(value) =>
                         updateExercise(exIndex, 'solutionCode', value || '')
                       }
+                      onMount={(editor) => {
+                        editorRefs.current[
+                          `solution-${exercise.exerciseUUID || exIndex}`
+                        ] = editor
+                      }}
                       theme={editorTheme}
                       options={{
                         minimap: { enabled: false },
@@ -940,6 +1045,38 @@ function TaskCodeEditorObject({
                   </div>
                 ))}
               </div>
+
+              {/* Strict Mode Toggle */}
+              <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id={`strict-mode-${exIndex}`}
+                  checked={exercise.strictMode || false}
+                  onChange={(e) =>
+                    updateExercise(
+                      exIndex,
+                      'strictMode' as any,
+                      e.target.checked
+                    )
+                  }
+                  className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                <label
+                  htmlFor={`strict-mode-${exIndex}`}
+                  className="flex items-center space-x-2 cursor-pointer"
+                >
+                  <ShieldAlert size={16} className="text-amber-600" />
+                  <div>
+                    <span className="text-sm font-semibold text-amber-800">
+                      Strict Mode (Exam)
+                    </span>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Disables copy/paste in the student editor to prevent
+                      external code injection.
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
           ))}
 
@@ -966,6 +1103,7 @@ function TaskCodeEditorObject({
         view="student"
         submitFC={submitFC}
         maxPoints={activeTaskData?.max_grade_value}
+        isFocusMode={isFocusMode}
       >
         <div className="flex flex-col space-y-8 w-full max-w-full overflow-hidden mt-6 min-w-0 pb-4">
           {exercisesData.length === 0 ? (
@@ -985,10 +1123,16 @@ function TaskCodeEditorObject({
             <>
               {/* Exercises Header */}
               <div className="flex items-center space-x-2.5 mb-2 px-1">
-                <div className="p-1.5 bg-slate-100 rounded-lg">
-                  <Terminal className="w-4 h-4 text-slate-500" />
+                <div
+                  className={`p-1.5 rounded-lg ${isFocusMode ? 'bg-white/10' : 'bg-slate-100'}`}
+                >
+                  <Terminal
+                    className={`w-4 h-4 ${isFocusMode ? 'text-zinc-300' : 'text-slate-500'}`}
+                  />
                 </div>
-                <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                <h4
+                  className={`text-[11px] font-bold uppercase tracking-widest ${isFocusMode ? 'text-zinc-200' : 'text-slate-500'}`}
+                >
                   Exercises & Challenges
                 </h4>
               </div>
@@ -1049,14 +1193,20 @@ function TaskCodeEditorObject({
                     >
                       {/* Exercise Title & Description */}
                       <div className="space-y-4">
-                        <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                        <h3
+                          className={`text-xl font-bold tracking-tight ${isFocusMode ? 'text-white' : 'text-slate-900'}`}
+                        >
                           {exercise.title ||
                             `${t('dashboard.assignments.editor.exercise')} ${index + 1}`}
                         </h3>
 
                         {exercise.description && (
-                          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                            <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                          <div
+                            className={`rounded-2xl p-5 shadow-sm border ${isFocusMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}
+                          >
+                            <p
+                              className={`text-sm leading-relaxed font-medium ${isFocusMode ? 'text-zinc-200' : 'text-slate-700'}`}
+                            >
                               {exercise.description}
                             </p>
                           </div>
@@ -1068,10 +1218,16 @@ function TaskCodeEditorObject({
                         <div className="flex flex-wrap items-center justify-between px-1 gap-2">
                           <div className="flex items-center space-x-3 grow">
                             <div className="flex items-center space-x-2.5 whitespace-nowrap">
-                              <div className="p-1 bg-slate-100 rounded-md">
-                                <Code className="w-4 h-4 text-slate-600" />
+                              <div
+                                className={`p-1 rounded-md ${isFocusMode ? 'bg-white/10' : 'bg-slate-100'}`}
+                              >
+                                <Code
+                                  className={`w-4 h-4 ${isFocusMode ? 'text-zinc-300' : 'text-slate-600'}`}
+                                />
                               </div>
-                              <span className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">
+                              <span
+                                className={`text-[11px] font-bold uppercase tracking-widest ${isFocusMode ? 'text-zinc-100' : 'text-slate-800'}`}
+                              >
                                 Code Editor ({exercise.language})
                               </span>
                             </div>
@@ -1080,13 +1236,12 @@ function TaskCodeEditorObject({
                             {/* Version History Dropdown */}
                             {historyTimeline.length > 0 ? (
                               <div className="relative group min-w-[180px]">
-                                <select
-                                  value={
+                                <Select
+                                  value={(
                                     viewingHistoryIdx[exercise.exerciseUUID] ??
                                     'current'
-                                  }
-                                  onChange={(e) => {
-                                    const val = e.target.value
+                                  ).toString()}
+                                  onValueChange={(val) => {
                                     restoreHistory(
                                       exercise.exerciseUUID,
                                       val === 'current'
@@ -1094,43 +1249,56 @@ function TaskCodeEditorObject({
                                         : parseInt(val, 10)
                                     )
                                   }}
-                                  className={`appearance-none bg-slate-50 border ${viewingHistoryIdx[exercise.exerciseUUID] !== null && viewingHistoryIdx[exercise.exerciseUUID] !== undefined ? 'border-amber-400 bg-amber-50 text-amber-900 shadow-[0_0_10px_rgba(251,191,36,0.2)]' : 'border-slate-200 text-slate-600'} rounded-full py-1.5 pl-3 pr-8 text-[11px] font-bold tracking-wider outline-none cursor-pointer hover:border-indigo-300 transition-colors shadow-sm`}
                                 >
-                                  <option value="current">
-                                    CURRENT WORKSPACE{' '}
-                                    {isSaving ? '(Saving...)' : '(Saved)'}
-                                  </option>
-                                  {historyTimeline
-                                    .map((h, i) => (
-                                      <option key={i} value={i}>
-                                        {new Date(
-                                          h.timestamp
-                                        ).toLocaleDateString()}{' '}
-                                        at{' '}
-                                        {new Date(
-                                          h.timestamp
-                                        ).toLocaleTimeString()}
-                                      </option>
-                                    ))
-                                    .reverse()}{' '}
-                                  {/* Show newest history first */}
-                                </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                                  <svg
-                                    className="fill-current h-4 w-4"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
+                                  <SelectTrigger
+                                    className={`appearance-none border ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-300' : 'bg-slate-50 border-slate-200 text-slate-600'} ${viewingHistoryIdx[exercise.exerciseUUID] !== null && viewingHistoryIdx[exercise.exerciseUUID] !== undefined ? 'border-amber-400 bg-amber-50 text-amber-900 shadow-[0_0_10px_rgba(251,191,36,0.2)]' : ''} rounded-full py-1.5 pl-3 pr-8 text-[11px] font-bold tracking-wider outline-none cursor-pointer hover:border-indigo-300 transition-colors shadow-sm`}
                                   >
-                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                  </svg>
-                                </div>
+                                    <SelectValue>
+                                      CURRENT WORKSPACE{' '}
+                                      {isSaving ? '(Saving...)' : '(Saved)'}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent
+                                    className={
+                                      isFocusMode
+                                        ? 'bg-zinc-900 border-white/10 text-zinc-300'
+                                        : ''
+                                    }
+                                  >
+                                    <SelectItem value="current">
+                                      CURRENT WORKSPACE{' '}
+                                      {isSaving ? '(Saving...)' : '(Saved)'}
+                                    </SelectItem>
+                                    {historyTimeline
+                                      .map((h, i) => (
+                                        <SelectItem
+                                          key={i}
+                                          value={i.toString()}
+                                        >
+                                          {new Date(
+                                            h.timestamp
+                                          ).toLocaleDateString()}{' '}
+                                          at{' '}
+                                          {new Date(
+                                            h.timestamp
+                                          ).toLocaleTimeString()}
+                                        </SelectItem>
+                                      ))
+                                      .reverse()}{' '}
+                                    {/* Show newest history first */}
+                                  </SelectContent>
+                                </Select>
                               </div>
                             ) : (
-                              <div className="flex items-center space-x-2 px-2.5 py-1 bg-slate-50 rounded-full border border-slate-100">
+                              <div
+                                className={`flex items-center space-x-2 px-2.5 py-1 rounded-full border ${isFocusMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-100'}`}
+                              >
                                 <div
                                   className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-[0_0_8px_rgba(16,185,129,0.5)]`}
                                 ></div>
-                                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                <span
+                                  className={`text-[9px] font-extrabold uppercase tracking-widest ${isFocusMode ? 'text-zinc-400' : 'text-slate-400'}`}
+                                >
                                   {isSaving ? 'Saving...' : 'Saved'}
                                 </span>
                               </div>
@@ -1138,31 +1306,57 @@ function TaskCodeEditorObject({
 
                             {/* Theme Selector Dropdown */}
                             <div className="relative group min-w-[130px]">
-                              <select
+                              <Select
                                 value={editorTheme}
-                                onChange={handleThemeChange}
-                                className="appearance-none bg-slate-50 border border-slate-200 text-slate-600 rounded-full py-1.5 pl-3 pr-8 text-[11px] font-bold tracking-wider outline-none cursor-pointer hover:border-indigo-300 transition-colors shadow-sm w-full"
+                                onValueChange={handleThemeChange}
                               >
-                                <option value="vs-light">Light Theme</option>
-                                <option value="vs-dark">Dark Theme</option>
-                                <option value="hc-black">
-                                  High Contrast Dark
-                                </option>
-                                <option value="hc-light">
-                                  High Contrast Light
-                                </option>
-                              </select>
-                              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                                <svg
-                                  className="fill-current h-4 w-4"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
+                                <SelectTrigger
+                                  className={`border rounded-full py-1.5 h-auto text-[11px] font-bold tracking-wider outline-none cursor-pointer transition-colors shadow-sm w-full ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-300 hover:border-white/20' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300'}`}
                                 >
-                                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                                </svg>
-                              </div>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent
+                                  className={
+                                    isFocusMode
+                                      ? 'bg-zinc-900 border-white/10 text-zinc-300'
+                                      : ''
+                                  }
+                                >
+                                  <SelectItem value="vs-light">
+                                    Light Theme
+                                  </SelectItem>
+                                  <SelectItem value="vs-dark">
+                                    Dark Theme
+                                  </SelectItem>
+                                  <SelectItem value="hc-black">
+                                    High Contrast Dark
+                                  </SelectItem>
+                                  <SelectItem value="hc-light">
+                                    High Contrast Light
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
+
+                          <button
+                            onClick={() =>
+                              formatCode(
+                                exercise.exerciseUUID,
+                                exercise.language
+                              )
+                            }
+                            className={`flex items-center space-x-2 px-4 py-2 rounded-2xl font-bold text-[11px] transition-all duration-200 shadow-md active:scale-95 ${
+                              isFocusMode
+                                ? 'bg-white/10 text-zinc-300 hover:bg-white/20'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600'
+                            }`}
+                            title="Format Code"
+                          >
+                            <Wand2 size={14} className="text-indigo-500" />
+                            <span className="hidden sm:inline">FORMAT</span>
+                          </button>
+
                           <button
                             onClick={() => runCode(exercise)}
                             disabled={exResults?.isRunning}
@@ -1182,7 +1376,22 @@ function TaskCodeEditorObject({
                             </span>
                           </button>
                         </div>
-                        <div className="border border-slate-200 rounded-3xl overflow-hidden h-[450px] relative w-full shadow-lg shadow-slate-100 bg-white ring-4 ring-slate-50">
+
+                        {/* Strict Mode Warning Banner */}
+                        {exercise.strictMode && (
+                          <div
+                            className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-[11px] font-bold tracking-wider ${isFocusMode ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-amber-50 border border-amber-200 text-amber-700'}`}
+                          >
+                            <ShieldAlert size={14} />
+                            <span>
+                              STRICT MODE — Paste is disabled for this exercise
+                            </span>
+                          </div>
+                        )}
+
+                        <div
+                          className={`border rounded-3xl overflow-hidden h-[450px] relative w-full shadow-lg ring-4 ${isFocusMode ? 'border-white/10 ring-white/5 shadow-white/5 bg-[#1e1e1e]' : 'border-slate-200 ring-slate-50 shadow-slate-100 bg-white'} ${exercise.strictMode ? 'ring-amber-200/50 border-amber-300/50' : ''}`}
+                        >
                           <div className="absolute inset-0">
                             <Editor
                               height="100%"
@@ -1195,6 +1404,33 @@ function TaskCodeEditorObject({
                                   value || ''
                                 )
                               }
+                              onMount={(editor) => {
+                                editorRefs.current[exercise.exerciseUUID] =
+                                  editor
+
+                                // Strict Mode: block paste
+                                if (exercise.strictMode) {
+                                  // Override Ctrl/Cmd+V keybinding
+                                  editor.addCommand(
+                                    // Monaco KeyMod.CtrlCmd | KeyCode.KeyV
+                                    2048 | 52, // CtrlCmd=2048, KeyV=52
+                                    () => {
+                                      toast.error(
+                                        'Pasting is disabled in Strict Mode (Exam).'
+                                      )
+                                    }
+                                  )
+
+                                  // Also intercept context-menu paste / programmatic paste via onDidPaste
+                                  editor.onDidPaste(() => {
+                                    // Undo the paste that just happened
+                                    editor.trigger('strict-mode', 'undo', null)
+                                    toast.error(
+                                      'Pasting is disabled in Strict Mode (Exam).'
+                                    )
+                                  })
+                                }
+                              }}
                               theme={editorTheme}
                               options={{
                                 minimap: { enabled: false },
@@ -1215,7 +1451,9 @@ function TaskCodeEditorObject({
                         </div>
 
                         {/* Custom Input Section */}
-                        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div
+                          className={`border rounded-3xl overflow-hidden shadow-sm ${isFocusMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}
+                        >
                           <button
                             onClick={() =>
                               setShowCustomInput((prev) => ({
@@ -1224,11 +1462,15 @@ function TaskCodeEditorObject({
                                   !prev[exercise.exerciseUUID],
                               }))
                             }
-                            className="flex items-center justify-between w-full px-5 py-3 hover:bg-slate-50 transition-colors"
+                            className={`flex items-center justify-between w-full px-5 py-3 transition-colors ${isFocusMode ? 'hover:bg-white/10' : 'hover:bg-slate-50'}`}
                           >
                             <div className="flex items-center space-x-2.5">
-                              <Terminal className="w-4 h-4 text-slate-500" />
-                              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">
+                              <Terminal
+                                className={`w-4 h-4 ${isFocusMode ? 'text-zinc-400' : 'text-slate-500'}`}
+                              />
+                              <span
+                                className={`text-[10px] font-bold uppercase tracking-widest ${isFocusMode ? 'text-zinc-300' : 'text-slate-600'}`}
+                              >
                                 Custom Test Input (stdin)
                               </span>
                             </div>
@@ -1250,9 +1492,11 @@ function TaskCodeEditorObject({
                                   }))
                                 }
                                 placeholder="Enter input here (one line per prompt)..."
-                                className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
+                                className={`w-full h-24 p-4 border rounded-2xl text-sm font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-100 placeholder:text-zinc-500' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
                               />
-                              <p className="mt-2 text-[10px] text-slate-400 font-medium">
+                              <p
+                                className={`mt-2 text-[10px] font-medium ${isFocusMode ? 'text-zinc-500' : 'text-slate-400'}`}
+                              >
                                 Provided input will be sent to your program's
                                 standard input.
                               </p>
@@ -1373,7 +1617,9 @@ function TaskCodeEditorObject({
                       {exercise.testCases.filter((tc) => !tc.isHidden).length >
                         0 && (
                         <div className="space-y-4">
-                          <div className="flex items-center space-x-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                          <div
+                            className={`flex items-center space-x-2 text-[11px] font-bold uppercase tracking-widest px-1 ${isFocusMode ? 'text-zinc-300' : 'text-slate-400'}`}
+                          >
                             <span>Visible Test Cases:</span>
                           </div>
                           <div className="space-y-3">
@@ -1388,58 +1634,86 @@ function TaskCodeEditorObject({
                                 return (
                                   <div
                                     key={testCase.testUUID}
-                                    className={`bg-white border rounded-2xl p-4 flex items-start space-x-4 shadow-sm transition-colors ${
+                                    className={`border rounded-2xl p-4 flex items-start space-x-4 shadow-sm transition-colors ${
                                       isPassed === true
-                                        ? 'border-emerald-200 bg-emerald-50/30'
+                                        ? isFocusMode
+                                          ? 'border-emerald-500/30 bg-emerald-500/10'
+                                          : 'border-emerald-200 bg-emerald-50/30'
                                         : isPassed === false
-                                          ? 'border-rose-200 bg-rose-50/30'
-                                          : 'border-slate-200 hover:border-slate-300'
+                                          ? isFocusMode
+                                            ? 'border-rose-500/30 bg-rose-500/10'
+                                            : 'border-rose-200 bg-rose-50/30'
+                                          : isFocusMode
+                                            ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                                            : 'bg-white border-slate-200 hover:border-slate-300'
                                     }`}
                                   >
                                     <div
                                       className={`p-2 rounded-full shrink-0 ${
                                         isPassed === true
-                                          ? 'bg-emerald-100'
+                                          ? isFocusMode
+                                            ? 'bg-emerald-500/20'
+                                            : 'bg-emerald-100'
                                           : isPassed === false
-                                            ? 'bg-rose-100'
-                                            : 'bg-amber-100'
+                                            ? isFocusMode
+                                              ? 'bg-rose-500/20'
+                                              : 'bg-rose-100'
+                                            : isFocusMode
+                                              ? 'bg-white/10'
+                                              : 'bg-amber-100'
                                       }`}
                                     >
                                       {isPassed === true ? (
                                         <Plus
                                           size={16}
-                                          className="text-emerald-600"
+                                          className={
+                                            isFocusMode
+                                              ? 'text-emerald-400'
+                                              : 'text-emerald-600'
+                                          }
                                         />
                                       ) : isPassed === false ? (
                                         <X
                                           size={16}
-                                          className="text-rose-600"
+                                          className={
+                                            isFocusMode
+                                              ? 'text-rose-400'
+                                              : 'text-rose-600'
+                                          }
                                         />
                                       ) : (
-                                        <Lightbulb className="w-4 h-4 text-amber-600" />
+                                        <Lightbulb
+                                          className={`w-4 h-4 ${isFocusMode ? 'text-amber-400' : 'text-amber-600'}`}
+                                        />
                                       )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center justify-between">
-                                        <div className="text-xs font-bold text-slate-800 truncate mb-1">
+                                        <div
+                                          className={`text-xs font-bold truncate mb-1 ${isFocusMode ? 'text-zinc-100' : 'text-slate-800'}`}
+                                        >
                                           Test {tcIndex + 1}:{' '}
                                           {testCase.description ||
                                             'General Scenario'}
                                         </div>
                                         {isPassed !== undefined && (
                                           <span
-                                            className={`text-[9px] font-bold uppercase tracking-widest ${isPassed ? 'text-emerald-600' : 'text-rose-600'}`}
+                                            className={`text-[9px] font-bold uppercase tracking-widest ${isPassed ? (isFocusMode ? 'text-emerald-400' : 'text-emerald-600') : isFocusMode ? 'text-rose-400' : 'text-rose-600'}`}
                                           >
                                             {isPassed ? 'Passed' : 'Failed'}
                                           </span>
                                         )}
                                       </div>
                                       <div className="flex flex-wrap gap-2 mt-2">
-                                        <div className="bg-slate-50 px-2 py-1 rounded-lg border border-slate-100 text-[10px] text-slate-500 font-mono">
+                                        <div
+                                          className={`px-2 py-1 rounded-lg border text-[10px] font-mono ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                                        >
                                           Expected: {testCase.expectedOutput}
                                         </div>
                                         {runResult && !isPassed && (
-                                          <div className="bg-rose-50 px-2 py-1 rounded-lg border border-rose-100 text-[10px] text-rose-600 font-mono">
+                                          <div
+                                            className={`px-2 py-1 rounded-lg border text-[10px] font-mono ${isFocusMode ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-rose-50 border-rose-100 text-rose-600'}`}
+                                          >
                                             Actual: {runResult.actual_output}
                                           </div>
                                         )}

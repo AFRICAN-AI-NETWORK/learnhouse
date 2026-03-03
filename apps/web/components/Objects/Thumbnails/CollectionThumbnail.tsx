@@ -36,7 +36,7 @@ function CollectionThumbnail(props: PropsType) {
   const courses = props.collection.courses || []
 
   return (
-    <div className="group relative flex flex-col bg-white rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01]">
+    <div className="group relative flex flex-col bg-card text-card-foreground rounded-xl nice-shadow overflow-hidden w-full transition-all duration-300 hover:scale-[1.01]">
       <CollectionAdminEditsArea
         orgslug={props.orgslug}
         org_id={props.org_id}
@@ -46,15 +46,15 @@ function CollectionThumbnail(props: PropsType) {
 
       <Link
         href={getUriWithOrg(props.orgslug, `/collection/${collectionId}`)}
-        className="block relative aspect-video overflow-hidden bg-gray-50"
+        className="block relative aspect-video overflow-hidden bg-muted"
       >
         {courses.length > 0 ? (
-          <div className="flex items-center justify-center h-full w-full bg-gray-100/50 relative p-4">
+          <div className="flex items-center justify-center h-full w-full bg-background/50 relative p-4">
             <div className="flex -space-x-10 items-center justify-center w-full">
               {courses.slice(0, 3).map((course: any, index: number) => (
                 <div
                   key={course.course_uuid}
-                  className="relative h-20 w-32 overflow-hidden rounded-lg border-2 border-white shadow-lg transition-all duration-300 shrink-0"
+                  className="relative h-20 w-32 overflow-hidden rounded-lg border-2 border-card shadow-lg transition-all duration-300 shrink-0"
                   style={{
                     backgroundImage: `url(${getCourseThumbnailMediaDirectory(
                       org?.org_uuid,
@@ -70,7 +70,7 @@ function CollectionThumbnail(props: PropsType) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full w-full bg-gray-50 text-gray-300 gap-1.5">
+          <div className="flex flex-col items-center justify-center h-full w-full bg-muted text-muted-foreground gap-1.5">
             <Library size={32} strokeWidth={1.5} />
             <span className="text-xs font-medium">
               {t('collections.empty_collection')}
@@ -82,19 +82,19 @@ function CollectionThumbnail(props: PropsType) {
       <div className="p-3 flex flex-col space-y-1.5">
         <Link
           href={getUriWithOrg(props.orgslug, `/collection/${collectionId}`)}
-          className="text-base font-bold text-gray-900 leading-tight hover:text-black transition-colors line-clamp-1"
+          className="text-base font-bold text-card-foreground leading-tight hover:text-primary transition-colors line-clamp-1"
         >
           {props.collection.name}
         </Link>
 
         {props.collection.description && (
-          <p className="text-[11px] text-gray-500 line-clamp-2 min-h-[1.5rem]">
+          <p className="text-[11px] text-muted-foreground line-clamp-2 min-h-6">
             {props.collection.description}
           </p>
         )}
 
-        <div className="pt-1.5 flex items-center justify-between border-t border-gray-100">
-          <div className="flex items-center gap-1.5 text-gray-500">
+        <div className="pt-1.5 flex items-center justify-between border-t border-border">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <BookCopy size={12} />
             <span className="text-[10px] font-bold uppercase tracking-wider">
               {courses.length === 1
@@ -105,7 +105,7 @@ function CollectionThumbnail(props: PropsType) {
 
           <Link
             href={getUriWithOrg(props.orgslug, `/collection/${collectionId}`)}
-            className="text-[10px] font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-wider"
+            className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
           >
             {t('common.view_details')}
           </Link>

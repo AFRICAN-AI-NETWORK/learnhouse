@@ -29,12 +29,14 @@ type TaskFileObjectProps = {
   view: 'teacher' | 'student' | 'grading' | 'custom-grading'
   assignmentTaskUUID?: string
   user_id?: string
+  isFocusMode?: boolean
 }
 
 export default function TaskFileObject({
   view,
   user_id,
   assignmentTaskUUID,
+  isFocusMode = false,
 }: TaskFileObjectProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -232,6 +234,7 @@ export default function TaskFileObject({
       currentPoints={userSubmissionObject?.grade}
       maxPoints={assignmentTaskOutsideProvider?.max_grade_value}
       type="file"
+      isFocusMode={isFocusMode}
     >
       {view === 'teacher' && (
         <div className="flex flex-col sm:flex-row py-5 sm:py-6 text-xs sm:text-sm justify-center mx-auto space-y-2 sm:space-y-0 sm:space-x-3 text-slate-600 px-4 sm:px-2 text-center sm:text-left bg-slate-50 rounded-lg border border-slate-100">
@@ -280,7 +283,9 @@ export default function TaskFileObject({
       )}
       {view === 'student' && (
         <>
-          <div className="w-full bg-white rounded-lg border border-gray-100 min-h-[200px] shadow-xs px-4 sm:px-6 py-5 sm:py-6">
+          <div
+            className={`w-full rounded-lg border min-h-[200px] shadow-xs px-4 sm:px-6 py-5 sm:py-6 ${isFocusMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-100'}`}
+          >
             <div className="flex flex-col justify-center items-center h-full w-full">
               <div className="flex flex-col justify-center items-center w-full max-w-full">
                 <div className="flex flex-col justify-center items-center w-full">
@@ -309,7 +314,9 @@ export default function TaskFileObject({
                   </div>
                 )}
                 {userSubmissions.fileUUID && !isLoading && !localUploadFile && (
-                  <div className="flex flex-col rounded-lg bg-white text-gray-500 shadow-xs border border-gray-100 px-4 sm:px-5 py-4 space-y-1 items-center relative w-full sm:w-auto mt-3">
+                  <div
+                    className={`flex flex-col rounded-lg shadow-xs border px-4 sm:px-5 py-4 space-y-1 items-center relative w-full sm:w-auto mt-3 ${isFocusMode ? 'bg-white/10 border-white/10 text-zinc-300' : 'bg-white border-gray-100 text-gray-500'}`}
+                  >
                     <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-emerald-500 rounded-full p-1.5 text-white flex justify-center items-center shadow-xs">
                       <Cloud size={14} />
                     </div>
@@ -322,8 +329,13 @@ export default function TaskFileObject({
                     </div>
                   </div>
                 )}
-                <div className="flex flex-col sm:flex-row pt-5 font-medium space-y-1 sm:space-y-0 sm:space-x-2 text-xs items-center text-slate-500 text-center sm:text-left bg-slate-50 rounded-lg px-3 py-2 mt-5 border border-slate-100 w-full sm:w-auto">
-                  <Info size={15} className="mx-auto sm:mx-0 text-slate-400" />
+                <div
+                  className={`flex flex-col sm:flex-row pt-5 font-medium space-y-1 sm:space-y-0 sm:space-x-2 text-xs items-center text-center sm:text-left rounded-lg px-3 py-2 mt-5 border w-full sm:w-auto ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}
+                >
+                  <Info
+                    size={15}
+                    className={`mx-auto sm:mx-0 ${isFocusMode ? 'text-zinc-500' : 'text-slate-400'}`}
+                  />
                   <p>
                     {t(
                       'dashboard.assignments.editor.task_editor.general.allowed_formats'

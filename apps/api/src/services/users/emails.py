@@ -103,7 +103,7 @@ def send_password_reset_email(
 ):
     
     # Use your actual domain
-    reset_link = f"https://lms.africanainetwork.com/org/{organization.slug}/reset-password?email={email}&resetCode={generated_reset_code}"
+    reset_link = f"https://lms.africanainetwork.com/reset?orgslug={organization.slug}&auth.email={email}&resetCode={generated_reset_code}"
     
     # Send email
     return send_email(
