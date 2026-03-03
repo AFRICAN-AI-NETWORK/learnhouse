@@ -1,7 +1,7 @@
 """Add chat system
 
 Revision ID: e8f9a0b1c2d3
-Revises: d7d2e818da81
+Revises: a1b2c3d4e5f6
 Create Date: 2026-03-03 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlmodel
 
 # revision identifiers, used by Alembic.
 revision: str = 'e8f9a0b1c2d3'
-down_revision: Union[str, None] = 'd7d2e818da81'
+down_revision: Union[str, None] = 'a1b2c3d4e5f6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

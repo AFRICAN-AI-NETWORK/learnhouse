@@ -1,7 +1,7 @@
 """add_code_editor_to_assignment_task_type_enum
 
 Revision ID: 376da94767ae
-Revises: 9d7156315687
+Revises: 62a6b8a08322
 Create Date: 2026-02-18 00:40:50.475203
 
 """
@@ -15,7 +15,7 @@ from alembic_postgresql_enum import TableReference # type: ignore
 
 # revision identifiers, used by Alembic.
 revision: str = '376da94767ae'
-down_revision: Union[str, None] = '9d7156315687'
+down_revision: Union[str, None] = '62a6b8a08322'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
