@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 from sqlmodel import Field, SQLModel, Column, JSON, Integer
 from sqlalchemy import ForeignKey, CheckConstraint, UniqueConstraint
@@ -40,7 +40,7 @@ class Message(MessageBase, table=True):
 
 
 class MessageCreate(BaseModel):
-    conversation_id: int
+    conversation_id: Union[str, int]  # Accepts conversation UUID (e.g., conv_xxx) or integer
     receiver_id: int
     content: str
     message_type: str = "text"

@@ -105,12 +105,39 @@ class MessageService:
     ) -> Message:
         """Create a new message."""
         
-        # Verify conversation exists and user is participant
-        conversation = db.exec(
-            select(Conversation)
-            .where(Conversation.id == message_data.conversation_id)
-            .where(Conversation.org_id == org_id)
-        ).first()
+        # Resolve conversation ID (accept UUID or integer)
+        conversation_identifier = message_data.conversation_id
+        
+        # Check if it's a UUID string (starts with 'conv_')
+        if isinstance(conversation_identifier, str):
+            if conversation_identifier.startswith('conv_'):
+                # Look up by UUID
+                conversation = db.exec(
+                    select(Conversation)
+                    .where(Conversation.conversation_uuid == conversation_identifier)
+                    .where(Conversation.org_id == org_id)
+                ).first()
+            else:
+                # String number, try to convert to integer
+                try:
+                    conv_id = int(conversation_identifier)
+                    conversation = db.exec(
+                        select(Conversation)
+                        .where(Conversation.id == conv_id)
+                        .where(Conversation.org_id == org_id)
+                    ).first()
+                except (ValueError, TypeError):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid conversation_id format. Must be a UUID (conv_xxx) or integer."
+                    )
+        else:
+            # Integer ID
+            conversation = db.exec(
+                select(Conversation)
+                .where(Conversation.id == conversation_identifier)
+                .where(Conversation.org_id == org_id)
+            ).first()
         
         if not conversation:
             raise HTTPException(
@@ -138,15 +165,20 @@ class MessageService:
                 detail="Invalid receiver for this conversation"
             )
         
-        # Create message
+        # Normalize reply_to_message_id: convert 0 to None
+        reply_to_id = message_data.reply_to_message_id
+        if reply_to_id == 0:
+            reply_to_id = None
+        
+        # Create message with the resolved integer conversation ID
         new_message = Message(
             message_uuid=f"msg_{uuid4()}",
-            conversation_id=message_data.conversation_id,
+            conversation_id=conversation.id,  # Use the resolved integer ID
             sender_id=sender_id,
             receiver_id=message_data.receiver_id,
             content=message_data.content,
             message_type=message_data.message_type,
-            reply_to_message_id=message_data.reply_to_message_id,
+            reply_to_message_id=reply_to_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
