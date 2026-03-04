@@ -71,7 +71,8 @@ class TestCreateMessage:
         )
         
         assert message is not None
-        assert message.conversation_id == conversation.id
+        # Service resolves integer conversation_id to UUID in the response
+        assert message.conversation_id == conversation.conversation_uuid
     
     @pytest.mark.asyncio
     async def test_create_message_normalizes_reply_to_zero(
@@ -98,7 +99,12 @@ class TestCreateMessage:
             org_id=org.id
         )
         
-        assert message.reply_to_message_id is None
+        # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
+        from sqlmodel import select
+        db_message = session.exec(
+            select(Message).where(Message.message_uuid == message.message_uuid)
+        ).first()
+        assert db_message.reply_to_message_id is None
     
     @pytest.mark.asyncio
     async def test_create_message_with_valid_reply_to(
@@ -126,7 +132,12 @@ class TestCreateMessage:
             org_id=org.id
         )
         
-        assert reply.reply_to_message_id == message.id
+        # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
+        from sqlmodel import select
+        db_reply = session.exec(
+            select(Message).where(Message.message_uuid == reply.message_uuid)
+        ).first()
+        assert db_reply.reply_to_message_id == message.id
     
     @pytest.mark.asyncio
     async def test_create_message_updates_conversation_timestamp(

@@ -1,4 +1,8 @@
-"""Integration tests for chat API endpoints."""
+"""Integration tests for chat API endpoints.
+
+These tests use FastAPI's dependency_overrides to mock authentication
+and database session, enabling proper endpoint testing.
+"""
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -6,210 +10,272 @@ from datetime import datetime
 from uuid import uuid4
 
 from app import app
+from src.security.auth import get_current_user
+from src.core.events.database import get_db_session
 from src.db.users import User
 from src.db.organizations import Organization
 from src.db.chat.conversations import Conversation
 from src.db.chat.messages import Message
 
 
-@pytest.fixture(name="client")
-def client_fixture():
-    """Create test client."""
-    return TestClient(app)
+@pytest.fixture(name="client_as_student")
+def client_as_student_fixture(session: Session, student_user: User):
+    """Create test client with student auth and test DB session."""
+    app.dependency_overrides[get_current_user] = lambda: student_user
+    app.dependency_overrides[get_db_session] = lambda: session
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture(name="auth_headers_student")
-def auth_headers_student_fixture(student_user: User):
-    """Create authentication headers for student."""
-    # In real scenario, this would generate a valid JWT token
-    # For testing, we mock the authentication
-    return {
-        "Authorization": f"Bearer mock_token_student_{student_user.id}",
-        "Content-Type": "application/json"
-    }
-
-
-@pytest.fixture(name="auth_headers_instructor")
-def auth_headers_instructor_fixture(instructor_user: User):
-    """Create authentication headers for instructor."""
-    return {
-        "Authorization": f"Bearer mock_token_instructor_{instructor_user.id}",
-        "Content-Type": "application/json"
-    }
+@pytest.fixture(name="client_as_instructor")
+def client_as_instructor_fixture(session: Session, instructor_user: User):
+    """Create test client with instructor auth and test DB session."""
+    app.dependency_overrides[get_current_user] = lambda: instructor_user
+    app.dependency_overrides[get_db_session] = lambda: session
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
 
 
 class TestConversationEndpoints:
     """Test conversation API endpoints."""
-    
+
     def test_create_conversation(
         self,
-        client: TestClient,
-        session: Session,
+        client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User,
-        auth_headers_student: dict
+        instructor_user: User
     ):
         """Test creating a new conversation."""
-        response = client.post(
+        response = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id},
-            headers=auth_headers_student
+            json={"participant_two_id": instructor_user.id}
         )
-        
-        # Note: This test requires mocking authentication
-        # In actual implementation, you would need to:
-        # 1. Mock get_current_user dependency
-        # 2. Mock database session
-        # 3. Or use actual test database
-        
-        # For demonstration purposes only
-        assert response.status_code in [200, 401]  # 401 if auth not mocked
-    
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "conversation_uuid" in data
+        assert data["conversation_uuid"].startswith("conv_")
+
     def test_get_conversations(
         self,
-        client: TestClient,
-        session: Session,
+        client_as_student: TestClient,
         org: Organization,
-        student_user: User,
-        auth_headers_student: dict
+        student_user: User
     ):
         """Test getting user conversations."""
-        response = client.get(
-            f"/api/v1/chat/conversations/?org_id={org.id}",
-            headers=auth_headers_student
+        response = client_as_student.get(
+            f"/api/v1/chat/conversations/?org_id={org.id}"
         )
-        
-        assert response.status_code in [200, 401]
-    
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
     def test_archive_conversation(
         self,
-        client: TestClient,
-        conversation: Conversation,
-        auth_headers_student: dict
+        client_as_student: TestClient,
+        org: Organization,
+        student_user: User,
+        instructor_user: User
     ):
         """Test archiving a conversation."""
-        response = client.patch(
-            f"/api/v1/chat/conversations/{conversation.conversation_uuid}/archive",
-            headers=auth_headers_student
+        # First create a conversation
+        create_resp = client_as_student.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": instructor_user.id}
         )
-        
-        assert response.status_code in [200, 401]
-    
+        conv_uuid = create_resp.json()["conversation_uuid"]
+
+        # Archive it
+        response = client_as_student.patch(
+            f"/api/v1/chat/conversations/{conv_uuid}/archive?org_id={org.id}"
+        )
+
+        assert response.status_code == 200
+
     def test_get_chatable_users(
         self,
-        client: TestClient,
+        client_as_student: TestClient,
         org: Organization,
-        auth_headers_student: dict
+        instructor_user: User
     ):
         """Test getting list of users to chat with."""
-        response = client.get(
-            f"/api/v1/chat/conversations/chatable-users?org_id={org.id}",
-            headers=auth_headers_student
+        response = client_as_student.get(
+            f"/api/v1/chat/conversations/chatable-users?org_id={org.id}"
         )
-        
-        assert response.status_code in [200, 401]
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
 
 
 class TestMessageEndpoints:
     """Test message API endpoints."""
-    
+
     def test_send_message(
         self,
-        client: TestClient,
+        client_as_student: TestClient,
         org: Organization,
-        conversation: Conversation,
-        instructor_user: User,
-        auth_headers_student: dict
+        student_user: User,
+        instructor_user: User
     ):
         """Test sending a message."""
-        response = client.post(
+        # Create conversation first
+        conv_resp = client_as_student.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": instructor_user.id}
+        )
+        conv_uuid = conv_resp.json()["conversation_uuid"]
+
+        response = client_as_student.post(
             f"/api/v1/chat/messages/?org_id={org.id}",
             json={
-                "conversation_id": conversation.conversation_uuid,
+                "conversation_id": conv_uuid,
                 "receiver_id": instructor_user.id,
                 "content": "Test message",
                 "message_type": "text"
-            },
-            headers=auth_headers_student
+            }
         )
-        
-        assert response.status_code in [200, 401]
-    
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["content"] == "Test message"
+        assert data["sender_id"] == student_user.id
+
     def test_get_conversation_messages(
         self,
-        client: TestClient,
-        conversation: Conversation,
-        auth_headers_student: dict
+        client_as_student: TestClient,
+        org: Organization,
+        student_user: User,
+        instructor_user: User
     ):
         """Test getting messages from a conversation."""
-        response = client.get(
-            f"/api/v1/chat/messages/conversation/{conversation.conversation_uuid}",
-            headers=auth_headers_student
+        # Create conversation and send a message first
+        conv_resp = client_as_student.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": instructor_user.id}
         )
-        
-        assert response.status_code in [200, 401]
-    
+        conv_uuid = conv_resp.json()["conversation_uuid"]
+
+        client_as_student.post(
+            f"/api/v1/chat/messages/?org_id={org.id}",
+            json={
+                "conversation_id": conv_uuid,
+                "receiver_id": instructor_user.id,
+                "content": "Test message",
+                "message_type": "text"
+            }
+        )
+
+        response = client_as_student.get(
+            f"/api/v1/chat/messages/conversation/{conv_uuid}?org_id={org.id}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
     def test_edit_message(
         self,
-        client: TestClient,
-        message: Message,
-        auth_headers_student: dict
+        client_as_student: TestClient,
+        org: Organization,
+        student_user: User,
+        instructor_user: User
     ):
         """Test editing a message."""
-        response = client.patch(
-            f"/api/v1/chat/messages/{message.message_uuid}",
-            json={"content": "Updated content"},
-            headers=auth_headers_student
+        # Create conversation and message
+        conv_resp = client_as_student.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": instructor_user.id}
         )
-        
-        assert response.status_code in [200, 401]
-    
+        conv_uuid = conv_resp.json()["conversation_uuid"]
+
+        msg_resp = client_as_student.post(
+            f"/api/v1/chat/messages/?org_id={org.id}",
+            json={
+                "conversation_id": conv_uuid,
+                "receiver_id": instructor_user.id,
+                "content": "Original content",
+                "message_type": "text"
+            }
+        )
+        msg_uuid = msg_resp.json()["message_uuid"]
+
+        response = client_as_student.patch(
+            f"/api/v1/chat/messages/{msg_uuid}?org_id={org.id}",
+            json={"content": "Updated content"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["content"] == "Updated content"
+        assert data["is_edited"] is True
+
     def test_delete_message(
         self,
-        client: TestClient,
-        message: Message,
-        auth_headers_student: dict
+        client_as_student: TestClient,
+        org: Organization,
+        student_user: User,
+        instructor_user: User
     ):
         """Test deleting a message."""
-        response = client.delete(
-            f"/api/v1/chat/messages/{message.message_uuid}",
-            headers=auth_headers_student
+        # Create conversation and message
+        conv_resp = client_as_student.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": instructor_user.id}
         )
-        
-        assert response.status_code in [200, 401]
-    
+        conv_uuid = conv_resp.json()["conversation_uuid"]
+
+        msg_resp = client_as_student.post(
+            f"/api/v1/chat/messages/?org_id={org.id}",
+            json={
+                "conversation_id": conv_uuid,
+                "receiver_id": instructor_user.id,
+                "content": "Message to delete",
+                "message_type": "text"
+            }
+        )
+        msg_uuid = msg_resp.json()["message_uuid"]
+
+        response = client_as_student.delete(
+            f"/api/v1/chat/messages/{msg_uuid}?org_id={org.id}"
+        )
+
+        assert response.status_code == 200
+
     def test_mark_message_as_read(
         self,
-        client: TestClient,
-        message: Message,
-        auth_headers_instructor: dict
+        client_as_student: TestClient,
+        client_as_instructor: TestClient,
+        org: Organization,
+        student_user: User,
+        instructor_user: User
     ):
         """Test marking a message as read."""
-        response = client.post(
-            f"/api/v1/chat/messages/{message.message_uuid}/read",
-            headers=auth_headers_instructor
+        # Student sends a message
+        conv_resp = client_as_student.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": instructor_user.id}
         )
-        
-        assert response.status_code in [200, 401]
+        conv_uuid = conv_resp.json()["conversation_uuid"]
 
+        msg_resp = client_as_student.post(
+            f"/api/v1/chat/messages/?org_id={org.id}",
+            json={
+                "conversation_id": conv_uuid,
+                "receiver_id": instructor_user.id,
+                "content": "Read this",
+                "message_type": "text"
+            }
+        )
+        msg_uuid = msg_resp.json()["message_uuid"]
 
-# Note: The above tests demonstrate the structure but require proper
-# FastAPI dependency injection mocking to work. Here's an example of
-# how to properly mock authentication:
+        # Instructor marks as read
+        response = client_as_instructor.post(
+            f"/api/v1/chat/messages/{msg_uuid}/read?org_id={org.id}"
+        )
 
-"""
-from fastapi import Depends
-from unittest.mock import patch
-
-@pytest.fixture
-def override_get_current_user(student_user):
-    def _get_current_user():
-        return student_user
-    return _get_current_user
-
-def test_with_mocked_auth(client, override_get_current_user):
-    with patch('src.security.auth.get_current_user', override_get_current_user):
-        response = client.get("/api/v1/chat/conversations/?org_id=1")
         assert response.status_code == 200
-"""

@@ -68,7 +68,13 @@ class TestCriticalChatFlows:
             org_id=org.id
         )
         
-        assert message2.reply_to_message_id == message1.id
+        # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
+        from sqlmodel import select
+        from src.db.chat.messages import Message
+        db_message2 = session.exec(
+            select(Message).where(Message.message_uuid == message2.message_uuid)
+        ).first()
+        assert db_message2.reply_to_message_id == message1.id
         
         # 4. Mark message as read
         receipt = await ReadReceiptService.mark_as_read(
@@ -261,10 +267,10 @@ class TestCriticalChatFlows:
             org_id=org.id
         )
         
-        # Student creates conversation with admin
+        # Instructor creates conversation with admin (instructor can chat with admin)
         conv2 = await ConversationService.create_or_get_conversation(
             db=session,
-            current_user_id=student_user.id,
+            current_user_id=instructor_user.id,
             target_user_id=admin_user.id,
             org_id=org.id
         )
@@ -297,18 +303,18 @@ class TestCriticalChatFlows:
         msg2 = await MessageService.create_message(
             db=session,
             message_data=msg2_data,
-            sender_id=student_user.id,
+            sender_id=instructor_user.id,
             org_id=org.id
         )
         
-        # Verify messages are in correct conversations
-        assert msg1.conversation_id == conv1.id
-        assert msg2.conversation_id == conv2.id
+        # Verify messages are in correct conversations (response uses UUID)
+        assert msg1.conversation_id == conv1.conversation_uuid
+        assert msg2.conversation_id == conv2.conversation_uuid
         
-        # Get all conversations for student
+        # Get all conversations for instructor (who is in both)
         conversations = await ConversationService.get_user_conversations(
             db=session,
-            user_id=student_user.id,
+            user_id=instructor_user.id,
             org_id=org.id,
             include_archived=False,
             limit=50,
@@ -338,14 +344,17 @@ class TestCriticalChatFlows:
                 username=f"instructor_{i}",
                 email=f"instructor{i}@test.com",
                 password="hashed",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                first_name=f"Instructor",
+                last_name=f"Number{i}",
+                creation_date=str(datetime.utcnow()),
+                update_date=str(datetime.utcnow())
             )
             session.add(instructor)
             session.commit()
             session.refresh(instructor)
             
             from src.db.roles import Role
+            from src.db.user_organizations import UserOrganization
             from sqlmodel import select
             instructor_role = session.exec(
                 select(Role).where(Role.name == "Instructor")
@@ -354,7 +363,9 @@ class TestCriticalChatFlows:
             user_org = UserOrganization(
                 user_id=instructor.id,
                 org_id=org.id,
-                role_id=instructor_role.id
+                role_id=instructor_role.id,
+                creation_date=str(datetime.utcnow()),
+                update_date=str(datetime.utcnow())
             )
             session.add(user_org)
             session.commit()
@@ -468,7 +479,13 @@ class TestCriticalErrorScenarios:
             org_id=org.id
         )
         
-        assert message.reply_to_message_id is None
+        # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
+        from sqlmodel import select
+        from src.db.chat.messages import Message
+        db_message = session.exec(
+            select(Message).where(Message.message_uuid == message.message_uuid)
+        ).first()
+        assert db_message.reply_to_message_id is None
     
     @pytest.mark.asyncio
     async def test_conversation_uuid_format_consistency(

@@ -121,8 +121,8 @@ class TestVerifyChatPermission:
             password="hashed_password",
             first_name="Instructor",
             last_name="Two",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            creation_date=str(datetime.utcnow()),
+            update_date=str(datetime.utcnow())
         )
         session.add(instructor2)
         session.commit()
@@ -131,7 +131,9 @@ class TestVerifyChatPermission:
         user_org = UserOrganization(
             user_id=instructor2.id,
             org_id=org.id,
-            role_id=instructor_role.id
+            role_id=instructor_role.id,
+            creation_date=str(datetime.utcnow()),
+            update_date=str(datetime.utcnow())
         )
         session.add(user_org)
         session.commit()
@@ -162,8 +164,10 @@ class TestVerifyChatPermission:
             username="external_user",
             email="external@test.com",
             password="hashed_password",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            first_name="External",
+            last_name="User",
+            creation_date=str(datetime.utcnow()),
+            update_date=str(datetime.utcnow())
         )
         session.add(external_user)
         session.commit()
@@ -251,7 +255,7 @@ class TestGetChatableUsersForUser:
         student_user_two: User,
         admin_user: User
     ):
-        """Test that student can only see instructors and admins."""
+        """Test that student can only see instructors (per permission rules)."""
         users = await get_chatable_users_for_user(
             db=session,
             current_user_id=student_user.id,
@@ -260,9 +264,11 @@ class TestGetChatableUsersForUser:
         
         user_ids = [u.id for u in users]
         
-        # Should include instructor and admin
+        # Should include instructor
         assert instructor_user.id in user_ids
-        assert admin_user.id in user_ids
+        
+        # Should NOT include admin (students can only chat with instructors)
+        assert admin_user.id not in user_ids
         
         # Should NOT include other students
         assert student_user_two.id not in user_ids
