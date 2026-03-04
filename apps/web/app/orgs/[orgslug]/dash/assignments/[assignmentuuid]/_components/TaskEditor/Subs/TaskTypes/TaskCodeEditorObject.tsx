@@ -76,6 +76,11 @@ type CodeExerciseSchema = {
     isHidden: boolean
     description: string
   }[]
+  datasetFiles?: {
+    name: string
+    content: string
+    size: number
+  }[]
 }
 
 type CodeSubmitSchema = {
@@ -412,6 +417,7 @@ function TaskCodeEditorObject({
       starterCode: '# Write your code here\n',
       solutionCode: '# Reference solution\n',
       testCases: [],
+      datasetFiles: [],
     }
   }
 
@@ -514,6 +520,61 @@ function TaskCodeEditorObject({
       [field]: value,
     }
     setExercises(newExercises)
+  }
+
+  // Handle dataset file upload
+  const handleDatasetUpload = (
+    exerciseIndex: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate size (500KB limit)
+    if (file.size > 512000) {
+      toast.error('File size must be under 500KB')
+      return
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase() || ''
+    if (!['csv', 'json', 'txt'].includes(extension)) {
+      toast.error('Only .csv, .json, and .txt files are supported')
+      return
+    }
+
+    const newExercises = [...exercises]
+    const currentDatasets = newExercises[exerciseIndex].datasetFiles || []
+
+    if (currentDatasets.length >= 3) {
+      toast.error('Maximum 3 dataset files allowed per exercise')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      newExercises[exerciseIndex].datasetFiles = [
+        ...currentDatasets,
+        {
+          name: file.name,
+          content: content,
+          size: file.size,
+        },
+      ]
+      setExercises(newExercises)
+      toast.success(`Attached ${file.name} to exercise.`)
+    }
+    reader.readAsText(file)
+  }
+
+  const removeDatasetFile = (exerciseIndex: number, datasetIndex: number) => {
+    const newExercises = [...exercises]
+    if (newExercises[exerciseIndex].datasetFiles) {
+      newExercises[exerciseIndex].datasetFiles = newExercises[
+        exerciseIndex
+      ].datasetFiles.filter((_, i) => i !== datasetIndex)
+      setExercises(newExercises)
+    }
   }
 
   // Save function (teacher)
@@ -664,6 +725,7 @@ function TaskCodeEditorObject({
             code: studentCode,
             stdin: customInputs[exercise.exerciseUUID] || '',
             test_cases: exercise.testCases.filter((tc) => !tc.isHidden),
+            dataset_files: exercise.datasetFiles || [],
           },
           access_token
         )
@@ -928,6 +990,60 @@ function TaskCodeEditorObject({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Dataset Files */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">
+                    Dataset Files
+                  </label>
+                  <label className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+                    <PlusCircle size={16} />
+                    <span>Upload Dataset</span>
+                    <input
+                      title="Upload Dataset"
+                      type="file"
+                      accept=".csv,.json,.txt"
+                      className="hidden"
+                      onChange={(e) => handleDatasetUpload(exIndex, e)}
+                    />
+                  </label>
+                </div>
+                {exercise.datasetFiles && exercise.datasetFiles.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {exercise.datasetFiles.map((file, fileIndex) => (
+                      <div
+                        key={fileIndex}
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <Code size={16} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeDatasetFile(exIndex, fileIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-gray-500">
+                  Upload data files (CSV, JSON, TXT) that students can read in
+                  their code. Max 3 files, 500KB each.
+                </p>
               </div>
 
               {/* Test Cases */}
@@ -1212,6 +1328,44 @@ function TaskCodeEditorObject({
                           </div>
                         )}
                       </div>
+
+                      {/* Dataset Files (Student View) */}
+                      {exercise.datasetFiles &&
+                        exercise.datasetFiles.length > 0 && (
+                          <div className="space-y-3">
+                            <div
+                              className={`flex items-center space-x-2 text-[11px] font-bold uppercase tracking-widest px-1 ${isFocusMode ? 'text-zinc-300' : 'text-slate-400'}`}
+                            >
+                              <span>Available Dataset Files (Read-Only):</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                              {exercise.datasetFiles.map((file, fileIndex) => (
+                                <div
+                                  key={fileIndex}
+                                  className={`flex items-center space-x-3 p-3 rounded-xl border ${isFocusMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'} shadow-sm`}
+                                >
+                                  <div
+                                    className={`p-2 rounded-lg ${isFocusMode ? 'bg-white/10 text-cyan-400' : 'bg-cyan-50 text-cyan-600'}`}
+                                  >
+                                    <Code size={16} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p
+                                      className={`text-sm font-semibold truncate ${isFocusMode ? 'text-zinc-200' : 'text-slate-700'}`}
+                                    >
+                                      {file.name}
+                                    </p>
+                                    <p
+                                      className={`text-[10px] ${isFocusMode ? 'text-zinc-500' : 'text-slate-400'}`}
+                                    >
+                                      {(file.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                       {/* Code Editor Container */}
                       <div className="space-y-4">

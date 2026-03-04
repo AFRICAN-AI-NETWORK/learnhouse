@@ -38,6 +38,7 @@ class CodeExecutionRequest(BaseModel):
     code: str
     stdin: str = ""
     test_cases: List[Dict] = []
+    dataset_files: List[Dict] = []
 
 
 @router.post("/execute", response_model=CodeExecutionResponse)
@@ -58,7 +59,7 @@ async def execute_code(
 
         # If Piston is available, use it
         if piston_available:
-            res = await execute_and_grade(request.language, request.code, request.test_cases, request.stdin, client_ip)
+            res = await execute_and_grade(request.language, request.code, request.test_cases, request.stdin, client_ip, request.dataset_files)
             if res:
                 return res
 

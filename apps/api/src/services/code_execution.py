@@ -53,7 +53,7 @@ def run_python_locally(code: str, stdin: str = "", timeout: int = 10) -> dict:
         os.unlink(tmp_path)
 
 
-async def run_piston_execution(language: str, version: str, code: str, stdin: str = "", client_ip: str = "unknown"):
+async def run_piston_execution(language: str, version: str, code: str, stdin: str = "", client_ip: str = "unknown", additional_files: List[Dict] = []):
     # Map language to proper file extension
     ext_map = {
         "python": "py", "javascript": "js", "java": "java",
@@ -61,10 +61,14 @@ async def run_piston_execution(language: str, version: str, code: str, stdin: st
     }
     file_ext = ext_map.get(language, language)
     
+    files = [{"name": f"main.{file_ext}", "content": code}]
+    if additional_files:
+        files.extend(additional_files)
+
     piston_payload = {
         "language": language,
         "version": version,
-        "files": [{"name": f"main.{file_ext}", "content": code}],
+        "files": files,
         "stdin": stdin.replace("\\n", "\n") if stdin else "",
         "compile_timeout": 15000,
         "run_timeout": 15000,
@@ -91,7 +95,7 @@ async def run_piston_execution(language: str, version: str, code: str, stdin: st
                 return None
 
 
-async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [], stdin: str = "", client_ip: str = "unknown"):
+async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [], stdin: str = "", client_ip: str = "unknown", dataset_files: List[Dict] = []):
     version_map = {
         "python": "3.10.0",
         "javascript": "*",
@@ -104,7 +108,7 @@ async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [
     version = version_map.get(language, "*")
 
     # 1. Main execution via Piston
-    main_res = await run_piston_execution(language, version, code, stdin, client_ip)
+    main_res = await run_piston_execution(language, version, code, stdin, client_ip, dataset_files)
     
     # Piston succeeded
     if main_res:
@@ -121,7 +125,7 @@ async def execute_and_grade(language: str, code: str, test_cases: List[Dict] = [
         # 2. Run Test Cases via Piston
         if test_cases:
             for tc in test_cases:
-                tc_res = await run_piston_execution(language, version, code, tc.get("input", ""), client_ip)
+                tc_res = await run_piston_execution(language, version, code, tc.get("input", ""), client_ip, dataset_files)
                 if tc_res:
                     tc_run = tc_res.get("run", {})
                     actual = tc_run.get("stdout", "").strip()

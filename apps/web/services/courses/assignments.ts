@@ -297,6 +297,7 @@ export async function executeCode(
     code: string
     stdin?: string
     test_cases?: any[]
+    dataset_files?: any[]
   },
   access_token: string
 ) {
