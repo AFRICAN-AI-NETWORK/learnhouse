@@ -248,21 +248,25 @@ class TestMessageEndpoints:
 
     def test_mark_message_as_read(
         self,
-        client_as_student: TestClient,
-        client_as_instructor: TestClient,
+        session: Session,
         org: Organization,
         student_user: User,
         instructor_user: User
     ):
         """Test marking a message as read."""
-        # Student sends a message
-        conv_resp = client_as_student.post(
+        # Use student identity first
+        app.dependency_overrides[get_current_user] = lambda: student_user
+        app.dependency_overrides[get_db_session] = lambda: session
+        student_client = TestClient(app)
+
+        # Student creates conversation and sends a message
+        conv_resp = student_client.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
             json={"participant_two_id": instructor_user.id}
         )
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
-        msg_resp = client_as_student.post(
+        msg_resp = student_client.post(
             f"/api/v1/chat/messages/?org_id={org.id}",
             json={
                 "conversation_id": conv_uuid,
@@ -271,11 +275,19 @@ class TestMessageEndpoints:
                 "message_type": "text"
             }
         )
+        assert msg_resp.status_code == 200
         msg_uuid = msg_resp.json()["message_uuid"]
 
+        # Switch to instructor identity
+        app.dependency_overrides[get_current_user] = lambda: instructor_user
+        instructor_client = TestClient(app)
+
         # Instructor marks as read
-        response = client_as_instructor.post(
+        response = instructor_client.post(
             f"/api/v1/chat/messages/{msg_uuid}/read?org_id={org.id}"
         )
 
         assert response.status_code == 200
+
+        # Clean up
+        app.dependency_overrides.clear()

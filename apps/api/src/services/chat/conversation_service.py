@@ -275,7 +275,7 @@ class ConversationService:
         db: Session,
         conversation_uuid: str,
         user_id: int
-    ) -> Conversation:
+    ) -> ConversationRead:
         """Archive a conversation."""
         
         conversation = db.exec(
@@ -307,4 +307,51 @@ class ConversationService:
         
         logger.info(f"Archived conversation {conversation_uuid} by user {user_id}")
         
-        return conversation
+        # Get the other participant details
+        other_user_id = (
+            conversation.participant_two_id
+            if conversation.participant_one_id == user_id
+            else conversation.participant_one_id
+        )
+        other_user = db.get(User, other_user_id)
+        
+        # Count unread messages
+        unread_count_query = (
+            select(func.count(Message.id))
+            .outerjoin(
+                MessageReadReceipt,
+                and_(
+                    MessageReadReceipt.message_id == Message.id,
+                    MessageReadReceipt.user_id == user_id,
+                    MessageReadReceipt.read_at.isnot(None)
+                )
+            )
+            .where(
+                Message.conversation_id == conversation.id,
+                Message.receiver_id == user_id,
+                Message.is_deleted == False,
+                MessageReadReceipt.id.is_(None)
+            )
+        )
+        unread_count = db.exec(unread_count_query).one()
+        
+        return ConversationRead(
+            id=conversation.id,
+            conversation_uuid=conversation.conversation_uuid,
+            org_id=conversation.org_id,
+            participant_one_id=conversation.participant_one_id,
+            participant_two_id=conversation.participant_two_id,
+            last_message_at=conversation.last_message_at,
+            is_archived=conversation.is_archived,
+            created_at=conversation.created_at,
+            updated_at=conversation.updated_at,
+            unread_count=int(unread_count),
+            other_participant={
+                "id": other_user.id if other_user else None,
+                "user_uuid": other_user.user_uuid if other_user else None,
+                "username": other_user.username if other_user else None,
+                "first_name": other_user.first_name if other_user else None,
+                "last_name": other_user.last_name if other_user else None,
+                "avatar_image": other_user.avatar_image if other_user else None
+            }
+        )
