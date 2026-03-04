@@ -52,6 +52,7 @@ class MessageUpdate(BaseModel):
 
 
 class MessageRead(MessageBase):
+    conversation_id: str  # Override to return UUID instead of int
     id: int
     message_uuid: str
     is_edited: bool

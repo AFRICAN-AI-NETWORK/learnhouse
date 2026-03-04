@@ -226,7 +226,22 @@ class MessageService:
         
         logger.info(f"Message {new_message.message_uuid} created in conversation {conversation.conversation_uuid}")
         
-        return new_message
+        # Return MessageRead with conversation UUID
+        return MessageRead(
+            id=new_message.id,
+            conversation_id=conversation.conversation_uuid,  # Return UUID instead of int
+            sender_id=new_message.sender_id,
+            receiver_id=new_message.receiver_id,
+            content=new_message.content,
+            message_type=new_message.message_type,
+            message_uuid=new_message.message_uuid,
+            is_edited=new_message.is_edited,
+            is_deleted=new_message.is_deleted,
+            created_at=new_message.created_at,
+            updated_at=new_message.updated_at,
+            attachments=[],
+            read_receipt=None
+        )
     
     @staticmethod
     async def get_conversation_messages(
