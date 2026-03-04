@@ -321,11 +321,21 @@ class MessageService:
             for receipt in receipts:
                 receipts_dict[receipt.message_id] = receipt.dict()
         
-        # Enrich messages
+        # Enrich messages with conversation UUID and other data
         enriched_messages = []
         for msg in messages:
             enriched_msg = MessageRead(
-                **msg.dict(),
+                id=msg.id,
+                conversation_id=conversation.conversation_uuid,  # Use UUID instead of integer ID
+                sender_id=msg.sender_id,
+                receiver_id=msg.receiver_id,
+                content=msg.content,
+                message_type=msg.message_type,
+                message_uuid=msg.message_uuid,
+                is_edited=msg.is_edited,
+                is_deleted=msg.is_deleted,
+                created_at=msg.created_at,
+                updated_at=msg.updated_at,
                 attachments=attachments_dict.get(msg.id, []),
                 read_receipt=receipts_dict.get(msg.id)
             )
