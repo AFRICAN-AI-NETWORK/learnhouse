@@ -87,18 +87,16 @@ class AttachmentService:
                 detail=f"File type {file.content_type} is not allowed"
             )
         
-        # Validate file size
-        file_content = await file.read()
-        file_size = len(file_content)
+        # Validate file size by seeking (avoids loading entire file into memory)
+        file.file.seek(0, 2)  # Seek to end of file
+        file_size = file.file.tell()  # Get position = size in bytes
+        file.file.seek(0)  # Reset pointer to beginning
         
         if file_size > AttachmentService.MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail=f"File size exceeds maximum of {AttachmentService.MAX_FILE_SIZE / (1024*1024)}MB"
             )
-        
-        # Reset file pointer
-        await file.seek(0)
         
         # Upload to S3
         try:

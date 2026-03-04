@@ -1,9 +1,47 @@
 from typing import Optional, List
+from enum import Enum
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, func
 from src.db.users import User
 from src.db.user_organizations import UserOrganization
 from src.db.roles import Role
+
+
+class ChatRole(str, Enum):
+    """Chat role definitions to avoid hardcoded strings."""
+    STUDENT = "student"
+    LEARNER = "learner"
+    USER = "user"
+    INSTRUCTOR = "instructor"
+    ADMIN = "admin"
+    MAINTAINER = "maintainer"
+
+
+# Roles that can chat with everyone
+_PRIVILEGED_ROLES = [
+    ChatRole.STUDENT, ChatRole.LEARNER, ChatRole.USER,
+    ChatRole.INSTRUCTOR, ChatRole.ADMIN, ChatRole.MAINTAINER,
+]
+
+# Permission matrix: maps a role to the list of roles it can chat with
+CHAT_PERMISSION_MATRIX = {
+    ChatRole.STUDENT: [ChatRole.INSTRUCTOR],
+    ChatRole.LEARNER: [ChatRole.INSTRUCTOR],
+    ChatRole.USER: [ChatRole.INSTRUCTOR],
+    ChatRole.INSTRUCTOR: _PRIVILEGED_ROLES,
+    ChatRole.ADMIN: _PRIVILEGED_ROLES,
+    ChatRole.MAINTAINER: _PRIVILEGED_ROLES,
+}
+
+# Target roles for listing chatable users (same structure as permission matrix)
+CHATABLE_TARGETS = {
+    ChatRole.STUDENT: [ChatRole.INSTRUCTOR.value],
+    ChatRole.LEARNER: [ChatRole.INSTRUCTOR.value],
+    ChatRole.USER: [ChatRole.INSTRUCTOR.value],
+    ChatRole.INSTRUCTOR: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.ADMIN: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.MAINTAINER: [r.value for r in _PRIVILEGED_ROLES],
+}
 
 
 async def verify_chat_permission(
@@ -33,24 +71,30 @@ async def verify_chat_permission(
             detail="One or both users are not members of this organization"
         )
     
-    # Extract role names (normalize to lowercase)
+    # Extract role names (normalize to lowercase) and map to ChatRole enum
     current_role_name = current_user_role.name.lower()
     target_role_name = target_user_role.name.lower()
     
-    # Define allowed chat pairs
-    allowed_pairs = {
-        "student": ["instructor"],
-        "learner": ["instructor"],
-        "user": ["instructor"],
-        "instructor": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-        "admin": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-        "maintainer": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-    }
+    try:
+        current_chat_role = ChatRole(current_role_name)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Unknown role '{current_role_name}' for chat permissions"
+        )
+    
+    try:
+        target_chat_role = ChatRole(target_role_name)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Unknown role '{target_role_name}' for chat permissions"
+        )
     
     # Check if current user's role allows chatting with target user's role
-    allowed_targets = allowed_pairs.get(current_role_name, [])
+    allowed_targets = CHAT_PERMISSION_MATRIX.get(current_chat_role, [])
     
-    if target_role_name not in allowed_targets:
+    if target_chat_role not in allowed_targets:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Users with role '{current_role_name}' cannot chat with users with role '{target_role_name}'"
@@ -90,17 +134,13 @@ async def get_chatable_users_for_user(
     
     current_role_name = current_user_role.name.lower()
     
-    # Define target roles based on current user's role (case-insensitive)
-    target_role_names_map = {
-        "student": ["instructor"],
-        "learner": ["instructor"],
-        "user": ["instructor"],
-        "instructor": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-        "admin": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-        "maintainer": ["student", "learner", "user", "instructor", "admin", "maintainer"],
-    }
+    # Look up allowed target roles from the centralized permission map
+    try:
+        current_chat_role = ChatRole(current_role_name)
+    except ValueError:
+        return []
     
-    target_role_names = target_role_names_map.get(current_role_name, [])
+    target_role_names = CHATABLE_TARGETS.get(current_chat_role, [])
     
     if not target_role_names:
         return []

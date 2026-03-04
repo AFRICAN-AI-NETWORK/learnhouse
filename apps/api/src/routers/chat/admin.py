@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlmodel import Session, select, func
+from sqlalchemy.orm import aliased
 from datetime import datetime
 
 from src.db.chat.conversations import Conversation
@@ -71,51 +72,52 @@ async def get_all_org_conversations(
     # Verify admin permission
     await verify_admin_permission(current_user, org_id, db)
     
-    # Get all conversations in org
+    # Use a single joined query to avoid N+1 problem
+    ParticipantOne = aliased(User)
+    ParticipantTwo = aliased(User)
+
     query = (
-        select(Conversation)
+        select(
+            Conversation,
+            ParticipantOne,
+            ParticipantTwo,
+            func.count(Message.id).label('message_count')
+        )
+        .join(ParticipantOne, Conversation.participant_one_id == ParticipantOne.id)
+        .join(ParticipantTwo, Conversation.participant_two_id == ParticipantTwo.id)
+        .outerjoin(
+            Message,
+            (Message.conversation_id == Conversation.id) & (Message.is_deleted == False)
+        )
         .where(Conversation.org_id == org_id)
+        .group_by(Conversation.id, ParticipantOne.id, ParticipantTwo.id)
         .order_by(Conversation.last_message_at.desc().nullslast())
         .offset(offset)
         .limit(limit)
     )
-    
-    conversations = db.exec(query).all()
-    
-    # Enrich with participant info and message count
+
+    results = db.exec(query).all()
+
     enriched = []
-    for conv in conversations:
-        participant_one = db.get(User, conv.participant_one_id)
-        participant_two = db.get(User, conv.participant_two_id)
-        
-        if not participant_one or not participant_two:
-            continue
-        
-        # Get message count
-        message_count = db.exec(
-            select(func.count(Message.id))
-            .where(Message.conversation_id == conv.id)
-            .where(Message.is_deleted == False)
-        ).one()
-        
+    for conv, p1, p2, message_count in results:
         enriched.append({
             "conversation_uuid": conv.conversation_uuid,
             "participant_one": {
-                "id": participant_one.id,
-                "username": participant_one.username,
-                "name": f"{participant_one.first_name} {participant_one.last_name}".strip()
+                "id": p1.id,
+                "username": p1.username,
+                "name": f"{p1.first_name} {p1.last_name}".strip()
             },
             "participant_two": {
-                "id": participant_two.id,
-                "username": participant_two.username,
-                "name": f"{participant_two.first_name} {participant_two.last_name}".strip()
+                "id": p2.id,
+                "username": p2.username,
+                "name": f"{p2.first_name} {p2.last_name}".strip()
             },
             "message_count": message_count,
             "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
             "is_archived": conv.is_archived,
             "created_at": conv.created_at.isoformat()
         })
-    
+
     return enriched
 
 

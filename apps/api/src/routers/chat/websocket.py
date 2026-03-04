@@ -5,7 +5,10 @@ import logging
 from typing import Optional
 
 from src.services.chat.websocket_manager import connection_manager
+from src.services.chat.ws_ticket_service import create_ticket, redeem_ticket
 from src.core.events.database import get_db_session
+from src.security.auth import get_current_user
+from src.db.users import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -16,12 +19,12 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
     Verify JWT token for WebSocket connection.
     Returns user_id if valid, None otherwise.
     
-    SECURITY NOTE: Tokens passed in query parameters are visible in logs.
-    Ensure Logfire is configured to scrub 'token' from URL logs.
+    SECURITY NOTE: Prefer the ticket-based flow (POST /ws/ticket then connect
+    with ?ticket=...) so the main JWT never appears in access logs.
     """
     try:
         from fastapi_jwt_auth import AuthJWT
-        from src.db.users import User
+        from src.db.users import User as UserModel
         from sqlmodel import select
         
         # Create AuthJWT instance with the token
@@ -34,7 +37,7 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
         
         # Get user from database
         user = db.exec(
-            select(User).where(User.user_uuid == user_uuid)
+            select(UserModel).where(UserModel.user_uuid == user_uuid)
         ).first()
         
         if user:
@@ -47,22 +50,36 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
         return None
 
 
+@router.post("/ws/ticket")
+async def create_ws_ticket(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Exchange a JWT for a short-lived, single-use WebSocket ticket.
+
+    The client should call this endpoint, then immediately open the WebSocket
+    with ``?ticket=<value>`` instead of sending the real JWT in the URL.
+    Tickets expire after 30 seconds and can only be used once.
+    """
+    ticket = create_ticket(current_user.id)
+    return {"ticket": ticket}
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    token: str = Query(..., description="JWT authentication token"),
+    token: Optional[str] = Query(None, description="JWT authentication token (legacy)"),
+    ticket: Optional[str] = Query(None, description="Single-use WebSocket ticket (preferred)"),
     db: Session = Depends(get_db_session)
 ):
     """
     WebSocket endpoint for real-time chat.
     
-    Authentication:
-    - Client sends JWT token as query parameter (?token=...)
-    - Standard approach for WebSockets (no custom headers during handshake)
-    
-    CRITICAL SECURITY:
-    - Configure Logfire to strip 'token' from URL logs
-    - Add to config: scrubbing_patterns=['token', 'password']
+    Authentication (in priority order):
+    1. **ticket** (preferred) – short-lived single-use token obtained via
+       ``POST /ws/ticket``.  Keeps the main JWT out of server access logs.
+    2. **token** (legacy) – raw JWT passed as query parameter.  Still
+       supported for backwards compatibility.
     
     Message types:
     - ping: Keep-alive
@@ -74,11 +91,14 @@ async def websocket_endpoint(
     user_id = None
     
     try:
-        # Verify JWT token
-        user_id = await verify_websocket_token(token, db)
+        # Authenticate: prefer ticket, fall back to JWT token
+        if ticket:
+            user_id = redeem_ticket(ticket)
+        elif token:
+            user_id = await verify_websocket_token(token, db)
         
         if not user_id:
-            await websocket.close(code=1008, reason="Invalid token")
+            await websocket.close(code=1008, reason="Invalid or expired credentials")
             return
         
         # Connect user
@@ -94,7 +114,15 @@ async def websocket_endpoint(
         while True:
             # Receive message from client
             data = await websocket.receive_text()
-            message = json.loads(data)
+            
+            try:
+                message = json.loads(data)
+            except json.JSONDecodeError:
+                await websocket.send_json({
+                    "type": "error",
+                    "data": {"message": "Invalid JSON format"}
+                })
+                continue
             
             message_type = message.get("type")
             payload = message.get("data", {})
