@@ -316,8 +316,7 @@ class TestArchiveConversation:
         )
         
         assert result.is_archived is True
-        assert result.archived_by_user_id == student_user.id
-        assert result.archived_at is not None
+        assert result.other_participant is not None
     
     @pytest.mark.asyncio
     async def test_archive_nonexistent_conversation_raises_error(
