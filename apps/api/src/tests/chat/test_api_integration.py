@@ -132,13 +132,7 @@ class TestMessageEndpoints:
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
         response = client_as_student.post(
-            f"/api/v1/chat/messages/?org_id={org.id}",
-            json={
-                "conversation_id": conv_uuid,
-                "receiver_id": instructor_user.id,
-                "content": "Test message",
-                "message_type": "text"
-            }
+            f"/api/v1/chat/messages/send?org_id={org.id}&conversation_id={conv_uuid}&receiver_id={instructor_user.id}&content=Test%20message&message_type=text"
         )
 
         assert response.status_code == 200
@@ -162,7 +156,7 @@ class TestMessageEndpoints:
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
         client_as_student.post(
-            f"/api/v1/chat/messages/?org_id={org.id}",
+            f"/api/v1/chat/messages/send?org_id={org.id}",
             json={
                 "conversation_id": conv_uuid,
                 "receiver_id": instructor_user.id,
@@ -195,13 +189,7 @@ class TestMessageEndpoints:
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
         msg_resp = client_as_student.post(
-            f"/api/v1/chat/messages/?org_id={org.id}",
-            json={
-                "conversation_id": conv_uuid,
-                "receiver_id": instructor_user.id,
-                "content": "Original content",
-                "message_type": "text"
-            }
+            f"/api/v1/chat/messages/send?org_id={org.id}&conversation_id={conv_uuid}&receiver_id={instructor_user.id}&content=Original%20content&message_type=text"
         )
         msg_uuid = msg_resp.json()["message_uuid"]
 
@@ -231,13 +219,7 @@ class TestMessageEndpoints:
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
         msg_resp = client_as_student.post(
-            f"/api/v1/chat/messages/?org_id={org.id}",
-            json={
-                "conversation_id": conv_uuid,
-                "receiver_id": instructor_user.id,
-                "content": "Message to delete",
-                "message_type": "text"
-            }
+            f"/api/v1/chat/messages/send?org_id={org.id}&conversation_id={conv_uuid}&receiver_id={instructor_user.id}&content=Message%20to%20delete&message_type=text"
         )
         msg_uuid = msg_resp.json()["message_uuid"]
 
@@ -268,13 +250,7 @@ class TestMessageEndpoints:
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
         msg_resp = student_client.post(
-            f"/api/v1/chat/messages/?org_id={org.id}",
-            json={
-                "conversation_id": conv_uuid,
-                "receiver_id": instructor_user.id,
-                "content": "Read this",
-                "message_type": "text"
-            }
+            f"/api/v1/chat/messages/send?org_id={org.id}&conversation_id={conv_uuid}&receiver_id={instructor_user.id}&content=Read%20this&message_type=text"
         )
         assert msg_resp.status_code == 200
         msg_uuid = msg_resp.json()["message_uuid"]
@@ -356,13 +332,7 @@ class TestAttachmentEndpoints:
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
         msg_resp = client.post(
-            f"/api/v1/chat/messages/?org_id={org.id}",
-            json={
-                "conversation_id": conv_uuid,
-                "receiver_id": receiver_user.id,
-                "content": "message with attachment",
-                "message_type": "file",
-            },
+            f"/api/v1/chat/messages/send?org_id={org.id}&conversation_id={conv_uuid}&receiver_id={receiver_user.id}&content=message%20with%20attachment&message_type=file"
         )
         assert msg_resp.status_code == 200
         msg_uuid = msg_resp.json()["message_uuid"]

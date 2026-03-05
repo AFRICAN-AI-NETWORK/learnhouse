@@ -216,7 +216,7 @@ class TestGetUserConversations:
         # Create multiple conversations
         for i in range(5):
             conv = Conversation(
-                conversation_id=f"conv_{uuid4()}",
+                conversation_uuid=f"conv_{uuid4()}",
                 org_id=org.id,
                 participant_one_id=min(student_user.id, instructor_user.id + i),
                 participant_two_id=max(student_user.id, instructor_user.id + i),
