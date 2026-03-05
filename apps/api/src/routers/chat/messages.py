@@ -1,8 +1,11 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, UploadFile, File
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+from sqlmodel import Session, select
 
 from src.db.chat.messages import MessageCreate, MessageUpdate, MessageRead
+from src.db.chat.attachments import MessageAttachmentRead
+from src.db.chat.conversations import Conversation
+from src.db.organizations import Organization
 from src.services.chat.message_service import MessageService
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
@@ -157,30 +160,57 @@ async def mark_message_as_read(
         return {"message": "Message not found"}
 
 
-@router.post("/{message_uuid}/attachments")
+@router.post("/{message_uuid}/attachments", response_model=MessageAttachmentRead)
 async def upload_attachment(
     message_uuid: str,
     file: UploadFile = File(...),
+    org_id: int = Query(..., description="Organisation ID"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """Upload file attachment to a message."""
+    """Upload a file attachment to a message.
+
+    Stores the file using the shared upload pipeline (filesystem or S3)
+    and returns the attachment metadata with a relative file_url that can
+    be fetched from /content/...
+    """
     from src.services.chat.attachment_service import AttachmentService
-    
+    from src.db.chat.messages import Message
+
+    # ── Resolve org_uuid from org_id ─────────────────────────────────────────
+    org = db.exec(select(Organization).where(Organization.id == org_id)).first()
+    if not org:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found"
+        )
+
+    # ── Resolve conversation_uuid from the message ───────────────────────────
+    message = db.exec(
+        select(Message).where(Message.message_uuid == message_uuid)
+    ).first()
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Message not found"
+        )
+
+    conversation = db.exec(
+        select(Conversation).where(Conversation.id == message.conversation_id)
+    ).first()
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
+        )
+
+    # ── Delegate to service ──────────────────────────────────────────────────
     attachment = await AttachmentService.upload_attachment(
         db=db,
         message_uuid=message_uuid,
         file=file,
-        user_id=current_user.id
+        user_id=current_user.id,
+        org_uuid=org.org_uuid,
+        org_id=org.id,
+        conversation_uuid=conversation.conversation_uuid,
     )
-    
-    return {
-        "attachment_uuid": attachment.attachment_uuid,
-        "file_name": attachment.file_name,
-        "file_type": attachment.file_type,
-        "file_size": attachment.file_size,
-        "file_url": attachment.file_url,
-        "thumbnail_url": attachment.thumbnail_url,
-        "upload_status": attachment.upload_status
-    }
+
+    return attachment
 

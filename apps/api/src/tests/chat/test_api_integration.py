@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 from datetime import datetime
 from uuid import uuid4
+from unittest.mock import patch, AsyncMock
 
 from app import app
 from src.security.auth import get_current_user
@@ -291,3 +292,256 @@ class TestMessageEndpoints:
 
         # Clean up
         app.dependency_overrides.clear()
+
+
+class TestAttachmentEndpoints:
+    """Test file attachment upload endpoints.
+
+    All file content is constructed in-memory so no real files are needed.
+    Magic bytes match what file_validation.py checks to pass content validation.
+
+    The upload_file() call inside the service is patched so no real filesystem
+    writes happen — the patch returns a deterministic fake filename.
+    """
+
+    # Fake filename returned by the mocked upload_file
+    _FAKE_FILENAME = "attachment_abc123.jpg"
+
+    @pytest.fixture(autouse=True)
+    def mock_upload(self):
+        """Patch upload_file in the attachment service to avoid filesystem writes.
+        
+        This is the correct patch target because attachment_service.py does:
+            from src.services.utils.upload_content import upload_file
+        so we patch it where it is *used*, not where it is *defined*.
+        """
+        with patch(
+            "src.services.chat.attachment_service.upload_file",
+            new_callable=AsyncMock,
+            return_value=self._FAKE_FILENAME,
+        ):
+            yield
+
+    # ── Minimal valid file bytes ──────────────────────────────────────────────
+    # JPEG: starts with FF D8 FF
+    _JPEG_BYTES = b"\xff\xd8\xff" + b"\xe0" + b"\x00" * 200
+
+    # PDF: starts with %PDF-
+    _PDF_BYTES = b"%PDF-1.4\n" + b"\x00" * 200
+
+    # MP4: bytes 4-7 == 'ftyp', bytes 8-11 contain 'mp4 '
+    _MP4_BYTES = b"\x00\x00\x00\x18" + b"ftyp" + b"mp4 " + b"\x00" * 200
+
+    # SVG (should be rejected)
+    _SVG_BYTES = b"<svg xmlns='http://www.w3.org/2000/svg'/>"
+
+    def _make_client(self, session: Session, user: User) -> TestClient:
+        app.dependency_overrides[get_current_user] = lambda: user
+        app.dependency_overrides[get_db_session] = lambda: session
+        return TestClient(app)
+
+    def _create_conversation_and_message(
+        self,
+        client: TestClient,
+        org,
+        sender_user,
+        receiver_user,
+    ) -> tuple[str, str]:
+        """Helper: create a conversation then send a message; return (conv_uuid, msg_uuid)."""
+        conv_resp = client.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": receiver_user.id},
+        )
+        assert conv_resp.status_code == 200
+        conv_uuid = conv_resp.json()["conversation_uuid"]
+
+        msg_resp = client.post(
+            f"/api/v1/chat/messages/?org_id={org.id}",
+            json={
+                "conversation_id": conv_uuid,
+                "receiver_id": receiver_user.id,
+                "content": "message with attachment",
+                "message_type": "file",
+            },
+        )
+        assert msg_resp.status_code == 200
+        msg_uuid = msg_resp.json()["message_uuid"]
+        return conv_uuid, msg_uuid
+
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def test_upload_image_attachment(
+        self,
+        session: Session,
+        org,
+        student_user: User,
+        instructor_user: User,
+    ):
+        """Upload a JPEG image — should succeed and return file_url."""
+        client = self._make_client(session, student_user)
+        _, msg_uuid = self._create_conversation_and_message(
+            client, org, student_user, instructor_user
+        )
+
+        response = client.post(
+            f"/api/v1/chat/messages/{msg_uuid}/attachments?org_id={org.id}",
+            files={"file": ("photo.jpg", self._JPEG_BYTES, "image/jpeg")},
+        )
+
+        app.dependency_overrides.clear()
+        assert response.status_code == 200
+        data = response.json()
+        assert "file_url" in data
+        assert "attachment_uuid" in data
+        assert data["file_name"] == "photo.jpg"
+        assert data["upload_status"] == "completed"
+        assert "content/orgs/" in data["file_url"]
+
+    def test_upload_pdf_attachment(
+        self,
+        session: Session,
+        org,
+        student_user: User,
+        instructor_user: User,
+    ):
+        """Upload a PDF document — should succeed."""
+        client = self._make_client(session, student_user)
+        _, msg_uuid = self._create_conversation_and_message(
+            client, org, student_user, instructor_user
+        )
+
+        response = client.post(
+            f"/api/v1/chat/messages/{msg_uuid}/attachments?org_id={org.id}",
+            files={"file": ("report.pdf", self._PDF_BYTES, "application/pdf")},
+        )
+
+        app.dependency_overrides.clear()
+        assert response.status_code == 200
+        data = response.json()
+        assert data["file_name"] == "report.pdf"
+        assert data["file_type"] == "application/pdf"
+
+    def test_upload_video_attachment(
+        self,
+        session: Session,
+        org,
+        student_user: User,
+        instructor_user: User,
+    ):
+        """Upload an MP4 video — should succeed."""
+        client = self._make_client(session, student_user)
+        _, msg_uuid = self._create_conversation_and_message(
+            client, org, student_user, instructor_user
+        )
+
+        response = client.post(
+            f"/api/v1/chat/messages/{msg_uuid}/attachments?org_id={org.id}",
+            files={"file": ("clip.mp4", self._MP4_BYTES, "video/mp4")},
+        )
+
+        app.dependency_overrides.clear()
+        assert response.status_code == 200
+        data = response.json()
+        assert data["file_name"] == "clip.mp4"
+
+    def test_upload_invalid_type_svg_rejected(
+        self,
+        session: Session,
+        org,
+        student_user: User,
+        instructor_user: User,
+    ):
+        """SVG file must be rejected (415) — security: XSS risk.
+
+        The autouse mock normally bypasses validation, so we override it here
+        with a side_effect that runs the real validate_upload (which explicitly
+        blocks SVG files) without attempting any filesystem/S3 write.
+        """
+        from fastapi import HTTPException as FastHTTPException
+        from src.security.file_validation import validate_upload
+
+        async def _real_validate_but_no_disk(file, *, directory, type_of_dir, uuid,
+                                              allowed_types, filename_prefix, max_size=None):
+            # This calls the real validation which raises HTTP 415 for SVGs
+            validate_upload(file, allowed_types, max_size)
+            return "fake_file.bin"
+
+        client = self._make_client(session, student_user)
+        _, msg_uuid = self._create_conversation_and_message(
+            client, org, student_user, instructor_user
+        )
+
+        with patch(
+            "src.services.chat.attachment_service.upload_file",
+            side_effect=_real_validate_but_no_disk,
+        ):
+            response = client.post(
+                f"/api/v1/chat/messages/{msg_uuid}/attachments?org_id={org.id}",
+                files={"file": ("malicious.svg", self._SVG_BYTES, "image/svg+xml")},
+            )
+
+        app.dependency_overrides.clear()
+        assert response.status_code == 415
+
+
+    def test_upload_by_non_sender_rejected(
+        self,
+        session: Session,
+        org,
+        student_user: User,
+        instructor_user: User,
+    ):
+        """Instructor trying to attach to student's message must get 403."""
+        student_client = self._make_client(session, student_user)
+        _, msg_uuid = self._create_conversation_and_message(
+            student_client, org, student_user, instructor_user
+        )
+
+        # Now try as the instructor (who is NOT the sender)
+        app.dependency_overrides[get_current_user] = lambda: instructor_user
+        instructor_client = TestClient(app)
+
+        response = instructor_client.post(
+            f"/api/v1/chat/messages/{msg_uuid}/attachments?org_id={org.id}",
+            files={"file": ("photo.jpg", self._JPEG_BYTES, "image/jpeg")},
+        )
+
+        app.dependency_overrides.clear()
+        assert response.status_code == 403
+
+    def test_attachment_appears_in_message_list(
+        self,
+        session: Session,
+        org,
+        student_user: User,
+        instructor_user: User,
+    ):
+        """After upload, attachment must appear in the conversation message list."""
+        client = self._make_client(session, student_user)
+        conv_uuid, msg_uuid = self._create_conversation_and_message(
+            client, org, student_user, instructor_user
+        )
+
+        # Upload
+        upload_resp = client.post(
+            f"/api/v1/chat/messages/{msg_uuid}/attachments?org_id={org.id}",
+            files={"file": ("doc.pdf", self._PDF_BYTES, "application/pdf")},
+        )
+        assert upload_resp.status_code == 200
+
+        # Retrieve messages and check attachment is included
+        messages_resp = client.get(
+            f"/api/v1/chat/messages/conversation/{conv_uuid}?org_id={org.id}"
+        )
+
+        app.dependency_overrides.clear()
+        assert messages_resp.status_code == 200
+        messages = messages_resp.json()
+        assert len(messages) > 0
+
+        # Find our message
+        target = next((m for m in messages if m["message_uuid"] == msg_uuid), None)
+        assert target is not None
+        assert len(target["attachments"]) == 1
+        assert target["attachments"][0]["file_name"] == "doc.pdf"
+
