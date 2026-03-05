@@ -71,7 +71,7 @@ function ChatClient() {
           setConversations(data)
         }
       } catch (error) {
-        console.error('Failed to load conversations:', error)
+        // Error loading conversations
       } finally {
         setIsLoadingConversations(false)
       }

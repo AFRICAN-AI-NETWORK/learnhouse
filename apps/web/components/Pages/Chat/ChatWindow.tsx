@@ -99,7 +99,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  // Track blob URLs created for optimistic previews so we can revoke them
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
 
   const access_token = session?.data?.tokens?.access_token
@@ -121,7 +120,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     removeMessageListener,
   } = useWebSocket(access_token, org_id)
 
-  // ─── Helper: fetch a single full message by UUID (includes attachments) ───────
   const fetchFullMessage = useCallback(
     async (messageUuid: string): Promise<Message | null> => {
       try {
@@ -138,20 +136,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           return await response.json()
         }
       } catch (error) {
-        console.error('Failed to fetch full message:', error)
+        // Error fetching full message
       }
       return null
     },
     [access_token]
   )
 
-  // ─── Build an absolute URL for any path the backend returns ──────────────────
-  // getAPIUrl() is confirmed to return "http://localhost:8009/api/v1/" so we
-  // extract the origin from it using the URL API — this works in all envs
-  // (local, staging, prod) without any regex or hardcoding.
   const ensureAbsoluteUrl = useCallback((url: string): string => {
     if (!url) return url
-    // Already absolute or a local blob preview — nothing to do
     if (
       url.startsWith('http://') ||
       url.startsWith('https://') ||
@@ -159,14 +152,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     ) {
       return url
     }
-    // Extract just the origin (e.g. "http://localhost:8009") from the API URL
     const backendOrigin = new URL(getAPIUrl()).origin
     const path = url.startsWith('/') ? url : `/${url}`
     return `${backendOrigin}${path}`
   }, [])
 
-  // Open a file in a real new browser tab — NOT a Next.js route.
-  // window.open with a full http(s) URL always opens an independent browser tab.
   const openFileInNewTab = useCallback(
     (fileUrl: string) => {
       window.open(ensureAbsoluteUrl(fileUrl), '_blank', 'noopener,noreferrer')
@@ -174,11 +164,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     [ensureAbsoluteUrl]
   )
 
-  // Revoke any leftover blob URLs when the component unmounts
   useEffect(() => {
+    const blobUrls = blobUrlsRef.current
     return () => {
-      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
-      blobUrlsRef.current.clear()
+      blobUrls.forEach((url) => URL.revokeObjectURL(url))
+      blobUrls.clear()
     }
   }, [])
 
@@ -208,12 +198,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           }
         }
       } catch (error) {
-        console.error('Failed to load conversation:', error)
+        // Error loading conversation
       }
     }
 
     loadConversation()
   }, [org_id, access_token, conversationId, onConversationUpdate])
+
+  const markMessageAsRead = useCallback(
+    async (messageUuid: string) => {
+      try {
+        if (isConnected) {
+          sendWebSocketMessage({
+            type: 'mark_read',
+            data: { message_uuid: messageUuid },
+          })
+        } else {
+          await fetch(`${getAPIUrl()}chat/messages/${messageUuid}/read`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Content-Type': 'application/json',
+            },
+          })
+        }
+      } catch (error) {
+        // Error marking message as read
+      }
+    },
+    [isConnected, sendWebSocketMessage, access_token]
+  )
 
   useEffect(() => {
     if (!access_token || !conversationId) return
@@ -243,18 +257,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           })
         }
       } catch (error) {
-        console.error('Failed to load messages:', error)
+        // Error loading messages
       } finally {
         setIsLoadingMessages(false)
       }
     }
 
     loadMessages()
-  }, [access_token, conversationId, current_user_id])
+  }, [access_token, conversationId, current_user_id, markMessageAsRead])
 
-  // ─── WebSocket: new message ───────────────────────────────────────────────────
-  // The WS payload carries only basic fields — no attachments. We always fetch
-  // the full message so both sender and receiver get thumbnail/file data.
   const handleNewMessage = useCallback(
     async (event: any) => {
       const data = event.data
@@ -318,7 +329,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               Authorization: `Bearer ${access_token}`,
               'Content-Type': 'application/json',
             },
-          }).catch((err) => console.error('Failed to mark as read:', err))
+          }).catch(() => {
+            // Error marking as read
+          })
         }
       }
     },
@@ -417,27 +430,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     conversationId,
   ])
 
-  const markMessageAsRead = async (messageUuid: string) => {
-    try {
-      if (isConnected) {
-        sendWebSocketMessage({
-          type: 'mark_read',
-          data: { message_uuid: messageUuid },
-        })
-      } else {
-        await fetch(`${getAPIUrl()}chat/messages/${messageUuid}/read`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            'Content-Type': 'application/json',
-          },
-        })
-      }
-    } catch (error) {
-      console.error('Failed to mark message as read:', error)
-    }
-  }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
@@ -510,9 +502,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setIsSendingMessage(true)
       setError(null)
 
-      // Build local previews for optimistic UI.
-      // Store blob URLs in a ref so we can use them as fallbacks if the
-      // server hasn't generated a thumbnail yet, and revoke them later.
       const localAttachmentPreviews: Attachment[] = filesToUpload.map(
         (file) => {
           let blobUrl: string | undefined
@@ -554,7 +543,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setMessageInput('')
       setSelectedFiles([])
 
-      // ── 1. Create the message on the server ──────────────────────────────
       const url = new URL(`${getAPIUrl()}chat/messages/send`)
       url.searchParams.append('org_id', String(org_id))
       url.searchParams.append('conversation_id', conversationId)
@@ -579,7 +567,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       const serverMessage = await response.json()
 
-      // ── 2. Upload attachments (if any) ───────────────────────────────────
       if (hasFiles) {
         const uploadedAttachments: Attachment[] = []
         for (const file of filesToUpload) {
@@ -590,18 +577,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             )
             uploadedAttachments.push(attachment)
           } catch (error) {
-            console.error('Failed to upload file:', file.name, error)
+            // Error uploading file
           }
         }
 
-        // ── 3. Fetch the fully-hydrated message so we have server-side
-        //        thumbnail URLs and confirmed attachment data ─────────────────
         const fullMessage = await fetchFullMessage(serverMessage.message_uuid)
         const resolvedAttachments = (
           fullMessage?.attachments ?? uploadedAttachments
         ).map((att) => {
-          // If the server returned a real thumbnail, revoke the blob URL to
-          // free memory. If not, keep the blob URL so the image stays visible.
           const blobUrl = blobUrlsRef.current.get(att.file_name)
           if (att.thumbnail_url && blobUrl) {
             URL.revokeObjectURL(blobUrl)
@@ -636,7 +619,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )
       }
 
-      // ── 4. Update conversation list ──────────────────────────────────────
       const updatedConversation = {
         ...conversation,
         last_message_at: serverMessage.created_at,
@@ -650,7 +632,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
       onConversationUpdate(updatedConversation)
     } catch (error) {
-      console.error('Failed to send message:', error)
+      // Error sending message
       setMessages((prev) => prev.filter((msg) => msg.clientId !== clientId))
       setError(t('chat.message_failed'))
     } finally {

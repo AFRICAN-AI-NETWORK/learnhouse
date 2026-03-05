@@ -43,18 +43,14 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       })
 
       if (!response.ok) {
-        console.error(
-          'Failed to get WebSocket ticket:',
-          response.status,
-          response.statusText
-        )
+        // Failed to get WebSocket ticket
         return null
       }
 
       const data = await response.json()
       return data.ticket ?? null
     } catch (error) {
-      console.error('Failed to get WebSocket ticket:', error)
+      // Error getting WebSocket ticket
       return null
     }
   }, [accessToken])
@@ -75,9 +71,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
         ? maxDelay
         : Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
 
-    console.log(
-      `[WebSocket] Reconnecting in ${delay}ms (attempt ${attempt + 1})`
-    )
+    // Reconnecting WebSocket
 
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectAttemptRef.current =
@@ -102,7 +96,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       // Exchange JWT for a short-lived ticket (expires in 30s, single-use)
       const ticket = await getWebSocketTicket()
       if (!ticket) {
-        console.error('[WebSocket] Failed to obtain ticket, will retry')
+        // Failed to obtain WebSocket ticket
         attemptReconnect()
         return
       }
@@ -111,7 +105,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       const ws = new WebSocket(getWebSocketUrl(ticket))
 
       ws.onopen = () => {
-        console.log('[WebSocket] Connected')
+        // WebSocket connected
         setIsConnected(true)
         reconnectAttemptRef.current = 0
       }
@@ -121,7 +115,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
           const message = JSON.parse(event.data) as WebSocketMessage
 
           if (message.type === 'connection_established') {
-            console.log('[WebSocket] Connection confirmed:', message.data)
+            // WebSocket connection confirmed
           }
 
           const listeners = messageListenersRef.current.get(message.type)
@@ -129,17 +123,17 @@ const useWebSocket = (accessToken: string, orgId: number) => {
             listeners.forEach((listener) => listener({ data: message.data }))
           }
         } catch (error) {
-          console.error('[WebSocket] Failed to parse message:', error)
+          // Error parsing WebSocket message
         }
       }
 
-      ws.onerror = (error) => {
-        console.error('[WebSocket] Error:', error)
+      ws.onerror = () => {
+        // WebSocket error
         setIsConnected(false)
       }
 
       ws.onclose = (event) => {
-        console.log('[WebSocket] Disconnected:', event.code, event.reason)
+        // WebSocket disconnected
         setIsConnected(false)
         wsRef.current = null
         // Only reconnect if not a deliberate close (code 1000)
@@ -150,7 +144,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
 
       wsRef.current = ws
     } catch (error) {
-      console.error('[WebSocket] Connection failed:', error)
+      // WebSocket connection failed
       attemptReconnect()
     }
   }, [
@@ -169,9 +163,8 @@ const useWebSocket = (accessToken: string, orgId: number) => {
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message))
-    } else {
-      console.warn('[WebSocket] Not connected, message dropped:', message)
     }
+    // Else: not connected, message dropped
   }, [])
 
   const addMessageListener = useCallback(
@@ -213,6 +206,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     return () => {
       disconnect()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, orgId]) // intentionally omitting connect/disconnect to avoid re-running on every render
 
   // Periodic ping to keep connection alive

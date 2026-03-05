@@ -87,7 +87,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
           setFilteredUsers(data)
         }
       } catch (error) {
-        console.error('Failed to load users:', error)
+        // Error loading users
       } finally {
         setIsLoading(false)
       }
@@ -132,7 +132,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
           alert(t('chat.not_allowed_to_chat'))
         }
       } catch (error) {
-        console.error('Failed to create conversation:', error)
+        // Error creating conversation
         alert(t('common.something_went_wrong'))
       } finally {
         setIsCreatingConversation(false)
