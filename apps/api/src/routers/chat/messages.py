@@ -125,7 +125,7 @@ async def mark_message_as_read(
         return {"message": "Message not found"}
 
 
-@router.post("/{message_uuid}/attachments", response_model=MessageAttachmentRead)
+@router.post("/{message_uuid}/attachments", response_model=MessageAttachmentRead, include_in_schema=False)
 async def upload_attachment(
     message_uuid: str,
     file: UploadFile = File(...),
@@ -222,6 +222,27 @@ async def send_message_with_attachment(
     if not org:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
 
+    # ── Resolve conversation upfront (conversation_id can be int or UUID string) ──
+    conversation = None
+    if conversation_id:
+        # Try to parse as integer first
+        try:
+            conv_int_id = int(conversation_id)
+            conversation = db.exec(
+                select(Conversation).where(Conversation.id == conv_int_id)
+            ).first()
+        except ValueError:
+            # It's a UUID string (conv_xxx format)
+            conversation = db.exec(
+                select(Conversation).where(Conversation.conversation_uuid == conversation_id)
+            ).first()
+        
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Conversation not found"
+            )
+
     # ── Normalise reply_to (0 → None, mirrors existing create_message logic) ──
     reply_to: Optional[int] = None if (reply_to_message_id is None or reply_to_message_id == 0) else reply_to_message_id
 
@@ -248,12 +269,7 @@ async def send_message_with_attachment(
     # ── Upload attachment if provided ─────────────────────────────────────────
     attachment_data = None
     if file is not None:
-        conversation = db.exec(
-            select(Conversation).where(
-                Conversation.conversation_uuid == message.conversation_id
-            )
-        ).first()
-
+        # Use the conversation we already resolved upfront
         if conversation:
             attachment = await AttachmentService.upload_attachment(
                 db=db,
@@ -272,6 +288,9 @@ async def send_message_with_attachment(
                 "file_url": attachment.file_url,
                 "upload_status": attachment.upload_status,
             }
+            
+            # Update the message response to include the attachment
+            message.attachments = [attachment_data]
 
     # ── WebSocket notification ────────────────────────────────────────────────
     try:
