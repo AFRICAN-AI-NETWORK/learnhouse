@@ -25,7 +25,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     const wsProtocol = backendUrl.startsWith('https') ? 'wss:' : 'ws:'
     const urlObj = new URL(backendUrl)
     const host = urlObj.host
-    // Use ticket (not token) — backend requires ticket-based WS auth
+    // Use ticket  backend requires ticket-based WS auth
     return `${wsProtocol}//${host}/api/v1/chat/ws?ticket=${ticket}`
   }, [])
 
@@ -99,7 +99,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     }
 
     try {
-      // Step 1: Exchange JWT for a short-lived ticket (expires in 30s, single-use)
+      // Exchange JWT for a short-lived ticket (expires in 30s, single-use)
       const ticket = await getWebSocketTicket()
       if (!ticket) {
         console.error('[WebSocket] Failed to obtain ticket, will retry')
@@ -107,7 +107,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
         return
       }
 
-      // Step 2: Connect using the ticket — NOT the raw JWT token
+      //  Connect using the ticket — NOT the raw JWT token
       const ws = new WebSocket(getWebSocketUrl(ticket))
 
       ws.onopen = () => {
