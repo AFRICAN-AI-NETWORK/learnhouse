@@ -11,5 +11,5 @@ os.environ["TESTING"] = "true"
 os.environ["LOGFIRE_IGNORE_NO_CONFIG"] = "1"
 
 # Set required encryption key for referral system tests
-# Generated test key - not for production use
-os.environ["BANK_DATA_ENCRYPTION_KEY"] = "test-key-for-testing-only-do-not-use-in-production-32bytes==" 
+# Valid Fernet key (32 url-safe base64-encoded bytes) - for testing only
+os.environ["BANK_DATA_ENCRYPTION_KEY"] = "tQGxQ8c5cFLb7QKlCNqNqYmH_6ZxFpGNHM8PxJcJ_Mc=" 
