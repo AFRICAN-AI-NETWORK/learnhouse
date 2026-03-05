@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
+import { getBackendUrl } from '@services/config/config'
 
 interface WebSocketMessage {
   type: string
@@ -17,10 +18,15 @@ const useWebSocket = (accessToken: string, orgId: number) => {
   const [isConnected, setIsConnected] = useState(false)
 
   const getWebSocketUrl = useCallback(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
-    // Use relative path for WebSocket that will be proxied by the server
-    return `${protocol}//${host}/api/v1/chat/ws?token=${accessToken}`
+    // Get the backend URL (e.g., http://localhost:8000/ or https://api.example.com/)
+    const backendUrl = getBackendUrl()
+    // Convert http/https to ws/wss
+    const wsProtocol = backendUrl.startsWith('https') ? 'wss:' : 'ws:'
+    // Extract host from backend URL
+    const urlObj = new URL(backendUrl)
+    const host = urlObj.host
+    // Build WebSocket URL pointing to the backend
+    return `${wsProtocol}//${host}/api/v1/chat/ws?token=${accessToken}`
   }, [accessToken])
 
   const connect = useCallback(() => {
