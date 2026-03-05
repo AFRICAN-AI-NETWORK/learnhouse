@@ -13,10 +13,10 @@ export default function RootLayout(props: {
   const { children } = props
 
   return (
-    <div className="theme-landing min-h-screen bg-background text-foreground flex flex-col">
+    <div className="theme-landing h-screen bg-background text-foreground flex flex-col overflow-hidden">
       <SessionProvider>
         <OrgMenu orgslug={params?.orgslug}></OrgMenu>
-        <main className="flex-1 w-full">{children}</main>
+        <main className="flex-1 w-full overflow-auto">{children}</main>
       </SessionProvider>
     </div>
   )

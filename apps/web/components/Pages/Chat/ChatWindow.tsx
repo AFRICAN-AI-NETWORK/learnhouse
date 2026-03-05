@@ -28,7 +28,7 @@ interface Message {
   updated_at: string
   attachments: any[]
   clientId?: string
-  isPending?: boolean // Flag for optimistic message not yet confirmed
+  isPending?: boolean
   read_receipt?: {
     delivered_at: string
     read_at?: string
@@ -86,17 +86,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const org_id = org?.id
   const current_user_id = session?.data?.user?.id
 
-  // Use refs for values needed in WebSocket handlers to avoid recreating handlers
   const conversationIdRef = useRef(conversationId)
   const currentUserIdRef = useRef(current_user_id)
 
-  // Update refs when values change
   useEffect(() => {
     conversationIdRef.current = conversationId
     currentUserIdRef.current = current_user_id
   }, [conversationId, current_user_id])
 
-  // WebSocket connection
   const {
     isConnected,
     sendMessage: sendWebSocketMessage,
@@ -104,7 +101,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     removeMessageListener,
   } = useWebSocket(access_token, org_id)
 
-  // Load conversation details
   useEffect(() => {
     if (!org_id || !access_token || !conversationId) return
 
@@ -138,7 +134,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     loadConversation()
   }, [org_id, access_token, conversationId, onConversationUpdate])
 
-  // Load messages
   useEffect(() => {
     if (!access_token || !conversationId) return
 
@@ -157,8 +152,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         if (response.ok) {
           const data = await response.json()
           setMessages(data.reverse())
-
-          // Mark unread messages as read
           data.forEach((msg: Message) => {
             if (
               msg.receiver_id === current_user_id &&
@@ -181,20 +174,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleNewMessage = useCallback(
     (event: any) => {
       const data = event.data
-
-      console.log('[Chat] handleNewMessage called:', {
-        messageUuid: data.message_uuid,
-        senderId: data.sender_id,
-        incomingConversationId: data.conversation_id,
-        currentConversationId: conversationIdRef.current,
-        matches: data.conversation_id === conversationIdRef.current,
-      })
-
-      // Check if message belongs to current conversation
-      if (data.conversation_id !== conversationIdRef.current) {
-        console.log('[Chat] Ignoring message - not in current conversation')
-        return
-      }
+      if (data.conversation_id !== conversationIdRef.current) return
 
       const confirmedMessage: Message = {
         id: data.id || 0,
@@ -210,15 +190,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         updated_at: data.created_at,
         attachments: data.attachments || [],
         isPending: false,
-        read_receipt: {
-          delivered_at: data.created_at,
-          read_at: undefined,
-        },
+        read_receipt: { delivered_at: data.created_at, read_at: undefined },
       }
 
-      // Optimistic update: Replace pending message or add new message
       setMessages((prev) => {
-        // Check if this is a confirmation of an optimistic message
         const optimisticIndex = prev.findIndex(
           (msg) =>
             msg.isPending &&
@@ -229,50 +204,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 new Date(data.created_at).getTime()
             ) < 5000
         )
-
         if (optimisticIndex !== -1) {
-          // Replace optimistic message with confirmed one
-          console.log('[Chat] Replacing optimistic message with confirmed:', {
-            optimisticId: prev[optimisticIndex].message_uuid,
-            confirmedId: confirmedMessage.message_uuid,
-          })
           const updated = [...prev]
           updated[optimisticIndex] = confirmedMessage
           return updated
         }
-
-        // Check if message already exists (by message_uuid)
         const exists = prev.some(
           (msg) => msg.message_uuid === confirmedMessage.message_uuid
         )
-        if (exists) {
-          console.log(
-            '[Chat] Duplicate message prevented:',
-            confirmedMessage.message_uuid
-          )
-          return prev
-        }
-
-        // Add new message (from other user or different tab)
-        console.log(
-          '[Chat] Adding new message from WebSocket:',
-          confirmedMessage.message_uuid
-        )
+        if (exists) return prev
         return [...prev, confirmedMessage]
       })
 
-      // Mark as read if it's for the current user and not sent by them
       if (
         data.receiver_id === currentUserIdRef.current &&
         data.sender_id !== currentUserIdRef.current
       ) {
-        // Use WebSocket or REST to mark as read
         if (isConnected) {
           sendWebSocketMessage({
             type: 'mark_read',
-            data: {
-              message_uuid: data.message_uuid,
-            },
+            data: { message_uuid: data.message_uuid },
           })
         } else {
           fetch(`${getAPIUrl()}chat/messages/${data.message_uuid}/read`, {
@@ -289,23 +240,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   )
 
   const handleUserTyping = useCallback((event: any) => {
-    // Use refs to avoid recreating handler
     if (
       event.data.conversation_uuid === conversationIdRef.current &&
       event.data.user_id !== currentUserIdRef.current
     ) {
       setOtherUserTyping(event.data.is_typing)
-
-      // Clear existing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-      }
-
-      // Auto dismiss typing indicator after 5 seconds
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
       if (event.data.is_typing) {
-        typingTimeoutRef.current = setTimeout(() => {
-          setOtherUserTyping(false)
-        }, 5000)
+        typingTimeoutRef.current = setTimeout(
+          () => setOtherUserTyping(false),
+          5000
+        )
       }
     }
   }, [])
@@ -345,17 +290,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setMessages((prev) =>
       prev.map((msg) =>
         msg.message_uuid === event.data.message_uuid
-          ? {
-              ...msg,
-              is_deleted: true,
-              content: '',
-            }
+          ? { ...msg, is_deleted: true, content: '' }
           : msg
       )
     )
   }, [])
 
-  // Auto scroll to bottom
   useEffect(() => {
     if (!isLoadingMessages) {
       setTimeout(
@@ -367,23 +307,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   useEffect(() => {
     if (!isConnected) return
-
-    console.log(
-      '[Chat] Registering WebSocket listeners for conversation:',
-      conversationId
-    )
-
     addMessageListener('new_message', handleNewMessage)
     addMessageListener('user_typing', handleUserTyping)
     addMessageListener('message_read', handleMessageRead)
     addMessageListener('message_edited', handleMessageEdited)
     addMessageListener('message_deleted', handleMessageDeleted)
-
     return () => {
-      console.log(
-        '[Chat] Cleaning up WebSocket listeners for conversation:',
-        conversationId
-      )
       removeMessageListener('new_message', handleNewMessage)
       removeMessageListener('user_typing', handleUserTyping)
       removeMessageListener('message_read', handleMessageRead)
@@ -407,9 +336,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       if (isConnected) {
         sendWebSocketMessage({
           type: 'mark_read',
-          data: {
-            message_uuid: messageUuid,
-          },
+          data: { message_uuid: messageUuid },
         })
       } else {
         await fetch(`${getAPIUrl()}chat/messages/${messageUuid}/read`, {
@@ -427,18 +354,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!messageInput.trim() || !conversation) return
 
     const messageContent = messageInput.trim()
-    const clientId = crypto.randomUUID() // Generate temporary ID
+    const clientId = crypto.randomUUID()
 
     try {
       setIsSendingMessage(true)
       setError(null)
 
       const optimisticMessage: Message = {
-        id: 0, // Temp ID
+        id: 0,
         message_uuid: `temp_${clientId}`,
         conversation_id: conversationId,
         sender_id: current_user_id || 0,
@@ -451,15 +377,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         updated_at: new Date().toISOString(),
         attachments: [],
         clientId: clientId,
-        isPending: true, // Mark as pending confirmation
-        read_receipt: {
-          delivered_at: new Date().toISOString(),
-        },
+        isPending: true,
+        read_receipt: { delivered_at: new Date().toISOString() },
       }
 
-      // Add optimistic message immediately
       setMessages((prev) => [...prev, optimisticMessage])
-      setMessageInput('') // Clear input immediately for better UX
+      setMessageInput('')
 
       const url = new URL(`${getAPIUrl()}chat/messages/send`)
       url.searchParams.append('org_id', String(org_id))
@@ -474,22 +397,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       const response = await fetch(url.toString(), {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
+        headers: { Authorization: `Bearer ${access_token}` },
       })
 
       if (response.ok) {
         const serverMessage = await response.json()
-        console.log(
-          '[Chat] Message sent successfully:',
-          serverMessage.message_uuid
-        )
-
-        // WebSocket will handle replacing optimistic message with confirmed one
-        // (handleNewMessage will match by content + timestamp + sender)
-
-        // Update conversation preview
         const updatedConversation = {
           ...conversation,
           last_message_at: serverMessage.created_at,
@@ -503,13 +415,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         }
         onConversationUpdate(updatedConversation)
       } else {
-        // Remove optimistic message on failure
         setMessages((prev) => prev.filter((msg) => msg.clientId !== clientId))
         setError(t('chat.message_failed'))
       }
     } catch (error) {
       console.error('Failed to send message:', error)
-      // Remove optimistic message on error
       setMessages((prev) => prev.filter((msg) => msg.clientId !== clientId))
       setError(t('chat.message_failed'))
     } finally {
@@ -521,205 +431,237 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleTyping = () => {
     if (!isConnected || !conversation) return
-
-    // Throttle typing indicator to avoid flooding
     const now = Date.now()
     if (now - lastTypingRef.current < 1000) return
-
     lastTypingRef.current = now
     sendWebSocketMessage({
       type: 'typing_start',
-      data: {
-        conversation_uuid: conversationId,
-      },
+      data: { conversation_uuid: conversationId },
     })
   }
 
   const handleTypingStop = () => {
     if (!isConnected || !conversation) return
-
     sendWebSocketMessage({
       type: 'typing_stop',
-      data: {
-        conversation_uuid: conversationId,
-      },
+      data: { conversation_uuid: conversationId },
     })
   }
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-gray-400" />
+      <div className="flex-1 flex items-center justify-center bg-[#0f0f13]">
+        <Loader2 size={24} className="animate-spin text-indigo-400" />
       </div>
     )
   }
 
+  const otherParticipant = conversation.other_participant
+  const displayName = otherParticipant.first_name
+    ? `${otherParticipant.first_name}${otherParticipant.last_name ? ' ' + otherParticipant.last_name : ''}`
+    : otherParticipant.username
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#0f0f13]">
       {/* Header */}
-      <div className="border-b border-gray-200 p-4">
+      <div className="flex-shrink-0 px-5 py-3.5 border-b border-white/[0.06] bg-[#13131a] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img
-            src={
-              conversation.other_participant.avatar_image ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation.other_participant.id}`
-            }
-            alt={conversation.other_participant.username}
-            className="w-10 h-10 rounded-full"
-          />
+          <div className="relative">
+            <img
+              src={
+                otherParticipant.avatar_image ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
+              }
+              alt={otherParticipant.username}
+              className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
+            />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
+          </div>
           <div>
-            <h2 className="font-semibold text-gray-900">
-              {conversation.other_participant.first_name ||
-                conversation.other_participant.username}
-              {conversation.other_participant.last_name &&
-                ` ${conversation.other_participant.last_name}`}
+            <h2 className="text-sm font-semibold text-white leading-tight">
+              {displayName}
             </h2>
-            <p className="text-sm text-gray-500">
-              @{conversation.other_participant.username}
+            <p className="text-xs text-white/35 leading-tight mt-0.5">
+              @{otherParticipant.username}
             </p>
           </div>
+        </div>
+        {/* Connection status dot */}
+        <div className="flex items-center gap-2">
+          <span
+            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-white/20'}`}
+          />
+          <span className="text-xs text-white/25">
+            {isConnected ? 'Live' : 'Offline'}
+          </span>
         </div>
       </div>
 
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
       >
         {isLoadingMessages ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 size={24} className="animate-spin text-gray-400" />
+            <Loader2 size={22} className="animate-spin text-indigo-400" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <p>{t('chat.no_messages')}</p>
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+              <span className="text-xl">👋</span>
+            </div>
+            <p className="text-white/30 text-sm">{t('chat.no_messages')}</p>
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.clientId || message.message_uuid}
-              className={`flex ${
-                message.sender_id === current_user_id
-                  ? 'justify-end'
-                  : 'justify-start'
-              }`}
-            >
+          messages.map((message) => {
+            const isMine = message.sender_id === current_user_id
+            return (
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.sender_id === current_user_id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-900'
-                } ${message.isPending ? 'opacity-70' : ''}`}
+                key={message.clientId || message.message_uuid}
+                className={`flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
               >
-                {message.is_deleted ? (
-                  <p className="italic text-gray-500">
-                    {t('chat.message_deleted')}
-                  </p>
-                ) : (
-                  <p>{message.content}</p>
+                {/* Other user avatar for incoming */}
+                {!isMine && (
+                  <img
+                    src={
+                      otherParticipant.avatar_image ||
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
+                    }
+                    alt={otherParticipant.username}
+                    className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
+                  />
                 )}
+
                 <div
-                  className={`text-xs mt-1 flex items-center gap-1 ${
-                    message.sender_id === current_user_id
-                      ? 'text-blue-100'
-                      : 'text-gray-500'
-                  }`}
+                  className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                 >
-                  <span>
-                    {new Date(message.created_at).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                  {message.sender_id === current_user_id && (
-                    <>
-                      {message.isPending ? (
-                        <Clock size={14} className="animate-pulse" />
-                      ) : message.read_receipt?.read_at ? (
-                        <CheckCheck size={14} />
-                      ) : (
-                        <Check size={14} />
+                  <div
+                    className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 ${
+                      isMine
+                        ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
+                        : 'bg-white/[0.07] text-white/85 rounded-bl-sm border border-white/[0.06]'
+                    }`}
+                  >
+                    {message.is_deleted ? (
+                      <span className="italic text-white/30 text-xs">
+                        {t('chat.message_deleted')}
+                      </span>
+                    ) : (
+                      <span>{message.content}</span>
+                    )}
+                  </div>
+
+                  {/* Timestamp + status */}
+                  <div
+                    className={`flex items-center gap-1 mt-1 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                  >
+                    <span className="text-[11px] text-white/20 tabular-nums">
+                      {new Date(message.created_at).toLocaleTimeString(
+                        'en-US',
+                        {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }
                       )}
-                    </>
-                  )}
-                  {message.is_edited && (
-                    <span className="ml-auto">({t('chat.edited')})</span>
-                  )}
+                    </span>
+                    {isMine && (
+                      <span className="text-white/30">
+                        {message.isPending ? (
+                          <Clock size={11} className="animate-pulse" />
+                        ) : message.read_receipt?.read_at ? (
+                          <CheckCheck size={11} className="text-indigo-400" />
+                        ) : (
+                          <Check size={11} />
+                        )}
+                      </span>
+                    )}
+                    {message.is_edited && (
+                      <span className="text-[11px] text-white/20">
+                        · {t('chat.edited')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
+
+        {/* Typing indicator */}
         {otherUserTyping && (
-          <div className="flex justify-start">
-            <div className="bg-gray-200 text-gray-900 px-4 py-2 rounded-lg">
-              <div className="flex gap-1">
+          <div className="flex justify-start gap-2">
+            <img
+              src={
+                otherParticipant.avatar_image ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
+              }
+              alt={otherParticipant.username}
+              className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
+            />
+            <div className="bg-white/[0.07] border border-white/[0.06] px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
+              {[0, 150, 300].map((delay) => (
                 <div
-                  className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '0ms' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '150ms' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                  style={{ animationDelay: '300ms' }}
-                ></div>
-              </div>
+                  key={delay}
+                  className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Error Message */}
+      {/* Error */}
       {sendError && (
-        <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg mx-4 flex items-center gap-2 text-red-700">
-          <AlertCircle size={16} />
-          <span className="text-sm">{sendError}</span>
+        <div className="mx-4 mb-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400">
+          <AlertCircle size={14} />
+          <span className="text-xs font-medium">{sendError}</span>
         </div>
       )}
 
-      {/* Input Area */}
-      <form
-        onSubmit={(e) => {
-          handleSendMessage(e)
-          handleTypingStop()
-        }}
-        className="border-t border-gray-200 p-4"
-      >
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder={t('chat.type_message')}
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                handleSendMessage(e as any)
-                handleTypingStop()
-              }
-              handleTyping()
-            }}
-            onBlur={handleTypingStop}
-            disabled={isSendingMessage}
-            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          />
+      {/* Input */}
+      <div className="flex-shrink-0 px-4 py-3 border-t border-white/[0.06] bg-[#13131a]">
+        <form
+          onSubmit={(e) => {
+            handleSendMessage(e)
+            handleTypingStop()
+          }}
+          className="flex items-center gap-3"
+        >
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder={t('chat.type_message')}
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSendMessage(e as any)
+                  handleTypingStop()
+                }
+                handleTyping()
+              }}
+              onBlur={handleTypingStop}
+              disabled={isSendingMessage}
+              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40 pr-12"
+            />
+          </div>
           <button
             type="submit"
             disabled={isSendingMessage || !messageInput.trim()}
-            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
           >
             {isSendingMessage ? (
-              <Loader2 size={20} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin" />
             ) : (
-              <Send size={20} />
+              <Send size={16} />
             )}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

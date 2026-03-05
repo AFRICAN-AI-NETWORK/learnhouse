@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@components/ui/dialog'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, UserSearch } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
@@ -66,7 +66,6 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
 
   const org_id = org?.id
 
-  // Load chatable users
   useEffect(() => {
     if (!isOpen || !org_id || !session?.data?.tokens?.access_token) return
 
@@ -97,7 +96,6 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
     loadUsers()
   }, [isOpen, org_id, session?.data?.tokens?.access_token])
 
-  // Filter users based on search
   useEffect(() => {
     const query = searchQuery.toLowerCase()
     const filtered = users.filter((user) => {
@@ -121,9 +119,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
               Authorization: `Bearer ${session.data.tokens.access_token}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              participant_two_id: user.id,
-            }),
+            body: JSON.stringify({ participant_two_id: user.id }),
           }
         )
 
@@ -147,65 +143,87 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t('chat.start_new_chat')}</DialogTitle>
+      <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-0">
+          <DialogTitle className="text-white font-semibold text-lg tracking-tight">
+            {t('chat.start_new_chat')}
+          </DialogTitle>
+          <p className="text-white/35 text-sm mt-1">Find someone to message</p>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="px-6 pt-4 pb-6 space-y-4">
           {/* Search Input */}
           <div className="relative">
             <Search
-              size={18}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none"
             />
             <input
               type="text"
               placeholder={t('chat.search_users')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isLoading}
+              autoFocus
+              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/25 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40"
             />
           </div>
 
           {/* Users List */}
-          <div className="max-h-96 overflow-y-auto space-y-2">
+          <div className="max-h-80 overflow-y-auto -mx-1 px-1 space-y-0.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
             {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 size={24} className="animate-spin text-gray-400" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={22} className="animate-spin text-indigo-400" />
               </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-gray-400">
-                <p>{t('chat.no_conversations')}</p>
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                  <UserSearch size={18} className="text-white/20" />
+                </div>
+                <p className="text-white/30 text-sm">
+                  {t('chat.no_conversations')}
+                </p>
               </div>
             ) : (
-              filteredUsers.map((user) => (
-                <button
-                  key={user.id}
-                  onClick={() => handleSelectUser(user)}
-                  disabled={isCreatingConversation}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  <img
-                    src={
-                      user.avatar_image ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
-                    }
-                    alt={user.username}
-                    className="w-10 h-10 rounded-full flex-shrink-0"
-                  />
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="font-semibold text-gray-900 truncate">
-                      {user.first_name || user.username}
-                      {user.last_name && ` ${user.last_name}`}
+              filteredUsers.map((user) => {
+                const displayName = user.first_name
+                  ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`
+                  : user.username
+
+                return (
+                  <button
+                    key={user.id}
+                    onClick={() => handleSelectUser(user)}
+                    disabled={isCreatingConversation}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.05] transition-all duration-150 disabled:opacity-40 group text-left"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={
+                          user.avatar_image ||
+                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
+                        }
+                        alt={user.username}
+                        className="w-10 h-10 rounded-full ring-2 ring-white/[0.06] object-cover"
+                      />
                     </div>
-                    <div className="text-sm text-gray-500 truncate">
-                      @{user.username}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white/80 group-hover:text-white truncate transition-colors duration-150">
+                        {displayName}
+                      </div>
+                      <div className="text-xs text-white/30 truncate mt-0.5">
+                        @{user.username}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))
+                    {isCreatingConversation && (
+                      <Loader2
+                        size={14}
+                        className="animate-spin text-indigo-400 flex-shrink-0"
+                      />
+                    )}
+                  </button>
+                )
+              })
             )}
           </div>
         </div>

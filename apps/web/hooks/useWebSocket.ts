@@ -17,26 +17,101 @@ const useWebSocket = (accessToken: string, orgId: number) => {
   )
   const [isConnected, setIsConnected] = useState(false)
 
-  const getWebSocketUrl = useCallback(() => {
-    // Get the backend URL (e.g., http://localhost:8000/ or https://api.example.com/)
+  // Use a ref for connect so attemptReconnect always calls the latest version
+  const connectRef = useRef<() => Promise<void>>(async () => {})
+
+  const getWebSocketUrl = useCallback((ticket: string) => {
     const backendUrl = getBackendUrl()
-    // Convert http/https to ws/wss
     const wsProtocol = backendUrl.startsWith('https') ? 'wss:' : 'ws:'
-    // Extract host from backend URL
     const urlObj = new URL(backendUrl)
     const host = urlObj.host
-    // Build WebSocket URL pointing to the backend
-    return `${wsProtocol}//${host}/api/v1/chat/ws?token=${accessToken}`
-  }, [accessToken])
+    // Use ticket (not token) — backend requires ticket-based WS auth
+    return `${wsProtocol}//${host}/api/v1/chat/ws?ticket=${ticket}`
+  }, [])
 
-  const connect = useCallback(() => {
-    if (!accessToken || !orgId) return
+  const getWebSocketTicket = useCallback(async (): Promise<string | null> => {
+    if (!accessToken) return null
 
     try {
-      const ws = new WebSocket(getWebSocketUrl())
+      const backendUrl = getBackendUrl()
+      const response = await fetch(`${backendUrl}api/v1/chat/ws/ticket`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error(
+          'Failed to get WebSocket ticket:',
+          response.status,
+          response.statusText
+        )
+        return null
+      }
+
+      const data = await response.json()
+      return data.ticket ?? null
+    } catch (error) {
+      console.error('Failed to get WebSocket ticket:', error)
+      return null
+    }
+  }, [accessToken])
+
+  // attemptReconnect reads connectRef.current so it always has the latest connect
+  const attemptReconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+    }
+
+    const baseDelay = 1000
+    const maxDelay = 30000
+    const maxAttempts = 6
+
+    const attempt = reconnectAttemptRef.current
+    const delay =
+      attempt >= maxAttempts
+        ? maxDelay
+        : Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
+
+    console.log(
+      `[WebSocket] Reconnecting in ${delay}ms (attempt ${attempt + 1})`
+    )
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectAttemptRef.current =
+        attempt < maxAttempts ? attempt + 1 : attempt
+      connectRef.current()
+    }, delay)
+  }, []) // no deps needed — reads ref at call time
+
+  const connect = useCallback(async () => {
+    if (!accessToken || !orgId) return
+
+    // Avoid opening duplicate connections
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState === WebSocket.OPEN ||
+        wsRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      return
+    }
+
+    try {
+      // Step 1: Exchange JWT for a short-lived ticket (expires in 30s, single-use)
+      const ticket = await getWebSocketTicket()
+      if (!ticket) {
+        console.error('[WebSocket] Failed to obtain ticket, will retry')
+        attemptReconnect()
+        return
+      }
+
+      // Step 2: Connect using the ticket — NOT the raw JWT token
+      const ws = new WebSocket(getWebSocketUrl(ticket))
 
       ws.onopen = () => {
-        console.log('WebSocket connected')
+        console.log('[WebSocket] Connected')
         setIsConnected(true)
         reconnectAttemptRef.current = 0
       }
@@ -45,69 +120,57 @@ const useWebSocket = (accessToken: string, orgId: number) => {
         try {
           const message = JSON.parse(event.data) as WebSocketMessage
 
-          if (message.type === 'connected') {
+          if (message.type === 'connection_established') {
             console.log('[WebSocket] Connection confirmed:', message.data)
           }
 
-          // Forward message to all registered listeners
           const listeners = messageListenersRef.current.get(message.type)
           if (listeners) {
-            listeners.forEach((listener) => {
-              listener({ data: message.data })
-            })
+            listeners.forEach((listener) => listener({ data: message.data }))
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
+          console.error('[WebSocket] Failed to parse message:', error)
         }
       }
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        console.error('[WebSocket] Error:', error)
         setIsConnected(false)
       }
 
-      ws.onclose = () => {
-        console.log('WebSocket disconnected')
+      ws.onclose = (event) => {
+        console.log('[WebSocket] Disconnected:', event.code, event.reason)
         setIsConnected(false)
-        attemptReconnect()
+        wsRef.current = null
+        // Only reconnect if not a deliberate close (code 1000)
+        if (event.code !== 1000) {
+          attemptReconnect()
+        }
       }
 
       wsRef.current = ws
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error)
+      console.error('[WebSocket] Connection failed:', error)
       attemptReconnect()
     }
-  }, [accessToken, orgId, getWebSocketUrl])
+  }, [
+    accessToken,
+    orgId,
+    getWebSocketUrl,
+    getWebSocketTicket,
+    attemptReconnect,
+  ])
 
-  const attemptReconnect = useCallback(() => {
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s, 30s...
-    const maxAttempts = 6
-    const baseDelay = 1000
-    const maxDelay = 30000
-
-    if (reconnectAttemptRef.current >= maxAttempts) {
-      const delay = maxDelay
-      reconnectTimeoutRef.current = setTimeout(() => {
-        reconnectAttemptRef.current = 0
-        connect()
-      }, delay)
-    } else {
-      const delay = Math.min(
-        baseDelay * Math.pow(2, reconnectAttemptRef.current),
-        maxDelay
-      )
-      reconnectAttemptRef.current += 1
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connect()
-      }, delay)
-    }
+  // Keep connectRef in sync with the latest connect function
+  useEffect(() => {
+    connectRef.current = connect
   }, [connect])
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message))
     } else {
-      console.warn('WebSocket is not connected, message not sent:', message)
+      console.warn('[WebSocket] Not connected, message dropped:', message)
     }
   }, [])
 
@@ -123,10 +186,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
 
   const removeMessageListener = useCallback(
     (eventType: string, listener: MessageListener) => {
-      const listeners = messageListenersRef.current.get(eventType)
-      if (listeners) {
-        listeners.delete(listener)
-      }
+      messageListenersRef.current.get(eventType)?.delete(listener)
     },
     []
   )
@@ -134,36 +194,34 @@ const useWebSocket = (accessToken: string, orgId: number) => {
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
     }
     if (wsRef.current) {
-      wsRef.current.close()
+      // Code 1000 = normal closure, suppresses auto-reconnect
+      wsRef.current.close(1000, 'Intentional disconnect')
       wsRef.current = null
     }
     setIsConnected(false)
     reconnectAttemptRef.current = 0
   }, [])
 
-  // Connect on mount
+  // Connect on mount / when credentials change
   useEffect(() => {
     if (accessToken && orgId) {
       connect()
     }
-
     return () => {
       disconnect()
     }
-  }, [accessToken, orgId])
+  }, [accessToken, orgId]) // intentionally omitting connect/disconnect to avoid re-running on every render
 
   // Periodic ping to keep connection alive
   useEffect(() => {
     if (!isConnected) return
 
     const intervalId = setInterval(() => {
-      sendMessage({
-        type: 'ping',
-        data: {},
-      })
-    }, 30000) // Send ping every 30 seconds
+      sendMessage({ type: 'ping', data: {} })
+    }, 30000)
 
     return () => clearInterval(intervalId)
   }, [isConnected, sendMessage])

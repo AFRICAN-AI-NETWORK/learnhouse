@@ -7,6 +7,7 @@ import { getAPIUrl } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
 import { useParams } from 'next/navigation'
+import { MessageSquare } from 'lucide-react'
 
 interface Conversation {
   id: number
@@ -50,7 +51,6 @@ function ChatClient() {
 
   const org_id = org?.id
 
-  // Load conversations on mount
   useEffect(() => {
     if (!org_id || !session?.data?.tokens?.access_token) return
 
@@ -109,10 +109,12 @@ function ChatClient() {
   )
 
   return (
-    <div className="flex h-full bg-background">
-      {/* Conversations List - Left Sidebar (visible on all screens) */}
+    <div className="flex h-full w-full overflow-hidden bg-[#0f0f13]">
+      {/* Sidebar */}
       <div
-        className={`${selectedConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-1/4 border-r border-gray-200 flex flex-col`}
+        className={`${
+          selectedConversationId ? 'hidden md:flex' : 'flex'
+        } w-full md:w-[320px] lg:w-[360px] flex-shrink-0 flex-col overflow-hidden border-r border-white/[0.06] bg-[#13131a]`}
       >
         <ConversationsList
           conversations={conversations}
@@ -124,19 +126,33 @@ function ChatClient() {
         />
       </div>
 
-      {/* Chat Window - Right Content Area (visible on all screens when selected) */}
+      {/* Main Chat Area */}
       <div
-        className={`${selectedConversationId ? 'flex' : 'hidden md:flex'} flex-1 flex flex-col`}
+        className={`${
+          selectedConversationId ? 'flex' : 'hidden md:flex'
+        } flex-1 flex-col overflow-hidden`}
       >
         {selectedConversationId ? (
           <>
             {/* Mobile back button */}
-            <div className="md:hidden p-2 border-b border-gray-200 flex items-center">
+            <div className="md:hidden px-4 py-3 border-b border-white/[0.06] bg-[#13131a] flex items-center gap-3">
               <button
                 onClick={() => setSelectedConversationId(null)}
-                className="text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
               >
-                ← {t('common.back')}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                {t('common.back')}
               </button>
             </div>
             <ChatWindow
@@ -145,8 +161,18 @@ function ChatClient() {
             />
           </>
         ) : (
-          <div className="flex-1 hidden md:flex items-center justify-center text-gray-400">
-            <p>{t('chat.select_user')}</p>
+          <div className="flex-1 hidden md:flex flex-col items-center justify-center gap-4 text-center px-8">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <MessageSquare size={28} className="text-indigo-400" />
+            </div>
+            <div>
+              <p className="text-white/70 font-medium text-base">
+                {t('chat.select_user')}
+              </p>
+              <p className="text-white/30 text-sm mt-1">
+                Choose a conversation from the sidebar to get started
+              </p>
+            </div>
           </div>
         )}
       </div>

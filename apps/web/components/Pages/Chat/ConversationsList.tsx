@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search, Plus, Loader2 } from 'lucide-react'
+import { Search, Plus, Loader2, MessageSquareDashed } from 'lucide-react'
 import NewChatDialog from './NewChatDialog'
 
 interface Participant {
@@ -91,12 +91,8 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   }
 
   const getPreviewText = (conversation: Conversation) => {
-    if (!conversation.last_message) {
-      return t('chat.no_messages')
-    }
-    if (conversation.last_message.is_deleted) {
-      return t('chat.message_deleted')
-    }
+    if (!conversation.last_message) return t('chat.no_messages')
+    if (conversation.last_message.is_deleted) return t('chat.message_deleted')
     return conversation.last_message.content.substring(0, 50)
   }
 
@@ -104,99 +100,121 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
     <>
       <div className="flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold mb-4">{t('chat.chats')}</h2>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder={t('chat.search_conversations')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+        <div className="px-5 pt-6 pb-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white tracking-tight">
+              {t('chat.chats')}
+            </h2>
             <button
               onClick={() => setShowNewChatDialog(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
               title={t('chat.create_new_chat')}
             >
-              <Plus size={20} />
+              <Plus size={16} strokeWidth={2.5} />
             </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none"
+            />
+            <input
+              type="text"
+              placeholder={t('chat.search_conversations')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/25 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.07] transition-all duration-200"
+            />
           </div>
         </div>
 
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 size={24} className="animate-spin text-gray-400" />
+            <div className="flex items-center justify-center py-16">
+              <Loader2 size={22} className="animate-spin text-indigo-400" />
             </div>
           ) : filteredConversations.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-gray-400">
-              <p>{t('chat.no_conversations')}</p>
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                <MessageSquareDashed size={20} className="text-white/20" />
+              </div>
+              <p className="text-white/30 text-sm">
+                {t('chat.no_conversations')}
+              </p>
             </div>
           ) : (
-            filteredConversations.map((conversation) => (
-              <div
-                key={conversation.conversation_uuid}
-                onClick={() =>
-                  onSelectConversation(conversation.conversation_uuid)
-                }
-                className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
-                  selectedConversationId === conversation.conversation_uuid
-                    ? 'bg-blue-50'
-                    : ''
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-1">
+            filteredConversations.map((conversation) => {
+              const isSelected =
+                selectedConversationId === conversation.conversation_uuid
+              const displayName = conversation.other_participant.first_name
+                ? `${conversation.other_participant.first_name}${conversation.other_participant.last_name ? ' ' + conversation.other_participant.last_name : ''}`
+                : conversation.other_participant.username
+
+              return (
+                <div
+                  key={conversation.conversation_uuid}
+                  onClick={() =>
+                    onSelectConversation(conversation.conversation_uuid)
+                  }
+                  className={`group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-150 ${
+                    isSelected
+                      ? 'bg-indigo-500/15 border border-indigo-500/25'
+                      : 'hover:bg-white/[0.04] border border-transparent'
+                  }`}
+                >
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
                     <img
                       src={
                         conversation.other_participant.avatar_image ||
                         `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation.other_participant.id}`
                       }
                       alt={conversation.other_participant.username}
-                      className="w-12 h-12 rounded-full"
+                      className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"
                     />
+                    {/* Online dot — placeholder, always shown subtle */}
+                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
                   </div>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {conversation.other_participant.first_name ||
-                          conversation.other_participant.username}
-                        {conversation.other_participant.last_name &&
-                          ` ${conversation.other_participant.last_name}`}
-                      </h3>
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <span
+                        className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-white/80'}`}
+                      >
+                        {displayName}
+                      </span>
                       {conversation.last_message_at && (
-                        <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                        <span className="text-[11px] text-white/30 flex-shrink-0 tabular-nums">
                           {formatTime(conversation.last_message_at)}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 truncate">
-                      {getPreviewText(conversation)}
-                    </p>
-                  </div>
-                  {conversation.unread_count > 0 && (
-                    <div className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">
-                      {conversation.unread_count > 9
-                        ? '9+'
-                        : conversation.unread_count}
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className={`text-xs truncate ${conversation.unread_count > 0 ? 'text-white/60 font-medium' : 'text-white/30'}`}
+                      >
+                        {getPreviewText(conversation)}
+                      </p>
+                      {conversation.unread_count > 0 && (
+                        <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center leading-none">
+                          {conversation.unread_count > 9
+                            ? '9+'
+                            : conversation.unread_count}
+                        </span>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>
 
-      {/* New Chat Dialog */}
       <NewChatDialog
         isOpen={showNewChatDialog}
         onClose={() => setShowNewChatDialog(false)}
