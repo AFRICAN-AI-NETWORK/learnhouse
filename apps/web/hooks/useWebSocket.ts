@@ -30,8 +30,8 @@ const useWebSocket = (accessToken: string, orgId: number) => {
   }, [accessToken])
 
   // Use refs to avoid circular dependency between connect and attemptReconnect
-  const connectRef = useRef<() => void>()
-  const attemptReconnectRef = useRef<() => void>()
+  const connectRef = useRef<(() => void) | null>(null)
+  const attemptReconnectRef = useRef<(() => void) | null>(null)
 
   const connect = useCallback(() => {
     if (!accessToken || !orgId) return
