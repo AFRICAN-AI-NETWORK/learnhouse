@@ -14,43 +14,8 @@ from src.db.users import User
 router = APIRouter()
 
 
-@router.post("/", response_model=MessageRead)
-async def send_message(
-    message_data: MessageCreate,
-    org_id: int = Query(..., description="Organization ID"),
-    db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
-):
-    """Send a new message."""
-    message = await MessageService.create_message(
-        db=db,
-        message_data=message_data,
-        sender_id=current_user.id,
-        org_id=org_id
-    )
-    
-    # Trigger WebSocket notification
-    try:
-        from src.services.chat.websocket_manager import connection_manager
-        await connection_manager.send_personal_message(
-            {
-                "type": "new_message",
-                "data": {
-                    "message_uuid": message.message_uuid,
-                    "conversation_id": message.conversation_id,
-                    "sender_id": message.sender_id,
-                    "content": message.content,
-                    "created_at": message.created_at.isoformat()
-                }
-            },
-            message.receiver_id
-        )
-    except Exception as e:
-        # Don't fail the request if WebSocket notification fails
-        import logging
-        logging.warning(f"Failed to send WebSocket notification: {e}")
-    
-    return message
+
+
 
 
 @router.get("/conversation/{conversation_uuid}", response_model=List[MessageRead])
@@ -213,4 +178,123 @@ async def upload_attachment(
     )
 
     return attachment
+
+
+@router.post("/send", response_model=MessageRead)
+async def send_message_with_attachment(
+    org_id: int = Query(..., description="Organisation ID"),
+    conversation_id: str = Query(..., description="Conversation UUID (conv_xxx) or integer ID"),
+    receiver_id: int = Query(..., description="Recipient user ID"),
+    content: str = Query(default="", description="Text content — optional when sending a file"),
+    message_type: str = Query(default="auto", description="'text', 'file', 'image', 'video', 'document', or 'auto' (auto-detected)"),
+    reply_to_message_id: Optional[int] = Query(default=None, description="ID of message being replied to (0 = no reply)"),
+    file: Optional[UploadFile] = File(default=None, description="Optional file attachment"),
+    db: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Single unified send endpoint — replaces POST /messages/.
+
+    Handles all cases in one request (WhatsApp-style):
+    - Text only         : content="hello", no file
+    - File only         : no content, file=<upload>
+    - Text + file       : content="see this", file=<upload>
+    - Reply             : reply_to_message_id=<id>
+    - Start with a file : no pre-existing message_uuid needed
+
+    message_type defaults to 'auto':
+      - 'file'  when only a file is provided
+      - 'text'  when content is provided (with or without a file)
+    Set it explicitly to override (e.g. 'image', 'video', 'document').
+
+    reply_to_message_id=0 is treated as no reply (same as null).
+    """
+    from src.services.chat.attachment_service import AttachmentService
+
+    # ── Validate: need at least text or file ──────────────────────────────────
+    if not content.strip() and file is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must provide at least a text message or a file attachment",
+        )
+
+    # ── Resolve org ───────────────────────────────────────────────────────────
+    org = db.exec(select(Organization).where(Organization.id == org_id)).first()
+    if not org:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
+
+    # ── Normalise reply_to (0 → None, mirrors existing create_message logic) ──
+    reply_to: Optional[int] = None if (reply_to_message_id is None or reply_to_message_id == 0) else reply_to_message_id
+
+    # ── Auto-detect message_type ──────────────────────────────────────────────
+    resolved_type = message_type
+    if message_type == "auto":
+        resolved_type = "file" if (file is not None and not content.strip()) else "text"
+
+    # ── Create message ────────────────────────────────────────────────────────
+    message_data = MessageCreate(
+        conversation_id=conversation_id,
+        receiver_id=receiver_id,
+        content=content.strip() or "📎",  # placeholder for file-only messages
+        message_type=resolved_type,
+        reply_to_message_id=reply_to,
+    )
+    message = await MessageService.create_message(
+        db=db,
+        message_data=message_data,
+        sender_id=current_user.id,
+        org_id=org_id,
+    )
+
+    # ── Upload attachment if provided ─────────────────────────────────────────
+    attachment_data = None
+    if file is not None:
+        conversation = db.exec(
+            select(Conversation).where(
+                Conversation.conversation_uuid == message.conversation_id
+            )
+        ).first()
+
+        if conversation:
+            attachment = await AttachmentService.upload_attachment(
+                db=db,
+                message_uuid=message.message_uuid,
+                file=file,
+                user_id=current_user.id,
+                org_uuid=org.org_uuid,
+                org_id=org.id,
+                conversation_uuid=conversation.conversation_uuid,
+            )
+            attachment_data = {
+                "attachment_uuid": attachment.attachment_uuid,
+                "file_name": attachment.file_name,
+                "file_type": attachment.file_type,
+                "file_size": attachment.file_size,
+                "file_url": attachment.file_url,
+                "upload_status": attachment.upload_status,
+            }
+
+    # ── WebSocket notification ────────────────────────────────────────────────
+    try:
+        from src.services.chat.websocket_manager import connection_manager
+        await connection_manager.send_personal_message(
+            {
+                "type": "new_message",
+                "data": {
+                    "message_uuid": message.message_uuid,
+                    "conversation_id": message.conversation_id,
+                    "sender_id": message.sender_id,
+                    "content": message.content,
+                    "message_type": message.message_type,
+                    "reply_to_message_id": reply_to,
+                    "attachment": attachment_data,
+                    "created_at": message.created_at.isoformat(),
+                },
+            },
+            message.receiver_id,
+        )
+    except Exception as e:
+        import logging
+        logging.warning(f"Failed to send WebSocket notification: {e}")
+
+    return message
 

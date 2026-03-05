@@ -545,3 +545,172 @@ class TestAttachmentEndpoints:
         assert len(target["attachments"]) == 1
         assert target["attachments"][0]["file_name"] == "doc.pdf"
 
+
+class TestSendEndpoint:
+    """Tests for POST /api/v1/chat/messages/send — the unified send endpoint.
+
+    Replaces the old two-step POST /messages/ + POST /messages/{uuid}/attachments flow.
+    upload_file is mocked to avoid filesystem writes (same pattern as TestAttachmentEndpoints).
+    """
+
+    _JPEG_BYTES = b"\xff\xd8\xff" + b"\xe0" + b"\x00" * 200
+    _PDF_BYTES = b"%PDF-1.4\n" + b"\x00" * 200
+    _FAKE_FILENAME = "attachment_send_test.jpg"
+
+    @pytest.fixture(autouse=True)
+    def mock_upload(self):
+        with patch(
+            "src.services.chat.attachment_service.upload_file",
+            new_callable=AsyncMock,
+            return_value=self._FAKE_FILENAME,
+        ):
+            yield
+
+    def _make_client(self, session: Session, user) -> TestClient:
+        app.dependency_overrides[get_current_user] = lambda: user
+        app.dependency_overrides[get_db_session] = lambda: session
+        return TestClient(app)
+
+    def _create_conversation(self, client: TestClient, org, receiver) -> str:
+        """Helper: create a conversation, return conversation_uuid."""
+        resp = client.post(
+            f"/api/v1/chat/conversations/?org_id={org.id}",
+            json={"participant_two_id": receiver.id},
+        )
+        assert resp.status_code == 200
+        return resp.json()["conversation_uuid"]
+
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def test_send_text_only(self, session, org, student_user, instructor_user):
+        """Text-only send — equivalent to the old POST /messages/."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        resp = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}&content=Hello+there",
+        )
+
+        app.dependency_overrides.clear()
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["content"] == "Hello there"
+        assert data["message_type"] == "text"
+        assert "message_uuid" in data
+
+    def test_send_file_only_no_preexisting_message(self, session, org, student_user, instructor_user):
+        """File-only — user starts a conversation with just an attachment. No message_uuid pre-required."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        resp = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}",
+            files={"file": ("photo.jpg", self._JPEG_BYTES, "image/jpeg")},
+        )
+
+        app.dependency_overrides.clear()
+        assert resp.status_code == 200
+        data = resp.json()
+        # Auto-detected as "file" type
+        assert data["message_type"] == "file"
+        # Placeholder content set automatically
+        assert data["content"] == "📎"
+
+    def test_send_text_and_file_together(self, session, org, student_user, instructor_user):
+        """Text + file in one request — message_type stays 'text'."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        resp = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}&content=Check+this+pdf",
+            files={"file": ("report.pdf", self._PDF_BYTES, "application/pdf")},
+        )
+
+        app.dependency_overrides.clear()
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["content"] == "Check this pdf"
+        assert data["message_type"] == "text"
+
+    def test_send_with_reply_to(self, session, org, student_user, instructor_user):
+        """Send a reply — reply_to_message_id=0 normalises to None (no error)."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        # First message to reply to
+        first = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}&content=First+message",
+        )
+        assert first.status_code == 200
+        first_id = first.json()["id"]
+
+        # Reply to that message
+        reply = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}&content=Reply&reply_to_message_id={first_id}",
+        )
+
+        app.dependency_overrides.clear()
+        assert reply.status_code == 200
+
+    def test_send_reply_to_zero_treated_as_no_reply(self, session, org, student_user, instructor_user):
+        """reply_to_message_id=0 treated as None — must not error."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        resp = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}&content=Hi&reply_to_message_id=0",
+        )
+
+        app.dependency_overrides.clear()
+        assert resp.status_code == 200
+
+    def test_send_empty_rejected(self, session, org, student_user, instructor_user):
+        """No content and no file → 400 Bad Request."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        resp = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}&content=",
+        )
+
+        app.dependency_overrides.clear()
+        assert resp.status_code == 400
+
+    def test_send_file_appears_in_conversation_history(self, session, org, student_user, instructor_user):
+        """After /send with a file, the attachment must appear in GET /messages/conversation/."""
+        client = self._make_client(session, student_user)
+        conv_uuid = self._create_conversation(client, org, instructor_user)
+
+        send_resp = client.post(
+            f"/api/v1/chat/messages/send"
+            f"?org_id={org.id}&conversation_id={conv_uuid}"
+            f"&receiver_id={instructor_user.id}",
+            files={"file": ("slide.pdf", self._PDF_BYTES, "application/pdf")},
+        )
+        assert send_resp.status_code == 200
+        msg_uuid = send_resp.json()["message_uuid"]
+
+        history = client.get(
+            f"/api/v1/chat/messages/conversation/{conv_uuid}?org_id={org.id}"
+        )
+        app.dependency_overrides.clear()
+        assert history.status_code == 200
+        messages = history.json()
+        target = next((m for m in messages if m["message_uuid"] == msg_uuid), None)
+        assert target is not None
+        assert len(target["attachments"]) == 1
+        assert target["attachments"][0]["file_name"] == "slide.pdf"
