@@ -88,9 +88,7 @@ class AttachmentService:
         # ── Generate unique attachment ID ────────────────────────────────────
         attachment_uuid = f"att_{uuid4()}"
 
-        # ── Upload via the shared utility (DRY) ──────────────────────────────
-        # Short flat path — att_uuid is globally unique so no nesting needed.
-        # Full nesting (chat/conversations/{conv}/attachments/{att}) exceeded
+        
         # Windows MAX_PATH (260 chars) when combined with the CWD.
         directory = f"chat/{attachment_uuid}"
 
@@ -126,8 +124,12 @@ class AttachmentService:
         except Exception:
             file_size = 0
 
-        # ── Build the relative URL (served by StaticFiles at /content) ───────
-        file_url = f"content/orgs/{org_uuid}/{directory}/{saved_filename}"
+        # ── Build absolute URL (served by StaticFiles at /content) ──────────
+        
+        from config.config import get_learnhouse_config
+        _config = get_learnhouse_config()
+        api_base = _config.hosting_config.app_base_url.rstrip("/")
+        file_url = f"{api_base}/content/orgs/{org_uuid}/{directory}/{saved_filename}"
 
         # ── Persist to DB ────────────────────────────────────────────────────
         attachment = MessageAttachment(
