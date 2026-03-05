@@ -1,5 +1,5 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+from typing import List, Optional, Union, Annotated
+from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status, Form
 from sqlmodel import Session, select
 
 from src.db.chat.messages import MessageCreate, MessageUpdate, MessageRead
@@ -18,18 +18,18 @@ router = APIRouter()
 
 
 
-@router.get("/conversation/{conversation_uuid}", response_model=List[MessageRead])
+@router.get("/conversation/{conversation_id}", response_model=List[MessageRead])
 async def get_conversation_messages(
-    conversation_uuid: str,
+    conversation_id: str,
     before_message_id: Optional[int] = Query(None, description="Get messages before this ID"),
     limit: int = Query(50, le=100, description="Number of messages to return"),
     db: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Get messages for a conversation (paginated)."""
+    """Get messages for a conversation (paginated). Accepts conversation UUID (conv_xxx) or integer ID."""
     messages = await MessageService.get_conversation_messages(
         db=db,
-        conversation_uuid=conversation_uuid,
+        conversation_id=conversation_id,
         user_id=current_user.id,
         limit=limit,
         before_message_id=before_message_id
@@ -185,12 +185,12 @@ async def send_message_with_attachment(
     org_id: int = Query(..., description="Organisation ID"),
     conversation_id: str = Query(..., description="Conversation UUID (conv_xxx) or integer ID"),
     receiver_id: int = Query(..., description="Recipient user ID"),
-    content: str = Query(default="", description="Text content — optional when sending a file"),
+    content: str = Query(default="", description="Text content — optional"),
     message_type: str = Query(default="auto", description="'text', 'file', 'image', 'video', 'document', or 'auto' (auto-detected)"),
     reply_to_message_id: Optional[int] = Query(default=None, description="ID of message being replied to (0 = no reply)"),
-    file: Optional[UploadFile] = File(default=None, description="Optional file attachment"),
     db: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
+    file: Union[UploadFile, str, None] = File(None),
 ):
     """Single unified send endpoint — replaces POST /messages/.
 
@@ -210,12 +210,18 @@ async def send_message_with_attachment(
     """
     from src.services.chat.attachment_service import AttachmentService
 
-    # ── Validate: need at least text or file ──────────────────────────────────
-    if not content.strip() and file is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Must provide at least a text message or a file attachment",
-        )
+    # ── Normalize file parameter (handle empty file uploads and strings) ──────
+    if isinstance(file, str) or file is None:
+        file = None
+    elif not file.filename or file.filename == '':
+        file = None
+
+    # Content and file are both optional - allow sending either or both
+    if not content.strip():
+        content = ""
+    # Content and file are both optional - allow sending either or both
+    if not content.strip():
+        content = ""
 
     # ── Resolve org ───────────────────────────────────────────────────────────
     org = db.exec(select(Organization).where(Organization.id == org_id)).first()

@@ -246,20 +246,31 @@ class MessageService:
     @staticmethod
     async def get_conversation_messages(
         db: Session,
-        conversation_uuid: str,
+        conversation_id: str,
         user_id: int,
         limit: int = 50,
         before_message_id: Optional[int] = None
     ) -> List[MessageRead]:
         """
         Get messages for a conversation with pagination.
+        Accepts conversation UUID (conv_xxx) or integer ID.
         """
         
-        # Get conversation
-        conversation = db.exec(
-            select(Conversation)
-            .where(Conversation.conversation_uuid == conversation_uuid)
-        ).first()
+        # Get conversation - handle both UUID and integer ID
+        conversation = None
+        try:
+            # Try as integer first
+            conv_int_id = int(conversation_id)
+            conversation = db.exec(
+                select(Conversation)
+                .where(Conversation.id == conv_int_id)
+            ).first()
+        except ValueError:
+            # It's a UUID string
+            conversation = db.exec(
+                select(Conversation)
+                .where(Conversation.conversation_uuid == conversation_id)
+            ).first()
         
         if not conversation:
             raise HTTPException(

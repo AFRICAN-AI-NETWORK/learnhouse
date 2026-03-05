@@ -121,9 +121,9 @@ async def get_all_org_conversations(
     return enriched
 
 
-@router.get("/conversations/{conversation_uuid}/export")
+@router.get("/conversations/{conversation_id}/export")
 async def export_conversation(
-    conversation_uuid: str,
+    conversation_id: str,
     org_id: int = Query(..., description="Organization ID"),
     format: str = Query("json", regex="^(json|csv)$", description="Export format"),
     db: Session = Depends(get_db_session),
@@ -131,17 +131,27 @@ async def export_conversation(
 ):
     """
     Export conversation for compliance/archival (Admin only).
+    Accepts conversation UUID (conv_xxx) or integer ID.
     """
     
     # Verify admin permission
     await verify_admin_permission(current_user, org_id, db)
     
-    # Get conversation
-    conversation = db.exec(
-        select(Conversation)
-        .where(Conversation.conversation_uuid == conversation_uuid)
-        .where(Conversation.org_id == org_id)
-    ).first()
+    # Get conversation - handle both UUID and integer ID
+    conversation = None
+    try:
+        conv_int_id = int(conversation_id)
+        conversation = db.exec(
+            select(Conversation)
+            .where(Conversation.id == conv_int_id)
+            .where(Conversation.org_id == org_id)
+        ).first()
+    except ValueError:
+        conversation = db.exec(
+            select(Conversation)
+            .where(Conversation.conversation_uuid == conversation_id)
+            .where(Conversation.org_id == org_id)
+        ).first()
     
     if not conversation:
         raise HTTPException(

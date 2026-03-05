@@ -273,15 +273,24 @@ class ConversationService:
     @staticmethod
     async def archive_conversation(
         db: Session,
-        conversation_uuid: str,
+        conversation_id: str,
         user_id: int
     ) -> ConversationRead:
-        """Archive a conversation."""
+        """Archive a conversation. Accepts conversation UUID (conv_xxx) or integer ID."""
         
-        conversation = db.exec(
-            select(Conversation)
-            .where(Conversation.conversation_uuid == conversation_uuid)
-        ).first()
+        # Handle both UUID and integer ID
+        conversation = None
+        try:
+            conv_int_id = int(conversation_id)
+            conversation = db.exec(
+                select(Conversation)
+                .where(Conversation.id == conv_int_id)
+            ).first()
+        except ValueError:
+            conversation = db.exec(
+                select(Conversation)
+                .where(Conversation.conversation_uuid == conversation_id)
+            ).first()
         
         if not conversation:
             raise HTTPException(

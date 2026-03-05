@@ -49,16 +49,16 @@ async def get_user_conversations(
     return conversations
 
 
-@router.patch("/{conversation_uuid}/archive", response_model=ConversationRead)
+@router.patch("/{conversation_id}/archive", response_model=ConversationRead)
 async def archive_conversation(
-    conversation_uuid: str,
+    conversation_id: str,
     db: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user)
 ):
-    """Archive a conversation."""
+    """Archive a conversation. Accepts conversation UUID (conv_xxx) or integer ID."""
     conversation = await ConversationService.archive_conversation(
         db=db,
-        conversation_uuid=conversation_uuid,
+        conversation_id=conversation_id,
         user_id=current_user.id
     )
     return conversation
