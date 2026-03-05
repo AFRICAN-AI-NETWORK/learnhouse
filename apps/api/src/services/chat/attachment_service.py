@@ -22,7 +22,7 @@ from uuid import uuid4
 from fastapi import HTTPException, UploadFile, status
 from sqlmodel import Session, select
 
-from src.db.chat.attachments import MessageAttachment, MessageAttachmentRead
+from src.db.chat.attachments import MessageAttachment
 from src.db.chat.messages import Message
 from src.services.utils.upload_content import upload_file
 

@@ -10,7 +10,7 @@ from src.db.organizations import Organization
 from src.db.user_organizations import UserOrganization
 from src.db.roles import Role
 from src.db.chat.conversations import Conversation
-from src.db.chat.messages import Message, MessageReadReceipt
+from src.db.chat.messages import Message
 
 
 @pytest.fixture(name="session", scope="function")

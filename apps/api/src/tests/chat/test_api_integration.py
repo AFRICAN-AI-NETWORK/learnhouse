@@ -6,8 +6,6 @@ and database session, enabling proper endpoint testing.
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from datetime import datetime
-from uuid import uuid4
 from unittest.mock import patch, AsyncMock
 
 from app import app
@@ -15,8 +13,6 @@ from src.security.auth import get_current_user
 from src.core.events.database import get_db_session
 from src.db.users import User
 from src.db.organizations import Organization
-from src.db.chat.conversations import Conversation
-from src.db.chat.messages import Message
 
 
 @pytest.fixture(name="client_as_student")
@@ -427,7 +423,6 @@ class TestAttachmentEndpoints:
         with a side_effect that runs the real validate_upload (which explicitly
         blocks SVG files) without attempting any filesystem/S3 write.
         """
-        from fastapi import HTTPException as FastHTTPException
         from src.security.file_validation import validate_upload
 
         async def _real_validate_but_no_disk(file, *, directory, type_of_dir, uuid,

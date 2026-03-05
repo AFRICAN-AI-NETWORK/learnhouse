@@ -1,7 +1,7 @@
 """Unit tests for conversation service."""
 import pytest
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from src.services.chat.conversation_service import ConversationService
 from src.db.chat.conversations import Conversation

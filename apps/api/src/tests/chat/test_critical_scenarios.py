@@ -334,7 +334,6 @@ class TestCriticalChatFlows:
         """Test that conversations are ordered by most recent message."""
         from src.db.users import User
         from src.db.user_organizations import UserOrganization
-        from datetime import timedelta
         
         # Create multiple instructors for multiple conversations
         instructors = []
@@ -344,7 +343,7 @@ class TestCriticalChatFlows:
                 username=f"instructor_{i}",
                 email=f"instructor{i}@test.com",
                 password="hashed",
-                first_name=f"Instructor",
+                first_name="Instructor",
                 last_name=f"Number{i}",
                 creation_date=str(datetime.utcnow()),
                 update_date=str(datetime.utcnow())
@@ -354,7 +353,6 @@ class TestCriticalChatFlows:
             session.refresh(instructor)
             
             from src.db.roles import Role
-            from src.db.user_organizations import UserOrganization
             from sqlmodel import select
             instructor_role = session.exec(
                 select(Role).where(Role.name == "Instructor")
@@ -511,7 +509,7 @@ class TestCriticalErrorScenarios:
             message_type="text"
         )
         
-        message = await MessageService.create_message(
+        await MessageService.create_message(
             db=session,
             message_data=message_data,
             sender_id=student_user.id,

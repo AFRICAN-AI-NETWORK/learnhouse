@@ -69,7 +69,7 @@ def main():
     args = parser.parse_args()
     
     # Base directory
-    base_dir = Path(__file__).parent
+    Path(__file__).parent
     
     # Build pytest command
     cmd_parts = ["pytest", "src/tests/chat/"]

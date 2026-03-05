@@ -237,7 +237,7 @@ async def export_conversation(
             iter([output.getvalue()]),
             media_type="text/csv",
             headers={
-                "Content-Disposition": f"attachment; filename=conversation_{conversation_uuid}.csv"
+                "Content-Disposition": f"attachment; filename=conversation_{conversation.conversation_uuid}.csv"
             }
         )
 
