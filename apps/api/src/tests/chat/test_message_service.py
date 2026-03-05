@@ -302,7 +302,7 @@ class TestGetConversationMessages:
         """Test getting messages from empty conversation."""
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
@@ -321,7 +321,7 @@ class TestGetConversationMessages:
         """Test getting messages from conversation."""
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
@@ -363,7 +363,7 @@ class TestGetConversationMessages:
         # Get first 3 messages
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=3,
             before_message_id=None
@@ -376,7 +376,7 @@ class TestGetConversationMessages:
             oldest_id = min([m.id for m in messages])
             earlier_messages = await MessageService.get_conversation_messages(
                 db=session,
-                conversation_uuid=conversation.conversation_uuid,
+                conversation_id=conversation.conversation_uuid,
                 user_id=student_user.id,
                 limit=3,
                 before_message_id=oldest_id
@@ -402,7 +402,7 @@ class TestGetConversationMessages:
         
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
@@ -421,7 +421,7 @@ class TestGetConversationMessages:
         with pytest.raises(HTTPException) as exc_info:
             await MessageService.get_conversation_messages(
                 db=session,
-                conversation_uuid=conversation.conversation_uuid,
+                conversation_id=conversation.conversation_uuid,
                 user_id=student_user_two.id,  # Not a participant
                 limit=50,
                 before_message_id=None

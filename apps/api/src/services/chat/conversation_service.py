@@ -314,7 +314,7 @@ class ConversationService:
         db.commit()
         db.refresh(conversation)
         
-        logger.info(f"Archived conversation {conversation_uuid} by user {user_id}")
+        logger.info(f"Archived conversation {conversation.conversation_uuid} by user {user_id}")
         
         # Get the other participant details
         other_user_id = (

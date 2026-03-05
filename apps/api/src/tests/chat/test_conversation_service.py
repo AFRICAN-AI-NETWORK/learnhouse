@@ -216,7 +216,7 @@ class TestGetUserConversations:
         # Create multiple conversations
         for i in range(5):
             conv = Conversation(
-                conversation_uuid=f"conv_{uuid4()}",
+                conversation_id=f"conv_{uuid4()}",
                 org_id=org.id,
                 participant_one_id=min(student_user.id, instructor_user.id + i),
                 participant_two_id=max(student_user.id, instructor_user.id + i),
@@ -311,7 +311,7 @@ class TestArchiveConversation:
         """Test archiving a conversation."""
         result = await ConversationService.archive_conversation(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id
         )
         
@@ -328,7 +328,7 @@ class TestArchiveConversation:
         with pytest.raises(HTTPException) as exc_info:
             await ConversationService.archive_conversation(
                 db=session,
-                conversation_uuid="conv_nonexistent",
+                conversation_id="conv_nonexistent",
                 user_id=student_user.id
             )
         
@@ -344,7 +344,7 @@ class TestArchiveConversation:
         with pytest.raises(HTTPException) as exc_info:
             await ConversationService.archive_conversation(
                 db=session,
-                conversation_uuid=conversation.conversation_uuid,
+                conversation_id=conversation.conversation_uuid,
                 user_id=99999  # Not a participant
             )
         

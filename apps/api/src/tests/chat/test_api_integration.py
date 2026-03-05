@@ -677,7 +677,7 @@ class TestSendEndpoint:
         assert resp.status_code == 200
 
     def test_send_empty_rejected(self, session, org, student_user, instructor_user):
-        """No content and no file → 400 Bad Request."""
+        """Empty content is now allowed (sends empty string message)."""
         client = self._make_client(session, student_user)
         conv_uuid = self._create_conversation(client, org, instructor_user)
 
@@ -688,7 +688,7 @@ class TestSendEndpoint:
         )
 
         app.dependency_overrides.clear()
-        assert resp.status_code == 400
+        assert resp.status_code == 200  # Empty content is now allowed
 
     def test_send_file_appears_in_conversation_history(self, session, org, student_user, instructor_user):
         """After /send with a file, the attachment must appear in GET /messages/conversation/."""

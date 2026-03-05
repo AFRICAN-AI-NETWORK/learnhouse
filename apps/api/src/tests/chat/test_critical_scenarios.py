@@ -88,7 +88,7 @@ class TestCriticalChatFlows:
         # 5. Get conversation messages
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
@@ -99,7 +99,7 @@ class TestCriticalChatFlows:
         # 6. Archive conversation
         archived = await ConversationService.archive_conversation(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id
         )
         
@@ -165,7 +165,7 @@ class TestCriticalChatFlows:
         # Verify deleted message doesn't appear in list
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
@@ -224,7 +224,7 @@ class TestCriticalChatFlows:
         # Get all messages
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
@@ -521,7 +521,7 @@ class TestCriticalErrorScenarios:
         # Get messages (they should return conversation UUID in response)
         messages = await MessageService.get_conversation_messages(
             db=session,
-            conversation_uuid=conversation.conversation_uuid,
+            conversation_id=conversation.conversation_uuid,
             user_id=student_user.id,
             limit=50,
             before_message_id=None
