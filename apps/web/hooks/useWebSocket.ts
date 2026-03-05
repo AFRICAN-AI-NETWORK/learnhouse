@@ -29,7 +29,8 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     return `${wsProtocol}//${host}/api/v1/chat/ws?token=${accessToken}`
   }, [accessToken])
 
-  // Define attemptReconnect before connect to avoid temporal dead zone
+  // Use refs to avoid circular dependency between connect and attemptReconnect
+  const connectRef = useRef<() => void>()
   const attemptReconnectRef = useRef<() => void>()
 
   const connect = useCallback(() => {
@@ -74,7 +75,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     }
   }, [accessToken, orgId, getWebSocketUrl])
 
-  attemptReconnectRef.current = useCallback(() => {
+  const attemptReconnect = useCallback(() => {
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s, 30s...
     const maxAttempts = 6
     const baseDelay = 1000
@@ -84,7 +85,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       const delay = maxDelay
       reconnectTimeoutRef.current = setTimeout(() => {
         reconnectAttemptRef.current = 0
-        connect()
+        connectRef.current?.()
       }, delay)
     } else {
       const delay = Math.min(
@@ -93,10 +94,16 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       )
       reconnectAttemptRef.current += 1
       reconnectTimeoutRef.current = setTimeout(() => {
-        connect()
+        connectRef.current?.()
       }, delay)
     }
-  }, [connect])
+  }, [])
+
+  // Update refs in effect to avoid updating during render
+  useEffect(() => {
+    connectRef.current = connect
+    attemptReconnectRef.current = attemptReconnect
+  }, [connect, attemptReconnect])
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
