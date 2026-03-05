@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useCallback } from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Plus, Loader2 } from 'lucide-react'
 import NewChatDialog from './NewChatDialog'

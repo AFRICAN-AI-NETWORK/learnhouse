@@ -29,6 +29,9 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     return `${wsProtocol}//${host}/api/v1/chat/ws?token=${accessToken}`
   }, [accessToken])
 
+  // Define attemptReconnect before connect to avoid temporal dead zone
+  const attemptReconnectRef = useRef<() => void>()
+
   const connect = useCallback(() => {
     if (!accessToken || !orgId) return
 
@@ -36,7 +39,6 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       const ws = new WebSocket(getWebSocketUrl())
 
       ws.onopen = () => {
-        console.log('WebSocket connected')
         setIsConnected(true)
         reconnectAttemptRef.current = 0
       }
@@ -44,10 +46,6 @@ const useWebSocket = (accessToken: string, orgId: number) => {
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data) as WebSocketMessage
-
-          if (message.type === 'connected') {
-            console.log('[WebSocket] Connection confirmed:', message.data)
-          }
 
           // Forward message to all registered listeners
           const listeners = messageListenersRef.current.get(message.type)
@@ -57,29 +55,26 @@ const useWebSocket = (accessToken: string, orgId: number) => {
             })
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
+          // Silently handle parse errors
         }
       }
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
+      ws.onerror = () => {
         setIsConnected(false)
       }
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected')
         setIsConnected(false)
-        attemptReconnect()
+        attemptReconnectRef.current?.()
       }
 
       wsRef.current = ws
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error)
-      attemptReconnect()
+      attemptReconnectRef.current?.()
     }
   }, [accessToken, orgId, getWebSocketUrl])
 
-  const attemptReconnect = useCallback(() => {
+  attemptReconnectRef.current = useCallback(() => {
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s, 30s...
     const maxAttempts = 6
     const baseDelay = 1000
@@ -106,8 +101,6 @@ const useWebSocket = (accessToken: string, orgId: number) => {
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message))
-    } else {
-      console.warn('WebSocket is not connected, message not sent:', message)
     }
   }, [])
 
@@ -152,7 +145,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     return () => {
       disconnect()
     }
-  }, [accessToken, orgId])
+  }, [accessToken, orgId, connect, disconnect])
 
   // Periodic ping to keep connection alive
   useEffect(() => {
