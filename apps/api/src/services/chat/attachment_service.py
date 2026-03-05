@@ -89,11 +89,10 @@ class AttachmentService:
         attachment_uuid = f"att_{uuid4()}"
 
         # ── Upload via the shared utility (DRY) ──────────────────────────────
-        # Path mirrors the pattern used throughout the codebase:
-        #   courses/{course_uuid}/activities/{activity_uuid}/...
-        directory = (
-            f"chat/conversations/{conversation_uuid}/attachments/{attachment_uuid}"
-        )
+        # Short flat path — att_uuid is globally unique so no nesting needed.
+        # Full nesting (chat/conversations/{conv}/attachments/{att}) exceeded
+        # Windows MAX_PATH (260 chars) when combined with the CWD.
+        directory = f"chat/{attachment_uuid}"
 
         try:
             # upload_file() handles:
