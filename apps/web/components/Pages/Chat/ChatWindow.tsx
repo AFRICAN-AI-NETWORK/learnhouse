@@ -15,11 +15,28 @@ import {
   Video,
   FileText,
   Download,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
 import useWebSocket from '@/hooks/useWebSocket'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@components/ui/dialog'
 
 interface Attachment {
   attachment_uuid: string
@@ -73,6 +90,13 @@ interface Conversation {
   updated_at: string
   unread_count: number
   other_participant: ParticipantUser
+  last_message?: {
+    message_uuid: string
+    content: string
+    sender_id: number
+    created_at: string
+    is_deleted: boolean
+  }
 }
 
 interface ChatWindowProps {
@@ -98,7 +122,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [otherUserTyping, setOtherUserTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null)
+  const [isUpdatingMessage, setIsUpdatingMessage] = useState(false)
+  const [deleteTargetMessage, setDeleteTargetMessage] =
+    useState<Message | null>(null)
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
 
   const access_token = session?.data?.tokens?.access_token
@@ -383,6 +413,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           : msg
       )
     )
+
+    setEditingMessage((prev) => {
+      if (!prev || prev.message_uuid !== event.data.message_uuid) return prev
+      return {
+        ...prev,
+        content: event.data.content,
+        is_edited: true,
+        updated_at: event.data.edited_at,
+      }
+    })
   }, [])
 
   const handleMessageDeleted = useCallback((event: any) => {
@@ -392,6 +432,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ? { ...msg, is_deleted: true, content: '' }
           : msg
       )
+    )
+
+    setEditingMessage((prev) =>
+      prev?.message_uuid === event.data.message_uuid ? null : prev
+    )
+
+    setDeleteTargetMessage((prev) =>
+      prev?.message_uuid === event.data.message_uuid ? null : prev
     )
   }, [])
 
@@ -444,6 +492,148 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const startEditMessage = (message: Message) => {
+    if (message.is_deleted || message.isPending) return
+    setEditingMessage(message)
+    setMessageInput(message.content)
+    setSelectedFiles([])
+    setError(null)
+    setTimeout(() => messageInputRef.current?.focus(), 0)
+  }
+
+  const cancelEditMessage = () => {
+    setEditingMessage(null)
+    setMessageInput('')
+  }
+
+  const handleEditMessage = async () => {
+    if (!editingMessage || !messageInput.trim()) return
+
+    const newContent = messageInput.trim()
+    const oldContent = editingMessage.content
+    const editedAt = new Date().toISOString()
+
+    setIsUpdatingMessage(true)
+    setError(null)
+
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.message_uuid === editingMessage.message_uuid
+          ? {
+              ...msg,
+              content: newContent,
+              is_edited: true,
+              updated_at: editedAt,
+            }
+          : msg
+      )
+    )
+
+    setEditingMessage(null)
+    setMessageInput('')
+
+    try {
+      const response = await fetch(
+        `${getAPIUrl()}chat/messages/${editingMessage.message_uuid}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: newContent }),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to edit message')
+      }
+
+      const serverMessage = await response.json()
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.message_uuid === editingMessage.message_uuid
+            ? {
+                ...msg,
+                content: serverMessage.content,
+                is_edited: serverMessage.is_edited ?? true,
+                updated_at: serverMessage.updated_at || editedAt,
+              }
+            : msg
+        )
+      )
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.message_uuid === editingMessage.message_uuid
+            ? {
+                ...msg,
+                content: oldContent,
+                is_edited: editingMessage.is_edited,
+                updated_at: editingMessage.updated_at,
+              }
+            : msg
+        )
+      )
+      setError(t('chat.message_failed'))
+    } finally {
+      setIsUpdatingMessage(false)
+    }
+  }
+
+  const handleDeleteMessage = async () => {
+    if (!deleteTargetMessage) return
+
+    const target = deleteTargetMessage
+    setIsDeletingMessage(true)
+    setError(null)
+
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.message_uuid === target.message_uuid
+          ? { ...msg, is_deleted: true, content: '' }
+          : msg
+      )
+    )
+
+    setDeleteTargetMessage(null)
+    if (editingMessage?.message_uuid === target.message_uuid) {
+      cancelEditMessage()
+    }
+
+    try {
+      const response = await fetch(
+        `${getAPIUrl()}chat/messages/${target.message_uuid}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to delete message')
+      }
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.message_uuid === target.message_uuid
+            ? {
+                ...msg,
+                is_deleted: target.is_deleted,
+                content: target.content,
+              }
+            : msg
+        )
+      )
+      setError(t('chat.message_failed'))
+    } finally {
+      setIsDeletingMessage(false)
+    }
+  }
+
   const uploadAttachment = async (
     messageUuid: string,
     file: File
@@ -488,8 +678,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSendMessage = async () => {
     if ((!messageInput.trim() && selectedFiles.length === 0) || !conversation)
       return
 
@@ -731,7 +920,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             return (
               <div
                 key={message.clientId || message.message_uuid}
-                className={`flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
+                className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
               >
                 {!isMine && (
                   <img
@@ -748,97 +937,132 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 ${
-                      isMine
-                        ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
-                        : 'bg-white/[0.07] text-white/85 rounded-bl-sm border border-white/[0.06]'
-                    }`}
+                    className={`flex items-start gap-1.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                   >
-                    {message.is_deleted ? (
-                      <span className="italic text-white/30 text-xs">
-                        {t('chat.message_deleted')}
-                      </span>
-                    ) : (
-                      <>
-                        {message.content && <span>{message.content}</span>}
-                        {message.attachments &&
-                          message.attachments.length > 0 && (
-                            <div
-                              className={`space-y-2 ${message.content ? 'mt-2' : ''}`}
-                            >
-                              {message.attachments.map((attachment) => {
-                                const IconComponent = getFileIcon(
-                                  attachment.file_type
-                                )
-                                const isImage =
-                                  attachment.file_type.startsWith('image/')
-                                // Resolve URLs once — used in both src and onClick
-                                const absoluteFileUrl = attachment.file_url
-                                  ? ensureAbsoluteUrl(attachment.file_url)
-                                  : ''
-                                const absoluteThumbUrl = ensureAbsoluteUrl(
-                                  attachment.thumbnail_url ||
-                                    attachment.file_url ||
-                                    ''
-                                )
-                                return (
-                                  <div
-                                    key={attachment.attachment_uuid}
-                                    className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-600/30' : 'bg-white/[0.08]'}`}
-                                  >
-                                    {isImage && absoluteFileUrl ? (
-                                      // ── Image: inline preview, click opens full file ──
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openFileInNewTab(absoluteFileUrl)
-                                        }
-                                        className="block group cursor-pointer p-0 border-0 bg-transparent"
-                                        title={`Open ${attachment.file_name}`}
-                                      >
-                                        <img
-                                          src={absoluteThumbUrl}
-                                          alt={attachment.file_name}
-                                          className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
-                                        />
-                                      </button>
-                                    ) : (
-                                      // ── Non-image file ──────────────────────
-                                      <>
-                                        <IconComponent
-                                          size={18}
-                                          className="flex-shrink-0"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-medium truncate">
-                                            {attachment.file_name}
-                                          </p>
-                                          <p className="text-[10px] opacity-60">
-                                            {formatFileSize(
-                                              attachment.file_size
-                                            )}
-                                          </p>
-                                        </div>
-                                        {absoluteFileUrl && (
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              openFileInNewTab(absoluteFileUrl)
-                                            }
-                                            className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
-                                            title={`Download ${attachment.file_name}`}
-                                          >
-                                            <Download size={14} />
-                                          </button>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )}
-                      </>
+                    <div
+                      className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 ${
+                        isMine
+                          ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
+                          : 'bg-white/[0.07] text-white/85 rounded-bl-sm border border-white/[0.06]'
+                      }`}
+                    >
+                      {message.is_deleted ? (
+                        <span className="italic text-white/30 text-xs">
+                          {t('chat.message_deleted')}
+                        </span>
+                      ) : (
+                        <>
+                          {message.content && <span>{message.content}</span>}
+                          {message.attachments &&
+                            message.attachments.length > 0 && (
+                              <div
+                                className={`space-y-2 ${message.content ? 'mt-2' : ''}`}
+                              >
+                                {message.attachments.map((attachment) => {
+                                  const IconComponent = getFileIcon(
+                                    attachment.file_type
+                                  )
+                                  const isImage =
+                                    attachment.file_type.startsWith('image/')
+                                  const absoluteFileUrl = attachment.file_url
+                                    ? ensureAbsoluteUrl(attachment.file_url)
+                                    : ''
+                                  const absoluteThumbUrl = ensureAbsoluteUrl(
+                                    attachment.thumbnail_url ||
+                                      attachment.file_url ||
+                                      ''
+                                  )
+                                  return (
+                                    <div
+                                      key={attachment.attachment_uuid}
+                                      className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-600/30' : 'bg-white/[0.08]'}`}
+                                    >
+                                      {isImage && absoluteFileUrl ? (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            openFileInNewTab(absoluteFileUrl)
+                                          }
+                                          className="block group cursor-pointer p-0 border-0 bg-transparent"
+                                          title={`Open ${attachment.file_name}`}
+                                        >
+                                          <img
+                                            src={absoluteThumbUrl}
+                                            alt={attachment.file_name}
+                                            className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
+                                          />
+                                        </button>
+                                      ) : (
+                                        <>
+                                          <IconComponent
+                                            size={18}
+                                            className="flex-shrink-0"
+                                          />
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-medium truncate">
+                                              {attachment.file_name}
+                                            </p>
+                                            <p className="text-[10px] opacity-60">
+                                              {formatFileSize(
+                                                attachment.file_size
+                                              )}
+                                            </p>
+                                          </div>
+                                          {absoluteFileUrl && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                openFileInNewTab(
+                                                  absoluteFileUrl
+                                                )
+                                              }
+                                              className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                                              title={`Download ${attachment.file_name}`}
+                                            >
+                                              <Download size={14} />
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                        </>
+                      )}
+                    </div>
+
+                    {isMine && !message.isPending && !message.is_deleted && (
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/60"
+                            aria-label="Message actions"
+                          >
+                            <MoreHorizontal size={14} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align={isMine ? 'end' : 'start'}
+                          className="w-40"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => startEditMessage(message)}
+                          >
+                            <Pencil size={14} />
+                            {t('common.edit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteTargetMessage(message)}
+                            className="text-red-500 focus:text-red-500"
+                          >
+                            <Trash2 size={14} />
+                            {t('common.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
 
@@ -910,6 +1134,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Input */}
       <div className="flex-shrink-0 px-4 py-3 border-t border-white/[0.06] bg-[#13131a]">
+        {editingMessage && (
+          <div className="mb-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/10">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-300/90">
+                  Editing message
+                </p>
+                <p className="text-xs text-white/70 mt-1 line-clamp-2">
+                  {editingMessage.content || t('chat.message_deleted')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={cancelEditMessage}
+                className="p-1 rounded-md hover:bg-white/10 text-white/60 hover:text-white/90"
+                aria-label="Cancel editing"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Selected files preview */}
         {selectedFiles.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -947,7 +1194,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
         <form
           onSubmit={(e) => {
-            handleSendMessage(e)
+            e.preventDefault()
+            if (editingMessage) {
+              handleEditMessage()
+            } else {
+              handleSendMessage()
+            }
             handleTypingStop()
           }}
           className="flex items-center gap-3"
@@ -963,13 +1215,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isSendingMessage}
+            disabled={isSendingMessage || isUpdatingMessage}
             className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Paperclip size={18} />
           </button>
           <div className="flex-1 relative">
             <input
+              ref={messageInputRef}
               type="text"
               placeholder={t('chat.type_message')}
               value={messageInput}
@@ -977,13 +1230,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               onKeyPress={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
-                  handleSendMessage(e as any)
+                  if (editingMessage) {
+                    handleEditMessage()
+                  } else {
+                    handleSendMessage()
+                  }
                   handleTypingStop()
                 }
                 handleTyping()
               }}
               onBlur={handleTypingStop}
-              disabled={isSendingMessage}
+              disabled={isSendingMessage || isUpdatingMessage}
               className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40 pr-12"
             />
           </div>
@@ -991,11 +1248,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             type="submit"
             disabled={
               isSendingMessage ||
+              isUpdatingMessage ||
               (!messageInput.trim() && selectedFiles.length === 0)
             }
             className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
           >
-            {isSendingMessage ? (
+            {isSendingMessage || isUpdatingMessage ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <Send size={16} />
@@ -1003,6 +1261,50 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </button>
         </form>
       </div>
+
+      <Dialog
+        open={!!deleteTargetMessage}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingMessage) {
+            setDeleteTargetMessage(null)
+          }
+        }}
+      >
+        <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">Delete message?</DialogTitle>
+            <DialogDescription className="text-white/70">
+              This action cannot be undone. The message will be replaced with a
+              deleted placeholder for everyone in this conversation.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setDeleteTargetMessage(null)}
+              disabled={isDeletingMessage}
+              className="h-9 px-4 rounded-md border border-white/[0.12] text-white/80 hover:bg-white/[0.06] disabled:opacity-40"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteMessage}
+              disabled={isDeletingMessage}
+              className="h-9 px-4 rounded-md bg-red-500/90 hover:bg-red-500 text-white disabled:opacity-40"
+            >
+              {isDeletingMessage ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  {t('common.delete')}
+                </span>
+              ) : (
+                t('common.delete')
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
