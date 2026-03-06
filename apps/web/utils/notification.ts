@@ -24,9 +24,8 @@ export const playNotificationSound = async () => {
 
     oscillator.start(audioContext.currentTime)
     oscillator.stop(audioContext.currentTime + 0.5)
-  } catch (error) {
+  } catch (_error) {
     // Silently fail if audio context is not supported
-    console.debug('Notification sound not available')
   }
 }
 
@@ -46,8 +45,7 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
     try {
       const permission = await Notification.requestPermission()
       return permission === 'granted'
-    } catch (error) {
-      console.debug('Notification permission request failed')
+    } catch (_error) {
       return false
     }
   }
@@ -89,8 +87,8 @@ export const showBrowserNotification = (
       }
       notification.close()
     }
-  } catch (error) {
-    console.debug('Failed to show notification:', error)
+  } catch (_error) {
+    // Silently fail if browser notification creation fails
   }
 }
 

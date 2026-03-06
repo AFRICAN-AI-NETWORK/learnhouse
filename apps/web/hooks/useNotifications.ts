@@ -4,7 +4,6 @@ import { NotificationContext } from '@components/Contexts/NotificationContext'
 import {
   playNotificationSound,
   showBrowserNotification,
-  isAppFocused,
   requestNotificationPermission,
 } from '@/utils/notification'
 

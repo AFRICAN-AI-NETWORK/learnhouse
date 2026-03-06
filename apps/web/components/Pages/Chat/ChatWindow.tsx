@@ -155,7 +155,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   // Request notification permission on mount
   useEffect(() => {
     requestNotificationPermission()
-  }, [])
+  }, [requestNotificationPermission])
 
   const {
     isConnected,
