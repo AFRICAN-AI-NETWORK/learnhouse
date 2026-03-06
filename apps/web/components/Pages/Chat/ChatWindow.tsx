@@ -23,6 +23,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
 import useWebSocket from '@/hooks/useWebSocket'
+import { useNotifications } from '@/hooks/useNotifications'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,17 +132,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
 
+  const {
+    showMessageNotification,
+    requestNotificationPermission,
+    windowFocused,
+  } = useNotifications()
+
   const access_token = session?.data?.tokens?.access_token
   const org_id = org?.id
   const current_user_id = session?.data?.user?.id
 
   const conversationIdRef = useRef(conversationId)
   const currentUserIdRef = useRef(current_user_id)
+  const conversationRef = useRef(conversation)
 
   useEffect(() => {
     conversationIdRef.current = conversationId
     currentUserIdRef.current = current_user_id
-  }, [conversationId, current_user_id])
+    conversationRef.current = conversation
+  }, [conversationId, current_user_id, conversation])
+
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission()
+  }, [])
 
   const {
     isConnected,
@@ -343,10 +357,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         return [...prev, confirmedMessage]
       })
 
-      if (
-        data.receiver_id === currentUserIdRef.current &&
-        data.sender_id !== currentUserIdRef.current
-      ) {
+      // Mark as read if message is for current user (notifications handled by GlobalChatProvider)
+      if (data.sender_id !== currentUserIdRef.current) {
         if (isConnected) {
           sendWebSocketMessage({
             type: 'mark_read',
@@ -476,6 +488,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     addMessageListener,
     removeMessageListener,
     conversationId,
+    showMessageNotification,
+    windowFocused,
   ])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
