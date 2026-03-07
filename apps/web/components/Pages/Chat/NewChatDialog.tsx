@@ -199,10 +199,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                   >
                     <div className="relative flex-shrink-0">
                       <img
-                        src={
-                          user.avatar_image ||
-                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
-                        }
+                        src={user.avatar_image || '/empty_avatar.png'}
                         alt={user.username}
                         className="w-10 h-10 rounded-full ring-2 ring-white/[0.06] object-cover"
                       />
