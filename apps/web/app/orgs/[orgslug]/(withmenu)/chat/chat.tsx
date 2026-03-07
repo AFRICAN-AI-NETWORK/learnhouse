@@ -358,33 +358,11 @@ function ChatClient() {
         } flex-1 flex-col overflow-hidden`}
       >
         {selectedConversationId ? (
-          <>
-            {/* Mobile back button */}
-            <div className="md:hidden px-4 py-3 border-b border-white/[0.06] bg-[#13131a] flex items-center gap-3">
-              <button
-                onClick={() => setSelectedConversationId(null)}
-                className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-                {t('common.back')}
-              </button>
-            </div>
-            <ChatWindow
-              conversationId={selectedConversationId}
-              onConversationUpdate={handleConversationUpdate}
-            />
-          </>
+          <ChatWindow
+            conversationId={selectedConversationId}
+            onConversationUpdate={handleConversationUpdate}
+            onBack={() => setSelectedConversationId(null)}
+          />
         ) : (
           <div className="flex-1 hidden md:flex flex-col items-center justify-center gap-4 text-center px-8">
             <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">

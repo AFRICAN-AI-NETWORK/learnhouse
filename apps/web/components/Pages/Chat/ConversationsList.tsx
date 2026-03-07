@@ -196,7 +196,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                     <img
                       src={
                         conversation.other_participant.avatar_image ||
-                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${conversation.other_participant.id}`
+                        '/empty_avatar.png'
                       }
                       alt={conversation.other_participant.username}
                       className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"

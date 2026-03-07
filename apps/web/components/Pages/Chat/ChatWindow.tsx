@@ -103,11 +103,13 @@ interface Conversation {
 interface ChatWindowProps {
   conversationId: string
   onConversationUpdate: (conversation: Conversation) => void
+  onBack?: () => void
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
   onConversationUpdate,
+  onBack,
 }) => {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -211,7 +213,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const downloadFile = useCallback(
     async (fileUrl: string, fileName: string) => {
       try {
-        // Extract the path from the URL (backend may return wrong domain)
+        // Extract the path from the URL
         let path = fileUrl
         try {
           const urlObj = new URL(fileUrl)
@@ -221,11 +223,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`
         }
 
-        // Always use the correct backend origin
         const backendOrigin = new URL(getAPIUrl()).origin
         const absoluteUrl = `${backendOrigin}${path}`
 
-        // Fetch the file with authentication if needed
         const response = await fetch(absoluteUrl, {
           headers: access_token
             ? { Authorization: `Bearer ${access_token}` }
@@ -897,7 +897,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           return Array.from(deduped.values())
         })
       } else {
-        // Text-only: just confirm the optimistic message
         setMessages((prev) =>
           prev.map((msg) =>
             msg.clientId === clientId
@@ -967,12 +966,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Header */}
       <div className="flex-shrink-0 px-5 py-3.5 border-b border-white/[0.06] bg-[#13131a] flex items-center justify-between">
         <div className="flex items-center gap-3">
+          {/* Back button for mobile/tablet - visible only on small to medium devices */}
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden flex-shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
+              aria-label="Back to conversations"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
           <div className="relative">
             <img
-              src={
-                otherParticipant.avatar_image ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
-              }
+              src={otherParticipant.avatar_image || '/empty_avatar.png'}
               alt={otherParticipant.username}
               className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
             />
@@ -1023,10 +1040,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               >
                 {!isMine && (
                   <img
-                    src={
-                      otherParticipant.avatar_image ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
-                    }
+                    src={otherParticipant.avatar_image || '/empty_avatar.png'}
                     alt={otherParticipant.username}
                     className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
                   />
@@ -1039,7 +1053,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     className={`flex items-start gap-1.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                   >
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 ${
+                      className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
                         isMine
                           ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
                           : 'bg-white/[0.07] text-white/85 rounded-bl-sm border border-white/[0.06]'
@@ -1074,7 +1088,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                   return (
                                     <div
                                       key={attachment.attachment_uuid}
-                                      className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-600/30' : 'bg-white/[0.08]'}`}
+                                      className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/[0.08]'}`}
                                     >
                                       {isImage && absoluteFileUrl ? (
                                         <div className="relative group">
