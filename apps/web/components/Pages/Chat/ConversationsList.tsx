@@ -41,6 +41,7 @@ interface ConversationsListProps {
   onNewConversation: (conversation: Conversation) => void
   isLoading: boolean
   orgslug: string
+  typingUsers: Map<string, number>
 }
 
 const ConversationsList: React.FC<ConversationsListProps> = ({
@@ -50,6 +51,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   onNewConversation,
   isLoading,
   orgslug,
+  typingUsers,
 }) => {
   const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
@@ -91,6 +93,30 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   }
 
   const getPreviewText = (conversation: Conversation) => {
+    // Check if someone is typing in this conversation
+    const isTyping = typingUsers.has(conversation.conversation_uuid)
+    if (isTyping) {
+      return (
+        <span className="flex items-center gap-1">
+          <span className="text-indigo-400 italic">{t('chat.typing')}</span>
+          <span className="flex gap-0.5">
+            <span
+              className="w-1 h-1 rounded-full bg-indigo-400 animate-bounce"
+              style={{ animationDelay: '0ms' }}
+            />
+            <span
+              className="w-1 h-1 rounded-full bg-indigo-400 animate-bounce"
+              style={{ animationDelay: '150ms' }}
+            />
+            <span
+              className="w-1 h-1 rounded-full bg-indigo-400 animate-bounce"
+              style={{ animationDelay: '300ms' }}
+            />
+          </span>
+        </span>
+      )
+    }
+
     if (!conversation.last_message) return t('chat.no_messages')
     if (conversation.last_message.is_deleted) return t('chat.message_deleted')
     return conversation.last_message.content.substring(0, 50)
@@ -194,11 +220,11 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                       )}
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <p
-                        className={`text-xs truncate ${conversation.unread_count > 0 ? 'text-white/60 font-medium' : 'text-white/30'}`}
+                      <div
+                        className={`text-xs truncate ${conversation.unread_count > 0 || typingUsers.has(conversation.conversation_uuid) ? 'text-white/60 font-medium' : 'text-white/30'}`}
                       >
                         {getPreviewText(conversation)}
-                      </p>
+                      </div>
                       {conversation.unread_count > 0 && (
                         <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center leading-none">
                           {conversation.unread_count > 9
