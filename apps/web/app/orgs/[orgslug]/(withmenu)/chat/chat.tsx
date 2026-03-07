@@ -326,9 +326,10 @@ function ChatClient() {
 
   // Cleanup timeouts on unmount
   useEffect(() => {
+    const timeouts = typingTimeoutsRef.current
     return () => {
-      typingTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout))
-      typingTimeoutsRef.current.clear()
+      timeouts.forEach((timeout) => clearTimeout(timeout))
+      timeouts.clear()
     }
   }, [])
 

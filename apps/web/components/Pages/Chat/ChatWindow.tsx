@@ -251,11 +251,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         document.body.removeChild(link)
         URL.revokeObjectURL(blobUrl)
       } catch (error) {
-        console.error('Download failed:', error)
         setError(t('chat.download_failed'))
       }
     },
-    [ensureAbsoluteUrl, access_token, t]
+    [access_token, t]
   )
 
   useEffect(() => {
