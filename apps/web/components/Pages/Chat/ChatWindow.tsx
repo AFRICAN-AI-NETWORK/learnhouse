@@ -208,6 +208,56 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     [ensureAbsoluteUrl]
   )
 
+  const downloadFile = useCallback(
+    async (fileUrl: string, fileName: string) => {
+      try {
+        // Extract the path from the URL (backend may return wrong domain)
+        let path = fileUrl
+        try {
+          const urlObj = new URL(fileUrl)
+          path = urlObj.pathname // Extract just the path part
+        } catch {
+          // If it's not a valid URL, treat it as a path
+          path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`
+        }
+
+        // Always use the correct backend origin
+        const backendOrigin = new URL(getAPIUrl()).origin
+        const absoluteUrl = `${backendOrigin}${path}`
+
+        // Fetch the file with authentication if needed
+        const response = await fetch(absoluteUrl, {
+          headers: access_token
+            ? { Authorization: `Bearer ${access_token}` }
+            : {},
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to download file: ${response.statusText}`)
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob()
+        const blobUrl = URL.createObjectURL(blob)
+
+        // Create a temporary link and trigger download
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = fileName // Use the original filename from DB
+        document.body.appendChild(link)
+        link.click()
+
+        // Cleanup
+        document.body.removeChild(link)
+        URL.revokeObjectURL(blobUrl)
+      } catch (error) {
+        console.error('Download failed:', error)
+        setError(t('chat.download_failed'))
+      }
+    },
+    [ensureAbsoluteUrl, access_token, t]
+  )
+
   useEffect(() => {
     const blobUrls = blobUrlsRef.current
     return () => {
@@ -339,7 +389,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           (msg) =>
             msg.isPending &&
             msg.sender_id === data.sender_id &&
-            msg.content === data.content &&
+            (msg.content === data.content ||
+              (msg.message_type === 'file' &&
+                data.message_type === 'file' &&
+                (msg.content === '' || msg.content === '📎'))) &&
             Math.abs(
               new Date(msg.created_at).getTime() -
                 new Date(data.created_at).getTime()
@@ -347,7 +400,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )
         if (optimisticIndex !== -1) {
           const updated = [...prev]
-          updated[optimisticIndex] = { ...confirmedMessage, isPending: false }
+          const optimisticMsg = updated[optimisticIndex]
+          updated[optimisticIndex] = {
+            ...confirmedMessage,
+            isPending: false,
+            clientId: optimisticMsg.clientId,
+          }
           return updated
         }
         const exists = prev.some(
@@ -679,7 +737,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return ImageIcon
     if (fileType.startsWith('video/')) return Video
-    if (fileType.includes('pdf') || fileType.includes('document'))
+    if (
+      fileType.includes('pdf') ||
+      fileType.includes('document') ||
+      fileType.includes('officedocument') ||
+      fileType.includes('word')
+    )
       return FileText
     return File
   }
@@ -730,7 +793,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         conversation_id: conversationId,
         sender_id: current_user_id || 0,
         receiver_id: conversation.other_participant.id,
-        content: messageContent,
+        content: messageContent || (hasFiles ? '📎' : ''),
         message_type: hasFiles ? 'file' : 'text',
         is_edited: false,
         is_deleted: false,
@@ -799,18 +862,40 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           }
         })
 
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.clientId === clientId
+        setMessages((prev) => {
+          const updated = prev.map((msg) =>
+            msg.clientId === clientId ||
+            msg.message_uuid === serverMessage.message_uuid
               ? {
                   ...(fullMessage ?? { ...serverMessage }),
                   attachments: resolvedAttachments,
                   isPending: false,
-                  clientId,
+                  clientId: msg.clientId ?? clientId,
                 }
               : msg
           )
-        )
+
+          const deduped = new Map<string, Message>()
+          for (const msg of updated) {
+            const existing = deduped.get(msg.message_uuid)
+            if (!existing) {
+              deduped.set(msg.message_uuid, msg)
+              continue
+            }
+
+            const existingAttachmentCount = existing.attachments?.length ?? 0
+            const currentAttachmentCount = msg.attachments?.length ?? 0
+            const shouldReplace =
+              currentAttachmentCount > existingAttachmentCount ||
+              (!!msg.clientId && !existing.clientId)
+
+            if (shouldReplace) {
+              deduped.set(msg.message_uuid, msg)
+            }
+          }
+
+          return Array.from(deduped.values())
+        })
       } else {
         // Text-only: just confirm the optimistic message
         setMessages((prev) =>
@@ -978,9 +1063,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                   )
                                   const isImage =
                                     attachment.file_type.startsWith('image/')
-                                  const absoluteFileUrl = attachment.file_url
-                                    ? ensureAbsoluteUrl(attachment.file_url)
-                                    : ''
+                                  // Don't double-process URLs - backend already returns absolute URLs
+                                  const absoluteFileUrl =
+                                    attachment.file_url || ''
                                   const absoluteThumbUrl = ensureAbsoluteUrl(
                                     attachment.thumbnail_url ||
                                       attachment.file_url ||
@@ -992,20 +1077,38 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                       className={`flex items-center gap-2 p-2 rounded-lg ${isMine ? 'bg-indigo-600/30' : 'bg-white/[0.08]'}`}
                                     >
                                       {isImage && absoluteFileUrl ? (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            openFileInNewTab(absoluteFileUrl)
-                                          }
-                                          className="block group cursor-pointer p-0 border-0 bg-transparent"
-                                          title={`Open ${attachment.file_name}`}
-                                        >
-                                          <img
-                                            src={absoluteThumbUrl}
-                                            alt={attachment.file_name}
-                                            className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
-                                          />
-                                        </button>
+                                        <div className="relative group">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              openFileInNewTab(absoluteFileUrl)
+                                            }
+                                            className="block cursor-pointer p-0 border-0 bg-transparent"
+                                            title={`Open ${attachment.file_name}`}
+                                          >
+                                            <img
+                                              src={absoluteThumbUrl}
+                                              alt={attachment.file_name}
+                                              className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
+                                            />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              downloadFile(
+                                                attachment.file_url,
+                                                attachment.file_name
+                                              )
+                                            }
+                                            className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded transition-colors opacity-0 group-hover:opacity-100 border-0 cursor-pointer"
+                                            title={`Download ${attachment.file_name}`}
+                                          >
+                                            <Download
+                                              size={14}
+                                              className="text-white"
+                                            />
+                                          </button>
+                                        </div>
                                       ) : (
                                         <>
                                           <IconComponent
@@ -1026,8 +1129,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                             <button
                                               type="button"
                                               onClick={() =>
-                                                openFileInNewTab(
-                                                  absoluteFileUrl
+                                                downloadFile(
+                                                  attachment.file_url,
+                                                  attachment.file_name
                                                 )
                                               }
                                               className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
