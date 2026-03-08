@@ -11,7 +11,7 @@ from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey, Index, JSO
 class PayoutStatus(str, Enum):
     """Status of payout request"""
     REQUESTED = "requested"  # User submits payout request
-    APPROVED = "approved"    # Admin explicitly approves payout
+    APPROVED = "APPROVED"    # Admin explicitly approves payout
     PROCESSING = "processing"  # Balance reserved, Paystack API called
     COMPLETED = "completed"  # Payout successful
     FAILED = "failed"  # Payout failed

@@ -1,7 +1,7 @@
 """add_code_editor_to_assignment_task_type_enum
 
 Revision ID: 376da94767ae
-Revises: 9d7156315687
+Revises: 62a6b8a08322
 Create Date: 2026-02-18 00:40:50.475203
 
 """

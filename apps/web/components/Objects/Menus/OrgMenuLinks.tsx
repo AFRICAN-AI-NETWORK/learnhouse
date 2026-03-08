@@ -1,6 +1,12 @@
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import { getUriWithOrg } from '@services/config/config'
-import { BookCopy, Signpost, SquareLibrary, CreditCard } from 'lucide-react'
+import {
+  BookCopy,
+  Signpost,
+  SquareLibrary,
+  CreditCard,
+  MessageSquare,
+} from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +25,7 @@ function MenuLinks(props: { orgslug: string }) {
           type="collections"
           orgslug={props.orgslug}
         ></LinkItem>
+        <LinkItem link="/chat" type="chat" orgslug={props.orgslug}></LinkItem>
         <LinkItem
           link="/pricing"
           type="pricing"
@@ -52,6 +59,12 @@ const LinkItem = (props: any) => {
           <>
             <SquareLibrary size={20} />{' '}
             <span>{t('collections.collections')}</span>
+          </>
+        )}
+
+        {props.type == 'chat' && (
+          <>
+            <MessageSquare size={20} /> <span>{t('chat.chat')}</span>
           </>
         )}
 

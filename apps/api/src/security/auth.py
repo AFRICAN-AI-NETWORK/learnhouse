@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlmodel import Session, select  # Added 'select' here
 from src.core.events.database import get_db_session
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
@@ -157,3 +158,46 @@ async def get_current_user(
 async def non_public_endpoint(current_user: UserRead | AnonymousUser):
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
+    """
+    Verify JWT token for WebSocket connection.
+    Returns user_id if valid, None otherwise.
+    
+    SECURITY NOTE: Tokens passed in query parameters are visible in logs.
+    Ensure Logfire is configured to scrub 'token' from URL logs:
+    
+    logfire.configure(
+        scrubbing_patterns=['token', 'password', 'authorization'],
+        scrubbing_callback=lambda key, value: '***REDACTED***'
+    )
+    """
+    try:
+        from fastapi_jwt_auth import AuthJWT
+        from src.db.users import User
+        from sqlmodel import select
+        import logging
+        
+        # Create AuthJWT instance with the token
+        auth = AuthJWT()
+        auth._token = token
+        
+        # Verify token
+        auth.jwt_required()
+        user_uuid = auth.get_jwt_subject()
+        
+        # Get user from database
+        user = db.exec(
+            select(User).where(User.user_uuid == user_uuid)
+        ).first()
+        
+        if user:
+            return user.id
+        
+        return None
+    
+    except Exception as e:
+        import logging
+        logging.error(f"WebSocket token verification failed: {e}")
+        return None
