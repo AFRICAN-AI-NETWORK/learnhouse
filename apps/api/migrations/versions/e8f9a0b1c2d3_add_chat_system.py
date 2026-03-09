@@ -115,7 +115,8 @@ def upgrade() -> None:
     _create_index_if_not_exists('idx_message_created_at', 'message', [sa.text('created_at DESC')], unique=False)
     _create_index_if_not_exists('idx_message_type', 'message', ['message_type'], unique=False)
     _create_index_if_not_exists('idx_message_deleted', 'message', ['is_deleted'], unique=False)
-    _create_index_if_not_exists('idx_message_metadata_gin', 'message', ['message_metadata'], unique=False, postgresql_using='gin')
+    # NOTE: GIN index on message_metadata skipped — JSON type doesn't support GIN.
+    # If JSONB queries are needed later, change the column type to JSONB first.
 
     # Create message_edit_history table
     if not _table_exists('message_edit_history'):
