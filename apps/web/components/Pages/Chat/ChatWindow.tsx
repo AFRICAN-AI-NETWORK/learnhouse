@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { getAPIUrl } from '@services/config/config'
+import { getAPIUrl, getBackendUrl } from '@services/config/config'
 import useWebSocket from '@/hooks/useWebSocket'
 import { useNotifications } from '@/hooks/useNotifications'
 import {
@@ -204,14 +204,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const ensureAbsoluteUrl = useCallback((url: string): string => {
     if (!url) return url
-    if (
-      url.startsWith('http://') ||
-      url.startsWith('https://') ||
-      url.startsWith('blob:')
-    ) {
+    if (url.startsWith('blob:')) {
       return url
     }
-    const backendOrigin = new URL(getAPIUrl()).origin
+
+    const backendOrigin = new URL(getBackendUrl()).origin
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      try {
+        const parsed = new URL(url)
+        if (parsed.pathname.startsWith('/content/')) {
+          return `${backendOrigin}${parsed.pathname}${parsed.search}${parsed.hash}`
+        }
+      } catch {
+        return url
+      }
+      return url
+    }
+
     const path = url.startsWith('/') ? url : `/${url}`
     return `${backendOrigin}${path}`
   }, [])
@@ -236,7 +246,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`
         }
 
-        const backendOrigin = new URL(getAPIUrl()).origin
+        const backendOrigin = new URL(getBackendUrl()).origin
         const absoluteUrl = `${backendOrigin}${path}`
 
         const response = await fetch(absoluteUrl, {
@@ -1041,7 +1051,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           )}
           <div className="relative">
             <img
-              src={otherParticipant.avatar_image || '/empty_avatar.png'}
+              src={
+                ensureAbsoluteUrl(otherParticipant.avatar_image || '') ||
+                '/empty_avatar.png'
+              }
               alt={otherParticipant.username}
               className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
             />
@@ -1092,7 +1105,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               >
                 {!isMine && (
                   <img
-                    src={otherParticipant.avatar_image || '/empty_avatar.png'}
+                    src={
+                      ensureAbsoluteUrl(otherParticipant.avatar_image || '') ||
+                      '/empty_avatar.png'
+                    }
                     alt={otherParticipant.username}
                     className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
                   />
@@ -1130,8 +1146,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                   const isImage =
                                     attachment.file_type.startsWith('image/')
                                   // Don't double-process URLs - backend already returns absolute URLs
-                                  const absoluteFileUrl =
+                                  const absoluteFileUrl = ensureAbsoluteUrl(
                                     attachment.file_url || ''
+                                  )
                                   const absoluteThumbUrl = ensureAbsoluteUrl(
                                     attachment.thumbnail_url ||
                                       attachment.file_url ||
@@ -1288,7 +1305,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="flex justify-start gap-2">
             <img
               src={
-                otherParticipant.avatar_image ||
+                ensureAbsoluteUrl(otherParticipant.avatar_image || '') ||
                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
               }
               alt={otherParticipant.username}

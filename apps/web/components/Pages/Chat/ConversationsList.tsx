@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Search, Plus, Loader2, MessageSquareDashed } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
+import { getBackendUrl } from '@services/config/config'
 import useWebSocket from '@/hooks/useWebSocket'
 import NewChatDialog from './NewChatDialog'
 
@@ -66,6 +67,20 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   const org_id = org?.id
 
   const { isConnected } = useWebSocket(access_token, org_id)
+
+  const ensureAbsoluteUrl = (url?: string) => {
+    if (!url) return '/empty_avatar.png'
+    if (
+      url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('blob:')
+    ) {
+      return url
+    }
+    const backendOrigin = new URL(getBackendUrl()).origin
+    const path = url.startsWith('/') ? url : `/${url}`
+    return `${backendOrigin}${path}`
+  }
 
   const filteredConversations = conversations.filter((conv) => {
     const participantName =
@@ -204,10 +219,9 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={
-                        conversation.other_participant.avatar_image ||
-                        '/empty_avatar.png'
-                      }
+                      src={ensureAbsoluteUrl(
+                        conversation.other_participant.avatar_image
+                      )}
                       alt={conversation.other_participant.username}
                       className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"
                     />
