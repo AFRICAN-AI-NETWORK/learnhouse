@@ -332,6 +332,8 @@
     "chat": "Chat",
     "chats": "Chats",
     "conversations": "Conversations",
+    "conversation": "Conversation",
+    "messages": "Messages",
     "create_new_chat": "Create New Chat",
     "search_conversations": "Search conversations...",
     "search_users": "Search users...",
