@@ -15,6 +15,7 @@ interface Participant {
   first_name?: string
   last_name?: string
   avatar_image?: string
+  role_name?: string
 }
 
 interface Conversation {
@@ -147,6 +148,40 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
     return conversation.last_message.content.substring(0, 50)
   }
 
+  const getRoleBadge = (roleName?: string) => {
+    const normalized = (roleName || '').toLowerCase()
+
+    if (normalized === 'instructor') {
+      return {
+        label: 'Instructor',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-sky-400/35 bg-sky-500/15 text-sky-300',
+      }
+    }
+
+    if (normalized === 'admin') {
+      return {
+        label: 'Admin',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-rose-400/35 bg-rose-500/15 text-rose-300',
+      }
+    }
+
+    if (normalized === 'maintainer') {
+      return {
+        label: 'Maintainer',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-amber-400/35 bg-amber-500/15 text-amber-300',
+      }
+    }
+
+    return {
+      label: 'User',
+      className:
+        'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-gray-400/35 bg-gray-500/15 text-gray-300',
+    }
+  }
+
   return (
     <>
       <div className="flex-1 flex flex-col min-h-0">
@@ -203,6 +238,9 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
               const displayName = conversation.other_participant.first_name
                 ? `${conversation.other_participant.first_name}${conversation.other_participant.last_name ? ' ' + conversation.other_participant.last_name : ''}`
                 : conversation.other_participant.username
+              const roleBadge = getRoleBadge(
+                conversation.other_participant.role_name
+              )
 
               return (
                 <div
@@ -233,11 +271,18 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span
-                        className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-white/80'}`}
-                      >
-                        {displayName}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-white/80'}`}
+                        >
+                          {displayName}
+                        </span>
+                        {roleBadge && (
+                          <span className={roleBadge.className}>
+                            {roleBadge.label}
+                          </span>
+                        )}
+                      </div>
                       {conversation.last_message_at && (
                         <span className="text-[11px] text-white/30 flex-shrink-0 tabular-nums">
                           {formatTime(conversation.last_message_at)}
