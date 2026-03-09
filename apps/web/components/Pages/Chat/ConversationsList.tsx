@@ -2,6 +2,9 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Plus, Loader2, MessageSquareDashed } from 'lucide-react'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { useOrg } from '@components/Contexts/OrgContext'
+import useWebSocket from '@/hooks/useWebSocket'
 import NewChatDialog from './NewChatDialog'
 
 interface Participant {
@@ -54,8 +57,15 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   typingUsers,
 }) => {
   const { t } = useTranslation()
+  const session = useLHSession() as any
+  const org = useOrg() as any
   const [searchQuery, setSearchQuery] = useState('')
   const [showNewChatDialog, setShowNewChatDialog] = useState(false)
+
+  const access_token = session?.data?.tokens?.access_token
+  const org_id = org?.id
+
+  const { isConnected } = useWebSocket(access_token, org_id)
 
   const filteredConversations = conversations.filter((conv) => {
     const participantName =
@@ -201,8 +211,9 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                       alt={conversation.other_participant.username}
                       className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"
                     />
-                    {/* Online dot — placeholder, always shown subtle */}
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
+                    <span
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-white/20'} border-2 border-[#13131a]`}
+                    />
                   </div>
 
                   {/* Content */}
