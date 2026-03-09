@@ -755,6 +755,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   const handleSendMessage = async () => {
+    if (isSendingMessage || isUpdatingMessage) return
     if ((!messageInput.trim() && selectedFiles.length === 0) || !conversation)
       return
 
@@ -923,6 +924,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setError(t('chat.message_failed'))
     } finally {
       setIsSendingMessage(false)
+      setTimeout(() => messageInputRef.current?.focus(), 0)
     }
   }
 
@@ -1371,7 +1373,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 handleTyping()
               }}
               onBlur={handleTypingStop}
-              disabled={isSendingMessage || isUpdatingMessage}
+              disabled={isUpdatingMessage}
               className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40 pr-12"
             />
           </div>
