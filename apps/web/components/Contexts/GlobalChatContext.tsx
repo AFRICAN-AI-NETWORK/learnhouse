@@ -59,9 +59,20 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
   const { isConnected, addMessageListener, removeMessageListener } =
     useWebSocket(access_token, org_id)
 
-  const openChat = useCallback(() => setIsChatOpen(true), [])
+  const openChat = useCallback(() => {
+    setUnreadCount(0)
+    setIsChatOpen(true)
+  }, [])
   const closeChat = useCallback(() => setIsChatOpen(false), [])
-  const toggleChat = useCallback(() => setIsChatOpen((prev) => !prev), [])
+  const toggleChat = useCallback(() => {
+    setIsChatOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setUnreadCount(0)
+      }
+      return next
+    })
+  }, [])
 
   // Load conversations to get participant names
   useEffect(() => {
@@ -134,13 +145,6 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
     },
     [current_user_id, showMessageNotification, windowFocused, isChatOpen]
   )
-
-  // Reset unread count when chat opens
-  useEffect(() => {
-    if (isChatOpen) {
-      setUnreadCount(0)
-    }
-  }, [isChatOpen])
 
   // Register global message listener
   useEffect(() => {

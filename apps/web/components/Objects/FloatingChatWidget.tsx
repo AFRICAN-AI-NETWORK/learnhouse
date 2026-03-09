@@ -85,8 +85,8 @@ export default function FloatingChatWidget() {
           const data = await response.json()
           setConversations(data)
         }
-      } catch (error) {
-        console.error('Error loading conversations:', error)
+      } catch {
+        // Ignore transient load errors; chat can recover on next open/reconnect.
       } finally {
         setIsLoadingConversations(false)
       }
@@ -177,11 +177,12 @@ export default function FloatingChatWidget() {
     if (!isConnected) return
 
     addMessageListener('typing', handleTyping)
+    const typingTimeouts = typingTimeoutsRef.current
 
     return () => {
       removeMessageListener('typing', handleTyping)
-      typingTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout))
-      typingTimeoutsRef.current.clear()
+      typingTimeouts.forEach((timeout) => clearTimeout(timeout))
+      typingTimeouts.clear()
     }
   }, [isConnected, addMessageListener, removeMessageListener, handleTyping])
 
