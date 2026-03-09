@@ -20,7 +20,9 @@ export default function RootLayout(props: {
         <NotificationProvider>
           <GlobalChatProvider>
             <OrgMenu orgslug={params?.orgslug}></OrgMenu>
-            <main className="flex-1 w-full overflow-auto">{children}</main>
+            <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden scrollbar-hide">
+              {children}
+            </main>
           </GlobalChatProvider>
         </NotificationProvider>
       </SessionProvider>
