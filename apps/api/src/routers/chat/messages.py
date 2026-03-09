@@ -2,8 +2,8 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
 from sqlmodel import Session, select
 
-from src.db.chat.messages import MessageCreate, MessageUpdate, MessageRead
-from src.db.chat.attachments import MessageAttachmentRead
+from src.db.chat.messages import MessageCreate, MessageUpdate, MessageRead, Message, MessageReadReceipt
+from src.db.chat.attachments import MessageAttachmentRead, MessageAttachment
 from src.db.chat.conversations import Conversation
 from src.db.organizations import Organization
 from src.services.chat.message_service import MessageService
@@ -12,6 +12,84 @@ from src.security.auth import get_current_user
 from src.db.users import User
 
 router = APIRouter()
+
+
+@router.get("/{message_uuid}", response_model=MessageRead)
+async def get_message(
+    message_uuid: str,
+    db: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a single message by UUID with full details including replied message."""
+    message = db.exec(select(Message).where(Message.message_uuid == message_uuid)).first()
+
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message not found"
+        )
+
+    conversation = db.exec(
+        select(Conversation).where(Conversation.id == message.conversation_id)
+    ).first()
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found"
+        )
+
+    if current_user.id not in [conversation.participant_one_id, conversation.participant_two_id]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view this message"
+        )
+
+    attachments = db.exec(
+        select(MessageAttachment).where(MessageAttachment.message_id == message.id)
+    ).all()
+
+    other_participant_id = (
+        conversation.participant_two_id
+        if conversation.participant_one_id == current_user.id
+        else conversation.participant_one_id
+    )
+    receipt = db.exec(
+        select(MessageReadReceipt)
+        .where(MessageReadReceipt.message_id == message.id)
+        .where(MessageReadReceipt.user_id == other_participant_id)
+    ).first()
+
+    replied_message_data = None
+    if message.reply_to_message_id:
+        replied_msg = db.exec(
+            select(Message).where(Message.id == message.reply_to_message_id)
+        ).first()
+        if replied_msg:
+            replied_message_data = {
+                "message_uuid": replied_msg.message_uuid,
+                "content": replied_msg.content if not replied_msg.is_deleted else "[Deleted message]",
+                "sender_id": replied_msg.sender_id,
+                "created_at": replied_msg.created_at.isoformat(),
+                "is_deleted": replied_msg.is_deleted,
+            }
+
+    return MessageRead(
+        id=message.id,
+        conversation_id=conversation.conversation_uuid,
+        sender_id=message.sender_id,
+        receiver_id=message.receiver_id,
+        content=message.content,
+        message_type=message.message_type,
+        message_uuid=message.message_uuid,
+        is_edited=message.is_edited,
+        is_deleted=message.is_deleted,
+        created_at=message.created_at,
+        updated_at=message.updated_at,
+        attachments=[att.dict() for att in attachments],
+        read_receipt=receipt.dict() if receipt else None,
+        reply_to_message_id=message.reply_to_message_id,
+        replied_message=replied_message_data,
+    )
 
 
 
@@ -310,8 +388,12 @@ async def send_message_with_attachment(
                     "sender_id": message.sender_id,
                     "content": message.content,
                     "message_type": message.message_type,
-                    "reply_to_message_id": reply_to,
+                    "reply_to_message_id": message.reply_to_message_id,
+                    "replied_message": message.replied_message,
                     "attachment": attachment_data,
+                    "attachments": message.attachments
+                    if hasattr(message, "attachments")
+                    else [],
                     "created_at": message.created_at.isoformat(),
                 },
             },
