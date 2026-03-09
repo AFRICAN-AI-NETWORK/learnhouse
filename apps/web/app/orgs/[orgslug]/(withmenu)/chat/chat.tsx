@@ -6,7 +6,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
 import useWebSocket from '@/hooks/useWebSocket'
 
@@ -41,6 +41,8 @@ interface Conversation {
 function ChatClient() {
   const { t } = useTranslation()
   const params = useParams()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const orgslug = params?.orgslug as string
   const session = useLHSession() as any
   const org = useOrg() as any
@@ -87,6 +89,23 @@ function ChatClient() {
 
     loadConversations()
   }, [org_id, session?.data?.tokens?.access_token])
+
+  // Handle conversation selection from URL query parameter (e.g., from notifications)
+  useEffect(() => {
+    const conversationIdFromUrl = searchParams.get('conversation')
+    if (conversationIdFromUrl && conversations.length > 0) {
+      // Check if the conversation exists in the loaded conversations
+      const conversationExists = conversations.some(
+        (conv) => conv.conversation_uuid === conversationIdFromUrl
+      )
+      if (conversationExists) {
+        setSelectedConversationId(conversationIdFromUrl)
+        // Remove the query parameter to clean up the URL
+        const newUrl = `${window.location.pathname}`
+        router.replace(newUrl)
+      }
+    }
+  }, [searchParams, conversations, router])
 
   const handleConversationSelect = useCallback((conversationId: string) => {
     setSelectedConversationId(conversationId)

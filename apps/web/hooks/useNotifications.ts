@@ -1,5 +1,6 @@
 import { createElement, useContext } from 'react'
 import toast from 'react-hot-toast'
+import { useRouter, useParams } from 'next/navigation'
 import { NotificationContext } from '@components/Contexts/NotificationContext'
 import MessageNotificationToast from '@components/Objects/StyledElements/Toast/MessageNotificationToast'
 import {
@@ -22,9 +23,19 @@ interface ShowNotificationOptions extends ShowToastOptions {
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext)
+  const router = useRouter()
+  const params = useParams()
 
   if (!context) {
     throw new Error('useNotifications must be used within NotificationProvider')
+  }
+
+  const navigateToChat = (conversationId: string) => {
+    const orgslug = params?.orgslug as string
+    if (orgslug && conversationId) {
+      const chatUrl = `/orgs/${orgslug}/chat?conversation=${conversationId}`
+      router.push(chatUrl)
+    }
   }
 
   const showToast = (
@@ -55,7 +66,7 @@ export const useNotifications = () => {
       userId,
     } = options
 
-    // Show in-app custom toast UI for chat messages
+    // Show in-app custom toast for chat messages
     toast.custom(
       (toastInstance) =>
         createElement(MessageNotificationToast, {
@@ -69,6 +80,7 @@ export const useNotifications = () => {
           background: 'transparent',
           boxShadow: 'none',
           padding: 0,
+          right: 0,
         },
       }
     )
