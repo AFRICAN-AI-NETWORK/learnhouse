@@ -33,7 +33,7 @@ export const useNotifications = () => {
   const navigateToChat = (conversationId: string) => {
     const orgslug = params?.orgslug as string
     if (orgslug && conversationId) {
-      const chatUrl = `/orgs/${orgslug}/chat?conversation=${conversationId}`
+      const chatUrl = `/chat/${conversationId}`
       router.push(chatUrl)
     }
   }
@@ -63,8 +63,13 @@ export const useNotifications = () => {
       playSound = true,
       showDesktop = true,
       conversationId,
-      userId,
     } = options
+
+    const handleOpenConversation = () => {
+      if (conversationId) {
+        navigateToChat(conversationId)
+      }
+    }
 
     // Show in-app custom toast for chat messages
     toast.custom(
@@ -72,6 +77,10 @@ export const useNotifications = () => {
         createElement(MessageNotificationToast, {
           senderName,
           messagePreview,
+          onClick: () => {
+            handleOpenConversation()
+            toast.dismiss(toastInstance.id)
+          },
           onClose: () => toast.dismiss(toastInstance.id),
         }),
       {
@@ -95,8 +104,7 @@ export const useNotifications = () => {
       showBrowserNotification(senderName, {
         body: messagePreview,
         tag: `message-${conversationId}`,
-        conversationId,
-        userId,
+        onClick: handleOpenConversation,
       })
     }
 

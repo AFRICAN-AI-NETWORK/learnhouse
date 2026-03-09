@@ -6,7 +6,12 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
 import useWebSocket from '@/hooks/useWebSocket'
 
@@ -41,9 +46,14 @@ interface Conversation {
 function ChatClient() {
   const { t } = useTranslation()
   const params = useParams()
+  const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
   const orgslug = params?.orgslug as string
+  const rawConversationIdFromPath = params?.conversationId as string | undefined
+  const conversationIdFromPath = rawConversationIdFromPath
+    ? decodeURIComponent(rawConversationIdFromPath).trim().replace(/;+$/, '')
+    : undefined
   const session = useLHSession() as any
   const org = useOrg() as any
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -60,6 +70,11 @@ function ChatClient() {
 
   const { isConnected, addMessageListener, removeMessageListener } =
     useWebSocket(access_token, org_id)
+
+  const normalizedPathname = pathname?.replace(/\/$/, '') || ''
+  const chatBasePath = /\/chat\/[^/]+$/.test(normalizedPathname)
+    ? normalizedPathname.replace(/\/chat\/[^/]+$/, '/chat')
+    : normalizedPathname || `/orgs/${orgslug}/chat`
 
   useEffect(() => {
     if (!org_id || !session?.data?.tokens?.access_token) return
@@ -90,39 +105,70 @@ function ChatClient() {
     loadConversations()
   }, [org_id, session?.data?.tokens?.access_token])
 
-  // Handle conversation selection from URL query parameter (e.g., from notifications)
+  // Keep selected conversation synced with the dynamic route segment.
   useEffect(() => {
-    const conversationIdFromUrl = searchParams.get('conversation')
-    if (conversationIdFromUrl && conversations.length > 0) {
+    if (conversationIdFromPath) {
+      setSelectedConversationId(conversationIdFromPath)
+    } else {
+      setSelectedConversationId(null)
+    }
+  }, [conversationIdFromPath])
+
+  // Handle legacy query parameter links (e.g. notifications) and rewrite to /chat/:id.
+  useEffect(() => {
+    const conversationIdFromUrl = searchParams
+      .get('conversation')
+      ?.trim()
+      .replace(/;+$/, '')
+    if (
+      conversationIdFromUrl &&
+      !conversationIdFromPath &&
+      conversations.length > 0
+    ) {
       // Check if the conversation exists in the loaded conversations
       const conversationExists = conversations.some(
         (conv) => conv.conversation_uuid === conversationIdFromUrl
       )
       if (conversationExists) {
-        setSelectedConversationId(conversationIdFromUrl)
-        // Remove the query parameter to clean up the URL
-        const newUrl = `${window.location.pathname}`
-        router.replace(newUrl)
+        router.replace(
+          `${chatBasePath}/${encodeURIComponent(conversationIdFromUrl)}`
+        )
       }
     }
-  }, [searchParams, conversations, router])
+  }, [
+    searchParams,
+    conversationIdFromPath,
+    conversations,
+    router,
+    chatBasePath,
+  ])
 
-  const handleConversationSelect = useCallback((conversationId: string) => {
-    setSelectedConversationId(conversationId)
-    // Reset unread count when selecting a conversation
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.conversation_uuid === conversationId
-          ? { ...conv, unread_count: 0 }
-          : conv
+  const handleConversationSelect = useCallback(
+    (conversationId: string) => {
+      setSelectedConversationId(conversationId)
+      if (conversationId !== conversationIdFromPath) {
+        router.push(`${chatBasePath}/${conversationId}`)
+      }
+      // Reset unread count when selecting a conversation
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.conversation_uuid === conversationId
+            ? { ...conv, unread_count: 0 }
+            : conv
+        )
       )
-    )
-  }, [])
+    },
+    [conversationIdFromPath, router, chatBasePath]
+  )
 
-  const handleNewConversation = useCallback((newConversation: Conversation) => {
-    setConversations((prev) => [newConversation, ...prev])
-    setSelectedConversationId(newConversation.conversation_uuid)
-  }, [])
+  const handleNewConversation = useCallback(
+    (newConversation: Conversation) => {
+      setConversations((prev) => [newConversation, ...prev])
+      setSelectedConversationId(newConversation.conversation_uuid)
+      router.push(`${chatBasePath}/${newConversation.conversation_uuid}`)
+    },
+    [router, chatBasePath]
+  )
 
   const handleConversationUpdate = useCallback(
     (updatedConversation: Conversation) => {
@@ -381,7 +427,7 @@ function ChatClient() {
           <ChatWindow
             conversationId={selectedConversationId}
             onConversationUpdate={handleConversationUpdate}
-            onBack={() => setSelectedConversationId(null)}
+            onBack={() => router.push(chatBasePath)}
           />
         ) : (
           <div className="flex-1 hidden md:flex flex-col items-center justify-center gap-4 text-center px-8">

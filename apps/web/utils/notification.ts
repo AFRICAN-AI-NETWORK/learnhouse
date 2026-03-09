@@ -1,100 +1,53 @@
-/**
- * Notification utilities: sound, permissions, desktop notifications
- */
+// Utility helpers for sounds, browser notifications, and permission requests.
 
-/**
- * Play notification sound
- */
-export const playNotificationSound = async () => {
+export const playNotificationSound = () => {
   try {
-    // Use a simple beep sound - you can replace with a custom sound file
-    const audioContext = new (window.AudioContext ||
-      (window as any).webkitAudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const gain = audioContext.createGain()
-
-    oscillator.connect(gain)
-    gain.connect(audioContext.destination)
-
-    oscillator.frequency.value = 800 // Hz
-    oscillator.type = 'sine'
-
-    gain.gain.setValueAtTime(0.3, audioContext.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
-
-    oscillator.start(audioContext.currentTime)
-    oscillator.stop(audioContext.currentTime + 0.5)
-  } catch (_error) {
-    // Silently fail if audio context is not supported
+    const audio = new Audio('/sounds/notification.mp3')
+    audio.volume = 0.5
+    audio.play().catch(() => {
+      // Autoplay may be blocked — silently ignore
+    })
+  } catch {
+    // Audio not supported
   }
 }
 
-/**
- * Request browser notification permission
- */
-export const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!('Notification' in window)) {
-    return false
+export const requestNotificationPermission =
+  async (): Promise<NotificationPermission> => {
+    if (!('Notification' in window)) return 'denied'
+    if (Notification.permission === 'granted') return 'granted'
+    if (Notification.permission === 'denied') return 'denied'
+    return Notification.requestPermission()
   }
 
-  if (Notification.permission === 'granted') {
-    return true
-  }
-
-  if (Notification.permission !== 'denied') {
-    try {
-      const permission = await Notification.requestPermission()
-      return permission === 'granted'
-    } catch (_error) {
-      return false
-    }
-  }
-
-  return false
+interface BrowserNotificationOptions {
+  body?: string
+  icon?: string
+  tag?: string
+  conversationId?: string
+  userId?: number
+  /** Called when the user clicks the browser notification. */
+  onClick?: () => void
 }
 
-/**
- * Show browser notification
- */
 export const showBrowserNotification = (
   title: string,
-  options?: NotificationOptions & { conversationId?: string; userId?: number }
+  options: BrowserNotificationOptions = {}
 ) => {
   if (!('Notification' in window) || Notification.permission !== 'granted') {
     return
   }
 
-  try {
-    const notification = new Notification(title, {
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      ...options,
-    })
+  const { body, icon = '/favicon.ico', tag, onClick } = options
 
-    // Click handler to focus window and potentially navigate
-    notification.onclick = () => {
-      window.focus()
-      if (options?.conversationId) {
-        // Navigation will be handled by the calling component
-        window.dispatchEvent(
-          new CustomEvent('notification-click', {
-            detail: {
-              conversationId: options.conversationId,
-              userId: options.userId,
-            },
-          })
-        )
-      }
-      notification.close()
-    }
-  } catch (_error) {
-    // Silently fail if browser notification creation fails
+  const notification = new Notification(title, { body, icon, tag })
+
+  notification.onclick = (event) => {
+    event.preventDefault()
+    // Bring the browser tab/window into focus
+    window.focus()
+    // Navigate to the relevant conversation
+    onClick?.()
+    notification.close()
   }
-}
-
-/**
- * Check if app window is currently focused
- */
-export const isAppFocused = (): boolean => {
-  return typeof document !== 'undefined' && document.hasFocus()
 }
