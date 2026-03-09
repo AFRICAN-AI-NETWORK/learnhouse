@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
 import {
   Send,
   Loader2,
@@ -1087,8 +1088,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="relative">
             <img
               src={
-                ensureAbsoluteUrl(otherParticipant.avatar_image || '') ||
-                '/empty_avatar.png'
+                otherParticipant.avatar_image
+                  ? getUserAvatarMediaDirectory(
+                      otherParticipant.user_uuid,
+                      otherParticipant.avatar_image
+                    )
+                  : '/empty_avatar.png'
               }
               alt={otherParticipant.username}
               className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
@@ -1141,8 +1146,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 {!isMine && (
                   <img
                     src={
-                      ensureAbsoluteUrl(otherParticipant.avatar_image || '') ||
-                      '/empty_avatar.png'
+                      otherParticipant.avatar_image
+                        ? getUserAvatarMediaDirectory(
+                            otherParticipant.user_uuid,
+                            otherParticipant.avatar_image
+                          )
+                        : '/empty_avatar.png'
                     }
                     alt={otherParticipant.username}
                     className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
@@ -1392,8 +1401,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="flex justify-start gap-2">
             <img
               src={
-                ensureAbsoluteUrl(otherParticipant.avatar_image || '') ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
+                otherParticipant.avatar_image
+                  ? getUserAvatarMediaDirectory(
+                      otherParticipant.user_uuid,
+                      otherParticipant.avatar_image
+                    )
+                  : '/empty_avatar.png'
               }
               alt={otherParticipant.username}
               className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"

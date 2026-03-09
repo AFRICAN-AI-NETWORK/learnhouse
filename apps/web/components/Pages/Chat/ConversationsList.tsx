@@ -7,6 +7,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { getBackendUrl } from '@services/config/config'
 import useWebSocket from '@/hooks/useWebSocket'
 import NewChatDialog from './NewChatDialog'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
 
 interface Participant {
   id: number
@@ -257,9 +258,14 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <img
-                      src={ensureAbsoluteUrl(
+                      src={
                         conversation.other_participant.avatar_image
-                      )}
+                          ? getUserAvatarMediaDirectory(
+                              conversation.other_participant.user_uuid,
+                              conversation.other_participant.avatar_image
+                            )
+                          : '/empty_avatar.png'
+                      }
                       alt={conversation.other_participant.username}
                       className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"
                     />
