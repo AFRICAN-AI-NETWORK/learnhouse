@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { getAPIUrl } from '@services/config/config'
+import { getAPIUrl, getUriWithoutOrg } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
 import {
@@ -68,6 +68,9 @@ function ChatClient() {
   const access_token = session?.data?.tokens?.access_token
   const current_user_id = session?.data?.user?.id
 
+  const isSessionLoading = session?.status === 'loading'
+  const isUserAuthenticated = !!session?.data?.user
+
   const { isConnected, addMessageListener, removeMessageListener } =
     useWebSocket(access_token, org_id)
 
@@ -75,6 +78,13 @@ function ChatClient() {
   const chatBasePath = /\/chat\/[^/]+$/.test(normalizedPathname)
     ? normalizedPathname.replace(/\/chat\/[^/]+$/, '/chat')
     : normalizedPathname || `/orgs/${orgslug}/chat`
+
+  useEffect(() => {
+    if (isSessionLoading) return
+    if (!isUserAuthenticated) {
+      router.replace(getUriWithoutOrg(`/login?orgslug=${orgslug}`))
+    }
+  }, [isSessionLoading, isUserAuthenticated, router, orgslug])
 
   useEffect(() => {
     if (!org_id || !session?.data?.tokens?.access_token) return
@@ -397,6 +407,10 @@ function ChatClient() {
       timeouts.clear()
     }
   }, [])
+
+  if (isSessionLoading || !isUserAuthenticated) {
+    return null
+  }
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#0f0f13]">
