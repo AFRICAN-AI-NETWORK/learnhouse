@@ -17,23 +17,49 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _column_exists(table_name: str, column_name: str) -> bool:
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = :table_name AND column_name = :column_name)"
+        ),
+        {"table_name": table_name, "column_name": column_name},
+    )
+    return result.scalar()
+
+
+def _index_exists(index_name: str) -> bool:
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text(
+            "SELECT EXISTS (SELECT 1 FROM pg_indexes "
+            "WHERE indexname = :index_name)"
+        ),
+        {"index_name": index_name},
+    )
+    return result.scalar()
+
+
 def upgrade() -> None:
     # Add org_id column to message_attachment for path namespacing
-    op.add_column(
-        "message_attachment",
-        sa.Column(
-            "org_id",
-            sa.Integer(),
-            sa.ForeignKey("organization.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-    )
-    op.create_index(
-        "idx_message_attachment_org",
-        "message_attachment",
-        ["org_id"],
-        unique=False,
-    )
+    if not _column_exists("message_attachment", "org_id"):
+        op.add_column(
+            "message_attachment",
+            sa.Column(
+                "org_id",
+                sa.Integer(),
+                sa.ForeignKey("organization.id", ondelete="SET NULL"),
+                nullable=True,
+            ),
+        )
+    if not _index_exists("idx_message_attachment_org"):
+        op.create_index(
+            "idx_message_attachment_org",
+            "message_attachment",
+            ["org_id"],
+            unique=False,
+        )
 
 
 def downgrade() -> None:
