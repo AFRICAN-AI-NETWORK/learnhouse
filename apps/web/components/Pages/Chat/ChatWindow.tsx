@@ -106,6 +106,19 @@ interface ChatWindowProps {
   onBack?: () => void
 }
 
+const SUPPORTED_CHAT_EXTENSIONS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
+  '.mp4',
+  '.webm',
+  '.pdf',
+]
+
+const CHAT_FILE_ACCEPT = SUPPORTED_CHAT_EXTENSIONS.join(',')
+
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
   onConversationUpdate,
@@ -552,7 +565,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      setSelectedFiles((prev) => [...prev, ...Array.from(files)])
+      const incomingFiles = Array.from(files)
+      const supportedFiles = incomingFiles.filter((file) => {
+        const ext = file.name.includes('.')
+          ? `.${file.name.split('.').pop()?.toLowerCase()}`
+          : ''
+        return SUPPORTED_CHAT_EXTENSIONS.includes(ext)
+      })
+      const rejectedFiles = incomingFiles.filter(
+        (file) => !supportedFiles.includes(file)
+      )
+
+      if (supportedFiles.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...supportedFiles])
+      }
+
+      if (rejectedFiles.length > 0) {
+        const rejectedNames = rejectedFiles.map((file) => file.name).join(', ')
+        setError(
+          `Unsupported file type: ${rejectedNames}. Allowed: ${SUPPORTED_CHAT_EXTENSIONS.join(', ')}`
+        )
+      }
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -724,7 +757,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
+      let errorText = ''
+      try {
+        const errorJson = await response.json()
+        errorText =
+          typeof errorJson?.detail === 'string'
+            ? errorJson.detail
+            : JSON.stringify(errorJson)
+      } catch {
+        errorText = await response.text()
+      }
       throw new Error(
         `Failed to upload attachment: ${response.status} ${errorText}`
       )
@@ -835,6 +877,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       if (hasFiles) {
         const uploadedAttachments: Attachment[] = []
+        const failedUploads: string[] = []
         for (const file of filesToUpload) {
           try {
             const attachment = await uploadAttachment(
@@ -843,8 +886,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             )
             uploadedAttachments.push(attachment)
           } catch (error) {
-            // Error uploading file
+            const reason =
+              error instanceof Error ? error.message : 'Unknown upload error'
+            failedUploads.push(`${file.name} (${reason})`)
           }
+        }
+
+        if (failedUploads.length > 0) {
+          setError(
+            `Some attachments failed to upload: ${failedUploads.join('; ')}`
+          )
         }
 
         const fullMessage = await fetchFullMessage(serverMessage.message_uuid)
@@ -1343,7 +1394,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             multiple
             onChange={handleFileSelect}
             className="hidden"
-            accept="*/*"
+            accept={CHAT_FILE_ACCEPT}
           />
           <button
             type="button"
