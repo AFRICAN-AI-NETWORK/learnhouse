@@ -1,6 +1,7 @@
-import { useContext } from 'react'
+import { createElement, useContext } from 'react'
 import toast from 'react-hot-toast'
 import { NotificationContext } from '@components/Contexts/NotificationContext'
+import MessageNotificationToast from '@components/Objects/StyledElements/Toast/MessageNotificationToast'
 import {
   playNotificationSound,
   showBrowserNotification,
@@ -54,8 +55,23 @@ export const useNotifications = () => {
       userId,
     } = options
 
-    // Show in-app toast
-    showToast(`${senderName}: ${messagePreview}`, { duration })
+    // Show in-app custom toast UI for chat messages
+    toast.custom(
+      (toastInstance) =>
+        createElement(MessageNotificationToast, {
+          senderName,
+          messagePreview,
+          onClose: () => toast.dismiss(toastInstance.id),
+        }),
+      {
+        duration,
+        style: {
+          background: 'transparent',
+          boxShadow: 'none',
+          padding: 0,
+        },
+      }
+    )
 
     // Play sound if enabled
     if (playSound) {
@@ -66,7 +82,7 @@ export const useNotifications = () => {
     if (showDesktop && !context.windowFocused) {
       showBrowserNotification(senderName, {
         body: messagePreview,
-        tag: `message-${conversationId}`, // Replace previous notif from same conversation
+        tag: `message-${conversationId}`,
         conversationId,
         userId,
       })
