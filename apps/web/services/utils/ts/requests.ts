@@ -113,6 +113,7 @@ export const errorHandling = async (res: any) => {
   try {
     return text ? JSON.parse(text) : {}
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error('Failed to parse JSON in errorHandling:', text)
     return {}
   }
@@ -133,6 +134,7 @@ export const getResponseMetadata = async (
     const text = await fetch_result.text()
     json = text ? JSON.parse(text) : {}
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error('Failed to parse JSON in getResponseMetadata:', e)
     json = { detail: 'Invalid JSON response from server' }
   }
