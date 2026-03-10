@@ -150,8 +150,15 @@ const getLEARNHOUSE_API_URL = () => {
   // Check for NEXT_PUBLIC_LEARNHOUSE_API_URL first, then fallback to NEXT_PUBLIC_API_URL for backward compatibility
 
   const learnhouseApiUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_API_URL')
-
   const apiUrl = learnhouseApiUrl || getConfig('NEXT_PUBLIC_API_URL')
+
+  // Check for internal API URL override for server-side requests
+  if (typeof window === 'undefined') {
+    const internalApiUrl = getConfig('LEARNHOUSE_API_URL_INTERNAL')
+    if (internalApiUrl && internalApiUrl.trim()) {
+      return normalizeApiUrl(internalApiUrl)
+    }
+  }
 
   // In production, fail fast if API URL is not configured
   if (
@@ -212,6 +219,17 @@ const getLEARNHOUSE_BACKEND_URL = () => {
   // Check for NEXT_PUBLIC_LEARNHOUSE_BACKEND_URL first, then fallback to NEXT_PUBLIC_API_URL (without /api/v1/)
   const learnhouseBackendUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_BACKEND_URL')
   const backendUrl = learnhouseBackendUrl || getConfig('NEXT_PUBLIC_API_URL')
+
+  // Check for internal backend URL override for server-side requests
+  if (typeof window === 'undefined') {
+    const internalBackendUrl = getConfig('LEARNHOUSE_BACKEND_URL_INTERNAL')
+    if (internalBackendUrl && internalBackendUrl.trim()) {
+      return (
+        internalBackendUrl.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') +
+        '/'
+      )
+    }
+  }
   if (backendUrl && backendUrl.trim()) {
     // Remove /api/v1/ if present to get base URL
     return backendUrl.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') + '/'

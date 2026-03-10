@@ -152,8 +152,17 @@ async def update_chapter(
             status_code=status.HTTP_409_CONFLICT, detail="Chapter does not exist"
         )
 
-    # RBAC check
-    await courses_rbac_check_for_chapters(request, chapter.chapter_uuid, current_user, "update", db_session)
+    # Get Course for RBAC check
+    statement = select(Course).where(Course.id == chapter.course_id)
+    course = db_session.exec(statement).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+
+    # RBAC check - using course_uuid so contributors are recognized
+    await courses_rbac_check_for_chapters(request, course.course_uuid, current_user, "update", db_session)
 
     # Update only the fields that were passed in
     for var, value in vars(chapter_object).items():
@@ -187,8 +196,17 @@ async def delete_chapter(
             status_code=status.HTTP_409_CONFLICT, detail="Chapter does not exist"
         )
 
-    # RBAC check
-    await courses_rbac_check_for_chapters(request, chapter.chapter_uuid, current_user, "delete", db_session)
+    # Get Course for RBAC check
+    statement = select(Course).where(Course.id == chapter.course_id)
+    course = db_session.exec(statement).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Course not found"
+        )
+
+    # RBAC check - using course_uuid so contributors are recognized
+    await courses_rbac_check_for_chapters(request, course.course_uuid, current_user, "delete", db_session)
 
     # Remove all linked chapter activities
     statement = select(ChapterActivity).where(ChapterActivity.chapter_id == chapter.id)

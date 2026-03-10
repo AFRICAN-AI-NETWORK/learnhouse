@@ -109,23 +109,13 @@ export const errorHandling = async (res: any) => {
     error.status = res.status
     throw error
   }
-
+  const text = await res.text()
   try {
-    return await res.json()
-  } catch (jsonError) {
-    // If JSON parsing fails, try to get text response for better error messages
-    try {
-      const text = await res.text()
-      const error: any = new Error(
-        `Invalid JSON response: ${text.substring(0, 100)}`
-      )
-      error.status = res.status
-      throw error
-    } catch {
-      const error: any = new Error('Failed to parse response')
-      error.status = res.status
-      throw error
-    }
+    return text ? JSON.parse(text) : {}
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to parse JSON in errorHandling:', text)
+    return {}
   }
 }
 
@@ -139,8 +129,17 @@ type CustomResponseTyping = {
 export const getResponseMetadata = async (
   fetch_result: any
 ): Promise<CustomResponseTyping> => {
-  const json = await fetch_result.json()
-  if (fetch_result.status === 200) {
+  let json = {}
+  try {
+    const text = await fetch_result.text()
+    json = text ? JSON.parse(text) : {}
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to parse JSON in getResponseMetadata:', e)
+    json = { detail: 'Invalid JSON response from server' }
+  }
+
+  if (fetch_result.status === 200 || fetch_result.status === 201) {
     return {
       success: true,
       data: json,
