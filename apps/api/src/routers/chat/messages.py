@@ -255,6 +255,45 @@ async def upload_attachment(
         conversation_uuid=conversation.conversation_uuid,
     )
 
+    # Push a realtime update so active recipients can render attachments
+    # without waiting for a manual refresh.
+    try:
+        from src.services.chat.websocket_manager import connection_manager
+
+        attachments = db.exec(
+            select(MessageAttachment).where(MessageAttachment.message_id == message.id)
+        ).all()
+
+        attachment_payload = [
+            {
+                "attachment_uuid": att.attachment_uuid,
+                "file_name": att.file_name,
+                "file_type": att.file_type,
+                "file_size": att.file_size,
+                "file_url": att.file_url,
+                "thumbnail_url": att.thumbnail_url,
+                "upload_status": att.upload_status,
+            }
+            for att in attachments
+        ]
+
+        ws_event = {
+            "type": "message_attachments_updated",
+            "data": {
+                "message_uuid": message.message_uuid,
+                "conversation_id": conversation.conversation_uuid,
+                "attachments": attachment_payload,
+                "updated_at": message.updated_at.isoformat() if message.updated_at else None,
+            },
+        }
+
+        participant_ids = [conversation.participant_one_id, conversation.participant_two_id]
+        await connection_manager.broadcast_to_conversation(ws_event, participant_ids)
+    except Exception as e:
+        import logging
+
+        logging.warning(f"Failed to send attachment websocket update: {e}")
+
     return attachment
 
 

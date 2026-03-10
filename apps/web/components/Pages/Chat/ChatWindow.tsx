@@ -483,6 +483,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     )
   }, [])
 
+  const handleMessageAttachmentsUpdated = useCallback((event: any) => {
+    const data = event.data
+    if (!data || data.conversation_id !== conversationIdRef.current) return
+
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.message_uuid === data.message_uuid
+          ? {
+              ...msg,
+              attachments: data.attachments || [],
+              updated_at: data.updated_at || msg.updated_at,
+            }
+          : msg
+      )
+    )
+  }, [])
+
   const scrollToLatestMessage = useCallback(
     (behavior: ScrollBehavior = 'auto') => {
       const container = messagesContainerRef.current
@@ -534,12 +551,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     addMessageListener('message_read', handleMessageRead)
     addMessageListener('message_edited', handleMessageEdited)
     addMessageListener('message_deleted', handleMessageDeleted)
+    addMessageListener(
+      'message_attachments_updated',
+      handleMessageAttachmentsUpdated
+    )
     return () => {
       removeMessageListener('new_message', handleNewMessage)
       removeMessageListener('user_typing', handleUserTyping)
       removeMessageListener('message_read', handleMessageRead)
       removeMessageListener('message_edited', handleMessageEdited)
       removeMessageListener('message_deleted', handleMessageDeleted)
+      removeMessageListener(
+        'message_attachments_updated',
+        handleMessageAttachmentsUpdated
+      )
     }
   }, [
     isConnected,
@@ -548,6 +573,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     handleMessageRead,
     handleMessageEdited,
     handleMessageDeleted,
+    handleMessageAttachmentsUpdated,
     addMessageListener,
     removeMessageListener,
     conversationId,
