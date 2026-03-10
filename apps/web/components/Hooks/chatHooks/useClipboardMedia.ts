@@ -5,6 +5,43 @@
 
 import { useCallback } from 'react'
 
+type ClipboardCopyFailureReason =
+  | 'clipboard-write-unavailable'
+  | 'clipboard-item-unavailable'
+  | 'mime-unsupported'
+  | 'write-failed'
+
+type ClipboardCopyResult =
+  | { ok: true }
+  | { ok: false; reason: ClipboardCopyFailureReason }
+
+const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  json: 'application/json',
+  zip: 'application/zip',
+}
+
+const inferMimeType = (fileName?: string, preferredType?: string): string => {
+  if (preferredType && preferredType !== 'application/octet-stream') {
+    return preferredType
+  }
+
+  const extension = fileName?.split('.').pop()?.toLowerCase()
+  if (extension && MIME_TYPE_BY_EXTENSION[extension]) {
+    return MIME_TYPE_BY_EXTENSION[extension]
+  }
+
+  return preferredType || 'application/octet-stream'
+}
+
 /**
  * Convert image blob to PNG format for maximum compatibility
  */
@@ -81,6 +118,64 @@ export const useClipboardMedia = () => {
   }, [])
 
   /**
+   * Copy any attachment blob to clipboard using the best available MIME type.
+   * Browser support for non-image binary clipboard formats varies, so callers
+   * should still keep a text fallback.
+   */
+  const copyAttachmentBlob = useCallback(
+    async ({
+      blob,
+      fileName,
+      mimeType,
+    }: {
+      blob: Blob
+      fileName?: string
+      mimeType?: string
+    }): Promise<ClipboardCopyResult> => {
+      try {
+        if (!navigator.clipboard?.write) {
+          return { ok: false, reason: 'clipboard-write-unavailable' }
+        }
+
+        if (blob.type.startsWith('image/')) {
+          return (await copyImageBlob(blob))
+            ? { ok: true }
+            : { ok: false, reason: 'write-failed' }
+        }
+
+        if (typeof ClipboardItem === 'undefined') {
+          return { ok: false, reason: 'clipboard-item-unavailable' }
+        }
+
+        const clipboardType = inferMimeType(fileName, mimeType || blob.type)
+        const normalizedBlob =
+          blob.type === clipboardType
+            ? blob
+            : new Blob([blob], { type: clipboardType })
+
+        if (
+          'supports' in ClipboardItem &&
+          typeof ClipboardItem.supports === 'function' &&
+          !ClipboardItem.supports(clipboardType)
+        ) {
+          return { ok: false, reason: 'mime-unsupported' }
+        }
+
+        const clipboardItem = new ClipboardItem({
+          [clipboardType]: normalizedBlob,
+        })
+
+        await navigator.clipboard.write([clipboardItem])
+        return { ok: true }
+      } catch (error) {
+        console.warn('Failed to copy attachment blob:', error)
+        return { ok: false, reason: 'write-failed' }
+      }
+    },
+    [copyImageBlob]
+  )
+
+  /**
    * Copy text to clipboard
    */
   const copyText = useCallback(async (text: string): Promise<boolean> => {
@@ -110,6 +205,7 @@ export const useClipboardMedia = () => {
   }, [])
 
   return {
+    copyAttachmentBlob,
     copyImageBlob,
     copyText,
   }

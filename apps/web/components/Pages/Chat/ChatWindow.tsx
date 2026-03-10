@@ -74,7 +74,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
-  const { copyImageBlob, copyText } = useClipboardMedia()
+  const { copyAttachmentBlob, copyText } = useClipboardMedia()
   const {
     selectedFiles,
     error: fileUploadError,
@@ -586,19 +586,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
     const textContent = message.content
     const hasAttachments = message.attachments && message.attachments.length > 0
+    const hasNonImageAttachments =
+      hasAttachments &&
+      message.attachments.some(
+        (attachment) => !attachment.file_type.startsWith('image/')
+      )
 
     try {
-      // Strategy 1: Try to copy media (images only - browser limitation)
+      // Strategy 1: Try to copy the first attachment as a real clipboard blob.
+      // This works for images and, when browser support allows it, documents.
       if (hasAttachments) {
-        const imageAttachments = message.attachments.filter((att) =>
-          att.file_type.startsWith('image/')
-        )
+        let clipboardFailureReason:
+          | 'clipboard-write-unavailable'
+          | 'clipboard-item-unavailable'
+          | 'mime-unsupported'
+          | 'write-failed'
+          | null = null
 
-        // Copy the first image if available
-        if (imageAttachments.length > 0) {
+        for (const attachment of message.attachments) {
           try {
-            const firstImage = imageAttachments[0]
-            const absoluteUrl = ensureAbsoluteUrl(firstImage.file_url)
+            const absoluteUrl = ensureAbsoluteUrl(attachment.file_url)
             const response = await fetch(absoluteUrl, {
               headers: access_token
                 ? { Authorization: `Bearer ${access_token}` }
@@ -607,19 +614,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
             if (response.ok) {
               const blob = await response.blob()
-              const success = await copyImageBlob(blob)
+              const result = await copyAttachmentBlob({
+                blob,
+                fileName: attachment.file_name,
+                mimeType: attachment.file_type,
+              })
 
-              if (success) {
+              if (result.ok) {
                 toast.success(t('chat.copied') || 'Copied', {
                   duration: 2000,
                   position: 'bottom-center',
                 })
                 return
               }
+
+              clipboardFailureReason = result.reason
             }
           } catch (error) {
-            console.warn('Failed to copy image:', error)
-            // Fall through to text copy
+            console.warn('Failed to copy attachment:', error)
           }
         }
 
@@ -633,11 +645,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ? `${textContent}\n\n${attachmentInfo}`
             : attachmentInfo
 
-        await copyText(textToCopy)
-        toast.success(t('chat.copied') || 'Copied', {
-          duration: 2000,
-          position: 'bottom-center',
-        })
+        const didCopyText = await copyText(textToCopy)
+        if (!didCopyText) {
+          throw new Error('Failed to copy attachment fallback text')
+        }
+
+        if (hasNonImageAttachments) {
+          const fallbackMessage =
+            clipboardFailureReason === 'mime-unsupported' ||
+            clipboardFailureReason === 'clipboard-item-unavailable' ||
+            clipboardFailureReason === 'clipboard-write-unavailable'
+              ? 'Document copied as text only. This browser cannot place that file type on the clipboard as a pasteable file.'
+              : 'Could not copy the document file itself. Copied its details as text instead.'
+
+          toast(fallbackMessage, {
+            duration: 3500,
+            position: 'bottom-center',
+            icon: '📋',
+          })
+        } else {
+          toast.success(t('chat.copied') || 'Copied', {
+            duration: 2000,
+            position: 'bottom-center',
+          })
+        }
         return
       }
 
