@@ -5,7 +5,7 @@ import { Search, Plus, Loader2, MessageSquareDashed } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getBackendUrl } from '@services/config/config'
-import useWebSocket from '@/hooks/useWebSocket'
+import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 import NewChatDialog from './NewChatDialog'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 
@@ -68,7 +68,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   const access_token = session?.data?.tokens?.access_token
   const org_id = org?.id
 
-  const { isConnected } = useWebSocket(access_token, org_id)
+  const { isConnected } = useGlobalChat()
 
   const ensureAbsoluteUrl = (url?: string) => {
     if (!url) return '/empty_avatar.png'
@@ -212,7 +212,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
               placeholder={t('chat.search_conversations')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/25 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.07] transition-all duration-200"
+              className="w-full bg-white/5 border border-white/8 text-white placeholder-white/25 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-indigo-500/60 focus:bg-white/7 transition-all duration-200"
             />
           </div>
         </div>
@@ -225,7 +225,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-white/4 border border-white/6 flex items-center justify-center">
                 <MessageSquareDashed size={20} className="text-white/20" />
               </div>
               <p className="text-white/30 text-sm">
@@ -252,11 +252,11 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                   className={`group flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-150 ${
                     isSelected
                       ? 'bg-indigo-500/15 border border-indigo-500/25'
-                      : 'hover:bg-white/[0.04] border border-transparent'
+                      : 'hover:bg-white/4 border border-transparent'
                   }`}
                 >
                   {/* Avatar */}
-                  <div className="relative flex-shrink-0">
+                  <div className="relative shrink-0">
                     <img
                       src={
                         conversation.other_participant.avatar_image
@@ -267,7 +267,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                           : '/empty_avatar.png'
                       }
                       alt={conversation.other_participant.username}
-                      className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"
+                      className="w-11 h-11 rounded-full ring-2 ring-white/6 object-cover"
                     />
                     <span
                       className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-white/20'} border-2 border-[#13131a]`}
@@ -290,7 +290,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                         )}
                       </div>
                       {conversation.last_message_at && (
-                        <span className="text-[11px] text-white/30 flex-shrink-0 tabular-nums">
+                        <span className="text-[11px] text-white/30 shrink-0 tabular-nums">
                           {formatTime(conversation.last_message_at)}
                         </span>
                       )}
@@ -302,7 +302,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                         {getPreviewText(conversation)}
                       </div>
                       {conversation.unread_count > 0 && (
-                        <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center leading-none">
+                        <span className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center leading-none">
                           {conversation.unread_count > 9
                             ? '9+'
                             : conversation.unread_count}

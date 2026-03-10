@@ -24,7 +24,7 @@ import {
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl, getBackendUrl } from '@services/config/config'
-import useWebSocket from '@/hooks/useWebSocket'
+import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 import { useNotifications } from '@/hooks/useNotifications'
 import {
   DropdownMenu,
@@ -190,7 +190,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     sendMessage: sendWebSocketMessage,
     addMessageListener,
     removeMessageListener,
-  } = useWebSocket(access_token, org_id)
+  } = useGlobalChat()
 
   const fetchFullMessage = useCallback(
     async (messageUuid: string): Promise<Message | null> => {
@@ -1062,13 +1062,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#0f0f13]">
       {/* Header */}
-      <div className="flex-shrink-0 px-5 py-3.5 border-b border-white/[0.06] bg-[#13131a] flex items-center justify-between">
+      <div className="shrink-0 px-5 py-3.5 border-b border-white/6 bg-[#13131a] flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Back button for mobile/tablet - visible only on small to medium devices */}
           {onBack && (
             <button
               onClick={onBack}
-              className="md:hidden flex-shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="md:hidden shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
               aria-label="Back to conversations"
             >
               <svg
@@ -1085,7 +1085,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </svg>
             </button>
           )}
-          <div className="relative">
+          <div className="relative shrink-0">
             <img
               src={
                 otherParticipant.avatar_image
@@ -1096,7 +1096,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   : '/empty_avatar.png'
               }
               alt={otherParticipant.username}
-              className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
+              className="w-9 h-9 rounded-full ring-2 ring-white/6 object-cover"
             />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
           </div>
@@ -1130,7 +1130,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/4 border border-white/6 flex items-center justify-center">
               <span className="text-xl">👋</span>
             </div>
             <p className="text-white/30 text-sm">{t('chat.no_messages')}</p>
@@ -1154,7 +1154,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         : '/empty_avatar.png'
                     }
                     alt={otherParticipant.username}
-                    className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
+                    className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
                   />
                 )}
 
@@ -1168,7 +1168,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
                         isMine
                           ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
-                          : 'bg-white/[0.07] text-white/85 rounded-bl-sm border border-white/[0.06]'
+                          : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
                       }`}
                     >
                       {message.is_deleted ? (
@@ -1180,7 +1180,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                           {/* Reply context */}
                           {message.replied_message && (
                             <div
-                              className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/[0.08] border-indigo-400/60'}`}
+                              className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/8 border-indigo-400/60'}`}
                             >
                               <div className="flex items-center gap-1 mb-0.5">
                                 <Reply size={10} className="opacity-60" />
@@ -1223,7 +1223,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                   return (
                                     <div
                                       key={attachment.attachment_uuid}
-                                      className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/[0.08]'}`}
+                                      className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/8'}`}
                                     >
                                       {isImage && absoluteFileUrl ? (
                                         <div className="relative group">
@@ -1262,7 +1262,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                         <>
                                           <IconComponent
                                             size={18}
-                                            className="flex-shrink-0"
+                                            className="shrink-0"
                                           />
                                           <div className="flex-1 min-w-0">
                                             <p className="text-xs font-medium truncate">
@@ -1283,7 +1283,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                                   attachment.file_name
                                                 )
                                               }
-                                              className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                                              className="shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
                                               title={`Download ${attachment.file_name}`}
                                             >
                                               <Download size={14} />
@@ -1305,7 +1305,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/60"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/8 flex items-center justify-center text-white/60"
                             aria-label="Message actions"
                           >
                             <MoreHorizontal size={14} />
@@ -1342,7 +1342,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/60"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/8 flex items-center justify-center text-white/60"
                             aria-label="Message actions"
                           >
                             <MoreHorizontal size={14} />
@@ -1409,9 +1409,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   : '/empty_avatar.png'
               }
               alt={otherParticipant.username}
-              className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
+              className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
             />
-            <div className="bg-white/[0.07] border border-white/[0.06] px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
+            <div className="bg-white/7 border border-white/6 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
               {[0, 150, 300].map((delay) => (
                 <div
                   key={delay}
@@ -1434,7 +1434,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 px-4 py-3 border-t border-white/[0.06] bg-[#13131a]">
+      <div className="shrink-0 px-4 py-3 border-t border-white/6 bg-[#13131a]">
         {editingMessage && (
           <div className="mb-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/10">
             <div className="flex items-start justify-between gap-3">
@@ -1463,10 +1463,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Reply
-                    size={12}
-                    className="text-indigo-300/90 flex-shrink-0"
-                  />
+                  <Reply size={12} className="text-indigo-300/90 shrink-0" />
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-300/90">
                     Replying to{' '}
                     {replyingToMessage.sender_id === current_user_id
@@ -1482,7 +1479,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <button
                 type="button"
                 onClick={cancelReply}
-                className="p-1 rounded-md hover:bg-white/10 text-white/60 hover:text-white/90 flex-shrink-0"
+                className="p-1 rounded-md hover:bg-white/10 text-white/60 hover:text-white/90 shrink-0"
                 aria-label="Cancel reply"
               >
                 <X size={14} />
@@ -1500,7 +1497,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               return (
                 <div
                   key={index}
-                  className="flex items-center gap-2 bg-white/[0.08] border border-white/[0.10] rounded-lg px-3 py-2 text-xs"
+                  className="flex items-center gap-2 bg-white/8 border border-white/10 rounded-lg px-3 py-2 text-xs"
                 >
                   {isImage ? (
                     <ImageIcon size={14} className="text-white/60" />
@@ -1550,7 +1547,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSendingMessage || isUpdatingMessage}
-            className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Paperclip size={18} />
           </button>
@@ -1575,7 +1572,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               }}
               onBlur={handleTypingStop}
               disabled={isUpdatingMessage}
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40 pr-12"
+              className="w-full bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"
             />
           </div>
           <button
@@ -1585,7 +1582,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               isUpdatingMessage ||
               (!messageInput.trim() && selectedFiles.length === 0)
             }
-            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
           >
             {isSendingMessage || isUpdatingMessage ? (
               <Loader2 size={16} className="animate-spin" />
@@ -1604,7 +1601,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           }
         }}
       >
-        <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] text-white">
+        <DialogContent className="max-w-md bg-[#17171f] border border-white/8 text-white">
           <DialogHeader>
             <DialogTitle className="text-white">Delete message?</DialogTitle>
             <DialogDescription className="text-white/70">
@@ -1617,7 +1614,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               onClick={() => setDeleteTargetMessage(null)}
               disabled={isDeletingMessage}
-              className="h-9 px-4 rounded-md border border-white/[0.12] text-white/80 hover:bg-white/[0.06] disabled:opacity-40"
+              className="h-9 px-4 rounded-md border border-white/12 text-white/80 hover:bg-white/6 disabled:opacity-40"
             >
               {t('common.cancel')}
             </button>

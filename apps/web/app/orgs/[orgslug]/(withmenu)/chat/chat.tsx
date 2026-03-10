@@ -13,7 +13,7 @@ import {
   useSearchParams,
 } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
-import useWebSocket from '@/hooks/useWebSocket'
+import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 
 interface Conversation {
   id: number
@@ -72,7 +72,7 @@ function ChatClient() {
   const isUserAuthenticated = !!session?.data?.user
 
   const { isConnected, addMessageListener, removeMessageListener } =
-    useWebSocket(access_token, org_id)
+    useGlobalChat()
 
   const normalizedPathname = pathname?.replace(/\/$/, '') || ''
   const chatBasePath = /\/chat\/[^/]+$/.test(normalizedPathname)
@@ -418,7 +418,7 @@ function ChatClient() {
       <div
         className={`${
           selectedConversationId ? 'hidden md:flex' : 'flex'
-        } w-full md:w-[320px] lg:w-[360px] flex-shrink-0 flex-col overflow-hidden border-r border-white/[0.06] bg-[#13131a]`}
+        } w-full md:w-[320px] lg:w-[360px] shrink-0 flex-col overflow-hidden border-r border-white/6 bg-[#13131a]`}
       >
         <ConversationsList
           conversations={conversations}
