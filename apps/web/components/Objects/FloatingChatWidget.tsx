@@ -13,6 +13,8 @@ import { Conversation } from '@/types/chatTypes'
 import { useConversationWebSocket } from '@components/Hooks/chatHooks'
 import useWebSocket from '@/hooks/useWebSocket'
 
+const floatingConversationListCache = new Map<number, Conversation[]>()
+
 export default function FloatingChatWidget() {
   const { t } = useTranslation()
   const params = useParams()
@@ -56,10 +58,16 @@ export default function FloatingChatWidget() {
   useEffect(() => {
     if (!org_id || !access_token || !isChatOpen) return
 
+    const cachedConversations = floatingConversationListCache.get(org_id)
+    if (cachedConversations) {
+      setConversations(cachedConversations)
+      setIsLoadingConversations(false)
+    } else {
+      setIsLoadingConversations(true)
+    }
+
     const loadConversations = async () => {
       try {
-        setIsLoadingConversations(true)
-
         // Add timeout for fetch request (10 seconds)
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000)
@@ -82,6 +90,7 @@ export default function FloatingChatWidget() {
           try {
             const data = JSON.parse(text)
             setConversations(data)
+            floatingConversationListCache.set(org_id, data)
           } catch (jsonError) {
             // Failed to parse conversations response - ignore silently
           }
@@ -314,6 +323,11 @@ export default function FloatingChatWidget() {
             ) : (
               <ChatWindow
                 conversationId={selectedConversationId}
+                conversationData={
+                  conversations.find(
+                    (conv) => conv.conversation_uuid === selectedConversationId
+                  ) ?? null
+                }
                 onBack={handleBackToList}
                 onConversationUpdate={handleConversationUpdate}
               />

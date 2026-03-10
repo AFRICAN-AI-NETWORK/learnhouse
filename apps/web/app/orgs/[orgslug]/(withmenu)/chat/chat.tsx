@@ -43,6 +43,8 @@ interface Conversation {
   }
 }
 
+const conversationListCache = new Map<number, Conversation[]>()
+
 function ChatClient() {
   const { t } = useTranslation()
   const params = useParams()
@@ -89,9 +91,16 @@ function ChatClient() {
   useEffect(() => {
     if (!org_id || !session?.data?.tokens?.access_token) return
 
+    const cachedConversations = conversationListCache.get(org_id)
+    if (cachedConversations) {
+      setConversations(cachedConversations)
+      setIsLoadingConversations(false)
+    } else {
+      setIsLoadingConversations(true)
+    }
+
     const loadConversations = async () => {
       try {
-        setIsLoadingConversations(true)
         const response = await fetch(
           `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
           {
@@ -104,6 +113,7 @@ function ChatClient() {
         if (response.ok) {
           const data = await response.json()
           setConversations(data)
+          conversationListCache.set(org_id, data)
         }
       } catch (error) {
         // Error loading conversations
@@ -440,6 +450,11 @@ function ChatClient() {
         {selectedConversationId ? (
           <ChatWindow
             conversationId={selectedConversationId}
+            conversationData={
+              conversations.find(
+                (conv) => conv.conversation_uuid === selectedConversationId
+              ) ?? null
+            }
             onConversationUpdate={handleConversationUpdate}
             onBack={() => router.push(chatBasePath)}
           />

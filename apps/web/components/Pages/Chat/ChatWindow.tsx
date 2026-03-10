@@ -32,7 +32,6 @@ import {
 import {
   Attachment,
   Message,
-  Conversation,
   ChatWindowProps,
   CHAT_FILE_ACCEPT,
 } from '../../../types/chatTypes'
@@ -47,6 +46,7 @@ import { TypingIndicator } from './components/chat/TypingIndicator'
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
+  conversationData,
   onConversationUpdate,
   onBack,
 }) => {
@@ -54,7 +54,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const session = useLHSession() as any
   const org = useOrg() as any
   const [messages, setMessages] = useState<Message[]>([])
-  const [conversation, setConversation] = useState<Conversation | null>(null)
+  const conversation = conversationData ?? null
   const [messageInput, setMessageInput] = useState('')
   const [isLoadingMessages, setIsLoadingMessages] = useState(true)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
@@ -78,6 +78,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
   const messageItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const messageCacheRef = useRef<Map<string, Message[]>>(new Map())
   const { copyAttachmentBlob, copyText } = useClipboardMedia()
   const {
     selectedFiles,
@@ -100,13 +101,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const conversationIdRef = useRef(conversationId)
   const currentUserIdRef = useRef(current_user_id)
-  const conversationRef = useRef(conversation)
 
   useEffect(() => {
     conversationIdRef.current = conversationId
     currentUserIdRef.current = current_user_id
-    conversationRef.current = conversation
-  }, [conversationId, current_user_id, conversation])
+  }, [conversationId, current_user_id])
 
   // Request notification permission on mount
   useEffect(() => {
@@ -250,39 +249,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   }, [])
 
-  useEffect(() => {
-    if (!org_id || !access_token || !conversationId) return
-
-    const loadConversation = async () => {
-      try {
-        setIsLoadingMessages(true)
-        const response = await fetch(
-          `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-        if (response.ok) {
-          const data = await response.json()
-          const conv = data.find(
-            (c: Conversation) => c.conversation_uuid === conversationId
-          )
-          if (conv) {
-            setConversation(conv)
-            onConversationUpdate(conv)
-          }
-        }
-      } catch (error) {
-        // Error loading conversation
-      }
-    }
-
-    loadConversation()
-  }, [org_id, access_token, conversationId, onConversationUpdate])
-
   const markMessageAsRead = useCallback(
     async (messageUuid: string) => {
       try {
@@ -310,9 +276,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     if (!access_token || !conversationId) return
 
+    const cachedMessages = messageCacheRef.current.get(conversationId)
+    if (cachedMessages) {
+      setMessages(cachedMessages)
+      setIsLoadingMessages(false)
+    } else {
+      setMessages([])
+      setIsLoadingMessages(true)
+    }
+
     const loadMessages = async () => {
       try {
-        setIsLoadingMessages(true)
         const response = await fetch(
           `${getAPIUrl()}chat/messages/conversation/${conversationId}`,
           {
@@ -324,8 +298,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )
         if (response.ok) {
           const data = await response.json()
-          setMessages(data.reverse())
-          data.forEach((msg: Message) => {
+          const normalizedMessages = data.reverse()
+          messageCacheRef.current.set(conversationId, normalizedMessages)
+          setMessages(normalizedMessages)
+          normalizedMessages.forEach((msg: Message) => {
             if (
               msg.receiver_id === current_user_id &&
               !msg.read_receipt?.read_at
@@ -343,6 +319,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
     loadMessages()
   }, [access_token, conversationId, current_user_id, markMessageAsRead])
+
+  useEffect(() => {
+    if (!conversationId) return
+
+    if (messages.length > 0 || messageCacheRef.current.has(conversationId)) {
+      messageCacheRef.current.set(conversationId, messages)
+    }
+  }, [conversationId, messages])
 
   const handleNewMessage = useCallback(
     async (event: any) => {

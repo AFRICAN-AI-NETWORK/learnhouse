@@ -75,6 +75,7 @@ export interface Conversation {
 
 export interface ChatWindowProps {
   conversationId: string
+  conversationData?: Conversation | null
   onConversationUpdate: (conversation: Conversation) => void
   onBack?: () => void
 }
