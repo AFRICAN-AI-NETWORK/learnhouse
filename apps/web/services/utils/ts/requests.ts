@@ -103,13 +103,19 @@ export const swrFetcher = async (url: string, token?: string) => {
   return res
 }
 
-export const errorHandling = (res: any) => {
+export const errorHandling = async (res: any) => {
   if (!res.ok) {
     const error: any = new Error(`${res.statusText}`)
     error.status = res.status
     throw error
   }
-  return res.json()
+  const text = await res.text()
+  try {
+    return text ? JSON.parse(text) : {}
+  } catch (e) {
+    console.error('Failed to parse JSON in errorHandling:', text)
+    return {}
+  }
 }
 
 type CustomResponseTyping = {
@@ -122,8 +128,16 @@ type CustomResponseTyping = {
 export const getResponseMetadata = async (
   fetch_result: any
 ): Promise<CustomResponseTyping> => {
-  const json = await fetch_result.json()
-  if (fetch_result.status === 200) {
+  let json = {}
+  try {
+    const text = await fetch_result.text()
+    json = text ? JSON.parse(text) : {}
+  } catch (e) {
+    console.error('Failed to parse JSON in getResponseMetadata:', e)
+    json = { detail: 'Invalid JSON response from server' }
+  }
+
+  if (fetch_result.status === 200 || fetch_result.status === 201) {
     return {
       success: true,
       data: json,
