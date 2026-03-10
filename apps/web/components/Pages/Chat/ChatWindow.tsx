@@ -705,6 +705,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               clipboardFailureReason = result.reason
             }
           } catch (error) {
+            // eslint-disable-next-line no-console
             console.warn('Failed to copy attachment:', error)
           }
         }
@@ -770,6 +771,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           position: 'bottom-center',
         })
       } catch (fallbackError) {
+        // eslint-disable-next-line no-console
         console.error('Copy failed:', fallbackError)
         toast.error('Failed to copy', {
           duration: 2000,

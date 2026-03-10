@@ -112,6 +112,7 @@ export const useClipboardMedia = () => {
       await navigator.clipboard.write([clipboardItem])
       return true
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.warn('Failed to copy image blob:', error)
       return false
     }
@@ -168,6 +169,7 @@ export const useClipboardMedia = () => {
         await navigator.clipboard.write([clipboardItem])
         return { ok: true }
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.warn('Failed to copy attachment blob:', error)
         return { ok: false, reason: 'write-failed' }
       }
@@ -185,6 +187,7 @@ export const useClipboardMedia = () => {
         return true
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.warn('Failed to copy text to clipboard:', error)
     }
 
