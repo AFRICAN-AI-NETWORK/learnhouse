@@ -499,14 +499,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     )
   }, [])
 
+  const scrollToLatestMessage = useCallback(
+    (behavior: ScrollBehavior = 'auto') => {
+      const container = messagesContainerRef.current
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior })
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (!conversationId) return
+
+    const immediateId = window.setTimeout(() => {
+      scrollToLatestMessage('auto')
+    }, 0)
+    const settleId = window.setTimeout(() => {
+      scrollToLatestMessage('auto')
+    }, 120)
+
+    return () => {
+      window.clearTimeout(immediateId)
+      window.clearTimeout(settleId)
+    }
+  }, [conversationId, scrollToLatestMessage])
+
   useEffect(() => {
     if (!isLoadingMessages) {
-      setTimeout(
-        () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }),
-        0
-      )
+      const frameId = window.requestAnimationFrame(() => {
+        scrollToLatestMessage('auto')
+      })
+
+      const settleId = window.setTimeout(() => {
+        scrollToLatestMessage('auto')
+      }, 120)
+
+      return () => {
+        window.cancelAnimationFrame(frameId)
+        window.clearTimeout(settleId)
+      }
     }
-  }, [messages, isLoadingMessages])
+  }, [messages, isLoadingMessages, scrollToLatestMessage])
 
   useEffect(() => {
     if (!isConnected) return
