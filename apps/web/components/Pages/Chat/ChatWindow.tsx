@@ -71,9 +71,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
     null
   )
+  const [highlightedMessageUuid, setHighlightedMessageUuid] = useState<
+    string | null
+  >(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
+  const messageItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const { copyAttachmentBlob, copyText } = useClipboardMedia()
   const {
     selectedFiles,
@@ -573,6 +577,57 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const cancelReply = () => {
     setReplyingToMessage(null)
   }
+
+  const setMessageItemRef = useCallback(
+    (messageUuid: string, node: HTMLDivElement | null) => {
+      const refs = messageItemRefs.current
+      if (node) {
+        refs.set(messageUuid, node)
+      } else {
+        refs.delete(messageUuid)
+      }
+    },
+    []
+  )
+
+  const scrollToParentMessage = useCallback((parentMessageUuid?: string) => {
+    if (!parentMessageUuid) return
+
+    const targetNode = messageItemRefs.current.get(parentMessageUuid)
+    if (!targetNode) return
+
+    targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setHighlightedMessageUuid(parentMessageUuid)
+
+    window.setTimeout(() => {
+      setHighlightedMessageUuid((current) =>
+        current === parentMessageUuid ? null : current
+      )
+    }, 1200)
+  }, [])
+
+  useEffect(() => {
+    if (!editingMessage && !replyingToMessage) return
+
+    const focusInput = () => {
+      const input = messageInputRef.current
+      if (!input) return
+      input.focus()
+
+      // Keep cursor at end so user can continue typing immediately.
+      const cursorPos = input.value.length
+      input.setSelectionRange(cursorPos, cursorPos)
+    }
+
+    // Run after state update and menu close focus handling settle.
+    const rafId = window.requestAnimationFrame(focusInput)
+    const timeoutId = window.setTimeout(focusInput, 40)
+
+    return () => {
+      window.cancelAnimationFrame(rafId)
+      window.clearTimeout(timeoutId)
+    }
+  }, [editingMessage, replyingToMessage])
 
   /**
    * Copy message with proper media blob handling
@@ -1200,6 +1255,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
+        style={{
+          backgroundImage: "url('/chat-wallpaper.png')",
+          backgroundSize: 'auto',
+          backgroundRepeat: 'repeat',
+        }}
       >
         {isLoadingMessages ? (
           <div className="flex items-center justify-center h-full">
@@ -1231,6 +1291,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   </div>
                 )}
                 <div
+                  ref={(node) => setMessageItemRef(message.message_uuid, node)}
+                  data-message-uuid={message.message_uuid}
                   className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
                 >
                   {!isMine && (
@@ -1255,10 +1317,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       className={`flex items-start gap-1.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                     >
                       <div
-                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
+                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-all duration-200 overflow-hidden ${
                           isMine
                             ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
                             : 'bg-white/[0.07] text-white/85 rounded-bl-sm border border-white/[0.06]'
+                        } ${
+                          highlightedMessageUuid === message.message_uuid
+                            ? 'ring-2 ring-amber-300/70 ring-offset-1 ring-offset-transparent'
+                            : ''
                         }`}
                       >
                         {message.is_deleted ? (
@@ -1269,8 +1335,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                           <>
                             {/* Reply context */}
                             {message.replied_message && (
-                              <div
-                                className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/[0.08] border-indigo-400/60'}`}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  scrollToParentMessage(
+                                    message.replied_message?.message_uuid
+                                  )
+                                }
+                                className={`mb-2 w-full text-left p-2 rounded-lg border-l-2 transition-colors ${
+                                  isMine
+                                    ? 'bg-indigo-600/30 border-white/40 hover:bg-indigo-600/40'
+                                    : 'bg-white/[0.08] border-indigo-400/60 hover:bg-white/[0.12]'
+                                }`}
                               >
                                 <div className="flex items-center gap-1 mb-0.5">
                                   <Reply size={10} className="opacity-60" />
@@ -1287,7 +1363,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                     ? '[Deleted message]'
                                     : message.replied_message.content}
                                 </p>
-                              </div>
+                              </button>
                             )}
                             {message.content && <span>{message.content}</span>}
                             {message.attachments &&

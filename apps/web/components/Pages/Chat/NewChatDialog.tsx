@@ -178,7 +178,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl p-0 overflow-hidden">
+      <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl p-0 overflow-hidden [&>button]:bg-indigo-500 [&>button]:text-white [&>button]:border [&>button]:border-indigo-300/70 [&>button]:opacity-100 [&>button]:rounded-md [&>button]:p-1 [&>button]:right-4 [&>button]:top-4 [&>button:hover]:bg-indigo-400 [&>button:focus]:ring-2 [&>button:focus]:ring-indigo-300">
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="text-white font-semibold text-lg tracking-tight">
             {t('chat.start_new_chat')}
