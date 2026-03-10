@@ -9,36 +9,9 @@ import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 import { getAPIUrl } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
+import { Conversation } from '@/types/chatTypes'
+import { useConversationWebSocket } from '@components/Hooks/chatHooks'
 import useWebSocket from '@/hooks/useWebSocket'
-
-interface Conversation {
-  id: number
-  conversation_uuid: string
-  org_id: number
-  participant_one_id: number
-  participant_two_id: number
-  last_message_at?: string
-  is_archived: boolean
-  created_at: string
-  updated_at: string
-  unread_count: number
-  other_participant: {
-    id: number
-    user_uuid: string
-    username: string
-    first_name?: string
-    last_name?: string
-    avatar_image?: string
-    role_name?: string
-  }
-  last_message?: {
-    message_uuid: string
-    content: string
-    sender_id: number
-    created_at: string
-    is_deleted: boolean
-  }
-}
 
 export default function FloatingChatWidget() {
   const { t } = useTranslation()
@@ -64,6 +37,13 @@ export default function FloatingChatWidget() {
 
   const { isConnected, addMessageListener, removeMessageListener, connect } =
     useWebSocket(access_token, org_id, { autoConnect: false })
+  const { setupMessageListener, setupTypingListener } =
+    useConversationWebSocket({
+      isConnected,
+      addMessageListener,
+      removeMessageListener,
+      currentUserId: current_user_id,
+    })
 
   // Connect WebSocket only when chat is opened
   useEffect(() => {
@@ -153,14 +133,8 @@ export default function FloatingChatWidget() {
   )
 
   useEffect(() => {
-    if (!isConnected) return
-
-    addMessageListener('new_message', handleNewMessage)
-
-    return () => {
-      removeMessageListener('new_message', handleNewMessage)
-    }
-  }, [isConnected, addMessageListener, removeMessageListener, handleNewMessage])
+    return setupMessageListener((data) => handleNewMessage({ data }))
+  }, [setupMessageListener, handleNewMessage])
 
   // Handle typing events
   const handleTyping = useCallback(
@@ -196,17 +170,19 @@ export default function FloatingChatWidget() {
   )
 
   useEffect(() => {
-    if (!isConnected) return
-
-    addMessageListener('typing', handleTyping)
     const typingTimeouts = typingTimeoutsRef.current
+    const cleanupTyping = setupTypingListener((userId, conversationId) =>
+      handleTyping({
+        data: { user_id: userId, conversation_id: conversationId },
+      })
+    )
 
     return () => {
-      removeMessageListener('typing', handleTyping)
+      cleanupTyping?.()
       typingTimeouts.forEach((timeout) => clearTimeout(timeout))
       typingTimeouts.clear()
     }
-  }, [isConnected, addMessageListener, removeMessageListener, handleTyping])
+  }, [setupTypingListener, handleTyping])
 
   const handleNewConversation = useCallback((conversation: Conversation) => {
     setConversations((prev) => [conversation, ...prev])

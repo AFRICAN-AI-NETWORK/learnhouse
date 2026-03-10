@@ -11,16 +11,9 @@ import {
   Clock,
   Paperclip,
   X,
-  File,
   Image as ImageIcon,
-  Video,
-  FileText,
   Download,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
   Reply,
-  Copy,
 } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -29,12 +22,6 @@ import useWebSocket from '@/hooks/useWebSocket'
 import toast from 'react-hot-toast'
 import { useNotifications } from '@/hooks/useNotifications'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@components/ui/dropdown-menu'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -42,94 +29,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@components/ui/dialog'
-
-interface Attachment {
-  attachment_uuid: string
-  file_name: string
-  file_type: string
-  file_size: number
-  file_url: string
-  thumbnail_url?: string
-  upload_status: string
-}
-
-interface Message {
-  id: number
-  message_uuid: string
-  conversation_id: string
-  sender_id: number
-  receiver_id: number
-  content: string
-  message_type: string
-  is_edited: boolean
-  is_deleted: boolean
-  created_at: string
-  updated_at: string
-  attachments: Attachment[]
-  clientId?: string
-  isPending?: boolean
-  read_receipt?: {
-    delivered_at: string
-    read_at?: string
-  }
-  reply_to_message_id?: number
-  replied_message?: {
-    message_uuid: string
-    content: string
-    sender_id: number
-    created_at: string
-    is_deleted: boolean
-  }
-}
-
-interface ParticipantUser {
-  id: number
-  user_uuid: string
-  username: string
-  first_name?: string
-  last_name?: string
-  avatar_image?: string
-}
-
-interface Conversation {
-  id: number
-  conversation_uuid: string
-  org_id: number
-  participant_one_id: number
-  participant_two_id: number
-  last_message_at?: string
-  is_archived: boolean
-  created_at: string
-  updated_at: string
-  unread_count: number
-  other_participant: ParticipantUser
-  last_message?: {
-    message_uuid: string
-    content: string
-    sender_id: number
-    created_at: string
-    is_deleted: boolean
-  }
-}
-
-interface ChatWindowProps {
-  conversationId: string
-  onConversationUpdate: (conversation: Conversation) => void
-  onBack?: () => void
-}
-
-const SUPPORTED_CHAT_EXTENSIONS = [
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.gif',
-  '.webp',
-  '.mp4',
-  '.webm',
-  '.pdf',
-]
-
-const CHAT_FILE_ACCEPT = SUPPORTED_CHAT_EXTENSIONS.join(',')
+import {
+  Attachment,
+  Message,
+  Conversation,
+  ChatWindowProps,
+  CHAT_FILE_ACCEPT,
+} from '../../../types/chatTypes'
+import { getFileIcon, formatFileSize } from '../../Utils/chatUtils'
+import {
+  useClipboardMedia,
+  useFileUpload,
+  useInputPaste,
+} from '../../Hooks/chatHooks'
+import { MessageActions } from './components/chat/MessageActions'
+import { TypingIndicator } from './components/chat/TypingIndicator'
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
@@ -149,7 +63,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [otherUserTyping, setOtherUserTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [editingMessage, setEditingMessage] = useState<Message | null>(null)
   const [isUpdatingMessage, setIsUpdatingMessage] = useState(false)
   const [deleteTargetMessage, setDeleteTargetMessage] =
@@ -161,6 +74,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
+  const { copyImageBlob, copyText } = useClipboardMedia()
+  const {
+    selectedFiles,
+    error: fileUploadError,
+    addFiles,
+    removeFile,
+    clearFiles,
+    clearError,
+  } = useFileUpload()
 
   const {
     showMessageNotification,
@@ -186,6 +108,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     requestNotificationPermission()
   }, [requestNotificationPermission])
+
+  useEffect(() => {
+    if (fileUploadError) {
+      setError(fileUploadError)
+    }
+  }, [fileUploadError])
+
+  const onFilesPasted = useCallback(
+    (files: File[]) => {
+      const result = addFiles(files)
+      if (result.accepted.length > 0) {
+        toast.success('File added to message', {
+          duration: 2000,
+          position: 'bottom-center',
+        })
+      }
+    },
+    [addFiles]
+  )
+
+  const { handlePaste } = useInputPaste({ onFilesAdded: onFilesPasted })
 
   const {
     isConnected,
@@ -592,27 +535,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      const incomingFiles = Array.from(files)
-      const supportedFiles = incomingFiles.filter((file) => {
-        const ext = file.name.includes('.')
-          ? `.${file.name.split('.').pop()?.toLowerCase()}`
-          : ''
-        return SUPPORTED_CHAT_EXTENSIONS.includes(ext)
-      })
-      const rejectedFiles = incomingFiles.filter(
-        (file) => !supportedFiles.includes(file)
-      )
-
-      if (supportedFiles.length > 0) {
-        setSelectedFiles((prev) => [...prev, ...supportedFiles])
-      }
-
-      if (rejectedFiles.length > 0) {
-        const rejectedNames = rejectedFiles.map((file) => file.name).join(', ')
-        setError(
-          `Unsupported file type: ${rejectedNames}. Allowed: ${SUPPORTED_CHAT_EXTENSIONS.join(', ')}`
-        )
-      }
+      addFiles(Array.from(files))
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -620,15 +543,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   const removeSelectedFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    removeFile(index)
   }
 
   const startEditMessage = (message: Message) => {
     if (message.is_deleted || message.isPending) return
     setEditingMessage(message)
     setMessageInput(message.content)
-    setSelectedFiles([])
+    clearFiles()
     setReplyingToMessage(null)
+    clearError()
     setError(null)
     setTimeout(() => messageInputRef.current?.focus(), 0)
   }
@@ -648,82 +572,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const cancelReply = () => {
     setReplyingToMessage(null)
-  }
-
-  /**
-   * Convert image to PNG format using canvas for better compatibility
-   * Handles both standard image types and converts unsupported types
-   */
-  const convertImageToPng = async (blob: Blob): Promise<Blob> => {
-    // If already PNG, return as-is
-    if (blob.type === 'image/png') {
-      return blob
-    }
-
-    // Only convert image types
-    if (!blob.type.startsWith('image/')) {
-      return blob
-    }
-
-    try {
-      const reader = new FileReader()
-      return new Promise((resolve, reject) => {
-        reader.onload = async (event) => {
-          try {
-            const img = new Image()
-            img.onload = () => {
-              const canvas = document.createElement('canvas')
-              canvas.width = img.width
-              canvas.height = img.height
-              const ctx = canvas.getContext('2d')
-              if (!ctx) {
-                resolve(blob)
-                return
-              }
-              ctx.drawImage(img, 0, 0)
-              canvas.toBlob((pngBlob) => {
-                resolve(pngBlob || blob)
-              }, 'image/png')
-            }
-            img.onerror = () => resolve(blob)
-            img.src = event.target?.result as string
-          } catch {
-            resolve(blob)
-          }
-        }
-        reader.onerror = () => resolve(blob)
-        reader.readAsDataURL(blob)
-      })
-    } catch {
-      return blob
-    }
-  }
-
-  /**
-   * Copy single image blob to clipboard
-   * Converts to PNG for maximum compatibility
-   */
-  const copyImageBlob = async (blob: Blob): Promise<boolean> => {
-    try {
-      if (!navigator.clipboard?.write) {
-        return false
-      }
-
-      // Convert to PNG for better compatibility
-      const pngBlob = await convertImageToPng(blob)
-
-      // Write single image to clipboard
-      // Most browsers only support one ClipboardItem at a time
-      const clipboardItem = new ClipboardItem({
-        'image/png': pngBlob,
-      })
-
-      await navigator.clipboard.write([clipboardItem])
-      return true
-    } catch (error) {
-      console.warn('Failed to copy image blob:', error)
-      return false
-    }
   }
 
   /**
@@ -785,7 +633,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ? `${textContent}\n\n${attachmentInfo}`
             : attachmentInfo
 
-        await navigator.clipboard.writeText(textToCopy)
+        await copyText(textToCopy)
         toast.success(t('chat.copied') || 'Copied', {
           duration: 2000,
           position: 'bottom-center',
@@ -795,7 +643,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       // Strategy 3: No attachments, just copy text
       const textToCopy = textContent.trim() || '[Empty message]'
-      await navigator.clipboard.writeText(textToCopy)
+      await copyText(textToCopy)
       toast.success(t('chat.copied') || 'Copied', {
         duration: 2000,
         position: 'bottom-center',
@@ -825,50 +673,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
     }
   }
-
-  /**
-   * Handle paste events to support pasting media from clipboard
-   * This completes the WhatsApp-like experience:
-   * User pastes image from clipboard → gets added as file to send
-   */
-  const handlePaste = useCallback(
-    async (e: React.ClipboardEvent<HTMLInputElement>) => {
-      const clipboardItems = e.clipboardData?.items
-
-      if (!clipboardItems || clipboardItems.length === 0) return
-
-      let hasMedia = false
-
-      // Process all clipboard items
-      for (let i = 0; i < clipboardItems.length; i++) {
-        const item = clipboardItems[i]
-
-        // Handle file items (images, documents, etc.)
-        if (item.kind === 'file') {
-          const file = item.getAsFile()
-          if (file) {
-            // Check if file type is supported
-            const ext = `.${file.name.split('.').pop()?.toLowerCase()}`
-            if (SUPPORTED_CHAT_EXTENSIONS.includes(ext)) {
-              setSelectedFiles((prev) => [...prev, file])
-              hasMedia = true
-              // Prevent default paste behavior when we handle files
-              e.preventDefault()
-            }
-          }
-        }
-      }
-
-      // Show feedback
-      if (hasMedia) {
-        toast.success('File added to message', {
-          duration: 2000,
-          position: 'bottom-center',
-        })
-      }
-    },
-    []
-  )
 
   const handleEditMessage = async () => {
     if (!editingMessage || !messageInput.trim()) return
@@ -1035,27 +839,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return await response.json()
   }
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return ImageIcon
-    if (fileType.startsWith('video/')) return Video
-    if (
-      fileType.includes('pdf') ||
-      fileType.includes('document') ||
-      fileType.includes('officedocument') ||
-      fileType.includes('word')
-    )
-      return FileText
-    return File
-  }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
-  }
-
   const handleSendMessage = async () => {
     if (isSendingMessage || isUpdatingMessage) return
     if ((!messageInput.trim() && selectedFiles.length === 0) || !conversation)
@@ -1109,7 +892,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       setMessages((prev) => [...prev, optimisticMessage])
       setMessageInput('')
-      setSelectedFiles([])
+      clearFiles()
 
       const url = new URL(`${getAPIUrl()}chat/messages/send`)
       url.searchParams.append('org_id', String(org_id))
@@ -1578,78 +1361,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         )}
                       </div>
 
-                      {isMine && !message.isPending && !message.is_deleted && (
-                        <DropdownMenu modal={false}>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/60"
-                              aria-label="Message actions"
-                            >
-                              <MoreHorizontal size={14} />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align={isMine ? 'end' : 'start'}
-                            className="w-40"
-                          >
-                            <DropdownMenuItem
-                              onClick={() => startReplyToMessage(message)}
-                            >
-                              <Reply size={14} />
-                              {t('chat.reply')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => copyMessageContent(message)}
-                            >
-                              <Copy size={14} />
-                              {t('common.copy')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => startEditMessage(message)}
-                            >
-                              <Pencil size={14} />
-                              {t('common.edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setDeleteTargetMessage(message)}
-                              className="text-red-500 focus:text-red-500"
-                            >
-                              <Trash2 size={14} />
-                              {t('common.delete')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                      {!isMine && !message.is_deleted && (
-                        <DropdownMenu modal={false}>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/60"
-                              aria-label="Message actions"
-                            >
-                              <MoreHorizontal size={14} />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align={isMine ? 'end' : 'start'}
-                            className="w-40"
-                          >
-                            <DropdownMenuItem
-                              onClick={() => startReplyToMessage(message)}
-                            >
-                              <Reply size={14} />
-                              {t('chat.reply')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => copyMessageContent(message)}
-                            >
-                              <Copy size={14} />
-                              {t('common.copy')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      {!message.is_deleted && !message.isPending && (
+                        <MessageActions
+                          message={message}
+                          isMine={isMine}
+                          onReply={() => startReplyToMessage(message)}
+                          onCopy={() => copyMessageContent(message)}
+                          onEdit={
+                            isMine ? () => startEditMessage(message) : undefined
+                          }
+                          onDelete={
+                            isMine
+                              ? () => setDeleteTargetMessage(message)
+                              : undefined
+                          }
+                          t={t}
+                        />
                       )}
                     </div>
 
@@ -1702,15 +1429,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               alt={otherParticipant.username}
               className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
             />
-            <div className="bg-white/[0.07] border border-white/[0.06] px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
-              {[0, 150, 300].map((delay) => (
-                <div
-                  key={delay}
-                  className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"
-                  style={{ animationDelay: `${delay}ms` }}
-                />
-              ))}
-            </div>
+            <TypingIndicator isVisible={otherUserTyping} />
           </div>
         )}
         <div ref={messagesEndRef} />
