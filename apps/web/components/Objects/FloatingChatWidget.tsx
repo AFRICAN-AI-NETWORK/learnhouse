@@ -62,8 +62,15 @@ export default function FloatingChatWidget() {
   const access_token = session?.data?.tokens?.access_token
   const current_user_id = session?.data?.user?.id
 
-  const { isConnected, addMessageListener, removeMessageListener } =
-    useWebSocket(access_token, org_id)
+  const { isConnected, addMessageListener, removeMessageListener, connect } =
+    useWebSocket(access_token, org_id, { autoConnect: false })
+
+  // Connect WebSocket only when chat is opened
+  useEffect(() => {
+    if (isChatOpen && access_token && org_id) {
+      connect()
+    }
+  }, [isChatOpen, access_token, org_id, connect])
 
   // Load conversations when chat opens
   useEffect(() => {
@@ -72,6 +79,11 @@ export default function FloatingChatWidget() {
     const loadConversations = async () => {
       try {
         setIsLoadingConversations(true)
+
+        // Add timeout for fetch request (10 seconds)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+
         const response = await fetch(
           `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
           {
@@ -79,14 +91,24 @@ export default function FloatingChatWidget() {
               Authorization: `Bearer ${access_token}`,
               'Content-Type': 'application/json',
             },
+            signal: controller.signal,
           }
         )
+
+        clearTimeout(timeoutId)
+
         if (response.ok) {
-          const data = await response.json()
-          setConversations(data)
+          const text = await response.text()
+          try {
+            const data = JSON.parse(text)
+            setConversations(data)
+          } catch (jsonError) {
+            // Failed to parse conversations response - ignore silently
+          }
         }
-      } catch {
-        // Ignore transient load errors; chat can recover on next open/reconnect.
+      } catch (error: any) {
+        // Ignore transient load errors (including timeout/abort)
+        // Chat can recover on next open/reconnect.
       } finally {
         setIsLoadingConversations(false)
       }

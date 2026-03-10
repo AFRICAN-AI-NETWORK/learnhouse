@@ -8,7 +8,15 @@ interface WebSocketMessage {
 
 type MessageListener = (event: any) => void
 
-const useWebSocket = (accessToken: string, orgId: number) => {
+interface UseWebSocketOptions {
+  autoConnect?: boolean
+}
+
+const useWebSocket = (
+  accessToken: string,
+  orgId: number,
+  options: UseWebSocketOptions = { autoConnect: true }
+) => {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectAttemptRef = useRef(0)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>(null)
@@ -47,8 +55,15 @@ const useWebSocket = (accessToken: string, orgId: number) => {
         return null
       }
 
-      const data = await response.json()
-      return data.ticket ?? null
+      // Safely parse JSON response
+      const text = await response.text()
+      try {
+        const data = JSON.parse(text)
+        return data.ticket ?? null
+      } catch (jsonError) {
+        // Failed to parse ticket response
+        return null
+      }
     } catch (error) {
       // Error getting WebSocket ticket
       return null
@@ -198,16 +213,16 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     reconnectAttemptRef.current = 0
   }, [])
 
-  // Connect on mount / when credentials change
+  // Connect on mount / when credentials change (only if autoConnect is true)
   useEffect(() => {
-    if (accessToken && orgId) {
+    if (accessToken && orgId && options.autoConnect) {
       connect()
     }
     return () => {
       disconnect()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, orgId]) // intentionally omitting connect/disconnect to avoid re-running on every render
+  }, [accessToken, orgId, options.autoConnect]) // intentionally omitting connect/disconnect to avoid re-running on every render
 
   // Periodic ping to keep connection alive
   useEffect(() => {
@@ -226,6 +241,7 @@ const useWebSocket = (accessToken: string, orgId: number) => {
     addMessageListener,
     removeMessageListener,
     disconnect,
+    connect, // Expose connect for manual triggering
   }
 }
 

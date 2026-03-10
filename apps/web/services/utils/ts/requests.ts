@@ -97,19 +97,36 @@ export const swrFetcher = async (url: string, token?: string) => {
 
   // Fetch the data
   const request = await fetch(url, options)
-  const res = errorHandling(request)
+  const res = await errorHandling(request)
 
   // Return the data
   return res
 }
 
-export const errorHandling = (res: any) => {
+export const errorHandling = async (res: any) => {
   if (!res.ok) {
     const error: any = new Error(`${res.statusText}`)
     error.status = res.status
     throw error
   }
-  return res.json()
+
+  try {
+    return await res.json()
+  } catch (jsonError) {
+    // If JSON parsing fails, try to get text response for better error messages
+    try {
+      const text = await res.text()
+      const error: any = new Error(
+        `Invalid JSON response: ${text.substring(0, 100)}`
+      )
+      error.status = res.status
+      throw error
+    } catch {
+      const error: any = new Error('Failed to parse response')
+      error.status = res.status
+      throw error
+    }
+  }
 }
 
 type CustomResponseTyping = {

@@ -56,8 +56,15 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
   const org_id = org?.id
   const current_user_id = session?.data?.user?.id
 
-  const { isConnected, addMessageListener, removeMessageListener } =
-    useWebSocket(access_token, org_id)
+  const { isConnected, addMessageListener, removeMessageListener, connect } =
+    useWebSocket(access_token, org_id, { autoConnect: false })
+
+  // Connect WebSocket when user is authenticated
+  useEffect(() => {
+    if (access_token && org_id) {
+      connect()
+    }
+  }, [access_token, org_id, connect])
 
   const openChat = useCallback(() => {
     setUnreadCount(0)
@@ -80,6 +87,10 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
 
     const loadConversations = async () => {
       try {
+        // Add timeout for fetch request (10 seconds)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+
         const response = await fetch(
           `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
           {
@@ -87,18 +98,27 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
               Authorization: `Bearer ${access_token}`,
               'Content-Type': 'application/json',
             },
+            signal: controller.signal,
           }
         )
+
+        clearTimeout(timeoutId)
+
         if (response.ok) {
-          const data = await response.json()
-          const conversationsMap = new Map<string, Conversation>()
-          data.forEach((conv: Conversation) => {
-            conversationsMap.set(conv.conversation_uuid, conv)
-          })
-          conversationsRef.current = conversationsMap
+          const text = await response.text()
+          try {
+            const data = JSON.parse(text)
+            const conversationsMap = new Map<string, Conversation>()
+            data.forEach((conv: Conversation) => {
+              conversationsMap.set(conv.conversation_uuid, conv)
+            })
+            conversationsRef.current = conversationsMap
+          } catch (jsonError) {
+            // Failed to parse conversations response - ignore silently
+          }
         }
       } catch (error) {
-        // Error loading conversations
+        // Error loading conversations (including timeout/abort) - ignore silently
       }
     }
 
