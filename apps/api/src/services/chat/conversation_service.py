@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from uuid import uuid4
 from sqlmodel import Session, select, and_, or_, func
@@ -9,6 +9,8 @@ from src.db.chat.conversations import (
 )
 from src.db.chat.messages import Message, MessageReadReceipt
 from src.db.users import User
+from src.db.user_organizations import UserOrganization
+from src.db.roles import Role
 from src.services.chat.authorization import verify_chat_permission
 import logging
 
@@ -17,6 +19,20 @@ logger = logging.getLogger(__name__)
 
 class ConversationService:
     """Service for managing conversations."""
+
+    @staticmethod
+    def _resolve_user_role_name(db: Session, user_id: int, org_id: int) -> Optional[str]:
+        """Resolve the role name for a user within an organization."""
+        user_org = db.exec(
+            select(UserOrganization)
+            .where(UserOrganization.user_id == user_id)
+            .where(UserOrganization.org_id == org_id)
+        ).first()
+        if not user_org:
+            return None
+
+        role = db.get(Role, user_org.role_id)
+        return role.name if role else None
     
     @staticmethod
     async def create_or_get_conversation(
@@ -69,6 +85,9 @@ class ConversationService:
         # Get the other participant details
         other_user_id = target_user_id
         other_user = db.get(User, other_user_id)
+        other_user_role_name = ConversationService._resolve_user_role_name(
+            db, other_user_id, org_id
+        )
         
         if not other_user:
             raise HTTPException(
@@ -114,7 +133,8 @@ class ConversationService:
                 "username": other_user.username,
                 "first_name": other_user.first_name,
                 "last_name": other_user.last_name,
-                "avatar_image": other_user.avatar_image
+                "avatar_image": other_user.avatar_image,
+                "role_name": other_user_role_name,
             }
         )
     
@@ -190,8 +210,18 @@ class ConversationService:
         if participant_ids:
             users_query = select(User).where(User.id.in_(participant_ids))
             all_users = {user.id: user for user in db.exec(users_query).all()}
+
+            # Fetch participant roles for this organization in one query
+            role_rows = db.exec(
+                select(UserOrganization.user_id, Role.name)
+                .join(Role, Role.id == UserOrganization.role_id)
+                .where(UserOrganization.org_id == org_id)
+                .where(UserOrganization.user_id.in_(participant_ids))
+            ).all()
+            role_map = {user_id: role_name for user_id, role_name in role_rows}
         else:
             all_users = {}
+            role_map = {}
         
         # Fetch last messages for all conversations in one query
         if conversation_ids:
@@ -257,7 +287,8 @@ class ConversationService:
                     "username": other_user.username,
                     "first_name": other_user.first_name,
                     "last_name": other_user.last_name,
-                    "avatar_image": other_user.avatar_image
+                    "avatar_image": other_user.avatar_image,
+                    "role_name": role_map.get(other_user.id),
                 },
                 last_message={
                     "content": last_message.content[:100],
@@ -323,6 +354,9 @@ class ConversationService:
             else conversation.participant_one_id
         )
         other_user = db.get(User, other_user_id)
+        other_user_role_name = ConversationService._resolve_user_role_name(
+            db, other_user_id, conversation.org_id
+        )
         
         # Count unread messages
         unread_count_query = (
@@ -361,6 +395,7 @@ class ConversationService:
                 "username": other_user.username if other_user else None,
                 "first_name": other_user.first_name if other_user else None,
                 "last_name": other_user.last_name if other_user else None,
-                "avatar_image": other_user.avatar_image if other_user else None
+                "avatar_image": other_user.avatar_image if other_user else None,
+                "role_name": other_user_role_name if other_user else None,
             }
         )

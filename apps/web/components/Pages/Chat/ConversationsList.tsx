@@ -2,7 +2,12 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Plus, Loader2, MessageSquareDashed } from 'lucide-react'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { useOrg } from '@components/Contexts/OrgContext'
+import { getBackendUrl } from '@services/config/config'
+import useWebSocket from '@/hooks/useWebSocket'
 import NewChatDialog from './NewChatDialog'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
 
 interface Participant {
   id: number
@@ -11,6 +16,7 @@ interface Participant {
   first_name?: string
   last_name?: string
   avatar_image?: string
+  role_name?: string
 }
 
 interface Conversation {
@@ -54,8 +60,29 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
   typingUsers,
 }) => {
   const { t } = useTranslation()
+  const session = useLHSession() as any
+  const org = useOrg() as any
   const [searchQuery, setSearchQuery] = useState('')
   const [showNewChatDialog, setShowNewChatDialog] = useState(false)
+
+  const access_token = session?.data?.tokens?.access_token
+  const org_id = org?.id
+
+  const { isConnected } = useWebSocket(access_token, org_id)
+
+  const ensureAbsoluteUrl = (url?: string) => {
+    if (!url) return '/empty_avatar.png'
+    if (
+      url.startsWith('http://') ||
+      url.startsWith('https://') ||
+      url.startsWith('blob:')
+    ) {
+      return url
+    }
+    const backendOrigin = new URL(getBackendUrl()).origin
+    const path = url.startsWith('/') ? url : `/${url}`
+    return `${backendOrigin}${path}`
+  }
 
   const filteredConversations = conversations.filter((conv) => {
     const participantName =
@@ -122,6 +149,40 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
     return conversation.last_message.content.substring(0, 50)
   }
 
+  const getRoleBadge = (roleName?: string) => {
+    const normalized = (roleName || '').toLowerCase()
+
+    if (normalized === 'instructor') {
+      return {
+        label: 'Instructor',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-sky-400/35 bg-sky-500/15 text-sky-300',
+      }
+    }
+
+    if (normalized === 'admin') {
+      return {
+        label: 'Admin',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-rose-400/35 bg-rose-500/15 text-rose-300',
+      }
+    }
+
+    if (normalized === 'maintainer') {
+      return {
+        label: 'Maintainer',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-amber-400/35 bg-amber-500/15 text-amber-300',
+      }
+    }
+
+    return {
+      label: 'User',
+      className:
+        'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-gray-400/35 bg-gray-500/15 text-gray-300',
+    }
+  }
+
   return (
     <>
       <div className="flex-1 flex flex-col min-h-0">
@@ -178,6 +239,9 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
               const displayName = conversation.other_participant.first_name
                 ? `${conversation.other_participant.first_name}${conversation.other_participant.last_name ? ' ' + conversation.other_participant.last_name : ''}`
                 : conversation.other_participant.username
+              const roleBadge = getRoleBadge(
+                conversation.other_participant.role_name
+              )
 
               return (
                 <div
@@ -195,24 +259,36 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                   <div className="relative flex-shrink-0">
                     <img
                       src={
-                        conversation.other_participant.avatar_image ||
-                        '/empty_avatar.png'
+                        conversation.other_participant.avatar_image
+                          ? getUserAvatarMediaDirectory(
+                              conversation.other_participant.user_uuid,
+                              conversation.other_participant.avatar_image
+                            )
+                          : '/empty_avatar.png'
                       }
                       alt={conversation.other_participant.username}
                       className="w-11 h-11 rounded-full ring-2 ring-white/[0.06] object-cover"
                     />
-                    {/* Online dot — placeholder, always shown subtle */}
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
+                    <span
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-white/20'} border-2 border-[#13131a]`}
+                    />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
-                      <span
-                        className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-white/80'}`}
-                      >
-                        {displayName}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`text-sm font-semibold truncate ${isSelected ? 'text-white' : 'text-white/80'}`}
+                        >
+                          {displayName}
+                        </span>
+                        {roleBadge && (
+                          <span className={roleBadge.className}>
+                            {roleBadge.label}
+                          </span>
+                        )}
+                      </div>
                       {conversation.last_message_at && (
                         <span className="text-[11px] text-white/30 flex-shrink-0 tabular-nums">
                           {formatTime(conversation.last_message_at)}

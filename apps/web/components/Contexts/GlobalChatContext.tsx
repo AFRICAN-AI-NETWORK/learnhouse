@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  useState,
 } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -15,6 +16,11 @@ import { getAPIUrl } from '@services/config/config'
 
 interface GlobalChatContextType {
   isConnected: boolean
+  isChatOpen: boolean
+  openChat: () => void
+  closeChat: () => void
+  toggleChat: () => void
+  unreadCount: number
 }
 
 const GlobalChatContext = createContext<GlobalChatContextType | undefined>(
@@ -43,12 +49,30 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
   const { showMessageNotification, windowFocused } = useNotifications()
   const conversationsRef = useRef<Map<string, Conversation>>(new Map())
 
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
   const access_token = session?.data?.tokens?.access_token
   const org_id = org?.id
   const current_user_id = session?.data?.user?.id
 
   const { isConnected, addMessageListener, removeMessageListener } =
     useWebSocket(access_token, org_id)
+
+  const openChat = useCallback(() => {
+    setUnreadCount(0)
+    setIsChatOpen(true)
+  }, [])
+  const closeChat = useCallback(() => setIsChatOpen(false), [])
+  const toggleChat = useCallback(() => {
+    setIsChatOpen((prev) => {
+      const next = !prev
+      if (next) {
+        setUnreadCount(0)
+      }
+      return next
+    })
+  }, [])
 
   // Load conversations to get participant names
   useEffect(() => {
@@ -113,8 +137,13 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
         playSound: true,
         showDesktop: !windowFocused,
       })
+
+      // Increment unread count if chat is closed
+      if (!isChatOpen) {
+        setUnreadCount((prev) => prev + 1)
+      }
     },
-    [current_user_id, showMessageNotification, windowFocused]
+    [current_user_id, showMessageNotification, windowFocused, isChatOpen]
   )
 
   // Register global message listener
@@ -134,7 +163,16 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
   ])
 
   return (
-    <GlobalChatContext.Provider value={{ isConnected }}>
+    <GlobalChatContext.Provider
+      value={{
+        isConnected,
+        isChatOpen,
+        openChat,
+        closeChat,
+        toggleChat,
+        unreadCount,
+      }}
+    >
       {children}
     </GlobalChatContext.Provider>
   )
