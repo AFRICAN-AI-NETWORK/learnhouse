@@ -48,6 +48,7 @@ interface NewChatDialogProps {
   onClose: () => void
   onSelectUser: (conversation: Conversation) => void
   orgslug: string
+  existingConversations?: Conversation[]
 }
 
 const NewChatDialog: React.FC<NewChatDialogProps> = ({
@@ -55,6 +56,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
   onClose,
   onSelectUser,
   orgslug,
+  existingConversations = [],
 }) => {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -110,6 +112,16 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
 
   const handleSelectUser = useCallback(
     async (user: User) => {
+      const existing = existingConversations.find(
+        (conv) => conv.other_participant.id === user.id
+      )
+      if (existing) {
+        onSelectUser(existing)
+        onClose()
+        setSearchQuery('')
+        return
+      }
+
       try {
         setIsCreatingConversation(true)
         const response = await fetch(
@@ -139,7 +151,14 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
         setIsCreatingConversation(false)
       }
     },
-    [org_id, session?.data?.tokens?.access_token, onSelectUser, onClose, t]
+    [
+      org_id,
+      session?.data?.tokens?.access_token,
+      onSelectUser,
+      onClose,
+      t,
+      existingConversations,
+    ]
   )
 
   const getRoleBadge = (roleName?: string) => {

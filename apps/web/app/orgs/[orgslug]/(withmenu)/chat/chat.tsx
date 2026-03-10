@@ -183,7 +183,12 @@ function ChatClient() {
 
   const handleNewConversation = useCallback(
     (newConversation: Conversation) => {
-      setConversations((prev) => [newConversation, ...prev])
+      setConversations((prev) => {
+        const exists = prev.some(
+          (conv) => conv.conversation_uuid === newConversation.conversation_uuid
+        )
+        return exists ? prev : [newConversation, ...prev]
+      })
       setSelectedConversationId(newConversation.conversation_uuid)
       router.push(`${chatBasePath}/${newConversation.conversation_uuid}`)
     },

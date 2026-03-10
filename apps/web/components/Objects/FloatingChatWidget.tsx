@@ -194,7 +194,12 @@ export default function FloatingChatWidget() {
   }, [setupTypingListener, handleTyping])
 
   const handleNewConversation = useCallback((conversation: Conversation) => {
-    setConversations((prev) => [conversation, ...prev])
+    setConversations((prev) => {
+      const exists = prev.some(
+        (conv) => conv.conversation_uuid === conversation.conversation_uuid
+      )
+      return exists ? prev : [conversation, ...prev]
+    })
     setSelectedConversationId(conversation.conversation_uuid)
   }, [])
 

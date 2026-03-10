@@ -322,6 +322,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
         onClose={() => setShowNewChatDialog(false)}
         onSelectUser={onNewConversation}
         orgslug={orgslug}
+        existingConversations={conversations}
       />
     </>
   )
