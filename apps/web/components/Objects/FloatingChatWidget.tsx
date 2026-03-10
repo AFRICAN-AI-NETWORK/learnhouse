@@ -278,6 +278,26 @@ export default function FloatingChatWidget() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
+              {selectedConversationId && (
+                <button
+                  onClick={handleBackToList}
+                  className="flex-shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
+                  aria-label="Back to conversations"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
               <MessageSquare className="w-5 h-5 text-blue-400" />
               <h3 className="text-sm font-semibold text-white">
                 {selectedConversationId

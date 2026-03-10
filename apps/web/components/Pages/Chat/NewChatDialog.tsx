@@ -19,6 +19,7 @@ interface User {
   first_name?: string
   last_name?: string
   avatar_image?: string
+  role_name?: string
 }
 
 interface Conversation {
@@ -141,6 +142,40 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
     [org_id, session?.data?.tokens?.access_token, onSelectUser, onClose, t]
   )
 
+  const getRoleBadge = (roleName?: string) => {
+    const normalized = (roleName || '').toLowerCase()
+
+    if (normalized === 'instructor') {
+      return {
+        label: 'Instructor',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-sky-400/35 bg-sky-500/15 text-sky-300',
+      }
+    }
+
+    if (normalized === 'admin') {
+      return {
+        label: 'Admin',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-rose-400/35 bg-rose-500/15 text-rose-300',
+      }
+    }
+
+    if (normalized === 'maintainer') {
+      return {
+        label: 'Maintainer',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-amber-400/35 bg-amber-500/15 text-amber-300',
+      }
+    }
+
+    return {
+      label: 'User',
+      className:
+        'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-gray-400/35 bg-gray-500/15 text-gray-300',
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl p-0 overflow-hidden">
@@ -189,6 +224,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                 const displayName = user.first_name
                   ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`
                   : user.username
+                const roleBadge = getRoleBadge(user.role_name)
 
                 return (
                   <button
@@ -205,10 +241,17 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-white/80 group-hover:text-white truncate transition-colors duration-150">
-                        {displayName}
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <div className="text-sm font-semibold text-white/80 group-hover:text-white truncate transition-colors duration-150">
+                          {displayName}
+                        </div>
+                        {roleBadge && (
+                          <span className={roleBadge.className}>
+                            {roleBadge.label}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs text-white/30 truncate mt-0.5">
+                      <div className="text-xs text-white/30 truncate">
                         @{user.username}
                       </div>
                     </div>
