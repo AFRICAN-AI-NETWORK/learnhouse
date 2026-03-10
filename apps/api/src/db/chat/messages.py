@@ -61,6 +61,8 @@ class MessageRead(MessageBase):
     updated_at: datetime
     attachments: List[dict] = []
     read_receipt: Optional[dict] = None
+    reply_to_message_id: Optional[int] = None
+    replied_message: Optional[dict] = None
 
 
 class MessageEditHistory(SQLModel, table=True):

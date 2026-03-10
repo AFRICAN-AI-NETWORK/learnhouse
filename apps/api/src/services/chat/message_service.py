@@ -226,6 +226,19 @@ class MessageService:
         
         logger.info(f"Message {new_message.message_uuid} created in conversation {conversation.conversation_uuid}")
         
+        # Fetch replied message data if this is a reply
+        replied_message_data = None
+        if reply_to_id:
+            replied_msg = db.exec(select(Message).where(Message.id == reply_to_id)).first()
+            if replied_msg:
+                replied_message_data = {
+                    "message_uuid": replied_msg.message_uuid,
+                    "content": replied_msg.content if not replied_msg.is_deleted else "[Deleted message]",
+                    "sender_id": replied_msg.sender_id,
+                    "created_at": replied_msg.created_at.isoformat(),
+                    "is_deleted": replied_msg.is_deleted
+                }
+        
         # Return MessageRead with conversation UUID
         return MessageRead(
             id=new_message.id,
@@ -240,7 +253,9 @@ class MessageService:
             created_at=new_message.created_at,
             updated_at=new_message.updated_at,
             attachments=[],
-            read_receipt=None
+            read_receipt=None,
+            reply_to_message_id=reply_to_id,
+            replied_message=replied_message_data
         )
     
     @staticmethod
@@ -332,6 +347,21 @@ class MessageService:
             for receipt in receipts:
                 receipts_dict[receipt.message_id] = receipt.dict()
         
+        # Batch fetch replied messages
+        replied_messages_dict = {}
+        reply_ids = [msg.reply_to_message_id for msg in messages if msg.reply_to_message_id]
+        if reply_ids:
+            replied_query = select(Message).where(Message.id.in_(reply_ids))
+            replied_messages = db.exec(replied_query).all()
+            for replied_msg in replied_messages:
+                replied_messages_dict[replied_msg.id] = {
+                    "message_uuid": replied_msg.message_uuid,
+                    "content": replied_msg.content if not replied_msg.is_deleted else "[Deleted message]",
+                    "sender_id": replied_msg.sender_id,
+                    "created_at": replied_msg.created_at.isoformat(),
+                    "is_deleted": replied_msg.is_deleted
+                }
+        
         # Enrich messages with conversation UUID and other data
         enriched_messages = []
         for msg in messages:
@@ -348,7 +378,9 @@ class MessageService:
                 created_at=msg.created_at,
                 updated_at=msg.updated_at,
                 attachments=attachments_dict.get(msg.id, []),
-                read_receipt=receipts_dict.get(msg.id)
+                read_receipt=receipts_dict.get(msg.id),
+                reply_to_message_id=msg.reply_to_message_id,
+                replied_message=replied_messages_dict.get(msg.reply_to_message_id) if msg.reply_to_message_id else None
             )
             enriched_messages.append(enriched_msg)
         

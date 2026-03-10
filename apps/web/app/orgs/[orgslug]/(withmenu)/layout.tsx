@@ -5,6 +5,7 @@ import { SessionProvider } from 'next-auth/react'
 import { OrgMenu } from '@components/Objects/Menus/OrgMenu'
 import { NotificationProvider } from '@components/Contexts/NotificationContext'
 import { GlobalChatProvider } from '@components/Contexts/GlobalChatContext'
+import FloatingChatWidget from '@components/Objects/FloatingChatWidget'
 
 export default function RootLayout(props: {
   children: React.ReactNode
@@ -20,7 +21,10 @@ export default function RootLayout(props: {
         <NotificationProvider>
           <GlobalChatProvider>
             <OrgMenu orgslug={params?.orgslug}></OrgMenu>
-            <main className="flex-1 w-full overflow-auto">{children}</main>
+            <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden scrollbar-hide">
+              {children}
+            </main>
+            <FloatingChatWidget />
           </GlobalChatProvider>
         </NotificationProvider>
       </SessionProvider>

@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
 import {
   Send,
   Loader2,
@@ -18,10 +19,11 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Reply,
 } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { getAPIUrl } from '@services/config/config'
+import { getAPIUrl, getBackendUrl } from '@services/config/config'
 import useWebSocket from '@/hooks/useWebSocket'
 import { useNotifications } from '@/hooks/useNotifications'
 import {
@@ -68,6 +70,14 @@ interface Message {
     delivered_at: string
     read_at?: string
   }
+  reply_to_message_id?: number
+  replied_message?: {
+    message_uuid: string
+    content: string
+    sender_id: number
+    created_at: string
+    is_deleted: boolean
+  }
 }
 
 interface ParticipantUser {
@@ -106,6 +116,19 @@ interface ChatWindowProps {
   onBack?: () => void
 }
 
+const SUPPORTED_CHAT_EXTENSIONS = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.webp',
+  '.mp4',
+  '.webm',
+  '.pdf',
+]
+
+const CHAT_FILE_ACCEPT = SUPPORTED_CHAT_EXTENSIONS.join(',')
+
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
   onConversationUpdate,
@@ -130,6 +153,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [deleteTargetMessage, setDeleteTargetMessage] =
     useState<Message | null>(null)
   const [isDeletingMessage, setIsDeletingMessage] = useState(false)
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
+    null
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
@@ -191,14 +217,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const ensureAbsoluteUrl = useCallback((url: string): string => {
     if (!url) return url
-    if (
-      url.startsWith('http://') ||
-      url.startsWith('https://') ||
-      url.startsWith('blob:')
-    ) {
+    if (url.startsWith('blob:')) {
       return url
     }
-    const backendOrigin = new URL(getAPIUrl()).origin
+
+    const backendOrigin = new URL(getBackendUrl()).origin
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      try {
+        const parsed = new URL(url)
+        if (parsed.pathname.startsWith('/content/')) {
+          return `${backendOrigin}${parsed.pathname}${parsed.search}${parsed.hash}`
+        }
+      } catch {
+        return url
+      }
+      return url
+    }
+
     const path = url.startsWith('/') ? url : `/${url}`
     return `${backendOrigin}${path}`
   }, [])
@@ -223,7 +259,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`
         }
 
-        const backendOrigin = new URL(getAPIUrl()).origin
+        const backendOrigin = new URL(getBackendUrl()).origin
         const absoluteUrl = `${backendOrigin}${path}`
 
         const response = await fetch(absoluteUrl, {
@@ -381,6 +417,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         attachments: data.attachments || [],
         isPending: false,
         read_receipt: { delivered_at: data.created_at, read_at: undefined },
+        reply_to_message_id: data.reply_to_message_id,
+        replied_message: data.replied_message,
       }
 
       setMessages((prev) => {
@@ -552,7 +590,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      setSelectedFiles((prev) => [...prev, ...Array.from(files)])
+      const incomingFiles = Array.from(files)
+      const supportedFiles = incomingFiles.filter((file) => {
+        const ext = file.name.includes('.')
+          ? `.${file.name.split('.').pop()?.toLowerCase()}`
+          : ''
+        return SUPPORTED_CHAT_EXTENSIONS.includes(ext)
+      })
+      const rejectedFiles = incomingFiles.filter(
+        (file) => !supportedFiles.includes(file)
+      )
+
+      if (supportedFiles.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...supportedFiles])
+      }
+
+      if (rejectedFiles.length > 0) {
+        const rejectedNames = rejectedFiles.map((file) => file.name).join(', ')
+        setError(
+          `Unsupported file type: ${rejectedNames}. Allowed: ${SUPPORTED_CHAT_EXTENSIONS.join(', ')}`
+        )
+      }
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -568,6 +626,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setEditingMessage(message)
     setMessageInput(message.content)
     setSelectedFiles([])
+    setReplyingToMessage(null)
     setError(null)
     setTimeout(() => messageInputRef.current?.focus(), 0)
   }
@@ -575,6 +634,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const cancelEditMessage = () => {
     setEditingMessage(null)
     setMessageInput('')
+  }
+
+  const startReplyToMessage = (message: Message) => {
+    if (message.is_deleted || message.isPending) return
+    setReplyingToMessage(message)
+    setEditingMessage(null)
+    setError(null)
+    setTimeout(() => messageInputRef.current?.focus(), 0)
+  }
+
+  const cancelReply = () => {
+    setReplyingToMessage(null)
   }
 
   const handleEditMessage = async () => {
@@ -724,7 +795,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
+      let errorText = ''
+      try {
+        const errorJson = await response.json()
+        errorText =
+          typeof errorJson?.detail === 'string'
+            ? errorJson.detail
+            : JSON.stringify(errorJson)
+      } catch {
+        errorText = await response.text()
+      }
       throw new Error(
         `Failed to upload attachment: ${response.status} ${errorText}`
       )
@@ -755,6 +835,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   const handleSendMessage = async () => {
+    if (isSendingMessage || isUpdatingMessage) return
     if ((!messageInput.trim() && selectedFiles.length === 0) || !conversation)
       return
 
@@ -817,7 +898,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )
       url.searchParams.append('content', messageContent)
       url.searchParams.append('message_type', hasFiles ? 'file' : 'text')
-      url.searchParams.append('reply_to_message_id', '0')
+      if (replyingToMessage?.id) {
+        url.searchParams.append(
+          'reply_to_message_id',
+          String(replyingToMessage.id)
+        )
+      }
 
       const response = await fetch(url.toString(), {
         method: 'POST',
@@ -832,8 +918,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       const serverMessage = await response.json()
 
+      // Clear reply state after successful send
+      setReplyingToMessage(null)
+
       if (hasFiles) {
         const uploadedAttachments: Attachment[] = []
+        const failedUploads: string[] = []
         for (const file of filesToUpload) {
           try {
             const attachment = await uploadAttachment(
@@ -842,8 +932,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             )
             uploadedAttachments.push(attachment)
           } catch (error) {
-            // Error uploading file
+            const reason =
+              error instanceof Error ? error.message : 'Unknown upload error'
+            failedUploads.push(`${file.name} (${reason})`)
           }
+        }
+
+        if (failedUploads.length > 0) {
+          setError(
+            `Some attachments failed to upload: ${failedUploads.join('; ')}`
+          )
         }
 
         const fullMessage = await fetchFullMessage(serverMessage.message_uuid)
@@ -923,6 +1021,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       setError(t('chat.message_failed'))
     } finally {
       setIsSendingMessage(false)
+      setTimeout(() => messageInputRef.current?.focus(), 0)
     }
   }
 
@@ -988,7 +1087,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           )}
           <div className="relative">
             <img
-              src={otherParticipant.avatar_image || '/empty_avatar.png'}
+              src={
+                otherParticipant.avatar_image
+                  ? getUserAvatarMediaDirectory(
+                      otherParticipant.user_uuid,
+                      otherParticipant.avatar_image
+                    )
+                  : '/empty_avatar.png'
+              }
               alt={otherParticipant.username}
               className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
             />
@@ -1039,7 +1145,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               >
                 {!isMine && (
                   <img
-                    src={otherParticipant.avatar_image || '/empty_avatar.png'}
+                    src={
+                      otherParticipant.avatar_image
+                        ? getUserAvatarMediaDirectory(
+                            otherParticipant.user_uuid,
+                            otherParticipant.avatar_image
+                          )
+                        : '/empty_avatar.png'
+                    }
                     alt={otherParticipant.username}
                     className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
                   />
@@ -1064,6 +1177,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         </span>
                       ) : (
                         <>
+                          {/* Reply context */}
+                          {message.replied_message && (
+                            <div
+                              className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/[0.08] border-indigo-400/60'}`}
+                            >
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <Reply size={10} className="opacity-60" />
+                                <span className="text-[10px] font-medium opacity-60">
+                                  {message.replied_message.sender_id ===
+                                  current_user_id
+                                    ? t('chat.you')
+                                    : otherParticipant.first_name ||
+                                      otherParticipant.username}
+                                </span>
+                              </div>
+                              <p className="text-xs opacity-75 line-clamp-2">
+                                {message.replied_message.is_deleted
+                                  ? '[Deleted message]'
+                                  : message.replied_message.content}
+                              </p>
+                            </div>
+                          )}
                           {message.content && <span>{message.content}</span>}
                           {message.attachments &&
                             message.attachments.length > 0 && (
@@ -1077,8 +1212,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                   const isImage =
                                     attachment.file_type.startsWith('image/')
                                   // Don't double-process URLs - backend already returns absolute URLs
-                                  const absoluteFileUrl =
+                                  const absoluteFileUrl = ensureAbsoluteUrl(
                                     attachment.file_url || ''
+                                  )
                                   const absoluteThumbUrl = ensureAbsoluteUrl(
                                     attachment.thumbnail_url ||
                                       attachment.file_url ||
@@ -1180,6 +1316,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                           className="w-40"
                         >
                           <DropdownMenuItem
+                            onClick={() => startReplyToMessage(message)}
+                          >
+                            <Reply size={14} />
+                            {t('chat.reply')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={() => startEditMessage(message)}
                           >
                             <Pencil size={14} />
@@ -1191,6 +1333,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                           >
                             <Trash2 size={14} />
                             {t('common.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    {!isMine && !message.is_deleted && (
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/60"
+                            aria-label="Message actions"
+                          >
+                            <MoreHorizontal size={14} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align={isMine ? 'end' : 'start'}
+                          className="w-40"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => startReplyToMessage(message)}
+                          >
+                            <Reply size={14} />
+                            {t('chat.reply')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1235,8 +1401,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <div className="flex justify-start gap-2">
             <img
               src={
-                otherParticipant.avatar_image ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherParticipant.id}`
+                otherParticipant.avatar_image
+                  ? getUserAvatarMediaDirectory(
+                      otherParticipant.user_uuid,
+                      otherParticipant.avatar_image
+                    )
+                  : '/empty_avatar.png'
               }
               alt={otherParticipant.username}
               className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
@@ -1281,6 +1451,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 onClick={cancelEditMessage}
                 className="p-1 rounded-md hover:bg-white/10 text-white/60 hover:text-white/90"
                 aria-label="Cancel editing"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {replyingToMessage && (
+          <div className="mb-3 p-3 rounded-xl border border-indigo-500/25 bg-indigo-500/10">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Reply
+                    size={12}
+                    className="text-indigo-300/90 flex-shrink-0"
+                  />
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-300/90">
+                    Replying to{' '}
+                    {replyingToMessage.sender_id === current_user_id
+                      ? 'yourself'
+                      : otherParticipant.first_name ||
+                        otherParticipant.username}
+                  </p>
+                </div>
+                <p className="text-xs text-white/70 line-clamp-2">
+                  {replyingToMessage.content || '[Attachment]'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={cancelReply}
+                className="p-1 rounded-md hover:bg-white/10 text-white/60 hover:text-white/90 flex-shrink-0"
+                aria-label="Cancel reply"
               >
                 <X size={14} />
               </button>
@@ -1341,7 +1544,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             multiple
             onChange={handleFileSelect}
             className="hidden"
-            accept="*/*"
+            accept={CHAT_FILE_ACCEPT}
           />
           <button
             type="button"
@@ -1371,7 +1574,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 handleTyping()
               }}
               onBlur={handleTypingStop}
-              disabled={isSendingMessage || isUpdatingMessage}
+              disabled={isUpdatingMessage}
               className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40 pr-12"
             />
           </div>
