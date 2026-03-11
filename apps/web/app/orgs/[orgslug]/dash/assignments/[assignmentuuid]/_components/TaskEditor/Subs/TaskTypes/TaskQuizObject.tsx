@@ -257,6 +257,8 @@ function TaskQuizObject({
           assignment_task_submission_uuid:
             res.data.assignment_task_submission_uuid,
         })
+        setUserSubmissionObject(res.data)
+        setHasSubmitted(!!res.data.task_submission?.grading_results)
       }
     }
   }, [
@@ -321,6 +323,8 @@ function TaskQuizObject({
         })
         toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
         setShowSavingDisclaimer(false)
+        setHasSubmitted(true)
+        setUserSubmissionObject(res.data)
         // Update userSubmissions with the returned UUID for future updates
         const updatedUserSubmissionsWithUUID = {
           ...updatedUserSubmissions,
@@ -345,6 +349,7 @@ function TaskQuizObject({
 
   /* GRADING VIEW CODE */
   const [userSubmissionObject, setUserSubmissionObject] = useState<any>(null)
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false)
   const getAssignmentTaskSubmissionFromIdentifiedUserUI =
     useCallback(async () => {
       if (assignmentTaskUUID && user_id) {
@@ -598,7 +603,7 @@ function TaskQuizObject({
                             </div>
                           </>
                         )}
-                        {view === 'student' && (
+                        {view === 'student' && !hasSubmitted && (
                           <div
                             className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
                               userSubmissions.submissions.find(
@@ -623,6 +628,41 @@ function TaskQuizObject({
                               <Check size={12} className="mx-auto" />
                             ) : (
                               <X size={12} className="mx-auto" />
+                            )}
+                          </div>
+                        )}
+                        {view === 'student' && hasSubmitted && (
+                          <div
+                            className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                              (userSubmissions.submissions.find(
+                                (s) =>
+                                  s.questionUUID === question.questionUUID &&
+                                  s.optionUUID === option.optionUUID
+                              )?.answer ?? false) ===
+                              option.assigned_right_answer
+                                ? 'bg-lime-200 text-lime-600'
+                                : 'bg-rose-200/60 text-rose-500'
+                            } text-sm`}
+                          >
+                            {(userSubmissions.submissions.find(
+                              (s) =>
+                                s.questionUUID === question.questionUUID &&
+                                s.optionUUID === option.optionUUID
+                            )?.answer ?? false) ===
+                            option.assigned_right_answer ? (
+                              <>
+                                <Check size={12} className="mx-auto" />
+                                <p className="mx-auto font-bold text-xs">
+                                  Correct
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <X size={12} className="mx-auto" />
+                                <p className="mx-auto font-bold text-xs">
+                                  Wrong
+                                </p>
+                              </>
                             )}
                           </div>
                         )}
