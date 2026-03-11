@@ -24,12 +24,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const displayName = getDisplayName(participant)
 
   return (
-    <div className="flex-shrink-0 px-5 py-3.5 border-b border-white/[0.06] bg-[#13131a] flex items-center justify-between">
+    <div className="shrink-0 px-5 py-3.5 border-b border-white/6 bg-[#13131a] flex items-center justify-between">
       <div className="flex items-center gap-3">
         {showBackButton && onBack && (
           <button
             onClick={onBack}
-            className="md:hidden flex-shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="md:hidden shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
             aria-label="Back to conversations"
           >
             <svg
@@ -57,7 +57,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 : '/empty_avatar.png'
             }
             alt={participant.username}
-            className="w-9 h-9 rounded-full ring-2 ring-white/[0.06] object-cover"
+            className="w-9 h-9 rounded-full ring-2 ring-white/6 object-cover"
           />
           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
         </div>

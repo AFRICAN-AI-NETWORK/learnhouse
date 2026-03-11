@@ -197,7 +197,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-[#17171f] border border-white/[0.08] shadow-2xl shadow-black/60 rounded-2xl p-0 overflow-hidden [&>button]:bg-indigo-500 [&>button]:text-white [&>button]:border [&>button]:border-indigo-300/70 [&>button]:opacity-100 [&>button]:rounded-md [&>button]:p-1 [&>button]:right-4 [&>button]:top-4 [&>button:hover]:bg-indigo-400 [&>button:focus]:ring-2 [&>button:focus]:ring-indigo-300">
+      <DialogContent className="max-w-md bg-[#17171f] border border-white/8 shadow-2xl shadow-black/60 rounded-2xl p-0 overflow-hidden [&>button]:bg-indigo-500 [&>button]:text-white [&>button]:border [&>button]:border-indigo-300/70 [&>button]:opacity-100 [&>button]:rounded-md [&>button]:p-1 [&>button]:right-4 [&>button]:top-4 [&>button:hover]:bg-indigo-400 [&>button:focus]:ring-2 [&>button:focus]:ring-indigo-300">
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="text-white font-semibold text-lg tracking-tight">
             {t('chat.start_new_chat')}
@@ -219,7 +219,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               disabled={isLoading}
               autoFocus
-              className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/25 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-indigo-500/60 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40"
+              className="w-full bg-white/5 border border-white/8 text-white placeholder-white/25 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-indigo-500/60 focus:bg-white/7 transition-all duration-200 disabled:opacity-40"
             />
           </div>
 
@@ -231,7 +231,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-white/4 border border-white/6 flex items-center justify-center">
                   <UserSearch size={18} className="text-white/20" />
                 </div>
                 <p className="text-white/30 text-sm">
@@ -250,13 +250,13 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                     key={user.id}
                     onClick={() => handleSelectUser(user)}
                     disabled={isCreatingConversation}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.05] transition-all duration-150 disabled:opacity-40 group text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-150 disabled:opacity-40 group text-left"
                   >
-                    <div className="relative flex-shrink-0">
+                    <div className="relative shrink-0">
                       <img
                         src={user.avatar_image || '/empty_avatar.png'}
                         alt={user.username}
-                        className="w-10 h-10 rounded-full ring-2 ring-white/[0.06] object-cover"
+                        className="w-10 h-10 rounded-full ring-2 ring-white/6 object-cover"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -277,7 +277,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                     {isCreatingConversation && (
                       <Loader2
                         size={14}
-                        className="animate-spin text-indigo-400 flex-shrink-0"
+                        className="animate-spin text-indigo-400 shrink-0"
                       />
                     )}
                   </button>

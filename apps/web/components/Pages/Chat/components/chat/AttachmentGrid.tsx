@@ -39,7 +39,7 @@ export const AttachmentGrid: React.FC<AttachmentGridProps> = ({
             <button
               key={att.attachment_uuid}
               onClick={() => window.open(att.file_url, '_blank')}
-              className="relative group rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] hover:border-white/[0.12] transition-colors"
+              className="relative group rounded-lg overflow-hidden bg-white/5 border border-white/8 hover:border-white/12 transition-colors"
             >
               <img
                 src={att.thumbnail_url || att.file_url}
@@ -61,7 +61,7 @@ export const AttachmentGrid: React.FC<AttachmentGridProps> = ({
             <button
               key={att.attachment_uuid}
               onClick={() => window.open(att.file_url, '_blank')}
-              className="w-full relative group rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08] hover:border-white/[0.12] transition-colors"
+              className="w-full relative group rounded-lg overflow-hidden bg-white/5 border border-white/8 hover:border-white/12 transition-colors"
             >
               {att.thumbnail_url && (
                 <img
@@ -86,9 +86,9 @@ export const AttachmentGrid: React.FC<AttachmentGridProps> = ({
             <button
               key={att.attachment_uuid}
               onClick={() => onDownload(att)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08] transition-colors text-left"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 border border-white/8 hover:bg-white/8 transition-colors text-left"
             >
-              <Download size={16} className="flex-shrink-0 text-white/60" />
+              <Download size={16} className="shrink-0 text-white/60" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-white truncate">
                   {att.file_name}

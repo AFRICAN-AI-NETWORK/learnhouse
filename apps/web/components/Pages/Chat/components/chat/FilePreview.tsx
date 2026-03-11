@@ -27,7 +27,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         return (
           <div key={index} className="relative group max-w-[200px]">
             {isImage ? (
-              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white/[0.05] border border-white/[0.08]">
+              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white/5 border border-white/8">
                 <img
                   src={URL.createObjectURL(file)}
                   alt={file.name}
@@ -43,11 +43,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] group-hover:bg-white/[0.08] transition-colors">
-                <IconComponent
-                  size={16}
-                  className="flex-shrink-0 text-white/60"
-                />
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/8 group-hover:bg-white/8 transition-colors">
+                <IconComponent size={16} className="shrink-0 text-white/60" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-white truncate">
                     {file.name}
@@ -59,7 +56,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                 <button
                   type="button"
                   onClick={() => onRemove(index)}
-                  className="flex-shrink-0 text-white/40 hover:text-white/80 transition-colors"
+                  className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
                   aria-label="Remove file"
                 >
                   <X size={12} className="text-white/60" />

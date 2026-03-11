@@ -39,7 +39,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.1] flex items-center justify-center text-white/60 hover:text-white/80"
+          className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white/80"
           aria-label="Message actions"
         >
           <MoreHorizontal size={14} />
@@ -47,7 +47,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align={isMine ? 'end' : 'start'}
-        className="w-40 p-1.5 bg-[#1a1a22] border border-white/[0.08] shadow-xl relative"
+        className="w-40 p-1.5 bg-[#1a1a22] border border-white/8 shadow-xl relative"
         onCloseAutoFocus={(event) => event.preventDefault()}
         style={{
           clipPath:

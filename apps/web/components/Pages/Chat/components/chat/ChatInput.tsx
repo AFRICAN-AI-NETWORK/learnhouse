@@ -61,11 +61,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }
 
   return (
-    <div className="px-4 py-4 border-t border-white/[0.06] bg-[#0f0f13] space-y-3">
+    <div className="px-4 py-4 border-t border-white/6 bg-[#0f0f13] space-y-3">
       {/* Error message */}
       {error && (
         <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-2">
-          <div className="flex-shrink-0 w-4 h-4 rounded-full bg-red-500 mt-0.5" />
+          <div className="shrink-0 w-4 h-4 rounded-full bg-red-500 mt-0.5" />
           <p className="text-xs text-red-400">{error}</p>
         </div>
       )}
@@ -84,7 +84,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <button
             type="button"
             onClick={onCancelReply}
-            className="flex-shrink-0 text-white/60 hover:text-white/90 p-1"
+            className="shrink-0 text-white/60 hover:text-white/90 p-1"
             aria-label="Cancel reply"
           >
             <X size={14} />
@@ -109,7 +109,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={isLoading || disabled}
-          className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Attach file"
         >
           <Paperclip size={18} />
@@ -134,7 +134,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             onBlur={onTypingStop}
             onPaste={onPaste}
             disabled={disabled}
-            className="w-full bg-white/[0.05] border border-white/[0.08] text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.07] transition-all duration-200 disabled:opacity-40 pr-12"
+            className="w-full bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"
           />
         </div>
         <button
@@ -144,7 +144,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             disabled ||
             (!value.trim() && selectedFiles.length === 0)
           }
-          className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
+          className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white transition-all duration-200 shadow-lg shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
           aria-label="Send message"
         >
           {isLoading ? (

@@ -15,6 +15,7 @@ import {
   Download,
   Reply,
 } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl, getBackendUrl } from '@services/config/config'
@@ -1326,28 +1327,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               index > 0 ? messages[index - 1] : undefined
             )
             return (
-              <div
-                key={message.clientId || message.message_uuid}
-                className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
-              >
-                {!isMine && (
-                  <img
-                    src={
-                      otherParticipant.avatar_image
-                        ? getUserAvatarMediaDirectory(
-                            otherParticipant.user_uuid,
-                            otherParticipant.avatar_image
-                          )
-                        : '/empty_avatar.png'
-                    }
-                    alt={otherParticipant.username}
-                    className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
-                  />
+              <React.Fragment key={message.clientId || message.message_uuid}>
+                {showDateSeparator && (
+                  <div className="flex justify-center my-6">
+                    <span className="px-3 py-1 rounded-full bg-white/4 border border-white/6 text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                      {getDateSeparatorLabel(message.created_at)}
+                    </span>
+                  </div>
                 )}
                 <div
-                  ref={(node) => setMessageItemRef(message.message_uuid, node)}
-                  data-message-uuid={message.message_uuid}
-                  className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
+                  className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 mb-4`}
                 >
                   {!isMine && (
                     <img
@@ -1360,124 +1349,97 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                           : '/empty_avatar.png'
                       }
                       alt={otherParticipant.username}
-                      className="w-7 h-7 rounded-full self-end flex-shrink-0 ring-1 ring-white/[0.06]"
+                      className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
                     />
                   )}
-
                   <div
-                    className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                    ref={(node) =>
+                      setMessageItemRef(message.message_uuid, node)
+                    }
+                    data-message-uuid={message.message_uuid}
+                    className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 relative`}
                   >
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
-                        isMine
-                          ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
-                          : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
-                      }`}
+                      className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
-                      {message.is_deleted ? (
-                        <span className="italic text-white/30 text-xs">
-                          {t('chat.message_deleted')}
-                        </span>
-                      ) : (
-                        <>
-                          {/* Reply context */}
-                          {message.replied_message && (
-                            <div
-                              className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/8 border-indigo-400/60'}`}
-                            >
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <Reply size={10} className="opacity-60" />
-                                <span className="text-[10px] font-medium opacity-60">
-                                  {message.replied_message.sender_id ===
-                                  current_user_id
-                                    ? t('chat.you')
-                                    : otherParticipant.first_name ||
-                                      otherParticipant.username}
-                                </span>
-                              </div>
-                              <p className="text-xs opacity-75 line-clamp-2">
-                                {message.replied_message.is_deleted
-                                  ? '[Deleted message]'
-                                  : message.replied_message.content}
-                              </p>
-                            </div>
-                          )}
-                          {message.content && <span>{message.content}</span>}
-                          {message.attachments &&
-                            message.attachments.length > 0 && (
+                      <div
+                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
+                          isMine
+                            ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
+                            : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
+                        }`}
+                      >
+                        {message.is_deleted ? (
+                          <span className="italic text-white/30 text-xs">
+                            {t('chat.message_deleted')}
+                          </span>
+                        ) : (
+                          <>
+                            {/* Reply context */}
+                            {message.replied_message && (
                               <div
-                                className={`space-y-2 ${message.content ? 'mt-2' : ''}`}
+                                className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/8 border-indigo-400/60'}`}
                               >
-                                {message.attachments.map((attachment) => {
-                                  const IconComponent = getFileIcon(
-                                    attachment.file_type
-                                  )
-                                  const isImage =
-                                    attachment.file_type.startsWith('image/')
-                                  // Don't double-process URLs - backend already returns absolute URLs
-                                  const absoluteFileUrl = ensureAbsoluteUrl(
-                                    attachment.file_url || ''
-                                  )
-                                  const absoluteThumbUrl = ensureAbsoluteUrl(
-                                    attachment.thumbnail_url ||
-                                      attachment.file_url ||
-                                      ''
-                                  )
-                                  return (
-                                    <div
-                                      key={attachment.attachment_uuid}
-                                      className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/8'}`}
-                                    >
-                                      {isImage && absoluteFileUrl ? (
-                                        <div className="relative group">
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              openFileInNewTab(absoluteFileUrl)
-                                            }
-                                            className="block cursor-pointer p-0 border-0 bg-transparent"
-                                            title={`Open ${attachment.file_name}`}
-                                          >
-                                            <img
-                                              src={absoluteThumbUrl}
-                                              alt={attachment.file_name}
-                                              className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
-                                            />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              downloadFile(
-                                                attachment.file_url,
-                                                attachment.file_name
-                                              )
-                                            }
-                                            className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded transition-colors opacity-0 group-hover:opacity-100 border-0 cursor-pointer"
-                                            title={`Download ${attachment.file_name}`}
-                                          >
-                                            <Download
-                                              size={14}
-                                              className="text-white"
-                                            />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <IconComponent
-                                            size={18}
-                                            className="shrink-0"
-                                          />
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-medium truncate">
-                                              {attachment.file_name}
-                                            </p>
-                                            <p className="text-[10px] opacity-60">
-                                              {formatFileSize(
-                                                attachment.file_size
-                                              )}
-                                            </p>
-                                          </div>
-                                          {absoluteFileUrl && (
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <Reply size={10} className="opacity-60" />
+                                  <span className="text-[10px] font-medium opacity-60">
+                                    {message.replied_message.sender_id ===
+                                    current_user_id
+                                      ? t('chat.you')
+                                      : otherParticipant.first_name ||
+                                        otherParticipant.username}
+                                  </span>
+                                </div>
+                                <p className="text-xs opacity-75 line-clamp-2">
+                                  {message.replied_message.is_deleted
+                                    ? '[Deleted message]'
+                                    : message.replied_message.content}
+                                </p>
+                              </div>
+                            )}
+                            {message.content && <span>{message.content}</span>}
+                            {message.attachments &&
+                              message.attachments.length > 0 && (
+                                <div
+                                  className={`space-y-2 ${message.content ? 'mt-2' : ''}`}
+                                >
+                                  {message.attachments.map((attachment) => {
+                                    const IconComponent = getFileIcon(
+                                      attachment.file_type
+                                    )
+                                    const isImage =
+                                      attachment.file_type.startsWith('image/')
+                                    const absoluteFileUrl = ensureAbsoluteUrl(
+                                      attachment.file_url || ''
+                                    )
+                                    const absoluteThumbUrl = ensureAbsoluteUrl(
+                                      attachment.thumbnail_url ||
+                                        attachment.file_url ||
+                                        ''
+                                    )
+                                    return (
+                                      <div
+                                        key={attachment.attachment_uuid}
+                                        className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/8'}`}
+                                      >
+                                        {isImage && absoluteFileUrl ? (
+                                          <div className="relative group">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                openFileInNewTab(
+                                                  absoluteFileUrl
+                                                )
+                                              }
+                                              className="block cursor-pointer p-0 border-0 bg-transparent"
+                                              title={`Open ${attachment.file_name}`}
+                                            >
+                                              <img
+                                                src={absoluteThumbUrl}
+                                                alt={attachment.file_name}
+                                                className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
+                                              />
+                                            </button>
                                             <button
                                               type="button"
                                               onClick={() =>
@@ -1486,7 +1448,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                                   attachment.file_name
                                                 )
                                               }
-                                              className="shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                                              className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded transition-colors opacity-0 group-hover:opacity-100 border-0 cursor-pointer"
                                               title={`Download ${attachment.file_name}`}
                                             >
                                               <Download
@@ -1499,7 +1461,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                           <>
                                             <IconComponent
                                               size={18}
-                                              className="flex-shrink-0"
+                                              className="shrink-0"
                                             />
                                             <div className="flex-1 min-w-0">
                                               <p className="text-xs font-medium truncate">
@@ -1520,10 +1482,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                                     attachment.file_name
                                                   )
                                                 }
-                                                className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                                                className="shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
                                                 title={`Download ${attachment.file_name}`}
                                               >
-                                                <Download size={14} />
+                                                <Download
+                                                  size={14}
+                                                  className="text-white"
+                                                />
                                               </button>
                                             )}
                                           </>
@@ -1537,125 +1502,54 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         )}
                       </div>
 
-                      {!message.is_deleted && !message.isPending && (
-                        <MessageActions
-                          message={message}
-                          isMine={isMine}
-                          onReply={() => startReplyToMessage(message)}
-                          onCopy={() => copyMessageContent(message)}
-                          onEdit={
-                            isMine ? () => startEditMessage(message) : undefined
-                          }
-                          onDelete={
-                            isMine
-                              ? () => setDeleteTargetMessage(message)
-                              : undefined
-                          }
-                          t={t}
-                        />
-                      )}
-                    </div>
-
-                    {isMine && !message.isPending && !message.is_deleted && (
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/8 flex items-center justify-center text-white/60"
-                            aria-label="Message actions"
-                          >
-                            <MoreHorizontal size={14} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align={isMine ? 'end' : 'start'}
-                          className="w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => startReplyToMessage(message)}
-                          >
-                            <Reply size={14} />
-                            {t('chat.reply')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => startEditMessage(message)}
-                          >
-                            <Pencil size={14} />
-                            {t('common.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeleteTargetMessage(message)}
-                            className="text-red-500 focus:text-red-500"
-                          >
-                            <Trash2 size={14} />
-                            {t('common.delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    {!isMine && !message.is_deleted && (
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/8 flex items-center justify-center text-white/60"
-                            aria-label="Message actions"
-                          >
-                            <MoreHorizontal size={14} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align={isMine ? 'end' : 'start'}
-                          className="w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => startReplyToMessage(message)}
-                          >
-                            <Reply size={14} />
-                            {t('chat.reply')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-
-                  {/* Timestamp + status */}
-                  <div
-                    className={`flex items-center gap-1 mt-1 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
-                  >
-                    <span className="text-[11px] text-white/20 tabular-nums">
-                      {new Date(message.created_at).toLocaleTimeString(
-                        'en-US',
-                        { hour: '2-digit', minute: '2-digit' }
-                      )}
-                    </span>
-                    {isMine && (
-                      <span className="text-white/30">
-                        {message.isPending ? (
-                          <Clock size={11} className="animate-pulse" />
-                        ) : message.read_receipt?.read_at ? (
-                          <CheckCheck size={11} className="text-indigo-400" />
-                        ) : (
-                          <Check size={11} />
-                        )}
-                      </span>
-                      {isMine && (
-                        <span className="text-white/30">
-                          {message.isPending ? (
-                            <Clock size={11} className="animate-pulse" />
-                          ) : message.read_receipt?.read_at ? (
-                            <CheckCheck size={11} className="text-indigo-400" />
-                          ) : (
-                            <Check size={11} />
+                      <div
+                        className={`flex items-center gap-1 mt-1 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                      >
+                        <span className="text-[11px] text-white/20 tabular-nums">
+                          {new Date(message.created_at).toLocaleTimeString(
+                            'en-US',
+                            { hour: '2-digit', minute: '2-digit' }
                           )}
                         </span>
-                      )}
-                      {message.is_edited && (
-                        <span className="text-[11px] text-white/20">
-                          · {t('chat.edited')}
-                        </span>
-                      )}
+                        {isMine && (
+                          <span className="text-white/30">
+                            {message.isPending ? (
+                              <Clock size={11} className="animate-pulse" />
+                            ) : message.read_receipt?.read_at ? (
+                              <CheckCheck
+                                size={11}
+                                className="text-indigo-400"
+                              />
+                            ) : (
+                              <Check size={11} />
+                            )}
+                          </span>
+                        )}
+                        {message.is_edited && (
+                          <span className="text-[11px] text-white/20">
+                            · {t('chat.edited')}
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {!message.is_deleted && !message.isPending && (
+                      <MessageActions
+                        message={message}
+                        isMine={isMine}
+                        onCopy={() => copyMessageContent(message)}
+                        onReply={() => startReplyToMessage(message)}
+                        onEdit={
+                          isMine ? () => startEditMessage(message) : undefined
+                        }
+                        onDelete={
+                          isMine
+                            ? () => setDeleteTargetMessage(message)
+                            : undefined
+                        }
+                        t={t}
+                      />
+                    )}
                   </div>
                 </div>
               </React.Fragment>
@@ -1664,31 +1558,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
 
         {/* Typing indicator */}
-        {otherUserTyping && (
-          <div className="flex justify-start gap-2">
-            <img
-              src={
-                otherParticipant.avatar_image
-                  ? getUserAvatarMediaDirectory(
-                      otherParticipant.user_uuid,
-                      otherParticipant.avatar_image
-                    )
-                  : '/empty_avatar.png'
-              }
-              alt={otherParticipant.username}
-              className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
-            />
-            <div className="bg-white/7 border border-white/6 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
-              {[0, 150, 300].map((delay) => (
-                <div
-                  key={delay}
-                  className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"
-                  style={{ animationDelay: `${delay}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        <TypingIndicator isVisible={otherUserTyping} />
         <div ref={messagesEndRef} />
       </div>
 
@@ -1814,11 +1684,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSendingMessage || isUpdatingMessage}
-            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="h-11 w-11 shrink-0 flex items-center justify-center rounded-xl border border-white/8 bg-white/5 text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white/80 disabled:cursor-not-allowed disabled:opacity-30"
           >
             <Paperclip size={18} />
           </button>
-          <div className="flex-1 relative">
+          <div className="relative flex-1">
             <input
               ref={messageInputRef}
               type="text"
