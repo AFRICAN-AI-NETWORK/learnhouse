@@ -21,6 +21,9 @@ interface GlobalChatContextType {
   closeChat: () => void
   toggleChat: () => void
   unreadCount: number
+  sendMessage: (message: any) => void
+  addMessageListener: (type: string, listener: any) => void
+  removeMessageListener: (type: string, listener: any) => void
 }
 
 const GlobalChatContext = createContext<GlobalChatContextType | undefined>(
@@ -56,15 +59,12 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
   const org_id = org?.id
   const current_user_id = session?.data?.user?.id
 
-  const { isConnected, addMessageListener, removeMessageListener, connect } =
-    useWebSocket(access_token, org_id, { autoConnect: false })
-
-  // Connect WebSocket when user is authenticated
-  useEffect(() => {
-    if (access_token && org_id) {
-      connect()
-    }
-  }, [access_token, org_id, connect])
+  const {
+    isConnected,
+    sendMessage,
+    addMessageListener,
+    removeMessageListener,
+  } = useWebSocket(access_token, org_id)
 
   const openChat = useCallback(() => {
     setUnreadCount(0)
@@ -191,6 +191,9 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
         closeChat,
         toggleChat,
         unreadCount,
+        sendMessage,
+        addMessageListener,
+        removeMessageListener,
       }}
     >
       {children}

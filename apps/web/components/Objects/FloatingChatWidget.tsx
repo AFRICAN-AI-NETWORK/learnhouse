@@ -9,9 +9,6 @@ import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 import { getAPIUrl } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
-import { Conversation } from '@/types/chatTypes'
-import { useConversationWebSocket } from '@components/Hooks/chatHooks'
-import useWebSocket from '@/hooks/useWebSocket'
 
 const floatingConversationListCache = new Map<number, Conversation[]>()
 
@@ -37,22 +34,8 @@ export default function FloatingChatWidget() {
   const access_token = session?.data?.tokens?.access_token
   const current_user_id = session?.data?.user?.id
 
-  const { isConnected, addMessageListener, removeMessageListener, connect } =
-    useWebSocket(access_token, org_id, { autoConnect: false })
-  const { setupMessageListener, setupTypingListener } =
-    useConversationWebSocket({
-      isConnected,
-      addMessageListener,
-      removeMessageListener,
-      currentUserId: current_user_id,
-    })
-
-  // Connect WebSocket only when chat is opened
-  useEffect(() => {
-    if (isChatOpen && access_token && org_id) {
-      connect()
-    }
-  }, [isChatOpen, access_token, org_id, connect])
+  const { isConnected, addMessageListener, removeMessageListener } =
+    useGlobalChat()
 
   // Load conversations when chat opens
   useEffect(() => {
@@ -250,7 +233,7 @@ export default function FloatingChatWidget() {
       {(!isChatOpen || isMinimized) && (
         <button
           onClick={isMinimized ? handleRestore : toggleChat}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-linear-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group"
           aria-label="Open chat"
         >
           <MessageSquare className="w-6 h-6" />
@@ -264,9 +247,9 @@ export default function FloatingChatWidget() {
 
       {/* Chat Panel */}
       {isChatOpen && !isMinimized && (
-        <div className="fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[480px] h-[600px] max-h-[80vh] bg-[#13131a] border border-white/[0.08] rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-6 right-6 z-50 w-[90vw] sm:w-[480px] h-[600px] max-h-[80vh] bg-[#13131a] border border-white/8 rounded-xl shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.08]">
+          <div className="flex items-center justify-between px-4 py-3 bg-white/3 border-b border-white/8">
             <div className="flex items-center gap-2">
               {selectedConversationId && (
                 <button
@@ -298,14 +281,14 @@ export default function FloatingChatWidget() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleMinimize}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-white transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/6 text-white/60 hover:text-white transition-colors"
                 aria-label="Minimize"
               >
                 <Minus className="w-4 h-4" />
               </button>
               <button
                 onClick={closeChat}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.06] text-white/60 hover:text-white transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/6 text-white/60 hover:text-white transition-colors"
                 aria-label="Close chat"
               >
                 <X className="w-4 h-4" />
