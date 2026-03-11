@@ -97,7 +97,7 @@ export const swrFetcher = async (url: string, token?: string) => {
 
   // Fetch the data
   const request = await fetch(url, options)
-  const res = errorHandling(request)
+  const res = await errorHandling(request)
 
   // Return the data
   return res

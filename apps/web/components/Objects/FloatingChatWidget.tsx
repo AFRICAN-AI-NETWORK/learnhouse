@@ -10,6 +10,16 @@ import { getAPIUrl } from '@services/config/config'
 import ConversationsList from '@components/Pages/Chat/ConversationsList'
 import ChatWindow from '@components/Pages/Chat/ChatWindow'
 
+interface Participant {
+  id: number
+  user_uuid: string
+  username: string
+  first_name?: string
+  last_name?: string
+  avatar_image?: string
+  role_name?: string
+}
+
 interface Conversation {
   id: number
   conversation_uuid: string
@@ -21,15 +31,7 @@ interface Conversation {
   created_at: string
   updated_at: string
   unread_count: number
-  other_participant: {
-    id: number
-    user_uuid: string
-    username: string
-    first_name?: string
-    last_name?: string
-    avatar_image?: string
-    role_name?: string
-  }
+  other_participant: Participant
   last_message?: {
     message_uuid: string
     content: string
@@ -38,6 +40,8 @@ interface Conversation {
     is_deleted: boolean
   }
 }
+
+const floatingConversationListCache = new Map<number, Conversation[]>()
 
 export default function FloatingChatWidget() {
   const { t } = useTranslation()
@@ -68,9 +72,20 @@ export default function FloatingChatWidget() {
   useEffect(() => {
     if (!org_id || !access_token || !isChatOpen) return
 
+    const cachedConversations = floatingConversationListCache.get(org_id)
+    if (cachedConversations) {
+      setConversations(cachedConversations)
+      setIsLoadingConversations(false)
+    } else {
+      setIsLoadingConversations(true)
+    }
+
     const loadConversations = async () => {
       try {
-        setIsLoadingConversations(true)
+        // Add timeout for fetch request (10 seconds)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+
         const response = await fetch(
           `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
           {
@@ -78,14 +93,25 @@ export default function FloatingChatWidget() {
               Authorization: `Bearer ${access_token}`,
               'Content-Type': 'application/json',
             },
+            signal: controller.signal,
           }
         )
+
+        clearTimeout(timeoutId)
+
         if (response.ok) {
-          const data = await response.json()
-          setConversations(data)
+          const text = await response.text()
+          try {
+            const data = JSON.parse(text)
+            setConversations(data)
+            floatingConversationListCache.set(org_id, data)
+          } catch (jsonError) {
+            // Failed to parse conversations response - ignore silently
+          }
         }
-      } catch {
-        // Ignore transient load errors; chat can recover on next open/reconnect.
+      } catch (error: any) {
+        // Ignore transient load errors (including timeout/abort)
+        // Chat can recover on next open/reconnect.
       } finally {
         setIsLoadingConversations(false)
       }
@@ -175,18 +201,28 @@ export default function FloatingChatWidget() {
   useEffect(() => {
     if (!isConnected) return
 
-    addMessageListener('typing', handleTyping)
-    const typingTimeouts = typingTimeoutsRef.current
+    addMessageListener('user_typing', handleTyping)
 
     return () => {
-      removeMessageListener('typing', handleTyping)
-      typingTimeouts.forEach((timeout) => clearTimeout(timeout))
-      typingTimeouts.clear()
+      removeMessageListener('user_typing', handleTyping)
     }
   }, [isConnected, addMessageListener, removeMessageListener, handleTyping])
 
+  useEffect(() => {
+    const timeouts = typingTimeoutsRef.current
+    return () => {
+      timeouts.forEach((timeout) => clearTimeout(timeout))
+      timeouts.clear()
+    }
+  }, [])
+
   const handleNewConversation = useCallback((conversation: Conversation) => {
-    setConversations((prev) => [conversation, ...prev])
+    setConversations((prev) => {
+      const exists = prev.some(
+        (conv) => conv.conversation_uuid === conversation.conversation_uuid
+      )
+      return exists ? prev : [conversation, ...prev]
+    })
     setSelectedConversationId(conversation.conversation_uuid)
   }, [])
 
@@ -255,6 +291,26 @@ export default function FloatingChatWidget() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-white/3 border-b border-white/8">
             <div className="flex items-center gap-2">
+              {selectedConversationId && (
+                <button
+                  onClick={handleBackToList}
+                  className="shrink-0 -ml-1 p-1 text-indigo-400 hover:text-indigo-300 transition-colors"
+                  aria-label="Back to conversations"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
               <MessageSquare className="w-5 h-5 text-blue-400" />
               <h3 className="text-sm font-semibold text-white">
                 {selectedConversationId
@@ -295,6 +351,11 @@ export default function FloatingChatWidget() {
             ) : (
               <ChatWindow
                 conversationId={selectedConversationId}
+                conversationData={
+                  conversations.find(
+                    (conv) => conv.conversation_uuid === selectedConversationId
+                  ) ?? null
+                }
                 onBack={handleBackToList}
                 onConversationUpdate={handleConversationUpdate}
               />

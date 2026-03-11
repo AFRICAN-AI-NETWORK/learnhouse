@@ -11,27 +11,16 @@ import {
   Clock,
   Paperclip,
   X,
-  File,
   Image as ImageIcon,
-  Video,
-  FileText,
   Download,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
   Reply,
 } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl, getBackendUrl } from '@services/config/config'
 import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 import { useNotifications } from '@/hooks/useNotifications'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -40,97 +29,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@components/ui/dialog'
-
-interface Attachment {
-  attachment_uuid: string
-  file_name: string
-  file_type: string
-  file_size: number
-  file_url: string
-  thumbnail_url?: string
-  upload_status: string
-}
-
-interface Message {
-  id: number
-  message_uuid: string
-  conversation_id: string
-  sender_id: number
-  receiver_id: number
-  content: string
-  message_type: string
-  is_edited: boolean
-  is_deleted: boolean
-  created_at: string
-  updated_at: string
-  attachments: Attachment[]
-  clientId?: string
-  isPending?: boolean
-  read_receipt?: {
-    delivered_at: string
-    read_at?: string
-  }
-  reply_to_message_id?: number
-  replied_message?: {
-    message_uuid: string
-    content: string
-    sender_id: number
-    created_at: string
-    is_deleted: boolean
-  }
-}
-
-interface ParticipantUser {
-  id: number
-  user_uuid: string
-  username: string
-  first_name?: string
-  last_name?: string
-  avatar_image?: string
-}
-
-interface Conversation {
-  id: number
-  conversation_uuid: string
-  org_id: number
-  participant_one_id: number
-  participant_two_id: number
-  last_message_at?: string
-  is_archived: boolean
-  created_at: string
-  updated_at: string
-  unread_count: number
-  other_participant: ParticipantUser
-  last_message?: {
-    message_uuid: string
-    content: string
-    sender_id: number
-    created_at: string
-    is_deleted: boolean
-  }
-}
-
-interface ChatWindowProps {
-  conversationId: string
-  onConversationUpdate: (conversation: Conversation) => void
-  onBack?: () => void
-}
-
-const SUPPORTED_CHAT_EXTENSIONS = [
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.gif',
-  '.webp',
-  '.mp4',
-  '.webm',
-  '.pdf',
-]
-
-const CHAT_FILE_ACCEPT = SUPPORTED_CHAT_EXTENSIONS.join(',')
+import {
+  Attachment,
+  Message,
+  ChatWindowProps,
+  CHAT_FILE_ACCEPT,
+} from '../../../types/chatTypes'
+import { getFileIcon, formatFileSize } from '../../Utils/chatUtils'
+import {
+  useClipboardMedia,
+  useFileUpload,
+  useInputPaste,
+} from '../../Hooks/chatHooks'
+import { MessageActions } from './components/chat/MessageActions'
+import { TypingIndicator } from './components/chat/TypingIndicator'
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
+  conversationData,
   onConversationUpdate,
   onBack,
 }) => {
@@ -138,7 +54,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const session = useLHSession() as any
   const org = useOrg() as any
   const [messages, setMessages] = useState<Message[]>([])
-  const [conversation, setConversation] = useState<Conversation | null>(null)
+  const conversation = conversationData ?? null
   const [messageInput, setMessageInput] = useState('')
   const [isLoadingMessages, setIsLoadingMessages] = useState(true)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
@@ -147,7 +63,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [otherUserTyping, setOtherUserTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [editingMessage, setEditingMessage] = useState<Message | null>(null)
   const [isUpdatingMessage, setIsUpdatingMessage] = useState(false)
   const [deleteTargetMessage, setDeleteTargetMessage] =
@@ -156,9 +71,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
     null
   )
+  const [highlightedMessageUuid, setHighlightedMessageUuid] = useState<
+    string | null
+  >(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messageInputRef = useRef<HTMLInputElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
+  const messageItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const messageCacheRef = useRef<Map<string, Message[]>>(new Map())
+  const { copyAttachmentBlob, copyText } = useClipboardMedia()
+  const {
+    selectedFiles,
+    error: fileUploadError,
+    addFiles,
+    removeFile,
+    clearFiles,
+    clearError,
+  } = useFileUpload()
 
   const {
     showMessageNotification,
@@ -172,18 +101,37 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const conversationIdRef = useRef(conversationId)
   const currentUserIdRef = useRef(current_user_id)
-  const conversationRef = useRef(conversation)
 
   useEffect(() => {
     conversationIdRef.current = conversationId
     currentUserIdRef.current = current_user_id
-    conversationRef.current = conversation
-  }, [conversationId, current_user_id, conversation])
+  }, [conversationId, current_user_id])
 
   // Request notification permission on mount
   useEffect(() => {
     requestNotificationPermission()
   }, [requestNotificationPermission])
+
+  useEffect(() => {
+    if (fileUploadError) {
+      setError(fileUploadError)
+    }
+  }, [fileUploadError])
+
+  const onFilesPasted = useCallback(
+    (files: File[]) => {
+      const result = addFiles(files)
+      if (result.accepted.length > 0) {
+        toast.success('File added to message', {
+          duration: 2000,
+          position: 'bottom-center',
+        })
+      }
+    },
+    [addFiles]
+  )
+
+  const { handlePaste } = useInputPaste({ onFilesAdded: onFilesPasted })
 
   const {
     isConnected,
@@ -301,39 +249,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   }, [])
 
-  useEffect(() => {
-    if (!org_id || !access_token || !conversationId) return
-
-    const loadConversation = async () => {
-      try {
-        setIsLoadingMessages(true)
-        const response = await fetch(
-          `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-        if (response.ok) {
-          const data = await response.json()
-          const conv = data.find(
-            (c: Conversation) => c.conversation_uuid === conversationId
-          )
-          if (conv) {
-            setConversation(conv)
-            onConversationUpdate(conv)
-          }
-        }
-      } catch (error) {
-        // Error loading conversation
-      }
-    }
-
-    loadConversation()
-  }, [org_id, access_token, conversationId, onConversationUpdate])
-
   const markMessageAsRead = useCallback(
     async (messageUuid: string) => {
       try {
@@ -361,9 +276,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     if (!access_token || !conversationId) return
 
+    const cachedMessages = messageCacheRef.current.get(conversationId)
+    if (cachedMessages) {
+      setMessages(cachedMessages)
+      setIsLoadingMessages(false)
+    } else {
+      setMessages([])
+      setIsLoadingMessages(true)
+    }
+
     const loadMessages = async () => {
       try {
-        setIsLoadingMessages(true)
         const response = await fetch(
           `${getAPIUrl()}chat/messages/conversation/${conversationId}`,
           {
@@ -375,8 +298,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )
         if (response.ok) {
           const data = await response.json()
-          setMessages(data.reverse())
-          data.forEach((msg: Message) => {
+          const normalizedMessages = data.reverse()
+          messageCacheRef.current.set(conversationId, normalizedMessages)
+          setMessages(normalizedMessages)
+          normalizedMessages.forEach((msg: Message) => {
             if (
               msg.receiver_id === current_user_id &&
               !msg.read_receipt?.read_at
@@ -394,6 +319,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
     loadMessages()
   }, [access_token, conversationId, current_user_id, markMessageAsRead])
+
+  useEffect(() => {
+    if (!conversationId) return
+
+    if (messages.length > 0 || messageCacheRef.current.has(conversationId)) {
+      messageCacheRef.current.set(conversationId, messages)
+    }
+  }, [conversationId, messages])
 
   const handleNewMessage = useCallback(
     async (event: any) => {
@@ -550,14 +483,66 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     )
   }, [])
 
+  const handleMessageAttachmentsUpdated = useCallback((event: any) => {
+    const data = event.data
+    if (!data || data.conversation_id !== conversationIdRef.current) return
+
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.message_uuid === data.message_uuid
+          ? {
+              ...msg,
+              attachments: data.attachments || [],
+              updated_at: data.updated_at || msg.updated_at,
+            }
+          : msg
+      )
+    )
+  }, [])
+
+  const scrollToLatestMessage = useCallback(
+    (behavior: ScrollBehavior = 'auto') => {
+      const container = messagesContainerRef.current
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior })
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' })
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (!conversationId) return
+
+    const immediateId = window.setTimeout(() => {
+      scrollToLatestMessage('auto')
+    }, 0)
+    const settleId = window.setTimeout(() => {
+      scrollToLatestMessage('auto')
+    }, 120)
+
+    return () => {
+      window.clearTimeout(immediateId)
+      window.clearTimeout(settleId)
+    }
+  }, [conversationId, scrollToLatestMessage])
+
   useEffect(() => {
     if (!isLoadingMessages) {
-      setTimeout(
-        () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }),
-        0
-      )
+      const frameId = window.requestAnimationFrame(() => {
+        scrollToLatestMessage('auto')
+      })
+
+      const settleId = window.setTimeout(() => {
+        scrollToLatestMessage('auto')
+      }, 120)
+
+      return () => {
+        window.cancelAnimationFrame(frameId)
+        window.clearTimeout(settleId)
+      }
     }
-  }, [messages, isLoadingMessages])
+  }, [messages, isLoadingMessages, scrollToLatestMessage])
 
   useEffect(() => {
     if (!isConnected) return
@@ -566,12 +551,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     addMessageListener('message_read', handleMessageRead)
     addMessageListener('message_edited', handleMessageEdited)
     addMessageListener('message_deleted', handleMessageDeleted)
+    addMessageListener(
+      'message_attachments_updated',
+      handleMessageAttachmentsUpdated
+    )
     return () => {
       removeMessageListener('new_message', handleNewMessage)
       removeMessageListener('user_typing', handleUserTyping)
       removeMessageListener('message_read', handleMessageRead)
       removeMessageListener('message_edited', handleMessageEdited)
       removeMessageListener('message_deleted', handleMessageDeleted)
+      removeMessageListener(
+        'message_attachments_updated',
+        handleMessageAttachmentsUpdated
+      )
     }
   }, [
     isConnected,
@@ -580,6 +573,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     handleMessageRead,
     handleMessageEdited,
     handleMessageDeleted,
+    handleMessageAttachmentsUpdated,
     addMessageListener,
     removeMessageListener,
     conversationId,
@@ -590,27 +584,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      const incomingFiles = Array.from(files)
-      const supportedFiles = incomingFiles.filter((file) => {
-        const ext = file.name.includes('.')
-          ? `.${file.name.split('.').pop()?.toLowerCase()}`
-          : ''
-        return SUPPORTED_CHAT_EXTENSIONS.includes(ext)
-      })
-      const rejectedFiles = incomingFiles.filter(
-        (file) => !supportedFiles.includes(file)
-      )
-
-      if (supportedFiles.length > 0) {
-        setSelectedFiles((prev) => [...prev, ...supportedFiles])
-      }
-
-      if (rejectedFiles.length > 0) {
-        const rejectedNames = rejectedFiles.map((file) => file.name).join(', ')
-        setError(
-          `Unsupported file type: ${rejectedNames}. Allowed: ${SUPPORTED_CHAT_EXTENSIONS.join(', ')}`
-        )
-      }
+      addFiles(Array.from(files))
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -618,15 +592,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   const removeSelectedFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    removeFile(index)
   }
 
   const startEditMessage = (message: Message) => {
     if (message.is_deleted || message.isPending) return
     setEditingMessage(message)
     setMessageInput(message.content)
-    setSelectedFiles([])
+    clearFiles()
     setReplyingToMessage(null)
+    clearError()
     setError(null)
     setTimeout(() => messageInputRef.current?.focus(), 0)
   }
@@ -646,6 +621,190 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const cancelReply = () => {
     setReplyingToMessage(null)
+  }
+
+  const setMessageItemRef = useCallback(
+    (messageUuid: string, node: HTMLDivElement | null) => {
+      const refs = messageItemRefs.current
+      if (node) {
+        refs.set(messageUuid, node)
+      } else {
+        refs.delete(messageUuid)
+      }
+    },
+    []
+  )
+
+  const scrollToParentMessage = useCallback((parentMessageUuid?: string) => {
+    if (!parentMessageUuid) return
+
+    const targetNode = messageItemRefs.current.get(parentMessageUuid)
+    if (!targetNode) return
+
+    targetNode.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setHighlightedMessageUuid(parentMessageUuid)
+
+    window.setTimeout(() => {
+      setHighlightedMessageUuid((current) =>
+        current === parentMessageUuid ? null : current
+      )
+    }, 1200)
+  }, [])
+
+  useEffect(() => {
+    if (!editingMessage && !replyingToMessage) return
+
+    const focusInput = () => {
+      const input = messageInputRef.current
+      if (!input) return
+      input.focus()
+
+      // Keep cursor at end so user can continue typing immediately.
+      const cursorPos = input.value.length
+      input.setSelectionRange(cursorPos, cursorPos)
+    }
+
+    // Run after state update and menu close focus handling settle.
+    const rafId = window.requestAnimationFrame(focusInput)
+    const timeoutId = window.setTimeout(focusInput, 40)
+
+    return () => {
+      window.cancelAnimationFrame(rafId)
+      window.clearTimeout(timeoutId)
+    }
+  }, [editingMessage, replyingToMessage])
+
+  /**
+   * Copy message with proper media blob handling
+   * Mimics WhatsApp/Discord behavior:
+   * - For images: Copy actual blob (can be pasted as file)
+   * - For text: Copy as plain text
+   * - For text + images: Prefer blob copy if possible
+   */
+  const copyMessageContent = async (message: Message) => {
+    if (message.is_deleted) return
+
+    const textContent = message.content
+    const hasAttachments = message.attachments && message.attachments.length > 0
+    const hasNonImageAttachments =
+      hasAttachments &&
+      message.attachments.some(
+        (attachment) => !attachment.file_type.startsWith('image/')
+      )
+
+    try {
+      // Strategy 1: Try to copy the first attachment as a real clipboard blob.
+      // This works for images and, when browser support allows it, documents.
+      if (hasAttachments) {
+        let clipboardFailureReason:
+          | 'clipboard-write-unavailable'
+          | 'clipboard-item-unavailable'
+          | 'mime-unsupported'
+          | 'write-failed'
+          | null = null
+
+        for (const attachment of message.attachments) {
+          try {
+            const absoluteUrl = ensureAbsoluteUrl(attachment.file_url)
+            const response = await fetch(absoluteUrl, {
+              headers: access_token
+                ? { Authorization: `Bearer ${access_token}` }
+                : {},
+            })
+
+            if (response.ok) {
+              const blob = await response.blob()
+              const result = await copyAttachmentBlob({
+                blob,
+                fileName: attachment.file_name,
+                mimeType: attachment.file_type,
+              })
+
+              if (result.ok) {
+                toast.success(t('chat.copied') || 'Copied', {
+                  duration: 2000,
+                  position: 'bottom-center',
+                })
+                return
+              }
+
+              clipboardFailureReason = result.reason
+            }
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to copy attachment:', error)
+          }
+        }
+
+        // Strategy 2: Fallback - copy text with attachment info
+        // (Better UX than just filename)
+        const attachmentInfo = message.attachments
+          .map((att) => `📎 ${att.file_name}`)
+          .join('\n')
+        const textToCopy =
+          textContent && textContent.trim()
+            ? `${textContent}\n\n${attachmentInfo}`
+            : attachmentInfo
+
+        const didCopyText = await copyText(textToCopy)
+        if (!didCopyText) {
+          throw new Error('Failed to copy attachment fallback text')
+        }
+
+        if (hasNonImageAttachments) {
+          const fallbackMessage =
+            clipboardFailureReason === 'mime-unsupported' ||
+            clipboardFailureReason === 'clipboard-item-unavailable' ||
+            clipboardFailureReason === 'clipboard-write-unavailable'
+              ? 'Document copied as text only. This browser cannot place that file type on the clipboard as a pasteable file.'
+              : 'Could not copy the document file itself. Copied its details as text instead.'
+
+          toast(fallbackMessage, {
+            duration: 3500,
+            position: 'bottom-center',
+            icon: '📋',
+          })
+        } else {
+          toast.success(t('chat.copied') || 'Copied', {
+            duration: 2000,
+            position: 'bottom-center',
+          })
+        }
+        return
+      }
+
+      // Strategy 3: No attachments, just copy text
+      const textToCopy = textContent.trim() || '[Empty message]'
+      await copyText(textToCopy)
+      toast.success(t('chat.copied') || 'Copied', {
+        duration: 2000,
+        position: 'bottom-center',
+      })
+    } catch (error) {
+      // Ultimate fallback for older browsers (IE/Edge legacy)
+      try {
+        const textToCopy = textContent.trim() || '[Empty message]'
+        const textarea = document.createElement('textarea')
+        textarea.value = textToCopy
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+        toast.success(t('chat.copied') || 'Copied', {
+          duration: 2000,
+          position: 'bottom-center',
+        })
+      } catch (fallbackError) {
+        // eslint-disable-next-line no-console
+        console.error('Copy failed:', fallbackError)
+        toast.error('Failed to copy', {
+          duration: 2000,
+          position: 'bottom-center',
+        })
+      }
+    }
   }
 
   const handleEditMessage = async () => {
@@ -813,27 +972,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return await response.json()
   }
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return ImageIcon
-    if (fileType.startsWith('video/')) return Video
-    if (
-      fileType.includes('pdf') ||
-      fileType.includes('document') ||
-      fileType.includes('officedocument') ||
-      fileType.includes('word')
-    )
-      return FileText
-    return File
-  }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
-  }
-
   const handleSendMessage = async () => {
     if (isSendingMessage || isUpdatingMessage) return
     if ((!messageInput.trim() && selectedFiles.length === 0) || !conversation)
@@ -887,7 +1025,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       setMessages((prev) => [...prev, optimisticMessage])
       setMessageInput('')
-      setSelectedFiles([])
+      clearFiles()
 
       const url = new URL(`${getAPIUrl()}chat/messages/send`)
       url.searchParams.append('org_id', String(org_id))
@@ -1027,6 +1165,47 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const lastTypingRef = useRef<number>(0)
 
+  const getDateSeparatorLabel = (dateString: string): string => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today)
+    yesterday.setDate(today.getDate() - 1)
+    const messageDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    )
+
+    if (messageDate.getTime() === today.getTime()) {
+      return t('chat.today') || 'Today'
+    } else if (messageDate.getTime() === yesterday.getTime()) {
+      return t('chat.yesterday') || 'Yesterday'
+    } else {
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    }
+  }
+
+  const shouldShowDateSeparator = (
+    currentMessage: Message,
+    previousMessage?: Message
+  ): boolean => {
+    if (!previousMessage) return true
+
+    const currentDate = new Date(currentMessage.created_at)
+    const previousDate = new Date(previousMessage.created_at)
+
+    return (
+      currentDate.getFullYear() !== previousDate.getFullYear() ||
+      currentDate.getMonth() !== previousDate.getMonth() ||
+      currentDate.getDate() !== previousDate.getDate()
+    )
+  }
+
   const handleTyping = () => {
     if (!isConnected || !conversation) return
     const now = Date.now()
@@ -1123,6 +1302,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
+        style={{
+          backgroundImage: "url('/chat-wallpaper.png')",
+          backgroundSize: 'auto',
+          backgroundRepeat: 'repeat',
+        }}
       >
         {isLoadingMessages ? (
           <div className="flex items-center justify-center h-full">
@@ -1136,145 +1320,126 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <p className="text-white/30 text-sm">{t('chat.no_messages')}</p>
           </div>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             const isMine = message.sender_id === current_user_id
+            const showDateSeparator = shouldShowDateSeparator(
+              message,
+              index > 0 ? messages[index - 1] : undefined
+            )
             return (
-              <div
-                key={message.clientId || message.message_uuid}
-                className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2`}
-              >
-                {!isMine && (
-                  <img
-                    src={
-                      otherParticipant.avatar_image
-                        ? getUserAvatarMediaDirectory(
-                            otherParticipant.user_uuid,
-                            otherParticipant.avatar_image
-                          )
-                        : '/empty_avatar.png'
-                    }
-                    alt={otherParticipant.username}
-                    className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
-                  />
+              <React.Fragment key={message.clientId || message.message_uuid}>
+                {showDateSeparator && (
+                  <div className="flex justify-center my-6">
+                    <span className="px-3 py-1 rounded-full bg-white/4 border border-white/6 text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                      {getDateSeparatorLabel(message.created_at)}
+                    </span>
+                  </div>
                 )}
-
                 <div
-                  className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                  className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 mb-4`}
                 >
+                  {!isMine && (
+                    <img
+                      src={
+                        otherParticipant.avatar_image
+                          ? getUserAvatarMediaDirectory(
+                              otherParticipant.user_uuid,
+                              otherParticipant.avatar_image
+                            )
+                          : '/empty_avatar.png'
+                      }
+                      alt={otherParticipant.username}
+                      className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
+                    />
+                  )}
                   <div
-                    className={`flex items-start gap-1.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                    ref={(node) =>
+                      setMessageItemRef(message.message_uuid, node)
+                    }
+                    data-message-uuid={message.message_uuid}
+                    className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 relative`}
                   >
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
-                        isMine
-                          ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
-                          : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
-                      }`}
+                      className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
-                      {message.is_deleted ? (
-                        <span className="italic text-white/30 text-xs">
-                          {t('chat.message_deleted')}
-                        </span>
-                      ) : (
-                        <>
-                          {/* Reply context */}
-                          {message.replied_message && (
-                            <div
-                              className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/8 border-indigo-400/60'}`}
-                            >
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <Reply size={10} className="opacity-60" />
-                                <span className="text-[10px] font-medium opacity-60">
-                                  {message.replied_message.sender_id ===
-                                  current_user_id
-                                    ? t('chat.you')
-                                    : otherParticipant.first_name ||
-                                      otherParticipant.username}
-                                </span>
-                              </div>
-                              <p className="text-xs opacity-75 line-clamp-2">
-                                {message.replied_message.is_deleted
-                                  ? '[Deleted message]'
-                                  : message.replied_message.content}
-                              </p>
-                            </div>
-                          )}
-                          {message.content && <span>{message.content}</span>}
-                          {message.attachments &&
-                            message.attachments.length > 0 && (
+                      <div
+                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
+                          isMine
+                            ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
+                            : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
+                        }`}
+                      >
+                        {message.is_deleted ? (
+                          <span className="italic text-white/30 text-xs">
+                            {t('chat.message_deleted')}
+                          </span>
+                        ) : (
+                          <>
+                            {/* Reply context */}
+                            {message.replied_message && (
                               <div
-                                className={`space-y-2 ${message.content ? 'mt-2' : ''}`}
+                                className={`mb-2 p-2 rounded-lg border-l-2 ${isMine ? 'bg-indigo-600/30 border-white/40' : 'bg-white/8 border-indigo-400/60'}`}
                               >
-                                {message.attachments.map((attachment) => {
-                                  const IconComponent = getFileIcon(
-                                    attachment.file_type
-                                  )
-                                  const isImage =
-                                    attachment.file_type.startsWith('image/')
-                                  // Don't double-process URLs - backend already returns absolute URLs
-                                  const absoluteFileUrl = ensureAbsoluteUrl(
-                                    attachment.file_url || ''
-                                  )
-                                  const absoluteThumbUrl = ensureAbsoluteUrl(
-                                    attachment.thumbnail_url ||
-                                      attachment.file_url ||
-                                      ''
-                                  )
-                                  return (
-                                    <div
-                                      key={attachment.attachment_uuid}
-                                      className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/8'}`}
-                                    >
-                                      {isImage && absoluteFileUrl ? (
-                                        <div className="relative group">
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              openFileInNewTab(absoluteFileUrl)
-                                            }
-                                            className="block cursor-pointer p-0 border-0 bg-transparent"
-                                            title={`Open ${attachment.file_name}`}
-                                          >
-                                            <img
-                                              src={absoluteThumbUrl}
-                                              alt={attachment.file_name}
-                                              className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
-                                            />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              downloadFile(
-                                                attachment.file_url,
-                                                attachment.file_name
-                                              )
-                                            }
-                                            className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded transition-colors opacity-0 group-hover:opacity-100 border-0 cursor-pointer"
-                                            title={`Download ${attachment.file_name}`}
-                                          >
-                                            <Download
-                                              size={14}
-                                              className="text-white"
-                                            />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <IconComponent
-                                            size={18}
-                                            className="shrink-0"
-                                          />
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-medium truncate">
-                                              {attachment.file_name}
-                                            </p>
-                                            <p className="text-[10px] opacity-60">
-                                              {formatFileSize(
-                                                attachment.file_size
-                                              )}
-                                            </p>
-                                          </div>
-                                          {absoluteFileUrl && (
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <Reply size={10} className="opacity-60" />
+                                  <span className="text-[10px] font-medium opacity-60">
+                                    {message.replied_message.sender_id ===
+                                    current_user_id
+                                      ? t('chat.you')
+                                      : otherParticipant.first_name ||
+                                        otherParticipant.username}
+                                  </span>
+                                </div>
+                                <p className="text-xs opacity-75 line-clamp-2">
+                                  {message.replied_message.is_deleted
+                                    ? '[Deleted message]'
+                                    : message.replied_message.content}
+                                </p>
+                              </div>
+                            )}
+                            {message.content && <span>{message.content}</span>}
+                            {message.attachments &&
+                              message.attachments.length > 0 && (
+                                <div
+                                  className={`space-y-2 ${message.content ? 'mt-2' : ''}`}
+                                >
+                                  {message.attachments.map((attachment) => {
+                                    const IconComponent = getFileIcon(
+                                      attachment.file_type
+                                    )
+                                    const isImage =
+                                      attachment.file_type.startsWith('image/')
+                                    const absoluteFileUrl = ensureAbsoluteUrl(
+                                      attachment.file_url || ''
+                                    )
+                                    const absoluteThumbUrl = ensureAbsoluteUrl(
+                                      attachment.thumbnail_url ||
+                                        attachment.file_url ||
+                                        ''
+                                    )
+                                    return (
+                                      <div
+                                        key={attachment.attachment_uuid}
+                                        className={`flex items-center gap-2 p-2 rounded-lg w-full max-w-[240px] ${isMine ? 'bg-indigo-600/30' : 'bg-white/8'}`}
+                                      >
+                                        {isImage && absoluteFileUrl ? (
+                                          <div className="relative group">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                openFileInNewTab(
+                                                  absoluteFileUrl
+                                                )
+                                              }
+                                              className="block cursor-pointer p-0 border-0 bg-transparent"
+                                              title={`Open ${attachment.file_name}`}
+                                            >
+                                              <img
+                                                src={absoluteThumbUrl}
+                                                alt={attachment.file_name}
+                                                className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
+                                              />
+                                            </button>
                                             <button
                                               type="button"
                                               onClick={() =>
@@ -1283,145 +1448,117 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                                   attachment.file_name
                                                 )
                                               }
-                                              className="shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                                              className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded transition-colors opacity-0 group-hover:opacity-100 border-0 cursor-pointer"
                                               title={`Download ${attachment.file_name}`}
                                             >
-                                              <Download size={14} />
+                                              <Download
+                                                size={14}
+                                                className="text-white"
+                                              />
                                             </button>
-                                          )}
-                                        </>
-                                      )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <IconComponent
+                                              size={18}
+                                              className="shrink-0"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-medium truncate">
+                                                {attachment.file_name}
+                                              </p>
+                                              <p className="text-[10px] opacity-60">
+                                                {formatFileSize(
+                                                  attachment.file_size
+                                                )}
+                                              </p>
+                                            </div>
+                                            {absoluteFileUrl && (
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  downloadFile(
+                                                    attachment.file_url,
+                                                    attachment.file_name
+                                                  )
+                                                }
+                                                className="shrink-0 p-1 hover:bg-white/10 rounded transition-colors bg-transparent border-0 cursor-pointer"
+                                                title={`Download ${attachment.file_name}`}
+                                              >
+                                                <Download
+                                                  size={14}
+                                                  className="text-white"
+                                                />
+                                              </button>
+                                            )}
+                                          </>
+                                        )}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                          </>
+                        )}
+                      </div>
+
+                      <div
+                        className={`flex items-center gap-1 mt-1 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                      >
+                        <span className="text-[11px] text-white/20 tabular-nums">
+                          {new Date(message.created_at).toLocaleTimeString(
+                            'en-US',
+                            { hour: '2-digit', minute: '2-digit' }
+                          )}
+                        </span>
+                        {isMine && (
+                          <span className="text-white/30">
+                            {message.isPending ? (
+                              <Clock size={11} className="animate-pulse" />
+                            ) : message.read_receipt?.read_at ? (
+                              <CheckCheck
+                                size={11}
+                                className="text-indigo-400"
+                              />
+                            ) : (
+                              <Check size={11} />
                             )}
-                        </>
-                      )}
+                          </span>
+                        )}
+                        {message.is_edited && (
+                          <span className="text-[11px] text-white/20">
+                            · {t('chat.edited')}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {isMine && !message.isPending && !message.is_deleted && (
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/8 flex items-center justify-center text-white/60"
-                            aria-label="Message actions"
-                          >
-                            <MoreHorizontal size={14} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align={isMine ? 'end' : 'start'}
-                          className="w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => startReplyToMessage(message)}
-                          >
-                            <Reply size={14} />
-                            {t('chat.reply')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => startEditMessage(message)}
-                          >
-                            <Pencil size={14} />
-                            {t('common.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeleteTargetMessage(message)}
-                            className="text-red-500 focus:text-red-500"
-                          >
-                            <Trash2 size={14} />
-                            {t('common.delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    {!isMine && !message.is_deleted && (
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/8 flex items-center justify-center text-white/60"
-                            aria-label="Message actions"
-                          >
-                            <MoreHorizontal size={14} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align={isMine ? 'end' : 'start'}
-                          className="w-40"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => startReplyToMessage(message)}
-                          >
-                            <Reply size={14} />
-                            {t('chat.reply')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-
-                  {/* Timestamp + status */}
-                  <div
-                    className={`flex items-center gap-1 mt-1 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
-                  >
-                    <span className="text-[11px] text-white/20 tabular-nums">
-                      {new Date(message.created_at).toLocaleTimeString(
-                        'en-US',
-                        { hour: '2-digit', minute: '2-digit' }
-                      )}
-                    </span>
-                    {isMine && (
-                      <span className="text-white/30">
-                        {message.isPending ? (
-                          <Clock size={11} className="animate-pulse" />
-                        ) : message.read_receipt?.read_at ? (
-                          <CheckCheck size={11} className="text-indigo-400" />
-                        ) : (
-                          <Check size={11} />
-                        )}
-                      </span>
-                    )}
-                    {message.is_edited && (
-                      <span className="text-[11px] text-white/20">
-                        · {t('chat.edited')}
-                      </span>
+                    {!message.is_deleted && !message.isPending && (
+                      <MessageActions
+                        message={message}
+                        isMine={isMine}
+                        onCopy={() => copyMessageContent(message)}
+                        onReply={() => startReplyToMessage(message)}
+                        onEdit={
+                          isMine ? () => startEditMessage(message) : undefined
+                        }
+                        onDelete={
+                          isMine
+                            ? () => setDeleteTargetMessage(message)
+                            : undefined
+                        }
+                        t={t}
+                      />
                     )}
                   </div>
                 </div>
-              </div>
+              </React.Fragment>
             )
           })
         )}
 
         {/* Typing indicator */}
-        {otherUserTyping && (
-          <div className="flex justify-start gap-2">
-            <img
-              src={
-                otherParticipant.avatar_image
-                  ? getUserAvatarMediaDirectory(
-                      otherParticipant.user_uuid,
-                      otherParticipant.avatar_image
-                    )
-                  : '/empty_avatar.png'
-              }
-              alt={otherParticipant.username}
-              className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
-            />
-            <div className="bg-white/7 border border-white/6 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1.5">
-              {[0, 150, 300].map((delay) => (
-                <div
-                  key={delay}
-                  className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"
-                  style={{ animationDelay: `${delay}ms` }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        <TypingIndicator isVisible={otherUserTyping} />
         <div ref={messagesEndRef} />
       </div>
 
@@ -1547,11 +1684,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSendingMessage || isUpdatingMessage}
-            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white/80 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="h-11 w-11 shrink-0 flex items-center justify-center rounded-xl border border-white/8 bg-white/5 text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white/80 disabled:cursor-not-allowed disabled:opacity-30"
           >
             <Paperclip size={18} />
           </button>
-          <div className="flex-1 relative">
+          <div className="relative flex-1">
             <input
               ref={messageInputRef}
               type="text"
@@ -1570,6 +1707,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 }
                 handleTyping()
               }}
+              onPaste={handlePaste}
               onBlur={handleTypingStop}
               disabled={isUpdatingMessage}
               className="w-full bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"

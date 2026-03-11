@@ -87,6 +87,10 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
 
     const loadConversations = async () => {
       try {
+        // Add timeout for fetch request (10 seconds)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+
         const response = await fetch(
           `${getAPIUrl()}chat/conversations/?org_id=${org_id}`,
           {
@@ -94,18 +98,27 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
               Authorization: `Bearer ${access_token}`,
               'Content-Type': 'application/json',
             },
+            signal: controller.signal,
           }
         )
+
+        clearTimeout(timeoutId)
+
         if (response.ok) {
-          const data = await response.json()
-          const conversationsMap = new Map<string, Conversation>()
-          data.forEach((conv: Conversation) => {
-            conversationsMap.set(conv.conversation_uuid, conv)
-          })
-          conversationsRef.current = conversationsMap
+          const text = await response.text()
+          try {
+            const data = JSON.parse(text)
+            const conversationsMap = new Map<string, Conversation>()
+            data.forEach((conv: Conversation) => {
+              conversationsMap.set(conv.conversation_uuid, conv)
+            })
+            conversationsRef.current = conversationsMap
+          } catch (jsonError) {
+            // Failed to parse conversations response - ignore silently
+          }
         }
       } catch (error) {
-        // Error loading conversations
+        // Error loading conversations (including timeout/abort) - ignore silently
       }
     }
 
