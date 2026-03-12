@@ -631,41 +631,52 @@ function TaskQuizObject({
                             )}
                           </div>
                         )}
-                        {view === 'student' && hasSubmitted && (
-                          <div
-                            className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
-                              (userSubmissions.submissions.find(
+                        {view === 'student' &&
+                          hasSubmitted &&
+                          (() => {
+                            const studentAnswer =
+                              userSubmissions.submissions.find(
                                 (s) =>
                                   s.questionUUID === question.questionUUID &&
                                   s.optionUUID === option.optionUUID
-                              )?.answer ?? false) ===
-                              option.assigned_right_answer
-                                ? 'bg-lime-200 text-lime-600'
-                                : 'bg-rose-200/60 text-rose-500'
-                            } text-sm`}
-                          >
-                            {(userSubmissions.submissions.find(
-                              (s) =>
-                                s.questionUUID === question.questionUUID &&
-                                s.optionUUID === option.optionUUID
-                            )?.answer ?? false) ===
-                            option.assigned_right_answer ? (
-                              <>
-                                <Check size={12} className="mx-auto" />
-                                <p className="mx-auto font-bold text-xs">
-                                  Correct
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <X size={12} className="mx-auto" />
-                                <p className="mx-auto font-bold text-xs">
-                                  Wrong
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        )}
+                              )?.answer ?? false
+                            const isCorrect = option.assigned_right_answer
+                            // Student selected a correct option ✓
+                            if (studentAnswer && isCorrect) {
+                              return (
+                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg bg-lime-200 text-lime-600">
+                                  <Check size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Correct
+                                  </p>
+                                </div>
+                              )
+                            }
+                            // Student selected a wrong option ✗
+                            if (studentAnswer && !isCorrect) {
+                              return (
+                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg bg-rose-200/60 text-rose-500">
+                                  <X size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Wrong
+                                  </p>
+                                </div>
+                              )
+                            }
+                            // Student missed a correct option (did not select it)
+                            if (!studentAnswer && isCorrect) {
+                              return (
+                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg bg-amber-100 text-amber-600">
+                                  <X size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Missed
+                                  </p>
+                                </div>
+                              )
+                            }
+                            // Did not select a wrong option — expected, no badge needed
+                            return null
+                          })()}
                         {view === 'grading' && (
                           <>
                             <div

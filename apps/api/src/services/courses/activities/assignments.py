@@ -119,26 +119,41 @@ async def perform_quiz_auto_grading(
     assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
 ) -> None:
     """
-    Auto-grade a QUIZ task. Every option is graded individually (partial credit).
-    grade = round((correct_option_matches / total_options) * max_grade_value)
+    Auto-grade a QUIZ task.
+    Only awards credit for correctly selected options (true positives).
+    grade = round((correct_selections / total_correct_options) * max_grade_value)
+
+    Wrong options that were not selected are intentionally ignored — they do NOT
+    contribute to the score. This prevents students from earning points simply by
+    submitting blank answers.
+
     Stores per-question results in task_submission["grading_results"].
     """
     questions = assignment_task.contents.get("questions", [])
     student_subs = submission.task_submission.get("submissions", [])
 
-    total_options = 0
-    correct_matches = 0
+    total_correct_options = 0  # denominator: options where assigned_right_answer=True
+    correct_selections = 0     # numerator: correct options the student actually selected
     question_results = []
 
     for question in questions:
         q_uuid = question.get("questionUUID")
         options = question.get("options", [])
         q_correct = 0
+        q_total = 0  # correct options for this question
 
         for option in options:
-            total_options += 1
-            opt_uuid = option.get("optionUUID")
             assigned_right = option.get("assigned_right_answer", False)
+            opt_uuid = option.get("optionUUID")
+
+            if not assigned_right:
+                # Wrong option: no credit gained or lost — skip entirely.
+                # Counting "correctly unselected" wrong options would let students
+                # earn points without selecting any correct answers.
+                continue
+
+            q_total += 1
+            total_correct_options += 1
 
             student_entry = next(
                 (s for s in student_subs
@@ -147,15 +162,15 @@ async def perform_quiz_auto_grading(
             )
             student_answer = student_entry.get("answer", False) if student_entry else False
 
-            if student_answer == assigned_right:
-                correct_matches += 1
+            if student_answer:  # student explicitly selected this correct option
+                correct_selections += 1
                 q_correct += 1
 
-        question_results.append({"questionUUID": q_uuid, "correct": q_correct, "total": len(options)})
+        question_results.append({"questionUUID": q_uuid, "correct": q_correct, "total": q_total})
 
     submission.grade = (
-        round((correct_matches / total_options) * assignment_task.max_grade_value)
-        if total_options > 0 else 0
+        round((correct_selections / total_correct_options) * assignment_task.max_grade_value)
+        if total_correct_options > 0 else 0
     )
 
     updated = dict(submission.task_submission)
@@ -163,7 +178,7 @@ async def perform_quiz_auto_grading(
     submission.task_submission = updated
 
     submission.task_submission_grade_feedback = (
-        f"Auto-graded: {correct_matches}/{total_options} options correct."
+        f"Auto-graded: {correct_selections}/{total_correct_options} options correct."
     )
 
 
