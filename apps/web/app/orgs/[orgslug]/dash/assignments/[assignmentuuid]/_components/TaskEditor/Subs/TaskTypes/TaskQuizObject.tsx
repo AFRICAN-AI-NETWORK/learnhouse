@@ -631,41 +631,38 @@ function TaskQuizObject({
                             )}
                           </div>
                         )}
-                        {view === 'student' && hasSubmitted && (
-                          <div
-                            className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
-                              (userSubmissions.submissions.find(
-                                (s) =>
-                                  s.questionUUID === question.questionUUID &&
-                                  s.optionUUID === option.optionUUID
-                              )?.answer ?? false) ===
-                              option.assigned_right_answer
-                                ? 'bg-lime-200 text-lime-600'
-                                : 'bg-rose-200/60 text-rose-500'
-                            } text-sm`}
-                          >
-                            {(userSubmissions.submissions.find(
-                              (s) =>
-                                s.questionUUID === question.questionUUID &&
-                                s.optionUUID === option.optionUUID
-                            )?.answer ?? false) ===
-                            option.assigned_right_answer ? (
-                              <>
-                                <Check size={12} className="mx-auto" />
-                                <p className="mx-auto font-bold text-xs">
-                                  Correct
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <X size={12} className="mx-auto" />
-                                <p className="mx-auto font-bold text-xs">
-                                  Wrong
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        )}
+                        {view === 'student' &&
+                          hasSubmitted &&
+                          (userSubmissions.submissions.find(
+                            (s) =>
+                              s.questionUUID === question.questionUUID &&
+                              s.optionUUID === option.optionUUID
+                          )?.answer === true ||
+                            option.assigned_right_answer) && (
+                            <div
+                              className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                                option.assigned_right_answer
+                                  ? 'bg-lime-200 text-lime-600'
+                                  : 'bg-rose-200/60 text-rose-500'
+                              } text-sm`}
+                            >
+                              {option.assigned_right_answer ? (
+                                <>
+                                  <Check size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Correct
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <X size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Wrong
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          )}
                         {view === 'grading' && (
                           <>
                             <div
