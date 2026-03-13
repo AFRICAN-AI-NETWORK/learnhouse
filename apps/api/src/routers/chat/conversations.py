@@ -97,7 +97,8 @@ async def get_chatable_users(
             "username": u.username,
             "first_name": u.first_name,
             "last_name": u.last_name,
-            "avatar_image": u.avatar_image
+            "avatar_image": u.avatar_image,
+            "role_name": ConversationService._resolve_user_role_name(db, u.id, org_id),
         }
         for u in users
     ]
