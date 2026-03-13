@@ -11,6 +11,7 @@ import { Search, Loader2, UserSearch } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
 
 interface User {
   id: number
@@ -254,7 +255,14 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                   >
                     <div className="relative shrink-0">
                       <img
-                        src={user.avatar_image || '/empty_avatar.png'}
+                        src={
+                          user.avatar_image
+                            ? getUserAvatarMediaDirectory(
+                                user.user_uuid,
+                                user.avatar_image
+                              )
+                            : '/empty_avatar.png'
+                        }
                         alt={user.username}
                         className="w-10 h-10 rounded-full ring-2 ring-white/6 object-cover"
                       />
