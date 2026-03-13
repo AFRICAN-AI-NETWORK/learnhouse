@@ -1357,7 +1357,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       setMessageItemRef(message.message_uuid, node)
                     }
                     data-message-uuid={message.message_uuid}
-                    className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 relative`}
+                    className={`group flex ${isMine ? 'flex-row-reverse justify-end' : 'justify-start'} gap-2 relative`}
                   >
                     <div
                       className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
