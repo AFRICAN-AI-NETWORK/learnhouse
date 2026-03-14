@@ -1360,10 +1360,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     className={`group flex ${isMine ? 'flex-row-reverse justify-end' : 'justify-start'} gap-2 relative`}
                   >
                     <div
-                      className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                      className={`w-full max-w-[280px] sm:max-w-[420px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[720px] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
                       <div
-                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
+                        className={`relative min-w-[80px] pl-4 pr-8 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
                           isMine
                             ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
                             : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
@@ -1500,6 +1500,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                               )}
                           </>
                         )}
+                        {!message.is_deleted && !message.isPending && (
+                          <MessageActions
+                            message={message}
+                            isMine={isMine}
+                            onCopy={() => copyMessageContent(message)}
+                            onReply={() => startReplyToMessage(message)}
+                            onEdit={
+                              isMine
+                                ? () => startEditMessage(message)
+                                : undefined
+                            }
+                            onDelete={
+                              isMine
+                                ? () => setDeleteTargetMessage(message)
+                                : undefined
+                            }
+                            t={t}
+                          />
+                        )}
                       </div>
 
                       <div
@@ -1532,24 +1551,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         )}
                       </div>
                     </div>
-
-                    {!message.is_deleted && !message.isPending && (
-                      <MessageActions
-                        message={message}
-                        isMine={isMine}
-                        onCopy={() => copyMessageContent(message)}
-                        onReply={() => startReplyToMessage(message)}
-                        onEdit={
-                          isMine ? () => startEditMessage(message) : undefined
-                        }
-                        onDelete={
-                          isMine
-                            ? () => setDeleteTargetMessage(message)
-                            : undefined
-                        }
-                        t={t}
-                      />
-                    )}
                   </div>
                 </div>
               </React.Fragment>
