@@ -215,6 +215,147 @@ def student_user_two_fixture(session: Session, org: Organization, student_role: 
     return user
 
 
+# ── Support / staff role fixtures ─────────────────────────────────────────────
+
+@pytest.fixture(name="teaching_assistant_role")
+def teaching_assistant_role_fixture(session: Session):
+    """Create Teaching Assistant role."""
+    role = Role(
+        name="Teaching Assistant",
+        description="Teaching Assistant role",
+        role_uuid=f"role_{uuid4()}",
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+    return role
+
+
+@pytest.fixture(name="student_success_coordinator_role")
+def student_success_coordinator_role_fixture(session: Session):
+    """Create Students Success Coordinator role."""
+    role = Role(
+        name="Students Success Coordinator",
+        description="Students Success Coordinator role",
+        role_uuid=f"role_{uuid4()}",
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+    return role
+
+
+@pytest.fixture(name="student_mentor_role")
+def student_mentor_role_fixture(session: Session):
+    """Create Students Mentor role."""
+    role = Role(
+        name="Students Mentor",
+        description="Students Mentor role",
+        role_uuid=f"role_{uuid4()}",
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+    return role
+
+
+@pytest.fixture(name="community_manager_role")
+def community_manager_role_fixture(session: Session):
+    """Create Community Manager role."""
+    role = Role(
+        name="Community Manager",
+        description="Community Manager role",
+        role_uuid=f"role_{uuid4()}",
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+    return role
+
+
+@pytest.fixture(name="lead_instructor_role")
+def lead_instructor_role_fixture(session: Session):
+    """Create Lead Instructor role."""
+    role = Role(
+        name="Lead Instructor",
+        description="Lead Instructor role",
+        role_uuid=f"role_{uuid4()}",
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+    return role
+
+
+def _make_user_with_role(session: Session, org: Organization, role: Role,
+                         username: str, email: str, first_name: str) -> User:
+    """Helper: create a user and associate them with the given role in the org."""
+    user = User(
+        user_uuid=f"usr_{uuid4()}",
+        username=username,
+        email=email,
+        password="hashed_password",
+        first_name=first_name,
+        last_name="Test",
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    user_org = UserOrganization(
+        user_id=user.id,
+        org_id=org.id,
+        role_id=role.id,
+        creation_date=str(datetime.utcnow()),
+        update_date=str(datetime.utcnow())
+    )
+    session.add(user_org)
+    session.commit()
+    return user
+
+
+@pytest.fixture(name="teaching_assistant_user")
+def teaching_assistant_user_fixture(session: Session, org: Organization, teaching_assistant_role: Role):
+    return _make_user_with_role(session, org, teaching_assistant_role,
+                                "ta_test", "ta@test.com", "TeachingAssistant")
+
+
+@pytest.fixture(name="student_success_coordinator_user")
+def student_success_coordinator_user_fixture(session: Session, org: Organization,
+                                              student_success_coordinator_role: Role):
+    return _make_user_with_role(session, org, student_success_coordinator_role,
+                                "ssc_test", "ssc@test.com", "SuccessCoordinator")
+
+
+@pytest.fixture(name="student_mentor_user")
+def student_mentor_user_fixture(session: Session, org: Organization, student_mentor_role: Role):
+    return _make_user_with_role(session, org, student_mentor_role,
+                                "mentor_test", "mentor@test.com", "StudentMentor")
+
+
+@pytest.fixture(name="community_manager_user")
+def community_manager_user_fixture(session: Session, org: Organization, community_manager_role: Role):
+    return _make_user_with_role(session, org, community_manager_role,
+                                "cm_test", "cm@test.com", "CommunityManager")
+
+
+@pytest.fixture(name="lead_instructor_user")
+def lead_instructor_user_fixture(session: Session, org: Organization, lead_instructor_role: Role):
+    return _make_user_with_role(session, org, lead_instructor_role,
+                                "lead_instructor_test", "lead_instructor@test.com", "LeadInstructor")
+
+
 @pytest.fixture(name="conversation")
 def conversation_fixture(session: Session, org: Organization, student_user: User, instructor_user: User):
     """Create test conversation."""

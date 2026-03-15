@@ -15,32 +15,60 @@ class ChatRole(str, Enum):
     INSTRUCTOR = "instructor"
     ADMIN = "admin"
     MAINTAINER = "maintainer"
+    # Support / staff roles
+    TEACHING_ASSISTANT = "teaching assistant"
+    STUDENT_SUCCESS_COORDINATOR = "students success coordinator"
+    STUDENT_MENTOR = "students mentor"
+    COMMUNITY_MANAGER = "community manager"
+    LEAD_INSTRUCTOR = "lead instructor"
 
 
 # Roles that can chat with everyone
 _PRIVILEGED_ROLES = [
     ChatRole.STUDENT, ChatRole.LEARNER, ChatRole.USER,
     ChatRole.INSTRUCTOR, ChatRole.ADMIN, ChatRole.MAINTAINER,
+    ChatRole.TEACHING_ASSISTANT, ChatRole.STUDENT_SUCCESS_COORDINATOR,
+    ChatRole.STUDENT_MENTOR, ChatRole.COMMUNITY_MANAGER, ChatRole.LEAD_INSTRUCTOR,
+]
+
+# Roles that students/learners/users are allowed to reach
+_STUDENT_REACHABLE_ROLES = [
+    ChatRole.INSTRUCTOR,
+    ChatRole.TEACHING_ASSISTANT,
+    ChatRole.STUDENT_SUCCESS_COORDINATOR,
+    ChatRole.STUDENT_MENTOR,
+    ChatRole.COMMUNITY_MANAGER,
+    ChatRole.LEAD_INSTRUCTOR,
 ]
 
 # Permission matrix: maps a role to the list of roles it can chat with
 CHAT_PERMISSION_MATRIX = {
-    ChatRole.STUDENT: [ChatRole.INSTRUCTOR],
-    ChatRole.LEARNER: [ChatRole.INSTRUCTOR],
-    ChatRole.USER: [ChatRole.INSTRUCTOR],
+    ChatRole.STUDENT: _STUDENT_REACHABLE_ROLES,
+    ChatRole.LEARNER: _STUDENT_REACHABLE_ROLES,
+    ChatRole.USER: _STUDENT_REACHABLE_ROLES,
     ChatRole.INSTRUCTOR: _PRIVILEGED_ROLES,
     ChatRole.ADMIN: _PRIVILEGED_ROLES,
     ChatRole.MAINTAINER: _PRIVILEGED_ROLES,
+    ChatRole.TEACHING_ASSISTANT: _PRIVILEGED_ROLES,
+    ChatRole.STUDENT_SUCCESS_COORDINATOR: _PRIVILEGED_ROLES,
+    ChatRole.STUDENT_MENTOR: _PRIVILEGED_ROLES,
+    ChatRole.COMMUNITY_MANAGER: _PRIVILEGED_ROLES,
+    ChatRole.LEAD_INSTRUCTOR: _PRIVILEGED_ROLES,
 }
 
 # Target roles for listing chatable users (same structure as permission matrix)
 CHATABLE_TARGETS = {
-    ChatRole.STUDENT: [ChatRole.INSTRUCTOR.value],
-    ChatRole.LEARNER: [ChatRole.INSTRUCTOR.value],
-    ChatRole.USER: [ChatRole.INSTRUCTOR.value],
+    ChatRole.STUDENT: [r.value for r in _STUDENT_REACHABLE_ROLES],
+    ChatRole.LEARNER: [r.value for r in _STUDENT_REACHABLE_ROLES],
+    ChatRole.USER: [r.value for r in _STUDENT_REACHABLE_ROLES],
     ChatRole.INSTRUCTOR: [r.value for r in _PRIVILEGED_ROLES],
     ChatRole.ADMIN: [r.value for r in _PRIVILEGED_ROLES],
     ChatRole.MAINTAINER: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.TEACHING_ASSISTANT: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.STUDENT_SUCCESS_COORDINATOR: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.STUDENT_MENTOR: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.COMMUNITY_MANAGER: [r.value for r in _PRIVILEGED_ROLES],
+    ChatRole.LEAD_INSTRUCTOR: [r.value for r in _PRIVILEGED_ROLES],
 }
 
 
