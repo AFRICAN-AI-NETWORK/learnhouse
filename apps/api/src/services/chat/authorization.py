@@ -23,6 +23,39 @@ class ChatRole(str, Enum):
     LEAD_INSTRUCTOR = "lead instructor"
 
 
+def _normalize_role_name(role_name: str) -> str:
+    """Normalize role names for robust matching across case/spacing variants."""
+    return " ".join(role_name.strip().lower().split())
+
+
+_ROLE_NAME_ALIASES: dict[str, ChatRole] = {
+    "student": ChatRole.STUDENT,
+    "learner": ChatRole.LEARNER,
+    "user": ChatRole.USER,
+    "instructor": ChatRole.INSTRUCTOR,
+    "admin": ChatRole.ADMIN,
+    "maintainer": ChatRole.MAINTAINER,
+    "teaching assistant": ChatRole.TEACHING_ASSISTANT,
+    "teaching_assistant": ChatRole.TEACHING_ASSISTANT,
+    "student success coordinator": ChatRole.STUDENT_SUCCESS_COORDINATOR,
+    "students success coordinator": ChatRole.STUDENT_SUCCESS_COORDINATOR,
+    "student mentor": ChatRole.STUDENT_MENTOR,
+    "students mentor": ChatRole.STUDENT_MENTOR,
+    "community manager": ChatRole.COMMUNITY_MANAGER,
+    "community_manager": ChatRole.COMMUNITY_MANAGER,
+    "lead instructor": ChatRole.LEAD_INSTRUCTOR,
+    "lead_instructor": ChatRole.LEAD_INSTRUCTOR,
+}
+
+
+def _resolve_chat_role(role_name: str) -> ChatRole:
+    """Resolve a DB role name to the canonical chat role enum."""
+    normalized = _normalize_role_name(role_name)
+    if normalized in _ROLE_NAME_ALIASES:
+        return _ROLE_NAME_ALIASES[normalized]
+    return ChatRole(normalized)
+
+
 # Roles that can chat with everyone
 _PRIVILEGED_ROLES = [
     ChatRole.STUDENT, ChatRole.LEARNER, ChatRole.USER,
@@ -81,12 +114,15 @@ async def verify_chat_permission(
     """
     Verify if current user has permission to chat with target user.
     
-    Rules:
-    - Regular users can ONLY chat with instructors
-    - Instructors can chat with users, other instructors, admins, maintainers
-    - Admins can chat with ANYONE (students, instructors, other admins, maintainers)
-    - Maintainers can chat with ANYONE (students, instructors, admins, other maintainers)
-    - All chats must be within same organization
+        Rules:
+        - Students/Learners/Users can chat with Instructors and support staff roles
+            (Teaching Assistant, Students Success Coordinator, Students Mentor,
+             Community Manager, Lead Instructor)
+        - Students cannot chat with students
+        - Students cannot chat with admins/maintainers
+        - Support staff roles can chat with all supported roles, including students
+        - Instructors/Admins/Maintainers can chat with all supported roles
+        - All chats must be within same organization
     """
     
     # Get both users' roles in the organization
@@ -99,12 +135,12 @@ async def verify_chat_permission(
             detail="One or both users are not members of this organization"
         )
     
-    # Extract role names (normalize to lowercase) and map to ChatRole enum
-    current_role_name = current_user_role.name.lower()
-    target_role_name = target_user_role.name.lower()
+    # Extract role names and map to canonical ChatRole enum
+    current_role_name = _normalize_role_name(current_user_role.name)
+    target_role_name = _normalize_role_name(target_user_role.name)
     
     try:
-        current_chat_role = ChatRole(current_role_name)
+        current_chat_role = _resolve_chat_role(current_role_name)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -112,7 +148,7 @@ async def verify_chat_permission(
         )
     
     try:
-        target_chat_role = ChatRole(target_role_name)
+        target_chat_role = _resolve_chat_role(target_role_name)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -160,11 +196,11 @@ async def get_chatable_users_for_user(
     if not current_user_role:
         return []
     
-    current_role_name = current_user_role.name.lower()
+    current_role_name = _normalize_role_name(current_user_role.name)
     
     # Look up allowed target roles from the centralized permission map
     try:
-        current_chat_role = ChatRole(current_role_name)
+        current_chat_role = _resolve_chat_role(current_role_name)
     except ValueError:
         return []
     

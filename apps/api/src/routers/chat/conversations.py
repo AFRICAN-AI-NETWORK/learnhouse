@@ -1,12 +1,15 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
+from sqlmodel import select
 
 from src.db.chat.conversations import ConversationCreate, ConversationRead, ConversationWithLastMessage
 from src.services.chat.conversation_service import ConversationService
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
 from src.db.users import User
+from src.db.user_organizations import UserOrganization
+from src.db.roles import Role
 
 router = APIRouter()
 
@@ -79,6 +82,17 @@ async def get_chatable_users(
         current_user_id=current_user.id,
         org_id=org_id
     )
+
+    user_ids = [u.id for u in users]
+    role_by_user_id: dict[int, str] = {}
+    if user_ids:
+        role_rows = db.exec(
+            select(UserOrganization.user_id, Role.name)
+            .join(Role, Role.id == UserOrganization.role_id)
+            .where(UserOrganization.org_id == org_id)
+            .where(UserOrganization.user_id.in_(user_ids))
+        ).all()
+        role_by_user_id = {row[0]: row[1] for row in role_rows}
     
     # Apply search filter if provided
     if search:
@@ -97,7 +111,8 @@ async def get_chatable_users(
             "username": u.username,
             "first_name": u.first_name,
             "last_name": u.last_name,
-            "avatar_image": u.avatar_image
+            "avatar_image": u.avatar_image,
+            "role_name": role_by_user_id.get(u.id)
         }
         for u in users
     ]

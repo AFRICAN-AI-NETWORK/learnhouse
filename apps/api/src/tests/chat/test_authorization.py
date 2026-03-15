@@ -184,6 +184,80 @@ class TestVerifyChatPermission:
         assert exc_info.value.status_code == 403
         assert "not members" in str(exc_info.value.detail).lower()
 
+    @pytest.mark.asyncio
+    async def test_student_can_chat_with_teaching_assistant(
+        self,
+        session: Session,
+        org: Organization,
+        student_user: User,
+        teaching_assistant_user: User,
+    ):
+        result = await verify_chat_permission(
+            db=session,
+            current_user_id=student_user.id,
+            target_user_id=teaching_assistant_user.id,
+            org_id=org.id,
+        )
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_student_can_chat_with_all_support_roles(
+        self,
+        session: Session,
+        org: Organization,
+        student_user: User,
+        student_success_coordinator_user: User,
+        student_mentor_user: User,
+        community_manager_user: User,
+        lead_instructor_user: User,
+    ):
+        for target_user in [
+            student_success_coordinator_user,
+            student_mentor_user,
+            community_manager_user,
+            lead_instructor_user,
+        ]:
+            result = await verify_chat_permission(
+                db=session,
+                current_user_id=student_user.id,
+                target_user_id=target_user.id,
+                org_id=org.id,
+            )
+            assert result is True
+
+    @pytest.mark.asyncio
+    async def test_support_role_can_chat_with_student(
+        self,
+        session: Session,
+        org: Organization,
+        teaching_assistant_user: User,
+        student_user: User,
+    ):
+        result = await verify_chat_permission(
+            db=session,
+            current_user_id=teaching_assistant_user.id,
+            target_user_id=student_user.id,
+            org_id=org.id,
+        )
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_student_cannot_chat_with_admin_or_maintainer(
+        self,
+        session: Session,
+        org: Organization,
+        student_user: User,
+        admin_user: User,
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_chat_permission(
+                db=session,
+                current_user_id=student_user.id,
+                target_user_id=admin_user.id,
+                org_id=org.id,
+            )
+        assert exc_info.value.status_code == 403
+
 
 class TestGetUserRoleInOrg:
     """Test getting user role in organization."""
@@ -255,7 +329,7 @@ class TestGetChatableUsersForUser:
         student_user_two: User,
         admin_user: User
     ):
-        """Test that student can only see instructors (per permission rules)."""
+        """Student sees instructors but not admin or other students when no support users exist."""
         users = await get_chatable_users_for_user(
             db=session,
             current_user_id=student_user.id,
@@ -275,6 +349,61 @@ class TestGetChatableUsersForUser:
         
         # Should NOT include self
         assert student_user.id not in user_ids
+
+    @pytest.mark.asyncio
+    async def test_student_sees_support_roles_in_chatable_list(
+        self,
+        session: Session,
+        org: Organization,
+        student_user: User,
+        instructor_user: User,
+        teaching_assistant_user: User,
+        student_success_coordinator_user: User,
+        student_mentor_user: User,
+        community_manager_user: User,
+        lead_instructor_user: User,
+        admin_user: User,
+        student_user_two: User,
+    ):
+        users = await get_chatable_users_for_user(
+            db=session,
+            current_user_id=student_user.id,
+            org_id=org.id,
+        )
+
+        user_ids = [u.id for u in users]
+        assert instructor_user.id in user_ids
+        assert teaching_assistant_user.id in user_ids
+        assert student_success_coordinator_user.id in user_ids
+        assert student_mentor_user.id in user_ids
+        assert community_manager_user.id in user_ids
+        assert lead_instructor_user.id in user_ids
+
+        assert admin_user.id not in user_ids
+        assert student_user_two.id not in user_ids
+        assert student_user.id not in user_ids
+
+    @pytest.mark.asyncio
+    async def test_support_role_sees_students_in_chatable_list(
+        self,
+        session: Session,
+        org: Organization,
+        teaching_assistant_user: User,
+        student_user: User,
+        student_user_two: User,
+        instructor_user: User,
+    ):
+        users = await get_chatable_users_for_user(
+            db=session,
+            current_user_id=teaching_assistant_user.id,
+            org_id=org.id,
+        )
+
+        user_ids = [u.id for u in users]
+        assert student_user.id in user_ids
+        assert student_user_two.id in user_ids
+        assert instructor_user.id in user_ids
+        assert teaching_assistant_user.id not in user_ids
     
     @pytest.mark.asyncio
     async def test_instructor_sees_everyone(
