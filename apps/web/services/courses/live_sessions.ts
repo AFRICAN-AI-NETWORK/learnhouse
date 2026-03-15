@@ -7,7 +7,7 @@ import { getAPIUrl } from '@services/config/config'
 
 export const registerForLiveSession = async (
   activityUuid: string,
-  token: string
+  token?: string
 ) => {
   const result: any = await fetch(
     `${getAPIUrl()}live_sessions/${activityUuid}/register`,
@@ -40,7 +40,7 @@ export const notifyParticipants = async (
   activityUuid: string,
   userIds: number[],
   type: 'CONFIRMATION' | 'REMINDER' | 'ENROLMENT',
-  token: string
+  token?: string
 ) => {
   const result: any = await fetch(
     `${getAPIUrl()}live_sessions/${activityUuid}/notify`,
