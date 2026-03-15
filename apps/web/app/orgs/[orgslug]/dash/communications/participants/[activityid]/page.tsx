@@ -15,6 +15,7 @@ import {
   getLiveParticipants,
   notifyParticipants,
 } from '@services/courses/live_sessions'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { BarLoader } from 'react-spinners'
@@ -22,6 +23,8 @@ import { BarLoader } from 'react-spinners'
 export default function ParticipantManagementPage() {
   const params = useParams()
   const activityId = params.activityid as string
+  const session = useLHSession() as any
+  const access_token: string = session?.data?.tokens?.access_token ?? ''
   const [participants, setParticipants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -31,7 +34,7 @@ export default function ParticipantManagementPage() {
   useEffect(() => {
     const loadParticipants = async () => {
       try {
-        const res = await getLiveParticipants(activityId)
+        const res = await getLiveParticipants(activityId, access_token)
         setParticipants(res || [])
       } catch (e) {
         toast.error('Failed to load participants')
@@ -75,7 +78,7 @@ export default function ParticipantManagementPage() {
 
     setIsNotifying(true)
     try {
-      await notifyParticipants(activityId, selectedUsers, type)
+      await notifyParticipants(activityId, selectedUsers, type, access_token)
       toast.success(`Successfully sent ${type.toLowerCase()} emails!`)
       setSelectedUsers([])
     } catch (e) {

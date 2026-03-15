@@ -15,12 +15,15 @@ import {
 import { createCampaign, getCampaigns } from '@services/communications'
 import { getOrgCourses } from '@services/courses/courses'
 import { useOrg } from '@components/Contexts/OrgContext'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { BarLoader } from 'react-spinners'
 
 export default function CommunicationsPage() {
   const org = useOrg() as any
+  const session = useLHSession() as any
+  const access_token: string = session?.data?.tokens?.access_token ?? ''
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [targetType, setTargetType] = useState('ALL')
@@ -36,7 +39,7 @@ export default function CommunicationsPage() {
     const loadInitialData = async () => {
       try {
         const [campaignsRes, coursesRes] = await Promise.all([
-          getCampaigns(),
+          getCampaigns(access_token),
           getOrgCourses(org?.org_slug, null),
         ])
         setCampaigns(campaignsRes || [])
@@ -81,11 +84,11 @@ export default function CommunicationsPage() {
         target_metadata: { value: targetValue },
         include_chat: includeChat,
       }
-      await createCampaign(data)
+      await createCampaign(data, access_token)
       toast.success('Campaign initiated! Sending messages in background.')
 
       // Refresh history
-      const updated = await getCampaigns()
+      const updated = await getCampaigns(access_token)
       setCampaigns(updated || [])
 
       // Reset form
