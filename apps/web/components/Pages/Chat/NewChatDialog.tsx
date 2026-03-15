@@ -189,6 +189,49 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
       }
     }
 
+    if (normalized === 'teaching assistant') {
+      return {
+        label: 'Teaching Assistant',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-emerald-400/35 bg-emerald-500/15 text-emerald-300',
+      }
+    }
+
+    if (
+      normalized === 'students success coordinator' ||
+      normalized === 'student success coordinator'
+    ) {
+      return {
+        label: 'Success Coordinator',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-cyan-400/35 bg-cyan-500/15 text-cyan-300',
+      }
+    }
+
+    if (normalized === 'students mentor' || normalized === 'student mentor') {
+      return {
+        label: 'Student Mentor',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-violet-400/35 bg-violet-500/15 text-violet-300',
+      }
+    }
+
+    if (normalized === 'community manager') {
+      return {
+        label: 'Community Manager',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-fuchsia-400/35 bg-fuchsia-500/15 text-fuchsia-300',
+      }
+    }
+
+    if (normalized === 'lead instructor') {
+      return {
+        label: 'Lead Instructor',
+        className:
+          'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md border border-lime-400/35 bg-lime-500/15 text-lime-300',
+      }
+    }
+
     return {
       label: 'User',
       className:
