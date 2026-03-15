@@ -185,6 +185,22 @@ function TaskFormObject({
   const [assignmentTaskOutsideProvider, setAssignmentTaskOutsideProvider] =
     useState<any>(null)
   const [userSubmissionObject, setUserSubmissionObject] = useState<any>(null)
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false)
+
+  /**
+   * Check if a student answer matches the correct answer.
+   * Supports comma-separated accepted answers (e.g. "Paris,paris,PARIS").
+   * Matching is case-insensitive with leading/trailing whitespace stripped.
+   * Mirrors the backend _is_form_answer_correct() logic.
+   */
+  const isFormAnswerCorrect = (student: string, correct: string): boolean => {
+    const normalized = student.trim().toLowerCase()
+    const accepted = correct
+      .split(',')
+      .map((a) => a.trim().toLowerCase())
+      .filter(Boolean)
+    return accepted.length > 0 ? accepted.includes(normalized) : false
+  }
 
   const handleUserAnswerChange = (
     questionUUID: string,
@@ -268,6 +284,8 @@ function TaskFormObject({
 
     if (res) {
       toast.success('Form submitted successfully!')
+      setHasSubmitted(true)
+      setUserSubmissionObject(res.data)
       // Update userSubmissions with the returned UUID for future updates
       const updatedUserSubmissions = {
         ...userSubmissions,
@@ -422,6 +440,8 @@ function TaskFormObject({
             assignment_task_submission_uuid:
               res.data.assignment_task_submission_uuid,
           })
+          setUserSubmissionObject(res.data)
+          setHasSubmitted(!!res.data.task_submission?.grading_results)
         }
       }
     }
@@ -716,30 +736,28 @@ function TaskFormObject({
                         {view === 'grading' && (
                           <div
                             className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
-                              userSubmissions.submissions
-                                .find(
+                              isFormAnswerCorrect(
+                                userSubmissions.submissions.find(
                                   (submission) =>
                                     submission.questionUUID ===
                                       question.questionUUID &&
                                     submission.blankUUID === blank.blankUUID
-                                )
-                                ?.answer?.toLowerCase()
-                                .trim() ===
-                              blank.correctAnswer.toLowerCase().trim()
+                                )?.answer ?? '',
+                                blank.correctAnswer
+                              )
                                 ? 'bg-lime-200 text-lime-600'
                                 : 'bg-rose-200/60 text-rose-500'
                             } text-sm`}
                           >
-                            {userSubmissions.submissions
-                              .find(
+                            {isFormAnswerCorrect(
+                              userSubmissions.submissions.find(
                                 (submission) =>
                                   submission.questionUUID ===
                                     question.questionUUID &&
                                   submission.blankUUID === blank.blankUUID
-                              )
-                              ?.answer?.toLowerCase()
-                              .trim() ===
-                            blank.correctAnswer.toLowerCase().trim() ? (
+                              )?.answer ?? '',
+                              blank.correctAnswer
+                            ) ? (
                               <>
                                 <Check size={12} className="mx-auto" />
                                 <p className="mx-auto font-bold text-xs">
@@ -756,7 +774,7 @@ function TaskFormObject({
                             )}
                           </div>
                         )}
-                        {view === 'student' && (
+                        {view === 'student' && !hasSubmitted && (
                           <div
                             className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
                               userSubmissions.submissions
@@ -782,6 +800,45 @@ function TaskFormObject({
                               <Check size={12} className="mx-auto" />
                             ) : (
                               <X size={12} className="mx-auto" />
+                            )}
+                          </div>
+                        )}
+                        {view === 'student' && hasSubmitted && (
+                          <div
+                            className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                              isFormAnswerCorrect(
+                                userSubmissions.submissions.find(
+                                  (s) =>
+                                    s.questionUUID === question.questionUUID &&
+                                    s.blankUUID === blank.blankUUID
+                                )?.answer ?? '',
+                                blank.correctAnswer
+                              )
+                                ? 'bg-lime-200 text-lime-600'
+                                : 'bg-rose-200/60 text-rose-500'
+                            } text-sm`}
+                          >
+                            {isFormAnswerCorrect(
+                              userSubmissions.submissions.find(
+                                (s) =>
+                                  s.questionUUID === question.questionUUID &&
+                                  s.blankUUID === blank.blankUUID
+                              )?.answer ?? '',
+                              blank.correctAnswer
+                            ) ? (
+                              <>
+                                <Check size={12} className="mx-auto" />
+                                <p className="mx-auto font-bold text-xs">
+                                  Correct
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <X size={12} className="mx-auto" />
+                                <p className="mx-auto font-bold text-xs">
+                                  Wrong
+                                </p>
+                              </>
                             )}
                           </div>
                         )}

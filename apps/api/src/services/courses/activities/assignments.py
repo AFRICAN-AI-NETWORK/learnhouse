@@ -114,6 +114,162 @@ async def perform_auto_grading(assignment_task: AssignmentTask, submission: Assi
     
     submission.task_submission_grade_feedback = f"Auto-graded: {total_passed}/{total_tests} tests passed."
 
+
+async def perform_quiz_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+) -> None:
+    """
+    Auto-grade a QUIZ task.
+    Only awards credit for correctly selected options (true positives).
+    grade = round((correct_selections / total_correct_options) * max_grade_value)
+
+    Wrong options that were not selected are intentionally ignored — they do NOT
+    contribute to the score. This prevents students from earning points simply by
+    submitting blank answers.
+
+    Stores per-question results in task_submission["grading_results"].
+    """
+    questions = assignment_task.contents.get("questions", [])
+    student_subs = submission.task_submission.get("submissions", [])
+
+    total_correct_options = 0  # denominator: options where assigned_right_answer=True
+    correct_selections = 0     # numerator: correct options the student actually selected
+    question_results = []
+
+    for question in questions:
+        q_uuid = question.get("questionUUID")
+        options = question.get("options", [])
+        q_correct = 0
+        q_total = 0  # correct options for this question
+
+        for option in options:
+            assigned_right = option.get("assigned_right_answer", False)
+            opt_uuid = option.get("optionUUID")
+
+            if not assigned_right:
+                # Wrong option: no credit gained or lost — skip entirely.
+                # Counting "correctly unselected" wrong options would let students
+                # earn points without selecting any correct answers.
+                continue
+
+            q_total += 1
+            total_correct_options += 1
+
+            student_entry = next(
+                (s for s in student_subs
+                 if s.get("questionUUID") == q_uuid and s.get("optionUUID") == opt_uuid),
+                None,
+            )
+            student_answer = student_entry.get("answer", False) if student_entry else False
+
+            if student_answer:  # student explicitly selected this correct option
+                correct_selections += 1
+                q_correct += 1
+
+        question_results.append({"questionUUID": q_uuid, "correct": q_correct, "total": q_total})
+
+    submission.grade = (
+        round((correct_selections / total_correct_options) * assignment_task.max_grade_value)
+        if total_correct_options > 0 else 0
+    )
+
+    updated = dict(submission.task_submission)
+    updated["grading_results"] = question_results
+    submission.task_submission = updated
+
+    submission.task_submission_grade_feedback = (
+        f"Auto-graded: {correct_selections}/{total_correct_options} options correct."
+    )
+
+
+def _is_form_answer_correct(student_answer: str, correct_answer: str) -> bool:
+    """
+    Check if a student answer matches the correct answer.
+    Supports comma-separated accepted answers (e.g. "Paris,paris,PARIS").
+    Matching is case-insensitive with leading/trailing whitespace stripped.
+    """
+    student = student_answer.strip().lower()
+    accepted = [a.strip().lower() for a in correct_answer.split(",") if a.strip()]
+    return student in accepted if accepted else False
+
+
+async def perform_form_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+) -> None:
+    """
+    Auto-grade a FORM (fill-in-the-blank) task.
+    Supports comma-separated accepted answers in blank.correctAnswer field.
+    grade = round((correct_blanks / total_blanks) * max_grade_value)
+    Stores per-question results in task_submission["grading_results"].
+    """
+    questions = assignment_task.contents.get("questions", [])
+    student_subs = submission.task_submission.get("submissions", [])
+
+    total_blanks = 0
+    correct_blanks = 0
+    question_results = []
+
+    for question in questions:
+        q_uuid = question.get("questionUUID")
+        blanks = question.get("blanks", [])
+        q_correct = 0
+
+        for blank in blanks:
+            total_blanks += 1
+            blank_uuid = blank.get("blankUUID")
+            correct_answer = blank.get("correctAnswer", "")
+
+            student_entry = next(
+                (s for s in student_subs
+                 if s.get("questionUUID") == q_uuid and s.get("blankUUID") == blank_uuid),
+                None,
+            )
+            student_answer = student_entry.get("answer", "") if student_entry else ""
+
+            if _is_form_answer_correct(student_answer, correct_answer):
+                correct_blanks += 1
+                q_correct += 1
+
+        question_results.append({"questionUUID": q_uuid, "correct": q_correct, "total": len(blanks)})
+
+    submission.grade = (
+        round((correct_blanks / total_blanks) * assignment_task.max_grade_value)
+        if total_blanks > 0 else 0
+    )
+
+    updated = dict(submission.task_submission)
+    updated["grading_results"] = question_results
+    submission.task_submission = updated
+
+    submission.task_submission_grade_feedback = (
+        f"Auto-graded: {correct_blanks}/{total_blanks} blanks correct."
+    )
+
+
+# Dispatch table: maps AssignmentTaskTypeEnum → grading handler (single source of truth)
+_AUTO_GRADE_DISPATCH = {
+    AssignmentTaskTypeEnum.CODE_EDITOR: perform_auto_grading,
+    AssignmentTaskTypeEnum.QUIZ: perform_quiz_auto_grading,
+    AssignmentTaskTypeEnum.FORM: perform_form_auto_grading,
+}
+
+# Set of task types that support auto-grading (used for final submission status)
+_AUTO_GRADABLE_TYPES = frozenset({
+    AssignmentTaskTypeEnum.CODE_EDITOR,
+    AssignmentTaskTypeEnum.QUIZ,
+    AssignmentTaskTypeEnum.FORM,
+})
+
+
+async def dispatch_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+) -> None:
+    """Route auto-grading to the correct handler based on task type. No-op for non-auto-gradable types."""
+    handler = _AUTO_GRADE_DISPATCH.get(assignment_task.assignment_type)
+    if handler:
+        await handler(assignment_task, submission)
+
+
 ## > Assignments CRUD
 
 
@@ -885,14 +1041,13 @@ async def handle_assignment_task_submission(
                 setattr(assignment_task_submission, var, value)
         assignment_task_submission.update_date = str(datetime.now())
 
-        # AUTO-GRADING LOGIC FOR CODE_EDITOR
-        if assignment_task.assignment_type == "CODE_EDITOR":
-            print(f"[HandleSubmission] Triggering auto-grading for task {assignment_task.assignment_task_uuid}")
-            try:
-                await perform_auto_grading(assignment_task, assignment_task_submission)
-                print(f"[HandleSubmission] Auto-grading completed successfully. Grade: {assignment_task_submission.grade}")
-            except Exception as e:
-                print(f"[AutoGrading] Failed (update path), saving submission without grade: {e}")
+        # AUTO-GRADING: dispatch to the correct handler based on task type
+        try:
+            await dispatch_auto_grading(assignment_task, assignment_task_submission)
+            if assignment_task_submission.grade:
+                print(f"[HandleSubmission] Auto-grading done. Task: {assignment_task.assignment_task_uuid}, Grade: {assignment_task_submission.grade}")
+        except Exception as e:
+            print(f"[AutoGrading] Failed (update path), saving submission without grade: {e}")
 
         # Insert Assignment Task Submission in DB
         db_session.add(assignment_task_submission)
@@ -930,12 +1085,11 @@ async def handle_assignment_task_submission(
             update_date=current_time,
         )
 
-        # AUTO-GRADING LOGIC FOR CODE_EDITOR
-        if assignment_task.assignment_type == "CODE_EDITOR":
-            try:
-                await perform_auto_grading(assignment_task, assignment_task_submission)
-            except Exception as e:
-                print(f"[AutoGrading] Failed (create path), saving submission without grade: {e}")
+        # AUTO-GRADING: dispatch to the correct handler based on task type
+        try:
+            await dispatch_auto_grading(assignment_task, assignment_task_submission)
+        except Exception as e:
+            print(f"[AutoGrading] Failed (create path), saving submission without grade: {e}")
 
         # Insert Assignment Task Submission in DB
         db_session.add(assignment_task_submission)
@@ -1322,11 +1476,11 @@ async def create_assignment_submission(
     
     total_grade = sum(sub.grade for sub in task_submissions)
     
-    # Check if all tasks are CODE_EDITOR
-    all_code_editor = all(task.assignment_type == AssignmentTaskTypeEnum.CODE_EDITOR for task in tasks) if tasks else False
-    
+    # Check if all tasks are auto-gradable (CODE_EDITOR, QUIZ, or FORM)
+    all_auto_gradable = all(task.assignment_type in _AUTO_GRADABLE_TYPES for task in tasks) if tasks else False
+
     status = AssignmentUserSubmissionStatus.SUBMITTED
-    if all_code_editor and len(task_submissions) == len(tasks):
+    if all_auto_gradable and len(task_submissions) == len(tasks):
         status = AssignmentUserSubmissionStatus.GRADED
 
     # Create Assignment User Submission

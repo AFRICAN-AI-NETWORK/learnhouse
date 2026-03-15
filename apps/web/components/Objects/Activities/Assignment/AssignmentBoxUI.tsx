@@ -151,16 +151,28 @@ function AssignmentBoxUI({
 
           {/* Student button - only show if authenticated */}
           {view === 'student' && isAuthenticated && (
-            <div
-              onClick={() => submitFC && submitFC()}
-              className={`flex px-4 py-1.5 cursor-pointer rounded-full space-x-2 items-center justify-center mx-auto w-full sm:w-auto transition-all hover:scale-105 active:scale-95 border-2 border-dashed ${isFocusMode ? 'text-emerald-300 bg-emerald-400/10 border-emerald-400/40 hover:bg-emerald-400/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]' : 'text-emerald-700 bg-emerald-300/20 border-emerald-500/60 hover:bg-emerald-300/30'}`}
-            >
-              <Forward size={14} />
-              <p className="text-[11px] font-bold uppercase tracking-wider">
-                {submission && submission.length > 0
-                  ? t('activities.resubmit')
-                  : t('activities.save_your_progress')}
-              </p>
+            <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto">
+              {currentPoints !== undefined && currentPoints !== null && (
+                <div
+                  className={`flex space-x-2 items-center font-semibold px-3 py-1 rounded-full ${isFocusMode ? 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/20' : 'bg-emerald-200/20 text-emerald-600 outline-1 outline-emerald-300/40'}`}
+                >
+                  <BookPlus size={12} />
+                  <p className="text-xs">
+                    {t('assignments.current_points', { points: currentPoints })}
+                  </p>
+                </div>
+              )}
+              <div
+                onClick={() => submitFC && submitFC()}
+                className={`flex px-4 py-1.5 cursor-pointer rounded-full space-x-2 items-center justify-center mx-auto w-full sm:w-auto transition-all hover:scale-105 active:scale-95 border-2 border-dashed ${isFocusMode ? 'text-emerald-300 bg-emerald-400/10 border-emerald-400/40 hover:bg-emerald-400/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]' : 'text-emerald-700 bg-emerald-300/20 border-emerald-500/60 hover:bg-emerald-300/30'}`}
+              >
+                <Forward size={14} />
+                <p className="text-[11px] font-bold uppercase tracking-wider">
+                  {submission && submission.length > 0
+                    ? t('activities.resubmit')
+                    : t('activities.save_your_progress')}
+                </p>
+              </div>
             </div>
           )}
 
