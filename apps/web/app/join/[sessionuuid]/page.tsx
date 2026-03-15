@@ -2,14 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import {
-  Video,
-  Calendar,
-  Clock,
-  MapPin,
-  ShieldCheck,
-  ArrowRight,
-} from 'lucide-react'
+import { Video, Calendar, Clock, ShieldCheck, ArrowRight } from 'lucide-react'
 import { getActivityByID } from '@services/courses/activities'
 import Link from 'next/link'
 
@@ -26,7 +19,7 @@ export default function JoinSessionLanding() {
         const res = await getActivityByID(sessionUuid, null, '')
         setActivity(res)
       } catch (e) {
-        console.error('Failed to load session', e)
+        // Suppress errors for clean UI
       } finally {
         setLoading(false)
       }

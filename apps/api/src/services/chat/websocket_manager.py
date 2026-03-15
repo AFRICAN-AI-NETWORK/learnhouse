@@ -50,8 +50,9 @@ class ConnectionManager:
                 redis_url = config.redis_config.redis_connection_string
                 
                 if redis_url:
-                    self.redis_client = redis.from_url(redis_url, decode_responses=True)
-                    self.pubsub = self.redis_client.pubsub()
+                    client = redis.from_url(redis_url, decode_responses=True)
+                    self.redis_client = client
+                    self.pubsub = client.pubsub()
                     logger.info("WebSocket manager initialized with Redis Pub/Sub")
                 else:
                     logger.warning("Redis URL not configured, WebSocket scaling will be limited")
@@ -72,9 +73,10 @@ class ConnectionManager:
         logger.info(f"User {user_id} connected. Total connections: {len(self.active_connections[user_id])}")
         
         # Publish connection event to Redis (if available)
-        if self.redis_client:
+        client = self.redis_client
+        if client is not None:
             try:
-                await self.redis_client.publish(
+                await client.publish(
                     "chat:user_status",
                     json.dumps({"user_id": user_id, "status": "online", "timestamp": datetime.utcnow().isoformat()})
                 )
@@ -88,12 +90,13 @@ class ConnectionManager:
             
             # Remove user from dict if no more connections
             if not self.active_connections[user_id]:
-                del self.active_connections[user_id]
+                self.active_connections.pop(user_id, None)
                 
                 # Publish offline event (if Redis available)
-                if self.redis_client:
+                client = self.redis_client
+                if client is not None:
                     try:
-                        await self.redis_client.publish(
+                        await client.publish(
                             "chat:user_status",
                             json.dumps({"user_id": user_id, "status": "offline", "timestamp": datetime.utcnow().isoformat()})
                         )
@@ -104,7 +107,7 @@ class ConnectionManager:
         for room_id in list(self.rooms.keys()):
             self.rooms[room_id].discard(websocket)
             if not self.rooms[room_id]:
-                del self.rooms[room_id]
+                self.rooms.pop(room_id, None)
         
         logger.info(f"User {user_id} disconnected")
     
@@ -125,9 +128,10 @@ class ConnectionManager:
                 await self.disconnect(conn, user_id)
         
         # Publish to Redis for other instances (if available)
-        if self.redis_client:
+        client = self.redis_client
+        if client is not None:
             try:
-                await self.redis_client.publish(
+                await client.publish(
                     f"chat:user:{user_id}",
                     json.dumps(message)
                 )
@@ -151,7 +155,7 @@ class ConnectionManager:
         if room_id in self.rooms:
             self.rooms[room_id].discard(websocket)
             if not self.rooms[room_id]:
-                del self.rooms[room_id]
+                self.rooms.pop(room_id, None)
         logger.info(f"WebSocket left room {room_id}")
 
     async def broadcast_to_room(self, room_id: str, message: dict):

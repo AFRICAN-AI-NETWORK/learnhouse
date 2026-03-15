@@ -163,7 +163,7 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
       isRegistered &&
       typeof window !== 'undefined'
     ) {
-      const domain = 'meet.jit.si'
+      const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
       const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
 
       const options = {
@@ -171,6 +171,7 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
         width: '100%',
         height: '100%',
         parentNode: document.querySelector('#jitsi-container'),
+        appId: process.env.NEXT_PUBLIC_JITSI_APP_ID,
         userInfo: {
           displayName: session.data?.user?.display_name || 'Student',
         },

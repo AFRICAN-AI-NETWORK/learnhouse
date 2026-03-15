@@ -15,6 +15,7 @@ import {
   School,
   Settings,
   Users,
+  BookOpen,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
@@ -175,6 +176,16 @@ function DashLeftMenu() {
             />
 
             <div className="my-4 border-t border-white/5 mx-2 opacity-50" />
+
+            {/* Staff Only Section */}
+            {session.data?.roles?.some((r: any) => r.role?.name !== 'User') && (
+              <MenuLink
+                href="/dash/handbook"
+                icon={<BookOpen size={18} />}
+                label="Staff Handbook"
+                isCollapsed={isCollapsed}
+              />
+            )}
 
             <MenuLink
               href="https://africanainetwork.com"

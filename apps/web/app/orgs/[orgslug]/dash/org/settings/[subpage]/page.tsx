@@ -8,6 +8,7 @@ import {
   Share2Icon,
   LayoutDashboardIcon,
   CodeIcon,
+  GlobeIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { use } from 'react'
@@ -17,6 +18,7 @@ import OrgEditImages from '@components/Dashboard/Pages/Org/OrgEditImages/OrgEdit
 import OrgEditSocials from '@components/Dashboard/Pages/Org/OrgEditSocials/OrgEditSocials'
 import OrgEditLanding from '@components/Dashboard/Pages/Org/OrgEditLanding/OrgEditLanding'
 import OrgEditOther from '@components/Dashboard/Pages/Org/OrgEditOther/OrgEditOther'
+import OrgEditIntegrations from '@components/Dashboard/Pages/Org/OrgEditIntegrations/OrgEditIntegrations'
 import { useTranslation } from 'react-i18next'
 
 export type OrgParams = {
@@ -50,6 +52,11 @@ const getSettingTabs = (t: any): TabItem[] => [
     id: 'socials',
     label: t('dashboard.organization.settings.tabs.socials'),
     icon: Share2Icon,
+  },
+  {
+    id: 'integrations',
+    label: t('dashboard.organization.settings.tabs.integrations'),
+    icon: GlobeIcon,
   },
   {
     id: 'other',
@@ -112,6 +119,11 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         h1: t('dashboard.organization.settings.pages.other.title'),
         h2: t('dashboard.organization.settings.pages.other.subtitle'),
       }
+    } else if (params.subpage == 'integrations') {
+      return {
+        h1: 'Integrations',
+        h2: 'Connect external services and manage API credentials.',
+      }
     }
     return { h1: '', h2: '' }
   }
@@ -124,7 +136,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         <BreadCrumbs type="org"></BreadCrumbs>
         <div className="my-2  py-2">
           <div className="w-100 flex flex-col space-y-1">
-            <div className="pt-3 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tighter break-words">
+            <div className="pt-3 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tighter wrap-break-word">
               {H1Label}
             </div>
             <div className="flex font-medium text-gray-400 text-md">
@@ -155,6 +167,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         {params.subpage == 'previews' ? <OrgEditImages /> : ''}
         {params.subpage == 'socials' ? <OrgEditSocials /> : ''}
         {params.subpage == 'landing' ? <OrgEditLanding /> : ''}
+        {params.subpage == 'integrations' ? <OrgEditIntegrations /> : ''}
         {params.subpage == 'other' ? <OrgEditOther /> : ''}
       </motion.div>
     </div>
