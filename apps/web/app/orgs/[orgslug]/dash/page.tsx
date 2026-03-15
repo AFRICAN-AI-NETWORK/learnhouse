@@ -2,7 +2,14 @@
 import Image from 'next/image'
 import React from 'react'
 import africanAiLogo from '../../../../public/african_ai_horizontal.png'
-import { BookCopy, School, Settings, Users, GitMerge } from 'lucide-react'
+import {
+  BookCopy,
+  School,
+  Settings,
+  Users,
+  GitMerge,
+  Megaphone,
+} from 'lucide-react'
 import Link from 'next/link'
 import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useTranslation } from 'react-i18next'
@@ -45,6 +52,12 @@ function DashboardHome() {
             icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
             title="Referrals"
             description="Earn commissions by referring new users"
+          />
+          <DashboardCard
+            href="/dash/communications"
+            icon={<Megaphone className="mx-auto text-gray-500" size={50} />}
+            title="Communications"
+            description="Send batch emails and announcements to students"
           />
         </div>
       </AdminAuthorization>

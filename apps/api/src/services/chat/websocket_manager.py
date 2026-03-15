@@ -36,6 +36,9 @@ class ConnectionManager:
         # {user_id: {websocket_connection}}
         self.active_connections: Dict[int, Set[WebSocket]] = {}
         
+        # {room_id: {websocket_connection}}
+        self.rooms: Dict[str, Set[WebSocket]] = {}
+        
         # Redis client for Pub/Sub (optional - for horizontal scaling)
         self.redis_client = None
         self.pubsub = None
@@ -97,6 +100,12 @@ class ConnectionManager:
                     except Exception as e:
                         logger.warning(f"Failed to publish disconnect event: {e}")
         
+        # Cleanup rooms
+        for room_id in list(self.rooms.keys()):
+            self.rooms[room_id].discard(websocket)
+            if not self.rooms[room_id]:
+                del self.rooms[room_id]
+        
         logger.info(f"User {user_id} disconnected")
     
     async def send_personal_message(self, message: dict, user_id: int):
@@ -129,6 +138,36 @@ class ConnectionManager:
         """Send message to all participants in a conversation."""
         for user_id in participant_ids:
             await self.send_personal_message(message, user_id)
+    
+    async def join_room(self, room_id: str, websocket: WebSocket):
+        """Join a specific room (e.g. for a live session)."""
+        if room_id not in self.rooms:
+            self.rooms[room_id] = set()
+        self.rooms[room_id].add(websocket)
+        logger.info(f"WebSocket joined room {room_id}")
+
+    async def leave_room(self, room_id: str, websocket: WebSocket):
+        """Leave a specific room."""
+        if room_id in self.rooms:
+            self.rooms[room_id].discard(websocket)
+            if not self.rooms[room_id]:
+                del self.rooms[room_id]
+        logger.info(f"WebSocket left room {room_id}")
+
+    async def broadcast_to_room(self, room_id: str, message: dict):
+        """Broadcast message to all websockets in a room."""
+        if room_id in self.rooms:
+            disconnected = set()
+            for connection in self.rooms[room_id]:
+                try:
+                    await connection.send_json(message)
+                except Exception as e:
+                    logger.error(f"Error broadcasting to room {room_id}: {e}")
+                    disconnected.add(connection)
+            
+            # Clean up disconnected sockets (this will be handled by disconnect, but good to be safe)
+            for conn in disconnected:
+                self.rooms[room_id].discard(conn)
     
     def is_user_online(self, user_id: int) -> bool:
         """Check if user has active connections."""

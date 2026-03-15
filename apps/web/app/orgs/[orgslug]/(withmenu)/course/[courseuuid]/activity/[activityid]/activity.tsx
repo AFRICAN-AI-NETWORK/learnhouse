@@ -78,6 +78,9 @@ const SmartArticleActivity = lazy(
   () =>
     import('@components/Objects/Activities/SmartArticle/SmartArticleActivity')
 )
+const LiveSessionActivity = lazy(
+  () => import('@components/Objects/Activities/LiveSession/LiveSessionActivity')
+)
 const AssignmentStudentActivity = lazy(
   () =>
     import(
@@ -390,6 +393,12 @@ function ActivityClient(props: ActivityClientProps) {
           </Suspense>
         ) : (
           <LoadingFallback />
+        )
+      case 'TYPE_LIVE_SESSION':
+        return (
+          <Suspense fallback={<LoadingFallback />}>
+            <LiveSessionActivity course={course} activity={activity} />
+          </Suspense>
         )
       default:
         return null

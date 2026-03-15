@@ -11,6 +11,7 @@ class ActivityTypeEnum(str, Enum):
     TYPE_ASSIGNMENT = "TYPE_ASSIGNMENT"
     TYPE_CUSTOM = "TYPE_CUSTOM"
     TYPE_SMART_ARTICLE = "TYPE_SMART_ARTICLE"
+    TYPE_LIVE_SESSION = "TYPE_LIVE_SESSION"
 
 
 class ActivitySubTypeEnum(str, Enum):
@@ -28,6 +29,9 @@ class ActivitySubTypeEnum(str, Enum):
     SUBTYPE_CUSTOM = "SUBTYPE_CUSTOM"
     # Smart Article
     SUBTYPE_SMART_ARTICLE_PDF = "SUBTYPE_SMART_ARTICLE_PDF"
+    # Live Session
+    SUBTYPE_LIVE_JITSI = "SUBTYPE_LIVE_JITSI"
+    SUBTYPE_LIVE_HOSTED = "SUBTYPE_LIVE_HOSTED"
 
 
 class ActivityBase(SQLModel):
