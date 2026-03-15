@@ -1,9 +1,8 @@
 import json
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import datetime
 
 class YouTubeService:
     def __init__(self, credentials_json: str):

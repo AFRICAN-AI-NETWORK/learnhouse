@@ -13,7 +13,6 @@ from src.security.courses_security import courses_rbac_check_for_activities
 from src.db.organization_config import OrganizationConfig
 from src.services.integrations.youtube import create_automated_youtube_session
 import sys
-import json
 
 print("[ACTIVITIES_SERVICE] Module loaded!", file=sys.stderr, flush=True)
 

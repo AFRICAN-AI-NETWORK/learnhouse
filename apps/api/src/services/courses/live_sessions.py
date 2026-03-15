@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import List
-from fastapi import HTTPException, Request, status
+from fastapi import Request
 from sqlmodel import Session, select
 from src.db.courses.live_sessions import (
     LiveSessionRegistration,
-    LiveSessionRegistrationCreate,
     LiveSessionRegistrationRead,
 )
 from src.db.users import PublicUser, User

@@ -1,6 +1,4 @@
 import logging
-from typing import List
-from sqlmodel import Session, select
 from src.services.email.utils import send_email
 from src.db.users import User
 from src.db.courses.activities import Activity
@@ -70,7 +68,7 @@ def send_enrolment_invitation_email(user: User, activity: Activity):
     """
     Send an invitation to complete registration and enroll in the full course.
     """
-    subject = f"Loved the workshop? Enroll in the full course now!"
+    subject = "Loved the workshop? Enroll in the full course now!"
     
     body = f"""
     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">

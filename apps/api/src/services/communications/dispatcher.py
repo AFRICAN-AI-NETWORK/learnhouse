@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List
 from sqlmodel import Session, select
 from src.db.communications import Campaign, CampaignStatus, CampaignTargetType
-from src.db.users import User, RoleEnum
+from src.db.users import User
 from src.db.resource_authors import ResourceAuthor
 from src.services.email.utils import send_email
 from src.services.chat.websocket_manager import connection_manager
