@@ -34,16 +34,38 @@ function LiveSessionModal({
   const [registrationEnabled, setRegistrationEnabled] = useState(true)
   const [recordingUrl, setRecordingUrl] = useState('')
 
+  const getStartTimeInUTC = (date: string, time: string) => {
+    const [year, month, day] = date.split('-').map(Number)
+    const [hours, minutes] = time.split(':').map(Number)
+
+    const localStartDate = new Date(year, month - 1, day, hours, minutes, 0)
+
+    if (Number.isNaN(localStartDate.getTime())) {
+      return null
+    }
+
+    return localStartDate.toISOString()
+  }
+
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (!name || !startDate || !startTime) return
 
+    const startTimeUTC = getStartTimeInUTC(startDate, startTime)
+    if (!startTimeUTC) {
+      toast.error('Invalid date or time selected')
+      return
+    }
+
     setIsSubmitting(true)
+
+    const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
     // Details for the JSON field in DB
     const details = {
       live_url: '', // Default to Jitsi room if empty
-      start_time: `${startDate}T${startTime}:00Z`,
+      start_time: startTimeUTC,
+      timezone: localTimezone,
       duration: parseInt(duration),
       external_signup_enabled: registrationEnabled,
       chat_enabled: chatEnabled,
