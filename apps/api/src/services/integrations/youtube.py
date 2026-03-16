@@ -79,8 +79,20 @@ class YouTubeService:
                 'watch_url': f"https://www.youtube.com/watch?v={video_id}"
             }
             
+    async def end_broadcast(self, video_id: str) -> Dict[str, Any]:
+        """
+        Transitions a Live Broadcast to the 'complete' status.
+        This stops the live stream and finalizes the recording.
+        """
+        try:
+            res = self.youtube.liveBroadcasts().transition(
+                broadcastStatus='complete',
+                id=video_id,
+                part='id,status'
+            ).execute()
+            return res
         except HttpError as e:
-            print(f"An HTTP error {e.resp.status} occurred: {e.content}")
+            print(f"An HTTP error {e.resp.status} occurred while ending broadcast: {e.content}")
             raise e
 
 async def create_automated_youtube_session(org_credentials: str, title: str, start_time: str):

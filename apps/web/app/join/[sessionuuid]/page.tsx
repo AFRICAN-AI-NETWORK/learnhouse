@@ -5,12 +5,16 @@ import { motion } from 'framer-motion'
 import { Video, Calendar, Clock, ShieldCheck, ArrowRight } from 'lucide-react'
 import { getActivityByID } from '@services/courses/activities'
 import Link from 'next/link'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 export default function JoinSessionLanding() {
   const params = useParams()
+  const session = useLHSession() as any
   const sessionUuid = params.sessionuuid as string
   const [activity, setActivity] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [name, setName] = useState(session?.data?.user?.display_name || '')
+  const [email, setEmail] = useState(session?.data?.user?.email || '')
 
   useEffect(() => {
     const loadActivity = async () => {
@@ -26,6 +30,19 @@ export default function JoinSessionLanding() {
     }
     if (sessionUuid) loadActivity()
   }, [sessionUuid])
+
+  const handleRegisterRedirect = () => {
+    if (!email) {
+      alert('Please enter your email to continue.')
+      return
+    }
+    // Encode the redirect URL back to this session's activity page in the dashboard/course view
+    // Assuming the path follows /orgs/[slug]/dash/course/[uuid]/activity/[id]
+    // but the landing page doesn't know the exact path easily.
+    // However, the signup page usually takes a redirectUrl.
+    const signupUrl = `/auth/signup?email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(name.split(' ')[0] || '')}&last_name=${encodeURIComponent(name.split(' ').slice(1).join(' ') || '')}`
+    window.location.href = signupUrl
+  }
 
   if (loading)
     return (
@@ -161,19 +178,35 @@ export default function JoinSessionLanding() {
             <input
               type="text"
               placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all font-bold placeholder:text-zinc-600"
             />
             <input
               type="email"
               placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all font-bold placeholder:text-zinc-600"
             />
           </div>
 
           <div className="space-y-4 pt-4">
-            <button className="w-full bg-white text-black py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-xl shadow-white/5 active:scale-[0.98]">
-              Register to Join <ArrowRight size={18} />
-            </button>
+            {session?.status === 'authenticated' ? (
+              <Link
+                href={`/orgs/${activity.org_slug || 'aan'}/dash/course/${activity.course_uuid}/activity/${activity.id}`}
+                className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98]"
+              >
+                Go to Workshop <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <button
+                onClick={handleRegisterRedirect}
+                className="w-full bg-white text-black py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-xl shadow-white/5 active:scale-[0.98]"
+              >
+                Register to Join <ArrowRight size={18} />
+              </button>
+            )}
             <p className="text-[10px] text-center text-zinc-600 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
               <ShieldCheck size={12} /> Securely Managed by AAN LMS
             </p>

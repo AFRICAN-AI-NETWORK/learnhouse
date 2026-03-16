@@ -189,6 +189,7 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
       {aiChatBotState.isModalOpen && (
         <>
           <motion.div
+            key="ai-modal-container"
             initial={{ y: 20, opacity: 0.3, filter: 'blur(5px)' }}
             animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
             exit={{ y: 50, opacity: 0, filter: 'blur(25px)' }}
