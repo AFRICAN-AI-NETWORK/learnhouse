@@ -11,6 +11,8 @@ import {
   ShieldAlert,
   HelpCircle,
   ExternalLink,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react'
 import {
   registerForLiveSession,
@@ -23,9 +25,16 @@ import toast from 'react-hot-toast'
 interface LiveSessionActivityProps {
   activity: any
   course: any
+  isFocusMode?: boolean
+  onFocusModeChange?: (focusMode: boolean) => void
 }
 
-function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
+function LiveSessionActivity({
+  activity,
+  course,
+  isFocusMode = false,
+  onFocusModeChange,
+}: LiveSessionActivityProps) {
   const org = useOrg() as any
   const session = useLHSession() as any
   const [isRegistered, setIsRegistered] = useState(false)
@@ -39,6 +48,7 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   const [isConcludedManually, setIsConcludedManually] = useState(
     activity?.details?.is_concluded_manually || false
   )
+  const [showFloatingButton, setShowFloatingButton] = useState(false)
   const jitsiContainerRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<any>(null)
 
@@ -82,6 +92,31 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
     () => new Date(startTime.getTime() + (details.duration || 60) * 60000),
     [startTime, details.duration]
   )
+
+  // ESC key listener and floating button for focus mode
+  useEffect(() => {
+    if (!onFocusModeChange) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onFocusModeChange(false)
+      }
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const isTopArea = e.clientY < 80
+      const isRightSide = e.clientX > window.innerWidth * 0.85
+      setShowFloatingButton(isTopArea || isRightSide)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('mousemove', handleMouseMove)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [onFocusModeChange])
 
   useEffect(() => {
     const checkRegistration = async () => {
@@ -423,8 +458,34 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
             key="live"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[75vh]"
+            className={`grid grid-cols-1 lg:grid-cols-4 gap-6 relative ${
+              isFocusMode ? 'h-[90vh]' : 'h-[65vh]'
+            }`}
           >
+            {/* Floating Focus Mode Button */}
+            {onFocusModeChange && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: showFloatingButton ? 1 : 0.3, scale: 1 }}
+                whileHover={{ scale: 1.1, opacity: 1 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => onFocusModeChange(!isFocusMode)}
+                className="fixed top-6 right-6 z-[70] p-3 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 text-white shadow-2xl hover:bg-zinc-800 transition-all flex items-center justify-center group"
+                title={
+                  isFocusMode ? 'Exit Focus Mode (ESC)' : 'Enter Focus Mode'
+                }
+              >
+                {isFocusMode ? (
+                  <Minimize2 size={20} className="text-white" />
+                ) : (
+                  <Maximize2 size={20} className="text-white" />
+                )}
+                <span className="absolute -bottom-8 right-0 bg-zinc-900 text-white text-[9px] font-bold px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  {isFocusMode ? 'Exit (ESC)' : 'Enter'}
+                </span>
+              </motion.button>
+            )}
             <div
               className="lg:col-span-3 bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-zinc-100"
               ref={jitsiContainerRef}
