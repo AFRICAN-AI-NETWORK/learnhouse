@@ -1,6 +1,7 @@
 import {
   swrFetcher,
   RequestBodyWithAuthHeader,
+  RequestBodyFormWithAuthHeader,
   errorHandling,
 } from './utils/ts/requests'
 import { getAPIUrl } from '@services/config/config'
@@ -39,4 +40,18 @@ export const getLiveSessions = async (token?: string, orgslug?: string) => {
     `${getAPIUrl()}communications/live-sessions${orgslug ? `?org_slug=${orgslug}` : ''}`,
     token
   )
+}
+
+export const uploadCampaignImage = async (
+  file: File,
+  token?: string,
+  orgslug?: string
+) => {
+  const formData = new FormData()
+  formData.append('image_file', file)
+  const result = await fetch(
+    `${getAPIUrl()}communications/upload-image${orgslug ? `?org_slug=${orgslug}` : ''}`,
+    RequestBodyFormWithAuthHeader('POST', formData, null, token || '')
+  )
+  return await errorHandling(result)
 }

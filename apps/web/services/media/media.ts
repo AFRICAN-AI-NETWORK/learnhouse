@@ -1,11 +1,11 @@
 import { getBackendUrl, getConfig } from '@services/config/config'
 
 function getMediaUrl() {
-  const mediaUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_MEDIA_URL');
+  const mediaUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_MEDIA_URL')
   if (mediaUrl) {
-    return mediaUrl;
+    return mediaUrl
   } else {
-    return getBackendUrl();
+    return getBackendUrl()
   }
 }
 
@@ -56,8 +56,7 @@ export function getTaskRefFileDir(
   activityUUID: string,
   assignmentUUID: string,
   assignmentTaskUUID: string,
-  fileID : string
-
+  fileID: string
 ) {
   let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/${fileID}`
   return uri
@@ -69,7 +68,7 @@ export function getTaskFileSubmissionDir(
   activityUUID: string,
   assignmentUUID: string,
   assignmentTaskUUID: string,
-  fileSubID : string
+  fileSubID: string
 ) {
   let uri = `${getMediaUrl()}content/orgs/${orgUUID}/courses/${courseUUID}/activities/${activityUUID}/assignments/${assignmentUUID}/tasks/${assignmentTaskUUID}/subs/${fileSubID}`
   return uri
@@ -104,5 +103,10 @@ export function getOrgThumbnailMediaDirectory(orgUUID: string, fileId: string) {
 
 export function getOrgPreviewMediaDirectory(orgUUID: string, fileId: string) {
   let uri = `${getMediaUrl()}content/orgs/${orgUUID}/previews/${fileId}`
+  return uri
+}
+
+export function getCampaignMediaUrl(orgUUID: string, fileId: string) {
+  let uri = `${getMediaUrl()}content/orgs/${orgUUID}/campaigns/${fileId}`
   return uri
 }
