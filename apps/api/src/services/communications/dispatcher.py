@@ -53,7 +53,10 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
     from sqlalchemy import func
     
     if campaign.target_type == CampaignTargetType.WAITLIST:
-        query = query.where(
+        # For WAITLIST, we search all users with waitlist status.
+        # We don't strictly join on UserOrganization here because waitlist users 
+        # might exist without a full org membership record in some edge cases.
+        query = select(User).where(
             User.user_status.in_(["WAITLIST", "WAITLIST_ACTIVATED"])
         )
     
@@ -238,7 +241,8 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                 db_session.commit()
             
             # Rate limiting delay - Throttle to avoid SMTP "Unusual sending activity" blocks
-            await asyncio.sleep(2.0)
+            # Set to 8.0s per request to be extremely safe against provider blocking
+            await asyncio.sleep(8.0)
 
         campaign.status = CampaignStatus.SENT
         campaign.update_date = datetime.now().isoformat()

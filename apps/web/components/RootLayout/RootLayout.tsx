@@ -9,6 +9,7 @@ import { isDevEnv } from '@/app/auth/options'
 import Script from 'next/script'
 import '@/lib/i18n'
 import I18nProvider from '@components/Contexts/I18nContext'
+import Footer from '@components/Footer/Footer'
 
 export default function RootLayout({
   children,
@@ -76,9 +77,11 @@ export default function RootLayout({
                   animate="enter"
                   exit="exit"
                   transition={{ type: 'tween' }}
+                  className="flex-grow"
                 >
                   {children}
                 </motion.main>
+                <Footer />
               </StyledComponentsRegistry>
             </I18nProvider>
           </LHSessionProvider>
