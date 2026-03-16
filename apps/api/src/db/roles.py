@@ -45,6 +45,7 @@ class Rights(BaseModel):
     coursechapters: Permission
     activities: Permission
     roles: Permission
+    communications: Permission
     dashboard: DashboardPermission
 
     def __getitem__(self, item):

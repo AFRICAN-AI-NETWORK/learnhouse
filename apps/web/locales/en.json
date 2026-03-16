@@ -2184,7 +2184,8 @@
             "assignment": "Assignment",
             "assignments": "Assignments",
             "dynamic": "Dynamic",
-            "dynamic_page": "Dynamic Page"
+            "dynamic_page": "Dynamic Page",
+            "live_session": "Live Session"
           },
           "toasts": {
             "deleting": "Deleting activity...",
