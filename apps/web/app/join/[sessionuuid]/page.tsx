@@ -6,6 +6,7 @@ import { Video, Calendar, Clock, ShieldCheck, ArrowRight } from 'lucide-react'
 import { getActivityWithAuthHeader } from '@services/courses/activities'
 import Link from 'next/link'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { getUriWithOrg } from '@services/config/config'
 
 export default function JoinSessionLanding() {
   const params = useParams()
@@ -204,7 +205,16 @@ export default function JoinSessionLanding() {
           <div className="space-y-4 pt-4">
             {session?.status === 'authenticated' ? (
               <Link
-                href={`/orgs/${activity.org_slug || 'aan'}/dash/course/${activity.course_uuid}/activity/${activity.id}`}
+                href={
+                  getUriWithOrg(activity.org_slug || 'aan', '') +
+                  `/course/${activity.course_uuid.replace(
+                    'course_',
+                    ''
+                  )}/activity/${activity.activity_uuid.replace(
+                    'activity_',
+                    ''
+                  )}`
+                }
                 className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98]"
               >
                 Go to Workshop <ArrowRight size={18} />
