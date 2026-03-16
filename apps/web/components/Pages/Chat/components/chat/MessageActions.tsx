@@ -2,9 +2,8 @@
  * Message actions dropdown menu
  * Provides copy, edit, delete, reply actions for messages
  */
-
 import React from 'react'
-import { MoreHorizontal, Reply, Copy, Pencil, Trash2 } from 'lucide-react'
+import { ChevronDown, Reply, Copy, Pencil, Trash2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,10 +38,10 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-md border border-white/8 bg-white/4 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white/80"
+          className="absolute top-1.5 right-1.5 flex items-center justify-center text-white/50 hover:text-white/90 bg-transparent border-0 p-0 cursor-pointer"
           aria-label="Message actions"
         >
-          <MoreHorizontal size={14} />
+          <ChevronDown size={20} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

@@ -75,7 +75,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     string | null
   >(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const messageInputRef = useRef<HTMLInputElement>(null)
+  const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
   const messageItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const messageCacheRef = useRef<Map<string, Message[]>>(new Map())
@@ -655,13 +655,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!editingMessage && !replyingToMessage) return
 
     const focusInput = () => {
-      const input = messageInputRef.current
-      if (!input) return
-      input.focus()
+      const textarea = messageInputRef.current
+      if (!textarea) return
+      textarea.focus()
 
       // Keep cursor at end so user can continue typing immediately.
-      const cursorPos = input.value.length
-      input.setSelectionRange(cursorPos, cursorPos)
+      const cursorPos = textarea.value.length
+      textarea.setSelectionRange(cursorPos, cursorPos)
     }
 
     // Run after state update and menu close focus handling settle.
@@ -1357,13 +1357,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       setMessageItemRef(message.message_uuid, node)
                     }
                     data-message-uuid={message.message_uuid}
-                    className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 relative`}
+                    className={`group flex ${isMine ? 'flex-row-reverse justify-end' : 'justify-start'} gap-2 relative`}
                   >
                     <div
-                      className={`max-w-[70%] lg:max-w-[60%] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                      className={`w-full max-w-[280px] sm:max-w-[420px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[720px] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
                       <div
-                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
+                        className={`relative min-w-[80px] pl-4 pr-8 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
                           isMine
                             ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
                             : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'
@@ -1397,7 +1397,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                 </p>
                               </div>
                             )}
-                            {message.content && <span>{message.content}</span>}
+                            {message.content && (
+                              <span className="whitespace-pre-wrap break-words">
+                                {message.content}
+                              </span>
+                            )}
                             {message.attachments &&
                               message.attachments.length > 0 && (
                                 <div
@@ -1500,6 +1504,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                               )}
                           </>
                         )}
+                        {!message.is_deleted && !message.isPending && (
+                          <MessageActions
+                            message={message}
+                            isMine={isMine}
+                            onCopy={() => copyMessageContent(message)}
+                            onReply={() => startReplyToMessage(message)}
+                            onEdit={
+                              isMine
+                                ? () => startEditMessage(message)
+                                : undefined
+                            }
+                            onDelete={
+                              isMine
+                                ? () => setDeleteTargetMessage(message)
+                                : undefined
+                            }
+                            t={t}
+                          />
+                        )}
                       </div>
 
                       <div
@@ -1532,24 +1555,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         )}
                       </div>
                     </div>
-
-                    {!message.is_deleted && !message.isPending && (
-                      <MessageActions
-                        message={message}
-                        isMine={isMine}
-                        onCopy={() => copyMessageContent(message)}
-                        onReply={() => startReplyToMessage(message)}
-                        onEdit={
-                          isMine ? () => startEditMessage(message) : undefined
-                        }
-                        onDelete={
-                          isMine
-                            ? () => setDeleteTargetMessage(message)
-                            : undefined
-                        }
-                        t={t}
-                      />
-                    )}
                   </div>
                 </div>
               </React.Fragment>
@@ -1689,13 +1694,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <Paperclip size={18} />
           </button>
           <div className="relative flex-1">
-            <input
+            <textarea
               ref={messageInputRef}
-              type="text"
               placeholder={t('chat.type_message')}
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyPress={(e) => {
+              rows={1}
+              onChange={(e) => {
+                setMessageInput(e.target.value)
+                handleTyping()
+              }}
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
                   if (editingMessage) {
@@ -1705,12 +1713,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   }
                   handleTypingStop()
                 }
-                handleTyping()
               }}
               onPaste={handlePaste}
               onBlur={handleTypingStop}
               disabled={isUpdatingMessage}
-              className="w-full bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"
+              className="w-full min-h-[44px] max-h-40 resize-none overflow-y-auto bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"
             />
           </div>
           <button

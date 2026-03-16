@@ -7,10 +7,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@components/ui/dialog'
-import { Search, Loader2, UserSearch } from 'lucide-react'
+import { Search, Loader2, UserSearch, Pin } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
+import { getUserAvatarMediaDirectory } from '@services/media/media'
+
+const PINNED_CHAT_ROLE_NAMES = new Set([
+  'students success coordinator',
+  'student mentor',
+  'students mentor',
+  'community manager',
+  'lead instructor',
+])
+
+const normalizeRoleName = (roleName?: string) =>
+  (roleName || '').trim().toLowerCase()
+
+const isPinnedRole = (roleName?: string) =>
+  PINNED_CHAT_ROLE_NAMES.has(normalizeRoleName(roleName))
 
 interface User {
   id: number
@@ -107,7 +122,12 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
       const username = user.username.toLowerCase()
       return name.includes(query) || username.includes(query)
     })
-    setFilteredUsers(filtered)
+
+    const pinnedUsers = filtered.filter((user) => isPinnedRole(user.role_name))
+    const regularUsers = filtered.filter(
+      (user) => !isPinnedRole(user.role_name)
+    )
+    setFilteredUsers([...pinnedUsers, ...regularUsers])
   }, [searchQuery, users])
 
   const handleSelectUser = useCallback(
@@ -287,6 +307,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                   ? `${user.first_name}${user.last_name ? ' ' + user.last_name : ''}`
                   : user.username
                 const roleBadge = getRoleBadge(user.role_name)
+                const pinnedUser = isPinnedRole(user.role_name)
 
                 return (
                   <button
@@ -297,7 +318,14 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                   >
                     <div className="relative shrink-0">
                       <img
-                        src={user.avatar_image || '/empty_avatar.png'}
+                        src={
+                          user.avatar_image
+                            ? getUserAvatarMediaDirectory(
+                                user.user_uuid,
+                                user.avatar_image
+                              )
+                            : '/empty_avatar.png'
+                        }
                         alt={user.username}
                         className="w-10 h-10 rounded-full ring-2 ring-white/6 object-cover"
                       />
@@ -317,12 +345,21 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                         @{user.username}
                       </div>
                     </div>
-                    {isCreatingConversation && (
-                      <Loader2
-                        size={14}
-                        className="animate-spin text-indigo-400 shrink-0"
-                      />
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {pinnedUser && (
+                        <Pin
+                          size={14}
+                          className="text-amber-300"
+                          aria-label="Pinned role"
+                        />
+                      )}
+                      {isCreatingConversation && (
+                        <Loader2
+                          size={14}
+                          className="animate-spin text-indigo-400"
+                        />
+                      )}
+                    </div>
                   </button>
                 )
               })
