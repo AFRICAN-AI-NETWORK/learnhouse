@@ -75,7 +75,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     string | null
   >(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const messageInputRef = useRef<HTMLInputElement>(null)
+  const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const blobUrlsRef = useRef<Map<string, string>>(new Map())
   const messageItemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const messageCacheRef = useRef<Map<string, Message[]>>(new Map())
@@ -655,13 +655,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!editingMessage && !replyingToMessage) return
 
     const focusInput = () => {
-      const input = messageInputRef.current
-      if (!input) return
-      input.focus()
+      const textarea = messageInputRef.current
+      if (!textarea) return
+      textarea.focus()
 
       // Keep cursor at end so user can continue typing immediately.
-      const cursorPos = input.value.length
-      input.setSelectionRange(cursorPos, cursorPos)
+      const cursorPos = textarea.value.length
+      textarea.setSelectionRange(cursorPos, cursorPos)
     }
 
     // Run after state update and menu close focus handling settle.
@@ -1397,7 +1397,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                 </p>
                               </div>
                             )}
-                            {message.content && <span>{message.content}</span>}
+                            {message.content && (
+                              <span className="whitespace-pre-wrap break-words">
+                                {message.content}
+                              </span>
+                            )}
                             {message.attachments &&
                               message.attachments.length > 0 && (
                                 <div
@@ -1690,13 +1694,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <Paperclip size={18} />
           </button>
           <div className="relative flex-1">
-            <input
+            <textarea
               ref={messageInputRef}
-              type="text"
               placeholder={t('chat.type_message')}
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyPress={(e) => {
+              rows={1}
+              onChange={(e) => {
+                setMessageInput(e.target.value)
+                handleTyping()
+              }}
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
                   if (editingMessage) {
@@ -1706,12 +1713,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   }
                   handleTypingStop()
                 }
-                handleTyping()
               }}
               onPaste={handlePaste}
               onBlur={handleTypingStop}
               disabled={isUpdatingMessage}
-              className="w-full bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"
+              className="w-full min-h-[44px] max-h-40 resize-none overflow-y-auto bg-white/5 border border-white/8 text-white placeholder-white/20 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500/50 focus:bg-white/7 transition-all duration-200 disabled:opacity-40 pr-12"
             />
           </div>
           <button
