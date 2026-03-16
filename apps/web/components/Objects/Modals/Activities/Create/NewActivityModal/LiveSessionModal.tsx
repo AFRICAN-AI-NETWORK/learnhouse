@@ -43,7 +43,7 @@ function LiveSessionModal({
     // Details for the JSON field in DB
     const details = {
       live_url: '', // Default to Jitsi room if empty
-      start_time: `${startDate}T${startTime}`,
+      start_time: `${startDate}T${startTime}:00Z`,
       duration: parseInt(duration),
       external_signup_enabled: registrationEnabled,
       chat_enabled: chatEnabled,
