@@ -50,13 +50,26 @@ async def check_course_permissions_with_own(
         return False
     
     # Check for general permission first
-    if getattr(element_rights, f"action_{action}", False):
+    action_key = f"action_{action}"
+    has_general_permission = False
+    if isinstance(element_rights, dict):
+        has_general_permission = element_rights.get(action_key, False)
+    else:
+        has_general_permission = getattr(element_rights, action_key, False)
+
+    if has_general_permission:
         return True
     
     # Check for "own" permission if user is the author
     if is_author:
-        own_action = f"action_{action}_own"
-        if getattr(element_rights, own_action, False):
+        own_action_key = f"action_{action}_own"
+        has_own_permission = False
+        if isinstance(element_rights, dict):
+            has_own_permission = element_rights.get(own_action_key, False)
+        else:
+            has_own_permission = getattr(element_rights, own_action_key, False)
+            
+        if has_own_permission:
             return True
     
     return False

@@ -21,7 +21,7 @@ def _resolve_org_id(db_session: Session, user_id: int, org_slug: str = None) -> 
         statement = (
             select(Organization.id)
             .join(UserOrganization, Organization.id == UserOrganization.org_id)
-            .where(Organization.org_slug == org_slug)
+            .where(Organization.slug == org_slug)
             .where(UserOrganization.user_id == user_id)
         )
         org_id = db_session.exec(statement).first()

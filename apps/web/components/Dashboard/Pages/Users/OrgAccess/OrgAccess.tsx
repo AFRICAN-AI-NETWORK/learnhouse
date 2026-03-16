@@ -485,7 +485,7 @@ function OrgAccess() {
 
             {/* Waitlist Campaign Management Section */}
             {joinMethod === 'waitlist' && (
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200 mt-6">
+              <div className="bg-linear-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200 mt-6">
                 <div className="flex flex-col bg-white -space-y-1 px-5 py-3 rounded-md mb-4">
                   <h1 className="font-bold text-xl text-gray-800">
                     {t('dashboard.users.signups.waitlist.campaigns.title')}
@@ -622,7 +622,9 @@ function OrgAccess() {
                                           }
                                           className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors font-semibold"
                                         >
-                                          Save
+                                          {campaign.status === 'COMPLETED'
+                                            ? 'Reactivate Waitlist'
+                                            : 'Save'}
                                         </button>
                                         <button
                                           onClick={() => {
@@ -643,9 +645,15 @@ function OrgAccess() {
                                         onClick={() =>
                                           startEditingWaitlist(campaign)
                                         }
-                                        className="px-3 py-1 text-xs bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors font-semibold"
+                                        className={`px-3 py-1 text-xs rounded transition-colors font-semibold ${
+                                          campaign.status === 'COMPLETED'
+                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
                                       >
-                                        Edit
+                                        {campaign.status === 'COMPLETED'
+                                          ? '🚀 Reactivate'
+                                          : 'Edit'}
                                       </button>
                                     )}
 

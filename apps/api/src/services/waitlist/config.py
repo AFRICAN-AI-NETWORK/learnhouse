@@ -210,6 +210,14 @@ async def update_waitlist_config(
     for key, value in update_dict.items():
         setattr(waitlist, key, value)
     
+    # Auto-reactivate if launch_datetime is updated to the future and status is COMPLETED
+    if update_data.launch_datetime and waitlist.status == WaitlistStatusEnum.COMPLETED.value:
+        # We already validated launch_datetime is in the future above
+        waitlist.status = WaitlistStatusEnum.ACTIVE.value
+        # Reset counters if we want a fresh start, or keep them? 
+        # User said "allow reactivation... will not affect the users who have already gained access"
+        # Keeping counters is fine as they represent historical registrations.
+
     waitlist.update_date = str(datetime.now())
     
     db_session.add(waitlist)
