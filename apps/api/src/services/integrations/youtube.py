@@ -78,7 +78,10 @@ class YouTubeService:
                 'stream_key': stream_name,
                 'watch_url': f"https://www.youtube.com/watch?v={video_id}"
             }
-            
+        except HttpError as e:
+            print(f"An HTTP error {e.resp.status} occurred in create_broadcast: {e.content}")
+            raise e
+
     async def end_broadcast(self, video_id: str) -> Dict[str, Any]:
         """
         Transitions a Live Broadcast to the 'complete' status.
