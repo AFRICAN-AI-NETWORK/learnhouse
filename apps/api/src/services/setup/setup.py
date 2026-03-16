@@ -525,7 +525,7 @@ def install_default_elements(db_session: Session):
         id=8,
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_community_manager",
-        rights=_read_only_rights,
+        rights=_teaching_rights,
         creation_date=str(datetime.now()),
         update_date=str(datetime.now()),
     )
