@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   Megaphone,
   Send,
@@ -23,6 +23,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import Link from 'next/link'
 import { BarLoader } from 'react-spinners'
 import useSWR, { useSWRConfig } from 'swr'
+import { toast } from 'react-hot-toast'
 
 export default function CommunicationsPage() {
   const org = useOrg() as any
@@ -317,7 +318,7 @@ export default function CommunicationsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {liveSessions.map((session) => (
+            {liveSessions.map((session: any) => (
               <Link
                 key={session.id}
                 href={`/dash/communications/participants/${session.activity_uuid}`}
