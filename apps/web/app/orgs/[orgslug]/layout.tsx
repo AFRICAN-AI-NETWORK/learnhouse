@@ -29,7 +29,6 @@ export default function RootLayout(props: {
         <Toast />
         <Onboarding />
         {children}
-        <Footer />
       </OrgProvider>
     </div>
   )

@@ -133,16 +133,30 @@ async def authorization_verify_based_on_roles(
         role = Role.model_validate(role)
         if role.rights:
             rights = role.rights
-            element_rights = getattr(rights, element_type, None)
+            
+            # Safely get element_rights whether rights is a dict or object
+            element_rights = None
+            if isinstance(rights, dict):
+                element_rights = rights.get(element_type)
+            else:
+                element_rights = getattr(rights, element_type, None)
+                
             if element_rights:
                 # Special handling for courses with PermissionsWithOwn
                 if element_type == "courses":
                     if await check_course_permissions_with_own(element_rights, action, is_author):
                         return True
                 else:
-                    # For non-course resources, only check general permissions
-                    # (regular Permission class no longer has "own" permissions)
-                    if getattr(element_rights, f"action_{action}", False):
+                    # For non-course resources, check general permissions
+                    # Safely get action value whether element_rights is a dict or object
+                    action_key = f"action_{action}"
+                    has_permission = False
+                    if isinstance(element_rights, dict):
+                        has_permission = element_rights.get(action_key, False)
+                    else:
+                        has_permission = getattr(element_rights, action_key, False)
+                        
+                    if has_permission:
                         return True
     
     # If we get here, no role granted the permission
