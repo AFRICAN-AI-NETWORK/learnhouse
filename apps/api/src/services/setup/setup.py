@@ -109,6 +109,12 @@ def install_default_elements(db_session: Session):
                 action_update=True,
                 action_delete=True,
             ),
+            communications=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=True,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -175,6 +181,12 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            communications=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -238,6 +250,12 @@ def install_default_elements(db_session: Session):
             roles=Permission(
                 action_create=False,
                 action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            communications=Permission(
+                action_create=True,
+                action_read=True,
                 action_update=False,
                 action_delete=False,
             ),
@@ -307,6 +325,12 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            communications=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=False,
             ),
@@ -369,6 +393,12 @@ def install_default_elements(db_session: Session):
             action_update=False,
             action_delete=False,
         ),
+        communications=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
         dashboard=DashboardPermission(action_access=False),
     )
 
@@ -424,6 +454,12 @@ def install_default_elements(db_session: Session):
             action_update=False,
             action_delete=False,
         ),
+        communications=Permission(
+            action_create=True,
+            action_read=True,
+            action_update=True,
+            action_delete=False,
+        ),
         dashboard=DashboardPermission(action_access=True),
     )
 
@@ -460,6 +496,12 @@ def install_default_elements(db_session: Session):
             coursechapters=_read_only_rights.coursechapters,
             activities=_read_only_rights.activities,
             roles=_read_only_rights.roles,
+            communications=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(action_access=True),
         ),
         creation_date=str(datetime.now()),

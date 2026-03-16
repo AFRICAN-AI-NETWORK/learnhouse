@@ -11,8 +11,8 @@ import {
   Megaphone,
 } from 'lucide-react'
 import Link from 'next/link'
-import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useTranslation } from 'react-i18next'
+import useAdminStatus from '@components/Hooks/useAdminStatus'
 
 function DashboardHome() {
   const { t } = useTranslation()

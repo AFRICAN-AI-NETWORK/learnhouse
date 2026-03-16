@@ -11,7 +11,6 @@ import {
   Megaphone,
 } from 'lucide-react'
 import Link from 'next/link'
-import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
@@ -25,7 +24,6 @@ function DashMobileMenu() {
   const canSeeUsers = isAdmin || rights?.users?.action_read
   const canSeeOrg = isAdmin || rights?.organizations?.action_read
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
-  const canSeePayments = isAdmin || rights?.payments?.action_read // Assuming general admin for now if not defined but adding for consistency
 
   if (loading) return null
 

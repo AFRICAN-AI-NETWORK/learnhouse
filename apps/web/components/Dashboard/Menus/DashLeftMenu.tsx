@@ -15,14 +15,13 @@ import {
   School,
   Settings,
   Users,
-  BookOpen,
   Megaphone,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import UserAvatar from '../../Objects/UserAvatar'
-import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import useFeatureFlag from '@components/Hooks/useFeatureFlag'
 import { useTranslation } from 'react-i18next'
