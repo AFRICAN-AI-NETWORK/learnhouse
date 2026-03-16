@@ -116,6 +116,34 @@ export default function PrivacyPolicyPage() {
                 additional notice.
               </p>
             </section>
+            <section>
+              <h2 className="text-2xl font-semibold mb-4 text-zinc-900 dark:text-zinc-100">
+                7. YouTube API Services
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Our application uses YouTube API Services to upload live session
+                recordings. By using this feature, users agree to be bound by
+                the{' '}
+                <a
+                  href="https://www.youtube.com/t/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-900 dark:text-zinc-100 font-medium hover:underline"
+                >
+                  YouTube Terms of Service
+                </a>{' '}
+                and{' '}
+                <a
+                  href="https://policies.google.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-900 dark:text-zinc-100 font-medium hover:underline"
+                >
+                  Google Privacy Policy
+                </a>
+                .
+              </p>
+            </section>
 
             <section className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
               <h2 className="text-2xl font-semibold mb-4 text-zinc-900 dark:text-zinc-100">

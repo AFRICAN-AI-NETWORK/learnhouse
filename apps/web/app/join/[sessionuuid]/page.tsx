@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Video, Calendar, Clock, ShieldCheck, ArrowRight } from 'lucide-react'
-import { getActivityByID } from '@services/courses/activities'
+import { getActivityWithAuthHeader } from '@services/courses/activities'
 import Link from 'next/link'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { getUriWithOrg } from '@services/config/config'
 
 export default function JoinSessionLanding() {
   const params = useParams()
@@ -19,12 +20,18 @@ export default function JoinSessionLanding() {
   useEffect(() => {
     const loadActivity = async () => {
       try {
-        const cleanId = sessionUuid?.replace('activity_', '')
-        // Fetching activity details (Publicly accessible part)
-        const res = await getActivityByID(cleanId, null, '')
+        const cleanUuid = sessionUuid?.replace('activity_', '')
+        const res = await getActivityWithAuthHeader(cleanUuid, null, null)
+
+        if (res?.detail || !res?.id) {
+          setActivity(null)
+          return
+        }
+
         setActivity(res)
       } catch (e) {
         // Suppress errors for clean UI
+        setActivity(null)
       } finally {
         setLoading(false)
       }
@@ -72,6 +79,19 @@ export default function JoinSessionLanding() {
 
   const details = activity.details || {}
   const startTime = new Date(details.start_time)
+  const hasValidStartTime = !Number.isNaN(startTime.getTime())
+  const formattedDate = hasValidStartTime
+    ? startTime.toLocaleDateString(undefined, {
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'Date TBD'
+  const formattedTime = hasValidStartTime
+    ? startTime.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'Time TBD'
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white selection:bg-red-500/30">
@@ -133,12 +153,7 @@ export default function JoinSessionLanding() {
                 <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
                   Date
                 </p>
-                <p className="font-bold">
-                  {startTime.toLocaleDateString(undefined, {
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
+                <p className="font-bold">{formattedDate}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -149,12 +164,7 @@ export default function JoinSessionLanding() {
                 <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
                   Time
                 </p>
-                <p className="font-bold">
-                  {startTime.toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
+                <p className="font-bold">{formattedTime}</p>
               </div>
             </div>
           </div>
@@ -195,7 +205,16 @@ export default function JoinSessionLanding() {
           <div className="space-y-4 pt-4">
             {session?.status === 'authenticated' ? (
               <Link
-                href={`/orgs/${activity.org_slug || 'aan'}/dash/course/${activity.course_uuid}/activity/${activity.id}`}
+                href={
+                  getUriWithOrg(activity.org_slug || 'aan', '') +
+                  `/course/${activity.course_uuid.replace(
+                    'course_',
+                    ''
+                  )}/activity/${activity.activity_uuid.replace(
+                    'activity_',
+                    ''
+                  )}`
+                }
                 className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98]"
               >
                 Go to Workshop <ArrowRight size={18} />

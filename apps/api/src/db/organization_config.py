@@ -97,6 +97,7 @@ class OrganizationConfigBase(BaseModel):
     features: OrgFeatureConfig
     cloud: OrgCloudConfig
     landing: dict = {}
+    integrations: dict = {}
 
 
 class OrganizationConfig(SQLModel, table=True):

@@ -77,7 +77,9 @@ class ActivityUpdate(ActivityBase):
 class ActivityRead(ActivityBase):
     id: int
     org_id: int
+    org_slug: Optional[str] = None
     course_id: int
+    course_uuid: Optional[str] = None
     activity_uuid: str
     creation_date: str
     update_date: str

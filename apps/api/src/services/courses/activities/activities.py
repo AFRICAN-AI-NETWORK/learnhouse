@@ -3,6 +3,7 @@ from src.db.courses.courses import Course
 from src.db.courses.chapters import Chapter
 from src.db.courses.activities import ActivityCreate, Activity, ActivityRead, ActivityUpdate, ActivityTypeEnum
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
 from fastapi import HTTPException, Request
 from uuid import uuid4
@@ -136,10 +137,11 @@ async def get_activity(
     current_user: PublicUser,
     db_session: Session,
 ):
-    # Optimize by joining Activity with Course in a single query
+    # Optimize by joining Activity with Course and Organization via explicit ON conditions
     statement = (
-        select(Activity, Course)
-        .join(Course)
+        select(Activity, Course, Organization)
+        .join(Course, Activity.course_id == Course.id)
+        .join(Organization, Course.org_id == Organization.id)
         .where(Activity.activity_uuid == activity_uuid)
     )
     result = db_session.exec(statement).first()
@@ -149,8 +151,8 @@ async def get_activity(
             status_code=404,
             detail="Activity not found",
         )
-    
-    activity, course = result
+
+    activity, course, organization = result
 
     # RBAC check
     await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "read", db_session)
@@ -164,6 +166,8 @@ async def get_activity(
     )
 
     activity_read = ActivityRead.model_validate(activity)
+    activity_read.course_uuid = course.course_uuid
+    activity_read.org_slug = organization.slug
     activity_read.content = activity_read.content if has_paid_access else { "paid_access": False }
 
     return activity_read
@@ -174,10 +178,11 @@ async def get_activityby_id(
     current_user: PublicUser,
     db_session: Session,
 ):
-    # Optimize by joining Activity with Course in a single query
+    # Optimize by joining Activity with Course and Organization via explicit ON conditions
     statement = (
-        select(Activity, Course)
-        .join(Course)
+        select(Activity, Course, Organization)
+        .join(Course, Activity.course_id == Course.id)
+        .join(Organization, Course.org_id == Organization.id)
         .where(Activity.id == activity_id)
     )
     result = db_session.exec(statement).first()
@@ -187,13 +192,16 @@ async def get_activityby_id(
             status_code=404,
             detail="Activity not found",
         )
-    
-    activity, course = result
+
+    activity, course, organization = result
 
     # RBAC check
     await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "read", db_session)
 
-    return ActivityRead.model_validate(activity)
+    activity_read = ActivityRead.model_validate(activity)
+    activity_read.course_uuid = course.course_uuid
+    activity_read.org_slug = organization.slug
+    return activity_read
 
 
 async def update_activity(

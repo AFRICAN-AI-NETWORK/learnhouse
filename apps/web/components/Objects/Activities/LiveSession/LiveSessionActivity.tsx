@@ -254,6 +254,8 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
             'tileview',
             'chat',
             'settings',
+            'livestreaming',
+            'recording',
           ],
           SET_FILMSTRIP_ENABLED: true,
         },
