@@ -15,12 +15,13 @@ import {
   School,
   Settings,
   Users,
+  Megaphone,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import UserAvatar from '../../Objects/UserAvatar'
-import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import useFeatureFlag from '@components/Hooks/useFeatureFlag'
 import { useTranslation } from 'react-i18next'
@@ -48,6 +49,7 @@ function DashLeftMenu() {
   const { t, i18n } = useTranslation()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { isEE } = useEEStatus()
+  const { isAdmin, loading, rights } = useAdminStatus() as any
 
   // Load collapse state from localStorage
   useEffect(() => {
@@ -83,7 +85,13 @@ function DashLeftMenu() {
     }
   }
 
-  if (!org || !session) return null
+  const canSeeCourses = isAdmin || rights?.courses?.action_read
+  const canSeeAssignments = isAdmin || rights?.coursechapters?.action_read
+  const canSeeUsers = isAdmin || rights?.users?.action_read
+  const canSeeOrg = isAdmin || rights?.organizations?.action_read
+  const canSeeCommunications = isAdmin || rights?.communications?.action_read
+
+  if (!org || !session || loading) return null
 
   return (
     <div
@@ -128,62 +136,76 @@ function DashLeftMenu() {
         </div>
 
         <div className="flex-1 flex flex-col justify-center space-y-1 py-8">
-          <AdminAuthorization authorizationMode="component">
-            <MenuLink
-              href="/dash"
-              icon={<Home size={18} />}
-              label={t('common.home')}
-              isCollapsed={isCollapsed}
-            />
+          <MenuLink
+            href="/dash"
+            icon={<Home size={18} />}
+            label={t('common.home')}
+            isCollapsed={isCollapsed}
+          />
+          {canSeeCourses && (
             <MenuLink
               href="/dash/courses"
               icon={<BookCopy size={18} />}
               label={t('courses.courses')}
               isCollapsed={isCollapsed}
             />
+          )}
+          {canSeeAssignments && (
             <MenuLink
               href="/dash/assignments"
               icon={<Backpack size={18} />}
               label={t('common.assignments')}
               isCollapsed={isCollapsed}
             />
+          )}
+          {canSeeUsers && (
             <MenuLink
               href="/dash/users/settings/users"
               icon={<Users size={18} />}
               label={t('common.users')}
               isCollapsed={isCollapsed}
             />
-            {isPaymentsEnabled && (
-              <MenuLink
-                href="/dash/payments/customers"
-                icon={<BadgeDollarSign size={18} />}
-                label={t('common.payments')}
-                isCollapsed={isCollapsed}
-              />
-            )}
+          )}
+          {isPaymentsEnabled && isAdmin && (
+            <MenuLink
+              href="/dash/payments/customers"
+              icon={<BadgeDollarSign size={18} />}
+              label={t('common.payments')}
+              isCollapsed={isCollapsed}
+            />
+          )}
+          {isAdmin && (
             <MenuLink
               href="/dash/referrals"
               icon={<Link2 size={18} />}
               label="Referrals"
               isCollapsed={isCollapsed}
             />
+          )}
+          {canSeeCommunications && (
+            <MenuLink
+              href="/dash/communications"
+              icon={<Megaphone size={18} />}
+              label="Communication Hub"
+              isCollapsed={isCollapsed}
+            />
+          )}
+          {canSeeOrg && (
             <MenuLink
               href="/dash/org/settings/general"
               icon={<School size={18} />}
               label={t('common.organization')}
               isCollapsed={isCollapsed}
             />
-
-            <div className="my-4 border-t border-white/5 mx-2 opacity-50" />
-
-            <MenuLink
-              href="https://africanainetwork.com"
-              icon={<HelpCircle size={18} />}
-              label={t('common.help')}
-              isCollapsed={isCollapsed}
-              isExternal
-            />
-          </AdminAuthorization>
+          )}
+          <MenuLink
+            href="https://africanainetwork.com"
+            icon={<HelpCircle size={18} />}
+            label={t('common.help')}
+            isCollapsed={isCollapsed}
+            isExternal
+          />
+          <div className="my-4 border-t border-white/5 mx-2 opacity-50" />
         </div>
 
         <div className="flex flex-col pb-6 pt-2 mt-auto">

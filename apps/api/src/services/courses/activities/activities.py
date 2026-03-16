@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 from src.db.courses.courses import Course
 from src.db.courses.chapters import Chapter
-from src.db.courses.activities import ActivityCreate, Activity, ActivityRead, ActivityUpdate
+from src.db.courses.activities import ActivityCreate, Activity, ActivityRead, ActivityUpdate, ActivityTypeEnum
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.users import AnonymousUser, PublicUser
 from fastapi import HTTPException, Request
@@ -10,6 +10,8 @@ from datetime import datetime
 
 import src.services.payments.payments_access as payments_access
 from src.security.courses_security import courses_rbac_check_for_activities
+from src.db.organization_config import OrganizationConfig
+from src.services.integrations.youtube import create_automated_youtube_session
 import sys
 
 print("[ACTIVITIES_SERVICE] Module loaded!", file=sys.stderr, flush=True)
@@ -62,6 +64,41 @@ async def create_activity(
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(activity)
+
+    # Trigger Automated Replay (YouTube) if it's a Live Session
+    if activity.activity_type == ActivityTypeEnum.TYPE_LIVE_SESSION:
+        try:
+            # Fetch Org Config
+            statement = select(OrganizationConfig).where(OrganizationConfig.org_id == activity.org_id)
+            org_config_obj = db_session.exec(statement).first()
+            
+            if org_config_obj and org_config_obj.config:
+                # Expecting config['integrations']['youtube'] to contain a JSON string of credentials
+                yt_config = org_config_obj.config.get('integrations', {}).get('youtube')
+                
+                if yt_config:
+                    # Create the broadcast
+                    yt_data = await create_automated_youtube_session(
+                        org_credentials=yt_config,
+                        title=f"{course.name} - {activity.name}",
+                        start_time=activity.details.get('start_time') if activity.details else str(datetime.now())
+                    )
+                    
+                    # Update activity details with the stream info
+                    details = activity.details or {}
+                    details.update({
+                        'recording_url': yt_data['watch_url'],
+                        'youtube_video_id': yt_data['video_id'],
+                        'youtube_stream_key': yt_data['stream_key'],
+                        'auto_stream_enabled': True
+                    })
+                    activity.details = details
+                    db_session.add(activity)
+                    db_session.commit()
+                    db_session.refresh(activity)
+        except Exception as e:
+            print(f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {str(e)}", file=sys.stderr)
+            # We don't fail the whole creation if YouTube fails, just log it.
 
     # Find the last activity in the Chapter and add it to the list
     statement = (

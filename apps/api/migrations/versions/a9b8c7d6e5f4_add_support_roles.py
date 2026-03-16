@@ -34,6 +34,7 @@ _READ_ONLY_RIGHTS = {
     "coursechapters": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
     "activities": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
     "roles": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
+    "communications": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
     "dashboard": {"action_access": False},
 }
 
@@ -50,12 +51,14 @@ _TEACHING_RIGHTS = {
     "coursechapters": {"action_create": True, "action_read": True, "action_update": False, "action_delete": False},
     "activities": {"action_create": True, "action_read": True, "action_update": False, "action_delete": False},
     "roles": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
+    "communications": {"action_create": True, "action_read": True, "action_update": True, "action_delete": False},
     "dashboard": {"action_access": True},
 }
 
 _COORDINATOR_RIGHTS = {
     **_READ_ONLY_RIGHTS,
     "users": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
+    "communications": {"action_create": True, "action_read": True, "action_update": True, "action_delete": False},
     "dashboard": {"action_access": True},
 }
 

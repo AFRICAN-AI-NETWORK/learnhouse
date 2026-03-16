@@ -55,19 +55,6 @@ const ORG_LABELS = [
   { value: 'early_education', label: '🎯 Early Education' },
 ] as const
 
-const validationSchema = Yup.object().shape({
-  name: Yup.string()
-    .required('Name is required')
-    .max(60, 'Organization name must be 60 characters or less'),
-  description: Yup.string()
-    .required('Short description is required')
-    .max(100, 'Short description must be 100 characters or less'),
-  about: Yup.string()
-    .optional()
-    .max(400, 'About text must be 400 characters or less'),
-  label: Yup.string().required('Organization label is required'),
-})
-
 interface OrganizationValues {
   name: string
   description: string
@@ -77,6 +64,26 @@ interface OrganizationValues {
 
 const OrgEditGeneral: React.FC = () => {
   const { t } = useTranslation()
+
+  const validationSchema = Yup.object().shape({
+    name: Yup.string()
+      .required(t('dashboard.organization.settings.validation.name_required'))
+      .max(60, t('dashboard.organization.settings.validation.name_max')),
+    description: Yup.string()
+      .required(
+        t('dashboard.organization.settings.validation.description_required')
+      )
+      .max(
+        100,
+        t('dashboard.organization.settings.validation.description_max')
+      ),
+    about: Yup.string()
+      .optional()
+      .max(400, t('dashboard.organization.settings.validation.about_max')),
+    label: Yup.string().required(
+      t('dashboard.organization.settings.validation.label_required')
+    ),
+  })
   const router = useRouter()
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token

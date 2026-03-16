@@ -3,6 +3,7 @@ import DynamicPageActivityImage from 'public/activities_types/dynamic-page-activ
 import VideoPageActivityImage from 'public//activities_types/video-page-activity.png'
 import DocumentPdfPageActivityImage from 'public//activities_types/documentpdf-page-activity.png'
 import AssignmentActivityImage from 'public//activities_types/assignment-page-activity.png'
+import LiveSessionActivityImage from 'public/activities_types/live-session-activity.png'
 
 import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal'
 import VideoModal from './NewActivityModal/VideoActivityModal'
@@ -10,6 +11,7 @@ import Image from 'next/image'
 import DocumentPdfModal from './NewActivityModal/DocumentActivityModal'
 import Assignment from './NewActivityModal/AssignmentActivityModal'
 import SmartActivityModal from './NewActivityModal/SmartActivityModal'
+import LiveSessionModal from './NewActivityModal/LiveSessionModal'
 import { useTranslation } from 'react-i18next'
 
 function NewActivityModal({
@@ -115,6 +117,23 @@ function NewActivityModal({
               {t('dashboard.courses.structure.activity.types.assignments')}
             </div>
           </ActivityOption>
+          <ActivityOption
+            onClick={() => {
+              setSelectedView('live')
+            }}
+          >
+            <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer">
+              <Image
+                unoptimized
+                quality={100}
+                alt="Live Session"
+                src={LiveSessionActivityImage}
+              ></Image>
+            </div>
+            <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center leading-tight">
+              <span>Live Session</span>
+            </div>
+          </ActivityOption>
         </div>
       )}
 
@@ -153,6 +172,15 @@ function NewActivityModal({
 
       {selectedView === 'assignments' && (
         <Assignment
+          submitActivity={submitActivity}
+          chapterId={chapterId}
+          course={course}
+          closeModal={closeModal}
+        />
+      )}
+
+      {selectedView === 'live' && (
+        <LiveSessionModal
           submitActivity={submitActivity}
           chapterId={chapterId}
           course={course}

@@ -326,6 +326,10 @@ const ACTIVITIES = {
     displayNameKey: 'dynamic',
     Icon: Sparkles,
   },
+  TYPE_LIVE_SESSION: {
+    displayNameKey: 'live_session',
+    Icon: Video,
+  },
 }
 
 const ActivityTypeIndicator = ({

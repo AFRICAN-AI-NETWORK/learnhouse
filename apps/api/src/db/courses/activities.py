@@ -11,6 +11,7 @@ class ActivityTypeEnum(str, Enum):
     TYPE_ASSIGNMENT = "TYPE_ASSIGNMENT"
     TYPE_CUSTOM = "TYPE_CUSTOM"
     TYPE_SMART_ARTICLE = "TYPE_SMART_ARTICLE"
+    TYPE_LIVE_SESSION = "TYPE_LIVE_SESSION"
 
 
 class ActivitySubTypeEnum(str, Enum):
@@ -28,6 +29,9 @@ class ActivitySubTypeEnum(str, Enum):
     SUBTYPE_CUSTOM = "SUBTYPE_CUSTOM"
     # Smart Article
     SUBTYPE_SMART_ARTICLE_PDF = "SUBTYPE_SMART_ARTICLE_PDF"
+    # Live Session
+    SUBTYPE_LIVE_JITSI = "SUBTYPE_LIVE_JITSI"
+    SUBTYPE_LIVE_HOSTED = "SUBTYPE_LIVE_HOSTED"
 
 
 class ActivityBase(SQLModel):
@@ -57,18 +61,17 @@ class ActivityCreate(ActivityBase):
     chapter_id: int
     activity_type: ActivityTypeEnum = ActivityTypeEnum.TYPE_CUSTOM
     activity_sub_type: ActivitySubTypeEnum = ActivitySubTypeEnum.SUBTYPE_CUSTOM
-    details: dict = Field(default={}, sa_column=Column(JSON))
-    pass
+    details: dict = Field(default={}, sa_column=Column(JSON))  # type: ignore
 
 
 class ActivityUpdate(ActivityBase):
-    name: Optional[str]
-    content: dict = Field(default={}, sa_column=Column(JSON))
-    activity_type: Optional[ActivityTypeEnum] 
-    activity_sub_type: Optional[ActivitySubTypeEnum] 
-    details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    published_version: Optional[int]
-    version: Optional[int]
+    name: Optional[str] = None  # type: ignore
+    content: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    activity_type: Optional[ActivityTypeEnum] = None  # type: ignore
+    activity_sub_type: Optional[ActivitySubTypeEnum] = None  # type: ignore
+    details: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # type: ignore
+    published_version: Optional[int] = None
+    version: Optional[int] = None
 
 
 class ActivityRead(ActivityBase):
