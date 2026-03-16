@@ -67,6 +67,12 @@ interface Rights {
     action_update: boolean
     action_delete: boolean
   }
+  communications: {
+    action_create: boolean
+    action_read: boolean
+    action_update: boolean
+    action_delete: boolean
+  }
   dashboard: {
     action_access: boolean
   }
@@ -151,6 +157,12 @@ function useAdminStatus(): UseAdminStatusReturn {
         action_delete: false,
       },
       roles: {
+        action_create: false,
+        action_read: false,
+        action_update: false,
+        action_delete: false,
+      },
+      communications: {
         action_create: false,
         action_read: false,
         action_update: false,

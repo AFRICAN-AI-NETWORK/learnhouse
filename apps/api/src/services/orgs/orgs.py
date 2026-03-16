@@ -750,6 +750,60 @@ async def update_org_landing(
     db_session.refresh(org_config)
 
     return {"detail": "Landing object updated"}
+    
+async def update_org_integrations(
+    request: Request,
+    integrations_object: dict,
+    org_id: int,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+):
+    statement = select(Organization).where(Organization.id == org_id)
+    result = db_session.exec(statement)
+
+    org = result.first()
+
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found",
+        )
+
+    # RBAC check
+    await rbac_check(request, org.org_uuid, current_user, "update", db_session)
+
+    # Get org config
+    statement = select(OrganizationConfig).where(OrganizationConfig.org_id == org.id)
+    result = db_session.exec(statement)
+
+    org_config = result.first()
+
+    if org_config is None:
+        logging.error(f"Organization {org_id} has no config")
+        raise HTTPException(
+            status_code=404,
+            detail="Organization config not found",
+        )
+
+    # Explicitly ensure we are working with a dictionary
+    config_data = dict(org_config.config) if org_config.config else {}
+    
+    # Safely update the integrations object
+    integrations = config_data.get('integrations', {})
+    if not isinstance(integrations, dict):
+        integrations = {}
+        
+    integrations.update(integrations_object)
+    config_data['integrations'] = integrations
+
+    # Map back to the model field
+    org_config.config = config_data
+    org_config.update_date = str(datetime.now())
+    db_session.add(org_config)
+    db_session.commit()
+    db_session.refresh(org_config)
+
+    return {"detail": "Integrations updated"}
 
 async def upload_org_landing_content_service(
     request: Request,

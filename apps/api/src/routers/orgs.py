@@ -431,6 +431,21 @@ async def api_update_org_landing(
     return await update_org_landing(request, landing_object, org_id, current_user, db_session)
 
 
+@router.put("/{org_id}/integrations")
+async def api_update_org_integrations(
+    request: Request,
+    org_id: int,
+    integrations_object: dict,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Update organization integrations object
+    """
+    from src.services.orgs.orgs import update_org_integrations
+    return await update_org_integrations(request, integrations_object, org_id, current_user, db_session)
+
+
 @router.post("/{org_id}/landing/content")
 async def api_upload_org_landing_content(
     request: Request,

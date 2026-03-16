@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from src.routers import health
 from src.routers import usergroups
-from src.routers import dev, trail, users, auth, orgs, roles, search, waitlist
+from src.routers import dev, trail, users, auth, orgs, roles, search, waitlist, communications
 from src.routers.ai import ai
-from src.routers.courses import chapters, collections, courses, assignments, certifications
+from src.routers.courses import chapters, collections, courses, assignments, certifications, live_sessions
 from src.routers.courses.activities import activities, blocks
 from src.routers.chat import conversations as chat_conversations
 from src.routers.chat import messages as chat_messages
@@ -39,9 +39,13 @@ v1_router.include_router(
 v1_router.include_router(
     certifications.router, prefix="/certifications", tags=["certifications"]
 )
+v1_router.include_router(
+    live_sessions.router, prefix="/live_sessions", tags=["live_sessions"]
+)
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
+v1_router.include_router(communications.router, prefix="/communications", tags=["communications"])
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
 
 # Chat Routes

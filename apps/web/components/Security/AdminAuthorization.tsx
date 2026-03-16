@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { usePathname, useRouter } from 'next/navigation'
@@ -30,31 +30,50 @@ const AdminAuthorization: React.FC<AuthorizationProps> = ({
   const org = useOrg() as any
   const pathname = usePathname()
   const router = useRouter()
-  const { isAdmin, loading } = useAdminStatus() as any
+  const { isAdmin, loading, rights } = useAdminStatus() as any
+
+  // Derived State (No useState/useEffect needed for authorization status)
+  const { isAuthorized, isAdminPath } = useMemo(() => {
+    let authorized = false
+    let isPathAdmin = false
+
+    const checkPath = (pattern: string) =>
+      pathname.startsWith(pattern.replace('*', ''))
+
+    // Specific granular permission checks
+    if (checkPath('/dash/communications')) {
+      isPathAdmin = true
+      authorized = isAdmin || !!rights?.communications?.action_read
+    } else if (checkPath('/dash/courses')) {
+      isPathAdmin = true
+      authorized = isAdmin || !!rights?.courses?.action_read
+    } else if (checkPath('/dash/users')) {
+      isPathAdmin = true
+      authorized = isAdmin || !!rights?.users?.action_read
+    } else if (checkPath('/dash/org')) {
+      isPathAdmin = true
+      authorized = isAdmin || !!rights?.organizations?.action_read
+    } else {
+      // General ADMIN_PATHS check
+      const isPathInAdminList = ADMIN_PATHS.some((path) => checkPath(path))
+      if (isPathInAdminList) {
+        isPathAdmin = true
+        authorized = isAdmin
+      } else {
+        authorized = true
+      }
+    }
+
+    // Special case for component mode: strictly checks isAdmin or specific right if passed
+    if (authorizationMode === 'component') {
+      return { isAuthorized: isAdmin, isAdminPath: true }
+    }
+
+    return { isAuthorized: authorized, isAdminPath: isPathAdmin }
+  }, [pathname, isAdmin, rights, authorizationMode])
 
   // Derived State
   const isUserAuthenticated = !!session?.data?.user
-  const isAdminPath = ADMIN_PATHS.some((path) => {
-    const pattern = path.replace('*', '')
-    return pathname.startsWith(pattern)
-  })
-
-  // Derived State (No useState/useEffect needed for authorization status)
-  let isAuthorized = false
-
-  if (loading) {
-    isAuthorized = false // Will return loader anyway
-  } else if (!isUserAuthenticated) {
-    isAuthorized = false
-  } else if (authorizationMode === 'component') {
-    isAuthorized = !!isAdmin
-  } else if (authorizationMode === 'page') {
-    if (isAdminPath) {
-      isAuthorized = !!isAdmin
-    } else {
-      isAuthorized = true
-    }
-  }
 
   // Side Effect: Handle Redirection
   useEffect(() => {
@@ -65,7 +84,7 @@ const AdminAuthorization: React.FC<AuthorizationProps> = ({
       return
     }
 
-    if (authorizationMode === 'page' && isAdminPath && !isAdmin) {
+    if (authorizationMode === 'page' && isAdminPath && !isAuthorized) {
       router.push('/dash')
     }
   }, [
@@ -73,7 +92,7 @@ const AdminAuthorization: React.FC<AuthorizationProps> = ({
     isUserAuthenticated,
     authorizationMode,
     isAdminPath,
-    isAdmin,
+    isAuthorized,
     router,
     org?.slug,
   ])

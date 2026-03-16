@@ -116,6 +116,12 @@ class TestRBAC:
                 action_update=False,
                 action_delete=False,
             ),
+            communications=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             )
