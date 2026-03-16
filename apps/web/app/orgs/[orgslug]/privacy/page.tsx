@@ -4,8 +4,12 @@ import React from 'react'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { useOrg } from '@components/Contexts/OrgContext'
 
 export default function PrivacyPolicyPage() {
+  const org = useOrg() as any
+  const orgName = org?.name || 'African AI Network'
+
   return (
     <div className="min-h-screen bg-background text-foreground py-20 px-4 md:px-0">
       <GeneralWrapperStyled>
@@ -23,7 +27,7 @@ export default function PrivacyPolicyPage() {
 
           <header className="mb-16">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-              Privacy Policy
+              {orgName} Privacy Policy
             </h1>
             <p className="text-zinc-500">
               Last updated:{' '}
