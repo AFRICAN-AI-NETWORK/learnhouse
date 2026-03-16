@@ -43,7 +43,7 @@ export default function ParticipantManagementPage() {
       }
     }
     if (activityId) loadParticipants()
-  }, [activityId])
+  }, [activityId, access_token])
 
   const filteredParticipants = participants.filter(
     (p) =>

@@ -66,10 +66,10 @@ export default function CommunicationsPage() {
         setLoadingHistory(false)
       }
     }
-    if (org?.org_slug) {
+    if (org?.org_slug && access_token) {
       loadInitialData()
     }
-  }, [org?.org_slug])
+  }, [org?.org_slug, access_token])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -289,7 +289,7 @@ export default function CommunicationsPage() {
                         {camp.status}
                       </span>
                       <span className="text-[9px] text-zinc-400 font-bold">
-                        {new Date(camp.created_at).toLocaleDateString()}
+                        {new Date(camp.creation_date).toLocaleDateString()}
                       </span>
                     </div>
                     <h4 className="font-bold text-xs text-zinc-900 truncate tracking-tight">
