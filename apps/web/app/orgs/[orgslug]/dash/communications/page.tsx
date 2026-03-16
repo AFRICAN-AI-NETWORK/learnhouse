@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Video,
   ChevronRight,
+  ImagePlus,
 } from 'lucide-react'
 // Imports removed to fix lint warnings
 import {
@@ -34,6 +35,7 @@ export default function CommunicationsPage() {
   const [targetType, setTargetType] = useState('ALL')
   const [targetValue, setTargetValue] = useState('')
   const [includeChat, setIncludeChat] = useState(true)
+  const [headerImageUrl, setHeaderImageUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { mutate } = useSWRConfig()
 
@@ -73,7 +75,10 @@ export default function CommunicationsPage() {
         subject,
         body,
         target_type: targetType,
-        target_metadata: { value: targetValue },
+        target_metadata: {
+          value: targetValue,
+          header_image_url: headerImageUrl,
+        },
         send_via_chat: includeChat,
       }
       await createCampaign(data, access_token, org?.org_slug)
@@ -85,6 +90,7 @@ export default function CommunicationsPage() {
       // Reset form
       setSubject('')
       setBody('')
+      setHeaderImageUrl('')
     } catch (e) {
       toast.error('Failed to initiate campaign')
     } finally {
@@ -129,6 +135,35 @@ export default function CommunicationsPage() {
                   className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium"
                   required
                 />
+              </div>
+
+              {/* Header Image */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 flex items-center gap-2">
+                  <ImagePlus size={14} /> Header Image URL
+                  <span className="text-zinc-300 font-medium normal-case tracking-normal">
+                    (optional)
+                  </span>
+                </label>
+                <input
+                  value={headerImageUrl}
+                  onChange={(e) => setHeaderImageUrl(e.target.value)}
+                  type="url"
+                  placeholder="https://example.com/banner.png"
+                  className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium"
+                />
+                {headerImageUrl && (
+                  <div className="mt-2 rounded-2xl overflow-hidden border border-zinc-100 bg-zinc-50">
+                    <img
+                      src={headerImageUrl}
+                      alt="Header preview"
+                      className="w-full h-40 object-cover"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
