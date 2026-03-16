@@ -22,8 +22,8 @@ const OrgEditIntegrations: React.FC = () => {
 
   // Initialize from org config
   React.useEffect(() => {
-    if (org?.config?.integrations?.youtube) {
-      setYoutubeJson(org.config.integrations.youtube)
+    if (org?.config?.config?.integrations?.youtube) {
+      setYoutubeJson(org.config.config.integrations.youtube)
     }
   }, [org])
 
