@@ -10,13 +10,19 @@ import {
   AlertCircle,
   Video,
   ChevronRight,
+  ImagePlus,
+  Upload,
+  Loader2,
+  X,
 } from 'lucide-react'
 // Imports removed to fix lint warnings
 import {
   createCampaign,
   getCampaigns,
   getLiveSessions,
+  uploadCampaignImage,
 } from '@services/communications'
+import { getCampaignMediaUrl } from '@services/media/media'
 import { getOrgCourses } from '@services/courses/courses'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -34,7 +40,10 @@ export default function CommunicationsPage() {
   const [targetType, setTargetType] = useState('ALL')
   const [targetValue, setTargetValue] = useState('')
   const [includeChat, setIncludeChat] = useState(true)
+  const [headerImageUrl, setHeaderImageUrl] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
   const { mutate } = useSWRConfig()
 
   // Use SWR for stable data fetching
@@ -63,6 +72,30 @@ export default function CommunicationsPage() {
     () => getLiveSessions(access_token, org?.org_slug)
   )
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const result = await uploadCampaignImage(
+        file,
+        access_token,
+        org?.org_slug
+      )
+      if (result && result.filename) {
+        const fullUrl = getCampaignMediaUrl(org.org_uuid, result.filename)
+        setHeaderImageUrl(fullUrl)
+        toast.success('Image uploaded successfully!')
+      }
+    } catch (err) {
+      toast.error('Failed to upload image')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!subject || !body) return
@@ -73,7 +106,10 @@ export default function CommunicationsPage() {
         subject,
         body,
         target_type: targetType,
-        target_metadata: { value: targetValue },
+        target_metadata: {
+          value: targetValue,
+          header_image_url: headerImageUrl,
+        },
         send_via_chat: includeChat,
       }
       await createCampaign(data, access_token, org?.org_slug)
@@ -85,6 +121,7 @@ export default function CommunicationsPage() {
       // Reset form
       setSubject('')
       setBody('')
+      setHeaderImageUrl('')
     } catch (e) {
       toast.error('Failed to initiate campaign')
     } finally {
@@ -129,6 +166,67 @@ export default function CommunicationsPage() {
                   className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium"
                   required
                 />
+              </div>
+
+              {/* Header Image */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImagePlus size={14} /> Header Image
+                    <span className="text-zinc-300 font-medium normal-case tracking-normal">
+                      (optional banner for email)
+                    </span>
+                  </div>
+                </label>
+
+                <div className="flex gap-2">
+                  <input
+                    value={headerImageUrl}
+                    onChange={(e) => setHeaderImageUrl(e.target.value)}
+                    type="url"
+                    placeholder="https://example.com/banner.png or upload..."
+                    className="flex-1 bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium"
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="bg-zinc-50 border border-zinc-100 p-3 rounded-2xl hover:bg-zinc-100 transition-all text-zinc-500 hover:text-zinc-900 disabled:opacity-50"
+                  >
+                    {isUploading ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Upload size={18} />
+                    )}
+                  </button>
+                </div>
+
+                {headerImageUrl && (
+                  <div className="relative mt-2 rounded-2xl overflow-hidden border border-zinc-100 bg-zinc-50 group">
+                    <img
+                      src={headerImageUrl}
+                      alt="Header preview"
+                      className="w-full h-40 object-cover"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setHeaderImageUrl('')}
+                      className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -198,9 +296,20 @@ export default function CommunicationsPage() {
                       required
                     >
                       <option value="">Select a role...</option>
-                      <option value="ADMIN">Admins Only</option>
-                      <option value="INSTRUCTOR">Instructors Only</option>
-                      <option value="STUDENT">Students Only</option>
+                      <option value="Admin">Admins Only</option>
+                      <option value="Instructor">Instructors Only</option>
+                      <option value="Lead Instructor">Lead Instructors</option>
+                      <option value="Teaching Assistant">
+                        Teaching Assistants
+                      </option>
+                      <option value="Community Manager">
+                        Community Managers
+                      </option>
+                      <option value="Students Success Coordinator">
+                        Success Coordinators
+                      </option>
+                      <option value="Students Mentor">Student Mentors</option>
+                      <option value="User">Students (Users)</option>
                     </select>
                   </div>
                 )}

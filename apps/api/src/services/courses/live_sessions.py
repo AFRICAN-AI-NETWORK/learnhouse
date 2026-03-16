@@ -13,6 +13,8 @@ from src.services.communications.notifications import (
     send_enrolment_invitation_email,
     send_session_reminder_email
 )
+from src.db.organization_config import OrganizationConfig
+from src.services.integrations.youtube import YouTubeService
 
 
 async def register_for_live_session(
@@ -110,3 +112,48 @@ async def send_manual_notifications(
             send_session_reminder_email(user, activity)
         elif notification_type == "ENROLMENT":
             send_enrolment_invitation_email(user, activity)
+
+
+async def end_live_session(
+    activity_uuid: str,
+    db_session: Session,
+):
+    """
+    End a live session:
+    1. Transition YouTube broadcast to 'complete' if it exists.
+    2. Mark activity as concluded manually.
+    """
+    activity = db_session.exec(
+        select(Activity).where(Activity.activity_uuid == activity_uuid)
+    ).first()
+    
+    if not activity:
+        return {"error": "Activity not found"}
+
+    # 1. YouTube Transition
+    details = activity.details or {}
+    youtube_video_id = details.get("youtube_video_id")
+    
+    if youtube_video_id:
+        try:
+            # Fetch Org Config for credentials
+            statement = select(OrganizationConfig).where(OrganizationConfig.org_id == activity.org_id)
+            org_config_obj = db_session.exec(statement).first()
+            
+            if org_config_obj and org_config_obj.config:
+                yt_config = org_config_obj.config.get('integrations', {}).get('youtube')
+                if yt_config:
+                    yt_service = YouTubeService(yt_config)
+                    await yt_service.end_broadcast(youtube_video_id)
+        except Exception as e:
+            print(f"[LIVE_SESSIONS_SERVICE] YouTube End Failed: {str(e)}")
+            # Log but continue to mark as ended locally
+
+    # 2. Update status
+    details.update({"is_concluded_manually": True})
+    activity.details = details
+    db_session.add(activity)
+    db_session.commit()
+    db_session.refresh(activity)
+    
+    return {"status": "success", "activity_uuid": activity_uuid}

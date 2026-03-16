@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException, UploadFile
 from sqlmodel import Session, select
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
@@ -10,6 +10,7 @@ from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
 from src.services.communications.dispatcher import create_campaign, dispatch_campaign
+from src.services.utils.upload_content import upload_file
 
 router = APIRouter()
 
@@ -122,3 +123,39 @@ async def api_get_campaign(
     """
     campaign = db_session.get(Campaign, campaign_id)
     return CampaignRead.model_validate(campaign)
+
+
+@router.post("/upload-image")
+async def api_upload_campaign_image(
+    image_file: UploadFile,
+    org_slug: str = None,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Upload an image to use as a campaign header.
+    Returns the filename and full content URL.
+    """
+    org_id = _resolve_org_id(db_session, current_user.id, org_slug)
+
+    # Get org_uuid from org_id
+    org = db_session.exec(
+        select(Organization).where(Organization.id == org_id)
+    ).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    filename = await upload_file(
+        file=image_file,
+        directory="campaigns",
+        type_of_dir="orgs",
+        uuid=org.org_uuid,
+        allowed_types=["image"],
+        filename_prefix="campaign_header",
+        max_size=5 * 1024 * 1024,  # 5MB
+    )
+
+    return {
+        "filename": filename,
+        "content_url": f"content/orgs/{org.org_uuid}/campaigns/{filename}",
+    }

@@ -508,6 +508,7 @@ function ActivityClient(props: ActivityClientProps) {
                     activity?.activity_type === 'TYPE_SMART_ARTICLE'
                   return (
                     <motion.div
+                      key="focus-mode-container"
                       initial={!hasMounted ? false : { opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}

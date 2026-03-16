@@ -77,3 +77,11 @@ export const kickParticipant = async (
   )
   return await errorHandling(result)
 }
+
+export const endLiveSession = async (activityUuid: string, token: string) => {
+  const result: any = await fetch(
+    `${getAPIUrl()}live_sessions/${activityUuid}/end`,
+    RequestBodyWithAuthHeader('POST', null, null, token)
+  )
+  return await errorHandling(result)
+}

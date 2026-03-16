@@ -138,6 +138,11 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.rewrite(new URL(`/api/health`, req.url))
   }
 
+  // Join Landing Page (Public)
+  if (pathname.startsWith('/join')) {
+    return NextResponse.rewrite(new URL(`${pathname}${search}`, req.url))
+  }
+
   // Auth Redirects
   if (pathname == '/redirect_from_auth') {
     if (cookie_orgslug) {

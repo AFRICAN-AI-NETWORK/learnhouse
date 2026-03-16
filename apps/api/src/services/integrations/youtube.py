@@ -20,7 +20,17 @@ class YouTubeService:
         Returns the videoId and the Stream Key.
         """
         try:
-            # 1. Create the Live Broadcast
+            # Ensure start_time is in ISO 8601 UTC format (suffix Z) if not already
+            if start_time and not start_time.endswith('Z'):
+                # Many browsers/pickers omit seconds or the Z.
+                # If it's 2024-03-16T12:00, we make it 2024-03-16T12:00:00Z
+                if len(start_time) == 16: # YYYY-MM-DDTHH:MM
+                    start_time += ":00Z"
+                elif 'T' in start_time and 'Z' not in start_time:
+                    start_time += "Z"
+
+            print(f"Creating YouTube Broadcast: {title} at {start_time}")
+            
             broadcast_body = {
                 'snippet': {
                     'title': title,
@@ -78,9 +88,24 @@ class YouTubeService:
                 'stream_key': stream_name,
                 'watch_url': f"https://www.youtube.com/watch?v={video_id}"
             }
-            
         except HttpError as e:
-            print(f"An HTTP error {e.resp.status} occurred: {e.content}")
+            print(f"An HTTP error {e.resp.status} occurred in create_broadcast: {e.content}")
+            raise e
+
+    async def end_broadcast(self, video_id: str) -> Dict[str, Any]:
+        """
+        Transitions a Live Broadcast to the 'complete' status.
+        This stops the live stream and finalizes the recording.
+        """
+        try:
+            res = self.youtube.liveBroadcasts().transition(
+                broadcastStatus='complete',
+                id=video_id,
+                part='id,status'
+            ).execute()
+            return res
+        except HttpError as e:
+            print(f"An HTTP error {e.resp.status} occurred while ending broadcast: {e.content}")
             raise e
 
 async def create_automated_youtube_session(org_credentials: str, title: str, start_time: str):

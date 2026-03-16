@@ -50,8 +50,12 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
     # Always filter by org_id first
     query = query.where(UserOrganization.org_id == campaign.org_id)
     
+    from sqlalchemy import func
+    
     if campaign.target_type == CampaignTargetType.WAITLIST:
-        query = query.where(User.user_status == "WAITLIST")
+        query = query.where(
+            User.user_status.in_(["WAITLIST", "WAITLIST_ACTIVATED"])
+        )
     
     elif campaign.target_type == CampaignTargetType.COURSE:
         course_uuid = campaign.target_metadata.get("course_uuid")
@@ -64,18 +68,83 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
             )
             
     elif campaign.target_type == CampaignTargetType.ROLES:
-        # Assuming campaign passes role names like ["STUDENT", "INSTRUCTOR"] instead of IDs
         roles = campaign.target_metadata.get("value", "")
         if roles:
-            # If it's a single role like "STUDENT" coming from the frontend dropdown
+            # Map frontend aliases to DB values where necessary
+            # e.g., if old frontend used "STUDENT", map it to "User"
+            if roles.upper() == "STUDENT":
+                roles = "User"
+            elif roles.upper() == "ADMIN":
+                roles = "Admin"
+            elif roles.upper() == "INSTRUCTOR":
+                roles = "Instructor"
+                
             query = query.join(Role, UserOrganization.role_id == Role.id).where(
-                Role.name == roles
+                func.lower(Role.name) == roles.lower()
             )
             
     elif campaign.target_type == CampaignTargetType.ALL:
         pass # org_id already applied at the top
         
     return db_session.exec(query).all()
+
+
+def build_email_html(campaign: Campaign) -> str:
+    """
+    Build a styled HTML email from the campaign data.
+    Supports an optional header image from target_metadata.header_image_url.
+    """
+    header_image_url = (campaign.target_metadata or {}).get("header_image_url", "")
+    # Convert plain-text newlines to HTML line breaks
+    body_html = campaign.body.replace("\n", "<br>")
+
+    image_block = ""
+    if header_image_url:
+        image_block = f'''
+        <tr>
+          <td style="padding:0;">
+            <img src="{header_image_url}" alt="Campaign Banner" 
+                 style="width:100%;max-width:600px;height:auto;display:block;border-radius:16px 16px 0 0;" />
+          </td>
+        </tr>
+        '''
+
+    return f'''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+    <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
+        <tr>
+          <td align="center">
+            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+              {image_block}
+              <tr>
+                <td style="padding:32px 40px 16px 40px;">
+                  <h1 style="margin:0;font-size:22px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">
+                    {campaign.subject}
+                  </h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 40px 32px 40px;font-size:15px;line-height:1.7;color:#3f3f46;">
+                  {body_html}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:24px 40px;border-top:1px solid #f4f4f5;">
+                  <p style="margin:0;font-size:11px;color:#a1a1aa;text-align:center;text-transform:uppercase;letter-spacing:1px;font-weight:700;">
+                    African AI Network
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    '''
 
 
 async def dispatch_campaign(campaign_id: int, db_session: Session):
@@ -96,6 +165,9 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
         db_session.add(campaign)
         db_session.commit()
 
+        # Build the HTML email once for all recipients
+        email_html = build_email_html(campaign)
+
         for user in targets:
             # 1. Send Email
             if campaign.send_via_email and user.email:
@@ -103,9 +175,10 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                     send_email(
                         to=user.email,
                         subject=campaign.subject,
-                        body=campaign.body
+                        body=email_html
                     )
                 except Exception as e:
+
                     logger.error(f"Failed to send email to {user.email}: {e}")
 
             # 2. Send LMS Chat (System Announcement)

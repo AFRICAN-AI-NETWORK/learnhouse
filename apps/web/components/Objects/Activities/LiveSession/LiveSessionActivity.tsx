@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -15,7 +15,9 @@ import {
 import {
   registerForLiveSession,
   checkLiveRegistration,
+  endLiveSession,
 } from '@services/courses/live_sessions'
+import { updateActivity } from '@services/courses/activities'
 import toast from 'react-hot-toast'
 
 interface LiveSessionActivityProps {
@@ -34,6 +36,11 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   )
   const [isAdminEnteringEarly, setIsAdminEnteringEarly] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
+  const [isConcludedManually, setIsConcludedManually] = useState(
+    activity?.details?.is_concluded_manually || false
+  )
+  const jitsiContainerRef = useRef<HTMLDivElement>(null)
+  const jitsiApiRef = useRef<any>(null)
 
   const isModerator = React.useMemo(() => {
     // 1. Check direct flags (Legacy/Quick check)
@@ -88,12 +95,24 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
       }
     }
     if (activity?.activity_uuid) {
-      checkRegistration()
+      if (isModerator) {
+        setIsRegistered(true)
+        setLoading(false)
+      } else {
+        checkRegistration()
+      }
     }
-  }, [activity?.activity_uuid])
+  }, [activity?.activity_uuid, isModerator])
 
   useEffect(() => {
     const timer = setInterval(() => {
+      // Priority 1: Manual Conclusion (Check both local state and activity details)
+      if (isConcludedManually || activity?.details?.is_concluded_manually) {
+        setStatus('ENDED')
+        clearInterval(timer)
+        return
+      }
+
       const now = new Date()
       if (now < startTime) {
         const diff = startTime.getTime() - now.getTime()
@@ -112,7 +131,12 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
       }
     }, 1000)
     return () => clearInterval(timer)
-  }, [startTime, endTime])
+  }, [
+    startTime,
+    endTime,
+    isConcludedManually,
+    activity?.details?.is_concluded_manually,
+  ])
 
   const handleRegister = async () => {
     try {
@@ -131,7 +155,8 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
     if (!doubleCheck) return
     setIsEnding(true)
     try {
-      // In a real scenario, we'd call updateActivity service here
+      await endLiveSession(activity.activity_uuid, session.data.access_token)
+      setIsConcludedManually(true)
       setStatus('ENDED')
       toast.success('Workshop concluded and archived.')
     } catch (e) {
@@ -148,11 +173,48 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
       return
     setIsAdminEnteringEarly(false)
     // For LIVE status, we just hide the local view
-    if (status === 'LIVE') {
-      const container = document.querySelector('#jitsi-container')
-      if (container)
-        container.innerHTML =
+    if (status === 'LIVE' || isAdminEnteringEarly) {
+      if (jitsiContainerRef.current)
+        jitsiContainerRef.current.innerHTML =
           '<div class="flex items-center justify-center h-full text-zinc-500 font-bold">You have left the meeting.</div>'
+    }
+  }
+
+  const handleCopyLink = () => {
+    if (typeof window !== 'undefined') {
+      // Ensure we strip any internal 'activity_' prefix if it exists for the clean public link
+      const uuid = activity.activity_uuid?.replace('activity_', '')
+      const joinUrl = `${window.location.origin}/join/${uuid}`
+      navigator.clipboard.writeText(joinUrl)
+      toast.success('Invite link (Landing Page) copied!')
+    }
+  }
+
+  const handleSetFallbackRecording = async () => {
+    const recordingUrl = window.prompt(
+      'Enter the recording/replay URL (e.g. YouTube watch link):',
+      activity?.details?.recording_url || ''
+    )
+    if (recordingUrl === null) return
+
+    const loadingToast = toast.loading('Updating archive...')
+    try {
+      const updatedDetails = {
+        ...activity.details,
+        recording_url: recordingUrl,
+      }
+      await updateActivity(
+        { details: updatedDetails },
+        activity.activity_uuid,
+        session.data.access_token
+      )
+      toast.success('Archive updated! Please refresh to see changes.', {
+        id: loadingToast,
+      })
+      // Optionally update local state if activity is fully controlled by parent,
+      // otherwise refresh is needed unless we have a refresh function passed.
+    } catch (e) {
+      toast.error('Failed to update archive', { id: loadingToast })
     }
   }
 
@@ -160,17 +222,19 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   useEffect(() => {
     if (
       (status === 'LIVE' || isAdminEnteringEarly) &&
-      isRegistered &&
+      (isRegistered || isModerator) &&
       typeof window !== 'undefined'
     ) {
       const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
       const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
 
+      if (!jitsiContainerRef.current) return
+
       const options = {
         roomName: roomName,
         width: '100%',
         height: '100%',
-        parentNode: document.querySelector('#jitsi-container'),
+        parentNode: jitsiContainerRef.current,
         appId: process.env.NEXT_PUBLIC_JITSI_APP_ID,
         userInfo: {
           displayName: session.data?.user?.display_name || 'Student',
@@ -200,23 +264,36 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
 
       const loadAPI = () => {
         // @ts-ignore
-        if (window.JitsiMeetExternalAPI) {
+        if (window.JitsiMeetExternalAPI && jitsiContainerRef.current) {
+          if (jitsiApiRef.current) return // Already initialized
+
+          // Re-validate parentNode right before call
+          const finalOptions = {
+            ...options,
+            parentNode: jitsiContainerRef.current,
+          }
           // @ts-ignore
-          const api = new window.JitsiMeetExternalAPI(domain, options)
+          jitsiApiRef.current = new window.JitsiMeetExternalAPI(
+            domain,
+            finalOptions
+          )
 
           // AUTOMATION: If current user is a moderator and auto_stream is enabled
-          api.addEventListener('videoConferenceJoined', () => {
+          jitsiApiRef.current.addEventListener('videoConferenceJoined', () => {
             if (
               isModerator &&
               details.auto_stream_enabled &&
               details.youtube_stream_key
             ) {
-              api.executeCommand('startRecording', {
+              jitsiApiRef.current.executeCommand('startRecording', {
                 mode: 'stream',
                 youtubeStreamKey: details.youtube_stream_key,
               })
             }
           })
+        } else {
+          // Retry logic if window.JitsiMeetExternalAPI is not yet defined
+          setTimeout(loadAPI, 100)
         }
       }
 
@@ -231,9 +308,14 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
         loadAPI()
       }
 
+      const container = jitsiContainerRef.current
+
       return () => {
         // Optimization: Don't remove script, just clear container
-        const container = document.querySelector('#jitsi-container')
+        if (jitsiApiRef.current) {
+          jitsiApiRef.current.dispose()
+          jitsiApiRef.current = null
+        }
         if (container) container.innerHTML = ''
       }
     }
@@ -259,36 +341,49 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   return (
     <div className="w-full h-full max-w-7xl mx-auto p-4 md:p-8 overflow-y-auto">
       <AnimatePresence mode="wait">
-        {status === 'UPCOMING' && (
+        {status === 'UPCOMING' && !isAdminEnteringEarly && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="bg-white border border-zinc-200 rounded-3xl p-12 text-center shadow-xl space-y-8"
+            key="upcoming"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            className="bg-white/70 backdrop-blur-xl border border-zinc-200 rounded-[40px] p-10 md:p-20 text-center shadow-2xl space-y-10 max-w-4xl mx-auto"
           >
-            <div className="mx-auto w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center animate-bounce">
-              <Calendar size={48} />
+            <div className="mx-auto w-20 h-20 bg-zinc-900 text-white rounded-[28px] flex items-center justify-center shadow-xl rotate-3">
+              <Calendar size={32} />
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-4xl font-extrabold text-zinc-900 tracking-tight">
+            <div className="space-y-3">
+              <h1 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter leading-tight">
                 {activity.name}
               </h1>
-              <p className="text-zinc-500 font-medium tracking-wide flex items-center justify-center gap-2">
-                <Clock size={16} /> Starts at {startTime.toLocaleString()}
-              </p>
+              <div className="flex items-center justify-center gap-4 text-zinc-500 text-sm font-bold uppercase tracking-widest">
+                <span className="flex items-center gap-2">
+                  <Clock size={16} className="text-zinc-400" />{' '}
+                  {startTime.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+                <span className="w-1 h-1 bg-zinc-300 rounded-full" />
+                <span>
+                  {startTime.toLocaleDateString([], {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 max-w-md mx-auto">
+            <div className="grid grid-cols-4 gap-4 max-w-sm mx-auto">
               {['days', 'hours', 'minutes', 'seconds'].map((unit) => (
-                <div
-                  key={unit}
-                  className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-                >
-                  <div className="text-3xl font-black text-zinc-900">
-                    {timeLeft?.[unit] || 0}
+                <div key={unit} className="space-y-2">
+                  <div className="bg-zinc-100/50 rounded-2xl p-4 border border-zinc-200/50 backdrop-blur-sm">
+                    <div className="text-2xl font-black text-zinc-900 tabular-nums">
+                      {timeLeft?.[unit] || 0}
+                    </div>
                   </div>
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  <div className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">
                     {unit}
                   </div>
                 </div>
@@ -325,13 +420,14 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
 
         {(status === 'LIVE' || isAdminEnteringEarly) && (
           <motion.div
+            key="live"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[75vh]"
           >
             <div
               className="lg:col-span-3 bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-zinc-100"
-              id="jitsi-container"
+              ref={jitsiContainerRef}
             >
               {!isRegistered && (
                 <div className="absolute inset-0 bg-zinc-900/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-12 z-20">
@@ -394,6 +490,24 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
                             {isEnding
                               ? 'Archiving...'
                               : 'End & Archive for All'}
+                          </button>
+                        )}
+
+                        <button
+                          onClick={handleCopyLink}
+                          className="w-full bg-zinc-900 text-white py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-black transition-colors shadow-sm flex items-center justify-center gap-2"
+                        >
+                          <ExternalLink size={12} />
+                          Copy Invite Link
+                        </button>
+
+                        {status === 'LIVE' && (
+                          <button
+                            onClick={handleSetFallbackRecording}
+                            className="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-colors shadow-sm flex items-center justify-center gap-2"
+                          >
+                            <HelpCircle size={12} />
+                            Manual Replay Setup
                           </button>
                         )}
                       </div>
@@ -474,6 +588,7 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
 
         {status === 'ENDED' && (
           <motion.div
+            key="ended"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="w-full max-w-5xl mx-auto"
@@ -535,6 +650,18 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
                   This live event has ended. If a recording was made, it will
                   appear here as a "Replay" activity soon.
                 </p>
+
+                {isModerator && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={handleSetFallbackRecording}
+                      className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl flex items-center gap-2"
+                    >
+                      <ExternalLink size={14} />
+                      Set/Edit Replay URL (Manual Fallback)
+                    </button>
+                  </div>
+                )}
 
                 <div className="mt-10 space-y-4">
                   {(!session.data?.user || session.data?.user?.is_waitlist) && (
