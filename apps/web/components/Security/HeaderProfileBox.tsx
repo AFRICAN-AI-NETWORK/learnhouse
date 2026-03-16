@@ -63,6 +63,16 @@ export const HeaderProfileBox = () => {
   const org = useOrg() as any
   const { t, i18n } = useTranslation()
 
+  const getRoleName = (membership: any): string => {
+    const role = membership?.role as { name?: unknown } | undefined
+    return typeof role?.name === 'string' ? role.name : ''
+  }
+
+  const getRoleDescription = (membership: any): string | undefined => {
+    const role = membership?.role as { description?: unknown } | undefined
+    return typeof role?.description === 'string' ? role.description : undefined
+  }
+
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng)
   }
@@ -80,6 +90,9 @@ export const HeaderProfileBox = () => {
     // Sort by role priority (admin > maintainer > instructor > user)
     const sortedRoles = orgRoles.sort((a: any, b: any) => {
       const getRolePriority = (role: any) => {
+        const roleUuid = role?.role?.role_uuid
+        const roleName = getRoleName(role).toLowerCase()
+
         if (role.role.role_uuid === 'role_global_admin' || role.role.id === 1)
           return 4
         if (
@@ -88,8 +101,24 @@ export const HeaderProfileBox = () => {
         )
           return 3
         if (
+          roleUuid === 'role_global_lead_instructor' ||
+          roleName === 'lead instructor'
+        ) {
+          return 2.5
+        }
+        if (
           role.role.role_uuid === 'role_global_instructor' ||
-          role.role.id === 3
+          role.role.id === 3 ||
+          roleUuid === 'role_global_teaching_assistant' ||
+          roleUuid === 'role_global_student_success_coordinator' ||
+          roleUuid === 'role_global_student_mentor' ||
+          roleUuid === 'role_global_community_manager' ||
+          roleName === 'teaching assistant' ||
+          roleName === 'student success coordinator' ||
+          roleName === 'students success coordinator' ||
+          roleName === 'student mentor' ||
+          roleName === 'students mentor' ||
+          roleName === 'community manager'
         )
           return 2
         return 1
@@ -122,6 +151,41 @@ export const HeaderProfileBox = () => {
         textColor: 'text-white',
         description: t('roles.role_instructor_desc'),
       },
+      role_global_teaching_assistant: {
+        name: 'Teaching Assistant',
+        icon: <Users size={12} />,
+        bgColor: 'bg-emerald-600',
+        textColor: 'text-white',
+        description: 'Teaching Assistant role',
+      },
+      role_global_student_success_coordinator: {
+        name: 'Success Coordinator',
+        icon: <Shield size={12} />,
+        bgColor: 'bg-cyan-600',
+        textColor: 'text-white',
+        description: 'Student Success Coordinator role',
+      },
+      role_global_student_mentor: {
+        name: 'Student Mentor',
+        icon: <Users size={12} />,
+        bgColor: 'bg-violet-600',
+        textColor: 'text-white',
+        description: 'Student Mentor role',
+      },
+      role_global_community_manager: {
+        name: 'Community Manager',
+        icon: <Shield size={12} />,
+        bgColor: 'bg-fuchsia-600',
+        textColor: 'text-white',
+        description: 'Community Manager role',
+      },
+      role_global_lead_instructor: {
+        name: 'Lead Instructor',
+        icon: <Users size={12} />,
+        bgColor: 'bg-lime-600',
+        textColor: 'text-white',
+        description: 'Lead Instructor role',
+      },
       role_global_user: {
         name: t('roles.role_user'),
         icon: <User size={12} />,
@@ -141,6 +205,25 @@ export const HeaderProfileBox = () => {
       roleKey = 'role_global_maintainer'
     } else if (highestRole.role.id === 3) {
       roleKey = 'role_global_instructor'
+    } else {
+      const roleName = getRoleName(highestRole).toLowerCase()
+      if (roleName === 'teaching assistant') {
+        roleKey = 'role_global_teaching_assistant'
+      } else if (
+        roleName === 'students success coordinator' ||
+        roleName === 'student success coordinator'
+      ) {
+        roleKey = 'role_global_student_success_coordinator'
+      } else if (
+        roleName === 'students mentor' ||
+        roleName === 'student mentor'
+      ) {
+        roleKey = 'role_global_student_mentor'
+      } else if (roleName === 'community manager') {
+        roleKey = 'role_global_community_manager'
+      } else if (roleName === 'lead instructor') {
+        roleKey = 'role_global_lead_instructor'
+      }
     }
 
     return roleConfigs[roleKey] || roleConfigs['role_global_user']
@@ -159,15 +242,27 @@ export const HeaderProfileBox = () => {
       // Check if it's a system role
       const isSystemRole =
         role.role.role_uuid?.startsWith('role_global_') ||
-        [1, 2, 3, 4].includes(role.role.id) ||
-        ['Admin', 'Maintainer', 'Instructor', 'User'].includes(role.role.name)
+        [1, 2, 3, 4, 5, 6, 7, 8, 9].includes(role.role.id) ||
+        [
+          'Admin',
+          'Maintainer',
+          'Instructor',
+          'User',
+          'Teaching Assistant',
+          'Students Success Coordinator',
+          'Student Success Coordinator',
+          'Students Mentor',
+          'Student Mentor',
+          'Community Manager',
+          'Lead Instructor',
+        ].includes(getRoleName(role))
 
       return !isSystemRole
     })
 
     return customRoles.map((role: any) => ({
-      name: role.role.name || t('roles.custom_role'),
-      description: role.role.description,
+      name: getRoleName(role) || t('roles.custom_role'),
+      description: getRoleDescription(role),
     }))
   }, [userRoles, org?.id, t])
 

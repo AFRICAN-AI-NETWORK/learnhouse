@@ -70,6 +70,8 @@ class TestConversationEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+        if data:
+            assert "role_name" in data[0]
 
     def test_archive_conversation(
         self,

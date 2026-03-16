@@ -16,7 +16,7 @@ export const useInputPaste = ({ onFilesAdded }: UseInputPasteProps) => {
    * Extracts files from clipboard and adds them
    */
   const handlePaste = useCallback(
-    (e: React.ClipboardEvent<HTMLInputElement>) => {
+    (e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const clipboardItems = e.clipboardData?.items
 
       if (!clipboardItems || clipboardItems.length === 0) return
