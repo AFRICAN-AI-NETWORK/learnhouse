@@ -337,7 +337,7 @@ export default function FloatingChatWidget() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {!selectedConversationId ? (
               <ConversationsList
                 conversations={conversations}

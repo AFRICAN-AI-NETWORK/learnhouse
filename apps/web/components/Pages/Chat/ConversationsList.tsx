@@ -228,7 +228,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
 
   return (
     <>
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         {/* Header */}
         <div className="px-5 pt-6 pb-4 space-y-4">
           <div className="flex items-center justify-between">
