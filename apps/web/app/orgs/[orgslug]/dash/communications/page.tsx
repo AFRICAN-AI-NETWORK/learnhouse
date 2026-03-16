@@ -38,35 +38,45 @@ export default function CommunicationsPage() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        console.log('[loadInitialData] Starting fetch for org:', org?.org_slug)
         const [campaignsRes, coursesRes] = await Promise.all([
           getCampaigns(access_token),
-          getOrgCourses(org?.org_slug, null),
+          getOrgCourses(org?.org_slug, null, access_token),
         ])
-        setCampaigns(campaignsRes || [])
-        setCourses(coursesRes || [])
+
+        console.log('[loadInitialData] Response:', { campaignsRes, coursesRes })
+
+        // Check if error
+        if (campaignsRes?.detail) throw new Error(campaignsRes.detail)
+
+        setCampaigns(Array.isArray(campaignsRes) ? campaignsRes : [])
+        setCourses(Array.isArray(coursesRes) ? coursesRes : [])
 
         // Extract live sessions from courses
         const sessions: any[] = []
-        coursesRes?.forEach((course: any) => {
-          course.chapters?.forEach((chapter: any) => {
-            chapter.activities?.forEach((activity: any) => {
-              if (activity.activity_type === 'TYPE_LIVE_SESSION') {
-                sessions.push({
-                  ...activity,
-                  course_name: course.name,
-                })
-              }
+        if (Array.isArray(coursesRes)) {
+          coursesRes.forEach((course: any) => {
+            course.chapters?.forEach((chapter: any) => {
+              chapter.activities?.forEach((activity: any) => {
+                if (activity.activity_type === 'TYPE_LIVE_SESSION') {
+                  sessions.push({
+                    ...activity,
+                    course_name: course.name,
+                  })
+                }
+              })
             })
           })
-        })
+        }
         setLiveSessions(sessions)
+        console.log('[loadInitialData] Success!')
       } catch (e) {
-        // Error handled silently
+        console.error('[loadInitialData] Error:', e)
       } finally {
         setLoadingHistory(false)
       }
     }
-    if (org?.org_slug && access_token) {
+    if (org?.org_slug) {
       loadInitialData()
     }
   }, [org?.org_slug, access_token])
@@ -82,7 +92,7 @@ export default function CommunicationsPage() {
         body,
         target_type: targetType,
         target_metadata: { value: targetValue },
-        include_chat: includeChat,
+        send_via_chat: includeChat,
       }
       await createCampaign(data, access_token)
       toast.success('Campaign initiated! Sending messages in background.')

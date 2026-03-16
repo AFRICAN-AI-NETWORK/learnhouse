@@ -43,7 +43,13 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
     """
     Retrieve users based on campaign targeting filters.
     """
-    query = select(User)
+    from src.db.user_organizations import UserOrganization
+    from src.db.roles import Role
+
+    query = select(User).join(UserOrganization, User.id == UserOrganization.user_id)
+    
+    # Always filter by org_id first
+    query = query.where(UserOrganization.org_id == campaign.org_id)
     
     if campaign.target_type == CampaignTargetType.WAITLIST:
         query = query.where(User.user_status == "WAITLIST")
@@ -54,17 +60,21 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
             # Join with ResourceAuthor to find students/contributors of a course
             # Note: This is an example, actual logic depends on how enrollments are stored
             # Assuming ResourceAuthor tracks course access
-            query = select(User).join(ResourceAuthor).where(
+            query = query.join(ResourceAuthor, User.id == ResourceAuthor.user_id).where(
                 ResourceAuthor.resource_uuid == course_uuid
             )
             
     elif campaign.target_type == CampaignTargetType.ROLES:
-        roles = campaign.target_metadata.get("roles", [])
+        # Assuming campaign passes role names like ["STUDENT", "INSTRUCTOR"] instead of IDs
+        roles = campaign.target_metadata.get("value", "")
         if roles:
-            query = query.where(User.role_id.in_(roles))
+            # If it's a single role like "STUDENT" coming from the frontend dropdown
+            query = query.join(Role, UserOrganization.role_id == Role.id).where(
+                Role.name == roles
+            )
             
     elif campaign.target_type == CampaignTargetType.ALL:
-        query = query.where(User.org_id == campaign.org_id)
+        pass # org_id already applied at the top
         
     return db_session.exec(query).all()
 
@@ -101,13 +111,38 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
 
             # 2. Send LMS Chat (System Announcement)
             if campaign.send_via_chat:
-                message = {
-                    "type": "SYSTEM_ANNOUNCEMENT",
-                    "subject": campaign.subject,
-                    "content": campaign.body,
-                    "timestamp": datetime.now().isoformat()
-                }
-                await connection_manager.send_personal_message(message, user.id)
+                if user.id == campaign.created_by_user_id:
+                    # Skip sending a chat to oneself to avoid message_sender_receiver_different constraint
+                    logger.info(f"Skipping chat message to self: {user.email}")
+                else:
+                    try:
+                        from src.services.chat.conversation_service import ConversationService
+                        from src.services.chat.message_service import MessageService
+                        from src.db.chat.messages import MessageCreate
+                        
+                        # Create or get conversation between the sender and the target student
+                        conversation = await ConversationService.create_or_get_conversation(
+                            db=db_session,
+                            current_user_id=campaign.created_by_user_id,
+                            target_user_id=user.id,
+                            org_id=campaign.org_id
+                        )
+                        
+                        message_data = MessageCreate(
+                            conversation_id=conversation.id,
+                            receiver_id=user.id,
+                            content=f"📢 {campaign.subject}\n\n{campaign.body}",
+                            message_type="text"
+                        )
+                        
+                        await MessageService.create_message(
+                            db=db_session,
+                            message_data=message_data,
+                            sender_id=campaign.created_by_user_id,
+                            org_id=campaign.org_id
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to send chat message to {user.email}: {e}")
 
             campaign.sent_count += 1
             if campaign.sent_count % 10 == 0: # Update progress every 10 users

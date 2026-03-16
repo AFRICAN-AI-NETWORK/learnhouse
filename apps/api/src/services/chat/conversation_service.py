@@ -46,7 +46,12 @@ class ConversationService:
         Enforces bidirectional uniqueness.
         Returns enriched conversation with other_participant details.
         """
-        
+        if current_user_id == target_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot start a conversation with yourself"
+            )
+
         # Verify permission
         await verify_chat_permission(db, current_user_id, target_user_id, org_id)
         
