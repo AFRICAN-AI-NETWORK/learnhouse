@@ -50,6 +50,8 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
     # Always filter by org_id first
     query = query.where(UserOrganization.org_id == campaign.org_id)
     
+    from sqlalchemy import func
+    
     if campaign.target_type == CampaignTargetType.WAITLIST:
         query = query.where(
             User.user_status.in_(["WAITLIST", "WAITLIST_ACTIVATED"])
@@ -66,12 +68,19 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
             )
             
     elif campaign.target_type == CampaignTargetType.ROLES:
-        # Assuming campaign passes role names like ["STUDENT", "INSTRUCTOR"] instead of IDs
         roles = campaign.target_metadata.get("value", "")
         if roles:
-            # If it's a single role like "STUDENT" coming from the frontend dropdown
+            # Map frontend aliases to DB values where necessary
+            # e.g., if old frontend used "STUDENT", map it to "User"
+            if roles.upper() == "STUDENT":
+                roles = "User"
+            elif roles.upper() == "ADMIN":
+                roles = "Admin"
+            elif roles.upper() == "INSTRUCTOR":
+                roles = "Instructor"
+                
             query = query.join(Role, UserOrganization.role_id == Role.id).where(
-                Role.name == roles
+                func.lower(Role.name) == roles.lower()
             )
             
     elif campaign.target_type == CampaignTargetType.ALL:

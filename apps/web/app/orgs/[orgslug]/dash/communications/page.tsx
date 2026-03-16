@@ -296,9 +296,20 @@ export default function CommunicationsPage() {
                       required
                     >
                       <option value="">Select a role...</option>
-                      <option value="ADMIN">Admins Only</option>
-                      <option value="INSTRUCTOR">Instructors Only</option>
-                      <option value="STUDENT">Students Only</option>
+                      <option value="Admin">Admins Only</option>
+                      <option value="Instructor">Instructors Only</option>
+                      <option value="Lead Instructor">Lead Instructors</option>
+                      <option value="Teaching Assistant">
+                        Teaching Assistants
+                      </option>
+                      <option value="Community Manager">
+                        Community Managers
+                      </option>
+                      <option value="Students Success Coordinator">
+                        Success Coordinators
+                      </option>
+                      <option value="Students Mentor">Student Mentors</option>
+                      <option value="User">Students (Users)</option>
                     </select>
                   </div>
                 )}
