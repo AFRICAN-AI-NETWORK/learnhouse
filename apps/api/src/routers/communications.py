@@ -2,10 +2,13 @@ from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException
 from sqlmodel import Session, select
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
-from src.db.users import PublicUser, User
+from src.db.users import PublicUser
 from src.db.user_organizations import UserOrganization
 from src.db.organizations import Organization
 from src.db.communications import Campaign, CampaignCreate, CampaignRead
+from src.db.courses.activities import Activity, ActivityTypeEnum
+from src.db.courses.chapters import Chapter
+from src.db.courses.courses import Course
 from src.services.communications.dispatcher import create_campaign, dispatch_campaign
 
 router = APIRouter()
@@ -75,9 +78,6 @@ async def api_get_campaigns(
     statement = select(Campaign).where(Campaign.org_id == org_id)
     results = db_session.exec(statement).all()
     return [CampaignRead.model_validate(r) for r in results]
-from src.db.courses.activities import Activity, ActivityTypeEnum
-from src.db.courses.chapters import Chapter
-from src.db.courses.courses import Course
 
 
 @router.get("/live-sessions")

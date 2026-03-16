@@ -2,7 +2,6 @@
 import sys
 import os
 sys.path.append(os.getcwd())
-import json
 from datetime import datetime
 from sqlmodel import Session, select
 from src.core.events.database import engine
