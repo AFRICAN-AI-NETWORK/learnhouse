@@ -31,7 +31,12 @@ import { BarLoader } from 'react-spinners'
 import useSWR, { useSWRConfig } from 'swr'
 import { toast } from 'react-hot-toast'
 
-export default function CommunicationsPage() {
+export default function CommunicationsPage({
+  params,
+}: {
+  params: { orgslug: string }
+}) {
+  const { orgslug } = params
   const org = useOrg() as any
   const session = useLHSession() as any
   const access_token: string = session?.data?.tokens?.access_token ?? ''
@@ -52,10 +57,8 @@ export default function CommunicationsPage() {
     error: campaignsError,
     isLoading: loadingCampaigns,
   } = useSWR(
-    org?.org_slug && access_token
-      ? [`${org.org_slug}_campaigns`, access_token]
-      : null,
-    () => getCampaigns(access_token, org?.org_slug)
+    orgslug && access_token ? [`${orgslug}_campaigns`, access_token] : null,
+    () => getCampaigns(access_token, orgslug)
   )
 
   const { data: courses = [] } = useSWR(
@@ -112,11 +115,11 @@ export default function CommunicationsPage() {
         },
         send_via_chat: includeChat,
       }
-      await createCampaign(data, access_token, org?.org_slug)
+      await createCampaign(data, access_token, orgslug)
       toast.success('Campaign initiated! Sending messages in background.')
 
       // Revalidate history
-      mutate([`${org.org_slug}_campaigns`, access_token])
+      mutate([`${orgslug}_campaigns`, access_token])
 
       // Reset form
       setSubject('')
@@ -396,7 +399,10 @@ export default function CommunicationsPage() {
                       {camp.subject}
                     </h4>
                     <div className="flex items-center gap-2 text-[9px] text-zinc-400 font-bold uppercase tracking-tight">
-                      <Users size={10} /> {camp.target_type}
+                      <Users size={10} />{' '}
+                      {typeof camp.target_type === 'string'
+                        ? camp.target_type.split('.').pop()
+                        : camp.target_type}
                     </div>
                   </div>
                 ))}
