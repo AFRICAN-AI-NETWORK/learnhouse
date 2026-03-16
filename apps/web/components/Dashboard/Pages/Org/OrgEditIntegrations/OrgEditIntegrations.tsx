@@ -11,7 +11,10 @@ import { Youtube, Save, Info, Key, Globe } from 'lucide-react'
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
 
+import { useTranslation } from 'react-i18next'
+
 const OrgEditIntegrations: React.FC = () => {
+  const { t } = useTranslation()
   const org = useOrg() as any
   const session = useLHSession() as any
   const [youtubeJson, setYoutubeJson] = React.useState('')
@@ -28,7 +31,11 @@ const OrgEditIntegrations: React.FC = () => {
     if (!youtubeJson) return
 
     setIsSubmitting(true)
-    const loadingToast = toast.loading('Updating integrations...')
+    const loadingToast = toast.loading(
+      t(
+        'dashboard.organization.settings.pages.integrations.youtube.toasts.updating'
+      )
+    )
 
     try {
       // Basic JSON validation
@@ -36,7 +43,9 @@ const OrgEditIntegrations: React.FC = () => {
         JSON.parse(youtubeJson)
       } catch (e) {
         toast.error(
-          'Invalid JSON format. Please paste the exact JSON from Google Cloud.',
+          t(
+            'dashboard.organization.settings.pages.integrations.youtube.toasts.invalid_json'
+          ),
           { id: loadingToast }
         )
         setIsSubmitting(false)
@@ -50,11 +59,21 @@ const OrgEditIntegrations: React.FC = () => {
       )
 
       mutate(`${getAPIUrl()}orgs/slug/${org.slug}`)
-      toast.success('YouTube Integration updated successfully!', {
-        id: loadingToast,
-      })
+      toast.success(
+        t(
+          'dashboard.organization.settings.pages.integrations.youtube.toasts.success'
+        ),
+        {
+          id: loadingToast,
+        }
+      )
     } catch (err) {
-      toast.error('Failed to update integrations', { id: loadingToast })
+      toast.error(
+        t(
+          'dashboard.organization.settings.pages.integrations.youtube.toasts.error'
+        ),
+        { id: loadingToast }
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -69,10 +88,14 @@ const OrgEditIntegrations: React.FC = () => {
           </div>
           <div>
             <h1 className="font-bold text-xl text-gray-900 tracking-tight">
-              External Integrations
+              {t(
+                'dashboard.organization.settings.pages.integrations.youtube.title'
+              )}
             </h1>
             <p className="text-gray-500 text-sm">
-              Connect and manage your third-party API credentials.
+              {t(
+                'dashboard.organization.settings.pages.integrations.youtube.subtitle'
+              )}
             </p>
           </div>
         </div>
@@ -85,11 +108,15 @@ const OrgEditIntegrations: React.FC = () => {
             <div className="flex items-center gap-3">
               <Youtube className="h-6 w-6 text-red-600" />
               <h3 className="text-lg font-bold text-gray-800">
-                YouTube Automation
+                {t(
+                  'dashboard.organization.settings.pages.integrations.youtube.feature_name'
+                )}
               </h3>
             </div>
             <div className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100">
-              Active Feature
+              {t(
+                'dashboard.organization.settings.pages.integrations.youtube.status_active'
+              )}
             </div>
           </div>
 
@@ -97,13 +124,14 @@ const OrgEditIntegrations: React.FC = () => {
             <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
             <div className="space-y-1 text-sm text-blue-800 leading-relaxed">
               <p className="font-bold uppercase text-[10px] tracking-widest opacity-70">
-                Instruction
+                {t(
+                  'dashboard.organization.settings.pages.integrations.youtube.instruction_label'
+                )}
               </p>
               <p>
-                Paste the content of your **Google Cloud OAuth 2.0 Client ID
-                JSON** file below. This enables the system to automatically
-                schedule live broadcasts and archive recordings for your
-                students.
+                {t(
+                  'dashboard.organization.settings.pages.integrations.youtube.instruction_text'
+                )}
               </p>
             </div>
           </div>
@@ -114,7 +142,9 @@ const OrgEditIntegrations: React.FC = () => {
               className="flex items-center gap-2 text-gray-700 font-bold"
             >
               <Key className="h-4 w-4" />
-              Service Account / Client ID JSON
+              {t(
+                'dashboard.organization.settings.pages.integrations.youtube.input_label'
+              )}
             </Label>
             <Textarea
               id="youtube-json"
@@ -133,7 +163,9 @@ const OrgEditIntegrations: React.FC = () => {
             className="bg-black text-white hover:bg-zinc-800 px-8 py-6 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center gap-2"
           >
             <Save className="h-4 w-4" />
-            Save Integration Settings
+            {t(
+              'dashboard.organization.settings.pages.integrations.youtube.save_button'
+            )}
           </Button>
         </div>
       </div>

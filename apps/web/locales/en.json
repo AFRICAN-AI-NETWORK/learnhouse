@@ -841,6 +841,7 @@
           "landing": "Landing Page",
           "previews": "Images & Previews",
           "socials": "Socials",
+          "integrations": "Integrations",
           "other": "Other"
         },
         "pages": {
@@ -863,6 +864,26 @@
           "other": {
             "title": "Other",
             "subtitle": "Manage additional organization settings"
+          },
+          "integrations": {
+            "title": "Integrations",
+            "subtitle": "Connect external services and manage API credentials",
+            "youtube": {
+              "title": "External Integrations",
+              "subtitle": "Connect and manage your third-party API credentials.",
+              "feature_name": "YouTube Automation",
+              "status_active": "Active Feature",
+              "instruction_label": "Instruction",
+              "instruction_text": "Paste the content of your **Google Cloud OAuth 2.0 Client ID JSON** file below. This enables the system to automatically schedule live broadcasts and archive recordings for your students.",
+              "input_label": "Service Account / Client ID JSON",
+              "save_button": "Save Integration Settings",
+              "toasts": {
+                "updating": "Updating integrations...",
+                "invalid_json": "Invalid JSON format. Please paste the exact JSON from Google Cloud.",
+                "success": "YouTube Integration updated successfully!",
+                "error": "Failed to update integrations"
+              }
+            }
           }
         },
         "name": "Organization Name",
@@ -879,7 +900,15 @@
         "saving": "Saving...",
         "update_success": "Organization Updated",
         "update_error": "Failed to update organization",
-        "updating": "Updating organization..."
+        "updating": "Updating organization...",
+        "validation": {
+          "name_required": "Name is required",
+          "name_max": "Organization name must be 60 characters or less",
+          "description_required": "Short description is required",
+          "description_max": "Short description must be 100 characters or less",
+          "about_max": "About text must be 400 characters or less",
+          "label_required": "Organization label is required"
+        }
       },
       "images": {
         "title": "Images & Previews",
@@ -966,7 +995,13 @@
         "save_script": "Save Script",
         "toasts": {
           "save_success": "Script saved successfully",
-          "delete_success": "Script deleted successfully"
+          "save_error": "Failed to save script",
+          "delete_success": "Script deleted successfully",
+          "delete_error": "Failed to delete script"
+        },
+        "validation": {
+          "name_required": "Script name is required",
+          "content_required": "Script content is required"
         }
       },
       "audit_logs": {

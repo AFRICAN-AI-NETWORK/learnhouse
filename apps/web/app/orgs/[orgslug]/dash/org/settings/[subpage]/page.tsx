@@ -121,8 +121,8 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
       }
     } else if (params.subpage == 'integrations') {
       return {
-        h1: 'Integrations',
-        h2: 'Connect external services and manage API credentials.',
+        h1: t('dashboard.organization.settings.pages.integrations.title'),
+        h2: t('dashboard.organization.settings.pages.integrations.subtitle'),
       }
     }
     return { h1: '', h2: '' }
