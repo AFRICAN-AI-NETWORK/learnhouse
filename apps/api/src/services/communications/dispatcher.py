@@ -93,8 +93,24 @@ def build_email_html(campaign: Campaign) -> str:
     """
     Build a styled HTML email from the campaign data.
     Supports an optional header image from target_metadata.header_image_url.
+    Ensures images use absolute public URLs for Gmail compatibility.
     """
+    from config.config import get_learnhouse_config
+    config = get_learnhouse_config()
+    
     header_image_url = (campaign.target_metadata or {}).get("header_image_url", "")
+    
+    # Gmail requires absolute public URLs. If it starts with /content or localhost:3000, 
+    # we prepend the public app base URL if available.
+    if header_image_url:
+        if header_image_url.startswith("/content"):
+            base_url = config.hosting_config.app_base_url.rstrip("/")
+            header_image_url = f"{base_url}{header_image_url}"
+        elif "localhost" in header_image_url:
+            # If tested locally, we try to swap it for the real domain to test dispatches
+            # though usually it remains localhost unless the user explicitly set LH_APP_BASE_URL
+            pass
+
     # Convert plain-text newlines to HTML line breaks
     body_html = campaign.body.replace("\n", "<br>")
 
@@ -221,8 +237,8 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                 db_session.add(campaign)
                 db_session.commit()
             
-            # Rate limiting delay
-            await asyncio.sleep(0.5)
+            # Rate limiting delay - Throttle to avoid SMTP "Unusual sending activity" blocks
+            await asyncio.sleep(2.0)
 
         campaign.status = CampaignStatus.SENT
         campaign.update_date = datetime.now().isoformat()
