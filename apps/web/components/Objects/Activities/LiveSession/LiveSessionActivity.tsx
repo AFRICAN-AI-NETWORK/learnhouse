@@ -39,7 +39,8 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   const [isConcludedManually, setIsConcludedManually] = useState(
     activity?.details?.is_concluded_manually || false
   )
-  const jitsiContainerRef = React.useRef<HTMLDivElement>(null)
+  const jitsiContainerRef = useRef<HTMLDivElement>(null)
+  const jitsiApiRef = useRef<any>(null)
 
   const isModerator = React.useMemo(() => {
     // 1. Check direct flags (Legacy/Quick check)
@@ -94,9 +95,14 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
       }
     }
     if (activity?.activity_uuid) {
-      checkRegistration()
+      if (isModerator) {
+        setIsRegistered(true)
+        setLoading(false)
+      } else {
+        checkRegistration()
+      }
     }
-  }, [activity?.activity_uuid])
+  }, [activity?.activity_uuid, isModerator])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -176,7 +182,9 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
-      const joinUrl = `${window.location.origin}/join/${activity.activity_uuid}`
+      // Ensure we strip any internal 'activity_' prefix if it exists for the clean public link
+      const uuid = activity.activity_uuid?.replace('activity_', '')
+      const joinUrl = `${window.location.origin}/join/${uuid}`
       navigator.clipboard.writeText(joinUrl)
       toast.success('Invite link (Landing Page) copied!')
     }
@@ -214,7 +222,7 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   useEffect(() => {
     if (
       (status === 'LIVE' || isAdminEnteringEarly) &&
-      isRegistered &&
+      (isRegistered || isModerator) &&
       typeof window !== 'undefined'
     ) {
       const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
@@ -257,27 +265,35 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
       const loadAPI = () => {
         // @ts-ignore
         if (window.JitsiMeetExternalAPI && jitsiContainerRef.current) {
+          if (jitsiApiRef.current) return // Already initialized
+
           // Re-validate parentNode right before call
           const finalOptions = {
             ...options,
             parentNode: jitsiContainerRef.current,
           }
           // @ts-ignore
-          const api = new window.JitsiMeetExternalAPI(domain, finalOptions)
+          jitsiApiRef.current = new window.JitsiMeetExternalAPI(
+            domain,
+            finalOptions
+          )
 
           // AUTOMATION: If current user is a moderator and auto_stream is enabled
-          api.addEventListener('videoConferenceJoined', () => {
+          jitsiApiRef.current.addEventListener('videoConferenceJoined', () => {
             if (
               isModerator &&
               details.auto_stream_enabled &&
               details.youtube_stream_key
             ) {
-              api.executeCommand('startRecording', {
+              jitsiApiRef.current.executeCommand('startRecording', {
                 mode: 'stream',
                 youtubeStreamKey: details.youtube_stream_key,
               })
             }
           })
+        } else {
+          // Retry logic if window.JitsiMeetExternalAPI is not yet defined
+          setTimeout(loadAPI, 100)
         }
       }
 
@@ -296,6 +312,10 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
 
       return () => {
         // Optimization: Don't remove script, just clear container
+        if (jitsiApiRef.current) {
+          jitsiApiRef.current.dispose()
+          jitsiApiRef.current = null
+        }
         if (container) container.innerHTML = ''
       }
     }
@@ -321,37 +341,49 @@ function LiveSessionActivity({ activity, course }: LiveSessionActivityProps) {
   return (
     <div className="w-full h-full max-w-7xl mx-auto p-4 md:p-8 overflow-y-auto">
       <AnimatePresence mode="wait">
-        {status === 'UPCOMING' && (
+        {status === 'UPCOMING' && !isAdminEnteringEarly && (
           <motion.div
             key="upcoming"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="bg-white border border-zinc-200 rounded-3xl p-12 text-center shadow-xl space-y-8"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            className="bg-white/70 backdrop-blur-xl border border-zinc-200 rounded-[40px] p-10 md:p-20 text-center shadow-2xl space-y-10 max-w-4xl mx-auto"
           >
-            <div className="mx-auto w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center animate-bounce">
-              <Calendar size={48} />
+            <div className="mx-auto w-20 h-20 bg-zinc-900 text-white rounded-[28px] flex items-center justify-center shadow-xl rotate-3">
+              <Calendar size={32} />
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-4xl font-extrabold text-zinc-900 tracking-tight">
+            <div className="space-y-3">
+              <h1 className="text-3xl md:text-5xl font-black text-zinc-900 tracking-tighter leading-tight">
                 {activity.name}
               </h1>
-              <p className="text-zinc-500 font-medium tracking-wide flex items-center justify-center gap-2">
-                <Clock size={16} /> Starts at {startTime.toLocaleString()}
-              </p>
+              <div className="flex items-center justify-center gap-4 text-zinc-500 text-sm font-bold uppercase tracking-widest">
+                <span className="flex items-center gap-2">
+                  <Clock size={16} className="text-zinc-400" />{' '}
+                  {startTime.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+                <span className="w-1 h-1 bg-zinc-300 rounded-full" />
+                <span>
+                  {startTime.toLocaleDateString([], {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 max-w-md mx-auto">
+            <div className="grid grid-cols-4 gap-4 max-w-sm mx-auto">
               {['days', 'hours', 'minutes', 'seconds'].map((unit) => (
-                <div
-                  key={unit}
-                  className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-                >
-                  <div className="text-3xl font-black text-zinc-900">
-                    {timeLeft?.[unit] || 0}
+                <div key={unit} className="space-y-2">
+                  <div className="bg-zinc-100/50 rounded-2xl p-4 border border-zinc-200/50 backdrop-blur-sm">
+                    <div className="text-2xl font-black text-zinc-900 tabular-nums">
+                      {timeLeft?.[unit] || 0}
+                    </div>
                   </div>
-                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                  <div className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">
                     {unit}
                   </div>
                 </div>

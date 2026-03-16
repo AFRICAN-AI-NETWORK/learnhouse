@@ -51,7 +51,9 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
     query = query.where(UserOrganization.org_id == campaign.org_id)
     
     if campaign.target_type == CampaignTargetType.WAITLIST:
-        query = query.where(User.user_status == "WAITLIST")
+        query = query.where(
+            User.user_status.in_(["WAITLIST", "WAITLIST_ACTIVATED"])
+        )
     
     elif campaign.target_type == CampaignTargetType.COURSE:
         course_uuid = campaign.target_metadata.get("course_uuid")

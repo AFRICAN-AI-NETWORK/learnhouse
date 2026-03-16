@@ -20,7 +20,17 @@ class YouTubeService:
         Returns the videoId and the Stream Key.
         """
         try:
-            # 1. Create the Live Broadcast
+            # Ensure start_time is in ISO 8601 UTC format (suffix Z) if not already
+            if start_time and not start_time.endswith('Z'):
+                # Many browsers/pickers omit seconds or the Z.
+                # If it's 2024-03-16T12:00, we make it 2024-03-16T12:00:00Z
+                if len(start_time) == 16: # YYYY-MM-DDTHH:MM
+                    start_time += ":00Z"
+                elif 'T' in start_time and 'Z' not in start_time:
+                    start_time += "Z"
+
+            print(f"Creating YouTube Broadcast: {title} at {start_time}")
+            
             broadcast_body = {
                 'snippet': {
                     'title': title,

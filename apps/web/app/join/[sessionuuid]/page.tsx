@@ -19,8 +19,9 @@ export default function JoinSessionLanding() {
   useEffect(() => {
     const loadActivity = async () => {
       try {
+        const cleanId = sessionUuid?.replace('activity_', '')
         // Fetching activity details (Publicly accessible part)
-        const res = await getActivityByID(sessionUuid, null, '')
+        const res = await getActivityByID(cleanId, null, '')
         setActivity(res)
       } catch (e) {
         // Suppress errors for clean UI

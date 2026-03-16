@@ -27,6 +27,7 @@ function LiveSessionModal({
   const session = useLHSession() as any
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [startDate, setStartDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [duration, setDuration] = useState('60')
   const [chatEnabled, setChatEnabled] = useState(true)
@@ -35,14 +36,14 @@ function LiveSessionModal({
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    if (!name || !startTime) return
+    if (!name || !startDate || !startTime) return
 
     setIsSubmitting(true)
 
     // Details for the JSON field in DB
     const details = {
       live_url: '', // Default to Jitsi room if empty
-      start_time: startTime,
+      start_time: `${startDate}T${startTime}`,
       duration: parseInt(duration),
       external_signup_enabled: registrationEnabled,
       chat_enabled: chatEnabled,
@@ -108,20 +109,40 @@ function LiveSessionModal({
         </div>
       </FormField>
 
-      <div className="grid grid-cols-2 gap-6">
-        <FormField name="live-activity-start-time">
+      <div className="grid grid-cols-3 gap-6">
+        <FormField name="live-activity-start-date">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <FormLabel className="flex items-center gap-2 text-zinc-900 font-bold text-sm">
                 <Calendar size={16} className="text-zinc-500" />
-                Start Time
+                Date
+              </FormLabel>
+            </div>
+            <Form.Control asChild>
+              <Input
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                type="date"
+                required
+                className="pl-4 pr-4 py-3 bg-zinc-50 border-zinc-200 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all rounded-xl w-full"
+              />
+            </Form.Control>
+          </div>
+        </FormField>
+
+        <FormField name="live-activity-start-time">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <FormLabel className="flex items-center gap-2 text-zinc-900 font-bold text-sm">
+                <Clock size={16} className="text-zinc-500" />
+                Time
               </FormLabel>
             </div>
             <Form.Control asChild>
               <Input
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                type="datetime-local"
+                type="time"
                 required
                 className="pl-4 pr-4 py-3 bg-zinc-50 border-zinc-200 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all rounded-xl w-full"
               />
@@ -221,11 +242,11 @@ function LiveSessionModal({
           <motion.button
             whileHover={{ scale: 1.01, translateY: -0.5 }}
             whileTap={{ scale: 0.99 }}
-            disabled={isSubmitting || !name || !startTime}
+            disabled={isSubmitting || !name || !startDate || !startTime}
             className={`
               relative overflow-hidden group py-3 px-10 rounded-xl font-bold text-sm tracking-tight transition-all duration-300 flex items-center justify-center shadow-lg active:shadow-sm
               ${
-                isSubmitting || !name || !startTime
+                isSubmitting || !name || !startDate || !startTime
                   ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed shadow-none'
                   : 'bg-zinc-900 text-white hover:bg-black'
               }
