@@ -34,9 +34,9 @@ import { toast } from 'react-hot-toast'
 export default function CommunicationsPage({
   params,
 }: {
-  params: { orgslug: string }
+  params: Promise<{ orgslug: string }>
 }) {
-  const { orgslug } = params
+  const { orgslug } = React.use(params)
   const org = useOrg() as any
   const session = useLHSession() as any
   const access_token: string = session?.data?.tokens?.access_token ?? ''
