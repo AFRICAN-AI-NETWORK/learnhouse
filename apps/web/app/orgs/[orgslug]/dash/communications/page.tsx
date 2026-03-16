@@ -12,13 +12,17 @@ import {
   ChevronRight,
 } from 'lucide-react'
 // Imports removed to fix lint warnings
-import { createCampaign, getCampaigns } from '@services/communications'
+import {
+  createCampaign,
+  getCampaigns,
+  getLiveSessions,
+} from '@services/communications'
 import { getOrgCourses } from '@services/courses/courses'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { BarLoader } from 'react-spinners'
+import useSWR, { useSWRConfig } from 'swr'
 
 export default function CommunicationsPage() {
   const org = useOrg() as any
@@ -30,56 +34,33 @@ export default function CommunicationsPage() {
   const [targetValue, setTargetValue] = useState('')
   const [includeChat, setIncludeChat] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [campaigns, setCampaigns] = useState<any[]>([])
-  const [courses, setCourses] = useState<any[]>([])
-  const [liveSessions, setLiveSessions] = useState<any[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(true)
+  const { mutate } = useSWRConfig()
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        console.log('[loadInitialData] Starting fetch for org:', org?.org_slug)
-        const [campaignsRes, coursesRes] = await Promise.all([
-          getCampaigns(access_token),
-          getOrgCourses(org?.org_slug, null, access_token),
-        ])
+  // Use SWR for stable data fetching
+  const {
+    data: campaigns = [],
+    error: campaignsError,
+    isLoading: loadingCampaigns,
+  } = useSWR(
+    org?.org_slug && access_token
+      ? [`${org.org_slug}_campaigns`, access_token]
+      : null,
+    () => getCampaigns(access_token, org?.org_slug)
+  )
 
-        console.log('[loadInitialData] Response:', { campaignsRes, coursesRes })
+  const { data: courses = [] } = useSWR(
+    org?.org_slug && access_token
+      ? [`${org.org_slug}_courses`, access_token]
+      : null,
+    () => getOrgCourses(org?.org_slug, null, access_token)
+  )
 
-        // Check if error
-        if (campaignsRes?.detail) throw new Error(campaignsRes.detail)
-
-        setCampaigns(Array.isArray(campaignsRes) ? campaignsRes : [])
-        setCourses(Array.isArray(coursesRes) ? coursesRes : [])
-
-        // Extract live sessions from courses
-        const sessions: any[] = []
-        if (Array.isArray(coursesRes)) {
-          coursesRes.forEach((course: any) => {
-            course.chapters?.forEach((chapter: any) => {
-              chapter.activities?.forEach((activity: any) => {
-                if (activity.activity_type === 'TYPE_LIVE_SESSION') {
-                  sessions.push({
-                    ...activity,
-                    course_name: course.name,
-                  })
-                }
-              })
-            })
-          })
-        }
-        setLiveSessions(sessions)
-        console.log('[loadInitialData] Success!')
-      } catch (e) {
-        console.error('[loadInitialData] Error:', e)
-      } finally {
-        setLoadingHistory(false)
-      }
-    }
-    if (org?.org_slug) {
-      loadInitialData()
-    }
-  }, [org?.org_slug, access_token])
+  const { data: liveSessions = [] } = useSWR(
+    org?.org_slug && access_token
+      ? [`${org.org_slug}_sessions`, access_token]
+      : null,
+    () => getLiveSessions(access_token, org?.org_slug)
+  )
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,12 +75,11 @@ export default function CommunicationsPage() {
         target_metadata: { value: targetValue },
         send_via_chat: includeChat,
       }
-      await createCampaign(data, access_token)
+      await createCampaign(data, access_token, org?.org_slug)
       toast.success('Campaign initiated! Sending messages in background.')
 
-      // Refresh history
-      const updated = await getCampaigns(access_token)
-      setCampaigns(updated || [])
+      // Revalidate history
+      mutate([`${org.org_slug}_campaigns`, access_token])
 
       // Reset form
       setSubject('')
@@ -261,14 +241,14 @@ export default function CommunicationsPage() {
           </form>
         </div>
 
-        {/* History Sidebar */}
+        {/* Sidebar */}
         <div className="space-y-6">
           <div className="bg-zinc-50 rounded-3xl p-6 border border-zinc-100 space-y-4">
             <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
               <History size={16} /> Campaign History
             </div>
 
-            {loadingHistory ? (
+            {loadingCampaigns ? (
               <div className="text-center py-12">
                 <BarLoader width={100} color="#e5e7eb" />
               </div>
@@ -280,7 +260,7 @@ export default function CommunicationsPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {campaigns.map((camp: any) => (
                   <div
                     key={camp.id}
