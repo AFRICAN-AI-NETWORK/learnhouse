@@ -44,11 +44,17 @@ export default function JoinSessionLanding() {
       alert('Please enter your email to continue.')
       return
     }
-    // Encode the redirect URL back to this session's activity page in the dashboard/course view
-    // Assuming the path follows /orgs/[slug]/dash/course/[uuid]/activity/[id]
-    // but the landing page doesn't know the exact path easily.
-    // However, the signup page usually takes a redirectUrl.
-    const signupUrl = `/auth/signup?email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(name.split(' ')[0] || '')}&last_name=${encodeURIComponent(name.split(' ').slice(1).join(' ') || '')}`
+    const courseUuid = activity?.course_uuid?.replace('course_', '') || ''
+    const activityUuid = activity?.activity_uuid?.replace('activity_', '') || ''
+    const orgSlug = activity?.org_slug || 'aan'
+
+    const activityPath = `${getUriWithOrg(orgSlug, '')}/course/${courseUuid}/activity/${activityUuid}`
+
+    const nameParts = name.trim().split(/\s+/)
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+
+    const signupUrl = `/auth/signup?orgslug=${encodeURIComponent(orgSlug)}&email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(firstName)}&last_name=${encodeURIComponent(lastName)}&redirectUrl=${encodeURIComponent(activityPath)}`
     window.location.href = signupUrl
   }
 

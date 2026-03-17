@@ -96,6 +96,14 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orgSlug = searchParams.get('orgslug') || ''
+  const redirectUrlParam = searchParams.get('redirectUrl') || ''
+
+  const getSafePostSignupRedirect = () => {
+    if (!redirectUrlParam || !redirectUrlParam.startsWith('/')) {
+      return `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
+    }
+    return redirectUrlParam
+  }
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
@@ -153,10 +161,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const formik = useFormik({
     initialValues: {
       username: '',
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
-      first_name: '',
-      last_name: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
       bio: '',
       org_slug: orgSlug,
       org_id: waitlistDetails?.org_id || 0,
@@ -206,9 +214,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           }
           setMessage('success')
           setTimeout(() => {
-            router.push(
-              `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-            )
+            router.push(getSafePostSignupRedirect())
           }, 2000)
         } else {
           const data = await res.json()
@@ -243,9 +249,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               }
               setMessage('success')
               setTimeout(() => {
-                router.push(
-                  `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-                )
+                router.push(getSafePostSignupRedirect())
               }, 2000)
             } else {
               const retryData = await retryRes.json()
@@ -333,9 +337,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           <CountdownTimer launchDate={launchDate} />
         </div>
 
-        <p className="text-xs text-slate-500">
-          Redirecting to countdown page...
-        </p>
+        <p className="text-xs text-slate-500">Redirecting you now...</p>
       </div>
     )
   }
