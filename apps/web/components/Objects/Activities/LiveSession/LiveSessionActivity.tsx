@@ -147,6 +147,9 @@ function LiveSessionActivity({
       if (isConcludedManually || activity?.details?.is_concluded_manually) {
         setStatus('ENDED')
         clearInterval(timer)
+        if (!session.data?.user || session.data?.user?.is_waitlist) {
+          window.location.href = `/auth/signup?email=${session.data?.user?.email || ''}`
+        }
         return
       }
 
@@ -165,6 +168,9 @@ function LiveSessionActivity({
       } else {
         setStatus('ENDED')
         clearInterval(timer)
+        if (!session.data?.user || session.data?.user?.is_waitlist) {
+          window.location.href = `/auth/signup?email=${session.data?.user?.email || ''}`
+        }
       }
     }, 1000)
     return () => clearInterval(timer)
@@ -173,6 +179,7 @@ function LiveSessionActivity({
     endTime,
     isConcludedManually,
     activity?.details?.is_concluded_manually,
+    session.data?.user,
   ])
 
   const handleRegister = async () => {
