@@ -2,7 +2,8 @@ import os
 import json
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-# The scopes required for YouTube Live Session automation
+# The scopes required for YouTube automation.
+# 'youtube.force-ssl' is the most reliable scope for creating and managing Live Broadcasts.
 SCOPES = [
     'https://www.googleapis.com/auth/youtube.force-ssl',
     'https://www.googleapis.com/auth/youtube.readonly'
@@ -11,9 +12,8 @@ SCOPES = [
 def main():
     print("YouTube Token Generator for LearnHouse")
     print("-" * 40)
-    print("1. Ensure you have your 'client_secrets.json' file ready.")
-    print("2. This script will open a browser for you to log in.")
-    print("3. After login, it will print the FULL JSON you need to paste into LearnHouse.")
+    print("NOTE: For production, you will need to justify the 'force-ssl' scope.")
+    print("Explain that LearnHouse automates Live Session creation for workshops.")
     print("-" * 40)
 
     secret_file = input("Enter path to client_secrets.json (default: client_secrets.json): ").strip() or "client_secrets.json"
