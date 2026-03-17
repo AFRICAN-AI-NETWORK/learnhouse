@@ -56,11 +56,18 @@ function LiveSessionActivity({
   const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
 
   // Stable iframe src — never changes for the lifetime of this activity
-  const jitsiSrc = useMemo(
-    () =>
-      `https://${jitsiDomain}/${encodeURIComponent(roomName)}#config.prejoinPageEnabled=false`,
-    [jitsiDomain, roomName]
-  )
+  const jitsiSrc = useMemo(() => {
+    const config = [
+      'config.prejoinPageEnabled=false',
+      'config.inactivityTimeout=3600',
+      'config.disableDeepLinking=true',
+      'config.disablePolls=true',
+      'config.disableReactions=true',
+      'config.disableInviteFunctions=true',
+      'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","hangup","tileview","select-background","fullscreen"]',
+    ]
+    return `https://${jitsiDomain}/${encodeURIComponent(roomName)}#${config.join('&')}`
+  }, [jitsiDomain, roomName])
 
   const isModerator = useMemo(() => {
     if (session.data?.user?.is_admin || session.data?.user?.is_instructor)
@@ -138,6 +145,22 @@ function LiveSessionActivity({
       if (isConcludedManually || activity?.details?.is_concluded_manually) {
         setStatus('ENDED')
         clearInterval(timer)
+        if (!session.data?.user || session.data?.user?.is_waitlist) {
+          const orgSlug = activity?.org_slug || 'aan'
+          const query = new URLSearchParams({
+            orgslug: orgSlug,
+            email: session.data?.user?.email || '',
+            first_name:
+              session.data?.user?.first_name ||
+              session.data?.user?.display_name?.split(' ')[0] ||
+              '',
+            last_name:
+              session.data?.user?.last_name ||
+              session.data?.user?.display_name?.split(' ').slice(1).join(' ') ||
+              '',
+          })
+          window.location.href = `/auth/signup?${query.toString()}`
+        }
         return
       }
       const now = new Date()
@@ -155,6 +178,22 @@ function LiveSessionActivity({
       } else {
         setStatus('ENDED')
         clearInterval(timer)
+        if (!session.data?.user || session.data?.user?.is_waitlist) {
+          const orgSlug = activity?.org_slug || 'aan'
+          const query = new URLSearchParams({
+            orgslug: orgSlug,
+            email: session.data?.user?.email || '',
+            first_name:
+              session.data?.user?.first_name ||
+              session.data?.user?.display_name?.split(' ')[0] ||
+              '',
+            last_name:
+              session.data?.user?.last_name ||
+              session.data?.user?.display_name?.split(' ').slice(1).join(' ') ||
+              '',
+          })
+          window.location.href = `/auth/signup?${query.toString()}`
+        }
       }
     }, 1000)
     return () => clearInterval(timer)
@@ -163,6 +202,7 @@ function LiveSessionActivity({
     endTime,
     isConcludedManually,
     activity?.details?.is_concluded_manually,
+    session.data?.user,
   ])
 
   const handleRegister = async () => {

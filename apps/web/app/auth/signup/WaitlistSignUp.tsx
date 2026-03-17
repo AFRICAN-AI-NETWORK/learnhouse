@@ -161,10 +161,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const formik = useFormik({
     initialValues: {
       username: '',
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
-      first_name: '',
-      last_name: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
       bio: '',
       org_slug: orgSlug,
       org_id: waitlistDetails?.org_id || 0,

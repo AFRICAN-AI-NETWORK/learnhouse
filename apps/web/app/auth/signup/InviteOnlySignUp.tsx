@@ -1,6 +1,6 @@
 'use client'
 import { useFormik } from 'formik'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect } from 'react'
 import FormLayout, {
   FormField,
@@ -56,16 +56,17 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
   const router = useRouter()
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
+  const searchParams = useSearchParams()
   const formik = useFormik({
     initialValues: {
       org_slug: org?.slug,
       org_id: org?.id,
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
       username: '',
       bio: '',
-      first_name: '',
-      last_name: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
     },
     validate: (values) => validate(values, t),
     enableReinitialize: true,

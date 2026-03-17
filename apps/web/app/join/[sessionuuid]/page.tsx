@@ -44,8 +44,17 @@ export default function JoinSessionLanding() {
       alert('Please enter your email to continue.')
       return
     }
-    const activityPath = `${getUriWithOrg(activity.org_slug || 'aan', '')}/course/${activity.course_uuid.replace('course_', '')}/activity/${activity.activity_uuid.replace('activity_', '')}`
-    const signupUrl = `/auth/signup?orgslug=${encodeURIComponent(activity.org_slug || 'aan')}&email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(name.split(' ')[0] || '')}&last_name=${encodeURIComponent(name.split(' ').slice(1).join(' ') || '')}&redirectUrl=${encodeURIComponent(activityPath)}`
+    const courseUuid = activity?.course_uuid?.replace('course_', '') || ''
+    const activityUuid = activity?.activity_uuid?.replace('activity_', '') || ''
+    const orgSlug = activity?.org_slug || 'aan'
+
+    const activityPath = `${getUriWithOrg(orgSlug, '')}/course/${courseUuid}/activity/${activityUuid}`
+
+    const nameParts = name.trim().split(/\s+/)
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+
+    const signupUrl = `/auth/signup?orgslug=${encodeURIComponent(orgSlug)}&email=${encodeURIComponent(email)}&first_name=${encodeURIComponent(firstName)}&last_name=${encodeURIComponent(lastName)}&redirectUrl=${encodeURIComponent(activityPath)}`
     window.location.href = signupUrl
   }
 
