@@ -255,17 +255,26 @@ function LiveSessionActivity({
     }
   }
 
-  // Remove script loading, just check for API
   useEffect(() => {
     if (typeof window === 'undefined') return
     // @ts-ignore
     if (window.JitsiMeetExternalAPI) {
       setJitsiReady(true)
     } else {
-      // Wait for script to load
-      const handler = () => setJitsiReady(true)
-      window.addEventListener('JITSI_API_LOADED', handler)
-      return () => window.removeEventListener('JITSI_API_LOADED', handler)
+      // Dynamic script injection
+      const script = document.createElement('script')
+      script.src = 'https://meet.jit.si/external_api.js'
+      script.async = true
+      script.onload = () => {
+        setJitsiReady(true)
+      }
+      document.body.appendChild(script)
+
+      return () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script)
+        }
+      }
     }
   }, [])
 
