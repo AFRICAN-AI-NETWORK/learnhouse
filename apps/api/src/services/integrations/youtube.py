@@ -11,6 +11,22 @@ class YouTubeService:
         credentials_json: A JSON string containing client_id, client_secret, refresh_token, etc.
         """
         creds_data = json.loads(credentials_json)
+        
+        # Google Console sometimes wraps credentials in 'installed' or 'web'
+        if 'installed' in creds_data:
+            creds_data = creds_data['installed']
+        elif 'web' in creds_data:
+            creds_data = creds_data['web']
+            
+        # Validate that we have the required fields
+        required_fields = ['client_id', 'client_secret', 'refresh_token']
+        missing = [f for f in required_fields if f not in creds_data]
+        if missing:
+            raise ValueError(
+                f"YouTube integration key is missing required fields: {', '.join(missing)}. "
+                "Ensure you have performed the OAuth authorization flow and included the 'refresh_token'."
+            )
+
         self.credentials = Credentials.from_authorized_user_info(creds_data)
         self.youtube = build('youtube', 'v3', credentials=self.credentials)
 
