@@ -64,3 +64,9 @@ REFERRAL_SYSTEM_IMPLEMENTATION_PLAN.md
 .agent/implementation_plans/CHAT_SYSTEM_IMPLEMENTATION_PLAN.md
 .agent/implementation_plans/browserconsolelogs.txt
 .agent/implementation_plans/term.txt
+# agent implementation plans
+.agent/implementation_plans/
+
+# Google OAuth secrets
+client_secrets.json
+token.json
