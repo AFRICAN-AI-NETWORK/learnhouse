@@ -56,11 +56,18 @@ function LiveSessionActivity({
   const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
 
   // Stable iframe src — never changes for the lifetime of this activity
-  const jitsiSrc = useMemo(
-    () =>
-      `https://${jitsiDomain}/${encodeURIComponent(roomName)}#config.prejoinPageEnabled=false`,
-    [jitsiDomain, roomName]
-  )
+  const jitsiSrc = useMemo(() => {
+    const config = [
+      'config.prejoinPageEnabled=false',
+      'config.inactivityTimeout=3600',
+      'config.disableDeepLinking=true',
+      'config.disablePolls=true',
+      'config.disableReactions=true',
+      'config.disableInviteFunctions=true',
+      'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","hangup","tileview","select-background","fullscreen"]',
+    ]
+    return `https://${jitsiDomain}/${encodeURIComponent(roomName)}#${config.join('&')}`
+  }, [jitsiDomain, roomName])
 
   const isModerator = useMemo(() => {
     if (session.data?.user?.is_admin || session.data?.user?.is_instructor)
