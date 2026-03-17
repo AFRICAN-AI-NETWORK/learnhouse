@@ -139,7 +139,20 @@ function LiveSessionActivity({
         setStatus('ENDED')
         clearInterval(timer)
         if (!session.data?.user || session.data?.user?.is_waitlist) {
-          window.location.href = `/auth/signup?email=${session.data?.user?.email || ''}`
+          const orgSlug = activity?.org_slug || 'aan'
+          const query = new URLSearchParams({
+            orgslug: orgSlug,
+            email: session.data?.user?.email || '',
+            first_name:
+              session.data?.user?.first_name ||
+              session.data?.user?.display_name?.split(' ')[0] ||
+              '',
+            last_name:
+              session.data?.user?.last_name ||
+              session.data?.user?.display_name?.split(' ').slice(1).join(' ') ||
+              '',
+          })
+          window.location.href = `/auth/signup?${query.toString()}`
         }
         return
       }
@@ -159,7 +172,20 @@ function LiveSessionActivity({
         setStatus('ENDED')
         clearInterval(timer)
         if (!session.data?.user || session.data?.user?.is_waitlist) {
-          window.location.href = `/auth/signup?email=${session.data?.user?.email || ''}`
+          const orgSlug = activity?.org_slug || 'aan'
+          const query = new URLSearchParams({
+            orgslug: orgSlug,
+            email: session.data?.user?.email || '',
+            first_name:
+              session.data?.user?.first_name ||
+              session.data?.user?.display_name?.split(' ')[0] ||
+              '',
+            last_name:
+              session.data?.user?.last_name ||
+              session.data?.user?.display_name?.split(' ').slice(1).join(' ') ||
+              '',
+          })
+          window.location.href = `/auth/signup?${query.toString()}`
         }
       }
     }, 1000)
