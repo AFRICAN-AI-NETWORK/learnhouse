@@ -64,3 +64,4 @@ REFERRAL_SYSTEM_IMPLEMENTATION_PLAN.md
 .agent/implementation_plans/CHAT_SYSTEM_IMPLEMENTATION_PLAN.md
 .agent/implementation_plans/browserconsolelogs.txt
 .agent/implementation_plans/term.txt
+apps/api/client_secrets.json
