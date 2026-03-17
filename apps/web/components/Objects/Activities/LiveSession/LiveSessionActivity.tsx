@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useOrg } from '@components/Contexts/OrgContext'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -36,7 +35,6 @@ function LiveSessionActivity({
   isFocusMode = false,
   onFocusModeChange,
 }: LiveSessionActivityProps) {
-  const org = useOrg() as any
   const session = useLHSession() as any
   const [isRegistered, setIsRegistered] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -46,20 +44,27 @@ function LiveSessionActivity({
   )
   const [isAdminEnteringEarly, setIsAdminEnteringEarly] = useState(false)
   const [isEnding, setIsEnding] = useState(false)
+  const [hasLeft, setHasLeft] = useState(false)
   const [isConcludedManually, setIsConcludedManually] = useState(
     activity?.details?.is_concluded_manually || false
   )
   const [showFloatingButton, setShowFloatingButton] = useState(false)
-  const [jitsiReady, setJitsiReady] = useState(false)
-  const jitsiContainerRef = useRef<HTMLDivElement>(null)
-  const jitsiApiRef = useRef<any>(null)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
 
-  const isModerator = React.useMemo(() => {
-    // 1. Check direct flags (Legacy/Quick check)
+  const details = activity?.details || {}
+  const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
+  const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
+
+  // Stable iframe src — never changes for the lifetime of this activity
+  const jitsiSrc = useMemo(
+    () =>
+      `https://${jitsiDomain}/${encodeURIComponent(roomName)}#config.prejoinPageEnabled=false`,
+    [jitsiDomain, roomName]
+  )
+
+  const isModerator = useMemo(() => {
     if (session.data?.user?.is_admin || session.data?.user?.is_instructor)
       return true
-
-    // 2. Check granular roles in current organization
     const staffRoles = [
       'Admin',
       'Maintainer',
@@ -70,50 +75,45 @@ function LiveSessionActivity({
       'Community Manager',
       'Lead Instructor',
     ]
-
     return session.data?.roles?.some(
       (r: any) =>
         staffRoles.includes(r.role?.name) && r.org?.id === activity?.org_id
     )
   }, [session.data, activity?.org_id])
 
-  const canEndSession = React.useMemo(() => {
-    // Strictly Admin for ending sessions
+  const canEndSession = useMemo(() => {
     if (session.data?.user?.is_admin) return true
     return session.data?.roles?.some(
       (r: any) => r.role?.name === 'Admin' && r.org?.id === activity?.org_id
     )
   }, [session.data, activity?.org_id])
 
-  const details = activity?.details || {}
-  const startTime = React.useMemo(
+  const startTime = useMemo(
     () => new Date(details.start_time),
     [details.start_time]
   )
-  const endTime = React.useMemo(
+  const endTime = useMemo(
     () => new Date(startTime.getTime() + (details.duration || 60) * 60000),
     [startTime, details.duration]
   )
 
-  // ESC key listener and floating button for focus mode
+  const shouldPrewarm =
+    (isRegistered || isModerator) && !hasLeft && status !== 'ENDED'
+  const shouldShowMeeting =
+    shouldPrewarm && (status === 'LIVE' || isAdminEnteringEarly)
+
   useEffect(() => {
     if (!onFocusModeChange) return
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onFocusModeChange(false)
-      }
+      if (e.key === 'Escape') onFocusModeChange(false)
     }
-
     const handleMouseMove = (e: MouseEvent) => {
-      const isTopArea = e.clientY < 80
-      const isRightSide = e.clientX > window.innerWidth * 0.85
-      setShowFloatingButton(isTopArea || isRightSide)
+      setShowFloatingButton(
+        e.clientY < 80 || e.clientX > window.innerWidth * 0.85
+      )
     }
-
     document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('mousemove', handleMouseMove)
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('mousemove', handleMouseMove)
@@ -121,29 +121,20 @@ function LiveSessionActivity({
   }, [onFocusModeChange])
 
   useEffect(() => {
-    const checkRegistration = async () => {
-      try {
-        const res = await checkLiveRegistration(activity.activity_uuid)
-        setIsRegistered(res.registered)
-      } catch (e) {
-        // Registration check failed
-      } finally {
-        setLoading(false)
-      }
+    if (!activity?.activity_uuid) return
+    if (isModerator) {
+      setIsRegistered(true)
+      setLoading(false)
+      return
     }
-    if (activity?.activity_uuid) {
-      if (isModerator) {
-        setIsRegistered(true)
-        setLoading(false)
-      } else {
-        checkRegistration()
-      }
-    }
+    checkLiveRegistration(activity.activity_uuid)
+      .then((res) => setIsRegistered(res.registered))
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [activity?.activity_uuid, isModerator])
 
   useEffect(() => {
     const timer = setInterval(() => {
-      // Priority 1: Manual Conclusion (Check both local state and activity details)
       if (isConcludedManually || activity?.details?.is_concluded_manually) {
         setStatus('ENDED')
         clearInterval(timer)
@@ -152,7 +143,6 @@ function LiveSessionActivity({
         }
         return
       }
-
       const now = new Date()
       if (now < startTime) {
         const diff = startTime.getTime() - now.getTime()
@@ -187,23 +177,25 @@ function LiveSessionActivity({
       await registerForLiveSession(activity.activity_uuid)
       setIsRegistered(true)
       toast.success('Successfully registered!')
-    } catch (e) {
+    } catch {
       toast.error('Registration failed')
     }
   }
 
   const handleEndSession = async () => {
-    const doubleCheck = window.confirm(
-      '⚠️ CRITICAL ACTION: This will close the workshop for ALL students and save the recording to the archive. \n\nAre you absolutely sure you want to END the session for everyone?'
+    if (
+      !window.confirm(
+        '⚠️ CRITICAL ACTION: This will close the workshop for ALL students and save the recording to the archive.\n\nAre you absolutely sure?'
+      )
     )
-    if (!doubleCheck) return
+      return
     setIsEnding(true)
     try {
       await endLiveSession(activity.activity_uuid, session.data.access_token)
       setIsConcludedManually(true)
       setStatus('ENDED')
       toast.success('Workshop concluded and archived.')
-    } catch (e) {
+    } catch {
       toast.error('Failed to conclude session')
     } finally {
       setIsEnding(false)
@@ -215,23 +207,16 @@ function LiveSessionActivity({
       !window.confirm('Leave the room? (The session will continue for others)')
     )
       return
+    setHasLeft(true)
     setIsAdminEnteringEarly(false)
-    // For LIVE status, we just hide the local view
-    if (status === 'LIVE' || isAdminEnteringEarly) {
-      if (jitsiContainerRef.current)
-        jitsiContainerRef.current.innerHTML =
-          '<div class="flex items-center justify-center h-full text-zinc-500 font-bold">You have left the meeting.</div>'
-    }
   }
 
+  const handleRejoin = () => setHasLeft(false)
+
   const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      // Ensure we strip any internal 'activity_' prefix if it exists for the clean public link
-      const uuid = activity.activity_uuid?.replace('activity_', '')
-      const joinUrl = `${window.location.origin}/join/${uuid}`
-      navigator.clipboard.writeText(joinUrl)
-      toast.success('Invite link (Landing Page) copied!')
-    }
+    const uuid = activity.activity_uuid?.replace('activity_', '')
+    navigator.clipboard.writeText(`${window.location.origin}/join/${uuid}`)
+    toast.success('Invite link (Landing Page) copied!')
   }
 
   const handleSetFallbackRecording = async () => {
@@ -240,135 +225,20 @@ function LiveSessionActivity({
       activity?.details?.recording_url || ''
     )
     if (recordingUrl === null) return
-
     const loadingToast = toast.loading('Updating archive...')
     try {
-      const updatedDetails = {
-        ...activity.details,
-        recording_url: recordingUrl,
-      }
       await updateActivity(
-        { details: updatedDetails },
+        { details: { ...activity.details, recording_url: recordingUrl } },
         activity.activity_uuid,
         session.data.access_token
       )
       toast.success('Archive updated! Please refresh to see changes.', {
         id: loadingToast,
       })
-      // Optionally update local state if activity is fully controlled by parent,
-      // otherwise refresh is needed unless we have a refresh function passed.
-    } catch (e) {
+    } catch {
       toast.error('Failed to update archive', { id: loadingToast })
     }
   }
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    // @ts-ignore
-    if (window.JitsiMeetExternalAPI) {
-      setJitsiReady(true)
-    } else {
-      // Dynamic script injection
-      const script = document.createElement('script')
-      script.src = 'https://meet.jit.si/external_api.js'
-      script.async = true
-      script.onload = () => {
-        setJitsiReady(true)
-      }
-      document.body.appendChild(script)
-
-      return () => {
-        if (script.parentNode) {
-          script.parentNode.removeChild(script)
-        }
-      }
-    }
-  }, [])
-
-  // Jitsi Integration — initialize the meeting once the API is ready
-  useEffect(() => {
-    if (
-      (status === 'LIVE' || isAdminEnteringEarly) &&
-      (isRegistered || isModerator) &&
-      jitsiReady &&
-      typeof window !== 'undefined'
-    ) {
-      const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
-      const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
-
-      if (!jitsiContainerRef.current) return
-      if (jitsiApiRef.current) return // Already initialized
-
-      const options = {
-        roomName: roomName,
-        width: '100%',
-        height: '100%',
-        parentNode: jitsiContainerRef.current,
-        appId: process.env.NEXT_PUBLIC_JITSI_APP_ID,
-        userInfo: {
-          displayName: session.data?.user?.display_name || 'Student',
-        },
-        interfaceConfigOverwrite: {
-          TOOLBAR_BUTTONS: [
-            'microphone',
-            'camera',
-            'closedcaptions',
-            'desktop',
-            'fullscreen',
-            'fstats',
-            'whiteboard',
-            'raisehand',
-            'videoquality',
-            'filmstrip',
-            'tileview',
-            'chat',
-            'settings',
-            'livestreaming',
-            'recording',
-          ],
-          SET_FILMSTRIP_ENABLED: true,
-        },
-      }
-
-      // @ts-ignore
-      jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options)
-
-      // AUTOMATION: If current user is a moderator and auto_stream is enabled
-      jitsiApiRef.current.addEventListener('videoConferenceJoined', () => {
-        if (
-          isModerator &&
-          details.auto_stream_enabled &&
-          details.youtube_stream_key
-        ) {
-          jitsiApiRef.current.executeCommand('startRecording', {
-            mode: 'stream',
-            youtubeStreamKey: details.youtube_stream_key,
-          })
-        }
-      })
-
-      const container = jitsiContainerRef.current
-
-      return () => {
-        if (jitsiApiRef.current) {
-          jitsiApiRef.current.dispose()
-          jitsiApiRef.current = null
-        }
-        if (container) container.innerHTML = ''
-      }
-    }
-  }, [
-    status,
-    isRegistered,
-    jitsiReady,
-    activity.activity_uuid,
-    details.jitsi_room,
-    details.auto_stream_enabled,
-    details.youtube_stream_key,
-    session.data?.user?.display_name,
-    isModerator,
-    isAdminEnteringEarly,
-  ])
 
   if (loading)
     return (
@@ -399,6 +269,13 @@ function LiveSessionActivity({
 
   return (
     <div className="w-full h-full max-w-7xl mx-auto p-4 md:p-8 overflow-y-auto">
+      <link
+        rel="preconnect"
+        href={`https://${jitsiDomain}`}
+        crossOrigin="anonymous"
+      />
+      <link rel="dns-prefetch" href={`https://${jitsiDomain}`} />
+
       <AnimatePresence mode="wait">
         {status === 'UPCOMING' && !isAdminEnteringEarly && (
           <motion.div
@@ -458,10 +335,20 @@ function LiveSessionActivity({
               </button>
             ) : (
               <div className="space-y-4">
-                <div className="text-emerald-600 font-bold bg-emerald-50 py-3 px-6 rounded-xl inline-block border border-emerald-100">
-                  ✓ You are registered! Come back when it's time.
+                <div className="text-emerald-600 font-bold bg-emerald-50 py-3 px-6 rounded-xl inline-flex items-center gap-3 border border-emerald-100">
+                  ✓ You are registered! Come back when it&apos;s time.
+                  {/* Background load progress indicator */}
+                  {!iframeLoaded ? (
+                    <span className="flex items-center gap-1.5 text-zinc-400 text-xs font-medium">
+                      <Loader2 size={12} className="animate-spin" />
+                      Pre-loading session…
+                    </span>
+                  ) : (
+                    <span className="text-emerald-500 text-xs font-bold">
+                      ⚡ Session ready
+                    </span>
+                  )}
                 </div>
-
                 {isModerator && (
                   <div className="block pt-4">
                     <button
@@ -482,11 +369,10 @@ function LiveSessionActivity({
             key="live"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className={`grid grid-cols-1 lg:grid-cols-4 gap-6 relative ${
+            className={`grid grid-cols-1 lg:grid-cols-4 gap-6 ${
               isFocusMode ? 'h-[90vh]' : 'h-[65vh]'
             }`}
           >
-            {/* Floating Focus Mode Button */}
             {onFocusModeChange && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -501,29 +387,58 @@ function LiveSessionActivity({
                 }
               >
                 {isFocusMode ? (
-                  <Minimize2 size={20} className="text-white" />
+                  <Minimize2 size={20} />
                 ) : (
-                  <Maximize2 size={20} className="text-white" />
+                  <Maximize2 size={20} />
                 )}
                 <span className="absolute -bottom-8 right-0 bg-zinc-900 text-white text-[9px] font-bold px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   {isFocusMode ? 'Exit (ESC)' : 'Enter'}
                 </span>
               </motion.button>
             )}
+
             <div
               className="lg:col-span-3 bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-zinc-100"
-              ref={jitsiContainerRef}
+              style={{ height: isFocusMode ? '90vh' : '65vh', minHeight: 300 }}
             >
-              {/* Jitsi loading overlay */}
-              {!jitsiApiRef.current && isRegistered && (
-                <div className="absolute inset-0 z-10 bg-zinc-900 flex flex-col items-center justify-center gap-4">
-                  <Loader2 size={32} className="animate-spin text-white" />
-                  <p className="text-sm font-bold text-zinc-400 tracking-tight">
-                    Loading live session interface&hellip;
+              {/* Jitsi Iframe: always mounted, visibility toggled */}
+              {shouldPrewarm && !hasLeft && (
+                <iframe
+                  key={activity.activity_uuid}
+                  src={jitsiSrc}
+                  allow="camera; microphone; display-capture; autoplay; clipboard-write"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 1,
+                    opacity: shouldShowMeeting ? 1 : 0,
+                    pointerEvents: shouldShowMeeting ? 'auto' : 'none',
+                    transition: 'opacity 0.3s',
+                  }}
+                  onLoad={() => setIframeLoaded(true)}
+                  title="Live Session"
+                />
+              )}
+
+              {/* ...existing code... */}
+              {hasLeft && (
+                <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center text-center p-12 gap-4 z-20">
+                  <p className="text-white font-bold text-lg">
+                    You have left the meeting.
                   </p>
+                  <button
+                    onClick={handleRejoin}
+                    className="bg-white text-black px-8 py-3 rounded-2xl font-bold hover:bg-zinc-100 transition-colors"
+                  >
+                    Rejoin Session
+                  </button>
                 </div>
               )}
-              {!isRegistered && (
+
+              {!isRegistered && !hasLeft && (
                 <div className="absolute inset-0 bg-zinc-900/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-12 z-20">
                   <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-6">
                     <ShieldAlert size={32} />
@@ -532,8 +447,7 @@ function LiveSessionActivity({
                     Registration Required
                   </h2>
                   <p className="text-zinc-400 mb-8 max-w-sm">
-                    Join the AAN community in this live workshop. You must
-                    register to gain access to the secure stream.
+                    You must register to gain access to the secure stream.
                   </p>
                   <button
                     onClick={handleRegister}
@@ -543,8 +457,21 @@ function LiveSessionActivity({
                   </button>
                 </div>
               )}
+
+              {/* Rare: only shown if iframe hasn't loaded yet when going live */}
+              {isRegistered && !iframeLoaded && !hasLeft && (
+                <div className="absolute inset-0 z-10 bg-zinc-900 flex flex-col items-center justify-center gap-4">
+                  <Loader2 size={32} className="animate-spin text-white" />
+                  <p className="text-sm font-bold text-zinc-400">
+                    Loading live session…
+                  </p>
+                </div>
+              )}
+
+              <div className="w-full h-full min-h-[300px]" />
             </div>
 
+            {/* Sidebar */}
             <div className="lg:col-span-1 border border-zinc-200 rounded-3xl bg-white overflow-hidden flex flex-col shadow-lg">
               <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
                 <h3 className="font-bold text-xs tracking-tight flex items-center gap-2 text-zinc-700">
@@ -559,14 +486,12 @@ function LiveSessionActivity({
 
               <div className="flex-1 overflow-y-auto">
                 <div className="p-6 space-y-6">
-                  {/* Instructor Controls */}
                   {isModerator && (
                     <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 space-y-4">
                       <h4 className="text-[10px] font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
                         <ShieldAlert size={12} className="text-zinc-500" />{' '}
                         Moderator Tools
                       </h4>
-
                       <div className="space-y-2">
                         <button
                           onClick={handleLeaveMeeting}
@@ -574,7 +499,6 @@ function LiveSessionActivity({
                         >
                           Leave Meeting Room
                         </button>
-
                         {canEndSession && (
                           <button
                             onClick={handleEndSession}
@@ -586,26 +510,21 @@ function LiveSessionActivity({
                               : 'End & Archive for All'}
                           </button>
                         )}
-
                         <button
                           onClick={handleCopyLink}
                           className="w-full bg-zinc-900 text-white py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-black transition-colors shadow-sm flex items-center justify-center gap-2"
                         >
-                          <ExternalLink size={12} />
-                          Copy Invite Link
+                          <ExternalLink size={12} /> Copy Invite Link
                         </button>
-
                         {status === 'LIVE' && (
                           <button
                             onClick={handleSetFallbackRecording}
                             className="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-colors shadow-sm flex items-center justify-center gap-2"
                           >
-                            <HelpCircle size={12} />
-                            Manual Replay Setup
+                            <HelpCircle size={12} /> Manual Replay Setup
                           </button>
                         )}
                       </div>
-
                       {!canEndSession && (
                         <p className="text-[8px] text-zinc-400 font-medium leading-relaxed italic">
                           Only Admins can end the session for everyone.
@@ -614,19 +533,17 @@ function LiveSessionActivity({
                     </div>
                   )}
 
-                  {/* Audience Info */}
                   <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-500">
                     <Users size={24} className="mx-auto mb-2 opacity-50" />
                     <p className="text-[10px] font-bold uppercase tracking-widest text-center">
                       Audience List
                     </p>
-                    <p className="text-[9px] mt-1 leadingsnug text-center">
+                    <p className="text-[9px] mt-1 leading-snug text-center">
                       Interactive chat and participants list are integrated
                       within the video portal.
                     </p>
                   </div>
 
-                  {/* Instructor Stream Guide */}
                   {details.recording_url && (
                     <div className="bg-zinc-900 rounded-2xl p-4 text-white space-y-3 shadow-xl relative overflow-hidden group">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -637,8 +554,8 @@ function LiveSessionActivity({
                         Auto-Replay Active
                       </h4>
                       <p className="text-[9px] text-zinc-400 font-medium leading-relaxed">
-                        You linked a YouTube Live stream for this session. To
-                        ensure the replay is available automatically:
+                        You linked a YouTube Live stream. To ensure the replay
+                        is available:
                       </p>
                       <ul className="text-[9px] text-zinc-300 space-y-2 font-bold">
                         <li className="flex gap-2">
@@ -689,7 +606,7 @@ function LiveSessionActivity({
           >
             {details.recording_url ? (
               <div className="space-y-6">
-                <div className="aspect-video bg-black rounded-[40px] overflow-hidden shadow-2xl border-4 border-zinc-100 relative group">
+                <div className="aspect-video bg-black rounded-[40px] overflow-hidden shadow-2xl border-4 border-zinc-100 relative">
                   <iframe
                     src={
                       details.recording_url.includes('live/')
@@ -708,16 +625,14 @@ function LiveSessionActivity({
                     </span>
                   </div>
                 </div>
-
                 <div className="bg-white border border-zinc-200 rounded-[32px] p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
                   <div className="space-y-1">
                     <h2 className="text-2xl font-black text-zinc-900 tracking-tight">
                       {activity.name} • Replay
                     </h2>
                     <p className="text-zinc-500 font-medium text-sm">
-                      This session was recorded on{' '}
-                      {startTime.toLocaleDateString()}. Watch the full workshop
-                      at your own pace.
+                      Recorded on {startTime.toLocaleDateString()}. Watch at
+                      your own pace.
                     </p>
                   </div>
                   {(!session.data?.user || session.data?.user?.is_waitlist) && (
@@ -744,19 +659,16 @@ function LiveSessionActivity({
                   This live event has ended. If a recording was made, it will
                   appear here as a "Replay" activity soon.
                 </p>
-
                 {isModerator && (
                   <div className="mt-6 flex justify-center">
                     <button
                       onClick={handleSetFallbackRecording}
                       className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl flex items-center gap-2"
                     >
-                      <ExternalLink size={14} />
-                      Set/Edit Replay URL (Manual Fallback)
+                      <ExternalLink size={14} /> Set/Edit Replay URL
                     </button>
                   </div>
                 )}
-
                 <div className="mt-10 space-y-4">
                   {(!session.data?.user || session.data?.user?.is_waitlist) && (
                     <motion.div
@@ -768,9 +680,8 @@ function LiveSessionActivity({
                         Enjoyed the workshop?
                       </h3>
                       <p className="text-zinc-400 text-sm leading-relaxed">
-                        Take the next step in your career. Complete your
-                        registration to unlock the full course curriculum,
-                        mentors, and certification.
+                        Unlock the full course curriculum, mentors, and
+                        certification.
                       </p>
                       <button
                         onClick={() =>
@@ -778,11 +689,10 @@ function LiveSessionActivity({
                         }
                         className="w-full bg-white text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-zinc-100 transition-all"
                       >
-                        Finish Registration & Enroll
+                        Finish Registration &amp; Enroll
                       </button>
                     </motion.div>
                   )}
-
                   <button
                     onClick={() => window.history.back()}
                     className="text-sm font-bold text-zinc-400 hover:text-zinc-900 transition-colors uppercase tracking-widest block mx-auto"
