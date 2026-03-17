@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar,
   Clock,
+  Loader2,
   MessageSquare,
   Users,
   Radio,
@@ -49,6 +50,7 @@ function LiveSessionActivity({
     activity?.details?.is_concluded_manually || false
   )
   const [showFloatingButton, setShowFloatingButton] = useState(false)
+  const [jitsiReady, setJitsiReady] = useState(false)
   const jitsiContainerRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<any>(null)
 
@@ -253,17 +255,42 @@ function LiveSessionActivity({
     }
   }
 
-  // Jitsi Integration
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // @ts-ignore
+    if (window.JitsiMeetExternalAPI) {
+      setJitsiReady(true)
+    } else {
+      // Dynamic script injection
+      const script = document.createElement('script')
+      script.src = 'https://meet.jit.si/external_api.js'
+      script.async = true
+      script.onload = () => {
+        setJitsiReady(true)
+      }
+      document.body.appendChild(script)
+
+      return () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script)
+        }
+      }
+    }
+  }, [])
+
+  // Jitsi Integration — initialize the meeting once the API is ready
   useEffect(() => {
     if (
       (status === 'LIVE' || isAdminEnteringEarly) &&
       (isRegistered || isModerator) &&
+      jitsiReady &&
       typeof window !== 'undefined'
     ) {
       const domain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
       const roomName = details.jitsi_room || `aan-${activity.activity_uuid}`
 
       if (!jitsiContainerRef.current) return
+      if (jitsiApiRef.current) return // Already initialized
 
       const options = {
         roomName: roomName,
@@ -296,59 +323,26 @@ function LiveSessionActivity({
         },
       }
 
-      const scriptId = 'jitsi-api-script'
-      let script = document.getElementById(scriptId) as HTMLScriptElement
+      // @ts-ignore
+      jitsiApiRef.current = new window.JitsiMeetExternalAPI(domain, options)
 
-      const loadAPI = () => {
-        // @ts-ignore
-        if (window.JitsiMeetExternalAPI && jitsiContainerRef.current) {
-          if (jitsiApiRef.current) return // Already initialized
-
-          // Re-validate parentNode right before call
-          const finalOptions = {
-            ...options,
-            parentNode: jitsiContainerRef.current,
-          }
-          // @ts-ignore
-          jitsiApiRef.current = new window.JitsiMeetExternalAPI(
-            domain,
-            finalOptions
-          )
-
-          // AUTOMATION: If current user is a moderator and auto_stream is enabled
-          jitsiApiRef.current.addEventListener('videoConferenceJoined', () => {
-            if (
-              isModerator &&
-              details.auto_stream_enabled &&
-              details.youtube_stream_key
-            ) {
-              jitsiApiRef.current.executeCommand('startRecording', {
-                mode: 'stream',
-                youtubeStreamKey: details.youtube_stream_key,
-              })
-            }
+      // AUTOMATION: If current user is a moderator and auto_stream is enabled
+      jitsiApiRef.current.addEventListener('videoConferenceJoined', () => {
+        if (
+          isModerator &&
+          details.auto_stream_enabled &&
+          details.youtube_stream_key
+        ) {
+          jitsiApiRef.current.executeCommand('startRecording', {
+            mode: 'stream',
+            youtubeStreamKey: details.youtube_stream_key,
           })
-        } else {
-          // Retry logic if window.JitsiMeetExternalAPI is not yet defined
-          setTimeout(loadAPI, 100)
         }
-      }
-
-      if (!script) {
-        script = document.createElement('script')
-        script.id = scriptId
-        script.src = `https://${domain}/external_api.js`
-        script.async = true
-        script.onload = loadAPI
-        document.head.appendChild(script)
-      } else {
-        loadAPI()
-      }
+      })
 
       const container = jitsiContainerRef.current
 
       return () => {
-        // Optimization: Don't remove script, just clear container
         if (jitsiApiRef.current) {
           jitsiApiRef.current.dispose()
           jitsiApiRef.current = null
@@ -359,6 +353,7 @@ function LiveSessionActivity({
   }, [
     status,
     isRegistered,
+    jitsiReady,
     activity.activity_uuid,
     details.jitsi_room,
     details.auto_stream_enabled,
@@ -370,8 +365,28 @@ function LiveSessionActivity({
 
   if (loading)
     return (
-      <div className="p-10 text-center font-bold text-zinc-400 animate-pulse">
-        Initializing Live Engine...
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="flex flex-col items-center gap-5"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center">
+              <Loader2 size={28} className="animate-spin text-zinc-900" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-lg font-bold text-zinc-900 tracking-tight">
+              Connecting you to the live session
+            </p>
+            <p className="text-sm text-zinc-400 font-medium">
+              Setting up a secure connection&hellip;
+            </p>
+          </div>
+        </motion.div>
       </div>
     )
 
@@ -492,6 +507,15 @@ function LiveSessionActivity({
               className="lg:col-span-3 bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-zinc-100"
               ref={jitsiContainerRef}
             >
+              {/* Jitsi loading overlay */}
+              {!jitsiApiRef.current && isRegistered && (
+                <div className="absolute inset-0 z-10 bg-zinc-900 flex flex-col items-center justify-center gap-4">
+                  <Loader2 size={32} className="animate-spin text-white" />
+                  <p className="text-sm font-bold text-zinc-400 tracking-tight">
+                    Loading live session interface&hellip;
+                  </p>
+                </div>
+              )}
               {!isRegistered && (
                 <div className="absolute inset-0 bg-zinc-900/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-12 z-20">
                   <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-6">
