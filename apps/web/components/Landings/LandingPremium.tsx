@@ -70,12 +70,20 @@ export default function LandingPremium({
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-red-500/30">
+    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-blue-500/30">
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="/landing/hero_bg.png"
+            alt=""
+            className="w-full h-full object-cover opacity-20 mix-blend-luminosity"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0a0a0a]" />
+        </div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-600/10 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-blue-600/10 blur-[120px] rounded-full" />
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
+          <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-cyan-600/10 blur-[120px] rounded-full" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 text-center">
@@ -84,12 +92,12 @@ export default function LandingPremium({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-red-500 text-xs font-black uppercase tracking-[0.2em] mb-8">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-blue-500 text-xs font-black uppercase tracking-[0.2em] mb-8">
               <Sparkles size={14} /> The Future of Learning
             </span>
             <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
               Accelerate Your Career in the{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-800">
                 New Economy
               </span>
             </h1>
@@ -120,7 +128,17 @@ export default function LandingPremium({
       </section>
 
       {/* Available Now */}
-      <section id="available" className="py-24 px-6 border-t border-white/5">
+      <section
+        id="available"
+        className="relative py-24 px-6 border-t border-white/5 overflow-hidden"
+      >
+        <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="/landing/programs_bg.png"
+            alt=""
+            className="w-full h-full object-cover opacity-5 mix-blend-overlay"
+          />
+        </div>
         <div className="max-w-7xl mx-auto">
           <div className="space-y-4 mb-16">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
@@ -137,16 +155,16 @@ export default function LandingPremium({
             viewport={{ once: true }}
             className="grid grid-cols-1 md:grid-cols-2 gap-8"
           >
-            <div className="group relative p-10 rounded-[40px] bg-zinc-900 border border-white/10 hover:border-red-500/50 transition-all overflow-hidden shadow-2xl">
+            <div className="group relative p-10 rounded-[40px] bg-zinc-900 border border-white/10 hover:border-blue-500/50 transition-all overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-20 transition-opacity">
                 <Cpu size={160} />
               </div>
               <div className="relative z-10 space-y-8">
-                <div className="w-16 h-16 bg-red-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20">
+                <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                   <Cpu size={32} />
                 </div>
                 <div className="space-y-4">
-                  <div className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest">
+                  <div className="inline-block px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest">
                     Live Now
                   </div>
                   <h3 className="text-4xl font-black tracking-tight">
@@ -173,8 +191,15 @@ export default function LandingPremium({
       {/* Launching & Coming Soon */}
       <section
         id="roadmap"
-        className="py-24 px-6 border-t border-white/5 bg-white/[0.01]"
+        className="relative py-24 px-6 border-t border-white/5 bg-white/[0.01] overflow-hidden"
       >
+        <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="/landing/roadmap_bg.png"
+            alt=""
+            className="w-full h-full object-cover opacity-10 mix-blend-screen"
+          />
+        </div>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
             {/* Launching Soon */}
@@ -259,8 +284,15 @@ export default function LandingPremium({
       {/* Tech Specializations */}
       <section
         id="specializations"
-        className="py-24 px-6 bg-white/[0.02] border-t border-white/5"
+        className="relative py-24 px-6 bg-white/[0.02] border-t border-white/5 overflow-hidden"
       >
+        <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="/landing/specializations_bg.png"
+            alt=""
+            className="w-full h-full object-cover opacity-10 mix-blend-overlay"
+          />
+        </div>
         <div className="max-w-7xl mx-auto">
           <div className="text-center space-y-4 mb-20">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
@@ -285,11 +317,11 @@ export default function LandingPremium({
                 variants={itemVariants}
                 className="p-6 rounded-2xl bg-zinc-900 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-800 transition-colors shadow-xl"
               >
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
                   {spec.icon ? (
                     <spec.icon size={24} />
                   ) : (
-                    <div className="w-4 h-4 bg-red-500 rounded-full" />
+                    <div className="w-4 h-4 bg-blue-500 rounded-full" />
                   )}
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
@@ -303,11 +335,11 @@ export default function LandingPremium({
 
       {/* Final CTA */}
       <section className="py-32 px-6 relative overflow-hidden border-t border-white/5">
-        <div className="absolute inset-0 bg-red-600/5 pointer-events-none" />
+        <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
         <div className="max-w-4xl mx-auto text-center relative z-10 space-y-12">
           <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight">
             Ready to Build the{' '}
-            <span className="text-red-500">Next Frontier?</span>
+            <span className="text-blue-500">Next Frontier?</span>
           </h2>
           <p className="text-xl text-zinc-400 font-medium max-w-2xl mx-auto">
             Join thousands of students across Africa mastering the future today.
@@ -349,7 +381,7 @@ export default function LandingPremium({
                         className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 relative"
                       >
                         <Quote
-                          className="text-red-500/20 absolute top-6 right-8"
+                          className="text-blue-500/20 absolute top-6 right-8"
                           size={40}
                         />
                         <p className="text-zinc-300 italic mb-6 relative z-10">
@@ -383,7 +415,7 @@ export default function LandingPremium({
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {section.metrics?.map((m: any, i: number) => (
                       <div key={i} className="text-center space-y-2">
-                        <p className="text-5xl font-black text-red-500">
+                        <p className="text-5xl font-black text-blue-500">
                           {m.value}
                           {m.suffix}
                         </p>
@@ -400,7 +432,7 @@ export default function LandingPremium({
 
           if (section.type === 'cta') {
             return (
-              <section key={index} className="py-24 px-6 bg-red-600/5">
+              <section key={index} className="py-24 px-6 bg-blue-600/5">
                 <div className="max-w-4xl mx-auto text-center space-y-8">
                   <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
                     {section.title}
@@ -426,7 +458,7 @@ export default function LandingPremium({
       {/* Footer-like subtle branding */}
       <div className="py-12 border-t border-white/5 px-8 flex justify-between items-center opacity-30 select-none">
         <span className="text-[10px] font-black uppercase tracking-[0.3em]">
-          {org?.name || 'African AI Network'} {'// 2024'}
+          {org?.name || 'African AI Network'} {'// 2026'}
         </span>
         <div className="flex gap-6 uppercase tracking-[0.2em] font-black text-[9px]">
           <span>Security</span>
