@@ -6,7 +6,6 @@ import {
   Clock,
   Loader2,
   MessageSquare,
-  Users,
   Radio,
   ShieldAlert,
   HelpCircle,
@@ -203,6 +202,7 @@ function LiveSessionActivity({
     isConcludedManually,
     activity?.details?.is_concluded_manually,
     session.data?.user,
+    activity?.org_slug,
   ])
 
   const handleRegister = async () => {

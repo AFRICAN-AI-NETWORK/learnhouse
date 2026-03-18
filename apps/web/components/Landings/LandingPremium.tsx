@@ -4,7 +4,6 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
-  CheckCircle2,
   Sparkles,
   Rocket,
   Timer,
@@ -299,7 +298,7 @@ export default function LandingPremium({
       {/* Footer-like subtle branding */}
       <div className="py-12 border-t border-white/5 px-8 flex justify-between items-center opacity-30 select-none">
         <span className="text-[10px] font-black uppercase tracking-[0.3em]">
-          {org?.name || 'African AI Network'} // 2024
+          {org?.name || 'African AI Network'} {'// 2024'}
         </span>
         <div className="flex gap-6 uppercase tracking-[0.2em] font-black text-[9px]">
           <span>Security</span>

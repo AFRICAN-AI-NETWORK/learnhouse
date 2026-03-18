@@ -5,7 +5,6 @@ import NextTopLoader from 'nextjs-toploader'
 import Toast from '@components/Objects/StyledElements/Toast/Toast'
 import '@styles/globals.css'
 import Onboarding from '@components/Objects/Onboarding/Onboarding'
-import Footer from '@components/Footer/Footer'
 
 export default function RootLayout(props: {
   children: React.ReactNode
