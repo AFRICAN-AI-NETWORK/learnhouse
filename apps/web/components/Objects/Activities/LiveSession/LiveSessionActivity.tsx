@@ -397,7 +397,7 @@ function LiveSessionActivity({
           </motion.div>
         )}
 
-        {(status === 'LIVE' || isAdminEnteringEarly) && (
+        {(status === 'LIVE' || isAdminEnteringEarly) && !hasLeft && (
           <motion.div
             key="live"
             initial={{ opacity: 0 }}
@@ -457,19 +457,6 @@ function LiveSessionActivity({
               )}
 
               {/* ...existing code... */}
-              {hasLeft && (
-                <div className="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center text-center p-12 gap-4 z-20">
-                  <p className="text-white font-bold text-lg">
-                    You have left the meeting.
-                  </p>
-                  <button
-                    onClick={handleRejoin}
-                    className="bg-white text-black px-8 py-3 rounded-2xl font-bold hover:bg-zinc-100 transition-colors"
-                  >
-                    Rejoin Session
-                  </button>
-                </div>
-              )}
 
               {!isRegistered && !hasLeft && (
                 <div className="absolute inset-0 bg-zinc-900/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-12 z-20">
@@ -566,17 +553,6 @@ function LiveSessionActivity({
                     </div>
                   )}
 
-                  <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-100 text-zinc-500">
-                    <Users size={24} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-center">
-                      Audience List
-                    </p>
-                    <p className="text-[9px] mt-1 leading-snug text-center">
-                      Interactive chat and participants list are integrated
-                      within the video portal.
-                    </p>
-                  </div>
-
                   {details.recording_url && (
                     <div className="bg-zinc-900 rounded-2xl p-4 text-white space-y-3 shadow-xl relative overflow-hidden group">
                       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -627,6 +603,31 @@ function LiveSessionActivity({
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {hasLeft && status !== 'ENDED' && (
+          <motion.div
+            key="left"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-zinc-50 border border-zinc-200 rounded-3xl p-20 text-center max-w-3xl mx-auto"
+          >
+            <div className="w-16 h-16 bg-zinc-100 text-zinc-400 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Radio size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-zinc-900 tracking-tight">
+              You have left the meeting
+            </h2>
+            <p className="text-zinc-500 mt-2 mb-8">
+              The session is still running for other participants.
+            </p>
+            <button
+              onClick={handleRejoin}
+              className="bg-zinc-900 text-white px-10 py-4 rounded-2xl font-bold hover:bg-black transition-all shadow-lg"
+            >
+              Rejoin Session
+            </button>
           </motion.div>
         )}
 

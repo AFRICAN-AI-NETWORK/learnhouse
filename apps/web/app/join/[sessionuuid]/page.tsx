@@ -14,8 +14,16 @@ export default function JoinSessionLanding() {
   const sessionUuid = params.sessionuuid as string
   const [activity, setActivity] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [name, setName] = useState(session?.data?.user?.display_name || '')
-  const [email, setEmail] = useState(session?.data?.user?.email || '')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+
+  // Hydrate name/email once session loads
+  useEffect(() => {
+    if (session?.data?.user) {
+      setName(session.data.user.display_name || '')
+      setEmail(session.data.user.email || '')
+    }
+  }, [session?.data?.user])
 
   useEffect(() => {
     const loadActivity = async () => {
@@ -58,7 +66,7 @@ export default function JoinSessionLanding() {
     window.location.href = signupUrl
   }
 
-  if (loading)
+  if (loading || session?.status === 'loading')
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-zinc-800 border-t-white rounded-full animate-spin" />

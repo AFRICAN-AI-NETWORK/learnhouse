@@ -3,9 +3,11 @@ import json
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 # The scopes required for YouTube automation.
-# 'youtube.force-ssl' is the most reliable scope for creating and managing Live Broadcasts.
+# 'youtube.force-ssl' for creating/managing Live Broadcasts.
+# 'youtube.upload' for finalizing recordings.
 SCOPES = [
     'https://www.googleapis.com/auth/youtube.force-ssl',
+    'https://www.googleapis.com/auth/youtube.upload',
     'https://www.googleapis.com/auth/youtube.readonly'
 ]
 
