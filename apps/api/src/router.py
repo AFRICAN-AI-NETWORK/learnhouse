@@ -14,6 +14,7 @@ from src.services.dev.dev import isDevModeEnabledOrRaise
 from src.routers.utils import router as utils_router
 from src.routers.code import router as code_router
 from ee.routers import referrals
+from src.routers.contact import router as contact_router
 
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -47,6 +48,7 @@ v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 v1_router.include_router(communications.router, prefix="/communications", tags=["communications"])
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
 
 # Chat Routes
 v1_router.include_router(chat_conversations.router, prefix="/chat/conversations", tags=["chat"])

@@ -29,6 +29,7 @@ import heroBg from '@public/landing/hero_bg.png'
 import programsBg from '@public/landing/programs_bg.png'
 import roadmapBg from '@public/landing/roadmap_bg.png'
 import specializationsBg from '@public/landing/specializations_bg.png'
+import ContactSection from './LandingContact'
 
 interface LandingPremiumProps {
   org: any
@@ -460,6 +461,11 @@ export default function LandingPremium({
           return null
         }
       )}
+
+      {/* Contact Section */}
+      <div className="max-w-7xl mx-auto">
+        <ContactSection />
+      </div>
 
       {/* Footer-like subtle branding */}
       <div className="py-12 border-t border-white/5 px-8 flex justify-between items-center opacity-30 select-none">
