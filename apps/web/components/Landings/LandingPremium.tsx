@@ -134,11 +134,8 @@ export default function LandingPremium({
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {techSpecializations.map((spec, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 * index }}
                 className="p-6 rounded-2xl bg-zinc-900 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-800 transition-colors shadow-xl"
               >
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
@@ -147,7 +144,7 @@ export default function LandingPremium({
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
                   {spec.name}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -166,12 +163,7 @@ export default function LandingPremium({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="group relative p-10 rounded-[40px] bg-zinc-900 border border-white/10 hover:border-red-500/50 transition-all overflow-hidden shadow-2xl"
-            >
+            <div className="group relative p-10 rounded-[40px] bg-zinc-900 border border-white/10 hover:border-red-500/50 transition-all overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-20 transition-opacity">
                 <Cpu size={160} />
               </div>
@@ -199,7 +191,7 @@ export default function LandingPremium({
                   Explore Directory <ArrowRight size={18} />
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -219,12 +211,7 @@ export default function LandingPremium({
                 </p>
               </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-                className="p-10 rounded-[40px] bg-zinc-900 border border-emerald-500/20 shadow-2xl shadow-emerald-500/5 space-y-8"
-              >
+              <div className="p-10 rounded-[40px] bg-zinc-900 border border-emerald-500/20 shadow-2xl shadow-emerald-500/5 space-y-8">
                 <div className="space-y-2">
                   <span className="text-xs font-black uppercase tracking-widest text-emerald-500">
                     Professional Path
@@ -247,7 +234,7 @@ export default function LandingPremium({
                     </li>
                   ))}
                 </ul>
-              </motion.div>
+              </div>
             </div>
 
             {/* Coming Soon */}
@@ -262,30 +249,20 @@ export default function LandingPremium({
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="p-10 rounded-[40px] bg-zinc-900 border border-white/5 space-y-3 shadow-2xl hover:border-amber-500/30 transition-colors"
-                >
+                <div className="p-10 rounded-[40px] bg-zinc-900 border border-white/5 space-y-3 shadow-2xl hover:border-amber-500/30 transition-colors">
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
                     Mastery Track
                   </span>
                   <h4 className="text-2xl font-black">
                     AI MASTERY CERTIFICATE TRACK
                   </h4>
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="p-10 rounded-[40px] bg-zinc-900 border border-white/5 space-y-3 shadow-2xl hover:border-amber-500/30 transition-colors"
-                >
+                </div>
+                <div className="p-10 rounded-[40px] bg-zinc-900 border border-white/5 space-y-3 shadow-2xl hover:border-amber-500/30 transition-colors">
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
                     Pro Series
                   </span>
                   <h4 className="text-2xl font-black">AAN AI PRO</h4>
-                </motion.div>
+                </div>
               </div>
             </div>
           </div>

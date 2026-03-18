@@ -71,16 +71,7 @@ export default function RootLayout({
           <LHSessionProvider>
             <I18nProvider>
               <StyledComponentsRegistry>
-                <motion.main
-                  variants={variants}
-                  initial="hidden"
-                  animate="enter"
-                  exit="exit"
-                  transition={{ type: 'tween' }}
-                  className="flex-grow"
-                >
-                  {children}
-                </motion.main>
+                <main className="flex-grow">{children}</main>
                 <Footer />
               </StyledComponentsRegistry>
             </I18nProvider>
