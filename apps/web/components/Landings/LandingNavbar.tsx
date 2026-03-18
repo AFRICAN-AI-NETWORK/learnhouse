@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ArrowRight } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { getUriWithOrg } from '@services/config/config'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 
@@ -95,44 +94,37 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
       </div>
 
       {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 bg-black z-[90] flex flex-col items-center justify-center p-6"
-          >
-            <div className="flex flex-col items-center gap-8 text-center">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-2xl font-black uppercase tracking-widest text-white"
-                >
-                  {link.name}
-                </a>
-              ))}
-              <div className="h-px w-20 bg-zinc-800 my-4" />
-              <Link
-                href="/auth/signin"
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-black z-[90] flex flex-col items-center justify-center p-6">
+          <div className="flex flex-col items-center gap-8 text-center">
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-black uppercase tracking-widest text-zinc-400"
+                className="text-2xl font-black uppercase tracking-widest text-white"
               >
-                Login
-              </Link>
-              <Link
-                href="/auth/signup"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest"
-              >
-                Join Now
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {link.name}
+              </a>
+            ))}
+            <div className="h-px w-20 bg-zinc-800 my-4" />
+            <Link
+              href="/auth/signin"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-lg font-black uppercase tracking-widest text-zinc-400"
+            >
+              Login
+            </Link>
+            <Link
+              href="/auth/signup"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest"
+            >
+              Join Now
+            </Link>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

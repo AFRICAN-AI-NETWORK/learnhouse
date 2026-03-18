@@ -19,9 +19,8 @@ import {
   Box,
   ClipboardList,
   Quote,
-  TrendingUp,
-  Users as UsersIcon,
 } from 'lucide-react'
+// Removed unused imports to fix lint warnings
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 
@@ -67,6 +66,7 @@ export default function LandingPremium({
     },
   }
 
+  const EXPLORE_COURSE_ID = '7119500c-05c4-44f9-a48e-5b14e37d2ccb' // AAN OPEN COURSE ID hard coded since page is static
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
@@ -183,7 +183,7 @@ export default function LandingPremium({
                   </p>
                 </div>
                 <Link
-                  href={getUriWithOrg(orgslug, '/course/aan-open')}
+                  href={getUriWithOrg(orgslug, `/course/${EXPLORE_COURSE_ID}`)}
                   className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all"
                 >
                   Explore Directory <ArrowRight size={18} />
