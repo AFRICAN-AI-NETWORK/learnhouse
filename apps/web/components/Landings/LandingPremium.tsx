@@ -119,43 +119,8 @@ export default function LandingPremium({
         </div>
       </section>
 
-      {/* Tech Specializations */}
-      <section className="py-24 px-6 bg-white/[0.02] border-t border-white/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-4 mb-20">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
-              Tech Specializations
-            </h2>
-            <p className="text-zinc-500 max-w-2xl mx-auto font-medium leading-relaxed">
-              We prepare students for high-impact roles across the modern
-              technology landscape.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {techSpecializations.map((spec, index) => (
-              <div
-                key={index}
-                className="p-6 rounded-2xl bg-zinc-900 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-800 transition-colors shadow-xl"
-              >
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
-                  {spec.icon ? (
-                    <spec.icon size={24} />
-                  ) : (
-                    <div className="w-4 h-4 bg-red-500 rounded-full" />
-                  )}
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
-                  {spec.name}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Available Now */}
-      <section className="py-24 px-6 border-t border-white/5">
+      <section id="available" className="py-24 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="space-y-4 mb-16">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
@@ -166,7 +131,12 @@ export default function LandingPremium({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8"
+          >
             <div className="group relative p-10 rounded-[40px] bg-zinc-900 border border-white/10 hover:border-red-500/50 transition-all overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-20 transition-opacity">
                 <Cpu size={160} />
@@ -196,16 +166,24 @@ export default function LandingPremium({
                 </Link>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Launching & Coming Soon */}
-      <section className="py-24 px-6 border-t border-white/5 bg-white/[0.01]">
+      <section
+        id="roadmap"
+        className="py-24 px-6 border-t border-white/5 bg-white/[0.01]"
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
             {/* Launching Soon */}
-            <div className="space-y-12">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-12"
+            >
               <div className="space-y-4">
                 <h3 className="text-3xl font-black tracking-tight flex items-center gap-3">
                   <Rocket className="text-emerald-500" /> Launching Soon
@@ -239,10 +217,15 @@ export default function LandingPremium({
                   ))}
                 </ul>
               </div>
-            </div>
+            </motion.div>
 
             {/* Coming Soon */}
-            <div className="space-y-12">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-12"
+            >
               <div className="space-y-4">
                 <h3 className="text-3xl font-black tracking-tight flex items-center gap-3">
                   <Timer className="text-amber-500" /> Coming Soon
@@ -268,8 +251,53 @@ export default function LandingPremium({
                   <h4 className="text-2xl font-black">AAN AI PRO</h4>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Tech Specializations */}
+      <section
+        id="specializations"
+        className="py-24 px-6 bg-white/[0.02] border-t border-white/5"
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center space-y-4 mb-20">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+              Tech Specializations
+            </h2>
+            <p className="text-zinc-500 max-w-2xl mx-auto font-medium leading-relaxed">
+              We prepare students for high-impact roles across the modern
+              technology landscape.
+            </p>
+          </div>
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
+          >
+            {techSpecializations.map((spec, index) => (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                className="p-6 rounded-2xl bg-zinc-900 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-800 transition-colors shadow-xl"
+              >
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
+                  {spec.icon ? (
+                    <spec.icon size={24} />
+                  ) : (
+                    <div className="w-4 h-4 bg-red-500 rounded-full" />
+                  )}
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                  {spec.name}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
@@ -302,97 +330,98 @@ export default function LandingPremium({
         </div>
       </section>
 
-      {/* Dynamic Sections from Org Config */}
-      {org?.landing?.sections?.map((section: any, index: number) => {
-        if (section.type === 'testimonials') {
-          return (
-            <section key={index} className="py-24 px-6 bg-white/[0.02]">
-              <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-16">
-                  <h2 className="text-4xl font-black tracking-tighter mb-4">
-                    {section.title || 'What Our Students Say'}
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {section.testimonials?.map((t: any, i: number) => (
-                    <div
-                      key={i}
-                      className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 relative"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 absolute top-4 left-4 opacity-50" />
-                      <Quote
-                        className="text-red-500/20 absolute top-6 right-8"
-                        size={40}
-                      />
-                      <p className="text-zinc-300 italic mb-6 relative z-10">
-                        "{t.text}"
-                      </p>
-                      <div className="flex items-center gap-4">
-                        {t.image_url && (
-                          <img
-                            src={t.image_url}
-                            alt={t.author}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        )}
-                        <div>
-                          <p className="font-bold text-white">{t.author}</p>
-                          <p className="text-xs text-zinc-500">{t.role}</p>
+      {/* Dynamic Sections from Org Config (Testimonials, Impact Metrics, etc.) */}
+      {org?.config?.config?.landing?.sections?.map(
+        (section: any, index: number) => {
+          if (section.type === 'testimonials') {
+            return (
+              <section key={index} className="py-24 px-6 bg-white/[0.02]">
+                <div className="max-w-7xl mx-auto">
+                  <div className="text-center mb-16">
+                    <h2 className="text-4xl font-black tracking-tighter mb-4">
+                      {section.title || 'What Our Students Say'}
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {section.testimonials?.map((t: any, i: number) => (
+                      <div
+                        key={i}
+                        className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 relative"
+                      >
+                        <Quote
+                          className="text-red-500/20 absolute top-6 right-8"
+                          size={40}
+                        />
+                        <p className="text-zinc-300 italic mb-6 relative z-10">
+                          "{t.text}"
+                        </p>
+                        <div className="flex items-center gap-4">
+                          {t.image_url && (
+                            <img
+                              src={t.image_url}
+                              alt={t.author}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          )}
+                          <div>
+                            <p className="font-bold text-white">{t.author}</p>
+                            <p className="text-xs text-zinc-500">{t.role}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </section>
-          )
-        }
+              </section>
+            )
+          }
 
-        if (section.type === 'impact-metrics') {
-          return (
-            <section key={index} className="py-24 px-6">
-              <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                  {section.metrics?.map((m: any, i: number) => (
-                    <div key={i} className="text-center space-y-2">
-                      <p className="text-5xl font-black text-red-500">
-                        {m.value}
-                        {m.suffix}
-                      </p>
-                      <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                        {m.label}
-                      </p>
-                    </div>
-                  ))}
+          if (section.type === 'impact-metrics') {
+            return (
+              <section key={index} className="py-24 px-6">
+                <div className="max-w-7xl mx-auto">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                    {section.metrics?.map((m: any, i: number) => (
+                      <div key={i} className="text-center space-y-2">
+                        <p className="text-5xl font-black text-red-500">
+                          {m.value}
+                          {m.suffix}
+                        </p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                          {m.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </section>
-          )
-        }
+              </section>
+            )
+          }
 
-        if (section.type === 'cta') {
-          return (
-            <section key={index} className="py-24 px-6 bg-red-600/5">
-              <div className="max-w-4xl mx-auto text-center space-y-8">
-                <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
-                  {section.title}
-                </h2>
-                <p className="text-xl text-zinc-400">{section.description}</p>
-                {section.button && (
-                  <Link
-                    href={section.button.link || '#'}
-                    className="inline-block px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all"
-                  >
-                    {section.button.text}
-                  </Link>
-                )}
-              </div>
-            </section>
-          )
-        }
+          if (section.type === 'cta') {
+            return (
+              <section key={index} className="py-24 px-6 bg-red-600/5">
+                <div className="max-w-4xl mx-auto text-center space-y-8">
+                  <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
+                    {section.title}
+                  </h2>
+                  <p className="text-xl text-zinc-400">{section.description}</p>
+                  {section.button && (
+                    <Link
+                      href={section.button.link || '#'}
+                      className="inline-block px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all"
+                    >
+                      {section.button.text}
+                    </Link>
+                  )}
+                </div>
+              </section>
+            )
+          }
 
-        return null
-      })}
+          return null
+        }
+      )}
 
       {/* Footer-like subtle branding */}
       <div className="py-12 border-t border-white/5 px-8 flex justify-between items-center opacity-30 select-none">
