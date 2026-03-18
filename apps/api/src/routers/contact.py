@@ -12,8 +12,6 @@ class ContactForm(BaseModel):
 
 @router.post("/contact")
 async def contact_submit(form: ContactForm, request: Request):
-    # Basic anti-spam: check for too many requests from same IP
-    client_ip = request.client.host
 
     # Compose email
     subject = f"Contact Form Submission from {form.name}"
