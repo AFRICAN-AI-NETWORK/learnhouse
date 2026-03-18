@@ -32,9 +32,9 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${
         isScrolled
-          ? 'py-4 bg-black/60 backdrop-blur-md border-b border-white/5'
+          ? 'py-4 bg-black/70 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.05)]'
           : 'py-6 bg-transparent'
       }`}
     >

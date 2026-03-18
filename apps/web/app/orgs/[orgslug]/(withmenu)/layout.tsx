@@ -21,7 +21,10 @@ export default function RootLayout(props: {
 
   const { children } = props
   const pathname = usePathname()
-  const isLandingPage = pathname === '/' || pathname === `/${params?.orgslug}`
+  const isLandingPage =
+    pathname === '/' ||
+    pathname === `/${params?.orgslug}` ||
+    pathname === `/orgs/${params?.orgslug}`
   const isGuest = !session?.data?.user
 
   return (
