@@ -19,9 +19,8 @@ import {
   Box,
   ClipboardList,
   Quote,
-  TrendingUp,
-  Users as UsersIcon,
 } from 'lucide-react'
+// Removed unused imports to fix lint warnings
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 

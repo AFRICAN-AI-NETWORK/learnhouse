@@ -19,6 +19,7 @@ const PINNED_CHAT_ROLE_NAMES = new Set([
   'students mentor',
   'community manager',
   'lead instructor',
+  'instructor',
 ])
 
 const normalizeRoleName = (roleName?: string) =>

@@ -2,7 +2,6 @@
 import React from 'react'
 import '@/styles/globals.css'
 import StyledComponentsRegistry from '@components/Utils/libs/styled-registry'
-import { motion } from 'framer-motion'
 import { SessionProvider } from 'next-auth/react'
 import LHSessionProvider from '@components/Contexts/LHSessionContext'
 import { isDevEnv } from '@/app/auth/options'
