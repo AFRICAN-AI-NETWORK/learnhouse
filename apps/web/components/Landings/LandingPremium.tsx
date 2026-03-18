@@ -139,7 +139,11 @@ export default function LandingPremium({
                 className="p-6 rounded-2xl bg-zinc-900 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-800 transition-colors shadow-xl"
               >
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
-                  <spec.icon size={24} />
+                  {spec.icon ? (
+                    <spec.icon size={24} />
+                  ) : (
+                    <div className="w-4 h-4 bg-red-500 rounded-full" />
+                  )}
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
                   {spec.name}
@@ -311,14 +315,11 @@ export default function LandingPremium({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {section.testimonials?.map((t: any, i: number) => (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
                       className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 relative"
                     >
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 absolute top-4 left-4 opacity-50" />
                       <Quote
                         className="text-red-500/20 absolute top-6 right-8"
                         size={40}
@@ -339,7 +340,7 @@ export default function LandingPremium({
                           <p className="text-xs text-zinc-500">{t.role}</p>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -353,14 +354,7 @@ export default function LandingPremium({
               <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                   {section.metrics?.map((m: any, i: number) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                      className="text-center space-y-2"
-                    >
+                    <div key={i} className="text-center space-y-2">
                       <p className="text-5xl font-black text-red-500">
                         {m.value}
                         {m.suffix}
@@ -368,7 +362,7 @@ export default function LandingPremium({
                       <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
                         {m.label}
                       </p>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>

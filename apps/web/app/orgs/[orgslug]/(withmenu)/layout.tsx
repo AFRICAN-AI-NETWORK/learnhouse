@@ -6,6 +6,7 @@ import { OrgMenu } from '@components/Objects/Menus/OrgMenu'
 import { NotificationProvider } from '@components/Contexts/NotificationContext'
 import { GlobalChatProvider } from '@components/Contexts/GlobalChatContext'
 import FloatingChatWidget from '@components/Objects/FloatingChatWidget'
+import { usePathname } from 'next/navigation'
 
 export default function RootLayout(props: {
   children: React.ReactNode
@@ -14,14 +15,28 @@ export default function RootLayout(props: {
   const params = use(props.params)
 
   const { children } = props
+  const pathname = usePathname()
+  const isLandingPage = pathname === '/' || pathname === `/${params?.orgslug}`
 
   return (
-    <div className="theme-landing h-screen bg-background text-foreground flex flex-col overflow-hidden">
+    <div
+      className={`theme-landing bg-background text-foreground flex flex-col ${
+        isLandingPage
+          ? 'min-h-screen overflow-visible'
+          : 'h-screen overflow-hidden'
+      }`}
+    >
       <SessionProvider>
         <NotificationProvider>
           <GlobalChatProvider>
             <OrgMenu orgslug={params?.orgslug}></OrgMenu>
-            <main className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <main
+              className={`flex-1 w-full overflow-x-hidden ${
+                isLandingPage
+                  ? 'overflow-y-visible'
+                  : 'min-h-0 overflow-y-auto scrollbar-hide'
+              }`}
+            >
               {children}
             </main>
             <FloatingChatWidget />
