@@ -1,7 +1,6 @@
 'use client'
 import React, { useState } from 'react'
 import { sendContactForm } from '@/services/contact/contact.service'
-import type { ContactForm, ContactApiResponse } from '@/types/contact'
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', message: '' })

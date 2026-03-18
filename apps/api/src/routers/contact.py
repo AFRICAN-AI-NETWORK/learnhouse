@@ -14,7 +14,6 @@ class ContactForm(BaseModel):
 async def contact_submit(form: ContactForm, request: Request):
     # Basic anti-spam: check for too many requests from same IP
     client_ip = request.client.host
-    # Optionally, add rate limiting or CAPTCHA here
 
     # Compose email
     subject = f"Contact Form Submission from {form.name}"
