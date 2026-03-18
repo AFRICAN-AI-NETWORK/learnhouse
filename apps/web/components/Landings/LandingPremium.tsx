@@ -18,6 +18,9 @@ import {
   BarChart3,
   Box,
   ClipboardList,
+  Quote,
+  TrendingUp,
+  Users as UsersIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
@@ -116,35 +119,74 @@ export default function LandingPremium({
         </div>
       </section>
 
-      {/* Available Now */}
-      <section className="py-24 px-6 bg-white/[0.02]">
+      {/* Tech Specializations */}
+      <section className="py-24 px-6 bg-white/[0.02] border-t border-white/5">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-16">
-            <div className="space-y-4">
-              <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
-                Available Programs
-              </h2>
-              <p className="text-zinc-500 font-medium">
-                Start learning today with our open access directory.
-              </p>
-            </div>
+          <div className="text-center space-y-4 mb-20">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+              Tech Specializations
+            </h2>
+            <p className="text-zinc-500 max-w-2xl mx-auto font-medium leading-relaxed">
+              We prepare students for high-impact roles across the modern
+              technology landscape.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {techSpecializations.map((spec, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 * index }}
+                className="p-6 rounded-2xl bg-zinc-900 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-800 transition-colors shadow-xl"
+              >
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
+                  <spec.icon size={24} />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                  {spec.name}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Available Now */}
+      <section className="py-24 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="space-y-4 mb-16">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+              Available Programs
+            </h2>
+            <p className="text-zinc-500 font-medium">
+              Start learning today with our open access directory.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <motion.div
-              whileHover={{ y: -5 }}
-              className="group relative p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 hover:border-red-500/30 transition-all overflow-hidden"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="group relative p-10 rounded-[40px] bg-zinc-900 border border-white/10 hover:border-red-500/50 transition-all overflow-hidden shadow-2xl"
             >
-              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Cpu size={120} />
+              <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-20 transition-opacity">
+                <Cpu size={160} />
               </div>
-              <div className="relative z-10 space-y-6">
-                <div className="w-14 h-14 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center">
-                  <Cpu size={28} />
+              <div className="relative z-10 space-y-8">
+                <div className="w-16 h-16 bg-red-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20">
+                  <Cpu size={32} />
                 </div>
-                <div>
-                  <h3 className="text-3xl font-black mb-2">AAN OPEN</h3>
-                  <p className="text-zinc-400 leading-relaxed font-medium">
+                <div className="space-y-4">
+                  <div className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest">
+                    Live Now
+                  </div>
+                  <h3 className="text-4xl font-black tracking-tight">
+                    AAN OPEN
+                  </h3>
+                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">
                     Your gateway to the AI ecosystem. Access our curated
                     directory of AI foundations and professional tools to
                     kickstart your journey.
@@ -152,9 +194,9 @@ export default function LandingPremium({
                 </div>
                 <Link
                   href={getUriWithOrg(orgslug, '/course/aan-open')}
-                  className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest text-red-500 hover:text-red-400"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all"
                 >
-                  Explore Directory <ArrowRight size={16} />
+                  Explore Directory <ArrowRight size={18} />
                 </Link>
               </div>
             </motion.div>
@@ -163,7 +205,7 @@ export default function LandingPremium({
       </section>
 
       {/* Launching & Coming Soon */}
-      <section className="py-24 px-6">
+      <section className="py-24 px-6 border-t border-white/5 bg-white/[0.01]">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
             {/* Launching Soon */}
@@ -177,9 +219,19 @@ export default function LandingPremium({
                 </p>
               </div>
 
-              <div className="p-8 rounded-[32px] bg-emerald-500/5 border border-emerald-500/10 space-y-6">
-                <h4 className="text-2xl font-black">AAN FUNDAMENTALS</h4>
-                <ul className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+                className="p-10 rounded-[40px] bg-zinc-900 border border-emerald-500/20 shadow-2xl shadow-emerald-500/5 space-y-8"
+              >
+                <div className="space-y-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-emerald-500">
+                    Professional Path
+                  </span>
+                  <h4 className="text-3xl font-black">AAN FUNDAMENTALS</h4>
+                </div>
+                <ul className="space-y-5">
                   {[
                     'Programming Essentials for AI',
                     'Mathematics for Machine Learning',
@@ -188,14 +240,14 @@ export default function LandingPremium({
                   ].map((item, i) => (
                     <li
                       key={i}
-                      className="flex items-center gap-3 text-sm font-medium text-zinc-300"
+                      className="flex items-center gap-4 text-base font-bold text-zinc-300"
                     >
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{' '}
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                       {item}
                     </li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             </div>
 
             {/* Coming Soon */}
@@ -210,90 +262,166 @@ export default function LandingPremium({
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                <div className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 space-y-2">
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="p-10 rounded-[40px] bg-zinc-900 border border-white/5 space-y-3 shadow-2xl hover:border-amber-500/30 transition-colors"
+                >
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
                     Mastery Track
                   </span>
-                  <h4 className="text-xl font-black">AI MASTERY CERTIFICATE</h4>
-                </div>
-                <div className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 space-y-2">
+                  <h4 className="text-2xl font-black">
+                    AI MASTERY CERTIFICATE TRACK
+                  </h4>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  className="p-10 rounded-[40px] bg-zinc-900 border border-white/5 space-y-3 shadow-2xl hover:border-amber-500/30 transition-colors"
+                >
                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
                     Pro Series
                   </span>
-                  <h4 className="text-xl font-black">AAN AI PRO</h4>
-                </div>
+                  <h4 className="text-2xl font-black">AAN AI PRO</h4>
+                </motion.div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Tech Specializations */}
-      <section className="py-24 px-6 bg-white/[0.02]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-4 mb-20">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
-              Tech Specializations
-            </h2>
-            <p className="text-zinc-500 max-w-2xl mx-auto font-medium lead-relaxed">
-              We prepare students for high-impact roles across the modern
-              technology landscape.
-            </p>
-          </div>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
-          >
-            {techSpecializations.map((spec, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="p-6 rounded-2xl bg-zinc-900/30 border border-white/5 flex flex-col items-center text-center gap-4 hover:bg-zinc-900/50 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-white/50">
-                  <spec.icon size={24} />
-                </div>
-                <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">
-                  {spec.name}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* Final CTA */}
-      <section className="py-32 px-6 relative overflow-hidden">
+      <section className="py-32 px-6 relative overflow-hidden border-t border-white/5">
         <div className="absolute inset-0 bg-red-600/5 pointer-events-none" />
         <div className="max-w-4xl mx-auto text-center relative z-10 space-y-12">
-          <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">
+          <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight">
             Ready to Build the{' '}
             <span className="text-red-500">Next Frontier?</span>
           </h2>
-          <p className="text-xl text-zinc-400 font-medium">
+          <p className="text-xl text-zinc-400 font-medium max-w-2xl mx-auto">
             Join thousands of students across Africa mastering the future today.
             Free access to basic tools, premium training for future leaders.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link
               href="/auth/signup"
-              className="w-full sm:w-auto px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest"
+              className="w-full sm:w-auto px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all"
             >
               Get Started Now
             </Link>
             <Link
               href={getUriWithOrg(orgslug, '/courses')}
-              className="w-full sm:w-auto px-12 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10"
+              className="w-full sm:w-auto px-12 py-5 bg-white/5 border border-white/10 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
             >
               Learn More
             </Link>
           </div>
         </div>
       </section>
+
+      {/* Dynamic Sections from Org Config */}
+      {org?.landing?.sections?.map((section: any, index: number) => {
+        if (section.type === 'testimonials') {
+          return (
+            <section key={index} className="py-24 px-6 bg-white/[0.02]">
+              <div className="max-w-7xl mx-auto">
+                <div className="text-center mb-16">
+                  <h2 className="text-4xl font-black tracking-tighter mb-4">
+                    {section.title || 'What Our Students Say'}
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {section.testimonials?.map((t: any, i: number) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.1 }}
+                      className="p-8 rounded-[32px] bg-zinc-900/50 border border-white/5 relative"
+                    >
+                      <Quote
+                        className="text-red-500/20 absolute top-6 right-8"
+                        size={40}
+                      />
+                      <p className="text-zinc-300 italic mb-6 relative z-10">
+                        "{t.text}"
+                      </p>
+                      <div className="flex items-center gap-4">
+                        {t.image_url && (
+                          <img
+                            src={t.image_url}
+                            alt={t.author}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        )}
+                        <div>
+                          <p className="font-bold text-white">{t.author}</p>
+                          <p className="text-xs text-zinc-500">{t.role}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )
+        }
+
+        if (section.type === 'impact-metrics') {
+          return (
+            <section key={index} className="py-24 px-6">
+              <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                  {section.metrics?.map((m: any, i: number) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.1 }}
+                      className="text-center space-y-2"
+                    >
+                      <p className="text-5xl font-black text-red-500">
+                        {m.value}
+                        {m.suffix}
+                      </p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                        {m.label}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )
+        }
+
+        if (section.type === 'cta') {
+          return (
+            <section key={index} className="py-24 px-6 bg-red-600/5">
+              <div className="max-w-4xl mx-auto text-center space-y-8">
+                <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
+                  {section.title}
+                </h2>
+                <p className="text-xl text-zinc-400">{section.description}</p>
+                {section.button && (
+                  <Link
+                    href={section.button.link || '#'}
+                    className="inline-block px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all"
+                  >
+                    {section.button.text}
+                  </Link>
+                )}
+              </div>
+            </section>
+          )
+        }
+
+        return null
+      })}
 
       {/* Footer-like subtle branding */}
       <div className="py-12 border-t border-white/5 px-8 flex justify-between items-center opacity-30 select-none">
