@@ -31,6 +31,11 @@ function MenuLinks(props: { orgslug: string }) {
           type="pricing"
           orgslug={props.orgslug}
         ></LinkItem>
+        <LinkItem
+          link="/contact"
+          type="contact"
+          orgslug={props.orgslug}
+        ></LinkItem>
         <AuthenticatedClientElement checkMethod="authentication">
           <LinkItem
             link="/trail"
@@ -54,29 +59,30 @@ const LinkItem = (props: any) => {
             <BookCopy size={20} /> <span>{t('courses.courses')}</span>
           </>
         )}
-
         {props.type == 'collections' && (
           <>
             <SquareLibrary size={20} />{' '}
             <span>{t('collections.collections')}</span>
           </>
         )}
-
         {props.type == 'chat' && (
           <>
             <MessageSquare size={20} /> <span>{t('chat.chat')}</span>
           </>
         )}
-
         {props.type == 'trail' && (
           <>
             <Signpost size={20} /> <span>{t('courses.progress')}</span>
           </>
         )}
-
         {props.type == 'pricing' && (
           <>
             <CreditCard size={20} /> <span>Pricing</span>
+          </>
+        )}
+        {props.type == 'contact' && (
+          <>
+            <MessageSquare size={20} /> <span>Contact</span>
           </>
         )}
       </li>
