@@ -25,6 +25,12 @@ import {
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 
+// Background Textures
+import heroBg from '@public/landing/hero_bg.png'
+import programsBg from '@public/landing/programs_bg.png'
+import roadmapBg from '@public/landing/roadmap_bg.png'
+import specializationsBg from '@public/landing/specializations_bg.png'
+
 interface LandingPremiumProps {
   org: any
   courses: any[]
@@ -75,7 +81,7 @@ export default function LandingPremium({
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <img
-            src="/landing/hero_bg.png"
+            src={heroBg.src}
             alt=""
             className="w-full h-full object-cover opacity-15"
           />
@@ -134,7 +140,7 @@ export default function LandingPremium({
       >
         <div className="absolute inset-0 pointer-events-none">
           <img
-            src="/landing/programs_bg.png"
+            src={programsBg.src}
             alt=""
             className="w-full h-full object-cover opacity-[0.08]"
           />
@@ -195,7 +201,7 @@ export default function LandingPremium({
       >
         <div className="absolute inset-0 pointer-events-none">
           <img
-            src="/landing/roadmap_bg.png"
+            src={roadmapBg.src}
             alt=""
             className="w-full h-full object-cover opacity-10"
           />
@@ -288,7 +294,7 @@ export default function LandingPremium({
       >
         <div className="absolute inset-0 pointer-events-none">
           <img
-            src="/landing/specializations_bg.png"
+            src={specializationsBg.src}
             alt=""
             className="w-full h-full object-cover opacity-[0.05]"
           />
