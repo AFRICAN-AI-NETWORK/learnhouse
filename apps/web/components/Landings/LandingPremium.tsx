@@ -77,7 +77,7 @@ export default function LandingPremium({
           <img
             src="/landing/hero_bg.png"
             alt=""
-            className="w-full h-full object-cover opacity-20 mix-blend-luminosity"
+            className="w-full h-full object-cover opacity-15"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#0a0a0a]" />
         </div>
@@ -136,7 +136,7 @@ export default function LandingPremium({
           <img
             src="/landing/programs_bg.png"
             alt=""
-            className="w-full h-full object-cover opacity-5 mix-blend-overlay"
+            className="w-full h-full object-cover opacity-[0.08]"
           />
         </div>
         <div className="max-w-7xl mx-auto">
@@ -197,7 +197,7 @@ export default function LandingPremium({
           <img
             src="/landing/roadmap_bg.png"
             alt=""
-            className="w-full h-full object-cover opacity-10 mix-blend-screen"
+            className="w-full h-full object-cover opacity-10"
           />
         </div>
         <div className="max-w-7xl mx-auto">
@@ -290,7 +290,7 @@ export default function LandingPremium({
           <img
             src="/landing/specializations_bg.png"
             alt=""
-            className="w-full h-full object-cover opacity-10 mix-blend-overlay"
+            className="w-full h-full object-cover opacity-[0.05]"
           />
         </div>
         <div className="max-w-7xl mx-auto">
