@@ -111,11 +111,69 @@ function StaffHandbookPage() {
           </div>
         </section>
 
+        {/* Batch Communication Guide */}
+        <section className="space-y-8 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-900 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 shadow-2xl">
+              <Radio size={24} />
+            </div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              Batch Communication (Admin)
+            </h2>
+          </div>
+          <HandbookCard
+            icon={<Radio size={20} className="text-emerald-400" />}
+            title="Broadcasting Announcements"
+            description="Admins can send announcements to all users, waitlists, courses, or roles using the Communications Hub. Messages can include banners and be posted to email and chat."
+          />
+          <div className="bg-zinc-900/50 border border-emerald-500/10 rounded-[32px] p-8 space-y-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+              Step-by-Step: Sending a Batch Campaign
+            </h3>
+            <ol className="space-y-4 text-zinc-400 text-sm leading-relaxed list-decimal ml-6">
+              <li>
+                <span className="text-white font-bold">
+                  Open Communications Hub:
+                </span>{' '}
+                Go to the dashboard and select "Communication Hub" from the
+                menu.
+              </li>
+              <li>
+                <span className="text-white font-bold">Compose Campaign:</span>{' '}
+                Enter a subject, message content, and optionally upload a header
+                image.
+              </li>
+              <li>
+                <span className="text-white font-bold">Select Audience:</span>{' '}
+                Choose All Users, Waitlist, Course, or Role. If Course or Role,
+                select the specific group.
+              </li>
+              <li>
+                <span className="text-white font-bold">Choose Channels:</span>{' '}
+                Decide if the announcement should also post to Global Chat.
+              </li>
+              <li>
+                <span className="text-white font-bold">Send Campaign:</span>{' '}
+                Click "Dispatch Campaign". The system will send messages in the
+                background and show campaign status.
+              </li>
+              <li>
+                <span className="text-white font-bold">Review History:</span>{' '}
+                View sent campaigns and their status in the sidebar.
+              </li>
+            </ol>
+            <p className="text-[11px] text-emerald-400 font-medium leading-relaxed mt-3">
+              Tip: Targeting waitlisted students is effective for new course
+              launches.
+            </p>
+          </div>
+        </section>
+
         {/* Future Guides Placeholder */}
         <div className="pt-12 border-t border-white/5 opacity-50">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">
-            More modules coming soon: Batch Communications, Assignment Grading,
-            and Student Mentorship.
+            More modules coming soon: Assignment Grading, and Student
+            Mentorship.
           </p>
         </div>
       </div>
