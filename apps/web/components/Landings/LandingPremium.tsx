@@ -463,7 +463,7 @@ export default function LandingPremium({
       )}
 
       {/* Contact Section */}
-      <div className="max-w-7xl mx-auto">
+      <div className="">
         <ContactSection />
       </div>
 
