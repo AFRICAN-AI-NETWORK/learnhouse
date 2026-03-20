@@ -34,6 +34,7 @@ const LoginClient = (props: LoginClientProps) => {
   const [resendingEmail, setResendingEmail] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState('')
+  const router = require('next/navigation').useRouter()
 
   const validate = (values: any) => {
     const errors: any = {}
@@ -109,6 +110,41 @@ const LoginClient = (props: LoginClientProps) => {
       })
 
       if (res && res.error) {
+        // Check for waitlist error
+        if (
+          res.error.includes('waitlist') ||
+          res.error.includes('launch date')
+        ) {
+          let waitlistUuid = ''
+          const uuidMatch = res.error.match(/waitlist_uuid=([\w-]+)/)
+          if (uuidMatch && uuidMatch[1]) {
+            waitlistUuid = uuidMatch[1]
+          }
+          // Fallback: fetch user's waitlist_uuid from backend if not found
+          const redirectToCountdown = async () => {
+            if (!waitlistUuid && values.email) {
+              try {
+                const resp = await fetch(
+                  `${process.env.NEXT_PUBLIC_API_URL || ''}/waitlist/user-uuid?email=${encodeURIComponent(values.email)}`
+                )
+                const data = await resp.json()
+                if (data && data.waitlist_uuid) {
+                  waitlistUuid = data.waitlist_uuid
+                }
+              } catch (err) {
+                // Optionally log error or handle gracefully
+                // console.error('Failed to fetch waitlist UUID:', err);
+              }
+            }
+            const searchParams = new URLSearchParams()
+            searchParams.set('orgslug', props.org?.slug || 'default')
+            if (waitlistUuid) searchParams.set('waitlist_uuid', waitlistUuid)
+            router.push(`/auth/waitlist/countdown?${searchParams.toString()}`)
+            setIsSubmitting(false)
+          }
+          await redirectToCountdown()
+          return
+        }
         if (
           res.error.includes('verify your email') ||
           res.error.includes('email address before') ||
