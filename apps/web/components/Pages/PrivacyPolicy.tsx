@@ -1,16 +1,41 @@
 'use client'
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
 
 import { mainDoc, categories, docs } from '@/data/privacy-policy'
 
 const PrivacyPolicy: React.FC = () => {
+  const router = useRouter()
   const [active, setActive] = useState<string>('all')
   const filteredDocs =
     active === 'all' ? docs : docs.filter((d) => d.category === active)
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold px-3 py-2 rounded transition border border-blue-100 bg-blue-50 hover:bg-blue-100"
+        aria-label="Go back"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+        Back
+      </button>
       {/* Header Section */}
       <div className="mb-10 flex flex-col items-center text-center">
         <div className="mb-4 flex items-center justify-center">
