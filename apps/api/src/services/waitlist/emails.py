@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import EmailStr
 from sqlmodel import Session, select
@@ -224,15 +224,34 @@ async def process_waitlist_activations(db_session: Session):
     Checks for expired waitlists and processes activations.
     """
     
-    # Query all ACTIVE waitlists where launch_datetime has passed
-    current_time = datetime.now().isoformat()
+    # Get current time in UTC for consistent timezone-aware comparison
+    current_time_utc = datetime.now(timezone.utc)
     
+    # Query all ACTIVE waitlists (filter by datetime comparison in Python)
     waitlists_query = select(WaitlistConfig).where(
-        WaitlistConfig.status == WaitlistStatusEnum.ACTIVE.value,
-        WaitlistConfig.launch_datetime <= current_time
+        WaitlistConfig.status == WaitlistStatusEnum.ACTIVE.value
     )
     
-    waitlists = db_session.exec(waitlists_query).all()
+    all_waitlists = db_session.exec(waitlists_query).all()
+    
+    # Filter waitlists where launch_datetime has passed (UTC-aware comparison)
+    waitlists = []
+    for wl in all_waitlists:
+        try:
+            # Parse launch_datetime with timezone awareness (handle Z suffix for UTC)
+            launch_dt = datetime.fromisoformat(wl.launch_datetime.replace('Z', '+00:00'))
+            if launch_dt.tzinfo is None:
+                launch_dt = launch_dt.replace(tzinfo=timezone.utc)
+            else:
+                launch_dt = launch_dt.astimezone(timezone.utc)
+            if current_time_utc >= launch_dt:
+                waitlists.append(wl)
+        except ValueError as e:
+            logger.error(
+                "Error parsing launch_datetime for waitlist %s: %s",
+                wl.waitlist_uuid, e
+            )
+            continue
     
     for waitlist in waitlists:
         try:
@@ -376,13 +395,16 @@ async def retry_failed_waitlist_emails(db_session: Session):
     Retry failed waitlist activation emails with exponential backoff.
     """
     
-    # Find failed emails with retry_count < 3
+    # Find actual failed activation emails with retry_count < 3.
+    # This excludes placeholder/pending records that were never attempted.
     failed_logs_query = select(WaitlistEmailLog).where(
         WaitlistEmailLog.email_sent == False,
+        WaitlistEmailLog.email_error.is_not(None),
         WaitlistEmailLog.retry_count < 3
     )
     
     failed_logs = db_session.exec(failed_logs_query).all()
+    current_time_utc = datetime.now(timezone.utc)
     
     for log in failed_logs:
         # Get user and waitlist
@@ -395,6 +417,24 @@ async def retry_failed_waitlist_emails(db_session: Session):
         # Get organization
         org = db_session.get(Organization, waitlist.org_id)
         if not org:
+            continue
+
+        # Never retry activation before launch time.
+        try:
+            launch_dt = datetime.fromisoformat(waitlist.launch_datetime.replace('Z', '+00:00'))
+            if launch_dt.tzinfo is None:
+                launch_dt = launch_dt.replace(tzinfo=timezone.utc)
+            else:
+                launch_dt = launch_dt.astimezone(timezone.utc)
+            if current_time_utc < launch_dt:
+                continue
+        except ValueError:
+            # Skip malformed launch datetimes to avoid early sends.
+            logger.warning(
+                "Skipping retry for waitlist %s due to invalid launch datetime: %s",
+                waitlist.waitlist_uuid,
+                waitlist.launch_datetime,
+            )
             continue
         
         try:
