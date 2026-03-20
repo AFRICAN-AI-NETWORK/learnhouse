@@ -34,6 +34,7 @@ const LoginClient = (props: LoginClientProps) => {
   const [resendingEmail, setResendingEmail] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState('')
+  const router = require('next/navigation').useRouter()
 
   const validate = (values: any) => {
     const errors: any = {}
@@ -109,6 +110,33 @@ const LoginClient = (props: LoginClientProps) => {
       })
 
       if (res && res.error) {
+        // Show waitlist error directly, no redirect
+        if (
+          res.error.includes('waitlist') ||
+          res.error.includes('launch date')
+        ) {
+          // Format date in error message for user-friendly display
+          let formattedError = res.error
+          const dateMatch = res.error.match(
+            /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
+          )
+          if (dateMatch && dateMatch[1]) {
+            const dateObj = new Date(dateMatch[1])
+            const formattedDate = dateObj.toLocaleString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })
+            formattedError = res.error.replace(dateMatch[1], formattedDate)
+          }
+          setError(formattedError)
+          setShowResendButton(false)
+          setIsSubmitting(false)
+          return
+        }
         if (
           res.error.includes('verify your email') ||
           res.error.includes('email address before') ||

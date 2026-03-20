@@ -27,6 +27,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
     { name: 'Programs', href: '#available' },
     { name: 'Roadmap', href: '#roadmap' },
     { name: 'Specializations', href: '#specializations' },
+    { name: 'Privacy Policy', href: '/policy' },
   ]
 
   return (
