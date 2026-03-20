@@ -110,39 +110,31 @@ const LoginClient = (props: LoginClientProps) => {
       })
 
       if (res && res.error) {
-        // Check for waitlist error
+        // Show waitlist error directly, no redirect
         if (
           res.error.includes('waitlist') ||
           res.error.includes('launch date')
         ) {
-          let waitlistUuid = ''
-          const uuidMatch = res.error.match(/waitlist_uuid=([\w-]+)/)
-          if (uuidMatch && uuidMatch[1]) {
-            waitlistUuid = uuidMatch[1]
+          // Format date in error message for user-friendly display
+          let formattedError = res.error
+          const dateMatch = res.error.match(
+            /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
+          )
+          if (dateMatch && dateMatch[1]) {
+            const dateObj = new Date(dateMatch[1])
+            const formattedDate = dateObj.toLocaleString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })
+            formattedError = res.error.replace(dateMatch[1], formattedDate)
           }
-          // Fallback: fetch user's waitlist_uuid from backend if not found
-          const redirectToCountdown = async () => {
-            if (!waitlistUuid && values.email) {
-              try {
-                const resp = await fetch(
-                  `${process.env.NEXT_PUBLIC_API_URL || ''}/waitlist/user-uuid?email=${encodeURIComponent(values.email)}`
-                )
-                const data = await resp.json()
-                if (data && data.waitlist_uuid) {
-                  waitlistUuid = data.waitlist_uuid
-                }
-              } catch (err) {
-                // Optionally log error or handle gracefully
-                // console.error('Failed to fetch waitlist UUID:', err);
-              }
-            }
-            const searchParams = new URLSearchParams()
-            searchParams.set('orgslug', props.org?.slug || 'default')
-            if (waitlistUuid) searchParams.set('waitlist_uuid', waitlistUuid)
-            router.push(`/auth/waitlist/countdown?${searchParams.toString()}`)
-            setIsSubmitting(false)
-          }
-          await redirectToCountdown()
+          setError(formattedError)
+          setShowResendButton(false)
+          setIsSubmitting(false)
           return
         }
         if (
