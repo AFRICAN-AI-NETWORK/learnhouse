@@ -474,7 +474,9 @@ export default function LandingPremium({
         </span>
         <div className="flex gap-6 uppercase tracking-[0.2em] font-black text-[9px]">
           <span>Security</span>
-          <span>Privacy</span>
+          <Link href="/policy" className="hover:underline">
+            Privacy
+          </Link>
           <span>Terms</span>
         </div>
       </div>
