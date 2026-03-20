@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
@@ -11,7 +12,6 @@ from src.db.waitlist import (
     WaitlistConfig,
     WaitlistStatusEnum,
     WaitlistCoursePreference,
-    WaitlistEmailLog,
 )
 from src.security.security import security_hash_password
 from src.security.features_utils.usage import (
@@ -22,6 +22,9 @@ from src.services.users.users import generate_verification_token
 from src.services.users.emails import send_account_creation_email
 from src.services.waitlist.emails import send_waitlist_confirmation_email
 from src.db.payments.payments_products import PaymentsProduct
+
+
+logger = logging.getLogger(__name__)
 
 
 async def create_waitlist_user(
@@ -64,15 +67,27 @@ async def create_waitlist_user(
             detail="Waitlist not found or no longer active"
         )
     
-    # Verify launch datetime hasn't passed
+    # Verify launch datetime hasn't passed (UTC-aware comparison)
     try:
+        from datetime import timezone as tz
+        # Parse launch_datetime with timezone awareness
         launch_dt = datetime.fromisoformat(waitlist.launch_datetime.replace('Z', '+00:00'))
-        if launch_dt <= datetime.now(launch_dt.tzinfo):
+        if launch_dt.tzinfo is None:
+            launch_dt = launch_dt.replace(tzinfo=tz.utc)
+        else:
+            launch_dt = launch_dt.astimezone(tz.utc)
+        # Get current time in UTC for consistent comparison
+        current_time_utc = datetime.now(tz.utc)
+        if current_time_utc >= launch_dt:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This waitlist has already launched. Registration is closed."
             )
-    except ValueError:
+    except ValueError as e:
+        logger.warning(
+            "Warning: Failed to parse launch_datetime for waitlist %s: %s. Allowing registration to proceed.",
+            waitlist.waitlist_uuid, e
+        )
         pass  # If datetime parsing fails, continue anyway
     
     # Resolve org_id from waitlist (NOT user-provided)
@@ -261,18 +276,6 @@ async def create_waitlist_user(
     # Increment waitlist registration counter
     waitlist.total_registrations += 1
     db_session.add(waitlist)
-    db_session.commit()
-    
-    # Create email log entry (pending)
-    email_log = WaitlistEmailLog(
-        waitlist_config_id=waitlist.id,
-        user_id=user.id,
-        email_sent=False,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now())
-    )
-    
-    db_session.add(email_log)
     db_session.commit()
     
     # Return user as UserRead
