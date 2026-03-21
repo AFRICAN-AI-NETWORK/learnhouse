@@ -1,114 +1,129 @@
 'use client'
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ShieldCheck } from 'lucide-react'
-
-import { mainDoc, categories, docs } from '@/data/privacy-policy'
+import { docs } from '@/data/privacy-policy'
+import LandingNavbar from '../Landings/LandingNavbar'
 
 const PrivacyPolicy: React.FC = () => {
-  const router = useRouter()
-  const [active, setActive] = useState<string>('all')
-  const filteredDocs =
-    active === 'all' ? docs : docs.filter((d) => d.category === active)
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
+
+  const selectedDoc = docs[selectedIdx]
+
+  const org = { name: 'DEFAULT ORGANIZATION' }
+  const orgslug = 'aan'
+
+  const handleSelect = (idx: number) => {
+    setSelectedIdx(idx)
+    setIsOpen(false)
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      {/* Back Button */}
-      <button
-        onClick={() => router.back()}
-        className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold px-3 py-2 rounded transition border border-blue-100 bg-blue-50 hover:bg-blue-100"
-        aria-label="Go back"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Back
-      </button>
-      {/* Header Section */}
-      <div className="mb-10 flex flex-col items-center text-center">
-        <div className="mb-4 flex items-center justify-center">
-          <ShieldCheck size={40} className="text-blue-600 mr-2" />
-          <span className="text-2xl font-black text-blue-600">
-            AFRICAN AI NETWORK
-          </span>
-        </div>
-        <h1 className="text-4xl font-bold mb-2">
-          Privacy and Policy Documentation Hub
-        </h1>
-        <h2 className="text-lg font-semibold text-zinc-700 dark:text-zinc-300 mb-4">
-          All official AAN policies, guidelines, and legal documents in one
-          place. Browse, filter, and access any document instantly.
-        </h2>
-        <a
-          href={mainDoc.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-        >
-          View Main Privacy Policy
-        </a>
-      </div>
+    <>
+      <LandingNavbar org={org} orgslug={orgslug} variant="policy" />
 
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2 mb-8 justify-center">
-        {categories.map((cat) => (
+      <div className="max-w-5xl mx-auto pt-[80px] md:pt-[100px] pb-8 px-4 md:px-2">
+        {/* MOBILE TOP BAR */}
+        <div className="md:hidden mb-6">
           <button
-            key={cat.key}
-            onClick={() => setActive(cat.key)}
-            className={`px-4 py-2 rounded-full font-bold text-sm border transition-colors ${active === cat.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-600 hover:bg-blue-50'}`}
+            onClick={() => setIsOpen(true)}
+            className="w-full flex items-center justify-between border border-zinc-300 dark:border-zinc-700 rounded-lg px-4 py-3 text-sm bg-white dark:bg-zinc-900"
           >
-            {cat.label}
+            <span>{selectedDoc.title}</span>
+            <span>☰</span>
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Main Section Heading */}
-      <h2 className="text-2xl font-bold mb-6 text-center">
-        All Policy Documents
-      </h2>
+        {/* MOBILE DRAWER */}
+        {isOpen && (
+          <div className="fixed inset-0 z-50 flex">
+            {/* Overlay */}
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setIsOpen(false)}
+            />
 
-      {/* Document Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredDocs.map((doc, idx) => {
-          const Icon = doc.icon
-          return (
-            <a
-              key={idx}
-              href={doc.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 bg-white dark:bg-zinc-900 shadow hover:shadow-lg transition group"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Icon
-                  size={28}
-                  className="text-blue-600 group-hover:text-blue-800"
-                />
-                <span className="text-lg font-bold">{doc.title}</span>
+            {/* Drawer */}
+            <div className="relative w-72 bg-white dark:bg-zinc-900 h-full p-6 overflow-y-auto shadow-xl">
+              <h2 className="text-lg font-semibold mb-4">Documents</h2>
+
+              <nav className="flex flex-col">
+                {docs.map((doc, idx) => (
+                  <button
+                    key={doc.title}
+                    onClick={() => handleSelect(idx)}
+                    className={`text-left py-3 text-sm border-b border-transparent ${
+                      selectedIdx === idx
+                        ? 'text-sky-500 font-medium'
+                        : 'text-zinc-800 dark:text-zinc-200'
+                    }`}
+                  >
+                    {doc.title}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col md:flex-row gap-10 min-h-[400px] mt-4">
+          {/* Sidebar (desktop only) */}
+          <aside className="hidden md:block md:w-64 flex-shrink-0 mt-12">
+            <nav className="flex flex-col">
+              {docs.map((doc, idx) => (
+                <button
+                  key={doc.title}
+                  onClick={() => handleSelect(idx)}
+                  className={`text-left py-3 text-sm border-b border-transparent ${
+                    selectedIdx === idx
+                      ? 'text-sky-500 font-medium'
+                      : 'text-zinc-800 dark:text-zinc-200 hover:text-sky-500'
+                  }`}
+                >
+                  {doc.title}
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          {/* Content */}
+          <main className="flex-1 w-full">
+            {selectedDoc ? (
+              <div className="max-w-full md:max-w-2xl">
+                <h1 className="text-2xl md:text-3xl font-bold text-[#2e5175] dark:text-white mb-5">
+                  {selectedDoc.title}
+                </h1>
+
+                <p className="text-zinc-700 dark:text-zinc-300 text-base leading-relaxed mb-6">
+                  {selectedDoc.desc}
+                </p>
+
+                <p className="flex items-center gap-2 text-base">
+                  <span>👉</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">
+                    Read the full
+                  </span>
+                  <a
+                    href={selectedDoc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-500 hover:underline"
+                  >
+                    {selectedDoc.title}
+                  </a>
+                </p>
               </div>
-              <div className="text-sm text-zinc-600 dark:text-zinc-300 mb-2">
-                {doc.desc}
+            ) : (
+              <div className="text-zinc-500 dark:text-zinc-400 py-12">
+                <p>Document not found.</p>
               </div>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-600 mt-2">
-                {doc.category.charAt(0).toUpperCase() + doc.category.slice(1)}
-              </span>
-            </a>
-          )
-        })}
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
