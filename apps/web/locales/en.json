@@ -1264,7 +1264,7 @@
         },
         "actions": {
           "edit_role": "Edit Role",
-          "remove_from_org": "Delete user account",
+          "remove_from_org": "Delete user",
           "removing": "Deleting...",
           "remove_success": "User account deleted successfully",
           "remove_error": "Error deleting user account"

@@ -9,9 +9,14 @@ import { getOrgLogoMediaDirectory } from '@services/media/media'
 interface LandingNavbarProps {
   org: any
   orgslug: string
+  variant?: string
 }
 
-const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
+const LandingNavbar: React.FC<LandingNavbarProps> = ({
+  org,
+  orgslug,
+  variant,
+}) => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -24,19 +29,24 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
   }, [])
 
   const navLinks = [
-    { name: 'Programs', href: '#available' },
-    { name: 'Roadmap', href: '#roadmap' },
-    { name: 'Specializations', href: '#specializations' },
+    { name: 'Programs', href: '/#available' },
+    { name: 'Roadmap', href: '/#roadmap' },
+    { name: 'Specializations', href: '/#specializations' },
     { name: 'Privacy Policy', href: '/policy' },
   ]
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${
-        isScrolled
-          ? 'py-4 bg-black/70 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.05)]'
-          : 'py-6 bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out
+        ${
+          variant === 'policy'
+            ? isScrolled
+              ? 'py-4 bg-white text-black border-b border-zinc-200 shadow'
+              : 'py-6 bg-white text-black'
+            : isScrolled
+              ? 'py-4 bg-black/70 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.05)]'
+              : 'py-6 bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
@@ -49,7 +59,9 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
                 className="h-full w-auto object-contain brightness-0 invert"
               />
             ) : (
-              <span className="text-xl font-black tracking-tighter text-white uppercase italic">
+              <span
+                className={`text-xl font-black tracking-tighter ${variant === 'policy' ? 'text-black' : 'text-white'} uppercase italic`}
+              >
                 {org?.name || 'AAN'}
               </span>
             )}
@@ -62,7 +74,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
             <a
               key={link.name}
               href={link.href}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors"
+              className={`text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ${variant === 'policy' ? 'hover:text-black' : 'hover:text-white'} transition-colors`}
             >
               {link.name}
             </a>
@@ -73,13 +85,13 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ org, orgslug }) => {
         <div className="hidden md:flex items-center gap-6">
           <Link
             href="/auth/signin"
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-white hover:opacity-70 transition-opacity"
+            className={`text-[10px] font-black uppercase tracking-[0.2em] ${variant === 'policy' ? 'text-black' : 'text-white'} hover:opacity-70 transition-opacity`}
           >
             Login
           </Link>
           <Link
             href="/auth/signup"
-            className="px-6 py-3 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all"
+            className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} ${variant === 'policy' ? 'text-black' : 'text-black'} rounded-xl ${variant === 'policy' ? 'border border-blue-500' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
           >
             Join Now
           </Link>
