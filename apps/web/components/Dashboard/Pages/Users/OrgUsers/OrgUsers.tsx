@@ -100,7 +100,7 @@ function OrgUsers() {
                         </span>
                       </td>
                       <td className="py-3 px-4">{user.role.name}</td>
-                      <td className="py-3 px-4 flex space-x-2 items-end">
+                      <td className="py-3 px-4 flex-col space-y-2 items-end">
                         <Modal
                           isDialogOpen={
                             rolesModal && selectedUser === user.user.user_uuid
