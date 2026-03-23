@@ -103,7 +103,7 @@ export default function LandingPremium({
               <Sparkles size={14} /> The Future of Learning
             </span>
             <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
-              Accelerate Your Career in the{' '}
+              Accelerate Your Career In The{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-800">
                 New Economy
               </span>
