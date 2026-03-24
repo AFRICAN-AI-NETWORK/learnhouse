@@ -1296,7 +1296,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
         style={{
           backgroundImage: "url('/chat-wallpaper.png')",
           backgroundSize: 'auto',

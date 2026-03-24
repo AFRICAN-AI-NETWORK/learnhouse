@@ -18,6 +18,12 @@ import { useTranslation } from 'react-i18next'
 const validate = (values: any, t: any) => {
   const errors: any = {}
 
+  if (!values.phone_number) {
+    errors.phone_number = t('validation.required')
+  } else if (!/^\+?[0-9]{7,15}$/.test(values.phone_number)) {
+    errors.phone_number = t('validation.invalid_phone')
+  }
+
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
@@ -65,6 +71,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
       password: '',
       username: '',
       bio: '',
+      phone_number: '',
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
     },
@@ -137,6 +144,20 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
               onChange={formik.handleChange}
               value={formik.values.email}
               type="email"
+              required
+            />
+          </Form.Control>
+        </FormField>
+        <FormField name="phone_number">
+          <FormLabelAndMessage
+            label={t('user.phone_number') || 'Phone Number'}
+            message={formik.errors.phone_number}
+          />
+          <Form.Control asChild>
+            <Input
+              onChange={formik.handleChange}
+              value={formik.values.phone_number}
+              type="tel"
               required
             />
           </Form.Control>

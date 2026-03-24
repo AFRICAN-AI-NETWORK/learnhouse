@@ -33,6 +33,12 @@ import { useTranslation } from 'react-i18next'
 const validate = (values: any, t: any) => {
   const errors: any = {}
 
+  if (!values.phone_number) {
+    errors.phone_number = t('validation.required')
+  } else if (!/^\+?[0-9]{7,15}$/.test(values.phone_number)) {
+    errors.phone_number = t('validation.invalid_phone')
+  }
+
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
@@ -117,6 +123,7 @@ function OpenSignUpComponent() {
       confirmPassword: '',
       username: '',
       bio: '',
+      phone_number: '',
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
     },
@@ -147,6 +154,7 @@ function OpenSignUpComponent() {
         browser_fingerprint?: { visitor_id: string }
       } = {
         ...values,
+        phone_number: values.phone_number,
         ...(device_id ? { device_id } : {}),
         ...(browser_fingerprint ? { browser_fingerprint } : {}),
         ...(referralCode.trim() ? { referral_code: referralCode.trim() } : {}),
@@ -502,11 +510,23 @@ function OpenSignUpComponent() {
               <FormLabelAndMessage label={t('user.bio')} />
               <Form.Control asChild>
                 <Textarea
-                  className="resize-none focus:ring-2 focus:ring-black/5 transition-all p-3"
-                  rows={3}
                   onChange={formik.handleChange}
                   value={formik.values.bio}
-                  placeholder="Tell us a bit about yourself..."
+                  required
+                />
+              </Form.Control>
+            </FormField>
+
+            <FormField name="phone_number">
+              <FormLabelAndMessage
+                label={t('user.phone_number') || 'Phone Number'}
+                message={formik.errors.phone_number}
+              />
+              <Form.Control asChild>
+                <Input
+                  onChange={formik.handleChange}
+                  value={formik.values.phone_number}
+                  type="tel"
                   required
                 />
               </Form.Control>
