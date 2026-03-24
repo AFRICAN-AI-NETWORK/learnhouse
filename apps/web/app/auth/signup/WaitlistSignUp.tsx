@@ -58,6 +58,12 @@ const validate = (values: any, t: any) => {
     errors.bio = t('validation.required')
   }
 
+  if (!values.phone_number) {
+    errors.phone_number = t('validation.required')
+  } else if (!/^\+?[0-9]{7,15}$/.test(values.phone_number)) {
+    errors.phone_number = t('validation.invalid_phone')
+  }
+
   if (!values.first_name) {
     errors.first_name = t('validation.required')
   }
@@ -166,6 +172,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
       bio: '',
+      phone_number: '',
       org_slug: orgSlug,
       org_id: waitlistDetails?.org_id || 0,
       is_waitlist: true,
@@ -196,6 +203,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
         const payload = {
           ...values,
           selected_product_ids: selectedProducts,
+          phone_number: values.phone_number,
           ...(device_id ? { device_id } : {}),
           ...(browser_fingerprint ? { browser_fingerprint } : {}),
           ...(referralCode.trim()
@@ -233,6 +241,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             const payloadWithoutRef = {
               ...values,
               selected_product_ids: selectedProducts,
+              phone_number: values.phone_number,
               device_id,
               browser_fingerprint,
             }
@@ -554,6 +563,28 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               {formik.errors.username && formik.touched.username && (
                 <p className="mt-1 text-xs text-red-600 font-medium">
                   {formik.errors.username}
+                </p>
+              )}
+            </FormField>
+
+            <FormField name="phone_number">
+              <FormLabelAndMessage
+                label={t('user.phone_number') || 'Phone Number'}
+              />
+              <Form.Control asChild>
+                <Input
+                  className={`h-12 focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.phone_number && formik.touched.phone_number ? 'border-red-400' : formik.values.phone_number && !formik.errors.phone_number ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values.phone_number}
+                  placeholder="e.g. +1234567890"
+                  type="tel"
+                  required
+                />
+              </Form.Control>
+              {formik.errors.phone_number && formik.touched.phone_number && (
+                <p className="mt-1 text-xs text-red-600 font-medium">
+                  {formik.errors.phone_number}
                 </p>
               )}
             </FormField>
