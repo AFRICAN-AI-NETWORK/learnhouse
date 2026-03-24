@@ -30,37 +30,46 @@ import { signup } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
 
+// Helper to format phone number to E.164 (basic, assumes user enters digits only or with +)
+function formatE164(phone: string) {
+  let cleaned = phone.replace(/[^\d+]/g, '')
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+' + cleaned
+  }
+  return cleaned
+}
+
 const validate = (values: any, t: any) => {
   const errors: any = {}
-
   if (!values.phone_number) {
     errors.phone_number = t('validation.required')
-  } else if (!/^\+?[0-9]{7,15}$/.test(values.phone_number)) {
+  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
     errors.phone_number = t('validation.invalid_phone')
   }
-
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
     errors.email = t('validation.invalid_email')
   }
-
   if (!values.password) {
     errors.password = t('validation.required')
   } else if (values.password.length < 8) {
     errors.password = t('validation.password_min_length')
   }
-
   if (!values.username) {
     errors.username = t('validation.required')
   } else if (values.username.length < 4) {
     errors.username = t('validation.username_min_length')
   }
-
   if (!values.bio) {
     errors.bio = t('validation.required')
   }
-
+  if (!values.first_name) {
+    errors.first_name = t('validation.required')
+  }
+  if (!values.last_name) {
+    errors.last_name = t('validation.required')
+  }
   return errors
 }
 
@@ -148,18 +157,21 @@ function OpenSignUpComponent() {
         /* fingerprint unavailable — proceed without it */
       }
 
-      const payload: typeof values & {
-        referral_code?: string
-        device_id?: string
-        browser_fingerprint?: { visitor_id: string }
-      } = {
-        ...values,
-        phone_number: values.phone_number,
+      // Only send required fields, and format phone_number
+      const payload: any = {
+        org_slug: values.org_slug,
+        org_id: values.org_id,
+        email: values.email,
+        password: values.password,
+        username: values.username,
+        bio: values.bio,
+        phone_number: formatE164(values.phone_number),
+        first_name: values.first_name,
+        last_name: values.last_name,
         ...(device_id ? { device_id } : {}),
         ...(browser_fingerprint ? { browser_fingerprint } : {}),
         ...(referralCode.trim() ? { referral_code: referralCode.trim() } : {}),
       }
-
       const res = await signup(payload)
       const response = await res.json()
 
@@ -528,6 +540,7 @@ function OpenSignUpComponent() {
                   value={formik.values.phone_number}
                   type="tel"
                   required
+                  placeholder="e.g. +254090000000"
                 />
               </Form.Control>
             </FormField>

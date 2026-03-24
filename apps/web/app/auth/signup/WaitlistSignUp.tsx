@@ -33,45 +33,46 @@ import { WaitlistConfig } from '@/types/waitlist'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 
+// Helper to format phone number to E.164 (basic, assumes user enters digits only or with +)
+function formatE164(phone: string) {
+  let cleaned = phone.replace(/[^\d+]/g, '')
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+' + cleaned
+  }
+  return cleaned
+}
+
 const validate = (values: any, t: any) => {
   const errors: any = {}
-
+  if (!values.phone_number) {
+    errors.phone_number = t('validation.required')
+  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
+    errors.phone_number = t('validation.invalid_phone')
+  }
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
     errors.email = t('validation.invalid_email')
   }
-
   if (!values.password) {
     errors.password = t('validation.required')
   } else if (values.password.length < 8) {
     errors.password = t('validation.password_min_length')
   }
-
   if (!values.username) {
     errors.username = t('validation.required')
   } else if (values.username.length < 4) {
     errors.username = t('validation.username_min_length')
   }
-
   if (!values.bio) {
     errors.bio = t('validation.required')
   }
-
-  if (!values.phone_number) {
-    errors.phone_number = t('validation.required')
-  } else if (!/^\+?[0-9]{7,15}$/.test(values.phone_number)) {
-    errors.phone_number = t('validation.invalid_phone')
-  }
-
   if (!values.first_name) {
     errors.first_name = t('validation.required')
   }
-
   if (!values.last_name) {
     errors.last_name = t('validation.required')
   }
-
   return errors
 }
 
@@ -200,17 +201,26 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       }
 
       try {
-        const payload = {
-          ...values,
+        // Only send required fields, and format phone_number
+        const payload: any = {
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          bio: values.bio,
+          phone_number: formatE164(values.phone_number),
+          org_slug: values.org_slug,
+          org_id: values.org_id,
+          is_waitlist: values.is_waitlist,
+          waitlist_interest: values.waitlist_interest,
           selected_product_ids: selectedProducts,
-          phone_number: values.phone_number,
           ...(device_id ? { device_id } : {}),
           ...(browser_fingerprint ? { browser_fingerprint } : {}),
           ...(referralCode.trim()
             ? { referral_code: referralCode.trim() }
             : {}),
         }
-
         const res = await registerWaitlistUser(waitlistUuid, payload)
 
         if (res.ok) {
@@ -577,7 +587,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.phone_number}
-                  placeholder="e.g. +1234567890"
+                  placeholder="e.g. +254090000000"
                   type="tel"
                   required
                 />

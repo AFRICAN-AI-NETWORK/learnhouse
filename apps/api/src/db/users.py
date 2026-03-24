@@ -1,8 +1,9 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from sqlmodel import Field, SQLModel
 from sqlalchemy import JSON, Column
 from src.db.roles import RoleRead
+from src.security.phone_validation import validate_e164_phone_number
 
 
 
@@ -11,10 +12,15 @@ class UserBase(SQLModel):
     first_name: str
     last_name: str
     email: EmailStr
+    phone_number: Optional[str] = None
     avatar_image: Optional[str] = ""
     bio: Optional[str] = ""
     details: Optional[dict] = Field(default={}, sa_column=Column(JSON))
     profile: Optional[dict] = Field(default={}, sa_column=Column(JSON))
+
+    @validator("phone_number", pre=True, always=False)
+    def validate_phone_number(cls, value):
+        return validate_e164_phone_number(value, required=False)
 
 class UserCreate(UserBase):
     first_name: str = ""
@@ -28,11 +34,20 @@ class UserCreate(UserBase):
     browser_fingerprint: Optional[dict] = None  # Full browser fingerprint
 
 
+class SignupUserCreate(UserCreate):
+    phone_number: str
+
+    @validator("phone_number", pre=True, always=True)
+    def validate_required_phone_number(cls, value):
+        return validate_e164_phone_number(value, required=True)
+
+
 class UserUpdate(UserBase):
     username: str
     first_name: Optional[str]
     last_name: Optional[str]
     email: str
+    phone_number: Optional[str] = None
     avatar_image: Optional[str] = ""
     bio: Optional[str] = ""
     details: Optional[dict] = {}

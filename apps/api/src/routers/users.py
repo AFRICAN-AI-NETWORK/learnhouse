@@ -13,8 +13,8 @@ from src.db.courses.courses import CourseRead
 
 from src.db.users import (
     PublicUser,
+    SignupUserCreate,
     User,
-    UserCreate,
     UserRead,
     UserSession,
     UserUpdate,
@@ -82,7 +82,7 @@ async def api_create_user_with_orgid(
     request: Request,
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
-    user_object: UserCreate,
+    user_object: SignupUserCreate,
     org_id: int,
 ) -> UserRead:
     """
@@ -108,7 +108,7 @@ async def api_create_user_with_orgid_and_invite(
     request: Request,
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
-    user_object: UserCreate,
+    user_object: SignupUserCreate,
     invite_code: str,
     org_id: int,
 ) -> UserRead:
@@ -137,7 +137,7 @@ async def api_create_user_without_org(
     request: Request,
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
-    user_object: UserCreate,
+    user_object: SignupUserCreate,
 ) -> UserRead:
     """
     Create User
