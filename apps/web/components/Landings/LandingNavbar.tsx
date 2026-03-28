@@ -54,9 +54,14 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           <div className="flex items-center h-10">
             {org?.logo_image ? (
               <img
-                src={getOrgLogoMediaDirectory(org.org_uuid, org.logo_image)}
-                alt={org.name}
-                className="h-full w-auto object-contain brightness-0 invert"
+                src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
+                alt="Learnhouse"
+                style={{ width: 'auto', height: '100%' }}
+                className={`${
+                  variant === 'policy'
+                    ? 'rounded-md'
+                    : 'h-full w-auto object-contain brightness-0 invert'
+                }`}
               />
             ) : (
               <span

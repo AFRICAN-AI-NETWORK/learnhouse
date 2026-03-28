@@ -2,15 +2,17 @@
 import React, { useState } from 'react'
 import { docs } from '@/data/privacy-policy'
 import LandingNavbar from '../Landings/LandingNavbar'
+import { useOrg } from '@components/Contexts/OrgContext'
+import { useParams } from 'next/navigation'
 
 const PrivacyPolicy: React.FC = () => {
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
+  const org = useOrg() as any
+  const params = useParams() as { orgslug?: string }
 
   const selectedDoc = docs[selectedIdx]
-
-  const org = { name: 'DEFAULT ORGANIZATION' }
-  const orgslug = 'aan'
+  const orgslug = params?.orgslug || 'aan'
 
   const handleSelect = (idx: number) => {
     setSelectedIdx(idx)
