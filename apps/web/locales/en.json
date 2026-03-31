@@ -1710,6 +1710,7 @@
         "toasts": {
           "task_created": "Task created successfully",
           "task_saved": "Task saved successfully",
+          "file_uploaded_success": "File uploaded successfully",
           "task_save_error": "Error saving task, please retry later.",
           "task_updated": "Task updated successfully",
           "task_update_error": "Error updating task, please retry later.",

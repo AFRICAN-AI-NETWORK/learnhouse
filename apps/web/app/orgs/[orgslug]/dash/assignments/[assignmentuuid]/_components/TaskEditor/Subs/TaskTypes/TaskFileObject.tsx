@@ -47,6 +47,7 @@ export default function TaskFileObject({
     null
   )
   const [error, setError] = React.useState<string | null>(null)
+  const [uploadSuccess, setUploadSuccess] = React.useState(false)
   const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
   const assignment = useAssignments() as any
 
@@ -131,6 +132,7 @@ export default function TaskFileObject({
     await new Promise((r) => setTimeout(r, 1500))
     if (res.success === false) {
       setError(res.data.detail)
+      setUploadSuccess(false)
       setIsLoading(false)
     } else {
       assignmentTaskStateHook({ type: 'reload' })
@@ -143,7 +145,12 @@ export default function TaskFileObject({
 
       setIsLoading(false)
       setError('')
+      setUploadSuccess(true)
+      toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
       setLocalUploadFile(null) // Reset local file after success
+
+      // auto-dismiss success message after 3 seconds
+      setTimeout(() => setUploadSuccess(false), 3000)
     }
   }
 
@@ -293,6 +300,15 @@ export default function TaskFileObject({
                     <div className="flex justify-center bg-red-50 border border-red-100 rounded-md text-red-600 space-x-2 items-center p-3 transition-all shadow-xs w-full sm:w-auto mb-4">
                       <div className="text-xs sm:text-sm font-medium">
                         {error}
+                      </div>
+                    </div>
+                  )}
+                  {uploadSuccess && (
+                    <div className="flex justify-center bg-emerald-50 border border-emerald-100 rounded-md text-emerald-700 space-x-2 items-center p-3 transition-all shadow-xs w-full sm:w-auto mb-4">
+                      <div className="text-xs sm:text-sm font-medium">
+                        {t(
+                          'dashboard.assignments.editor.toasts.file_uploaded_success'
+                        ) || 'File uploaded successfully!'}
                       </div>
                     </div>
                   )}
