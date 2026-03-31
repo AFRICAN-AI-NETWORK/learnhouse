@@ -2,13 +2,33 @@ from typing import Literal, Optional
 import boto3
 from botocore.exceptions import ClientError
 import os
+from pathlib import Path
 from fastapi import HTTPException, UploadFile
 from config.config import get_learnhouse_config
 from src.security.file_validation import validate_upload
 
 
-def ensure_directory_exists(directory: str):
-    os.makedirs(directory, exist_ok=True)
+def _to_windows_safe_path(path: Path) -> str:
+    resolved = str(path.resolve())
+
+    if os.name != "nt":
+        return resolved
+
+    if resolved.startswith("\\\\?\\"):
+        return resolved
+
+    # Windows can fail on long/deep paths unless they use the long-path prefix.
+    if len(resolved) >= 248:
+        if resolved.startswith("\\\\"):
+            return "\\\\?\\UNC\\" + resolved[2:]
+        return "\\\\?\\" + resolved
+
+    return resolved
+
+
+def ensure_directory_exists(directory: str | Path):
+    directory_path = Path(directory)
+    os.makedirs(_to_windows_safe_path(directory_path), exist_ok=True)
 
 
 async def upload_file(
@@ -81,14 +101,15 @@ async def upload_content(
                 detail=f"File format {file_format} not allowed",
             )
 
-    ensure_directory_exists(f"content/{type_of_dir}/{uuid}/{directory}")
+    local_directory = Path("content") / type_of_dir / uuid / Path(directory)
+    ensure_directory_exists(local_directory)
+    local_file_path = local_directory / file_and_format
+    s3_key_directory = directory.replace("\\", "/").strip("/")
+    s3_key = f"content/{type_of_dir}/{uuid}/{s3_key_directory}/{file_and_format}"
 
     if content_delivery == "filesystem":
         # upload file to server
-        with open(
-            f"content/{type_of_dir}/{uuid}/{directory}/{file_and_format}",
-            "wb",
-        ) as f:
+        with open(_to_windows_safe_path(local_file_path), "wb") as f:
             f.write(file_binary)
             f.close()
 
@@ -102,19 +123,16 @@ async def upload_content(
         )
 
         # Upload file to server
-        with open(
-            f"content/{type_of_dir}/{uuid}/{directory}/{file_and_format}",
-            "wb",
-        ) as f:
+        with open(_to_windows_safe_path(local_file_path), "wb") as f:
             f.write(file_binary)
             f.close()
 
         print("Uploading to s3 using boto3...")
         try:
             s3.upload_file(
-                f"content/{type_of_dir}/{uuid}/{directory}/{file_and_format}",
+                _to_windows_safe_path(local_file_path),
                 "learnhouse-media",
-                f"content/{type_of_dir}/{uuid}/{directory}/{file_and_format}",
+                s3_key,
             )
         except ClientError as e:
             print(e)
@@ -123,7 +141,7 @@ async def upload_content(
         try:
             s3.head_object(
                 Bucket="learnhouse-media",
-                Key=f"content/{type_of_dir}/{uuid}/{directory}/{file_and_format}",
+                Key=s3_key,
             )
             print("File upload successful!")
         except Exception as e:
