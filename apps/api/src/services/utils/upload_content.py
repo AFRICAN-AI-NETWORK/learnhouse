@@ -17,7 +17,6 @@ def _to_windows_safe_path(path: Path) -> str:
     if resolved.startswith("\\\\?\\"):
         return resolved
 
-    # Windows can fail on long/deep paths unless they use the long-path prefix.
     if len(resolved) >= 248:
         if resolved.startswith("\\\\"):
             return "\\\\?\\UNC\\" + resolved[2:]
