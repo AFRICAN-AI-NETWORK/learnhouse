@@ -814,7 +814,45 @@ async def put_assignment_task_submission_file(
             assignment_task_uuid,
         )
 
-        return {"file_uuid": name_in_disk}
+        # Persist the submission record at the same time so the "me" lookup
+        # has a row to return even before the explicit submit action runs.
+        statement = select(AssignmentTaskSubmission).where(
+            AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
+            AssignmentTaskSubmission.user_id == current_user.id,
+        )
+        assignment_task_submission = db_session.exec(statement).first()
+
+        current_time = str(datetime.now())
+        if assignment_task_submission:
+            updated_task_submission = dict(assignment_task_submission.task_submission or {})
+            updated_task_submission["fileUUID"] = name_in_disk
+
+            assignment_task_submission.task_submission = updated_task_submission
+            assignment_task_submission.grade = 0
+            assignment_task_submission.task_submission_grade_feedback = ""
+            assignment_task_submission.assignment_type = assignment_task.assignment_type
+            assignment_task_submission.update_date = current_time
+        else:
+            assignment_task_submission = AssignmentTaskSubmission(
+                assignment_task_submission_uuid=f"assignmenttasksubmission_{uuid4()}",
+                task_submission={"fileUUID": name_in_disk},
+                grade=0,
+                task_submission_grade_feedback="",
+                assignment_type=assignment_task.assignment_type,
+                user_id=current_user.id,
+                activity_id=assignment.activity_id,
+                course_id=assignment.course_id,
+                chapter_id=assignment.chapter_id,
+                assignment_task_id=int(assignment_task.id),  # type: ignore
+                creation_date=current_time,
+                update_date=current_time,
+            )
+
+        db_session.add(assignment_task_submission)
+        db_session.commit()
+        db_session.refresh(assignment_task_submission)
+
+        return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
 
 
 async def update_assignment_task(
@@ -1178,17 +1216,6 @@ async def read_user_assignment_task_submissions_me(
             detail="Assignment Task not found",
         )
 
-    # Check if assignment task submission exists
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
-        AssignmentTaskSubmission.user_id == current_user.id,
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    if not assignment_task_submission:
-        # Return None instead of raising an error for cases where no submission exists yet
-        return None
-
     # Check if assignment exists
     statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
     assignment = db_session.exec(statement).first()
@@ -1211,6 +1238,41 @@ async def read_user_assignment_task_submissions_me(
 
     # RBAC check
     await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+
+    # Check if assignment task submission exists
+    statement = select(AssignmentTaskSubmission).where(
+        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
+        AssignmentTaskSubmission.user_id == current_user.id,
+    )
+    assignment_task_submission = db_session.exec(statement).first()
+
+    if not assignment_task_submission:
+        default_task_submission: dict = {"fileUUID": ""}
+        if assignment_task.assignment_type == AssignmentTaskTypeEnum.CODE_EDITOR:
+            default_task_submission = {"submissions": [], "history": []}
+        elif assignment_task.assignment_type in (
+            AssignmentTaskTypeEnum.QUIZ,
+            AssignmentTaskTypeEnum.FORM,
+        ):
+            default_task_submission = {"submissions": []}
+
+        return AssignmentTaskSubmissionRead.model_validate(
+            {
+                "id": 0,
+                "assignment_task_submission_uuid": "",
+                "task_submission": default_task_submission,
+                "grade": 0,
+                "task_submission_grade_feedback": "",
+                "assignment_type": assignment_task.assignment_type,
+                "user_id": current_user.id,
+                "activity_id": assignment.activity_id,
+                "course_id": assignment.course_id,
+                "chapter_id": assignment.chapter_id,
+                "assignment_task_id": assignment_task.id,
+                "creation_date": "",
+                "update_date": "",
+            }
+        )
 
     # return assignment task submission read
     return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
