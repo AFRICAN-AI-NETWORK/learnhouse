@@ -7,7 +7,7 @@ from fastapi import HTTPException, UploadFile
 from config.config import get_learnhouse_config
 from src.security.file_validation import validate_upload
 
-
+# new method to handle windows long path issues when saving files locally
 def _to_windows_safe_path(path: Path) -> str:
     resolved = str(path.resolve())
 
