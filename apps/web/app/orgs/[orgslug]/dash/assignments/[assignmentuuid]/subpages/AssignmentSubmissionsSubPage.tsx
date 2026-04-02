@@ -21,23 +21,50 @@ function AssignmentSubmissionsSubPage({
   const { t } = useTranslation()
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
+  const normalizedAssignmentUUID = assignment_uuid.startsWith('assignment_')
+    ? assignment_uuid
+    : `assignment_${assignment_uuid}`
 
   const { data: assignmentSubmission, error: assignmentError } = useSWR(
-    `${getAPIUrl()}assignments/assignment_${assignment_uuid}/submissions`,
+    `${getAPIUrl()}assignments/${normalizedAssignmentUUID}/submissions`,
     (url) => swrFetcher(url, access_token)
   )
 
+  const submissions = Array.isArray(assignmentSubmission)
+    ? assignmentSubmission
+    : []
+
   const renderSubmissions = (status: string) => {
-    return assignmentSubmission
+    return submissions
       ?.filter((submission: any) => submission.submission_status === status)
       .map((submission: any) => (
         <SubmissionBox
-          key={submission.submission_uuid}
+          key={submission.assignmentusersubmission_uuid}
           submission={submission}
-          assignment_uuid={assignment_uuid}
+          assignment_uuid={normalizedAssignmentUUID}
           user_id={submission.user_id}
         />
       ))
+  }
+
+  if (assignmentError) {
+    return (
+      <div className="pl-10 mr-10 flex flex-col pt-3 w-full">
+        <div className="text-sm font-medium text-red-600">
+          {t('common.something_went_wrong')}
+        </div>
+      </div>
+    )
+  }
+
+  if (!assignmentSubmission) {
+    return (
+      <div className="pl-10 mr-10 flex flex-col pt-3 w-full">
+        <div className="text-sm font-medium text-slate-500">
+          {t('common.loading')}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -129,23 +156,21 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
               isDialogOpen={
                 gradeSudmissionModal.open &&
                 gradeSudmissionModal.submission_id ===
-                  submission.submission_uuid
+                  submission.assignmentusersubmission_uuid
               }
               onOpenChange={(open: boolean) =>
                 setGradeSubmissionModal({
                   open,
-                  submission_id: submission.submission_uuid,
+                  submission_id: submission.assignmentusersubmission_uuid,
                 })
               }
               minHeight="no-min"
               minWidth="lg"
               dialogContent={
-                <AssignmentProvider
-                  assignment_uuid={'assignment_' + assignment_uuid}
-                >
+                <AssignmentProvider assignment_uuid={assignment_uuid}>
                   <AssignmentsTaskProvider>
                     <AssignmentSubmissionProvider
-                      assignment_uuid={'assignment_' + assignment_uuid}
+                      assignment_uuid={assignment_uuid}
                     >
                       <EvaluateAssignment user_id={user_id} />
                     </AssignmentSubmissionProvider>
