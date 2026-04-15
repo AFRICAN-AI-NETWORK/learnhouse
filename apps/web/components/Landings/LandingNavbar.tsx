@@ -10,12 +10,14 @@ interface LandingNavbarProps {
   org: any
   orgslug: string
   variant?: string
+  isAuthenticated?: boolean
 }
 
 const LandingNavbar: React.FC<LandingNavbarProps> = ({
   org,
   orgslug,
   variant,
+  isAuthenticated = false,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -88,18 +90,29 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/auth/signin"
-            className={`text-[10px] font-black uppercase tracking-[0.2em] ${variant === 'policy' ? 'text-black' : 'text-white'} hover:opacity-70 transition-opacity`}
-          >
-            Login
-          </Link>
-          <Link
-            href="/auth/signup"
-            className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} ${variant === 'policy' ? 'text-black' : 'text-black'} rounded-xl ${variant === 'policy' ? 'border border-blue-500' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
-          >
-            Join Now
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              href={getUriWithOrg(orgslug, '/')}
+              className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} text-black rounded-xl ${variant === 'policy' ? 'border border-blue-500' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/auth/signin"
+                className={`text-[10px] font-black uppercase tracking-[0.2em] ${variant === 'policy' ? 'text-black' : 'text-white'} hover:opacity-70 transition-opacity`}
+              >
+                Login
+              </Link>
+              <Link
+                href="/auth/signup"
+                className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} ${variant === 'policy' ? 'text-black' : 'text-black'} rounded-xl ${variant === 'policy' ? 'border border-blue-500' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
+              >
+                Join Now
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Toggle */}

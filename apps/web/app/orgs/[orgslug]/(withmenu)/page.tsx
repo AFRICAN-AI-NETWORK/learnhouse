@@ -14,6 +14,11 @@ type MetadataProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+type OrgHomePageProps = {
+  params: Promise<{ orgslug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
 export async function generateMetadata(
   props: MetadataProps
 ): Promise<Metadata> {
@@ -57,8 +62,12 @@ export async function generateMetadata(
   }
 }
 
-const OrgHomePage = async (params: any) => {
-  const orgslug = (await params.params).orgslug
+const OrgHomePage = async (props: OrgHomePageProps) => {
+  const orgslug = (await props.params).orgslug
+  const searchParams = await props.searchParams
+  const landingParam = searchParams?.landing
+  const shouldForcePremiumLanding =
+    typeof landingParam === 'string' && landingParam === 'premium'
 
   try {
     const session = await getServerSession(nextAuthOptions)
@@ -88,7 +97,7 @@ const OrgHomePage = async (params: any) => {
 
     // If internal user (logged in), show the classic LMS view (collections and courses)
     // If guest, show the premium landing page
-    if (session) {
+    if (session && !shouldForcePremiumLanding) {
       return (
         <div className="w-full">
           <LandingClassic

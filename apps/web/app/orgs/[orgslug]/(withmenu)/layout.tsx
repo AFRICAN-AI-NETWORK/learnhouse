@@ -6,7 +6,7 @@ import { OrgMenu } from '@components/Objects/Menus/OrgMenu'
 import { NotificationProvider } from '@components/Contexts/NotificationContext'
 import { GlobalChatProvider } from '@components/Contexts/GlobalChatContext'
 import FloatingChatWidget from '@components/Objects/FloatingChatWidget'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import LandingNavbar from '@components/Landings/LandingNavbar'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -21,11 +21,15 @@ export default function RootLayout(props: {
 
   const { children } = props
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isLandingPage =
     pathname === '/' ||
     pathname === `/${params?.orgslug}` ||
     pathname === `/orgs/${params?.orgslug}`
   const isGuest = !session?.data?.user
+  const isPremiumLandingView = searchParams?.get('landing') === 'premium'
+  const shouldShowLandingNavbar =
+    isLandingPage && (isGuest || isPremiumLandingView)
 
   return (
     <div
@@ -38,8 +42,12 @@ export default function RootLayout(props: {
       <SessionProvider>
         <NotificationProvider>
           <GlobalChatProvider>
-            {isLandingPage && isGuest ? (
-              <LandingNavbar org={org} orgslug={params?.orgslug} />
+            {shouldShowLandingNavbar ? (
+              <LandingNavbar
+                org={org}
+                orgslug={params?.orgslug}
+                isAuthenticated={!isGuest}
+              />
             ) : (
               <OrgMenu orgslug={params?.orgslug}></OrgMenu>
             )}

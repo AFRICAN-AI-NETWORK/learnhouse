@@ -196,7 +196,7 @@ export default async function proxy(req: NextRequest) {
       ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
       : (default_org as string)
     const response = NextResponse.rewrite(
-      new URL(`/orgs/${orgslug}${pathname}`, req.url)
+      new URL(`/orgs/${orgslug}${pathname}${search}`, req.url)
     )
 
     // Set the cookie with the orgslug value
@@ -216,7 +216,7 @@ export default async function proxy(req: NextRequest) {
     const LEARNHOUSE_TOP_DOMAIN = getLEARNHOUSE_TOP_DOMAIN_VAL()
     const orgslug = default_org as string
     const response = NextResponse.rewrite(
-      new URL(`/orgs/${orgslug}${pathname}`, req.url)
+      new URL(`/orgs/${orgslug}${pathname}${search}`, req.url)
     )
 
     if (pathname.startsWith('/ref/')) {
