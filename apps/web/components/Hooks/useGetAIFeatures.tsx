@@ -7,7 +7,6 @@ interface UseGetAIFeatures {
 
 function useGetAIFeatures(props: UseGetAIFeatures) {
   const org = useOrg() as any
-  const [isEnabled, setisEnabled] = React.useState(false)
 
   const checkAvailableAIFeaturesOnOrg = React.useCallback(
     (feature: string) => {
@@ -18,12 +17,12 @@ function useGetAIFeatures(props: UseGetAIFeatures) {
     [org]
   )
 
-  React.useEffect(() => {
-    if (org) {
-      // Check if org is not null or undefined
-      let isEnabledStatus = checkAvailableAIFeaturesOnOrg(props.feature)
-      setisEnabled(isEnabledStatus)
+  const isEnabled = React.useMemo(() => {
+    if (!org) {
+      return false
     }
+
+    return !!checkAvailableAIFeaturesOnOrg(props.feature)
   }, [org, props.feature, checkAvailableAIFeaturesOnOrg])
 
   return isEnabled

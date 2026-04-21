@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { searchOrgContent } from '@services/search/search'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -77,6 +77,108 @@ interface SearchResults {
 
 type ContentType = 'all' | 'courses' | 'collections' | 'users'
 
+type FilterButtonProps = {
+  type: ContentType
+  count: number
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  selectedType: ContentType
+  onSelect: (type: ContentType) => void
+  label: string
+}
+
+function FilterButton({
+  type,
+  count,
+  icon: Icon,
+  selectedType,
+  onSelect,
+  label,
+}: FilterButtonProps) {
+  return (
+    <button
+      onClick={() => onSelect(type)}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors ${
+        selectedType === type
+          ? 'bg-black/10 text-black/80 font-medium'
+          : 'hover:bg-black/5 text-black/60'
+      }`}
+    >
+      <Icon size={16} />
+      <span>{label}</span>
+      <span className="text-black/40">({count})</span>
+    </button>
+  )
+}
+
+type PaginationProps = {
+  page: number
+  totalPages: number
+  onPageSelect: (page: number) => void
+}
+
+function Pagination({ page, totalPages, onPageSelect }: PaginationProps) {
+  if (totalPages <= 1) return null
+
+  return (
+    <div className="flex justify-center gap-2 mt-8">
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+        <button
+          key={pageNum}
+          onClick={() => onPageSelect(pageNum)}
+          className={`w-8 h-8 rounded-lg text-sm transition-colors ${
+            page === pageNum
+              ? 'bg-black/10 text-black/80 font-medium'
+              : 'hover:bg-black/5 text-black/60'
+          }`}
+        >
+          {pageNum}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          className="bg-white rounded-xl nice-shadow p-4 animate-pulse"
+        >
+          <div className="w-full h-32 bg-black/5 rounded-lg mb-4" />
+          <div className="space-y-2">
+            <div className="w-3/4 h-4 bg-black/5 rounded" />
+            <div className="w-1/2 h-3 bg-black/5 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EmptyState({
+  query,
+  noResultsLabel,
+  description,
+}: {
+  query: string
+  noResultsLabel: string
+  description: string
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="mb-4 p-4 bg-black/5 rounded-full">
+        <Search className="w-8 h-8 text-black/40" />
+      </div>
+      <h3 className="text-lg font-medium text-black/80 mb-2">
+        {noResultsLabel}
+      </h3>
+      <p className="text-sm text-black/50 max-w-md">{description}</p>
+    </div>
+  )
+}
+
 function SearchPage() {
   const { t } = useTranslation()
   const router = useRouter()
@@ -124,9 +226,7 @@ function SearchPage() {
     }
   }
 
-  useEffect(() => {
-    setSearchQuery(query)
-  }, [query])
+  const effectiveSearchQuery = query || searchQuery
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -198,83 +298,9 @@ function SearchPage() {
     searchResults.total_users
   const totalPages = Math.ceil(totalResults / perPage)
 
-  const FilterButton = ({
-    type,
-    count,
-    icon: Icon,
-  }: {
-    type: ContentType
-    count: number
-    icon: any
-  }) => (
-    <button
-      onClick={() => {
-        setSelectedType(type)
-        updateSearchParams({ type: type === 'all' ? '' : type, page: '1' })
-      }}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors ${
-        selectedType === type
-          ? 'bg-black/10 text-black/80 font-medium'
-          : 'hover:bg-black/5 text-black/60'
-      }`}
-    >
-      <Icon size={16} />
-      <span>{t(type)}</span>
-      <span className="text-black/40">({count})</span>
-    </button>
-  )
-
-  const Pagination = () => {
-    if (totalPages <= 1) return null
-
-    return (
-      <div className="flex justify-center gap-2 mt-8">
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-          <button
-            key={pageNum}
-            onClick={() => updateSearchParams({ page: pageNum.toString() })}
-            className={`w-8 h-8 rounded-lg text-sm transition-colors ${
-              page === pageNum
-                ? 'bg-black/10 text-black/80 font-medium'
-                : 'hover:bg-black/5 text-black/60'
-            }`}
-          >
-            {pageNum}
-          </button>
-        ))}
-      </div>
-    )
-  }
-
-  const LoadingState = () => (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          className="bg-white rounded-xl nice-shadow p-4 animate-pulse"
-        >
-          <div className="w-full h-32 bg-black/5 rounded-lg mb-4" />
-          <div className="space-y-2">
-            <div className="w-3/4 h-4 bg-black/5 rounded" />
-            <div className="w-1/2 h-3 bg-black/5 rounded" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-
-  const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="mb-4 p-4 bg-black/5 rounded-full">
-        <Search className="w-8 h-8 text-black/40" />
-      </div>
-      <h3 className="text-lg font-medium text-black/80 mb-2">
-        {t('search.no_results_found')}
-      </h3>
-      <p className="text-sm text-black/50 max-w-md">
-        {t('search.no_results_description', { query })}
-      </p>
-    </div>
+  const noResultsDescription = useMemo(
+    () => t('search.no_results_description', { query: effectiveSearchQuery }),
+    [effectiveSearchQuery, t]
   )
 
   return (
@@ -291,7 +317,7 @@ function SearchPage() {
             <form onSubmit={handleSearch} className="relative group mb-6">
               <input
                 type="text"
-                value={searchQuery}
+                value={effectiveSearchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('search.search_placeholder')}
                 className="w-full h-12 pl-12 pr-4 rounded-xl nice-shadow bg-white 
@@ -314,21 +340,61 @@ function SearchPage() {
 
             {/* Filters */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              <FilterButton type="all" count={totalResults} icon={Search} />
+              <FilterButton
+                type="all"
+                count={totalResults}
+                icon={Search}
+                selectedType={selectedType}
+                onSelect={(nextType) => {
+                  setSelectedType(nextType)
+                  updateSearchParams({
+                    type: nextType === 'all' ? '' : nextType,
+                    page: '1',
+                  })
+                }}
+                label={t('all')}
+              />
               <FilterButton
                 type="courses"
                 count={searchResults.total_courses}
                 icon={BookCopy}
+                selectedType={selectedType}
+                onSelect={(nextType) => {
+                  setSelectedType(nextType)
+                  updateSearchParams({
+                    type: nextType === 'all' ? '' : nextType,
+                    page: '1',
+                  })
+                }}
+                label={t('courses')}
               />
               <FilterButton
                 type="collections"
                 count={searchResults.total_collections}
                 icon={SquareLibrary}
+                selectedType={selectedType}
+                onSelect={(nextType) => {
+                  setSelectedType(nextType)
+                  updateSearchParams({
+                    type: nextType === 'all' ? '' : nextType,
+                    page: '1',
+                  })
+                }}
+                label={t('collections')}
               />
               <FilterButton
                 type="users"
                 count={searchResults.total_users}
                 icon={Users}
+                selectedType={selectedType}
+                onSelect={(nextType) => {
+                  setSelectedType(nextType)
+                  updateSearchParams({
+                    type: nextType === 'all' ? '' : nextType,
+                    page: '1',
+                  })
+                }}
+                label={t('users')}
               />
             </div>
           </div>
@@ -347,7 +413,11 @@ function SearchPage() {
           {isLoading ? (
             <LoadingState />
           ) : totalResults === 0 && query ? (
-            <EmptyState />
+            <EmptyState
+              query={effectiveSearchQuery}
+              noResultsLabel={t('search.no_results_found')}
+              description={noResultsDescription}
+            />
           ) : (
             <div className="space-y-12">
               {/* Courses Grid */}
@@ -523,7 +593,13 @@ function SearchPage() {
             </div>
           )}
 
-          <Pagination />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageSelect={(pageNum) =>
+              updateSearchParams({ page: pageNum.toString() })
+            }
+          />
         </div>
       </div>
     </div>
