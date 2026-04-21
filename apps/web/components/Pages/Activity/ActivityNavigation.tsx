@@ -16,6 +16,7 @@ export default function ActivityNavigation(
   props: ActivityNavigationProps
 ): React.ReactNode {
   const router = useRouter()
+  const { t } = useTranslation()
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [isBottomNavVisible, setIsBottomNavVisible] = React.useState(true)
   const bottomNavRef = React.useRef<HTMLDivElement>(null)
@@ -109,9 +110,8 @@ export default function ActivityNavigation(
     }
   }, [])
 
-  // Navigation buttons component - reused for both top and bottom
-  const NavigationButtons = ({ isFloating = false }) => {
-    const { t } = useTranslation()
+  // Navigation buttons markup reused for both top and bottom
+  const renderNavigationButtons = (isFloating = false) => {
     return (
       <div
         className={`${isFloating ? 'flex justify-between' : 'grid grid-cols-3'} items-center w-full`}
@@ -247,14 +247,14 @@ export default function ActivityNavigation(
     <>
       {/* Bottom navigation (in-place) */}
       <div ref={bottomNavRef} className="mt-6 mb-2 w-full">
-        <NavigationButtons isFloating={false} />
+        {renderNavigationButtons(false)}
       </div>
 
       {/* Floating bottom navigation - shown when bottom nav is not visible */}
       {!isBottomNavVisible && (
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 w-[85%] sm:w-auto sm:min-w-[350px] max-w-lg transition-all duration-300 ease-in-out">
           <div className="bg-white/90 backdrop-blur-xl rounded-full py-1.5 px-2.5 shadow-xs animate-in fade-in slide-in-from-bottom duration-300">
-            <NavigationButtons isFloating={true} />
+            {renderNavigationButtons(true)}
           </div>
         </div>
       )}

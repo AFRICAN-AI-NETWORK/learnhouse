@@ -1,41 +1,41 @@
 'use client'
-import React, { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 interface CustomSelectProps {
-  value: string;
-  onValueChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  disabled?: boolean;
-  children: React.ReactNode;
+  value: string
+  onValueChange: (value: string) => void
+  placeholder?: string
+  className?: string
+  disabled?: boolean
+  children: React.ReactNode
 }
 
 interface CustomSelectItemProps {
-  value: string;
-  children: React.ReactNode;
-  className?: string;
+  value: string
+  children: React.ReactNode
+  className?: string
 }
 
 interface CustomSelectTriggerProps {
-  children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
+  children: React.ReactNode
+  className?: string
+  disabled?: boolean
 }
 
 interface CustomSelectContentProps {
-  children: React.ReactNode;
-  className?: string;
+  children: React.ReactNode
+  className?: string
 }
 
 const CustomSelectContext = React.createContext<{
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  selectedValue: string;
-  setSelectedValue: (value: string) => void;
-  onValueChange: (value: string) => void;
-  disabled?: boolean;
-} | null>(null);
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
+  selectedValue: string
+  setSelectedValue: (value: string) => void
+  onValueChange: (value: string) => void
+  disabled?: boolean
+} | null>(null)
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
@@ -43,21 +43,21 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder,
   className = '',
   disabled = false,
-  children
+  children,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState(value);
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedValue, setSelectedValue] = useState(value)
 
   useEffect(() => {
-    setSelectedValue(value);
-  }, [value]);
+    setSelectedValue(value)
+  }, [value])
 
   const handleValueChange = (newValue: string) => {
-    if (disabled) return;
-    setSelectedValue(newValue);
-    onValueChange(newValue);
-    setIsOpen(false);
-  };
+    if (disabled) return
+    setSelectedValue(newValue)
+    onValueChange(newValue)
+    setIsOpen(false)
+  }
 
   return (
     <CustomSelectContext.Provider
@@ -67,28 +67,26 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         selectedValue,
         setSelectedValue,
         onValueChange: handleValueChange,
-        disabled
+        disabled,
       }}
     >
-      <div className={`relative ${className}`}>
-        {children}
-      </div>
+      <div className={`relative ${className}`}>{children}</div>
     </CustomSelectContext.Provider>
-  );
-};
+  )
+}
 
 export const CustomSelectTrigger: React.FC<CustomSelectTriggerProps> = ({
   children,
   className = '',
-  disabled = false
+  disabled = false,
 }) => {
-  const context = React.useContext(CustomSelectContext);
+  const context = React.useContext(CustomSelectContext)
   if (!context) {
-    throw new Error('CustomSelectTrigger must be used within CustomSelect');
+    throw new Error('CustomSelectTrigger must be used within CustomSelect')
   }
 
-  const { isOpen, setIsOpen, disabled: contextDisabled } = context;
-  const isDisabled = disabled || contextDisabled;
+  const { isOpen, setIsOpen, disabled: contextDisabled } = context
+  const isDisabled = disabled || contextDisabled
 
   return (
     <button
@@ -98,44 +96,46 @@ export const CustomSelectTrigger: React.FC<CustomSelectTriggerProps> = ({
       onClick={() => !isDisabled && setIsOpen(!isOpen)}
     >
       {children}
-      <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      <ChevronDown
+        className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+      />
     </button>
-  );
-};
+  )
+}
 
 export const CustomSelectContent: React.FC<CustomSelectContentProps> = ({
   children,
-  className = ''
+  className = '',
 }) => {
-  const context = React.useContext(CustomSelectContext);
+  const context = React.useContext(CustomSelectContext)
   if (!context) {
-    throw new Error('CustomSelectContent must be used within CustomSelect');
+    throw new Error('CustomSelectContent must be used within CustomSelect')
   }
 
-  const { isOpen, disabled } = context;
+  const { isOpen, disabled } = context
 
-  if (!isOpen || disabled) return null;
+  if (!isOpen || disabled) return null
 
   return (
-    <div className={`absolute z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 ${className}`}>
-      <div className="p-1">
-        {children}
-      </div>
+    <div
+      className={`absolute z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 ${className}`}
+    >
+      <div className="p-1">{children}</div>
     </div>
-  );
-};
+  )
+}
 
 export const CustomSelectItem: React.FC<CustomSelectItemProps> = ({
   value,
   children,
-  className = ''
+  className = '',
 }) => {
-  const context = React.useContext(CustomSelectContext);
+  const context = React.useContext(CustomSelectContext)
   if (!context) {
-    throw new Error('CustomSelectItem must be used within CustomSelect');
+    throw new Error('CustomSelectItem must be used within CustomSelect')
   }
 
-  const { selectedValue, onValueChange, disabled } = context;
+  const { selectedValue, onValueChange, disabled } = context
 
   return (
     <div
@@ -145,24 +145,34 @@ export const CustomSelectItem: React.FC<CustomSelectItemProps> = ({
       {children}
       {selectedValue === value && (
         <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         </span>
       )}
     </div>
-  );
-};
+  )
+}
 
 export const CustomSelectValue: React.FC<{ children?: React.ReactNode }> = ({
-  children
+  children,
 }) => {
-  const context = React.useContext(CustomSelectContext);
+  const context = React.useContext(CustomSelectContext)
   if (!context) {
-    throw new Error('CustomSelectValue must be used within CustomSelect');
+    throw new Error('CustomSelectValue must be used within CustomSelect')
   }
 
-  const { selectedValue } = context;
+  const { selectedValue } = context
 
-  return <span>{children || selectedValue}</span>;
-}; 
+  return <span>{children || selectedValue}</span>
+}

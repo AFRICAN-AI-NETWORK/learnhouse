@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useMemo, useCallback } from 'react'
 import {
   Check,
   Square,
@@ -28,9 +28,6 @@ const CourseProgress: React.FC<CourseProgressProps> = ({
   onClose,
   trailData,
 }) => {
-  const [completedActivities, setCompletedActivities] = useState(0)
-  const [totalActivities, setTotalActivities] = useState(0)
-
   const isActivityDone = useCallback(
     (activity: any) => {
       const cleanCourseUuid = course.course_uuid?.replace('course_', '')
@@ -49,7 +46,7 @@ const CourseProgress: React.FC<CourseProgressProps> = ({
     [course.course_uuid, trailData]
   )
 
-  useEffect(() => {
+  const { totalActivities, completedActivities } = useMemo(() => {
     let total = 0
     let completed = 0
 
@@ -62,8 +59,7 @@ const CourseProgress: React.FC<CourseProgressProps> = ({
       })
     })
 
-    setTotalActivities(total)
-    setCompletedActivities(completed)
+    return { totalActivities: total, completedActivities: completed }
   }, [course, isActivityDone])
 
   const getActivityTypeIcon = (activityType: string) => {

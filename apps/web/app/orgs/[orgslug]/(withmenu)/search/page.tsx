@@ -125,10 +125,6 @@ function SearchPage() {
   }
 
   useEffect(() => {
-    setSearchQuery(query)
-  }, [query])
-
-  useEffect(() => {
     const fetchResults = async () => {
       if (!query.trim()) {
         setSearchResults({
@@ -198,7 +194,7 @@ function SearchPage() {
     searchResults.total_users
   const totalPages = Math.ceil(totalResults / perPage)
 
-  const FilterButton = ({
+  const renderFilterButton = ({
     type,
     count,
     icon: Icon,
@@ -224,7 +220,7 @@ function SearchPage() {
     </button>
   )
 
-  const Pagination = () => {
+  const renderPagination = () => {
     if (totalPages <= 1) return null
 
     return (
@@ -246,7 +242,7 @@ function SearchPage() {
     )
   }
 
-  const LoadingState = () => (
+  const renderLoadingState = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
@@ -263,7 +259,7 @@ function SearchPage() {
     </div>
   )
 
-  const EmptyState = () => (
+  const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="mb-4 p-4 bg-black/5 rounded-full">
         <Search className="w-8 h-8 text-black/40" />
@@ -314,22 +310,26 @@ function SearchPage() {
 
             {/* Filters */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              <FilterButton type="all" count={totalResults} icon={Search} />
-              <FilterButton
-                type="courses"
-                count={searchResults.total_courses}
-                icon={BookCopy}
-              />
-              <FilterButton
-                type="collections"
-                count={searchResults.total_collections}
-                icon={SquareLibrary}
-              />
-              <FilterButton
-                type="users"
-                count={searchResults.total_users}
-                icon={Users}
-              />
+              {renderFilterButton({
+                type: 'all',
+                count: totalResults,
+                icon: Search,
+              })}
+              {renderFilterButton({
+                type: 'courses',
+                count: searchResults.total_courses,
+                icon: BookCopy,
+              })}
+              {renderFilterButton({
+                type: 'collections',
+                count: searchResults.total_collections,
+                icon: SquareLibrary,
+              })}
+              {renderFilterButton({
+                type: 'users',
+                count: searchResults.total_users,
+                icon: Users,
+              })}
             </div>
           </div>
         </div>
@@ -345,9 +345,9 @@ function SearchPage() {
           )}
 
           {isLoading ? (
-            <LoadingState />
+            renderLoadingState()
           ) : totalResults === 0 && query ? (
-            <EmptyState />
+            renderEmptyState()
           ) : (
             <div className="space-y-12">
               {/* Courses Grid */}
@@ -523,7 +523,7 @@ function SearchPage() {
             </div>
           )}
 
-          <Pagination />
+          {renderPagination()}
         </div>
       </div>
     </div>

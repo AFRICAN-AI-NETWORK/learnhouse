@@ -3,7 +3,12 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
 import { updateCourseThumbnail } from '@services/courses/courses'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { ArrowBigUpDash, UploadCloud, Image as ImageIcon, Video } from 'lucide-react'
+import {
+  ArrowBigUpDash,
+  UploadCloud,
+  Image as ImageIcon,
+  Video,
+} from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import React, { useState, useEffect, useRef } from 'react'
 import { mutate } from 'swr'
@@ -11,156 +16,168 @@ import UnsplashImagePicker from './UnsplashImagePicker'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
-const MAX_FILE_SIZE = 8_000_000; // 8MB for images
-const MAX_VIDEO_FILE_SIZE = 100_000_000; // 100MB for videos
-const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
-const VALID_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm'] as const;
+const MAX_FILE_SIZE = 8_000_000 // 8MB for images
+const MAX_VIDEO_FILE_SIZE = 100_000_000 // 100MB for videos
+const VALID_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const
+const VALID_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm'] as const
 
-type ValidImageMimeType = typeof VALID_IMAGE_MIME_TYPES[number];
-type ValidVideoMimeType = typeof VALID_VIDEO_MIME_TYPES[number];
+type ValidImageMimeType = (typeof VALID_IMAGE_MIME_TYPES)[number]
+type ValidVideoMimeType = (typeof VALID_VIDEO_MIME_TYPES)[number]
 
 type ThumbnailUpdateProps = {
-  thumbnailType: 'image' | 'video' | 'both';
+  thumbnailType: 'image' | 'video' | 'both'
 }
 
-type TabType = 'image' | 'video';
+type TabType = 'image' | 'video'
 
 function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
   const { t } = useTranslation()
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const course = useCourse() as any
-  const session = useLHSession() as any;
+  const session = useLHSession() as any
   const org = useOrg() as any
-  const [localThumbnail, setLocalThumbnail] = useState<{ file: File; url: string; type: 'image' | 'video' } | null>(null)
+  const [localThumbnail, setLocalThumbnail] = useState<{
+    file: File
+    url: string
+    type: 'image' | 'video'
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showUnsplashPicker, setShowUnsplashPicker] = useState(false)
-  const [activeTab, setActiveTab] = useState<TabType>('image')
-  const withUnpublishedActivities = course ? course.withUnpublishedActivities : false
-
-  // Set initial active tab based on thumbnailType
-  useEffect(() => {
-    if (thumbnailType === 'video') {
-      setActiveTab('video');
-    } else {
-      setActiveTab('image');
-    }
-  }, [thumbnailType]);
+  const [activeTab, setActiveTab] = useState<TabType>(
+    thumbnailType === 'video' ? 'video' : 'image'
+  )
+  const withUnpublishedActivities = course
+    ? course.withUnpublishedActivities
+    : false
 
   // Cleanup blob URLs when component unmounts or when thumbnail changes
   useEffect(() => {
     return () => {
       if (localThumbnail?.url) {
-        URL.revokeObjectURL(localThumbnail.url);
+        URL.revokeObjectURL(localThumbnail.url)
       }
-    };
-  }, [localThumbnail]);
+    }
+  }, [localThumbnail])
 
   const showError = (message: string) => {
     toast.error(message, {
       duration: 3000,
       position: 'top-center',
-    });
-  };
+    })
+  }
 
   const validateFile = (file: File, type: 'image' | 'video'): boolean => {
     if (type === 'image') {
       if (!VALID_IMAGE_MIME_TYPES.includes(file.type as ValidImageMimeType)) {
-        showError(`Invalid file type: ${file.type}. Please upload only PNG or JPG/JPEG images`);
-        return false;
+        showError(
+          `Invalid file type: ${file.type}. Please upload only PNG or JPG/JPEG images`
+        )
+        return false
       }
 
       if (file.size > MAX_FILE_SIZE) {
-        showError(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 8MB limit`);
-        return false;
+        showError(
+          `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 8MB limit`
+        )
+        return false
       }
     } else {
       if (!VALID_VIDEO_MIME_TYPES.includes(file.type as ValidVideoMimeType)) {
-        showError(`Invalid file type: ${file.type}. Please upload only MP4 or WebM videos`);
-        return false;
+        showError(
+          `Invalid file type: ${file.type}. Please upload only MP4 or WebM videos`
+        )
+        return false
       }
 
       if (file.size > MAX_VIDEO_FILE_SIZE) {
-        showError(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 100MB limit`);
-        return false;
+        showError(
+          `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 100MB limit`
+        )
+        return false
       }
     }
 
-    return true;
+    return true
   }
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
-    const file = event.target.files?.[0];
-    
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'image' | 'video'
+  ) => {
+    const file = event.target.files?.[0]
+
     if (!file) {
-      showError('Please select a file');
-      return;
+      showError('Please select a file')
+      return
     }
-    
+
     if (!validateFile(file, type)) {
-      event.target.value = '';
-      return;
+      event.target.value = ''
+      return
     }
-    
-    const blobUrl = URL.createObjectURL(file);
-    setLocalThumbnail({ file, url: blobUrl, type });
-    await updateThumbnail(file, type);
+
+    const blobUrl = URL.createObjectURL(file)
+    setLocalThumbnail({ file, url: blobUrl, type })
+    await updateThumbnail(file, type)
   }
 
   const handleUnsplashSelect = async (imageUrl: string) => {
     try {
-      setIsLoading(true);
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      
+      setIsLoading(true)
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+
       if (!VALID_IMAGE_MIME_TYPES.includes(blob.type as ValidImageMimeType)) {
-        throw new Error('Invalid image format from Unsplash');
+        throw new Error('Invalid image format from Unsplash')
       }
 
-      const file = new File([blob], `unsplash_${Date.now()}.jpg`, { type: blob.type });
-      
+      const file = new File([blob], 'unsplash_image.jpg', { type: blob.type })
+
       if (!validateFile(file, 'image')) {
-        return;
+        return
       }
 
-      const blobUrl = URL.createObjectURL(file);
-      setLocalThumbnail({ file, url: blobUrl, type: 'image' });
-      await updateThumbnail(file, 'image');
+      const blobUrl = URL.createObjectURL(file)
+      setLocalThumbnail({ file, url: blobUrl, type: 'image' })
+      await updateThumbnail(file, 'image')
     } catch (err) {
-      showError('Failed to process Unsplash image');
-      setIsLoading(false);
+      showError('Failed to process Unsplash image')
+      setIsLoading(false)
     }
   }
 
   const updateThumbnail = async (file: File, type: 'image' | 'video') => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const formData = new FormData();
-      formData.append('thumbnail', file);
-      formData.append('thumbnail_type', type);
+      const formData = new FormData()
+      formData.append('thumbnail', file)
+      formData.append('thumbnail_type', type)
 
       const res = await updateCourseThumbnail(
         course.courseStructure.course_uuid,
         formData,
         session.data?.tokens?.access_token
-      );
-      
-      await mutate(`${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`);
-      await new Promise((r) => setTimeout(r, 1500));
+      )
+
+      await mutate(
+        `${getAPIUrl()}courses/${course.courseStructure.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+      )
+      await new Promise((r) => setTimeout(r, 1500))
 
       if (res.success === false) {
-        showError(res.HTTPmessage);
+        showError(res.HTTPmessage)
       } else {
-        setLocalThumbnail(null);
+        setLocalThumbnail(null)
         toast.success('Thumbnail updated successfully', {
           duration: 3000,
           position: 'top-center',
-        });
+        })
       }
     } catch (err) {
-      showError('Failed to update thumbnail');
+      showError('Failed to update thumbnail')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
@@ -172,7 +189,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             course.courseStructure.course_uuid,
             course.courseStructure.thumbnail_image
           )
-        : '/empty_thumbnail.png';
+        : '/empty_thumbnail.png'
     } else {
       return course.courseStructure.thumbnail_video
         ? getCourseThumbnailMediaDirectory(
@@ -180,9 +197,9 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             course.courseStructure.course_uuid,
             course.courseStructure.thumbnail_video
           )
-        : undefined;
+        : undefined
     }
-  };
+  }
 
   const renderThumbnailPreview = () => {
     if (localThumbnail) {
@@ -195,7 +212,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
               controls
             />
           </div>
-        );
+        )
       } else {
         return (
           <div className="max-w-[480px] mx-auto">
@@ -205,11 +222,11 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
               className={`${isLoading ? 'animate-pulse' : ''} w-full aspect-video object-cover rounded-lg border border-gray-200`}
             />
           </div>
-        );
+        )
       }
     }
 
-    const currentThumbnailUrl = getThumbnailUrl(activeTab);
+    const currentThumbnailUrl = getThumbnailUrl(activeTab)
     if (activeTab === 'video' && currentThumbnailUrl) {
       return (
         <div className="max-w-[480px] mx-auto">
@@ -219,7 +236,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             controls
           />
         </div>
-      );
+      )
     } else if (currentThumbnailUrl) {
       return (
         <div className="max-w-[480px] mx-auto">
@@ -229,11 +246,11 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             className="w-full aspect-video object-cover rounded-lg border border-gray-200"
           />
         </div>
-      );
+      )
     }
 
-    return null;
-  };
+    return null
+  }
 
   const renderTabContent = () => {
     if (isLoading) {
@@ -244,7 +261,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             Uploading...
           </div>
         </div>
-      );
+      )
     }
 
     if (activeTab === 'image') {
@@ -274,7 +291,7 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
             {t('dashboard.courses.general.thumbnail.gallery')}
           </button>
         </div>
-      );
+      )
     }
 
     return (
@@ -295,8 +312,8 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
           {t('dashboard.courses.general.thumbnail.upload_video')}
         </button>
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="w-full bg-white rounded-xl">
@@ -332,14 +349,16 @@ function ThumbnailUpdate({ thumbnailType }: ThumbnailUpdateProps) {
         <div className="space-y-6">
           {renderThumbnailPreview()}
           {renderTabContent()}
-          
+
           <p className="text-sm text-gray-500">
-            {activeTab === 'image' && t('dashboard.courses.general.thumbnail.supported_formats.image')}
-            {activeTab === 'video' && t('dashboard.courses.general.thumbnail.supported_formats.video')}
+            {activeTab === 'image' &&
+              t('dashboard.courses.general.thumbnail.supported_formats.image')}
+            {activeTab === 'video' &&
+              t('dashboard.courses.general.thumbnail.supported_formats.video')}
           </p>
         </div>
       </div>
-      
+
       {showUnsplashPicker && (
         <UnsplashImagePicker
           onSelect={handleUnsplashSelect}
