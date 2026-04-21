@@ -113,7 +113,7 @@ function VideoModal({
     }
   }
 
-  const renderVideoSettingsForm = () => {
+  const VideoSettingsForm = () => {
     const convertToSeconds = (minutes: number, seconds: number) => {
       return minutes * 60 + seconds
     }
@@ -423,7 +423,7 @@ function VideoModal({
                     </div>
                   </div>
                 </div>
-                {renderVideoSettingsForm()}
+                <VideoSettingsForm />
               </motion.div>
             )}
 
@@ -457,7 +457,7 @@ function VideoModal({
                     />
                   </div>
                 </div>
-                {renderVideoSettingsForm()}
+                <VideoSettingsForm />
               </motion.div>
             )}
           </AnimatePresence>

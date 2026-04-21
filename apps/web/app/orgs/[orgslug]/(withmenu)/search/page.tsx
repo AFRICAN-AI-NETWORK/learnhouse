@@ -125,6 +125,10 @@ function SearchPage() {
   }
 
   useEffect(() => {
+    setSearchQuery(query)
+  }, [query])
+
+  useEffect(() => {
     const fetchResults = async () => {
       if (!query.trim()) {
         setSearchResults({
@@ -194,7 +198,7 @@ function SearchPage() {
     searchResults.total_users
   const totalPages = Math.ceil(totalResults / perPage)
 
-  const renderFilterButton = ({
+  const FilterButton = ({
     type,
     count,
     icon: Icon,
@@ -220,7 +224,7 @@ function SearchPage() {
     </button>
   )
 
-  const renderPagination = () => {
+  const Pagination = () => {
     if (totalPages <= 1) return null
 
     return (
@@ -242,7 +246,7 @@ function SearchPage() {
     )
   }
 
-  const renderLoadingState = () => (
+  const LoadingState = () => (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
@@ -259,7 +263,7 @@ function SearchPage() {
     </div>
   )
 
-  const renderEmptyState = () => (
+  const EmptyState = () => (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="mb-4 p-4 bg-black/5 rounded-full">
         <Search className="w-8 h-8 text-black/40" />
@@ -310,26 +314,22 @@ function SearchPage() {
 
             {/* Filters */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {renderFilterButton({
-                type: 'all',
-                count: totalResults,
-                icon: Search,
-              })}
-              {renderFilterButton({
-                type: 'courses',
-                count: searchResults.total_courses,
-                icon: BookCopy,
-              })}
-              {renderFilterButton({
-                type: 'collections',
-                count: searchResults.total_collections,
-                icon: SquareLibrary,
-              })}
-              {renderFilterButton({
-                type: 'users',
-                count: searchResults.total_users,
-                icon: Users,
-              })}
+              <FilterButton type="all" count={totalResults} icon={Search} />
+              <FilterButton
+                type="courses"
+                count={searchResults.total_courses}
+                icon={BookCopy}
+              />
+              <FilterButton
+                type="collections"
+                count={searchResults.total_collections}
+                icon={SquareLibrary}
+              />
+              <FilterButton
+                type="users"
+                count={searchResults.total_users}
+                icon={Users}
+              />
             </div>
           </div>
         </div>
@@ -345,9 +345,9 @@ function SearchPage() {
           )}
 
           {isLoading ? (
-            renderLoadingState()
+            <LoadingState />
           ) : totalResults === 0 && query ? (
-            renderEmptyState()
+            <EmptyState />
           ) : (
             <div className="space-y-12">
               {/* Courses Grid */}
@@ -523,7 +523,7 @@ function SearchPage() {
             </div>
           )}
 
-          {renderPagination()}
+          <Pagination />
         </div>
       </div>
     </div>

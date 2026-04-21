@@ -45,7 +45,13 @@ function AIEditorToolkit(props: AIEditorToolkitProps) {
   const dispatchAIEditor = useAIEditorDispatch() as any
   const aiEditorState = useAIEditor() as AIEditorStateTypes
   const is_ai_feature_enabled = useGetAIFeatures({ feature: 'editor' })
-  const isToolkitAvailable = Boolean(is_ai_feature_enabled)
+  const [isToolkitAvailable, setIsToolkitAvailable] = React.useState(true)
+
+  React.useEffect(() => {
+    if (is_ai_feature_enabled) {
+      setIsToolkitAvailable(true)
+    }
+  }, [is_ai_feature_enabled])
 
   return (
     <>
