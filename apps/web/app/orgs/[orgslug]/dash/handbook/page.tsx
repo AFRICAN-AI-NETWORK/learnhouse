@@ -111,11 +111,145 @@ function StaffHandbookPage() {
           </div>
         </section>
 
+        {/* Batch Communication Guide */}
+        <section className="space-y-8 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-900 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 shadow-2xl">
+              <Radio size={24} />
+            </div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              Batch Communication (Admin)
+            </h2>
+          </div>
+          <HandbookCard
+            icon={<Radio size={20} className="text-emerald-400" />}
+            title="Broadcasting Announcements"
+            description="Admins can send announcements to all users, waitlists, courses, or roles using the Communications Hub. Messages can include banners and be posted to email and chat."
+          />
+          <div className="bg-zinc-900/50 border border-emerald-500/10 rounded-[32px] p-8 space-y-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+              Step-by-Step: Sending a Batch Campaign
+            </h3>
+            <ol className="space-y-4 text-zinc-400 text-sm leading-relaxed list-decimal ml-6">
+              <li>
+                <span className="text-white font-bold">
+                  Open Communications Hub:
+                </span>{' '}
+                Go to the dashboard and select "Communication Hub" from the
+                menu.
+              </li>
+              <li>
+                <span className="text-white font-bold">Compose Campaign:</span>{' '}
+                Enter a subject, message content, and optionally upload a header
+                image.
+              </li>
+              <li>
+                <span className="text-white font-bold">Select Audience:</span>{' '}
+                Choose All Users, Waitlist, Course, or Role. If Course or Role,
+                select the specific group.
+              </li>
+              <li>
+                <span className="text-white font-bold">Choose Channels:</span>{' '}
+                Decide if the announcement should also post to Global Chat.
+              </li>
+              <li>
+                <span className="text-white font-bold">Send Campaign:</span>{' '}
+                Click "Dispatch Campaign". The system will send messages in the
+                background and show campaign status.
+              </li>
+              <li>
+                <span className="text-white font-bold">Review History:</span>{' '}
+                View sent campaigns and their status in the sidebar.
+              </li>
+            </ol>
+            <p className="text-[11px] text-emerald-400 font-medium leading-relaxed mt-3">
+              Tip: Targeting waitlisted students is effective for new course
+              launches.
+            </p>
+          </div>
+        </section>
+
+        {/* Referral System Guide */}
+        <section className="space-y-8 pt-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-900 border border-amber-400/20 rounded-2xl flex items-center justify-center text-amber-400 shadow-2xl">
+              <Users size={24} />
+            </div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              Referral System Guide
+            </h2>
+          </div>
+          <HandbookCard
+            icon={<Users size={20} className="text-amber-400" />}
+            title="Earn by Referring"
+            description="Invite new users to the platform and earn commissions. Track your earnings, request payouts, and view your referral history. Admins can manage payouts and review flagged referrals."
+          />
+          <div className="bg-zinc-900/50 border border-amber-400/10 rounded-[32px] p-8 space-y-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+              Step-by-Step: Using the Referral Page
+            </h3>
+            <ol className="space-y-4 text-zinc-400 text-sm leading-relaxed list-decimal ml-6">
+              <li>
+                <span className="text-white font-bold">
+                  Generate Your Referral Code:
+                </span>{' '}
+                If you don’t have a code, click the button to generate one.
+                Share this code with new users to earn rewards.
+              </li>
+              <li>
+                <span className="text-white font-bold">
+                  Track Your Earnings:
+                </span>{' '}
+                View your commission balance and referral history in the
+                dashboard.
+              </li>
+              <li>
+                <span className="text-white font-bold">Request a Payout:</span>{' '}
+                When you have a balance, click “Request Payout” to withdraw your
+                earnings. Fill out the required details in the modal.
+              </li>
+              <li>
+                <span className="text-white font-bold">
+                  Admin Dashboard (Admins/Maintainers only):
+                </span>{' '}
+                If you are an admin, you’ll see extra tabs:
+                <ul className="list-disc ml-6 mt-2 space-y-2">
+                  <li>
+                    <span className="text-white font-bold">Leaderboard:</span>{' '}
+                    View top referrers and total stats.
+                  </li>
+                  <li>
+                    <span className="text-white font-bold">
+                      Payout Approvals:
+                    </span>{' '}
+                    Approve or reject payout requests from users.
+                  </li>
+                  <li>
+                    <span className="text-white font-bold">Fraud Review:</span>{' '}
+                    Review flagged referrals with high fraud scores for
+                    potential abuse.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <span className="text-white font-bold">Get Notified:</span> All
+                actions (code generation, payout, admin actions) provide instant
+                feedback via notifications.
+              </li>
+            </ol>
+            <p className="text-[11px] text-amber-400 font-medium leading-relaxed mt-3">
+              Tip: Share your referral code widely to maximize your earnings.
+              Admins should regularly review flagged referrals for fraud
+              prevention.
+            </p>
+          </div>
+        </section>
+
         {/* Future Guides Placeholder */}
         <div className="pt-12 border-t border-white/5 opacity-50">
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center">
-            More modules coming soon: Batch Communications, Assignment Grading,
-            and Student Mentorship.
+            More modules coming soon: Assignment Grading, and Student
+            Mentorship.
           </p>
         </div>
       </div>

@@ -24,7 +24,7 @@ export const config = {
      * 10. Static files (sw.js, manifest.json, workbox, favicon, images)
      * 11. all root files inside /public (e.g. /favicon.ico)
      */
-    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
+    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|data|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
     '/payments/stripe/connect/oauth',
   ],
@@ -196,7 +196,7 @@ export default async function proxy(req: NextRequest) {
       ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
       : (default_org as string)
     const response = NextResponse.rewrite(
-      new URL(`/orgs/${orgslug}${pathname}`, req.url)
+      new URL(`/orgs/${orgslug}${pathname}${search}`, req.url)
     )
 
     // Set the cookie with the orgslug value
@@ -216,7 +216,7 @@ export default async function proxy(req: NextRequest) {
     const LEARNHOUSE_TOP_DOMAIN = getLEARNHOUSE_TOP_DOMAIN_VAL()
     const orgslug = default_org as string
     const response = NextResponse.rewrite(
-      new URL(`/orgs/${orgslug}${pathname}`, req.url)
+      new URL(`/orgs/${orgslug}${pathname}${search}`, req.url)
     )
 
     if (pathname.startsWith('/ref/')) {

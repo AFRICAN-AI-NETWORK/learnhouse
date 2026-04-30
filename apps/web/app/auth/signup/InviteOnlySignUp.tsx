@@ -1,6 +1,6 @@
 'use client'
 import { useFormik } from 'formik'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect } from 'react'
 import FormLayout, {
   FormField,
@@ -15,33 +15,46 @@ import { signUpWithInviteCode } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
 
+// Helper to format phone number to E.164 (basic, assumes user enters digits only or with +)
+function formatE164(phone: string) {
+  let cleaned = phone.replace(/[^\d+]/g, '')
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+' + cleaned
+  }
+  return cleaned
+}
+
 const validate = (values: any, t: any) => {
   const errors: any = {}
-
+  if (!values.phone_number) {
+    errors.phone_number = t('validation.required')
+  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
+    errors.phone_number = t('validation.invalid_phone')
+  }
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
     errors.email = t('validation.invalid_email')
   }
-
   if (!values.password) {
     errors.password = t('validation.required')
   } else if (values.password.length < 8) {
     errors.password = t('validation.password_min_length')
   }
-
   if (!values.username) {
     errors.username = t('validation.required')
-  }
-
-  if (!values.username || values.username.length < 4) {
+  } else if (values.username.length < 4) {
     errors.username = t('validation.username_min_length')
   }
-
   if (!values.bio) {
     errors.bio = t('validation.required')
   }
-
+  if (!values.first_name) {
+    errors.first_name = t('validation.required')
+  }
+  if (!values.last_name) {
+    errors.last_name = t('validation.required')
+  }
   return errors
 }
 
@@ -56,16 +69,18 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
   const router = useRouter()
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
+  const searchParams = useSearchParams()
   const formik = useFormik({
     initialValues: {
       org_slug: org?.slug,
       org_id: org?.id,
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
       username: '',
       bio: '',
-      first_name: '',
-      last_name: '',
+      phone_number: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
     },
     validate: (values) => validate(values, t),
     enableReinitialize: true,
@@ -73,17 +88,26 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
       setError('')
       setMessage('')
       setIsSubmitting(true)
-      let res = await signUpWithInviteCode(values, props.inviteCode)
+      // Only send required fields, and format phone_number
+      const payload = {
+        org_slug: values.org_slug,
+        org_id: values.org_id,
+        email: values.email,
+        password: values.password,
+        username: values.username,
+        bio: values.bio,
+        phone_number: formatE164(values.phone_number),
+        first_name: values.first_name,
+        last_name: values.last_name,
+      }
+      let res = await signUpWithInviteCode(payload, props.inviteCode)
       let message = await res.json()
       if (res.status == 200) {
         setMessage(t('auth.account_created_success'))
-
         setTimeout(() => {
           const orgSlug = org?.slug || 'default'
-          // FIXED: Changed from /org/${orgSlug}/login to /login?orgslug=${orgSlug}
           router.push(`/login?orgslug=${orgSlug}`)
         }, 2000)
-
         setIsSubmitting(false)
       } else if (
         res.status == 401 ||
@@ -137,6 +161,21 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
               value={formik.values.email}
               type="email"
               required
+            />
+          </Form.Control>
+        </FormField>
+        <FormField name="phone_number">
+          <FormLabelAndMessage
+            label={t('user.phone_number') || 'Phone Number'}
+            message={formik.errors.phone_number}
+          />
+          <Form.Control asChild>
+            <Input
+              onChange={formik.handleChange}
+              value={formik.values.phone_number}
+              type="tel"
+              required
+              placeholder="e.g. +254090000000"
             />
           </Form.Control>
         </FormField>

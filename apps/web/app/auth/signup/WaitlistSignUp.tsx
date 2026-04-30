@@ -33,39 +33,46 @@ import { WaitlistConfig } from '@/types/waitlist'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 
+// Helper to format phone number to E.164 (basic, assumes user enters digits only or with +)
+function formatE164(phone: string) {
+  let cleaned = phone.replace(/[^\d+]/g, '')
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+' + cleaned
+  }
+  return cleaned
+}
+
 const validate = (values: any, t: any) => {
   const errors: any = {}
-
+  if (!values.phone_number) {
+    errors.phone_number = t('validation.required')
+  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
+    errors.phone_number = t('validation.invalid_phone')
+  }
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
     errors.email = t('validation.invalid_email')
   }
-
   if (!values.password) {
     errors.password = t('validation.required')
   } else if (values.password.length < 8) {
     errors.password = t('validation.password_min_length')
   }
-
   if (!values.username) {
     errors.username = t('validation.required')
   } else if (values.username.length < 4) {
     errors.username = t('validation.username_min_length')
   }
-
   if (!values.bio) {
     errors.bio = t('validation.required')
   }
-
   if (!values.first_name) {
     errors.first_name = t('validation.required')
   }
-
   if (!values.last_name) {
     errors.last_name = t('validation.required')
   }
-
   return errors
 }
 
@@ -96,6 +103,14 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orgSlug = searchParams.get('orgslug') || ''
+  const redirectUrlParam = searchParams.get('redirectUrl') || ''
+
+  const getSafePostSignupRedirect = () => {
+    if (!redirectUrlParam || !redirectUrlParam.startsWith('/')) {
+      return `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
+    }
+    return redirectUrlParam
+  }
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
@@ -153,11 +168,12 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const formik = useFormik({
     initialValues: {
       username: '',
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
-      first_name: '',
-      last_name: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
       bio: '',
+      phone_number: '',
       org_slug: orgSlug,
       org_id: waitlistDetails?.org_id || 0,
       is_waitlist: true,
@@ -185,8 +201,19 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       }
 
       try {
-        const payload = {
-          ...values,
+        // Only send required fields, and format phone_number
+        const payload: any = {
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          bio: values.bio,
+          phone_number: formatE164(values.phone_number),
+          org_slug: values.org_slug,
+          org_id: values.org_id,
+          is_waitlist: values.is_waitlist,
+          waitlist_interest: values.waitlist_interest,
           selected_product_ids: selectedProducts,
           ...(device_id ? { device_id } : {}),
           ...(browser_fingerprint ? { browser_fingerprint } : {}),
@@ -194,7 +221,6 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             ? { referral_code: referralCode.trim() }
             : {}),
         }
-
         const res = await registerWaitlistUser(waitlistUuid, payload)
 
         if (res.ok) {
@@ -206,9 +232,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           }
           setMessage('success')
           setTimeout(() => {
-            router.push(
-              `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-            )
+            router.push(getSafePostSignupRedirect())
           }, 2000)
         } else {
           const data = await res.json()
@@ -227,6 +251,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             const payloadWithoutRef = {
               ...values,
               selected_product_ids: selectedProducts,
+              phone_number: values.phone_number,
               device_id,
               browser_fingerprint,
             }
@@ -243,9 +268,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               }
               setMessage('success')
               setTimeout(() => {
-                router.push(
-                  `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-                )
+                router.push(getSafePostSignupRedirect())
               }, 2000)
             } else {
               const retryData = await retryRes.json()
@@ -333,9 +356,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           <CountdownTimer launchDate={launchDate} />
         </div>
 
-        <p className="text-xs text-slate-500">
-          Redirecting to countdown page...
-        </p>
+        <p className="text-xs text-slate-500">Redirecting you now...</p>
       </div>
     )
   }
@@ -552,6 +573,28 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               {formik.errors.username && formik.touched.username && (
                 <p className="mt-1 text-xs text-red-600 font-medium">
                   {formik.errors.username}
+                </p>
+              )}
+            </FormField>
+
+            <FormField name="phone_number">
+              <FormLabelAndMessage
+                label={t('user.phone_number') || 'Phone Number'}
+              />
+              <Form.Control asChild>
+                <Input
+                  className={`h-12 focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.phone_number && formik.touched.phone_number ? 'border-red-400' : formik.values.phone_number && !formik.errors.phone_number ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values.phone_number}
+                  placeholder="e.g. +254090000000"
+                  type="tel"
+                  required
+                />
+              </Form.Control>
+              {formik.errors.phone_number && formik.touched.phone_number && (
+                <p className="mt-1 text-xs text-red-600 font-medium">
+                  {formik.errors.phone_number}
                 </p>
               )}
             </FormField>

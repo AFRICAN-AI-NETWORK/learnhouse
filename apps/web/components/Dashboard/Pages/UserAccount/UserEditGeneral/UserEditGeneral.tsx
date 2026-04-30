@@ -131,6 +131,7 @@ interface FormValues {
   first_name: string
   last_name: string
   email: string
+  phone_number: string
   bio: string
   details: {
     [key: string]: DetailItem
@@ -164,6 +165,13 @@ const validationSchema = Yup.object().shape({
   username: Yup.string().required('Username is required'),
   first_name: Yup.string().required('First name is required'),
   last_name: Yup.string().required('Last name is required'),
+  phone_number: Yup.string()
+    .matches(
+      /^\+\d{7,15}$/,
+      'Phone number must be in E.164 format (e.g. +14155552671)'
+    )
+    .nullable()
+    .notRequired(),
   bio: Yup.string().max(400, 'Bio must be 400 characters or less'),
   details: Yup.object().shape({}),
 })
@@ -459,6 +467,25 @@ const UserEditForm = ({
               />
               {touched.last_name && errors.last_name && (
                 <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="phone_number">
+                {t('user.settings.general.phone_number') || 'Phone Number'}
+              </Label>
+              <Input
+                id="phone_number"
+                name="phone_number"
+                type="tel"
+                value={values.phone_number}
+                onChange={handleChange}
+                placeholder="e.g. +14155552671"
+              />
+              {touched.phone_number && errors.phone_number && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.phone_number}
+                </p>
               )}
             </div>
 
@@ -763,6 +790,7 @@ function UserEditGeneral() {
           first_name: userData.first_name,
           last_name: userData.last_name,
           email: userData.email,
+          phone_number: userData.phone_number || '',
           bio: userData.bio || '',
           details: userData.details || {},
         }}

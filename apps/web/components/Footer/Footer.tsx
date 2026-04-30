@@ -4,15 +4,20 @@ import React from 'react'
 import OrgScripts from '@/components/OrgScripts/OrgScripts'
 import { usePathname } from 'next/navigation'
 
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 import Link from 'next/link'
 
 const Footer: React.FC = () => {
   const pathname = usePathname()
+  const session = useLHSession() as any
+  const isGuest = !session?.data?.user
 
   // The footer (and specifically the privacy link) should ONLY be visible on the home page
+  // However, on the Premium Landing Page (for guests), we hide it to favor the custom black footer.
   const isHomePage = pathname === '/' || pathname === '/home'
+  const shouldHideOnLanding = isHomePage && isGuest
 
-  if (!isHomePage) {
+  if (!isHomePage || shouldHideOnLanding) {
     return (
       <footer className="w-full mt-auto">
         <OrgScripts />

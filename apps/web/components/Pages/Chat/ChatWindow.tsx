@@ -693,8 +693,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )
 
     try {
-      // Strategy 1: Try to copy the first attachment as a real clipboard blob.
-      // This works for images and, when browser support allows it, documents.
       if (hasAttachments) {
         let clipboardFailureReason:
           | 'clipboard-write-unavailable'
@@ -736,8 +734,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           }
         }
 
-        // Strategy 2: Fallback - copy text with attachment info
-        // (Better UX than just filename)
         const attachmentInfo = message.attachments
           .map((att) => `📎 ${att.file_name}`)
           .join('\n')
@@ -773,7 +769,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         return
       }
 
-      // Strategy 3: No attachments, just copy text
       const textToCopy = textContent.trim() || '[Empty message]'
       await copyText(textToCopy)
       toast.success(t('chat.copied') || 'Copied', {
@@ -1301,7 +1296,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
         style={{
           backgroundImage: "url('/chat-wallpaper.png')",
           backgroundSize: 'auto',
@@ -1363,7 +1358,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       className={`w-full max-w-[280px] sm:max-w-[420px] md:max-w-[520px] lg:max-w-[640px] xl:max-w-[720px] flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
                       <div
-                        className={`relative min-w-[80px] pl-4 pr-8 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
+                        className={`relative min-w-[80px] max-w-[80vw] md:max-w-[70%] pl-4 pr-8 py-2.5 rounded-2xl text-sm leading-relaxed transition-opacity duration-200 overflow-hidden ${
                           isMine
                             ? `bg-indigo-500 text-white rounded-br-sm shadow-lg shadow-indigo-500/20 ${message.isPending ? 'opacity-60' : 'opacity-100'}`
                             : 'bg-white/7 text-white/85 rounded-bl-sm border border-white/6'

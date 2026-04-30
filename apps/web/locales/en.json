@@ -140,6 +140,7 @@
       "last_name": "Last Name",
       "username": "Username",
       "bio": "Bio",
+      "phone_number": "Phone Number",
       "next_step": "Next Step",
       "previous_step": "Previous Step",
       "password_strength_weak": "Weak",
@@ -174,7 +175,8 @@
     "password_min_length": "Password must be at least 8 characters",
     "username_min_length": "Username must be at least 4 characters",
     "title_required": "Title is required",
-    "content_required": "Content is required"
+    "content_required": "Content is required",
+    "invalid_phone": "Invalid phone number"
   },
   "courses": {
     "my_courses": "My Courses",
@@ -581,6 +583,8 @@
         "last_name": "Last Name",
         "last_name_placeholder": "Your last name",
         "bio": "Bio",
+        "phone_number": "Phone Number",
+        "phone_number_placeholder": "Your phone number",
         "bio_placeholder": "Tell us about yourself",
         "characters_left": "{{count}} characters left",
         "additional_details": "Additional Details",
@@ -785,6 +789,7 @@
     "first_name": "First Name",
     "last_name": "Last Name",
     "bio": "Bio",
+    "phone_number": "Phone Number",
     "no_biography": "No biography provided",
     "my_progress": "My Progress",
     "no_courses_in_progress": "No courses in progress",
@@ -907,7 +912,8 @@
           "description_required": "Short description is required",
           "description_max": "Short description must be 100 characters or less",
           "about_max": "About text must be 400 characters or less",
-          "label_required": "Organization label is required"
+          "label_required": "Organization label is required",
+          "invalid_phone": "Invalid phone number"
         }
       },
       "images": {
@@ -1264,7 +1270,7 @@
         },
         "actions": {
           "edit_role": "Edit Role",
-          "remove_from_org": "Delete user account",
+          "remove_from_org": "Delete user",
           "removing": "Deleting...",
           "remove_success": "User account deleted successfully",
           "remove_error": "Error deleting user account"
@@ -1704,6 +1710,7 @@
         "toasts": {
           "task_created": "Task created successfully",
           "task_saved": "Task saved successfully",
+          "file_uploaded_success": "File uploaded successfully",
           "task_save_error": "Error saving task, please retry later.",
           "task_updated": "Task updated successfully",
           "task_update_error": "Error updating task, please retry later.",

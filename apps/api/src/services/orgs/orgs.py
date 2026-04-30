@@ -799,6 +799,12 @@ async def update_org_integrations(
     # Map back to the model field
     org_config.config = config_data
     org_config.update_date = str(datetime.now())
+
+    # SQLAlchemy doesn't detect in-place mutations to JSON columns.
+    # flag_modified tells SQLAlchemy the column has actually changed.
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(org_config, "config")
+
     db_session.add(org_config)
     db_session.commit()
     db_session.refresh(org_config)

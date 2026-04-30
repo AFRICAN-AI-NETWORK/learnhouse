@@ -6,10 +6,15 @@ import { getOrgCollections } from '@services/courses/collections'
 import { getServerSession } from 'next-auth'
 import { nextAuthOptions } from 'app/auth/options'
 import { getOrgThumbnailMediaDirectory } from '@services/media/media'
+import LandingPremium from '@components/Landings/LandingPremium'
 import LandingClassic from '@components/Landings/LandingClassic'
-import LandingCustom from '@components/Landings/LandingCustom'
 
 type MetadataProps = {
+  params: Promise<{ orgslug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+type OrgHomePageProps = {
   params: Promise<{ orgslug: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
@@ -57,8 +62,12 @@ export async function generateMetadata(
   }
 }
 
-const OrgHomePage = async (params: any) => {
-  const orgslug = (await params.params).orgslug
+const OrgHomePage = async (props: OrgHomePageProps) => {
+  const orgslug = (await props.params).orgslug
+  const searchParams = await props.searchParams
+  const landingParam = searchParams?.landing
+  const shouldForcePremiumLanding =
+    typeof landingParam === 'string' && landingParam === 'premium'
 
   try {
     const session = await getServerSession(nextAuthOptions)
@@ -86,26 +95,29 @@ const OrgHomePage = async (params: any) => {
       collectionsResult.status === 'fulfilled' ? collectionsResult.value : [],
     ])
 
-    const org_id = org.id
-
-    // Check if custom landing is enabled
-    const hasCustomLanding = org.config?.config?.landing?.enabled
-
-    return (
-      <div className="w-full">
-        {hasCustomLanding ? (
-          <LandingCustom
-            landing={org.config.config.landing}
-            orgslug={orgslug}
-          />
-        ) : (
+    // If internal user (logged in), show the classic LMS view (collections and courses)
+    // If guest, show the premium landing page
+    if (session && !shouldForcePremiumLanding) {
+      return (
+        <div className="w-full">
           <LandingClassic
             courses={courses}
             collections={collections}
             orgslug={orgslug}
-            org_id={org_id}
+            org_id={org.id}
           />
-        )}
+        </div>
+      )
+    }
+
+    return (
+      <div className="w-full">
+        <LandingPremium
+          org={org}
+          courses={courses}
+          collections={collections}
+          orgslug={orgslug}
+        />
       </div>
     )
   } catch (error) {

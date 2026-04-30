@@ -11,6 +11,9 @@ import {
   LandingButton,
   LandingImage,
   LandingFeaturedCourses,
+  LandingTestimonials,
+  LandingImpactMetrics,
+  LandingCTA,
 } from './landing_types'
 import {
   Plus,
@@ -26,6 +29,8 @@ import {
   Save,
   BookOpen,
   TextIcon,
+  BarChart3,
+  CheckCircle2,
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Input } from '@components/ui/input'
@@ -93,6 +98,21 @@ const getSectionTypes = (t: any) =>
       description: t(
         'dashboard.organization.landing.section_types.featured_courses.description'
       ),
+    },
+    testimonials: {
+      icon: Award,
+      label: 'Testimonials',
+      description: 'Add student reviews and testimonials',
+    },
+    'impact-metrics': {
+      icon: BarChart3,
+      label: 'Impact Metrics',
+      description: 'Show numbers and statistics',
+    },
+    cta: {
+      icon: Link,
+      label: 'Call to Action',
+      description: 'Final prompt to join or register',
     },
   }) as const
 
@@ -279,6 +299,30 @@ const OrgEditLanding = () => {
           ),
           courses: [],
         }
+      case 'testimonials':
+        return {
+          type: 'testimonials',
+          title: 'What our students say',
+          testimonials: [],
+        }
+      case 'impact-metrics':
+        return {
+          type: 'impact-metrics',
+          title: 'Our Impact',
+          metrics: [],
+        }
+      case 'cta':
+        return {
+          type: 'cta',
+          title: 'Ready to join?',
+          description: 'Start your journey today.',
+          button: {
+            text: 'Join Now',
+            link: '/auth/signup',
+            color: '#ffffff',
+            background: '#000000',
+          },
+        }
       default:
         throw new Error('Invalid section type')
     }
@@ -364,15 +408,10 @@ const OrgEditLanding = () => {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isLandingEnabled}
-                onChange={() => setIsLandingEnabled(!isLandingEnabled)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+            <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100 italic text-sm font-medium">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Premium Landing Active</span>
+            </div>
             <Button
               variant="default"
               onClick={handleSave}
@@ -387,175 +426,170 @@ const OrgEditLanding = () => {
           </div>
         </div>
 
-        {isLandingEnabled && (
-          <>
-            {/* Section List */}
-            <div className="grid grid-cols-4 gap-6">
-              {/* Sections Panel */}
-              <div className="col-span-1 border-r pr-4">
-                <h3 className="font-medium mb-4">
-                  {t('dashboard.organization.landing.sections')}
-                </h3>
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="sections">
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-2"
-                      >
-                        {landingData.sections.map((section, index) => (
-                          <Draggable
-                            key={`section-${index}`}
-                            draggableId={`section-${index}`}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                onClick={() => setSelectedSection(index)}
-                                className={`p-4 bg-white/80 backdrop-blur-xs rounded-lg cursor-pointer border  ${
-                                  selectedSection === index
-                                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20 shadow-xs'
-                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 hover:shadow-xs'
-                                } ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500/20 rotate-2' : ''}`}
-                              >
-                                <div className="flex items-center justify-between group">
-                                  <div className="flex items-center space-x-3">
-                                    <div
-                                      {...provided.dragHandleProps}
-                                      className={`p-1.5 rounded-md transition-colors duration-200 ${
-                                        selectedSection === index
-                                          ? 'text-blue-500 bg-blue-100/50'
-                                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                      }`}
-                                    >
-                                      <GripVertical size={16} />
-                                    </div>
-                                    <div
-                                      className={`p-1.5 rounded-md ${
-                                        selectedSection === index
-                                          ? 'text-blue-600 bg-blue-100/50'
-                                          : 'text-gray-600 bg-gray-100/50'
-                                      }`}
-                                    >
-                                      {React.createElement(
-                                        SECTION_TYPES[
-                                          section.type as keyof typeof SECTION_TYPES
-                                        ].icon,
-                                        {
-                                          size: 16,
-                                        }
-                                      )}
-                                    </div>
-                                    <span
-                                      className={`text-sm font-medium truncate capitalize ${
-                                        selectedSection === index
-                                          ? 'text-blue-700'
-                                          : 'text-gray-700'
-                                      }`}
-                                    >
-                                      {getSectionDisplayName(section)}
-                                    </span>
-                                  </div>
-                                  <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setSelectedSection(index)
-                                      }}
-                                      className={`p-1.5 rounded-md transition-colors duration-200 ${
-                                        selectedSection === index
-                                          ? 'text-blue-500 hover:bg-blue-100'
-                                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                      }`}
-                                    >
-                                      <Edit size={14} />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        deleteSection(index)
-                                      }}
-                                      className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors duration-200"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
-
-                <div className="pt-4">
-                  <Select
-                    onValueChange={(value) => {
-                      if (value) {
-                        addSection(value)
-                      }
-                    }}
+        <div className="grid grid-cols-4 gap-6">
+          {/* Sections Panel */}
+          <div className="col-span-1 border-r pr-4">
+            <h3 className="font-medium mb-4">
+              {t('dashboard.organization.landing.sections')}
+            </h3>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="sections">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-2"
                   >
-                    <SelectTrigger className="w-full p-0 border-0 bg-black ">
-                      <div className="w-full">
-                        <Button
-                          variant="default"
-                          className="w-full bg-black hover:bg-black/90 text-white"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          {t('dashboard.organization.landing.add_section')}
-                        </Button>
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(SECTION_TYPES).map(
-                        ([type, { icon: Icon, label, description }]) => (
-                          <SelectItem key={type} value={type}>
-                            <div className="flex items-center space-x-3 py-1">
-                              <div className="p-1.5 bg-gray-50 rounded-md">
-                                <Icon size={16} className="text-gray-600" />
+                    {landingData.sections.map((section, index) => (
+                      <Draggable
+                        key={`section-${index}`}
+                        draggableId={`section-${index}`}
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            onClick={() => setSelectedSection(index)}
+                            className={`p-4 bg-white/80 backdrop-blur-xs rounded-lg cursor-pointer border  ${
+                              selectedSection === index
+                                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20 shadow-xs'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 hover:shadow-xs'
+                            } ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500/20 rotate-2' : ''}`}
+                          >
+                            <div className="flex items-center justify-between group">
+                              <div className="flex items-center space-x-3">
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className={`p-1.5 rounded-md transition-colors duration-200 ${
+                                    selectedSection === index
+                                      ? 'text-blue-500 bg-blue-100/50'
+                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <GripVertical size={16} />
+                                </div>
+                                <div
+                                  className={`p-1.5 rounded-md ${
+                                    selectedSection === index
+                                      ? 'text-blue-600 bg-blue-100/50'
+                                      : 'text-gray-600 bg-gray-100/50'
+                                  }`}
+                                >
+                                  {React.createElement(
+                                    SECTION_TYPES[
+                                      section.type as keyof typeof SECTION_TYPES
+                                    ].icon,
+                                    {
+                                      size: 16,
+                                    }
+                                  )}
+                                </div>
+                                <span
+                                  className={`text-sm font-medium truncate capitalize ${
+                                    selectedSection === index
+                                      ? 'text-blue-700'
+                                      : 'text-gray-700'
+                                  }`}
+                                >
+                                  {getSectionDisplayName(section)}
+                                </span>
                               </div>
-                              <div className="flex-1">
-                                <div className="font-medium text-sm text-gray-700">
-                                  {label}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {description}
-                                </div>
+                              <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedSection(index)
+                                  }}
+                                  className={`p-1.5 rounded-md transition-colors duration-200 ${
+                                    selectedSection === index
+                                      ? 'text-blue-500 hover:bg-blue-100'
+                                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  <Edit size={14} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    deleteSection(index)
+                                  }}
+                                  className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors duration-200"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
                               </div>
                             </div>
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Editor Panel */}
-              <div className="col-span-3">
-                {selectedSection !== null ? (
-                  <SectionEditor
-                    section={landingData.sections[selectedSection]}
-                    onChange={(updatedSection) =>
-                      updateSection(selectedSection, updatedSection)
-                    }
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500">
-                    {t('dashboard.organization.landing.select_section')}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
                   </div>
                 )}
-              </div>
+              </Droppable>
+            </DragDropContext>
+
+            <div className="pt-4">
+              <Select
+                onValueChange={(value) => {
+                  if (value) {
+                    addSection(value)
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full p-0 border-0 bg-black ">
+                  <div className="w-full">
+                    <Button
+                      variant="default"
+                      className="w-full bg-black hover:bg-black/90 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('dashboard.organization.landing.add_section')}
+                    </Button>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(SECTION_TYPES).map(
+                    ([type, { icon: Icon, label, description }]) => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center space-x-3 py-1">
+                          <div className="p-1.5 bg-gray-50 rounded-md">
+                            <Icon size={16} className="text-gray-600" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm text-gray-700">
+                              {label}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {description}
+                            </div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
             </div>
-          </>
-        )}
+          </div>
+
+          {/* Editor Panel */}
+          <div className="col-span-3">
+            {selectedSection !== null ? (
+              <SectionEditor
+                section={landingData.sections[selectedSection]}
+                onChange={(updatedSection) =>
+                  updateSection(selectedSection, updatedSection)
+                }
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                {t('dashboard.organization.landing.select_section')}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -578,6 +612,12 @@ const SectionEditor: React.FC<SectionEditorProps> = ({ section, onChange }) => {
       return <PeopleSectionEditor section={section} onChange={onChange} />
     case 'featured-courses':
       return <FeaturedCoursesEditor section={section} onChange={onChange} />
+    case 'testimonials':
+      return <TestimonialsEditor section={section} onChange={onChange} />
+    case 'impact-metrics':
+      return <ImpactMetricsEditor section={section} onChange={onChange} />
+    case 'cta':
+      return <CTAEditor section={section} onChange={onChange} />
     default:
       return <div>Unknown section type</div>
   }
@@ -2156,6 +2196,281 @@ const FeaturedCoursesEditor: React.FC<{
                 )}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const TestimonialsEditor: React.FC<{
+  section: LandingTestimonials
+  onChange: (section: LandingTestimonials) => void
+}> = ({ section, onChange }) => {
+  return (
+    <div className="space-y-6 p-6 bg-white rounded-lg nice-shadow">
+      <div className="flex items-center space-x-2">
+        <Award className="w-5 h-5 text-gray-500" />
+        <h3 className="font-medium text-lg">Testimonials</h3>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <Label>Section Title</Label>
+          <Input
+            value={section.title}
+            onChange={(e) => onChange({ ...section, title: e.target.value })}
+            placeholder="What our students say"
+          />
+        </div>
+        <div className="space-y-4">
+          {section.testimonials.map((testimonial: any, index: number) => (
+            <div
+              key={index}
+              className="p-4 border rounded-xl space-y-4 bg-gray-50/50"
+            >
+              <div className="flex justify-between items-start">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  Testimonial #{index + 1}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-red-500 h-8 w-8"
+                  onClick={() => {
+                    const newTestimonials = section.testimonials.filter(
+                      (_: any, i: number) => i !== index
+                    )
+                    onChange({ ...section, testimonials: newTestimonials })
+                  }}
+                >
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label>Review Text</Label>
+                  <Textarea
+                    value={testimonial.text}
+                    onChange={(e) => {
+                      const newTestimonials = [...section.testimonials]
+                      newTestimonials[index] = {
+                        ...testimonial,
+                        text: e.target.value,
+                      }
+                      onChange({ ...section, testimonials: newTestimonials })
+                    }}
+                    placeholder="This course changed my life..."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Author Name</Label>
+                    <Input
+                      value={testimonial.author}
+                      onChange={(e) => {
+                        const newTestimonials = [...section.testimonials]
+                        newTestimonials[index] = {
+                          ...testimonial,
+                          author: e.target.value,
+                        }
+                        onChange({ ...section, testimonials: newTestimonials })
+                      }}
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label>Author Role/Company</Label>
+                    <Input
+                      value={testimonial.role}
+                      onChange={(e) => {
+                        const newTestimonials = [...section.testimonials]
+                        newTestimonials[index] = {
+                          ...testimonial,
+                          role: e.target.value,
+                        }
+                        onChange({ ...section, testimonials: newTestimonials })
+                      }}
+                      placeholder="AI Engineer"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button
+            variant="outline"
+            className="w-full border-dashed"
+            onClick={() => {
+              onChange({
+                ...section,
+                testimonials: [
+                  ...section.testimonials,
+                  { text: '', author: '', role: '' },
+                ],
+              })
+            }}
+          >
+            <Plus size={16} className="mr-2" /> Add Testimonial
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ImpactMetricsEditor: React.FC<{
+  section: LandingImpactMetrics
+  onChange: (section: LandingImpactMetrics) => void
+}> = ({ section, onChange }) => {
+  return (
+    <div className="space-y-6 p-6 bg-white rounded-lg nice-shadow">
+      <div className="flex items-center space-x-2">
+        <BarChart3 className="w-5 h-5 text-gray-500" />
+        <h3 className="font-medium text-lg">Impact Metrics</h3>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <Label>Section Title</Label>
+          <Input
+            value={section.title}
+            onChange={(e) => onChange({ ...section, title: e.target.value })}
+            placeholder="Our Impact"
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-4">
+          {section.metrics.map((metric: any, index: number) => (
+            <div
+              key={index}
+              className="flex gap-4 items-end p-4 border rounded-xl bg-gray-50/50"
+            >
+              <div className="flex-1 space-y-2">
+                <Label>Label</Label>
+                <Input
+                  value={metric.label}
+                  onChange={(e) => {
+                    const newMetrics = [...section.metrics]
+                    newMetrics[index] = { ...metric, label: e.target.value }
+                    onChange({ ...section, metrics: newMetrics })
+                  }}
+                  placeholder="Students"
+                />
+              </div>
+              <div className="w-24 space-y-2">
+                <Label>Value</Label>
+                <Input
+                  value={metric.value}
+                  onChange={(e) => {
+                    const newMetrics = [...section.metrics]
+                    newMetrics[index] = { ...metric, value: e.target.value }
+                    onChange({ ...section, metrics: newMetrics })
+                  }}
+                  placeholder="10,000"
+                />
+              </div>
+              <div className="w-20 space-y-2">
+                <Label>Suffix</Label>
+                <Input
+                  value={metric.suffix || ''}
+                  onChange={(e) => {
+                    const newMetrics = [...section.metrics]
+                    newMetrics[index] = { ...metric, suffix: e.target.value }
+                    onChange({ ...section, metrics: newMetrics })
+                  }}
+                  placeholder="+"
+                />
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-500 mb-1"
+                onClick={() => {
+                  const newMetrics = section.metrics.filter(
+                    (_: any, i: number) => i !== index
+                  )
+                  onChange({ ...section, metrics: newMetrics })
+                }}
+              >
+                <Trash2 size={14} />
+              </Button>
+            </div>
+          ))}
+          <Button
+            variant="outline"
+            className="w-full border-dashed"
+            onClick={() => {
+              onChange({
+                ...section,
+                metrics: [
+                  ...section.metrics,
+                  { label: '', value: '', suffix: '' },
+                ],
+              })
+            }}
+          >
+            <Plus size={16} className="mr-2" /> Add Metric
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const CTAEditor: React.FC<{
+  section: LandingCTA
+  onChange: (section: LandingCTA) => void
+}> = ({ section, onChange }) => {
+  return (
+    <div className="space-y-6 p-6 bg-white rounded-lg nice-shadow">
+      <div className="flex items-center space-x-2">
+        <Link className="w-5 h-5 text-gray-500" />
+        <h3 className="font-medium text-lg">Call to Action</h3>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <Label>Title</Label>
+          <Input
+            value={section.title}
+            onChange={(e) => onChange({ ...section, title: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label>Description</Label>
+          <Textarea
+            value={section.description}
+            onChange={(e) =>
+              onChange({ ...section, description: e.target.value })
+            }
+          />
+        </div>
+        <div className="p-4 border rounded-xl space-y-4 bg-gray-50/50">
+          <Label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            Button Config
+          </Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Text</Label>
+              <Input
+                value={section.button.text}
+                onChange={(e) =>
+                  onChange({
+                    ...section,
+                    button: { ...section.button, text: e.target.value },
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>Link</Label>
+              <Input
+                value={section.button.link}
+                onChange={(e) =>
+                  onChange({
+                    ...section,
+                    button: { ...section.button, link: e.target.value },
+                  })
+                }
+              />
+            </div>
           </div>
         </div>
       </div>

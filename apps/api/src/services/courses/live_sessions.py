@@ -152,6 +152,11 @@ async def end_live_session(
     # 2. Update status
     details.update({"is_concluded_manually": True})
     activity.details = details
+
+    # SQLAlchemy doesn't detect in-place mutations to JSON columns.
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(activity, "details")
+
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(activity)

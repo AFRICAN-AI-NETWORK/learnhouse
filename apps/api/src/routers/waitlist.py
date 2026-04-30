@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
@@ -30,6 +30,7 @@ from src.services.users.waitlist import (
     create_waitlist_user,
     get_waitlist_users,
 )
+from src.security.phone_validation import validate_e164_phone_number
 
 
 router = APIRouter()
@@ -42,6 +43,7 @@ class WaitlistUserRegistration(BaseModel):
     username: str
     email: str
     password: str
+    phone_number: str
     first_name: str = ""
     last_name: str = ""
     bio: Optional[str] = ""
@@ -50,6 +52,10 @@ class WaitlistUserRegistration(BaseModel):
     referral_code: Optional[str] = None
     device_id: Optional[str] = None
     browser_fingerprint: Optional[dict] = None
+
+    @validator("phone_number", pre=True, always=True)
+    def validate_phone_number(cls, value):
+        return validate_e164_phone_number(value, required=True)
 
 # ==================== Waitlist Configuration Endpoints (Admin) ====================
 
@@ -243,6 +249,7 @@ async def join_waitlist(
         username=user_data.username,
         email=user_data.email,
         password=user_data.password,
+        phone_number=user_data.phone_number,
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         bio=user_data.bio,

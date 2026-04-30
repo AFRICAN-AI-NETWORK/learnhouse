@@ -22,6 +22,7 @@ function DashboardHome() {
   const canSeeOrg = isAdmin || rights?.organizations?.action_read
   const canSeeUsers = isAdmin || rights?.users?.action_read
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
+  const canSeeHandbook = isAdmin || rights?.handbook?.action_read
 
   return (
     <div className="flex items-center justify-center mx-auto min-h-screen flex-col p-4 sm:mb-0 mb-16">
@@ -73,6 +74,14 @@ function DashboardHome() {
             icon={<Megaphone className="mx-auto text-gray-500" size={50} />}
             title="Communications"
             description="Send batch emails and announcements to students"
+          />
+        )}
+        {canSeeHandbook && (
+          <DashboardCard
+            href="/dash/handbook"
+            icon={<BookCopy className="mx-auto text-gray-500" size={50} />}
+            title="Handbook"
+            description="Access the organization's handbook and guidelines"
           />
         )}
       </div>

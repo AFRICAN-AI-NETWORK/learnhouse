@@ -2,7 +2,6 @@
 import React from 'react'
 import '@/styles/globals.css'
 import StyledComponentsRegistry from '@components/Utils/libs/styled-registry'
-import { motion } from 'framer-motion'
 import { SessionProvider } from 'next-auth/react'
 import LHSessionProvider from '@components/Contexts/LHSessionContext'
 import { isDevEnv } from '@/app/auth/options'
@@ -71,16 +70,7 @@ export default function RootLayout({
           <LHSessionProvider>
             <I18nProvider>
               <StyledComponentsRegistry>
-                <motion.main
-                  variants={variants}
-                  initial="hidden"
-                  animate="enter"
-                  exit="exit"
-                  transition={{ type: 'tween' }}
-                  className="flex-grow"
-                >
-                  {children}
-                </motion.main>
+                <main className="flex-grow">{children}</main>
                 <Footer />
               </StyledComponentsRegistry>
             </I18nProvider>
