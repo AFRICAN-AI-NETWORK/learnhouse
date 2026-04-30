@@ -473,7 +473,7 @@ function LiveSessionActivity({
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.2 }}
                 onClick={() => onFocusModeChange(!isFocusMode)}
-                className="fixed top-6 right-6 z-[70] p-3 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 text-white shadow-2xl hover:bg-zinc-800 transition-all flex items-center justify-center group"
+                className="fixed top-6 right-6 z-70 p-3 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 text-white shadow-2xl hover:bg-zinc-800 transition-all flex items-center justify-center group"
                 title={
                   isFocusMode ? 'Exit Focus Mode (ESC)' : 'Enter Focus Mode'
                 }
@@ -488,10 +488,13 @@ function LiveSessionActivity({
                 </span>
               </motion.button>
             )}
-            <div
-              className="lg:col-span-3 bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-zinc-100"
-              ref={jitsiContainerRef}
-            >
+            <div className="lg:col-span-3 bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-zinc-100 min-h-[500px]">
+              {/* Dedicated container for Jitsi iframe, untouched by React's conditionally rendered children */}
+              <div
+                ref={jitsiContainerRef}
+                className="absolute inset-0 w-full h-full z-10 bg-zinc-900 flex items-center justify-center"
+              />
+
               {!isRegistered && (
                 <div className="absolute inset-0 bg-zinc-900/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-12 z-20">
                   <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-6">
