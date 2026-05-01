@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -49,6 +49,7 @@ function LiveSessionActivity({
   )
   const [showFloatingButton, setShowFloatingButton] = useState(false)
   const [iframeLoaded, setIframeLoaded] = useState(false)
+  const jitsiContainerRef = useRef<HTMLDivElement>(null)
 
   const details = activity?.details || {}
   const jitsiDomain = process.env.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si'
