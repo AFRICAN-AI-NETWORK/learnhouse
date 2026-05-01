@@ -357,6 +357,13 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>`
               : ''
           }
+          ${
+            userCertificate.certification.config.certificate_ceo
+              ? `<div style="margin: 8px 0; font-size: 14px; color: #374151;">
+              <strong style="color: ${theme.primary};">CEO:</strong> ${userCertificate.certification.config.certificate_ceo}
+            </div>`
+              : ''
+          }
         </div>
         
         <div style="
@@ -370,6 +377,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
 
       // Add to document temporarily
       document.body.appendChild(certificateDiv)
+
+      // Wait a bit for rendering
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       // Convert to canvas
       const canvas = await html2canvas(certificateDiv, {
@@ -539,6 +549,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                     certificateInstructor={
                       userCertificate.certification.config
                         .certificate_instructor
+                    }
+                    certificateCeo={
+                      userCertificate.certification.config.certificate_ceo
                     }
                     certificateId={
                       userCertificate.certificate_user.user_certification_uuid

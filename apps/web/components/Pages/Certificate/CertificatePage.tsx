@@ -311,6 +311,9 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
       // Add to document temporarily
       document.body.appendChild(certificateDiv)
 
+      // Wait a bit for rendering
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       // Convert to canvas
       const canvas = await html2canvas(certificateDiv, {
         width: 800,

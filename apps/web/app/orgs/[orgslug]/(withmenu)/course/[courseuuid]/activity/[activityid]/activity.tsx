@@ -12,6 +12,7 @@ import {
   Minimize2,
   Info,
   Loader2,
+  Trophy,
 } from 'lucide-react'
 import {
   markActivityAsComplete,
@@ -420,9 +421,17 @@ function ActivityClient(props: ActivityClientProps) {
 
   // Navigate to an activity
   const navigateToActivity = (activity: any) => {
+    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+
+    if (activity === 'end') {
+      router.push(
+        getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}/activity/end`
+      )
+      return
+    }
+
     if (!activity) return
 
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
     router.push(
       getUriWithOrg(orgslug, '') +
         `/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`
@@ -849,26 +858,29 @@ function ActivityClient(props: ActivityClientProps) {
                                 <motion.button
                                   initial={{ opacity: 0, x: 20 }}
                                   animate={{
-                                    opacity: nextActivity ? 1 : 0,
+                                    opacity: 1,
                                     x: 0,
                                   }}
                                   whileHover={{ x: 2 }}
                                   onClick={() =>
-                                    navigateToActivity(nextActivity)
+                                    navigateToActivity(nextActivity || 'end')
                                   }
-                                  disabled={!nextActivity}
-                                  className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl ${
-                                    nextActivity
-                                      ? 'hover:bg-zinc-800 hover:scale-110'
-                                      : 'hidden'
+                                  className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl hover:bg-zinc-800 hover:scale-110 ${
+                                    !nextActivity
+                                      ? 'border-emerald-500/50 text-emerald-400'
+                                      : ''
                                   }`}
                                   title={
                                     nextActivity
                                       ? `${t('common.next')}: ${nextActivity.name}`
-                                      : ''
+                                      : t('courses.finish_course')
                                   }
                                 >
-                                  <ChevronRight size={24} />
+                                  {nextActivity ? (
+                                    <ChevronRight size={24} />
+                                  ) : (
+                                    <Trophy size={24} />
+                                  )}
                                 </motion.button>
                               </div>
                             )}
@@ -876,35 +888,49 @@ function ActivityClient(props: ActivityClientProps) {
                             <div
                               className={`${activity?.activity_type === 'TYPE_VIDEO' ? 'max-w-5xl' : isSmartArticle ? 'max-w-full' : 'max-w-(--breakpoint-xl)'} mx-auto ${isSmartArticle ? 'px-0' : 'px-4 mb-20'}`}
                             >
-                              {activity && activity.published == true && (
-                                <>
-                                  {activity.content.paid_access == false ? (
-                                    <PaidCourseActivityDisclaimer
-                                      course={course}
-                                    />
-                                  ) : (
-                                    <motion.div
-                                      initial={
-                                        !hasMounted
-                                          ? false
-                                          : { scale: 0.95, opacity: 0, y: 20 }
-                                      }
-                                      animate={{ scale: 1, opacity: 1, y: 0 }}
-                                      transition={{
-                                        delay: 0.3,
-                                        type: 'spring',
-                                        stiffness: 100,
-                                        damping: 20,
-                                      }}
-                                      className={`rounded-2xl ${bgColor} ${isSmartArticle ? 'mt-0' : 'mt-4 md:mt-8 p-3 md:p-8 shadow-2xl border border-white/5'}`}
-                                    >
-                                      {/* Activity Types */}
-                                      <div className="relative z-10 w-full overflow-visible">
-                                        {activityContent}
-                                      </div>
-                                    </motion.div>
-                                  )}
-                                </>
+                              {activityid === 'end' ? (
+                                <div className="mt-8">
+                                  <CourseEndView
+                                    courseName={course.name}
+                                    orgslug={orgslug}
+                                    courseUuid={course.course_uuid}
+                                    thumbnailImage={course.thumbnail_image}
+                                    course={course}
+                                    trailData={trailData}
+                                  />
+                                </div>
+                              ) : (
+                                activity &&
+                                activity.published == true && (
+                                  <>
+                                    {activity.content.paid_access == false ? (
+                                      <PaidCourseActivityDisclaimer
+                                        course={course}
+                                      />
+                                    ) : (
+                                      <motion.div
+                                        initial={
+                                          !hasMounted
+                                            ? false
+                                            : { scale: 0.95, opacity: 0, y: 20 }
+                                        }
+                                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                                        transition={{
+                                          delay: 0.3,
+                                          type: 'spring',
+                                          stiffness: 100,
+                                          damping: 20,
+                                        }}
+                                        className={`rounded-2xl ${bgColor} ${isSmartArticle ? 'mt-0' : 'mt-4 md:mt-8 p-3 md:p-8 shadow-2xl border border-white/5'}`}
+                                      >
+                                        {/* Activity Types */}
+                                        <div className="relative z-10 w-full overflow-visible">
+                                          {activityContent}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </>
+                                )
                               )}
                             </div>
                           </div>
@@ -934,17 +960,24 @@ function ActivityClient(props: ActivityClientProps) {
                               <div className="h-8 w-px bg-white/10" />
 
                               <button
-                                onClick={() => navigateToActivity(nextActivity)}
-                                disabled={!nextActivity}
+                                onClick={() =>
+                                  navigateToActivity(nextActivity || 'end')
+                                }
                                 className={`flex flex-col items-center gap-1 transition-all ${
                                   nextActivity
                                     ? 'text-white'
-                                    : 'text-zinc-600 opacity-50'
+                                    : 'text-emerald-400'
                                 }`}
                               >
-                                <ChevronRight size={20} />
+                                {nextActivity ? (
+                                  <ChevronRight size={20} />
+                                ) : (
+                                  <Trophy size={20} />
+                                )}
                                 <span className="text-[10px] font-bold uppercase tracking-widest">
-                                  {t('common.next')}
+                                  {nextActivity
+                                    ? t('common.next')
+                                    : t('courses.finish')}
                                 </span>
                               </button>
                             </motion.div>
@@ -1677,13 +1710,30 @@ function NextActivityButton({
 
   const nextActivity = findNextActivity()
 
-  if (!nextActivity) return null
-
   const navigateToActivity = () => {
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
     router.push(
       getUriWithOrg(orgslug, '') +
-        `/course/${cleanCourseUuid}/activity/${nextActivity.cleanUuid}`
+        `/course/${cleanCourseUuid}/activity/${nextActivity ? nextActivity.cleanUuid : 'end'}`
+    )
+  }
+
+  if (!nextActivity) {
+    return (
+      <div
+        onClick={navigateToActivity}
+        className="bg-emerald-600 rounded-md px-4 shadow-lg flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-emerald-700"
+      >
+        <span className="text-[10px] font-bold text-emerald-100 mb-1 uppercase">
+          {t('common.next')}
+        </span>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-semibold truncate max-w-[200px]">
+            {t('courses.finish_course')}
+          </span>
+          <Trophy size={17} />
+        </div>
+      </div>
     )
   }
 
