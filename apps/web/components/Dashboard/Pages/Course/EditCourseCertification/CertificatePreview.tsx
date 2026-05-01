@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Award,
-  CheckCircle,
-  QrCode,
-  Building,
-  User,
-  Calendar,
-  Hash,
-} from 'lucide-react'
+import { Award, CheckCircle, QrCode, Building, User, Hash } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
@@ -22,6 +14,7 @@ interface CertificatePreviewProps {
   awardedDate?: string
   qrCodeLink?: string
   studentName?: string
+  certificateCeo?: string
 }
 
 const CertificatePreview: React.FC<CertificatePreviewProps> = ({
@@ -34,6 +27,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   awardedDate,
   qrCodeLink,
   studentName,
+  certificateCeo,
 }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const org = useOrg() as any
@@ -662,26 +656,30 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         {/* Bottom Section */}
         <div className="relative z-10 mt-auto p-6 pt-8">
           <div className="flex items-end justify-between w-full">
-            {/* Left: Teacher/Organization Signature */}
+            {/* Left: Chief Instructor */}
             <div className="flex flex-col items-start space-y-1 flex-1">
               <div className="flex items-center space-x-1">
                 <User className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${theme.icon}`} />
-                <span className={`text-xs ${theme.secondary} font-medium`}>
+                <span
+                  className={`text-[10px] sm:text-xs ${theme.secondary} font-bold uppercase tracking-wider`}
+                >
                   Chief Instructor
                 </span>
               </div>
-              <div className={`text-xs ${theme.primary} font-semibold`}>
+              <div
+                className={`text-xs sm:text-sm ${theme.primary} font-extrabold`}
+              >
                 {certificateInstructor || 'Dr. Jane Smith'}
               </div>
               <div
-                className={`h-px w-10 sm:w-12 ${theme.secondary.replace('text-', 'bg-')} opacity-50`}
+                className={`h-px w-12 sm:w-16 ${theme.secondary.replace('text-', 'bg-')} opacity-50`}
               ></div>
             </div>
 
             {/* Center: Logo */}
             <div className="flex flex-col items-center space-y-1 flex-1">
               <div
-                className={`w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center`}
+                className={`w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center`}
               >
                 {org?.logo_image ? (
                   <img
@@ -694,30 +692,46 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                     className={`w-full h-full ${theme.icon.replace('text-', 'bg-')}-100 rounded-full flex items-center justify-center`}
                   >
                     <Building
-                      className={`w-4 h-4 sm:w-5 sm:h-5 ${theme.icon}`}
+                      className={`w-8 h-8 sm:w-12 sm:h-12 ${theme.icon}`}
                     />
                   </div>
                 )}
               </div>
-              <div className={`text-xs ${theme.secondary} font-medium`}>
+              <div
+                className={`text-[10px] sm:text-xs ${theme.secondary} font-bold uppercase`}
+              >
                 {org?.name || 'LearnHouse'}
               </div>
             </div>
 
-            {/* Right: Award Date */}
+            {/* Right: CEO */}
             <div className="flex flex-col items-end space-y-1 flex-1">
               <div className="flex items-center space-x-1">
-                <Calendar
-                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${theme.icon}`}
-                />
-                <span className={`text-xs ${theme.secondary} font-medium`}>
-                  Awarded
+                <User className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${theme.icon}`} />
+                <span
+                  className={`text-[10px] sm:text-xs ${theme.secondary} font-bold uppercase tracking-wider`}
+                >
+                  CEO
                 </span>
               </div>
-              <div className={`text-xs ${theme.primary} font-semibold`}>
-                {awardedDate || 'Dec 15, 2024'}
+              <div
+                className={`text-xs sm:text-sm ${theme.primary} font-extrabold`}
+              >
+                {certificateCeo || 'CEO Name'}
               </div>
+              <div
+                className={`h-px w-12 sm:w-16 ${theme.secondary.replace('text-', 'bg-')} opacity-50`}
+              ></div>
             </div>
+          </div>
+
+          {/* Absolute bottom: Awarded Date */}
+          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 opacity-60">
+            <span
+              className={`text-[8px] sm:text-[10px] ${theme.secondary} font-medium italic`}
+            >
+              Awarded: {awardedDate || 'Dec 15, 2024'}
+            </span>
           </div>
         </div>
       </div>

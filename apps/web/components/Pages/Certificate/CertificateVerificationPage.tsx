@@ -228,6 +228,9 @@ const CertificateVerificationPage: React.FC<
                   certificateInstructor={
                     certificateData.certification.config.certificate_instructor
                   }
+                  certificateCeo={
+                    certificateData.certification.config.certificate_ceo
+                  }
                   certificateId={
                     certificateData.certificate_user.user_certification_uuid
                   }
@@ -448,6 +451,19 @@ const CertificateVerificationPage: React.FC<
                           certificateData.certification.config
                             .certificate_instructor
                         }
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {certificateData.certification.config.certificate_ceo && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CEO
+                    </label>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <span className="text-gray-900">
+                        {certificateData.certification.config.certificate_ceo}
                       </span>
                     </div>
                   </div>

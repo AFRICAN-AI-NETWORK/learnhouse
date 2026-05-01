@@ -169,6 +169,8 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
         localDraftConfig.certificate_instructor ||
         config.certificate_instructor ||
         getInstructorName(),
+      certificate_ceo:
+        localDraftConfig.certificate_ceo || config.certificate_ceo || '',
     }
   }, [courseStructure, existingCertification, hasExistingCertification])
 
@@ -198,6 +200,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
           certificate_pattern:
             formik.values.certificate_pattern || 'professional',
           certificate_instructor: formik.values.certificate_instructor || '',
+          certificate_ceo: formik.values.certificate_ceo || '',
         }
 
         const result = await createCertification(
@@ -269,6 +272,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             certification_type: formikValues.certification_type,
             certificate_pattern: formikValues.certificate_pattern,
             certificate_instructor: formikValues.certificate_instructor,
+            certificate_ceo: formikValues.certificate_ceo,
           },
         }
 
@@ -576,11 +580,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
 
                     {/* Custom Instructor */}
                     <FormField name="certificate_instructor">
-                      <FormLabelAndMessage
-                        label={t(
-                          'dashboard.courses.certification.form.certificate_instructor_label'
-                        )}
-                      />
+                      <FormLabelAndMessage label="Chief Instructor" />
                       <Form.Control asChild>
                         <Input
                           name="certificate_instructor"
@@ -588,9 +588,22 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                           onChange={formik.handleChange}
                           value={formik.values.certificate_instructor}
                           type="text"
-                          placeholder={t(
-                            'dashboard.courses.certification.form.certificate_instructor_placeholder'
-                          )}
+                          placeholder="Enter Chief Instructor name"
+                        />
+                      </Form.Control>
+                    </FormField>
+
+                    {/* CEO Name */}
+                    <FormField name="certificate_ceo">
+                      <FormLabelAndMessage label="CEO Name" />
+                      <Form.Control asChild>
+                        <Input
+                          name="certificate_ceo"
+                          style={{ backgroundColor: 'white' }}
+                          onChange={formik.handleChange}
+                          value={formik.values.certificate_ceo}
+                          type="text"
+                          placeholder="Enter CEO name"
                         />
                       </Form.Control>
                     </FormField>
@@ -625,6 +638,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         certificateInstructor={
                           formik.values.certificate_instructor
                         }
+                        certificateCeo={formik.values.certificate_ceo}
                         studentName="Student Name"
                       />
                     </div>

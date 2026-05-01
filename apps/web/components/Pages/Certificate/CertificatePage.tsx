@@ -290,6 +290,13 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
             </div>`
               : ''
           }
+          ${
+            userCertificate.certification.config.certificate_ceo
+              ? `<div style="margin: 8px 0; font-size: 14px; color: #374151;">
+              <strong style="color: ${theme.primary};">CEO:</strong> ${userCertificate.certification.config.certificate_ceo}
+            </div>`
+              : ''
+          }
         </div>
         
         <div style="
@@ -443,6 +450,9 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
               }
               certificateInstructor={
                 userCertificate.certification.config.certificate_instructor
+              }
+              certificateCeo={
+                userCertificate.certification.config.certificate_ceo
               }
               certificateId={
                 userCertificate.certificate_user.user_certification_uuid
