@@ -18,7 +18,6 @@ import { getUserCertificates } from '@services/courses/certifications'
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import QRCode from 'qrcode'
 import { useTranslation } from 'react-i18next'
 
 interface CourseEndViewProps {

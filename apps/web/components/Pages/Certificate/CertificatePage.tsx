@@ -9,7 +9,6 @@ import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import QRCode from 'qrcode'
 
 interface CertificatePageProps {
   orgslug: string
