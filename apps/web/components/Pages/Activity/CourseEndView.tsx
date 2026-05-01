@@ -45,10 +45,12 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
   const [userCertificate, setUserCertificate] = useState<any>(null)
   const [isLoadingCertificate, setIsLoadingCertificate] = useState(false)
   const [certificateError, setCertificateError] = useState<string | null>(null)
-  const qrCodeLink = getUriWithOrg(
-    orgslug,
-    `/certificates/${userCertificate?.certificate_user.user_certification_uuid}/verify`
-  )
+  const qrCodeLink = userCertificate?.certificate_user?.user_certification_uuid
+    ? getUriWithOrg(
+        orgslug,
+        `/certificates/${userCertificate.certificate_user.user_certification_uuid}/verify`
+      )
+    : ''
 
   // Check if course is actually completed
   const isCourseCompleted = useMemo(() => {
@@ -177,11 +179,11 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       }
 
       const theme = getPatternTheme(
-        userCertificate.certification.config.certificate_pattern
+        userCertificate?.certification?.config?.certificate_pattern
       )
       const certificateId =
-        userCertificate.certificate_user.user_certification_uuid
-      const qrCodeData = qrCodeLink
+        userCertificate?.certificate_user?.user_certification_uuid || 'LH-CERT'
+      const qrCodeData = qrCodeLink || certificateId
 
       // Generate QR code
       const qrCodeDataUrl = await QRCode.toDataURL(qrCodeData, {
@@ -552,6 +554,10 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                       }
                     )}
                     qrCodeLink={qrCodeLink}
+                    studentName={
+                      `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
+                      'Student Name'
+                    }
                   />
                 </div>
               </div>

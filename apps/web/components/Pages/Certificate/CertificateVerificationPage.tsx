@@ -167,7 +167,7 @@ const CertificateVerificationPage: React.FC<
 
   const qrCodeLink = getUriWithOrg(
     org?.org_slug || '',
-    `/certificates/${certificateData.certificate_user.user_certification_uuid}/verify`
+    `/certificates/${certificateData?.certificate_user?.user_certification_uuid || 'unknown'}/verify`
   )
 
   return (
@@ -239,6 +239,10 @@ const CertificateVerificationPage: React.FC<
                     day: 'numeric',
                   })}
                   qrCodeLink={qrCodeLink}
+                  studentName={
+                    `${certificateData.certificate_user?.user?.first_name || ''} ${certificateData.certificate_user?.user?.last_name || ''}`.trim() ||
+                    'Student Name'
+                  }
                 />
               </div>
             </div>

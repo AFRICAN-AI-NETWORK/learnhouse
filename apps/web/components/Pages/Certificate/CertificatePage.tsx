@@ -112,11 +112,11 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
       }
 
       const theme = getPatternTheme(
-        userCertificate.certification.config.certificate_pattern
+        userCertificate?.certification?.config?.certificate_pattern
       )
       const certificateId =
-        userCertificate.certificate_user.user_certification_uuid
-      const qrCodeData = qrCodeLink
+        userCertificate?.certificate_user?.user_certification_uuid || 'LH-CERT'
+      const qrCodeData = qrCodeLink || certificateId
 
       // Generate QR code
       const qrCodeDataUrl = await QRCode.toDataURL(qrCodeData, {
@@ -455,6 +455,10 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
                 day: 'numeric',
               })}
               qrCodeLink={qrCodeLink}
+              studentName={
+                `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
+                'Student Name'
+              }
             />
           </div>
         </div>

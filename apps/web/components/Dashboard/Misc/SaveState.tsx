@@ -89,6 +89,8 @@ function SaveState(props: { orgslug: string }) {
           certData.config,
           session.data?.tokens?.access_token
         )
+        // Refresh certification data in SWR cache
+        mutate(`certifications/course/${course.courseStructure.course_uuid}`)
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to save certification data:', error)

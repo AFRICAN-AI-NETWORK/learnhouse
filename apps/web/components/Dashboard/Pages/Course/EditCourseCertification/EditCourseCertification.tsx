@@ -625,6 +625,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         certificateInstructor={
                           formik.values.certificate_instructor
                         }
+                        studentName="Student Name"
                       />
                     </div>
                   </div>
