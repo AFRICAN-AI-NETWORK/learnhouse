@@ -286,7 +286,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           ${
             userCertificate.certification.config.certificate_instructor
               ? `<div style="margin: 8px 0; font-size: 14px; color: #374151;">
-              <strong style="color: ${theme.primary};">Instructor:</strong> ${userCertificate.certification.config.certificate_instructor}
+              <strong style="color: ${theme.primary};">Chief Instructor:</strong> ${userCertificate.certification.config.certificate_instructor}
             </div>`
               : ''
           }

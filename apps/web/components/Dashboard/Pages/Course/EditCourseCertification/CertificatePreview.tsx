@@ -667,7 +667,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div className="flex items-center space-x-1">
                 <User className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${theme.icon}`} />
                 <span className={`text-xs ${theme.secondary} font-medium`}>
-                  Instructor
+                  Chief Instructor
                 </span>
               </div>
               <div className={`text-xs ${theme.primary} font-semibold`}>
@@ -681,7 +681,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             {/* Center: Logo */}
             <div className="flex flex-col items-center space-y-1 flex-1">
               <div
-                className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center`}
+                className={`w-16 h-16 sm:w-24 sm:h-24 flex items-center justify-center`}
               >
                 {org?.logo_image ? (
                   <img

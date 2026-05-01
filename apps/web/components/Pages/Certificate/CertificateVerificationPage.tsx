@@ -440,7 +440,7 @@ const CertificateVerificationPage: React.FC<
                   .certificate_instructor && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Instructor
+                      Chief Instructor
                     </label>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <span className="text-gray-900">
