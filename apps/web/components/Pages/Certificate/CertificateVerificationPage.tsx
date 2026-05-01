@@ -243,7 +243,7 @@ const CertificateVerificationPage: React.FC<
                   })}
                   qrCodeLink={qrCodeLink}
                   studentName={
-                    `${certificateData.certificate_user?.user?.first_name || ''} ${certificateData.certificate_user?.user?.last_name || ''}`.trim() ||
+                    `${certificateData.user?.first_name || ''} ${certificateData.user?.last_name || ''}`.trim() ||
                     'Student Name'
                   }
                 />
@@ -392,6 +392,18 @@ const CertificateVerificationPage: React.FC<
                     <code className="text-sm text-gray-900 break-all">
                       {certificateData.certificate_user.user_certification_uuid}
                     </code>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Recipient Name
+                  </label>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <span className="text-gray-900 font-bold">
+                      {`${certificateData.user?.first_name || ''} ${certificateData.user?.last_name || ''}`.trim() ||
+                        'Not Specified'}
+                    </span>
                   </div>
                 </div>
 

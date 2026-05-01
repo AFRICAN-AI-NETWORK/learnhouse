@@ -464,6 +464,11 @@ async def get_certificate_by_user_certification_uuid(
 
     # No RBAC check - allow anyone to access certificates by UUID
 
+    # Get user information
+    from src.db.users import User
+    statement = select(User).where(User.id == certificate_user.user_id)
+    user = db_session.exec(statement).first()
+
     return {
         "certificate_user": CertificateUserRead(**certificate_user.model_dump()),
         "certification": CertificationRead(**certification.model_dump()),
@@ -473,7 +478,15 @@ async def get_certificate_by_user_certification_uuid(
             "name": course.name,
             "description": course.description,
             "thumbnail_image": course.thumbnail_image,
-        }
+        },
+        "user": {
+            "id": user.id if user else None,
+            "user_uuid": user.user_uuid if user else None,
+            "username": user.username if user else None,
+            "email": user.email if user else None,
+            "first_name": user.first_name if user else None,
+            "last_name": user.last_name if user else None,
+        } if user else None
     }
 
 
