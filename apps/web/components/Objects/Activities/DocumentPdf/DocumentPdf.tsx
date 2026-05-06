@@ -36,30 +36,30 @@ function DocumentPdfActivity({
   )
 
   return (
-    <div className="m-4 md:m-8 bg-zinc-900 rounded-xl mt-8 md:mt-14 flex flex-col items-center nice-shadow overflow-hidden border border-border">
-      <div className="w-full bg-muted/40 p-3 md:p-4 border-b border-border flex justify-between items-center z-10 backdrop-blur-sm">
-        <span className="text-muted-foreground font-semibold text-sm md:text-base">
+    <div className="flex w-full flex-col items-center overflow-hidden rounded-lg bg-white">
+      <div className="z-10 flex w-full items-center justify-between border-b border-slate-200 bg-white p-3 md:p-4">
+        <span className="text-sm font-semibold text-slate-700 md:text-base">
           {activity?.name || 'PDF Document'}
         </span>
         {numPages && (
-          <div className="flex space-x-2 md:space-x-4 items-center">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <button
               onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
               disabled={pageNumber <= 1}
-              className="p-1 md:px-3 md:py-1.5 bg-background border border-border text-foreground hover:bg-muted rounded-md disabled:opacity-50 transition-colors flex items-center cursor-pointer"
+              className="flex cursor-pointer items-center rounded-md border border-slate-200 bg-white p-1 text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 md:px-3 md:py-1.5"
             >
               <ChevronLeft size={16} className="md:mr-1" />
               <span className="hidden md:inline text-sm font-medium">
                 Previous
               </span>
             </button>
-            <span className="text-xs md:text-sm font-medium text-foreground bg-muted px-2 py-1 rounded-md">
+            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 md:text-sm">
               {pageNumber} / {numPages}
             </span>
             <button
               onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
               disabled={pageNumber >= numPages}
-              className="p-1 md:px-3 md:py-1.5 bg-background border border-border text-foreground hover:bg-muted rounded-md disabled:opacity-50 transition-colors flex items-center cursor-pointer"
+              className="flex cursor-pointer items-center rounded-md border border-slate-200 bg-white p-1 text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 md:px-3 md:py-1.5"
             >
               <span className="hidden md:inline text-sm font-medium">Next</span>
               <ChevronRight size={16} className="md:ml-1" />
@@ -68,7 +68,7 @@ function DocumentPdfActivity({
         )}
       </div>
 
-      <div className="p-2 md:p-8 w-full flex justify-center bg-zinc-950/50 overflow-x-auto min-h-[500px]">
+      <div className="flex min-h-[500px] w-full justify-center overflow-x-auto bg-slate-50 p-2 md:p-8">
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
