@@ -19,6 +19,7 @@ export const OrgMenu = (props: any) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
   const pathname = usePathname()
+  const isActivityPage = pathname?.includes('/activity/')
 
   useEffect(() => {
     // Only check focus mode if we're in an activity page
@@ -69,7 +70,7 @@ export const OrgMenu = (props: any) => {
   }
 
   // Only hide menu if we're in an activity page and focus mode is enabled
-  if (pathname?.includes('/activity/') && isFocusMode) {
+  if (isActivityPage || (pathname?.includes('/activity/') && isFocusMode)) {
     return null
   }
 
