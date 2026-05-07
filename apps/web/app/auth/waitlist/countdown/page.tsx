@@ -5,12 +5,15 @@ import CountdownTimer from '@components/Utils/CountdownTimer'
 import { getWaitlistDetails } from '@services/waitlist/waitlist'
 import { WaitlistConfig } from '@/types/waitlist'
 import { CheckCircle2 } from 'lucide-react'
+import { SiWhatsapp } from '@icons-pack/react-simple-icons'
 import toast from 'react-hot-toast'
 
 function CountdownPage() {
   const searchParams = useSearchParams()
   const waitlistUuid = searchParams.get('waitlist_uuid') || ''
   const orgslug = searchParams.get('orgslug') || ''
+  const whatsappGroupUrl =
+    'https://chat.whatsapp.com/BohSUrcVlPREw5KUS2vEPr?mode=gi_t'
 
   const [waitlist, setWaitlist] = useState<WaitlistConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,6 +71,35 @@ function CountdownPage() {
 
             <div className="mb-6">
               <CountdownTimer launchDate={launchDate} />
+            </div>
+
+            <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+                    <SiWhatsapp size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">
+                      Stay updated on WhatsApp
+                    </p>
+                    <p className="text-xs leading-5 text-slate-600">
+                      Join the official group for launch updates and helpful
+                      information while you wait.
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={whatsappGroupUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
+                >
+                  <SiWhatsapp size={16} />
+                  Join Group
+                </a>
+              </div>
             </div>
           </div>
         </div>
