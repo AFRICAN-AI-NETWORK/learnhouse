@@ -1,11 +1,10 @@
 'use client'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getActivityMediaDirectory } from '@services/media/media'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
-import { useMediaQuery } from 'usehooks-ts'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Using the mjs worker for newer react-pdf versions
@@ -21,7 +20,27 @@ function DocumentPdfActivity({
   const org = useOrg() as any
   const [numPages, setNumPages] = useState<number>()
   const [pageNumber, setPageNumber] = useState<number>(1)
-  const isMobile = useMediaQuery('(max-width: 768px)')
+  const viewerRef = useRef<HTMLDivElement>(null)
+  const [viewerWidth, setViewerWidth] = useState(0)
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+
+    if (!viewer) {
+      return
+    }
+
+    const updateViewerWidth = () => {
+      setViewerWidth(Math.floor(viewer.clientWidth))
+    }
+
+    updateViewerWidth()
+
+    const resizeObserver = new ResizeObserver(updateViewerWidth)
+    resizeObserver.observe(viewer)
+
+    return () => resizeObserver.disconnect()
+  }, [])
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
     setNumPages(numPages)
@@ -68,13 +87,16 @@ function DocumentPdfActivity({
         )}
       </div>
 
-      <div className="flex min-h-[500px] w-full justify-center overflow-x-auto bg-slate-50 p-2 md:p-8">
+      <div
+        ref={viewerRef}
+        className="flex min-h-[500px] w-full overflow-hidden bg-white"
+      >
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
-          className="flex justify-center flex-col items-center"
+          className="flex min-h-[500px] w-full flex-col items-start justify-start"
           loading={
-            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+            <div className="flex min-h-[500px] w-full flex-col items-center justify-center space-y-4">
               <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="text-muted-foreground text-sm font-medium animate-pulse">
                 Loading PDF safely...
@@ -82,7 +104,7 @@ function DocumentPdfActivity({
             </div>
           }
           error={
-            <div className="flex flex-col items-center justify-center p-10 text-destructive text-center space-y-2">
+            <div className="flex min-h-[500px] w-full flex-col items-center justify-center p-10 text-center text-destructive space-y-2">
               <p className="font-bold">Failed to load PDF.</p>
               <p className="text-sm">
                 The document might be missing or corrupted.
@@ -94,14 +116,8 @@ function DocumentPdfActivity({
             pageNumber={pageNumber}
             renderTextLayer={true}
             renderAnnotationLayer={true}
-            className="rounded-sm overflow-hidden shadow-2xl bg-white"
-            width={
-              isMobile
-                ? typeof window !== 'undefined'
-                  ? window.innerWidth - 32
-                  : 350
-                : 800
-            }
+            className="!min-w-0 w-full overflow-hidden bg-white [&>canvas]:!block"
+            width={viewerWidth || undefined}
           />
         </Document>
       </div>

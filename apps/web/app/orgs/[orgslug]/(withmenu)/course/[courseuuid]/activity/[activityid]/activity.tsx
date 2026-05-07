@@ -4,6 +4,7 @@ import { getAPIUrl, getUriWithOrg } from '@services/config/config'
 import {
   BookOpenCheck,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -60,6 +61,7 @@ import CourseEndView from '@components/Pages/Activity/CourseEndView'
 import { motion, AnimatePresence } from 'framer-motion'
 import MiniInfoTooltip from '@components/Objects/MiniInfoTooltip'
 import { useTranslation } from 'react-i18next'
+import { getOrgLogoMediaDirectory } from '@services/media/media'
 
 // Lazy load heavy components
 const Canva = lazy(
@@ -1156,28 +1158,25 @@ function ActivityPageNavbar({
   trailData: any
 }) {
   const { t } = useTranslation()
+  const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur">
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-center gap-4 gap-5">
             <Link
-              href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
-              className="hidden shrink-0 rounded-md border border-slate-200 bg-white p-1 shadow-xs sm:block"
+              href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
+              className="hidden shrink-0 bg-white p-1 shadow-xs sm:block"
             >
               <img
-                className="h-8 w-14 rounded object-cover"
-                src={`${getCourseThumbnailMediaDirectory(
-                  org?.org_uuid,
-                  course.course_uuid,
-                  course.thumbnail_image
-                )}`}
+                className="w-32"
+                src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
                 alt=""
               />
             </Link>
-            <div className="min-w-0">
-              <div className="mb-2 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
+            <div className="min-w-0 flex flex-row gap-10">
+              <div className="flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
                 <Link
                   href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
                   className="truncate hover:text-slate-900"
@@ -1189,19 +1188,21 @@ function ActivityPageNavbar({
                   {activity?.name}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-slate-500">
                   {t('courses.course_progress')}
                 </p>
-                <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200 sm:w-72">
-                  <div
-                    className="h-full rounded-full bg-blue-600"
-                    style={{ width: `${progressPercentage}%` }}
-                  />
+                <div className="flex items-center justify-center gap-3">
+                  <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200 sm:w-72">
+                    <div
+                      className="h-full rounded-full bg-blue-600"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-slate-600">
+                    {progressPercentage}%
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-slate-600">
-                  {progressPercentage}%
-                </span>
               </div>
             </div>
           </div>
@@ -1306,11 +1307,33 @@ function CourseContentSidebar({
 }) {
   const { t } = useTranslation()
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const currentChapterKey = useMemo(() => {
+    const cleanCurrentActivityId = currentActivityId.replace('activity_', '')
+
+    const currentChapterIndex = course.chapters?.findIndex((chapter: any) =>
+      chapter.activities?.some(
+        (chapterActivity: any) =>
+          chapterActivity.activity_uuid?.replace('activity_', '') ===
+          cleanCurrentActivityId
+      )
+    )
+
+    if (currentChapterIndex === undefined || currentChapterIndex < 0) {
+      return course.chapters?.[0]?.id ?? 0
+    }
+
+    return course.chapters?.[currentChapterIndex]?.id ?? currentChapterIndex
+  }, [course.chapters, currentActivityId])
+  const [openChapterKey, setOpenChapterKey] = useState<any>(currentChapterKey)
   const run = trailData?.runs?.find((run: any) => {
     const runCourseUuid =
       run.course?.course_uuid || run.course_uuid || run.course?.uuid
     return runCourseUuid?.replace('course_', '') === cleanCourseUuid
   })
+
+  useEffect(() => {
+    setOpenChapterKey(currentChapterKey)
+  }, [currentChapterKey])
 
   const isComplete = (activity: any) =>
     run?.steps?.some(
@@ -1348,101 +1371,119 @@ function CourseContentSidebar({
           <h2 className="text-base font-bold text-slate-900">
             {t('courses.course_content')}
           </h2>
-          <Link
-            href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
-            className="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-            title={t('courses.back_to_course')}
-          >
-            <ChevronLeft size={18} />
-          </Link>
         </div>
       </div>
 
       <div className="max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
-        {course.chapters?.map((chapter: any, index: number) => (
-          <section key={chapter.id} className="border-b border-slate-100 pb-3">
-            <div className="flex items-start gap-3 px-4 py-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                {index + 1}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900">
-                  {chapter.name}
-                </h3>
-              </div>
-            </div>
+        {course.chapters?.map((chapter: any, index: number) => {
+          const chapterKey = chapter.id ?? index
+          const isOpen = openChapterKey === chapterKey
 
-            <div className="space-y-1">
-              {chapter.activities?.map((chapterActivity: any) => {
-                const cleanActivityUuid =
-                  chapterActivity.activity_uuid?.replace('activity_', '')
-                const isCurrent =
-                  cleanActivityUuid ===
-                  currentActivityId.replace('activity_', '')
-                const complete = isComplete(chapterActivity)
-                const activityMeta = getActivityMeta(
-                  chapterActivity.activity_type
-                )
-                const ActivityIcon = activityMeta.icon
+          return (
+            <section
+              key={chapterKey}
+              className="border-b border-slate-100 pb-3"
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenChapterKey((currentKey: any) =>
+                    currentKey === chapterKey ? null : chapterKey
+                  )
+                }
+                aria-expanded={isOpen}
+                className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  {index + 1}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900">
+                    {chapter.name}
+                  </h3>
+                </div>
+                <ChevronDown
+                  size={18}
+                  className={`mt-1 shrink-0 text-slate-500 transition-transform ${
+                    isOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-                return (
-                  <Link
-                    key={chapterActivity.id}
-                    href={
-                      getUriWithOrg(orgslug, '') +
-                      `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
-                    }
-                    prefetch={false}
-                    className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
-                      isCurrent
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-transparent hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
-                      {complete ? (
-                        <CheckCircle
-                          size={17}
-                          className="text-teal-600"
-                          strokeWidth={2.5}
-                        />
-                      ) : (
-                        <Circle
-                          size={12}
-                          className={
-                            isCurrent ? 'text-blue-600' : 'text-slate-300'
-                          }
-                          fill={isCurrent ? 'currentColor' : 'none'}
-                        />
-                      )}
-                    </div>
+              {isOpen && (
+                <div className="space-y-1">
+                  {chapter.activities?.map((chapterActivity: any) => {
+                    const cleanActivityUuid =
+                      chapterActivity.activity_uuid?.replace('activity_', '')
+                    const isCurrent =
+                      cleanActivityUuid ===
+                      currentActivityId.replace('activity_', '')
+                    const complete = isComplete(chapterActivity)
+                    const activityMeta = getActivityMeta(
+                      chapterActivity.activity_type
+                    )
+                    const ActivityIcon = activityMeta.icon
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p
-                          className={`line-clamp-2 text-sm font-semibold leading-5 ${
-                            isCurrent ? 'text-slate-950' : 'text-slate-700'
-                          }`}
-                        >
-                          {chapterActivity.name}
-                        </p>
-                        {isCurrent && (
-                          <span className="shrink-0 text-[11px] font-semibold text-blue-600">
-                            {t('activities.current')}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                        <ActivityIcon size={13} />
-                        <span>{activityMeta.label}</span>
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </section>
-        ))}
+                    return (
+                      <Link
+                        key={chapterActivity.id}
+                        href={
+                          getUriWithOrg(orgslug, '') +
+                          `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
+                        }
+                        prefetch={false}
+                        className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
+                          isCurrent
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-transparent hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
+                          {complete ? (
+                            <CheckCircle
+                              size={17}
+                              className="text-teal-600"
+                              strokeWidth={2.5}
+                            />
+                          ) : (
+                            <Circle
+                              size={12}
+                              className={
+                                isCurrent ? 'text-blue-600' : 'text-slate-300'
+                              }
+                              fill={isCurrent ? 'currentColor' : 'none'}
+                            />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`line-clamp-2 text-sm font-semibold leading-5 ${
+                                isCurrent ? 'text-slate-950' : 'text-slate-700'
+                              }`}
+                            >
+                              {chapterActivity.name}
+                            </p>
+                            {isCurrent && (
+                              <span className="shrink-0 text-[11px] font-semibold text-blue-600">
+                                {t('activities.current')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                            <ActivityIcon size={13} />
+                            <span>{activityMeta.label}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+          )
+        })}
       </div>
     </aside>
   )
@@ -1795,16 +1836,16 @@ function NextActivityButton({
   return (
     <div
       onClick={navigateToActivity}
-      className="bg-gray-200 rounded-md px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-gray-200"
+      className="bg-blue-600 rounded-md px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-gray-200"
     >
-      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase">
+      <span className="text-[10px] font-bold text-white mb-1 uppercase">
         {t('common.next')}
       </span>
       <div className="flex items-center space-x-1">
-        <span className="text-sm font-semibold truncate max-w-[200px]">
+        <span className="text-sm font-semibold truncate max-w-[200px] text-white">
           {nextActivity.name}
         </span>
-        <ChevronRight size={17} />
+        <ChevronRight size={17} className="text-white" />
       </div>
     </div>
   )
