@@ -1163,7 +1163,7 @@ function ActivityPageNavbar({
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur">
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 items-center gap-4 gap-5">
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
