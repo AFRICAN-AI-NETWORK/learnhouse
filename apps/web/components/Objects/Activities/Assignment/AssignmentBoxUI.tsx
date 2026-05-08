@@ -52,7 +52,7 @@ function AssignmentBoxUI({
 
   return (
     <div
-      className={`flex flex-col px-3 sm:px-6 py-4 nice-shadow rounded-md w-full max-w-full lg:max-w-4xl mx-auto min-w-0 ${isFocusMode ? 'bg-white/5 border border-white/10' : 'bg-slate-100/30'}`}
+      className={`flex w-full min-w-0 max-w-full flex-col rounded-md px-4 py-5 nice-shadow sm:px-6 ${isFocusMode ? 'bg-white/5 border border-white/10' : 'bg-slate-100/30'}`}
     >
       <div
         className={`flex flex-col sm:flex-row sm:justify-between sm:space-x-2 pb-2 sm:items-center ${isFocusMode ? 'text-zinc-400' : 'text-slate-400'}`}
