@@ -30,6 +30,8 @@ export default function RootLayout(props: {
   const isPremiumLandingView = searchParams?.get('landing') === 'premium'
   const shouldShowLandingNavbar =
     isLandingPage && (isGuest || isPremiumLandingView)
+  const isActivityPage = pathname?.includes('/activity/')
+  const shouldReserveSidebarSpace = !shouldShowLandingNavbar && !isActivityPage
 
   return (
     <div
@@ -53,6 +55,10 @@ export default function RootLayout(props: {
             )}
             <main
               className={`flex-1 w-full overflow-x-hidden ${
+                shouldReserveSidebarSpace
+                  ? 'md:pl-[var(--org-sidebar-width,280px)] transition-[padding-left] duration-300'
+                  : ''
+              } ${
                 isLandingPage
                   ? 'overflow-y-visible'
                   : 'min-h-0 overflow-y-auto scrollbar-hide'
