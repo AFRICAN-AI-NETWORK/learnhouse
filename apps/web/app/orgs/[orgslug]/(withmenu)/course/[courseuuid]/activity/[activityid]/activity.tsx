@@ -1365,7 +1365,7 @@ function CourseContentSidebar({
   }
 
   return (
-    <aside className="border-b border-slate-200 bg-white lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+    <aside className="scrollbar-hide border-b border-slate-200 bg-white lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900">
@@ -1374,7 +1374,7 @@ function CourseContentSidebar({
         </div>
       </div>
 
-      <div className="max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
+      <div className="scrollbar-hide max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
         {course.chapters?.map((chapter: any, index: number) => {
           const chapterKey = chapter.id ?? index
           const isOpen = openChapterKey === chapterKey
