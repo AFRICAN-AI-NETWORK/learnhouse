@@ -238,11 +238,17 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           const data = await res.json()
 
           // If error is referral-related, surface inline without blocking waitlist signup
-          const detail: string = data.detail ?? ''
+          const detail = data.detail
+          const errorMessage = Array.isArray(detail)
+            ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+            : typeof detail === 'string'
+              ? detail
+              : detail?.msg || JSON.stringify(detail) || 'Registration failed'
+
           if (
             referralCode.trim() &&
-            (detail.toLowerCase().includes('referral') ||
-              detail.toLowerCase().includes('code'))
+            (errorMessage.toLowerCase().includes('referral') ||
+              errorMessage.toLowerCase().includes('code'))
           ) {
             setReferralCodeError(
               'Invalid referral code — your account was created without it.'
@@ -272,7 +278,17 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               }, 2000)
             } else {
               const retryData = await retryRes.json()
-              setError(retryData.detail || 'Registration failed')
+              const retryDetail = retryData.detail
+              const retryErrorMessage = Array.isArray(retryDetail)
+                ? retryDetail
+                    .map((e: any) => e.msg || JSON.stringify(e))
+                    .join(', ')
+                : typeof retryDetail === 'string'
+                  ? retryDetail
+                  : retryDetail?.msg ||
+                    JSON.stringify(retryDetail) ||
+                    'Registration failed'
+              setError(retryErrorMessage)
               // Clear stored referral code after failed signup attempt
               try {
                 localStorage.removeItem('referral_code')
@@ -281,7 +297,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               }
             }
           } else {
-            setError(detail || 'Registration failed')
+            setError(errorMessage)
             // Clear stored referral code after failed signup attempt
             try {
               localStorage.removeItem('referral_code')

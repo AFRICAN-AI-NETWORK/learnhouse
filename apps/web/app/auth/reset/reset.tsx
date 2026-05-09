@@ -77,7 +77,15 @@ function ResetPasswordClient() {
         setMessage(res.data + ', ' + t('auth.login_again_message'))
         setIsSubmitting(false)
       } else {
-        setError(res.data.detail)
+        const detail = res.data.detail
+        const errorMessage = Array.isArray(detail)
+          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+          : typeof detail === 'string'
+            ? detail
+            : detail?.msg ||
+              JSON.stringify(detail) ||
+              t('common.something_went_wrong')
+        setError(errorMessage)
         setIsSubmitting(false)
       }
     },

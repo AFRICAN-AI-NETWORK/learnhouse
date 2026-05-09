@@ -93,7 +93,13 @@ function UserBlockComponent(props: any) {
       } catch (err: any) {
         // eslint-disable-next-line no-console
         console.error('Error fetching user by ID:', err)
-        setError(err.detail || 'User not found')
+        const detail = err.detail
+        const errorMessage = Array.isArray(detail)
+          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+          : typeof detail === 'string'
+            ? detail
+            : detail?.msg || JSON.stringify(detail) || 'User not found'
+        setError(errorMessage)
         // Clear the invalid user_id from the node attributes
         props.updateAttributes({
           user_id: null,
@@ -126,7 +132,13 @@ function UserBlockComponent(props: any) {
     } catch (err: any) {
       // eslint-disable-next-line no-console
       console.error('Error fetching user by username:', err)
-      setError(err.detail || 'User not found')
+      const detail = err.detail
+      const errorMessage = Array.isArray(detail)
+        ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+        : typeof detail === 'string'
+          ? detail
+          : detail?.msg || JSON.stringify(detail) || 'User not found'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
