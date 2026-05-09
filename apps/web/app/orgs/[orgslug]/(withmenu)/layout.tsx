@@ -31,7 +31,8 @@ export default function RootLayout(props: {
   const shouldShowLandingNavbar =
     isLandingPage && (isGuest || isPremiumLandingView)
   const isActivityPage = pathname?.includes('/activity/')
-  const shouldReserveSidebarSpace = !shouldShowLandingNavbar && !isActivityPage
+  const shouldReserveSidebarSpace =
+    isLandingPage && !shouldShowLandingNavbar && !isActivityPage
 
   return (
     <div
