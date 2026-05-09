@@ -1071,21 +1071,42 @@ function ActivityClient(props: ActivityClientProps) {
                                       course={course}
                                     />
                                   ) : (
-                                    <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm">
-                                      <div
-                                        className={`relative mx-auto ${
-                                          activity.activity_type ===
-                                          'TYPE_VIDEO'
-                                            ? 'max-w-5xl'
-                                            : activity.activity_type ===
-                                                'TYPE_SMART_ARTICLE'
-                                              ? 'max-w-full'
-                                              : 'max-w-6xl'
-                                        }`}
-                                      >
-                                        {activityContent}
+                                    <>
+                                      <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
+                                        <Link
+                                          href={
+                                            getUriWithOrg(orgslug, '') +
+                                            `/course/${courseuuid}`
+                                          }
+                                          className="truncate hover:text-slate-900"
+                                        >
+                                          {course.name}
+                                        </Link>
+                                        <ChevronRight
+                                          size={14}
+                                          className="shrink-0 text-slate-300"
+                                        />
+                                        <span className="truncate text-slate-800">
+                                          {activity?.name}
+                                        </span>
                                       </div>
-                                    </div>
+
+                                      <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm">
+                                        <div
+                                          className={`relative mx-auto ${
+                                            activity.activity_type ===
+                                            'TYPE_VIDEO'
+                                              ? 'max-w-5xl'
+                                              : activity.activity_type ===
+                                                  'TYPE_SMART_ARTICLE'
+                                                ? 'max-w-full'
+                                                : 'max-w-6xl'
+                                          }`}
+                                        >
+                                          {activityContent}
+                                        </div>
+                                      </div>
+                                    </>
                                   )}
                                 </>
                               )}
@@ -1176,18 +1197,6 @@ function ActivityPageNavbar({
               />
             </Link>
             <div className="min-w-0 flex flex-row gap-10">
-              <div className="flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
-                <Link
-                  href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
-                  className="truncate hover:text-slate-900"
-                >
-                  {course.name}
-                </Link>
-                <ChevronRight size={14} className="shrink-0 text-slate-300" />
-                <span className="truncate text-slate-800">
-                  {activity?.name}
-                </span>
-              </div>
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-slate-500">
                   {t('courses.course_progress')}
