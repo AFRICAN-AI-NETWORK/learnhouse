@@ -217,7 +217,7 @@ function LandingClassic({
 
         <section className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            icon={<BookOpen />}
+            icon={<BookOpen fill="currentColor" />}
             iconClassName="bg-blue-50 text-blue-600"
             value={courses.length}
             label="Courses Enrolled"
@@ -240,7 +240,7 @@ function LandingClassic({
             helper="Across enrolled courses"
           />
           <StatCard
-            icon={<Award />}
+            icon={<Award fill="currentColor" />}
             iconClassName="bg-amber-50 text-amber-500"
             value={completedCourses}
             label="Certificates Earned"
