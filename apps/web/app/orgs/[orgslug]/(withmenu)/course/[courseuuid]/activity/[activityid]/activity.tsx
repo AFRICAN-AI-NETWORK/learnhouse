@@ -1071,21 +1071,42 @@ function ActivityClient(props: ActivityClientProps) {
                                       course={course}
                                     />
                                   ) : (
-                                    <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm">
-                                      <div
-                                        className={`relative mx-auto ${
-                                          activity.activity_type ===
-                                          'TYPE_VIDEO'
-                                            ? 'max-w-5xl'
-                                            : activity.activity_type ===
-                                                'TYPE_SMART_ARTICLE'
-                                              ? 'max-w-full'
-                                              : 'max-w-6xl'
-                                        }`}
-                                      >
-                                        {activityContent}
+                                    <>
+                                      <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
+                                        <Link
+                                          href={
+                                            getUriWithOrg(orgslug, '') +
+                                            `/course/${courseuuid}`
+                                          }
+                                          className="truncate hover:text-slate-900"
+                                        >
+                                          {course.name}
+                                        </Link>
+                                        <ChevronRight
+                                          size={14}
+                                          className="shrink-0 text-slate-300"
+                                        />
+                                        <span className="truncate text-slate-800">
+                                          {activity?.name}
+                                        </span>
                                       </div>
-                                    </div>
+
+                                      <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm">
+                                        <div
+                                          className={`relative mx-auto ${
+                                            activity.activity_type ===
+                                            'TYPE_VIDEO'
+                                              ? 'max-w-5xl'
+                                              : activity.activity_type ===
+                                                  'TYPE_SMART_ARTICLE'
+                                                ? 'max-w-full'
+                                                : 'max-w-6xl'
+                                          }`}
+                                        >
+                                          {activityContent}
+                                        </div>
+                                      </div>
+                                    </>
                                   )}
                                 </>
                               )}
@@ -1176,18 +1197,6 @@ function ActivityPageNavbar({
               />
             </Link>
             <div className="min-w-0 flex flex-row gap-10">
-              <div className="flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
-                <Link
-                  href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
-                  className="truncate hover:text-slate-900"
-                >
-                  {course.name}
-                </Link>
-                <ChevronRight size={14} className="shrink-0 text-slate-300" />
-                <span className="truncate text-slate-800">
-                  {activity?.name}
-                </span>
-              </div>
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-slate-500">
                   {t('courses.course_progress')}
@@ -1365,7 +1374,7 @@ function CourseContentSidebar({
   }
 
   return (
-    <aside className="border-b border-slate-200 bg-white lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+    <aside className="scrollbar-hide border-b border-slate-200 bg-white lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900">
@@ -1374,7 +1383,7 @@ function CourseContentSidebar({
         </div>
       </div>
 
-      <div className="max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
+      <div className="scrollbar-hide max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
         {course.chapters?.map((chapter: any, index: number) => {
           const chapterKey = chapter.id ?? index
           const isOpen = openChapterKey === chapterKey
