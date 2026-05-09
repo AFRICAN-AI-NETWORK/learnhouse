@@ -107,7 +107,7 @@ export const OrgMenu = (props: any) => {
         }`}
       >
         <div
-          className={`flex flex-1 flex-col overflow-y-auto pb-5 pt-5 ${
+          className={`scrollbar-hide flex flex-1 flex-col overflow-y-auto pb-5 pt-5 ${
             isSidebarCollapsed ? 'px-3' : 'px-5'
           }`}
         >
