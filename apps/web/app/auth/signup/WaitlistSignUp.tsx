@@ -47,7 +47,9 @@ const validate = (values: any, t: any) => {
   if (!values.phone_number) {
     errors.phone_number = t('validation.required')
   } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
-    errors.phone_number = t('validation.invalid_phone')
+    errors.phone_number =
+      t('validation.invalid_phone_with_country_code') ||
+      'Invalid phone. Please include country code (e.g. +234)'
   }
   if (!values.email) {
     errors.email = t('validation.required')
@@ -603,7 +605,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.phone_number}
-                  placeholder="e.g. +254090000000"
+                  placeholder="e.g. +2340900000000"
                   type="tel"
                   required
                 />

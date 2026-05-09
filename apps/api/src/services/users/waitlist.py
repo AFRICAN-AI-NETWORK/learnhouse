@@ -157,7 +157,7 @@ async def create_waitlist_user(
     user.user_status = "WAITLIST"
     
     # Store waitlist information
-    user.waitlist_interest = waitlist.interest_category
+    user.waitlist_interest = user_object.waitlist_interest or waitlist.interest_category
     user.waitlist_joined_date = str(datetime.now())
     
     # Set timestamps
