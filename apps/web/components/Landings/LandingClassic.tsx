@@ -336,7 +336,7 @@ const ContinueLearningCard = ({
             orgslug,
             `/course/${cleanCourseUuid(course.course_uuid)}`
           )}
-          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-blue-500 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-blue-500 px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-50"
         >
           <Play size={16} fill="currentColor" />
           Resume Course
