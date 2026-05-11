@@ -642,7 +642,7 @@ const StatCard = ({
   label,
   helper,
 }: {
-  icon: React.ReactNode
+  icon: React.ReactElement<{ size?: number }>
   iconClassName: string
   value: string | number
   label: string
@@ -652,7 +652,7 @@ const StatCard = ({
     <div
       className={`flex h-12 w-12 items-center justify-center rounded-full ${iconClassName}`}
     >
-      {React.cloneElement(icon as React.ReactElement, { size: 24 })}
+      {React.cloneElement(icon, { size: 24 })}
     </div>
     <div>
       <p className="text-xl font-bold text-gray-950">{value}</p>
