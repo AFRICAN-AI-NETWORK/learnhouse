@@ -9,7 +9,6 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { SearchBar } from '@components/Objects/Search/SearchBar'
 import { usePathname } from 'next/navigation'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 
 export const OrgMenu = (props: any) => {
   const orgslug = props.orgslug
@@ -19,32 +18,8 @@ export const OrgMenu = (props: any) => {
   const org = useOrg() as any
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const pathname = usePathname()
   const isActivityPage = pathname?.includes('/activity/')
-  const isClassicLandingPage =
-    pathname === '/' ||
-    pathname === `/${orgslug}` ||
-    pathname === `/orgs/${orgslug}`
-  const shouldShowSidebar = isClassicLandingPage
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const saved = localStorage.getItem('orgSidebarCollapsed')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsSidebarCollapsed(saved === 'true')
-  }, [])
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-
-    document.documentElement.style.setProperty(
-      '--org-sidebar-width',
-      isSidebarCollapsed ? '80px' : '280px'
-    )
-    localStorage.setItem('orgSidebarCollapsed', String(isSidebarCollapsed))
-  }, [isSidebarCollapsed])
 
   useEffect(() => {
     // Only check focus mode if we're in an activity page
@@ -94,10 +69,6 @@ export const OrgMenu = (props: any) => {
     setIsMenuOpen(!isMenuOpen)
   }
 
-  function toggleSidebar() {
-    setIsSidebarCollapsed(!isSidebarCollapsed)
-  }
-
   // Only hide menu if we're in an activity page and focus mode is enabled
   if (isActivityPage || (pathname?.includes('/activity/') && isFocusMode)) {
     return null
@@ -106,63 +77,6 @@ export const OrgMenu = (props: any) => {
   return (
     <>
       <div className="backdrop-blur-lg h-[72px] blur-3xl -z-10"></div>
-      {shouldShowSidebar && (
-        <aside
-          className={`hidden md:flex fixed bottom-0 left-0 top-[72px] z-40 flex-col border-r border-gray-200 bg-white transition-[width] duration-300 ${
-            isSidebarCollapsed ? 'w-20' : 'w-[280px]'
-          }`}
-        >
-          <div
-            className={`scrollbar-hide flex flex-1 flex-col overflow-y-auto pb-5 pt-5 ${
-              isSidebarCollapsed ? 'px-3' : 'px-5'
-            }`}
-          >
-            <div
-              className={`mb-4 flex ${
-                isSidebarCollapsed ? 'justify-center' : 'justify-end'
-              }`}
-            >
-              <button
-                onClick={toggleSidebar}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                title={
-                  isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
-                }
-                aria-label={
-                  isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
-                }
-              >
-                {isSidebarCollapsed ? (
-                  <PanelLeftOpen size={20} />
-                ) : (
-                  <PanelLeftClose size={20} />
-                )}
-              </button>
-            </div>
-            <MenuLinks
-              orgslug={orgslug}
-              variant="sidebar"
-              collapsed={isSidebarCollapsed}
-            />
-            <div className="mt-6 border-t border-gray-100 pt-5">
-              <p
-                className={`px-3.5 text-xs font-medium text-gray-500 ${
-                  isSidebarCollapsed ? 'sr-only' : ''
-                }`}
-              >
-                Resources
-              </p>
-            </div>
-            <div
-              className={`mt-auto border-t border-gray-100 pt-5 ${
-                isSidebarCollapsed ? 'hidden' : ''
-              }`}
-            >
-              <HeaderProfileBox />
-            </div>
-          </div>
-        </aside>
-      )}
       <div className="backdrop-blur-lg bg-white/90 fixed top-0 left-0 right-0 h-[72px] ring-1 ring-inset ring-gray-500/10 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] z-50">
         <div className="flex items-center justify-between w-full px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center space-x-5 md:w-auto">
@@ -182,11 +96,9 @@ export const OrgMenu = (props: any) => {
                 </div>
               </Link>
             </div>
-            {!shouldShowSidebar && (
-              <div className="hidden md:flex">
-                <MenuLinks orgslug={orgslug} />
-              </div>
-            )}
+            <div className="hidden md:flex">
+              <MenuLinks orgslug={orgslug} />
+            </div>
           </div>
 
           {/* Search Section */}

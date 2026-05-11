@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCourseButton'
 import NewCollectionButton from '@components/Objects/StyledElements/Buttons/NewCollectionButton'
@@ -11,23 +11,36 @@ import { useTranslation } from 'react-i18next'
 import {
   Award,
   BarChart3,
+  BookMinus,
   BookCopy,
   BookOpen,
   CalendarDays,
   CheckCircle2,
   Clock3,
+  FilePenLine,
   Grid2X2,
   List,
   MoreVertical,
   Play,
+  Settings2,
   SquareLibrary,
   TrendingUp,
 } from 'lucide-react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { swrFetcher } from '@services/utils/ts/requests'
+import { revalidateTags, swrFetcher } from '@services/utils/ts/requests'
 import useSWR from 'swr'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@components/ui/dropdown-menu'
+import ConfirmationModal from '@components/Objects/StyledElements/ConfirmationModal/ConfirmationModal'
+import { deleteCourseFromBackend } from '@services/courses/courses'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface LandingClassicProps {
   courses: any[]
@@ -39,6 +52,14 @@ interface LandingClassicProps {
 const cleanCourseUuid = (courseUuid?: string) =>
   courseUuid?.replace('course_', '') || ''
 
+type CourseTab = 'all' | 'in-progress' | 'completed'
+
+const courseTabs: Array<{ label: string; value: CourseTab }> = [
+  { label: 'All Courses', value: 'all' },
+  { label: 'In Progress', value: 'in-progress' },
+  { label: 'Completed', value: 'completed' },
+]
+
 function LandingClassic({
   courses,
   collections,
@@ -49,6 +70,7 @@ function LandingClassic({
   const session = useLHSession() as any
   const org = useOrg() as any
   const accessToken = session?.data?.tokens?.access_token
+  const [activeCourseTab, setActiveCourseTab] = useState<CourseTab>('all')
   const username =
     session?.data?.user?.username ||
     session?.data?.user?.first_name ||
@@ -80,6 +102,12 @@ function LandingClassic({
     return Math.min(100, Math.round((completedSteps / totalSteps) * 100))
   }
 
+  const getCourseTotalLessons = (course: any) => {
+    const run = getRunForCourse(course)
+
+    return run?.course_total_steps || getCourseLessonCount(course)
+  }
+
   const totalCompletedSteps = trailRuns.reduce(
     (total: number, run: any) => total + (run.steps?.length || 0),
     0
@@ -88,6 +116,19 @@ function LandingClassic({
     const totalSteps = run.course_total_steps || 0
     return totalSteps > 0 && (run.steps?.length || 0) >= totalSteps
   }).length
+  const displayedCourses = courses.filter((course: any) => {
+    const progress = getCourseProgress(course)
+
+    if (activeCourseTab === 'in-progress') {
+      return progress > 0 && progress < 100
+    }
+
+    if (activeCourseTab === 'completed') {
+      return progress >= 100
+    }
+
+    return true
+  })
 
   return (
     <main className="min-h-screen w-full bg-[#f8fafc]">
@@ -139,20 +180,19 @@ function LandingClassic({
             <div>
               <h2 className="text-xl font-bold text-gray-950">Your Courses</h2>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['All Courses', 'In Progress', 'Completed', 'Saved'].map(
-                  (filter, index) => (
-                    <button
-                      key={filter}
-                      className={`rounded-full px-4 py-2 text-sm font-medium ${
-                        index === 0
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  )
-                )}
+                {courseTabs.map((tab) => (
+                  <button
+                    key={tab.value}
+                    onClick={() => setActiveCourseTab(tab.value)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium ${
+                      activeCourseTab === tab.value
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -190,22 +230,27 @@ function LandingClassic({
             </div>
           </div>
 
-          {courses.length > 0 ? (
+          {displayedCourses.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {courses.slice(0, 6).map((course: any) => (
+              {displayedCourses.slice(0, 6).map((course: any) => (
                 <DashboardCourseCard
                   key={course.course_uuid}
                   course={course}
                   org={org}
                   orgslug={orgslug}
                   progress={getCourseProgress(course)}
+                  lessonCount={getCourseTotalLessons(course)}
                 />
               ))}
             </div>
           ) : (
             <EmptyPanel
               icon={<BookCopy className="h-8 w-8" />}
-              title={t('courses.no_courses')}
+              title={
+                courses.length > 0
+                  ? t('courses.no_courses_found')
+                  : t('courses.no_courses')
+              }
               description={
                 <ContentPlaceHolderIfUserIsNotAdmin
                   text={t('courses.create_courses_placeholder')}
@@ -363,13 +408,16 @@ const DashboardCourseCard = ({
   org,
   orgslug,
   progress,
+  lessonCount,
 }: {
   course: any
   org: any
   orgslug: string
   progress: number
+  lessonCount: number
 }) => (
-  <article className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+  <article className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <AdminCourseCardActions course={course} orgslug={orgslug} />
     <Link
       href={getUriWithOrg(
         orgslug,
@@ -403,30 +451,129 @@ const DashboardCourseCard = ({
             {course.description || 'African AI Network'}
           </p>
         </div>
-        <button className="text-gray-400 hover:text-gray-700">
-          <MoreVertical size={18} />
-        </button>
       </div>
       <div className="mt-5 flex items-center gap-3">
-        <ProgressBar progress={progress} />
+        <ProgressBar
+          progress={progress}
+          color={progress >= 100 ? 'green' : 'blue'}
+        />
         <span className="text-sm font-semibold text-gray-700">{progress}%</span>
       </div>
-      <div className="mt-4 flex items-center gap-5 text-xs text-gray-500">
+      <div className="mt-4 flex items-center justify-between gap-5 text-xs text-gray-500">
         <span className="inline-flex items-center gap-1.5">
           <BookCopy size={14} />
-          {getCourseLessonCount(course)} Lessons
+          {lessonCount} Lessons
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Clock3 size={14} />
-          {Math.max(
-            1,
-            Math.ceil((getCourseLessonCount(course) * 15) / 60)
-          )}h {(getCourseLessonCount(course) * 15) % 60}m
+          {Math.max(1, Math.ceil((lessonCount * 15) / 60))}h{' '}
+          {(lessonCount * 15) % 60}m
         </span>
+        <Link
+          href={getUriWithOrg(
+            orgslug,
+            `/course/${cleanCourseUuid(course.course_uuid)}`
+          )}
+          className="text-sm font-semibold text-blue-400 hover:text-blue-700"
+        >
+          Start learning
+        </Link>
       </div>
     </div>
   </article>
 )
+
+const AdminCourseCardActions = ({
+  course,
+  orgslug,
+}: {
+  course: any
+  orgslug: string
+}) => {
+  const { t } = useTranslation()
+  const router = useRouter()
+  const session = useLHSession() as any
+
+  const deleteCourse = async () => {
+    const toastId = toast.loading(t('courses.deleting_course'))
+
+    try {
+      await deleteCourseFromBackend(
+        course.course_uuid,
+        session.data?.tokens?.access_token
+      )
+      await revalidateTags(['courses'], orgslug)
+      toast.success(t('courses.course_deleted_success'))
+      router.refresh()
+    } catch (error) {
+      toast.error(t('courses.course_deleted_error'))
+    } finally {
+      toast.dismiss(toastId)
+    }
+  }
+
+  return (
+    <AuthenticatedClientElement
+      action="update"
+      ressourceType="courses"
+      checkMethod="roles"
+      orgId={course.org_id}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="absolute right-3 top-3 z-20 rounded-full bg-white/90 p-1.5 text-gray-700 shadow-md backdrop-blur-sm transition-all hover:bg-white">
+            <MoreVertical size={18} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem asChild>
+            <Link
+              prefetch
+              href={getUriWithOrg(
+                orgslug,
+                `/dash/courses/course/${cleanCourseUuid(course.course_uuid)}/content`
+              )}
+              className="flex cursor-pointer items-center"
+            >
+              <FilePenLine className="mr-2 h-4 w-4" />
+              {t('courses.edit_content')}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link
+              prefetch
+              href={getUriWithOrg(
+                orgslug,
+                `/dash/courses/course/${cleanCourseUuid(course.course_uuid)}/general`
+              )}
+              className="flex cursor-pointer items-center"
+            >
+              <Settings2 className="mr-2 h-4 w-4" />
+              {t('common.settings')}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <ConfirmationModal
+              confirmationButtonText={t('courses.delete_course')}
+              confirmationMessage={t('courses.delete_course_confirm')}
+              dialogTitle={t('courses.delete_course_title', {
+                name: course.name,
+              })}
+              dialogTrigger={
+                <button className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-red-600 transition-colors hover:bg-red-50">
+                  <BookMinus className="mr-2 h-4 w-4" />
+                  {t('courses.delete_course')}
+                </button>
+              }
+              functionToExecute={deleteCourse}
+              status="warning"
+            />
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </AuthenticatedClientElement>
+  )
+}
 
 const CourseImage = ({
   course,
@@ -447,16 +594,24 @@ const CourseImage = ({
 
   return (
     <div
-      className={`w-full bg-gray-900 bg-cover bg-center ${className}`}
+      className={`w-full bg-gray-900 bg-cover bg-center rounded-2xl ${className}`}
       style={{ backgroundImage: `url(${image})` }}
     />
   )
 }
 
-const ProgressBar = ({ progress }: { progress: number }) => (
+const ProgressBar = ({
+  progress,
+  color = 'blue',
+}: {
+  progress: number
+  color?: 'blue' | 'green'
+}) => (
   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
     <div
-      className="h-full rounded-full bg-blue-600"
+      className={`h-full rounded-full ${
+        color === 'green' ? 'bg-emerald-600' : 'bg-blue-600'
+      }`}
       style={{ width: `${progress}%` }}
     />
   </div>
