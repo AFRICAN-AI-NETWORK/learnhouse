@@ -76,11 +76,11 @@ export const OrgMenu = (props: any) => {
 
   return (
     <>
-      <div className="backdrop-blur-lg h-[60px] blur-3xl -z-10"></div>
-      <div className="backdrop-blur-lg bg-white/90 fixed top-0 left-0 right-0 h-[60px] ring-1 ring-inset ring-gray-500/10 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] z-50">
-        <div className="flex items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 h-full">
-          <div className="flex items-center space-x-5 md:w-auto w-full">
-            <div className="logo flex md:w-auto w-full justify-center">
+      <div className="backdrop-blur-lg h-[72px] blur-3xl -z-10"></div>
+      <div className="backdrop-blur-lg bg-white/90 fixed top-0 left-0 right-0 h-[72px] ring-1 ring-inset ring-gray-500/10 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] z-50">
+        <div className="flex items-center justify-between w-full px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex items-center space-x-5 md:w-auto">
+            <div className="logo flex w-auto justify-start">
               <Link href={getUriWithOrg(orgslug, '/?landing=premium')}>
                 <div className="flex w-auto h-9 rounded-md items-center m-auto py-1 justify-center">
                   {org?.logo_image ? (
@@ -102,7 +102,7 @@ export const OrgMenu = (props: any) => {
           </div>
 
           {/* Search Section */}
-          <div className="hidden md:flex flex-1 justify-center max-w-lg px-4">
+          <div className="hidden md:flex flex-1 justify-start max-w-lg px-1">
             <SearchBar orgslug={orgslug} className="w-full" />
           </div>
 
@@ -151,7 +151,7 @@ export const OrgMenu = (props: any) => {
       </div>
       <div
         className={`fixed inset-x-0 z-40 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${
-          isMenuOpen ? 'top-[60px] opacity-100' : '-top-full opacity-0'
+          isMenuOpen ? 'top-[72px] opacity-100' : '-top-full opacity-0'
         }`}
       >
         <div className="flex flex-col px-4 py-3 space-y-4 justify-center items-center">
@@ -160,7 +160,7 @@ export const OrgMenu = (props: any) => {
             <SearchBar orgslug={orgslug} isMobile={true} />
           </div>
           <div className="py-4">
-            <MenuLinks orgslug={orgslug} />
+            <MenuLinks orgslug={orgslug} variant="sidebar" />
           </div>
           <div className="border-t border-gray-200">
             <HeaderProfileBox />
