@@ -43,8 +43,8 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
         ${
           variant === 'policy'
             ? isScrolled
-              ? 'py-4 bg-white text-black border-b border-zinc-200 shadow'
-              : 'py-6 bg-white text-black'
+              ? 'py-4 bg-white text-black border-b border-zinc-200 shadow dark:bg-[#13131a] dark:text-white dark:border-white/8 dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]'
+              : 'py-6 bg-white text-black dark:bg-[#13131a] dark:text-white'
             : isScrolled
               ? 'py-4 bg-black/70 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5),inset_0_1px_1px_0_rgba(255,255,255,0.05)]'
               : 'py-6 bg-transparent'
@@ -67,7 +67,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
               />
             ) : (
               <span
-                className={`text-xl font-black tracking-tighter ${variant === 'policy' ? 'text-black' : 'text-white'} uppercase italic`}
+                className={`text-xl font-black tracking-tighter ${variant === 'policy' ? 'text-black dark:text-white' : 'text-white'} uppercase italic`}
               >
                 {org?.name || 'AAN'}
               </span>
@@ -81,7 +81,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
             <a
               key={link.name}
               href={link.href}
-              className={`text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ${variant === 'policy' ? 'hover:text-black' : 'hover:text-white'} transition-colors`}
+              className={`text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ${variant === 'policy' ? 'hover:text-black dark:text-white/40 dark:hover:text-white' : 'hover:text-white'} transition-colors`}
             >
               {link.name}
             </a>
@@ -93,7 +93,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           {isAuthenticated ? (
             <Link
               href={getUriWithOrg(orgslug, '/')}
-              className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} text-black rounded-xl ${variant === 'policy' ? 'border border-blue-500' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
+              className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} text-black rounded-xl ${variant === 'policy' ? 'border border-blue-500 dark:text-white dark:border-blue-400/50' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
             >
               Dashboard
             </Link>
@@ -101,13 +101,13 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
             <>
               <Link
                 href="/auth/signin"
-                className={`text-[10px] font-black uppercase tracking-[0.2em] ${variant === 'policy' ? 'text-black' : 'text-white'} hover:opacity-70 transition-opacity`}
+                className={`text-[10px] font-black uppercase tracking-[0.2em] ${variant === 'policy' ? 'text-black dark:text-white' : 'text-white'} hover:opacity-70 transition-opacity`}
               >
                 Login
               </Link>
               <Link
                 href="/auth/signup"
-                className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} ${variant === 'policy' ? 'text-black' : 'text-black'} rounded-xl ${variant === 'policy' ? 'border border-blue-500' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
+                className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} ${variant === 'policy' ? 'text-black dark:text-white' : 'text-black'} rounded-xl ${variant === 'policy' ? 'border border-blue-500 dark:border-blue-400/50' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
               >
                 Join Now
               </Link>
@@ -117,7 +117,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 
         {/* Mobile Toggle */}
         <button
-          className="md:hidden relative z-10 text-white p-2"
+          className={`md:hidden relative z-10 p-2 ${variant === 'policy' ? 'text-black dark:text-white' : 'text-white'}`}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}

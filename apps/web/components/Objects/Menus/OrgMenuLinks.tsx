@@ -1,4 +1,3 @@
-import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import { getUriWithOrg } from '@services/config/config'
 import {
   BookCopy,
@@ -44,13 +43,13 @@ function MenuLinks(props: {
           variant={variant}
           collapsed={props.collapsed}
         />
-        <LinkItem
+        {/* <LinkItem
           link="/collections"
           type="collections"
           orgslug={props.orgslug}
           variant={variant}
           collapsed={props.collapsed}
-        />
+        /> */}
         <LinkItem
           link="/chat"
           type="chat"
@@ -72,7 +71,7 @@ function MenuLinks(props: {
           variant={variant}
           collapsed={props.collapsed}
         />
-        <AuthenticatedClientElement checkMethod="authentication">
+        {/* <AuthenticatedClientElement checkMethod="authentication">
           <LinkItem
             link="/trail"
             type="trail"
@@ -80,7 +79,7 @@ function MenuLinks(props: {
             variant={variant}
             collapsed={props.collapsed}
           />
-        </AuthenticatedClientElement>
+        </AuthenticatedClientElement> */}
       </ul>
     </div>
   )
@@ -113,10 +112,10 @@ const LinkItem = (props: any) => {
                   : 'justify-start gap-3 px-3.5'
               } ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-indigo-500/15 dark:text-indigo-200'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-white/60 dark:hover:bg-white/6 dark:hover:text-white'
               }`
-            : 'flex space-x-2 items-center text-[#909192] font-medium'
+            : 'flex space-x-2 items-center text-[#909192] dark:text-white/55 dark:hover:text-white font-medium'
         }
       >
         {props.type == 'dashboard' && (
