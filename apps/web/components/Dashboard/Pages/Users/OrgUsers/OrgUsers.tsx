@@ -60,18 +60,18 @@ function OrgUsers() {
         <>
           <Toast></Toast>
           <div className="h-6"></div>
-          <div className="ml-10 mr-10 mx-auto bg-white rounded-xl shadow-xs px-4 py-4  ">
-            <div className="flex flex-col bg-gray-50 -space-y-1  px-5 py-3 rounded-md mb-3 ">
-              <h1 className="font-bold text-xl text-gray-800">
+          <div className="ml-10 mr-10 mx-auto bg-white rounded-xl shadow-xs px-4 py-4 dark:border dark:border-white/8 dark:bg-[#13131a] dark:shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
+            <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 rounded-md mb-3 dark:bg-white/5">
+              <h1 className="font-bold text-xl text-gray-800 dark:text-white/90">
                 {t('dashboard.users.active_users.title')}
               </h1>
-              <h2 className="text-gray-500  text-md">
+              <h2 className="text-gray-500 text-md dark:text-white/50">
                 {' '}
                 {t('dashboard.users.active_users.subtitle')}{' '}
               </h2>
             </div>
             <table className="table-auto w-full text-left whitespace-nowrap rounded-md overflow-hidden">
-              <thead className="bg-gray-100 text-gray-500 rounded-xl uppercase">
+              <thead className="bg-gray-100 text-gray-500 rounded-xl uppercase dark:bg-white/5 dark:text-white/45">
                 <tr className="font-bolder text-sm">
                   <th className="py-3 px-4">
                     {t('dashboard.users.active_users.table.user')}
@@ -85,17 +85,17 @@ function OrgUsers() {
                 </tr>
               </thead>
               <>
-                <tbody className="mt-5 bg-white rounded-md">
+                <tbody className="mt-5 bg-white rounded-md dark:bg-[#13131a] dark:text-white/75">
                   {orgUsers?.map((user: any) => (
                     <tr
                       key={user.user.id}
-                      className="border-b border-gray-200 border-dashed"
+                      className="border-b border-gray-200 border-dashed dark:border-white/8"
                     >
                       <td className="py-3 px-4 flex space-x-2 items-center">
                         <span>
                           {user.user.first_name + ' ' + user.user.last_name}
                         </span>
-                        <span className="text-xs bg-neutral-100 p-1 px-2 rounded-full text-neutral-400 font-semibold">
+                        <span className="text-xs bg-neutral-100 p-1 px-2 rounded-full text-neutral-400 font-semibold dark:bg-white/7 dark:text-white/35">
                           @{user.user.username}
                         </span>
                       </td>

@@ -10,6 +10,18 @@ import '@/lib/i18n'
 import I18nProvider from '@components/Contexts/I18nContext'
 import Footer from '@components/Footer/Footer'
 
+const themeInitScript = `
+  (function() {
+    try {
+      var mode = localStorage.getItem('learnhouse_theme') || 'light';
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var shouldUseDark = mode === 'dark' || (mode === 'system' && prefersDark);
+      document.documentElement.classList.toggle('dark', shouldUseDark);
+      document.documentElement.dataset.theme = mode;
+    } catch (error) {}
+  })();
+`
+
 export default function RootLayout({
   children,
 }: {
@@ -28,6 +40,7 @@ export default function RootLayout({
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src="/runtime-config.js" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
