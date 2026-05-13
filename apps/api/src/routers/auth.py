@@ -188,19 +188,11 @@ async def resend_verification_email(
     db_session: Session = Depends(get_db_session),
 ):
     """
-        Resend verification email to user if they didn't receive it or it expired.
+    Resend verification email to user if they didn't receive it or it expired.
 
-        Example request:
-    ```json
-        {
-            "email": "user@example.com",
-            "org_slug": "default"
-        }
-    ```
-
-        Returns:
-        - success: bool
-        - message: str
+    Returns:
+    - success: bool
+    - message: str
     """
     # Get user
     statement = select(User).where(User.email == resend_data.email)
