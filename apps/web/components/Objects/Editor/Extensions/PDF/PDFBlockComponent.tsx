@@ -51,7 +51,7 @@ function PDFBlockComponent(props: any) {
 
   const handleDownload = () => {
     if (!fileId) return;
-    
+
     const pdfUrl = getActivityBlockMediaDirectory(
       org?.org_uuid,
       course?.courseStructure.course_uuid,
@@ -60,7 +60,7 @@ function PDFBlockComponent(props: any) {
       fileId,
       'pdfBlock'
     );
-    
+
     const link = document.createElement('a');
     link.href = pdfUrl || '';
     link.download = `document-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'pdf'}`;
@@ -94,7 +94,7 @@ function PDFBlockComponent(props: any) {
           <FileUploadBlockInput onChange={handlePDFChange} accept={SUPPORTED_FILES} />
           <FileUploadBlockButton onClick={handleSubmit} disabled={!pdf}/>
         </FileUploadBlock>
-        
+
         {blockObject && (
           <BlockPDF>
             <div className="relative">
@@ -129,7 +129,7 @@ function PDFBlockComponent(props: any) {
           </div>
         )}
       </NodeViewWrapper>
-      
+
       {blockObject && pdfUrl && (
         <Modal
           isDialogOpen={isModalOpen}

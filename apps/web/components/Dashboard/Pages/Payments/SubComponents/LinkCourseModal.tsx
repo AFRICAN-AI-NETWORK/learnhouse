@@ -29,7 +29,7 @@ interface CoursePreviewProps {
 
 const CoursePreview = ({ course, onLink, isLinked }: CoursePreviewProps) => {
   const org = useOrg() as any;
-  
+
   const thumbnailImage = course.thumbnail_image
     ? getCourseThumbnailMediaDirectory(org?.org_uuid, course.course_uuid, course.thumbnail_image)
     : '../empty_thumbnail.png';
@@ -37,11 +37,11 @@ const CoursePreview = ({ course, onLink, isLinked }: CoursePreviewProps) => {
   return (
     <div className="flex gap-4 p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
       {/* Thumbnail */}
-      <div 
+      <div
         className="shrink-0 w-[120px] h-[68px] rounded-md bg-cover bg-center ring-1 ring-inset ring-black/10"
         style={{ backgroundImage: `url(${thumbnailImage})` }}
       />
-      
+
       {/* Content */}
       <div className="grow space-y-1">
         <h3 className="font-medium text-gray-900 line-clamp-1">
@@ -111,19 +111,19 @@ export default function LinkCourseModal({ productId, onSuccess }: LinkCourseModa
 
   return (
     <div className="space-y-4">
-     
+
 
       {/* Course List */}
       <div className="max-h-[400px] overflow-y-auto space-y-2 px-3">
         {courses?.map((course: any) => (
-          <CoursePreview 
+          <CoursePreview
             key={course.course_uuid}
             course={course}
             onLink={handleLinkCourse}
             isLinked={isLinked(course.id)}
           />
         ))}
-        
+
         {/* Empty State */}
         {(!courses || courses.length === 0) && (
           <div className="text-center py-6 text-gray-500">
@@ -133,4 +133,4 @@ export default function LinkCourseModal({ productId, onSuccess }: LinkCourseModa
       </div>
     </div>
   );
-} 
+}

@@ -5,6 +5,7 @@ Background tasks that run periodically.
 All synchronous DB work is offloaded to a worker thread via
 asyncio.to_thread() so the event loop is never blocked.
 """
+
 import asyncio
 import logging
 import os
@@ -12,7 +13,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from sqlmodel import Session, select
 from src.core.events.database import engine
-from src.services.referrals.referral_commissions import update_pending_commissions_to_eligible
+from src.services.referrals.referral_commissions import (
+    update_pending_commissions_to_eligible,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +56,7 @@ def _safe_asyncio_run(coro):
 # Sync helpers – run inside _job_executor via loop.run_in_executor()
 # ---------------------------------------------------------------------------
 
+
 def _sync_process_commissions() -> dict:
     """Process commission eligibility on a worker thread."""
     start = time.monotonic()
@@ -74,9 +78,11 @@ def _sync_process_payouts() -> dict:
     failed_count = 0
 
     with Session(engine) as db_session:
-        statement = select(ReferrerPayoutRequest).where(
-            ReferrerPayoutRequest.status == PayoutStatus.APPROVED
-        ).limit(10)  # Process in batches
+        statement = (
+            select(ReferrerPayoutRequest)
+            .where(ReferrerPayoutRequest.status == PayoutStatus.APPROVED)
+            .limit(10)
+        )  # Process in batches
 
         payouts = db_session.exec(statement).all()
 
@@ -103,6 +109,7 @@ def _sync_process_payouts() -> dict:
 # Uses loop.run_in_executor with the capped _job_executor.
 # ---------------------------------------------------------------------------
 
+
 async def process_commission_eligibility_job():
     """
     Daily job to update pending commissions to eligible after 14-day refund period.
@@ -110,9 +117,7 @@ async def process_commission_eligibility_job():
     logger.info("Commission eligibility job started")
     try:
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            _job_executor, _sync_process_commissions
-        )
+        result = await loop.run_in_executor(_job_executor, _sync_process_commissions)
         logger.info(
             "Commission eligibility job completed in %.2fs — "
             "updated %d commissions to eligible",
@@ -131,12 +136,9 @@ async def process_payout_requests_job():
     logger.info("Payout processing job started")
     try:
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            _job_executor, _sync_process_payouts
-        )
+        result = await loop.run_in_executor(_job_executor, _sync_process_payouts)
         logger.info(
-            "Payout processing job completed in %.2fs — "
-            "processed: %d, failed: %d",
+            "Payout processing job completed in %.2fs — " "processed: %d, failed: %d",
             result["elapsed_s"],
             result["processed_count"],
             result["failed_count"],
@@ -151,12 +153,12 @@ SCHEDULED_JOBS = {
         "function": process_commission_eligibility_job,
         "schedule": "daily",  # Run once per day
         "time": "00:00",  # Midnight
-        "description": "Update pending commissions to eligible after refund period"
+        "description": "Update pending commissions to eligible after refund period",
     },
     "payout_requests": {
         "function": process_payout_requests_job,
         "schedule": "interval",  # Run at intervals
         "minutes": 5,  # Every 5 minutes
-        "description": "Process pending payout requests with Paystack"
-    }
+        "description": "Process pending payout requests with Paystack",
+    },
 }

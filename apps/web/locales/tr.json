@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "LearnHouse University"
     },
-    "courses": {
-      "title": "Kurslar",
-      "rights_guide": "Haklar Rehberi",
-      "create_course": "Kurs Oluştur",
-      "create_new_course": "Yeni Kurs Oluştur",
-      "no_courses": "Henüz kurs yok",
-      "create_course_placeholder": "İçerik eklemek için bir kurs oluşturun",
-      "no_courses_available": "Şu anda mevcut kurs bulunmamaktadır"
-    },
     "organization": {
       "settings": {
         "title": "Organizasyon Ayarları",

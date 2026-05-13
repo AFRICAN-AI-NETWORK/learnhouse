@@ -53,7 +53,7 @@ function Activity(props: any) {
         ...props.activity,
         name: modifiedActivity.activityName,
       }
-      
+
       await updateActivity(modifiedActivityCopy, activityId, session.data?.tokens?.access_token)
       await mutate(`${getAPIUrl()}chapters/meta/course_${props.courseid}?with_unpublished_activities=${withUnpublishedActivities}`)
       await revalidateTags(['courses'], props.orgslug)

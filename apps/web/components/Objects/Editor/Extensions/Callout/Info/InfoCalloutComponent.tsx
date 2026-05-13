@@ -17,13 +17,13 @@ const IconWrapper = styled.div<{ size?: string }>`
   shrink: 0;
   margin-right: 0.5rem;
   padding-left: 0.5rem;
-  
+
   svg {
     width: 20px;
     height: 20px;
     min-width: 20px;
   }
-  
+
   @media (max-width: 640px) {
     margin-right: 0.25rem;
     padding-left: 0.375rem;
@@ -47,7 +47,7 @@ const DismissButton = styled.button`
   padding: 4px;
   margin-left: 8px;
   border-radius: 50%;
-  
+
   &:hover {
     background-color: rgba(0, 0, 0, 0.1);
   }
@@ -58,7 +58,7 @@ const InfoCalloutWrapper = styled.div<{ size?: string }>`
   display: flex;
   position: relative;
   margin: 1rem 0;
-  
+
   @media (max-width: 640px) {
     flex-direction: ${props => props.size === 'sm' ? 'row' : 'column'};
     align-items: ${props => props.size === 'sm' ? 'center' : 'flex-start'};
@@ -74,7 +74,7 @@ const InfoCalloutWrapper = styled.div<{ size?: string }>`
     border: ${(props) =>
       props.contentEditable ? '2px dashed #1f3a8a12' : 'none'};
     border-radius: 0.5rem;
-    
+
     @media (max-width: 640px) {
       margin: ${props => props.size === 'sm' ? '3px' : '5px 0'};
       padding: ${props => props.size === 'sm' ? '0.25rem' : '0.5rem'};
@@ -87,16 +87,16 @@ function InfoCalloutComponent(props: any) {
   const editorState = useEditorProvider() as any
   const isEditable = editorState.isEditable
   const [dismissed, setDismissed] = useState(false)
-  
+
   // Extract options from props or use defaults
   const options: CalloutOptions = {
     dismissible: props.node?.attrs?.dismissible || false,
     variant: props.node?.attrs?.variant || 'default',
     size: props.node?.attrs?.size || 'md',
   }
-  
+
   if (dismissed) return null;
-  
+
   const getVariantClasses = () => {
     switch(options.variant) {
       case 'filled':
@@ -107,7 +107,7 @@ function InfoCalloutComponent(props: any) {
         return 'bg-gray-100 text-gray-600';
     }
   }
-  
+
   const getSizeClasses = () => {
     switch(options.size) {
       case 'sm': return 'py-1 px-2 text-sm';

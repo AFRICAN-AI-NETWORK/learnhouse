@@ -215,8 +215,6 @@ async def get_invite_codes(
     # Get invite codes
     invite_codes = r.keys(f"org_invite_code_*:org:{org.org_uuid}:code:*")
 
-
-
     invite_codes_list = []
 
     for invite_code in invite_codes:  # type: ignore

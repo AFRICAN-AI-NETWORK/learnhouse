@@ -17,7 +17,7 @@ class LiveSessionRegistration(LiveSessionRegistrationBase, table=True):
     __tablename__ = "live_session_registration"
     id: Optional[int] = Field(default=None, primary_key=True)
     creation_date: str = ""
-    
+
     __table_args__ = (
         UniqueConstraint("activity_uuid", "user_id", name="unique_live_registration"),
     )

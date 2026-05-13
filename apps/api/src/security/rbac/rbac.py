@@ -4,10 +4,17 @@ from sqlalchemy import null
 from sqlmodel import Session, select
 from src.db.collections import Collection
 from src.db.courses.courses import Course
-from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.roles import Role
 from src.db.user_organizations import UserOrganization
-from src.security.rbac.utils import check_element_type, check_course_permissions_with_own
+from src.security.rbac.utils import (
+    check_element_type,
+    check_course_permissions_with_own,
+)
 
 
 # Tested and working
@@ -63,13 +70,13 @@ async def authorization_verify_if_user_is_author(
     # For create action, we don't need to check existing resource
     if action == "create":
         return True  # Allow creation if user is authenticated
-        
+
     if action in ["update", "delete", "read"]:
         # Fix: Filter by BOTH resource_uuid and user_id to correctly check inheritance for all authors
         statement = select(ResourceAuthor).where(
             ResourceAuthor.resource_uuid == element_uuid,
             ResourceAuthor.user_id == int(user_id),
-            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
+            ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
         )
         resource_author = db_session.exec(statement).first()
 
@@ -87,15 +94,15 @@ async def authorization_verify_if_user_is_author(
             # All active authorship roles have "read" access
             if action == "read":
                 return True
-                
+
             # Only CREATOR, MAINTAINER, and CONTRIBUTOR have write/delete access
             if resource_author.authorship in [
                 ResourceAuthorshipEnum.CREATOR,
                 ResourceAuthorshipEnum.MAINTAINER,
-                ResourceAuthorshipEnum.CONTRIBUTOR
+                ResourceAuthorshipEnum.CONTRIBUTOR,
             ]:
                 return True
-                
+
         return False
     return False
 
@@ -120,7 +127,6 @@ async def authorization_verify_based_on_roles(
 
     user_roles_in_organization_and_standard_roles = db_session.exec(statement).all()
 
-    
     # Check if user is the author of the resource for "own" permissions
     is_author = False
     if action in ["update", "delete", "read"]:
@@ -133,18 +139,20 @@ async def authorization_verify_based_on_roles(
         role = Role.model_validate(role)
         if role.rights:
             rights = role.rights
-            
+
             # Safely get element_rights whether rights is a dict or object
             element_rights = None
             if isinstance(rights, dict):
                 element_rights = rights.get(element_type)
             else:
                 element_rights = getattr(rights, element_type, None)
-                
+
             if element_rights:
                 # Special handling for courses with PermissionsWithOwn
                 if element_type == "courses":
-                    if await check_course_permissions_with_own(element_rights, action, is_author):
+                    if await check_course_permissions_with_own(
+                        element_rights, action, is_author
+                    ):
                         return True
                 else:
                     # For non-course resources, check general permissions
@@ -155,10 +163,10 @@ async def authorization_verify_based_on_roles(
                         has_permission = element_rights.get(action_key, False)
                     else:
                         has_permission = getattr(element_rights, action_key, False)
-                        
+
                     if has_permission:
                         return True
-    
+
     # If we get here, no role granted the permission
     return False
 
@@ -187,7 +195,7 @@ async def authorization_verify_based_on_org_admin_status(
         role = Role.model_validate(role)
         if role.id in [1, 2]:  # Assuming 1 and 2 are admin role IDs
             return True
-    
+
     return False
 
 

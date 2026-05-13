@@ -2,7 +2,13 @@ from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
 from sqlmodel import Session, select
 
-from src.db.chat.messages import MessageCreate, MessageUpdate, MessageRead, Message, MessageReadReceipt
+from src.db.chat.messages import (
+    MessageCreate,
+    MessageUpdate,
+    MessageRead,
+    Message,
+    MessageReadReceipt,
+)
 from src.db.chat.attachments import MessageAttachmentRead, MessageAttachment
 from src.db.chat.conversations import Conversation
 from src.db.organizations import Organization
@@ -18,15 +24,16 @@ router = APIRouter()
 async def get_message(
     message_uuid: str,
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a single message by UUID with full details including replied message."""
-    message = db.exec(select(Message).where(Message.message_uuid == message_uuid)).first()
+    message = db.exec(
+        select(Message).where(Message.message_uuid == message_uuid)
+    ).first()
 
     if not message:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Message not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Message not found"
         )
 
     conversation = db.exec(
@@ -34,14 +41,16 @@ async def get_message(
     ).first()
     if not conversation:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Conversation not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
         )
 
-    if current_user.id not in [conversation.participant_one_id, conversation.participant_two_id]:
+    if current_user.id not in [
+        conversation.participant_one_id,
+        conversation.participant_two_id,
+    ]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this message"
+            detail="Not authorized to view this message",
         )
 
     attachments = db.exec(
@@ -67,7 +76,9 @@ async def get_message(
         if replied_msg:
             replied_message_data = {
                 "message_uuid": replied_msg.message_uuid,
-                "content": replied_msg.content if not replied_msg.is_deleted else "[Deleted message]",
+                "content": replied_msg.content
+                if not replied_msg.is_deleted
+                else "[Deleted message]",
                 "sender_id": replied_msg.sender_id,
                 "created_at": replied_msg.created_at.isoformat(),
                 "is_deleted": replied_msg.is_deleted,
@@ -92,17 +103,15 @@ async def get_message(
     )
 
 
-
-
-
-
 @router.get("/conversation/{conversation_id}", response_model=List[MessageRead])
 async def get_conversation_messages(
     conversation_id: str,
-    before_message_id: Optional[int] = Query(None, description="Get messages before this ID"),
+    before_message_id: Optional[int] = Query(
+        None, description="Get messages before this ID"
+    ),
     limit: int = Query(50, le=100, description="Number of messages to return"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get messages for a conversation (paginated). Accepts conversation UUID (conv_xxx) or integer ID."""
     messages = await MessageService.get_conversation_messages(
@@ -110,7 +119,7 @@ async def get_conversation_messages(
         conversation_id=conversation_id,
         user_id=current_user.id,
         limit=limit,
-        before_message_id=before_message_id
+        before_message_id=before_message_id,
     )
     return messages
 
@@ -120,19 +129,20 @@ async def edit_message(
     message_uuid: str,
     update_data: MessageUpdate,
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Edit a message."""
     message = await MessageService.edit_message(
         db=db,
         message_uuid=message_uuid,
         user_id=current_user.id,
-        update_data=update_data
+        update_data=update_data,
     )
-    
+
     # Notify via WebSocket
     try:
         from src.services.chat.websocket_manager import connection_manager
+
         await connection_manager.send_personal_message(
             {
                 "type": "message_edited",
@@ -140,15 +150,18 @@ async def edit_message(
                     "message_uuid": message.message_uuid,
                     "content": message.content,
                     "is_edited": True,
-                    "edited_at": message.edited_at.isoformat() if message.edited_at else None
-                }
+                    "edited_at": message.edited_at.isoformat()
+                    if message.edited_at
+                    else None,
+                },
             },
-            message.receiver_id
+            message.receiver_id,
         )
     except Exception as e:
         import logging
+
         logging.warning(f"Failed to send WebSocket notification: {e}")
-    
+
     return message
 
 
@@ -156,29 +169,26 @@ async def edit_message(
 async def delete_message(
     message_uuid: str,
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a message."""
     message = await MessageService.delete_message(
-        db=db,
-        message_uuid=message_uuid,
-        user_id=current_user.id
+        db=db, message_uuid=message_uuid, user_id=current_user.id
     )
-    
+
     # Notify via WebSocket
     try:
         from src.services.chat.websocket_manager import connection_manager
+
         await connection_manager.send_personal_message(
-            {
-                "type": "message_deleted",
-                "data": {"message_uuid": message_uuid}
-            },
-            message.receiver_id
+            {"type": "message_deleted", "data": {"message_uuid": message_uuid}},
+            message.receiver_id,
         )
     except Exception as e:
         import logging
+
         logging.warning(f"Failed to send WebSocket notification: {e}")
-    
+
     return {"message": "Message deleted successfully"}
 
 
@@ -186,24 +196,26 @@ async def delete_message(
 async def mark_message_as_read(
     message_uuid: str,
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Mark a message as read."""
     from src.services.chat.message_service import ReadReceiptService
-    
+
     receipt = await ReadReceiptService.mark_as_read(
-        db=db,
-        message_uuid=message_uuid,
-        user_id=current_user.id
+        db=db, message_uuid=message_uuid, user_id=current_user.id
     )
-    
+
     if receipt:
         return {"message": "Message marked as read", "read_at": receipt.read_at}
     else:
         return {"message": "Message not found"}
 
 
-@router.post("/{message_uuid}/attachments", response_model=MessageAttachmentRead, include_in_schema=False)
+@router.post(
+    "/{message_uuid}/attachments",
+    response_model=MessageAttachmentRead,
+    include_in_schema=False,
+)
 async def upload_attachment(
     message_uuid: str,
     file: UploadFile = File(...),
@@ -283,11 +295,16 @@ async def upload_attachment(
                 "message_uuid": message.message_uuid,
                 "conversation_id": conversation.conversation_uuid,
                 "attachments": attachment_payload,
-                "updated_at": message.updated_at.isoformat() if message.updated_at else None,
+                "updated_at": message.updated_at.isoformat()
+                if message.updated_at
+                else None,
             },
         }
 
-        participant_ids = [conversation.participant_one_id, conversation.participant_two_id]
+        participant_ids = [
+            conversation.participant_one_id,
+            conversation.participant_two_id,
+        ]
         await connection_manager.broadcast_to_conversation(ws_event, participant_ids)
     except Exception as e:
         import logging
@@ -300,11 +317,18 @@ async def upload_attachment(
 @router.post("/send", response_model=MessageRead)
 async def send_message_with_attachment(
     org_id: int = Query(..., description="Organisation ID"),
-    conversation_id: str = Query(..., description="Conversation UUID (conv_xxx) or integer ID"),
+    conversation_id: str = Query(
+        ..., description="Conversation UUID (conv_xxx) or integer ID"
+    ),
     receiver_id: int = Query(..., description="Recipient user ID"),
     content: str = Query(default="", description="Text content — optional"),
-    message_type: str = Query(default="auto", description="'text', 'file', 'image', 'video', 'document', or 'auto' (auto-detected)"),
-    reply_to_message_id: Optional[int] = Query(default=None, description="ID of message being replied to (0 = no reply)"),
+    message_type: str = Query(
+        default="auto",
+        description="'text', 'file', 'image', 'video', 'document', or 'auto' (auto-detected)",
+    ),
+    reply_to_message_id: Optional[int] = Query(
+        default=None, description="ID of message being replied to (0 = no reply)"
+    ),
     db: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
     file: Union[UploadFile, str, None] = File(None),
@@ -330,7 +354,7 @@ async def send_message_with_attachment(
     # ── Normalize file parameter (handle empty file uploads and strings) ──────
     if isinstance(file, str) or file is None:
         file = None
-    elif not file.filename or file.filename == '':
+    elif not file.filename or file.filename == "":
         file = None
 
     # Content and file are both optional - allow sending either or both
@@ -343,7 +367,9 @@ async def send_message_with_attachment(
     # ── Resolve org ───────────────────────────────────────────────────────────
     org = db.exec(select(Organization).where(Organization.id == org_id)).first()
     if not org:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Organisation not found"
+        )
 
     # ── Resolve conversation upfront (conversation_id can be int or UUID string) ──
     conversation = None
@@ -357,17 +383,22 @@ async def send_message_with_attachment(
         except ValueError:
             # It's a UUID string (conv_xxx format)
             conversation = db.exec(
-                select(Conversation).where(Conversation.conversation_uuid == conversation_id)
+                select(Conversation).where(
+                    Conversation.conversation_uuid == conversation_id
+                )
             ).first()
-        
+
         if not conversation:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Conversation not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
             )
 
     # ── Normalise reply_to (0 → None, mirrors existing create_message logic) ──
-    reply_to: Optional[int] = None if (reply_to_message_id is None or reply_to_message_id == 0) else reply_to_message_id
+    reply_to: Optional[int] = (
+        None
+        if (reply_to_message_id is None or reply_to_message_id == 0)
+        else reply_to_message_id
+    )
 
     # ── Auto-detect message_type ──────────────────────────────────────────────
     resolved_type = message_type
@@ -411,13 +442,14 @@ async def send_message_with_attachment(
                 "file_url": attachment.file_url,
                 "upload_status": attachment.upload_status,
             }
-            
+
             # Update the message response to include the attachment
             message.attachments = [attachment_data]
 
     # ── WebSocket notification ────────────────────────────────────────────────
     try:
         from src.services.chat.websocket_manager import connection_manager
+
         await connection_manager.send_personal_message(
             {
                 "type": "new_message",
@@ -440,7 +472,7 @@ async def send_message_with_attachment(
         )
     except Exception as e:
         import logging
+
         logging.warning(f"Failed to send WebSocket notification: {e}")
 
     return message
-

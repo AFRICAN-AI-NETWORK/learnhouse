@@ -3,7 +3,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session
 from sqlmodel import select
 
-from src.db.chat.conversations import ConversationCreate, ConversationRead, ConversationWithLastMessage
+from src.db.chat.conversations import (
+    ConversationCreate,
+    ConversationRead,
+    ConversationWithLastMessage,
+)
 from src.services.chat.conversation_service import ConversationService
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
@@ -19,14 +23,14 @@ async def create_conversation(
     conversation_data: ConversationCreate,
     org_id: int = Query(..., description="Organization ID"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create or get existing conversation with target user."""
     conversation = await ConversationService.create_or_get_conversation(
         db=db,
         current_user_id=current_user.id,
         target_user_id=conversation_data.participant_two_id,
-        org_id=org_id
+        org_id=org_id,
     )
     return conversation
 
@@ -38,7 +42,7 @@ async def get_user_conversations(
     limit: int = Query(50, le=100, description="Number of conversations to return"),
     offset: int = Query(0, description="Offset for pagination"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all conversations for current user."""
     conversations = await ConversationService.get_user_conversations(
@@ -47,7 +51,7 @@ async def get_user_conversations(
         org_id=org_id,
         include_archived=include_archived,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
     return conversations
 
@@ -56,13 +60,11 @@ async def get_user_conversations(
 async def archive_conversation(
     conversation_id: str,
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Archive a conversation. Accepts conversation UUID (conv_xxx) or integer ID."""
     conversation = await ConversationService.archive_conversation(
-        db=db,
-        conversation_id=conversation_id,
-        user_id=current_user.id
+        db=db, conversation_id=conversation_id, user_id=current_user.id
     )
     return conversation
 
@@ -72,15 +74,13 @@ async def get_chatable_users(
     org_id: int = Query(..., description="Organization ID"),
     search: str = Query(None, description="Search query for user name"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get list of users that current user can initiate chats with."""
     from src.services.chat.authorization import get_chatable_users_for_user
-    
+
     users = await get_chatable_users_for_user(
-        db=db,
-        current_user_id=current_user.id,
-        org_id=org_id
+        db=db, current_user_id=current_user.id, org_id=org_id
     )
 
     user_ids = [u.id for u in users]
@@ -93,17 +93,18 @@ async def get_chatable_users(
             .where(UserOrganization.user_id.in_(user_ids))
         ).all()
         role_by_user_id = {row[0]: row[1] for row in role_rows}
-    
+
     # Apply search filter if provided
     if search:
         search_lower = search.lower()
         users = [
-            u for u in users
+            u
+            for u in users
             if search_lower in u.username.lower()
             or search_lower in (u.first_name or "").lower()
             or search_lower in (u.last_name or "").lower()
         ]
-    
+
     return [
         {
             "id": u.id,
@@ -112,7 +113,7 @@ async def get_chatable_users(
             "first_name": u.first_name,
             "last_name": u.last_name,
             "avatar_image": u.avatar_image,
-            "role_name": role_by_user_id.get(u.id)
+            "role_name": role_by_user_id.get(u.id),
         }
         for u in users
     ]

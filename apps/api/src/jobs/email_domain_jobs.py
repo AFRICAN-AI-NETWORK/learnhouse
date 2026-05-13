@@ -2,6 +2,7 @@
 Scheduled Jobs for Domain List Management
 Run these jobs to keep email domain lists up-to-date
 """
+
 import logging
 from sqlmodel import Session
 
@@ -18,7 +19,7 @@ async def update_email_domain_lists_job():
     """
     Scheduled job to update disposable email domains from external source
     Schedule: Weekly (Sunday at midnight recommended)
-    
+
     This job:
     1. Fetches latest disposable domains from GitHub
     2. Updates database with new domains
@@ -26,11 +27,11 @@ async def update_email_domain_lists_job():
     4. Refreshes in-memory cache
     """
     logger.info("Starting email domain list update job")
-    
+
     with Session(engine) as session:
         try:
             stats = await update_disposable_email_list(session)
-            
+
             if stats["success"]:
                 logger.info(
                     f"Email domain list update completed: "
@@ -51,7 +52,7 @@ async def seed_domain_lists_job():
     Run this once during initial deployment
     """
     logger.info("Starting domain list seeding job")
-    
+
     with Session(engine) as session:
         try:
             await seed_initial_domain_lists(session)
@@ -64,7 +65,7 @@ async def seed_domain_lists_job():
 # from apscheduler.schedulers.asyncio import AsyncIOScheduler
 #
 # scheduler = AsyncIOScheduler()
-# 
+#
 # # Update domain lists weekly (Sunday at midnight)
 # scheduler.add_job(
 #     update_email_domain_lists_job,

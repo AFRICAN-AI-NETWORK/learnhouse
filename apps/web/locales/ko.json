@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "LearnHouse University"
     },
-    "courses": {
-      "title": "코스",
-      "rights_guide": "권한 가이드",
-      "create_course": "코스 생성",
-      "create_new_course": "새 코스 생성",
-      "no_courses": "아직 코스가 없습니다",
-      "create_course_placeholder": "코스를 생성하여 콘텐츠를 추가해 보세요",
-      "no_courses_available": "이용 가능한 코스가 아직 없습니다"
-    },
     "organization": {
       "settings": {
         "title": "조직 설정",

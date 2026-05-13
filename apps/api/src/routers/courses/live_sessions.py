@@ -37,7 +37,9 @@ async def api_register_live_session(
     """
     Register current user for a live session.
     """
-    return await register_for_live_session(request, activity_uuid, current_user, db_session)
+    return await register_for_live_session(
+        request, activity_uuid, current_user, db_session
+    )
 
 
 @router.get("/{activity_uuid}/participants")
@@ -78,5 +80,7 @@ async def api_send_session_notifications(
     Manually trigger batch notifications for session participants.
     """
     # Note: Admin check should be added here
-    await send_manual_notifications(db_session, activity_uuid, user_ids, notification_type)
+    await send_manual_notifications(
+        db_session, activity_uuid, user_ids, notification_type
+    )
     return {"status": "success"}

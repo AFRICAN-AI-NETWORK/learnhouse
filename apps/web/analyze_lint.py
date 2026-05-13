@@ -18,10 +18,10 @@ for file_result in data:
     for message in file_result.get('messages', []):
         rule_id = message.get('ruleId') or 'unknown'
         severity = message.get('severity')
-        
+
         if rule_id not in rule_counts:
             rule_counts[rule_id] = {'errors': 0, 'warnings': 0}
-            
+
         if severity == 2:
             rule_counts[rule_id]['errors'] += 1
             total_errors += 1

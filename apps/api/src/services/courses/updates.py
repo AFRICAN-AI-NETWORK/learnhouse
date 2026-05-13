@@ -22,7 +22,6 @@ async def create_update(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CourseUpdateRead:
-
     # CHekc if org exists
     statement_org = select(Organization).where(Organization.id == update_object.org_id)
     org = db_session.exec(statement_org).first()
@@ -41,7 +40,9 @@ async def create_update(
         )
 
     # RBAC check
-    await courses_rbac_check(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Generate UUID
     courseupdate_uuid = str(f"courseupdate_{uuid4()}")

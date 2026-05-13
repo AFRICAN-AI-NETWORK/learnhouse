@@ -108,7 +108,7 @@ export const ToolbarButtons = ({ editor, props }: any) => {
   const handleLinkClick = () => {
     // Store the current selection
     const { from, to } = editor.state.selection
-    
+
     if (editor.isActive('link')) {
       const currentLink = editor.getAttributes('link')
       setShowLinkInput(true)
@@ -133,7 +133,7 @@ export const ToolbarButtons = ({ editor, props }: any) => {
     editor
       .chain()
       .focus()
-      .setLink({ 
+      .setLink({
         href: url,
         target: '_blank',
         rel: 'noopener noreferrer'
@@ -187,7 +187,7 @@ export const ToolbarButtons = ({ editor, props }: any) => {
         {showListMenu && (
           <ListDropdown>
             {listOptions.map((option, index) => (
-              <ListMenuItem 
+              <ListMenuItem
                 key={index}
                 onClick={() => {
                   option.action()
@@ -240,7 +240,7 @@ export const ToolbarButtons = ({ editor, props }: any) => {
         {showTableMenu && (
           <TableDropdown>
             {tableOptions.map((option, index) => (
-              <TableMenuItem 
+              <TableMenuItem
                 key={index}
                 onClick={() => {
                   option.action()

@@ -174,7 +174,7 @@ const BadgesExtension: React.FC = (props: any) => {
             </div>
           )}
         </div>
-        
+
         {isEditable && (
           <button
             onClick={() => setShowPredefinedCallouts(!showPredefinedCallouts)}

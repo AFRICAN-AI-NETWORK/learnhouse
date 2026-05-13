@@ -38,8 +38,10 @@ router = APIRouter()
 
 # ==================== Request/Response Models ====================
 
+
 class WaitlistUserRegistration(BaseModel):
     """Request model for user registration via waitlist"""
+
     username: str
     email: str
     password: str
@@ -57,7 +59,9 @@ class WaitlistUserRegistration(BaseModel):
     def validate_phone_number(cls, value):
         return validate_e164_phone_number(value, required=True)
 
+
 # ==================== Waitlist Configuration Endpoints (Admin) ====================
+
 
 @router.post("/config", response_model=WaitlistConfigRead, tags=["waitlist"])
 async def create_waitlist(
@@ -73,27 +77,28 @@ async def create_waitlist(
     # RBAC check: Ensure user is admin of the organization
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    
+
     # Verify user is admin or maintainer of the organization
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
         UserOrganization.org_id == config_data.org_id,
-        UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+        UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
     if not user_org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to create waitlists in this organization. Admin or Maintainer role required."
+            detail="You don't have permission to create waitlists in this organization. Admin or Maintainer role required.",
         )
-    
+
     return await create_waitlist_config(request, db_session, config_data)
 
 
-@router.get("/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"])
+@router.get(
+    "/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"]
+)
 async def get_waitlist_details(
     request: Request,
     waitlist_uuid: str,
@@ -106,7 +111,9 @@ async def get_waitlist_details(
     return await get_waitlist_config(request, db_session, waitlist_uuid)
 
 
-@router.get("/config/org/{org_id}", response_model=List[WaitlistConfigRead], tags=["waitlist"])
+@router.get(
+    "/config/org/{org_id}", response_model=List[WaitlistConfigRead], tags=["waitlist"]
+)
 async def list_org_waitlists(
     request: Request,
     org_id: int,
@@ -131,13 +138,15 @@ async def list_org_waitlists(
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
         UserOrganization.org_id == org_id,
-        UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+        UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
 
     # Admins/Maintainers: can apply status_filter and view all campaigns
     if user_org:
-        return await get_org_waitlist_configs(request, db_session, org_id, status_filter)
+        return await get_org_waitlist_configs(
+            request, db_session, org_id, status_filter
+        )
 
     # Authenticated non-admin users: only ACTIVE campaigns
     return await get_org_waitlist_configs(
@@ -148,7 +157,9 @@ async def list_org_waitlists(
     )
 
 
-@router.put("/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"])
+@router.put(
+    "/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"]
+)
 async def update_waitlist(
     request: Request,
     waitlist_uuid: str,
@@ -164,31 +175,33 @@ async def update_waitlist(
     # RBAC check
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    
+
     # Get waitlist to verify org ownership
     from src.services.waitlist.config import get_waitlist_config
+
     waitlist = await get_waitlist_config(request, db_session, waitlist_uuid)
-    
+
     # Verify user is admin or maintainer of the organization
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
         UserOrganization.org_id == waitlist.org_id,
-        UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+        UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
     if not user_org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to update this waitlist. Admin or Maintainer role required."
+            detail="You don't have permission to update this waitlist. Admin or Maintainer role required.",
         )
-    
+
     return await update_waitlist_config(request, db_session, waitlist_uuid, update_data)
 
 
-@router.delete("/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"])
+@router.delete(
+    "/config/{waitlist_uuid}", response_model=WaitlistConfigRead, tags=["waitlist"]
+)
 async def cancel_waitlist(
     request: Request,
     waitlist_uuid: str,
@@ -202,31 +215,32 @@ async def cancel_waitlist(
     # RBAC check
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    
+
     # Get waitlist to verify org ownership
     from src.services.waitlist.config import get_waitlist_config
+
     waitlist = await get_waitlist_config(request, db_session, waitlist_uuid)
-    
+
     # Verify user is admin or maintainer of the organization
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
         UserOrganization.org_id == waitlist.org_id,
-        UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+        UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
     if not user_org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to cancel this waitlist. Admin or Maintainer role required."
+            detail="You don't have permission to cancel this waitlist. Admin or Maintainer role required.",
         )
-    
+
     return await cancel_waitlist_config(request, db_session, waitlist_uuid)
 
 
 # ==================== Waitlist User Registration Endpoints ====================
+
 
 @router.post("/join", response_model=UserRead)
 async def join_waitlist(
@@ -238,12 +252,12 @@ async def join_waitlist(
     """
     Register a new user on a waitlist using an invite link.
     Public endpoint - anyone with valid waitlist link can register.
-    
+
     Query parameter: waitlist_uuid identifies the waitlist campaign.
     Request body includes user details, select_course_ids, and referral details.
     """
     from src.db.users import UserCreate
-    
+
     # Convert registration payload to UserCreate object
     user_create = UserCreate(
         username=user_data.username,
@@ -256,9 +270,9 @@ async def join_waitlist(
         is_waitlist=True,
         referral_code=user_data.referral_code,
         device_id=user_data.device_id,
-        browser_fingerprint=user_data.browser_fingerprint
+        browser_fingerprint=user_data.browser_fingerprint,
     )
-    
+
     # Pass request object as user creation now utilizes request variables
     # e.g for fetching IP for referrals tracking
     return await create_waitlist_user(
@@ -266,11 +280,13 @@ async def join_waitlist(
         db_session=db_session,
         user_object=user_create,
         waitlist_uuid=waitlist_uuid,
-        selected_product_ids=user_data.selected_product_ids
+        selected_product_ids=user_data.selected_product_ids,
     )
 
 
-@router.get("/config/{waitlist_uuid}/users", response_model=List[UserRead], tags=["waitlist"])
+@router.get(
+    "/config/{waitlist_uuid}/users", response_model=List[UserRead], tags=["waitlist"]
+)
 async def list_waitlist_users(
     request: Request,
     waitlist_uuid: str,
@@ -286,31 +302,32 @@ async def list_waitlist_users(
     # RBAC check
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    
+
     # Get waitlist to verify org ownership
     from src.services.waitlist.config import get_waitlist_config
+
     waitlist = await get_waitlist_config(request, db_session, waitlist_uuid)
-    
+
     # Verify user is admin or maintainer of the organization
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
         UserOrganization.org_id == waitlist.org_id,
-        UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+        UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
     if not user_org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to view users for this waitlist. Admin or Maintainer role required."
+            detail="You don't have permission to view users for this waitlist. Admin or Maintainer role required.",
         )
-    
+
     return await get_waitlist_users(request, db_session, waitlist_uuid, skip, limit)
 
 
 # ==================== Course Listing Endpoints ====================
+
 
 @router.get("/config/{waitlist_uuid}/courses", tags=["waitlist"])
 async def list_waitlist_courses(
@@ -321,13 +338,14 @@ async def list_waitlist_courses(
     """
     Get all courses for the organization with pricing information.
     Public endpoint - used in Step 3 of registration form.
-    
+
     Returns courses with is_free/price/currency for free/paid labels.
     """
     return await get_org_courses_for_waitlist(request, db_session, waitlist_uuid)
 
 
 # ==================== Course Preference Analytics Endpoints ====================
+
 
 @router.get("/config/{waitlist_uuid}/preferences", tags=["waitlist"])
 async def get_waitlist_preferences(
@@ -339,33 +357,33 @@ async def get_waitlist_preferences(
     """
     Get aggregated course preference analytics for a waitlist campaign.
     Admin-only endpoint for demand forecasting.
-    
+
     Returns which courses are most popular among waitlist registrants.
     """
     # RBAC check
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    
+
     # Get waitlist to verify org ownership
     from src.services.waitlist.config import get_waitlist_config
+
     waitlist = await get_waitlist_config(request, db_session, waitlist_uuid)
-    
+
     # Verify user is admin or maintainer of the organization
     statement = select(UserOrganization).where(
         UserOrganization.user_id == current_user.id,
         UserOrganization.org_id == waitlist.org_id,
-        UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+        UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
     )
     user_org = db_session.exec(statement).first()
     if not user_org:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to view preferences for this waitlist. Admin or Maintainer role required."
+            detail="You don't have permission to view preferences for this waitlist. Admin or Maintainer role required.",
         )
-    
+
     return await get_course_preference_analytics(request, db_session, waitlist_uuid)
 
 
@@ -384,29 +402,31 @@ async def get_user_preferences(
     # RBAC check: Admin or the user themselves
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    
+
     # Get waitlist to verify org ownership
     from src.services.waitlist.config import get_waitlist_config
+
     waitlist = await get_waitlist_config(request, db_session, waitlist_uuid)
-    
+
     # Check if user is admin/maintainer of the organization OR accessing their own preferences
     is_self = current_user.id == user_id
-    
+
     if not is_self:
         # Verify user is admin or maintainer of the organization
         statement = select(UserOrganization).where(
             UserOrganization.user_id == current_user.id,
             UserOrganization.org_id == waitlist.org_id,
-            UserOrganization.role_id.in_([1, 2])  # 1=Admin, 2=Maintainer
+            UserOrganization.role_id.in_([1, 2]),  # 1=Admin, 2=Maintainer
         )
         user_org = db_session.exec(statement).first()
         if not user_org:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to view other users' preferences. Admin or Maintainer role required."
+                detail="You don't have permission to view other users' preferences. Admin or Maintainer role required.",
             )
-    
-    return await get_user_course_preferences(request, db_session, waitlist_uuid, user_id)
+
+    return await get_user_course_preferences(
+        request, db_session, waitlist_uuid, user_id
+    )

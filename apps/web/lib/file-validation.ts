@@ -53,9 +53,9 @@ export function validateFile(
 
   if (!matchedType) {
     const allowedMimes = allowedTypes.flatMap(type => FILE_TYPES[type].mimeTypes)
-    return { 
-      valid: false, 
-      error: `Invalid file type: ${file.type}. Allowed types: ${allowedMimes.join(', ')}` 
+    return {
+      valid: false,
+      error: `Invalid file type: ${file.type}. Allowed types: ${allowedMimes.join(', ')}`
     }
   }
 
@@ -64,9 +64,9 @@ export function validateFile(
   if (file.size > maxSize) {
     const sizeMB = (file.size / 1024 / 1024).toFixed(1)
     const maxSizeMB = (maxSize / 1024 / 1024).toFixed(1)
-    return { 
-      valid: false, 
-      error: `File too large (${sizeMB}MB). Maximum size: ${maxSizeMB}MB` 
+    return {
+      valid: false,
+      error: `File too large (${sizeMB}MB). Maximum size: ${maxSizeMB}MB`
     }
   }
 
@@ -90,9 +90,9 @@ export function getFileTypeDescription(allowedTypes: FileType[]): string {
     .flatMap(type => FILE_TYPES[type].extensions)
     .map(ext => ext.toUpperCase().slice(1))
     .join(', ')
-  
+
   const maxSizes = Array.from(new Set(allowedTypes.map(type => FILE_TYPES[type].maxSize)))
-  const maxSizeStr = maxSizes.length === 1 
+  const maxSizeStr = maxSizes.length === 1
     ? `${maxSizes[0] / 1024 / 1024}MB`
     : 'varies'
 

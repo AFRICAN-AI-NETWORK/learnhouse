@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "লার্নহাউস ইউনিভার্সিটি"
     },
-    "courses": {
-      "title": "কোর্সসমূহ",
-      "rights_guide": "অধিকার নির্দেশিকা",
-      "create_course": "কোর্স তৈরি করুন",
-      "create_new_course": "একটি নতুন কোর্স তৈরি করুন",
-      "no_courses": "এখনও কোনো কোর্স নেই",
-      "create_course_placeholder": "কন্টেন্ট যোগ করতে কোর্স তৈরি করুন",
-      "no_courses_available": "এখনও কোনো কোর্স উপলব্ধ নেই"
-    },
     "organization": {
       "settings": {
         "title": "সংস্থা সেটিংস",

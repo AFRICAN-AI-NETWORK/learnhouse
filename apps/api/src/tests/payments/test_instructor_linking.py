@@ -1,13 +1,26 @@
 import pytest
 from datetime import datetime, timedelta
 from sqlmodel import Session
-from src.db.payments.discount_codes import DiscountCode, DiscountTypeEnum, DiscountCodeCreate
-from src.services.payments.discount_codes import create_discount_code, validate_discount_code, DiscountValidationError
-from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
+from src.db.payments.discount_codes import (
+    DiscountCode,
+    DiscountTypeEnum,
+    DiscountCodeCreate,
+)
+from src.services.payments.discount_codes import (
+    create_discount_code,
+    validate_discount_code,
+    DiscountValidationError,
+)
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.users import User
 from src.db.courses.courses import Course
 from fastapi import HTTPException
 from unittest.mock import MagicMock
+
 
 @pytest.fixture
 def authorized_instructor(db_session: Session, mock_org) -> User:
@@ -22,12 +35,13 @@ def authorized_instructor(db_session: Session, mock_org) -> User:
         email_verified=True,
         creation_date=datetime.utcnow(),
         update_date=datetime.utcnow(),
-        role=3 # Instructor role
+        role=3,  # Instructor role
     )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
     return user
+
 
 @pytest.fixture
 def instructor_course(db_session: Session, mock_org, authorized_instructor) -> Course:
@@ -40,30 +54,28 @@ def instructor_course(db_session: Session, mock_org, authorized_instructor) -> C
         public=True,
         open_to_contributors=False,
         creation_date=datetime.utcnow(),
-        update_date=datetime.utcnow()
+        update_date=datetime.utcnow(),
     )
     db_session.add(course)
     db_session.commit()
     db_session.refresh(course)
-    
+
     # Add instructor as CREATOR in ResourceAuthor
     author = ResourceAuthor(
         resource_uuid=course.course_uuid,
         user_id=authorized_instructor.id,
         authorship=ResourceAuthorshipEnum.CREATOR,
-        authorship_status=ResourceAuthorshipStatusEnum.ACTIVE
+        authorship_status=ResourceAuthorshipStatusEnum.ACTIVE,
     )
     db_session.add(author)
     db_session.commit()
-    
+
     return course
+
 
 @pytest.mark.asyncio
 async def test_instructor_can_create_code_for_owned_course(
-    db_session: Session,
-    mock_org,
-    authorized_instructor,
-    instructor_course
+    db_session: Session, mock_org, authorized_instructor, instructor_course
 ):
     # Setup
     request = MagicMock()
@@ -72,28 +84,23 @@ async def test_instructor_can_create_code_for_owned_course(
         discount_type=DiscountTypeEnum.PERCENTAGE,
         discount_value=10.0,
         valid_from=datetime.utcnow(),
-        course_id=instructor_course.id
+        course_id=instructor_course.id,
     )
-    
+
     # Execute
     code = await create_discount_code(
-        request, 
-        mock_org.id, 
-        discount_data, 
-        authorized_instructor, 
-        db_session
+        request, mock_org.id, discount_data, authorized_instructor, db_session
     )
-    
+
     # Verify
     assert code.code == "INST10"
     assert code.course_id == instructor_course.id
     assert code.org_id == mock_org.id
 
+
 @pytest.mark.asyncio
 async def test_instructor_cannot_create_global_code(
-    db_session: Session,
-    mock_org,
-    authorized_instructor
+    db_session: Session, mock_org, authorized_instructor
 ):
     # Setup
     request = MagicMock()
@@ -101,21 +108,18 @@ async def test_instructor_cannot_create_global_code(
         code="GLOBAL_FAIL",
         discount_type=DiscountTypeEnum.PERCENTAGE,
         discount_value=10.0,
-        valid_from=datetime.utcnow()
+        valid_from=datetime.utcnow(),
         # course_id is None
     )
-    
+
     # Execute & Verify
     with pytest.raises(HTTPException) as excinfo:
         await create_discount_code(
-            request, 
-            mock_org.id, 
-            discount_data, 
-            authorized_instructor, 
-            db_session
+            request, mock_org.id, discount_data, authorized_instructor, db_session
         )
     assert excinfo.value.status_code == 403
     assert "global" in excinfo.value.detail.lower()
+
 
 @pytest.mark.asyncio
 async def test_course_specific_code_enforcement(
@@ -123,7 +127,7 @@ async def test_course_specific_code_enforcement(
     mock_org,
     mock_user,
     instructor_course,
-    mock_course # Another course not owned by instructor in this context (owned by mock_org admin by default)
+    mock_course,  # Another course not owned by instructor in this context (owned by mock_org admin by default)
 ):
     # Setup: Create code restricted to instructor_course
     code = DiscountCode(
@@ -132,11 +136,11 @@ async def test_course_specific_code_enforcement(
         discount_type=DiscountTypeEnum.FIXED,
         discount_value=50.0,
         valid_from=datetime.utcnow() - timedelta(days=1),
-        course_id=instructor_course.id
+        course_id=instructor_course.id,
     )
     db_session.add(code)
     db_session.commit()
-    
+
     # Execute & Verify: Should fail for mock_course (wrong course)
     with pytest.raises(DiscountValidationError) as excinfo:
         await validate_discount_code(
@@ -145,10 +149,10 @@ async def test_course_specific_code_enforcement(
             user_id=mock_user.id,
             course_id=mock_course.id,  # Wrong course
             original_amount=100.0,
-            db_session=db_session
+            db_session=db_session,
         )
     assert "not valid for this course" in str(excinfo.value)
-    
+
     # Execute & Verify: Should succeed for instructor_course (correct course)
     dc, discount, final = await validate_discount_code(
         code="COURSE_ONLY",
@@ -156,7 +160,7 @@ async def test_course_specific_code_enforcement(
         user_id=mock_user.id,
         course_id=instructor_course.id,  # Correct course
         original_amount=100.0,
-        db_session=db_session
+        db_session=db_session,
     )
     assert dc.id == code.id
     assert final == 50.0

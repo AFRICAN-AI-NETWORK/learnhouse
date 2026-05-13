@@ -6,6 +6,7 @@ access logs from Nginx, AWS ALBs, etc.), the client first exchanges its JWT
 for a short-lived, single-use ticket via a regular authenticated POST request.
 The ticket is then passed in the WebSocket query string.
 """
+
 import secrets
 import time
 import logging

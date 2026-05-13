@@ -12,7 +12,7 @@ LearnHouse is an open source platform that makes it easy for anyone to provide w
 
 ## Roadmap
 
-We prioritize issues depending on the most requested features from our users, please help us prioritize issues by commenting on them and sharing your thoughts 
+We prioritize issues depending on the most requested features from our users, please help us prioritize issues by commenting on them and sharing your thoughts
 
 [🚢 LearnHouse General Roadmap](https://www.learnhouse.app/roadmap)
 
@@ -52,7 +52,7 @@ Thank you for you interest 💖, here is how you can help :
 - [Overview](https://docs.learnhouse.app)
 - [Developers](https://docs.learnhouse.app/setup-dev-environment)
 
-## Get started 
+## Get started
 
 ### Get a local ready copy of LearnHouse
 
@@ -60,7 +60,7 @@ TLDR: Run `docker-compose up -d` and inspect the logs, should be ready to go in 
 
 - [Self Hosting](https://docs.learnhouse.app/self-hosting/hosting-guide)
 
-### Set-up a Development Environment 
+### Set-up a Development Environment
 
 
 

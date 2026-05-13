@@ -50,7 +50,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
   const displayedAvatars = authors.slice(0, 3)
   const displayedNames = authors.slice(0, 2)
   const remainingCount = Math.max(0, authors.length - 3)
-  
+
   // Consistent sizes for both avatars and badge
   const avatarSize = isMobile ? 72 : 86
   const borderSize = "border-4"
@@ -58,7 +58,7 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
   return (
     <div className="flex flex-col items-center space-y-4 px-2 py-2">
       <div className="text-[12px] text-neutral-400 font-semibold self-start">{t('courses.authors_and_updates')} </div>
-      
+
       {/* Avatars row */}
       <div className="flex justify-center -space-x-6 relative">
         {displayedAvatars.map((author, index) => (
@@ -81,14 +81,14 @@ const MultipleAuthors = ({ authors, isMobile }: { authors: Author[], isMobile: b
           </div>
         ))}
         {remainingCount > 0 && (
-          <div 
+          <div
             className="relative"
             style={{ zIndex: 0 }}
           >
-            <div 
+            <div
               className="flex items-center justify-center bg-neutral-100 text-neutral-600 font-medium rounded-full border-4 border-white shadow-sm"
-              style={{ 
-                width: `${avatarSize}px`, 
+              style={{
+                width: `${avatarSize}px`,
                 height: `${avatarSize}px`,
                 fontSize: isMobile ? '14px' : '16px'
               }}
@@ -177,8 +177,8 @@ const UpdatesSection = () => {
             className={`
               inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium
               transition-colors duration-150
-              ${selectedView === 'new' 
-                ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300' 
+              ${selectedView === 'new'
+                ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
                 : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }
             `}
@@ -188,7 +188,7 @@ const UpdatesSection = () => {
           </button>
         )}
       </div>
-      
+
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -357,7 +357,7 @@ const DeleteUpdateButton = ({ update }: any) => {
       update.courseupdate_uuid,
       session.data?.tokens?.access_token
     )
-    
+
     if (res.status === 200) {
       toast.dismiss(toast_loading)
       toast.success(t('courses.update_deleted_success'))
@@ -413,4 +413,4 @@ const CourseAuthors = ({ authors }: CourseAuthorsProps) => {
   )
 }
 
-export default CourseAuthors 
+export default CourseAuthors

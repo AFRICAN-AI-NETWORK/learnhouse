@@ -6,13 +6,13 @@ from sqlalchemy import ForeignKey
 
 class ChatAuditLog(SQLModel, table=True):
     __tablename__ = "chat_audit_log"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     log_uuid: str = Field(unique=True, index=True)
     org_id: int = Field(foreign_key="organization.id", ondelete="CASCADE")
     user_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
     action: str  # 'message_sent', 'message_edited', 'message_deleted', etc.
     resource_type: str  # 'message', 'conversation', 'attachment'

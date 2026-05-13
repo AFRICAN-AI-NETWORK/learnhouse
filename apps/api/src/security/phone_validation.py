@@ -24,7 +24,9 @@ def normalize_phone_number(raw_phone_number: Optional[str]) -> Optional[str]:
     return compact_phone_number
 
 
-def validate_e164_phone_number(phone_number: Optional[str], required: bool = False) -> Optional[str]:
+def validate_e164_phone_number(
+    phone_number: Optional[str], required: bool = False
+) -> Optional[str]:
     """Validate and normalize a phone number in strict E.164 format."""
     normalized_phone_number = normalize_phone_number(phone_number)
 
@@ -34,6 +36,8 @@ def validate_e164_phone_number(phone_number: Optional[str], required: bool = Fal
         return None
 
     if not E164_PATTERN.fullmatch(normalized_phone_number):
-        raise ValueError("Phone number must be in strict E.164 format (example: +14155552671)")
+        raise ValueError(
+            "Phone number must be in strict E.164 format (example: +14155552671)"
+        )
 
     return normalized_phone_number

@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "LearnHouse University"
     },
-    "courses": {
-      "title": "คอร์สเรียน",
-      "rights_guide": "คู่มือการใช้งานสิทธิ์",
-      "create_course": "สร้างคอร์ส",
-      "create_new_course": "สร้างคอร์สใหม่",
-      "no_courses": "ยังไม่มีคอร์สเรียน",
-      "create_course_placeholder": "สร้างคอร์สเพื่อเพิ่มเนื้อหา",
-      "no_courses_available": "ยังไม่มีคอร์สเรียนในขณะนี้"
-    },
     "organization": {
       "settings": {
         "title": "ตั้งค่าองค์กร",

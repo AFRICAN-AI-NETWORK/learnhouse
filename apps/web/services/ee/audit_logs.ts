@@ -21,4 +21,3 @@ export const getEEStatus = async (accessToken: string) => {
   const url = `${getAPIUrl()}ee/status`;
   return swrFetcher(url, accessToken);
 };
-

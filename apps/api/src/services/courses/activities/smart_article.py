@@ -36,9 +36,9 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     return "\n\n".join(text_parts)
 
 
-SYSTEM_PROMPT = """You are an expert educational content formatter. 
-Your job is to take raw text extracted from a PDF document and break it into 
-logical, sequential "steps" (like pages in a book) that a student can read 
+SYSTEM_PROMPT = """You are an expert educational content formatter.
+Your job is to take raw text extracted from a PDF document and break it into
+logical, sequential "steps" (like pages in a book) that a student can read
 one at a time on a screen without scrolling.
 
 Rules:
@@ -82,7 +82,10 @@ async def chunk_text_with_openai(raw_text: str, api_key: str) -> list[dict]:
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Please chunk the following document text into steps:\n\n{raw_text[:60000]}"},
+                {
+                    "role": "user",
+                    "content": f"Please chunk the following document text into steps:\n\n{raw_text[:60000]}",
+                },
             ],
             temperature=0.3,
             max_tokens=16000,
@@ -114,14 +117,18 @@ async def chunk_text_with_gemini(raw_text: str, api_key: str) -> list[dict]:
         "contents": [
             {
                 "parts": [
-                    {"text": SYSTEM_PROMPT + "\n\nPlease chunk the following document text into steps:\n\n" + raw_text[:60000]}
+                    {
+                        "text": SYSTEM_PROMPT
+                        + "\n\nPlease chunk the following document text into steps:\n\n"
+                        + raw_text[:60000]
+                    }
                 ]
             }
         ],
         "generationConfig": {
             "temperature": 0.3,
             "maxOutputTokens": 16000,
-        }
+        },
     }
 
     try:
@@ -162,6 +169,7 @@ async def chunk_text_with_ai(raw_text: str, config) -> list[dict]:
       - LEARNHOUSE_GEMINI_API_KEY
     """
     import os
+
     preferred = os.environ.get("LEARNHOUSE_AI_PROVIDER", "openai").lower()
     gemini_key = os.environ.get("LEARNHOUSE_GEMINI_API_KEY")
     openai_key = config.ai_config.openai_api_key
@@ -196,12 +204,16 @@ async def chunk_text_with_ai(raw_text: str, config) -> list[dict]:
         except HTTPException as e:
             last_error = e
             if e.status_code in (429, 502):
-                logger.warning(f"Smart Article: {provider_name} failed ({e.detail}), trying next provider...")
+                logger.warning(
+                    f"Smart Article: {provider_name} failed ({e.detail}), trying next provider..."
+                )
                 continue
             raise  # Re-raise non-recoverable errors
         except Exception as e:
             last_error = e
-            logger.warning(f"Smart Article: {provider_name} failed ({str(e)[:100]}), trying next provider...")
+            logger.warning(
+                f"Smart Article: {provider_name} failed ({str(e)[:100]}), trying next provider..."
+            )
             continue
 
     # All providers failed

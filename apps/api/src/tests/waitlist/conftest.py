@@ -36,18 +36,18 @@ def sample_org(db_session):
     """Create a sample organization for testing"""
     from src.db.organization_config import OrganizationConfig
     from datetime import datetime, timezone
-    
+
     org = Organization(
         id=1,
         name="Test Organization",
         slug="test-org",
         email="test@testorg.com",
-        org_uuid="test-org-uuid"
+        org_uuid="test-org-uuid",
     )
     db_session.add(org)
     db_session.commit()
     db_session.refresh(org)
-    
+
     # Add organization config to prevent "Organization has no config" error
     org_config = OrganizationConfig(
         org_id=org.id,
@@ -55,11 +55,11 @@ def sample_org(db_session):
             "features": {
                 "members": {"enabled": True, "limit": 1000},
                 "courses": {"enabled": True, "limit": 100},
-                "storage": {"enabled": True, "limit": 10000}
+                "storage": {"enabled": True, "limit": 10000},
             }
         },
         creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat()
+        update_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(org_config)
     db_session.commit()
@@ -78,7 +78,7 @@ def sample_user(db_session, sample_org):
         first_name="Test",
         last_name="User",
         user_status=UserStatusEnum.ACTIVE.value,
-        org_id=sample_org.id
+        org_id=sample_org.id,
     )
     db_session.add(user)
     db_session.commit()
@@ -99,7 +99,7 @@ def waitlist_user(db_session, sample_org):
         user_status=UserStatusEnum.WAITLIST.value,
         waitlist_interest="Programming",
         waitlist_joined_date=datetime.now(timezone.utc).isoformat(),
-        org_id=sample_org.id
+        org_id=sample_org.id,
     )
     db_session.add(user)
     db_session.commit()
@@ -117,7 +117,7 @@ def sample_course(db_session, sample_org):
         description="A test course",
         org_id=sample_org.id,
         public=True,
-        open_to_contributors=False
+        open_to_contributors=False,
     )
     db_session.add(course)
     db_session.commit()
@@ -144,7 +144,7 @@ def sample_waitlist_config(db_session, sample_org, sample_user):
         total_registrations=0,
         emails_sent_count=0,
         creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat()
+        update_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(config)
     db_session.commit()
@@ -171,7 +171,7 @@ def expired_waitlist_config(db_session, sample_org, sample_user):
         total_registrations=5,
         emails_sent_count=0,
         creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat()
+        update_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(config)
     db_session.commit()
@@ -190,7 +190,7 @@ def sample_email_log(db_session, waitlist_user, sample_waitlist_config):
         email_sent_date=datetime.now(timezone.utc).isoformat(),
         retry_count=0,
         creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat()
+        update_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(log)
     db_session.commit()
@@ -202,12 +202,9 @@ def sample_email_log(db_session, waitlist_user, sample_waitlist_config):
 def sample_payment_product(db_session, sample_org):
     """Create a sample payment product for testing"""
     from src.db.payments.payments_products import PaymentsProduct
+
     product = PaymentsProduct(
-        id=100,
-        name="Test Package",
-        amount=1000,
-        currency="USD",
-        org_id=sample_org.id
+        id=100, name="Test Package", amount=1000, currency="USD", org_id=sample_org.id
     )
     db_session.add(product)
     db_session.commit()
@@ -216,7 +213,13 @@ def sample_payment_product(db_session, sample_org):
 
 
 @pytest.fixture
-def sample_course_preference(db_session, waitlist_user, sample_payment_product, sample_waitlist_config, sample_org):
+def sample_course_preference(
+    db_session,
+    waitlist_user,
+    sample_payment_product,
+    sample_waitlist_config,
+    sample_org,
+):
     """Create a sample course preference for testing"""
     preference = WaitlistCoursePreference(
         id=1,
@@ -224,7 +227,7 @@ def sample_course_preference(db_session, waitlist_user, sample_payment_product, 
         payments_product_id=sample_payment_product.id,
         waitlist_config_id=sample_waitlist_config.id,
         org_id=sample_org.id,
-        creation_date=datetime.now(timezone.utc).isoformat()
+        creation_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(preference)
     db_session.commit()

@@ -1,9 +1,26 @@
 from fastapi import APIRouter, Depends
 from src.routers import health
 from src.routers import usergroups
-from src.routers import dev, trail, users, auth, orgs, roles, search, waitlist, communications
+from src.routers import (
+    dev,
+    trail,
+    users,
+    auth,
+    orgs,
+    roles,
+    search,
+    waitlist,
+    communications,
+)
 from src.routers.ai import ai
-from src.routers.courses import chapters, collections, courses, assignments, certifications, live_sessions
+from src.routers.courses import (
+    chapters,
+    collections,
+    courses,
+    assignments,
+    certifications,
+    live_sessions,
+)
 from src.routers.courses.activities import activities, blocks
 from src.routers.chat import conversations as chat_conversations
 from src.routers.chat import messages as chat_messages
@@ -46,12 +63,16 @@ v1_router.include_router(
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
-v1_router.include_router(communications.router, prefix="/communications", tags=["communications"])
+v1_router.include_router(
+    communications.router, prefix="/communications", tags=["communications"]
+)
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
 v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
 
 # Chat Routes
-v1_router.include_router(chat_conversations.router, prefix="/chat/conversations", tags=["chat"])
+v1_router.include_router(
+    chat_conversations.router, prefix="/chat/conversations", tags=["chat"]
+)
 v1_router.include_router(chat_messages.router, prefix="/chat/messages", tags=["chat"])
 v1_router.include_router(chat_websocket.router, prefix="/chat", tags=["chat"])
 v1_router.include_router(chat_admin.router, prefix="/chat/admin", tags=["chat-admin"])

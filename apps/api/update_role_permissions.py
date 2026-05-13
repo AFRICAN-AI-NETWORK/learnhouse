@@ -1,11 +1,12 @@
-
 import sys
 import os
+
 sys.path.append(os.getcwd())
 from datetime import datetime
 from sqlmodel import Session, select
 from src.core.events.database import engine
 from src.db.roles import Role, RoleTypeEnum
+
 
 def update_roles():
     with Session(engine) as session:
@@ -16,20 +17,20 @@ def update_roles():
                 "action_create": True,
                 "action_read": True,
                 "action_update": True,
-                "action_delete": False
+                "action_delete": False,
             },
             "users": {
                 "action_create": False,
                 "action_read": True,
                 "action_update": False,
-                "action_delete": False
+                "action_delete": False,
             },
             "activities": {
                 "action_create": False,
                 "action_read": True,
                 "action_update": False,
-                "action_delete": False
-            }
+                "action_delete": False,
+            },
         }
 
         community_manager_rights = {
@@ -38,25 +39,35 @@ def update_roles():
                 "action_create": True,
                 "action_read": True,
                 "action_update": True,
-                "action_delete": True
+                "action_delete": True,
             },
             "activities": {
                 "action_create": True,
                 "action_read": True,
                 "action_update": True,
-                "action_delete": True
+                "action_delete": True,
             },
             "usergroups": {
                 "action_create": False,
                 "action_read": True,
                 "action_update": False,
-                "action_delete": False
-            }
+                "action_delete": False,
+            },
         }
 
         roles_to_update = [
-            ("Support", "support_role", "Role for support staff to manage communications", support_rights),
-            ("Community Manager", "community_manager_role", "Role for managing community activities and communications", community_manager_rights)
+            (
+                "Support",
+                "support_role",
+                "Role for support staff to manage communications",
+                support_rights,
+            ),
+            (
+                "Community Manager",
+                "community_manager_role",
+                "Role for managing community activities and communications",
+                community_manager_rights,
+            ),
         ]
 
         for name, uuid, desc, rights in roles_to_update:
@@ -76,12 +87,16 @@ def update_roles():
                 # Also check by name to avoid duplicates if UUID is different
                 statement_name = select(Role).where(Role.name == name)
                 role_by_name = session.exec(statement_name).first()
-                
+
                 if role_by_name:
-                    print(f"Role with name '{name}' already exists with different UUID: {role_by_name.role_uuid}. Updating it.")
+                    print(
+                        f"Role with name '{name}' already exists with different UUID: {role_by_name.role_uuid}. Updating it."
+                    )
                     role_by_name.rights = rights
                     role_by_name.description = desc
-                    role_by_name.role_uuid = uuid # Force sync UUID if we want it to be predictable
+                    role_by_name.role_uuid = (
+                        uuid  # Force sync UUID if we want it to be predictable
+                    )
                     role_by_name.update_date = now_str
                     session.add(role_by_name)
                 else:
@@ -93,10 +108,10 @@ def update_roles():
                         role_type=RoleTypeEnum.TYPE_GLOBAL,
                         rights=rights,
                         creation_date=now_str,
-                        update_date=now_str
+                        update_date=now_str,
                     )
                     session.add(new_role)
-        
+
         try:
             session.commit()
             print("Roles sync completed successfully.")
@@ -104,6 +119,7 @@ def update_roles():
             session.rollback()
             print(f"Error during commit: {e}")
             raise
+
 
 if __name__ == "__main__":
     update_roles()

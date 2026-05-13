@@ -1573,18 +1573,6 @@
         }
       }
     },
-    "courses": {
-      "title": "コース",
-      "rights_guide": "権利ガイド",
-      "create_course": "コースを作成",
-      "create_new_course": "新しいコースを作成",
-      "no_courses": "コースがまだありません",
-      "create_course_placeholder": "コースを作成してコンテンツを追加しましょう",
-      "no_courses_available": "利用可能なコースがまだありません",
-      "overview_top": {
-        "course_label": "コース",
-        "rights_guide_button": "権利ガイド"
-      },
       "settings": {
         "tabs": {
           "general": "一般",
@@ -1936,5 +1924,3 @@
       }
     }
   }
-}
-

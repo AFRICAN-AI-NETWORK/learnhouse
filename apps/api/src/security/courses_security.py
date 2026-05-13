@@ -94,7 +94,11 @@ from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
 from src.db.users import AnonymousUser, PublicUser
 from src.db.courses.courses import Course
-from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
     authorization_verify_if_element_is_public,
@@ -113,7 +117,7 @@ async def courses_rbac_check(
 ) -> bool:
     """
     Unified RBAC check for courses-related operations.
-    
+
     SECURITY NOTES:
     - READ operations: Allow if user has read access to the course (public courses or user has permissions)
     - COURSE CREATION: Allow if user has instructor role (3) or higher
@@ -121,7 +125,7 @@ async def courses_rbac_check(
     - UPDATE/DELETE operations: Require course ownership (CREATOR, MAINTAINER, CONTRIBUTOR) or admin/maintainer role
     - Course ownership is determined by ResourceAuthor table with ACTIVE status
     - Admin/maintainer roles are checked via authorization_verify_based_on_org_admin_status
-    
+
     Args:
         request: FastAPI request object
         course_uuid: UUID of the course (or "course_x" for course creation)
@@ -129,15 +133,15 @@ async def courses_rbac_check(
         action: Action to perform (create, read, update, delete)
         db_session: Database session
         require_course_ownership: If True, requires course ownership for non-read actions
-    
+
     Returns:
         bool: True if authorized, raises HTTPException otherwise
-    
+
     Raises:
         HTTPException: 403 Forbidden if user lacks required permissions
         HTTPException: 401 Unauthorized if user is anonymous for non-read actions
     """
-    
+
     if action == "read":
         if current_user.id == 0:  # Anonymous user
             return await authorization_verify_if_element_is_public(
@@ -150,17 +154,17 @@ async def courses_rbac_check(
     else:
         # For non-read actions, proceed with strict RBAC checks
         await authorization_verify_if_user_is_anon(current_user.id)
-        
+
         # SECURITY: Special handling for course creation vs course content creation
         if action == "create" and course_uuid == "course_x":
             # This is course creation - allow instructors (role 3) or higher
             # Check if user has instructor role or higher
             from src.security.rbac.rbac import authorization_verify_based_on_roles
-            
+
             has_create_permission = await authorization_verify_based_on_roles(
                 request, current_user.id, "create", "course_x", db_session
             )
-            
+
             if has_create_permission:
                 return True
             else:
@@ -168,30 +172,43 @@ async def courses_rbac_check(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You must have instructor role or higher to create courses",
                 )
-        
+
         # SECURITY: For course content creation and other operations, require course ownership
         # This prevents users without course ownership from creating/modifying course content
         if require_course_ownership or action in ["create", "update", "delete"]:
             # Check if user is course owner (CREATOR, MAINTAINER, or CONTRIBUTOR)
             statement = select(ResourceAuthor).where(
                 ResourceAuthor.resource_uuid == course_uuid,
-                ResourceAuthor.user_id == current_user.id
+                ResourceAuthor.user_id == current_user.id,
             )
             resource_author = db_session.exec(statement).first()
-            
+
             is_course_owner = False
             if resource_author:
-                if ((resource_author.authorship == ResourceAuthorshipEnum.CREATOR) or 
-                    (resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER) or 
-                    (resource_author.authorship == ResourceAuthorshipEnum.CONTRIBUTOR)) and \
-                    resource_author.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE:
+                if (
+                    (
+                        (resource_author.authorship == ResourceAuthorshipEnum.CREATOR)
+                        or (
+                            resource_author.authorship
+                            == ResourceAuthorshipEnum.MAINTAINER
+                        )
+                        or (
+                            resource_author.authorship
+                            == ResourceAuthorshipEnum.CONTRIBUTOR
+                        )
+                    )
+                    and resource_author.authorship_status
+                    == ResourceAuthorshipStatusEnum.ACTIVE
+                ):
                     is_course_owner = True
-            
+
             # Check if user has admin or maintainer role
-            is_admin_or_maintainer = await authorization_verify_based_on_org_admin_status(
-                request, current_user.id, action, course_uuid, db_session
+            is_admin_or_maintainer = (
+                await authorization_verify_based_on_org_admin_status(
+                    request, current_user.id, action, course_uuid, db_session
+                )
             )
-            
+
             # SECURITY: For creating, updating, and deleting course content, user MUST be either:
             # 1. Course owner (CREATOR, MAINTAINER, or CONTRIBUTOR with ACTIVE status)
             # 2. Admin or maintainer role
@@ -223,12 +240,12 @@ async def courses_rbac_check_with_course_lookup(
 ) -> Course:
     """
     Unified RBAC check for courses-related operations with course lookup.
-    
+
     SECURITY NOTES:
     - First validates that the course exists
     - Then performs RBAC check using courses_rbac_check
     - Returns the course object if authorized
-    
+
     Args:
         request: FastAPI request object
         course_uuid: UUID of the course
@@ -236,30 +253,30 @@ async def courses_rbac_check_with_course_lookup(
         action: Action to perform (create, read, update, delete)
         db_session: Database session
         require_course_ownership: If True, requires course ownership for non-read actions
-    
+
     Returns:
         Course: The course object if authorized, raises HTTPException otherwise
-    
+
     Raises:
         HTTPException: 404 Not Found if course doesn't exist
         HTTPException: 403 Forbidden if user lacks required permissions
     """
-    
+
     # First check if course exists
     statement = select(Course).where(Course.course_uuid == course_uuid)
     course = db_session.exec(statement).first()
-    
+
     if not course:
         raise HTTPException(
             status_code=404,
             detail="Course not found",
         )
-    
+
     # Perform RBAC check
     await courses_rbac_check(
         request, course_uuid, current_user, action, db_session, require_course_ownership
     )
-    
+
     return course
 
 
@@ -272,7 +289,7 @@ async def courses_rbac_check_for_activities(
 ) -> bool:
     """
     Specialized RBAC check for activities that requires course ownership for non-read actions.
-    
+
     SECURITY NOTES:
     - Activities are core course content and require strict ownership controls
     - READ: Allow if user has read access to the course
@@ -280,9 +297,14 @@ async def courses_rbac_check_for_activities(
     - This prevents unauthorized users from creating/modifying course activities
     - Instructors can create courses but cannot create activities in courses they don't own
     """
-    
+
     return await courses_rbac_check(
-        request, course_uuid, current_user, action, db_session, require_course_ownership=True
+        request,
+        course_uuid,
+        current_user,
+        action,
+        db_session,
+        require_course_ownership=True,
     )
 
 
@@ -295,7 +317,7 @@ async def courses_rbac_check_for_assignments(
 ) -> bool:
     """
     Specialized RBAC check for assignments that requires course ownership for non-read actions.
-    
+
     SECURITY NOTES:
     - Assignments are course content and require strict ownership controls
     - READ: Allow if user has read access to the course
@@ -303,9 +325,14 @@ async def courses_rbac_check_for_assignments(
     - This prevents unauthorized users from creating/modifying course assignments
     - Instructors can create courses but cannot create assignments in courses they don't own
     """
-    
+
     return await courses_rbac_check(
-        request, course_uuid, current_user, action, db_session, require_course_ownership=True
+        request,
+        course_uuid,
+        current_user,
+        action,
+        db_session,
+        require_course_ownership=True,
     )
 
 
@@ -318,7 +345,7 @@ async def courses_rbac_check_for_chapters(
 ) -> bool:
     """
     Specialized RBAC check for chapters that requires course ownership for non-read actions.
-    
+
     SECURITY NOTES:
     - Chapters are course structure and require strict ownership controls
     - READ: Allow if user has read access to the course
@@ -326,9 +353,14 @@ async def courses_rbac_check_for_chapters(
     - This prevents unauthorized users from creating/modifying course chapters
     - Instructors can create courses but cannot create chapters in courses they don't own
     """
-    
+
     return await courses_rbac_check(
-        request, course_uuid, current_user, action, db_session, require_course_ownership=True
+        request,
+        course_uuid,
+        current_user,
+        action,
+        db_session,
+        require_course_ownership=True,
     )
 
 
@@ -341,7 +373,7 @@ async def courses_rbac_check_for_certifications(
 ) -> bool:
     """
     Specialized RBAC check for certifications that requires course ownership for non-read actions.
-    
+
     SECURITY NOTES:
     - Certifications are course credentials and require strict ownership controls
     - READ: Allow if user has read access to the course
@@ -350,9 +382,14 @@ async def courses_rbac_check_for_certifications(
     - CRITICAL: Without this check, users could create certifications for courses they don't own
     - Instructors can create courses but cannot create certifications in courses they don't own
     """
-    
+
     return await courses_rbac_check(
-        request, course_uuid, current_user, action, db_session, require_course_ownership=True
+        request,
+        course_uuid,
+        current_user,
+        action,
+        db_session,
+        require_course_ownership=True,
     )
 
 
@@ -365,24 +402,24 @@ async def courses_rbac_check_for_collections(
 ) -> bool:
     """
     Specialized RBAC check for collections.
-    
+
     SECURITY NOTES:
     - Collections are course groupings and require appropriate access controls
     - READ: Allow if collection is public or user has read access
     - CREATE/UPDATE/DELETE: Require appropriate permissions based on collection ownership
     - Collections may have different ownership models than courses
-    
+
     Args:
         request: FastAPI request object
         collection_uuid: UUID of the collection
         current_user: Current user (PublicUser or AnonymousUser)
         action: Action to perform (create, read, update, delete)
         db_session: Database session
-    
+
     Returns:
         bool: True if authorized, raises HTTPException otherwise
     """
-    
+
     if action == "read":
         if current_user.id == 0:  # Anonymous user
             res = await authorization_verify_if_element_is_public(
@@ -400,11 +437,11 @@ async def courses_rbac_check_for_collections(
             )
     else:
         await authorization_verify_if_user_is_anon(current_user.id)
-        
+
         return await authorization_verify_based_on_roles_and_authorship(
             request,
             current_user.id,
             action,
             collection_uuid,
             db_session,
-        ) 
+        )

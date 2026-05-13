@@ -1,4 +1,5 @@
 /** @type {import('common.next').NextConfig} */
+const { withSentryConfig } = require('@sentry/nextjs')
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
@@ -62,4 +63,10 @@ if (process.env.NODE_ENV === 'development') {
   )
 }
 
-module.exports = withPWA(nextConfig)
+module.exports = withSentryConfig(withPWA(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  disableLogger: true,
+})

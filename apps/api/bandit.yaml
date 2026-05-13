@@ -1,0 +1,26 @@
+skips: []
+
+tests:
+  - B101
+  - B105
+  - B106
+  - B107
+  - B201
+  - B301
+  - B302
+  - B303
+  - B311
+  - B320
+  - B401
+  - B403
+  - B404
+  - B501
+  - B601
+  - B602
+  - B608
+  - B703
+
+exclude_dirs:
+  - apps/api/.venv
+  - apps/api/migrations
+  - apps/api/src/tests

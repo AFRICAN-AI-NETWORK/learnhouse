@@ -64,5 +64,3 @@ export async function deleteRole(
   const res = await getResponseMetadata(result)
   return res
 }
-
- 

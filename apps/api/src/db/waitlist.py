@@ -6,6 +6,7 @@ from sqlmodel import Field, SQLModel
 
 class UserStatusEnum(str, Enum):
     """User account status enumeration"""
+
     ACTIVE = "ACTIVE"
     WAITLIST = "WAITLIST"
     WAITLIST_ACTIVATED = "WAITLIST_ACTIVATED"
@@ -15,6 +16,7 @@ class UserStatusEnum(str, Enum):
 
 class WaitlistStatusEnum(str, Enum):
     """Waitlist campaign status enumeration"""
+
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
@@ -23,8 +25,10 @@ class WaitlistStatusEnum(str, Enum):
 
 # ==================== WaitlistConfig Models ====================
 
+
 class WaitlistConfigBase(SQLModel):
     """Base model for waitlist configuration"""
+
     name: str
     description: Optional[str] = None
     interest_category: str
@@ -35,8 +39,9 @@ class WaitlistConfigBase(SQLModel):
 
 class WaitlistConfig(WaitlistConfigBase, table=True):
     """Database model for waitlist configuration"""
+
     __tablename__ = "waitlist_config"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     waitlist_uuid: str = Field(unique=True, index=True)
     org_id: int = Field(
@@ -44,7 +49,7 @@ class WaitlistConfig(WaitlistConfigBase, table=True):
     )
     created_by_user_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
     status: str = Field(default=WaitlistStatusEnum.ACTIVE.value)
     total_registrations: int = Field(default=0)
@@ -56,6 +61,7 @@ class WaitlistConfig(WaitlistConfigBase, table=True):
 
 class WaitlistConfigCreate(SQLModel):
     """Request model for creating a waitlist"""
+
     org_id: int
     name: str
     interest_category: str
@@ -67,6 +73,7 @@ class WaitlistConfigCreate(SQLModel):
 
 class WaitlistConfigUpdate(SQLModel):
     """Request model for updating a waitlist"""
+
     name: Optional[str] = None
     description: Optional[str] = None
     launch_datetime: Optional[str] = None
@@ -77,6 +84,7 @@ class WaitlistConfigUpdate(SQLModel):
 
 class WaitlistConfigRead(WaitlistConfigBase):
     """Response model for reading waitlist configuration"""
+
     id: int
     waitlist_uuid: str
     org_id: int
@@ -91,8 +99,10 @@ class WaitlistConfigRead(WaitlistConfigBase):
 
 # ==================== WaitlistEmailLog Models ====================
 
+
 class WaitlistEmailLogBase(SQLModel):
     """Base model for email log tracking"""
+
     email_sent: bool = False
     email_error: Optional[str] = None
     retry_count: int = 0
@@ -100,8 +110,9 @@ class WaitlistEmailLogBase(SQLModel):
 
 class WaitlistEmailLog(WaitlistEmailLogBase, table=True):
     """Database model for tracking email delivery"""
+
     __tablename__ = "waitlist_email_log"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     waitlist_config_id: int = Field(
         sa_column=Column(Integer, ForeignKey("waitlist_config.id", ondelete="CASCADE"))
@@ -116,12 +127,14 @@ class WaitlistEmailLog(WaitlistEmailLogBase, table=True):
 
 class WaitlistEmailLogCreate(SQLModel):
     """Request model for creating email log entry"""
+
     waitlist_config_id: int
     user_id: int
 
 
 class WaitlistEmailLogRead(WaitlistEmailLogBase):
     """Response model for reading email log"""
+
     id: int
     waitlist_config_id: int
     user_id: int
@@ -132,15 +145,18 @@ class WaitlistEmailLogRead(WaitlistEmailLogBase):
 
 # ==================== WaitlistCoursePreference Models ====================
 
+
 class WaitlistCoursePreferenceBase(SQLModel):
     """Base model for course preference tracking"""
+
     pass
 
 
 class WaitlistCoursePreference(WaitlistCoursePreferenceBase, table=True):
     """Database model for storing user course preferences during waitlist registration"""
+
     __tablename__ = "waitlist_course_preference"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
@@ -159,6 +175,7 @@ class WaitlistCoursePreference(WaitlistCoursePreferenceBase, table=True):
 
 class WaitlistCoursePreferenceCreate(SQLModel):
     """Request model for creating course preference"""
+
     user_id: int
     payments_product_id: int
     waitlist_config_id: int
@@ -167,6 +184,7 @@ class WaitlistCoursePreferenceCreate(SQLModel):
 
 class WaitlistCoursePreferenceRead(WaitlistCoursePreferenceBase):
     """Response model for reading course preference"""
+
     id: int
     user_id: int
     payments_product_id: int

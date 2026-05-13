@@ -37,7 +37,7 @@ def _safe_asyncio_run(coro):
     """
     Call asyncio.run() only when there is NO running event loop.
 
-    
+
     """
     has_loop = True
     try:
@@ -57,6 +57,7 @@ def _safe_asyncio_run(coro):
 # ---------------------------------------------------------------------------
 # Sync helpers – these run inside _job_executor via loop.run_in_executor()
 # ---------------------------------------------------------------------------
+
 
 def _sync_process_activations() -> dict:
     """
@@ -93,9 +94,7 @@ async def run_waitlist_activation_job():
     logger.info("Waitlist activation job started")
     try:
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            _job_executor, _sync_process_activations
-        )
+        result = await loop.run_in_executor(_job_executor, _sync_process_activations)
         logger.info(
             "Waitlist activation job completed in %.2fs",
             result["elapsed_s"],
@@ -112,9 +111,7 @@ async def run_retry_failed_emails_job():
     logger.info("Retry failed emails job started")
     try:
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            _job_executor, _sync_retry_failed_emails
-        )
+        result = await loop.run_in_executor(_job_executor, _sync_retry_failed_emails)
         logger.info(
             "Retry failed emails job completed in %.2fs",
             result["elapsed_s"],

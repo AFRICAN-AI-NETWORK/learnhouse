@@ -2,6 +2,7 @@
 Referral API Router
 Handles all referral-related endpoints following RESTful principles
 """
+
 import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, Request
@@ -38,7 +39,7 @@ async def api_generate_referral_code(
 ):
     """
     Generate permanent referral code for current user
-    
+
     Returns existing code if already generated (idempotent)
     """
     return await create_referral_code_for_user(
@@ -55,7 +56,7 @@ async def api_get_my_referral_code(
 ):
     """
     Get current user's referral code if it exists
-    
+
     Returns null if user hasn't generated a code yet
     """
     return await get_my_referral_code(request, org_id, current_user, db_session)
@@ -70,7 +71,7 @@ async def api_get_commission_balance(
 ):
     """
     Get current user's commission balance breakdown
-    
+
     Returns:
         - total_balance: Total accumulated commissions
         - eligible_for_payout: Amount available for withdrawal
@@ -90,10 +91,10 @@ async def api_get_commission_history(
 ):
     """
     Get commission history for current user
-    
+
     Args:
         limit: Maximum number of records to return (default 50)
-        
+
     Returns list of commission records with:
         - referred_user_email
         - course_name
@@ -117,7 +118,7 @@ async def api_request_payout(
 ):
     """
     Request payout of accumulated commissions
-    
+
     Args:
         amount: Amount to withdraw (minimum $1.00)
         bank_details: Bank account information for payout
@@ -126,7 +127,7 @@ async def api_request_payout(
             - account_holder: Account holder name
             - account_type: "savings" or "current"
             - bank_code: Paystack bank code (optional)
-            
+
     Returns:
         Payout request with status 'requested'
         Processing happens in background
@@ -146,16 +147,17 @@ async def api_get_payout_history(
 ):
     """
     Get payout request history for current user
-    
+
     Args:
         limit: Maximum number of records to return (default 20)
-        
+
     Returns list of payout requests with status and dates
     """
     return await get_payout_history(request, org_id, current_user, db_session, limit)
 
 
 # ==================== Admin Endpoints ====================
+
 
 def _require_admin(current_user, org_id, db_session):
     """Helper to enforce admin/maintainer role for an org."""
@@ -217,23 +219,25 @@ async def api_get_flagged_referrals(
         # Fetch referred user info
         referred = db_session.get(User, r.referred_user_id)
         referrer = db_session.get(User, r.referrer_user_id)
-        results.append({
-            "id": r.id,
-            "referred_user": {
-                "id": r.referred_user_id,
-                "username": referred.username if referred else "unknown",
-                "email": referred.email if referred else "unknown",
-            },
-            "referrer_user": {
-                "id": r.referrer_user_id,
-                "username": referrer.username if referrer else "unknown",
-                "email": referrer.email if referrer else "unknown",
-            },
-            "fraud_score": r.fraud_score,
-            "ip_address": r.ip_address,
-            "device_id": r.device_id,
-            "signup_date": str(r.signup_date),
-        })
+        results.append(
+            {
+                "id": r.id,
+                "referred_user": {
+                    "id": r.referred_user_id,
+                    "username": referred.username if referred else "unknown",
+                    "email": referred.email if referred else "unknown",
+                },
+                "referrer_user": {
+                    "id": r.referrer_user_id,
+                    "username": referrer.username if referrer else "unknown",
+                    "email": referrer.email if referrer else "unknown",
+                },
+                "fraud_score": r.fraud_score,
+                "ip_address": r.ip_address,
+                "device_id": r.device_id,
+                "signup_date": str(r.signup_date),
+            }
+        )
 
     return {"flagged_count": len(results), "records": results}
 
@@ -270,18 +274,20 @@ async def api_get_pending_payouts(
     results = []
     for p in payouts:
         user = db_session.get(User, p.referrer_user_id)
-        results.append({
-            "id": p.id,
-            "referrer": {
-                "id": p.referrer_user_id,
-                "username": user.username if user else "unknown",
-                "email": user.email if user else "unknown",
-            },
-            "amount": p.total_amount,
-            "currency": p.currency,
-            "status": p.status,
-            "request_date": str(p.request_date),
-        })
+        results.append(
+            {
+                "id": p.id,
+                "referrer": {
+                    "id": p.referrer_user_id,
+                    "username": user.username if user else "unknown",
+                    "email": user.email if user else "unknown",
+                },
+                "amount": p.total_amount,
+                "currency": p.currency,
+                "status": p.status,
+                "request_date": str(p.request_date),
+            }
+        )
 
     return {"pending_count": len(results), "payouts": results}
 
@@ -311,7 +317,7 @@ async def api_approve_payout(
     if payout.status != PayoutStatus.REQUESTED:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot approve payout with status '{payout.status}'"
+            detail=f"Cannot approve payout with status '{payout.status}'",
         )
 
     payout.status = PayoutStatus.APPROVED
@@ -321,7 +327,9 @@ async def api_approve_payout(
 
     logger.info(
         "Payout %d approved by admin %d for org %d",
-        payout_id, current_user.id, org_id,
+        payout_id,
+        current_user.id,
+        org_id,
     )
     return {"message": "Payout approved", "payout_id": payout_id, "status": "approved"}
 
@@ -351,7 +359,7 @@ async def api_reject_payout(
     if payout.status not in (PayoutStatus.REQUESTED, PayoutStatus.APPROVED):
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot reject payout with status '{payout.status}'"
+            detail=f"Cannot reject payout with status '{payout.status}'",
         )
 
     payout.status = PayoutStatus.FAILED
@@ -362,7 +370,10 @@ async def api_reject_payout(
 
     logger.info(
         "Payout %d rejected by admin %d for org %d: %s",
-        payout_id, current_user.id, org_id, reason,
+        payout_id,
+        current_user.id,
+        org_id,
+        reason,
     )
     return {"message": "Payout rejected", "payout_id": payout_id, "reason": reason}
 
@@ -417,12 +428,14 @@ async def api_get_referral_stats(
     leaderboard = []
     for referrer_id, count in rows:
         user = db_session.get(User, referrer_id)
-        leaderboard.append({
-            "user_id": referrer_id,
-            "username": user.username if user else "unknown",
-            "email": user.email if user else "unknown",
-            "referral_count": count,
-        })
+        leaderboard.append(
+            {
+                "user_id": referrer_id,
+                "username": user.username if user else "unknown",
+                "email": user.email if user else "unknown",
+                "referral_count": count,
+            }
+        )
 
     return {
         "total_referrals": total_referrals,

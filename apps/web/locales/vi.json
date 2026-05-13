@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "LearnHouse University"
     },
-    "courses": {
-      "title": "Khóa học",
-      "rights_guide": "Hướng dẫn về quyền hạn",
-      "create_course": "Tạo khóa học",
-      "create_new_course": "Tạo khóa học mới",
-      "no_courses": "Chưa có khóa học nào",
-      "create_course_placeholder": "Tạo khóa học để thêm nội dung",
-      "no_courses_available": "Hiện không có khóa học nào"
-    },
     "organization": {
       "settings": {
         "title": "Cài đặt tổ chức",

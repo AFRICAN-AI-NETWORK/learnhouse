@@ -6,7 +6,6 @@ from src.db.roles import RoleRead
 from src.security.phone_validation import validate_e164_phone_number
 
 
-
 class UserBase(SQLModel):
     username: str
     first_name: str
@@ -21,6 +20,7 @@ class UserBase(SQLModel):
     @validator("phone_number", pre=True, always=False)
     def validate_phone_number(cls, value):
         return validate_e164_phone_number(value, required=False)
+
 
 class UserCreate(UserBase):
     first_name: str = ""
@@ -72,6 +72,7 @@ class PublicUser(UserRead):
 
 class UserRoleWithOrg(BaseModel):
     from src.db.organizations import OrganizationRead
+
     role: RoleRead
     org: OrganizationRead
 
@@ -85,6 +86,7 @@ class AnonymousUser(SQLModel):
     id: int = 0
     user_uuid: str = "user_anonymous"
     username: str = "anonymous"
+
 
 class InternalUser(SQLModel):
     id: int = 0

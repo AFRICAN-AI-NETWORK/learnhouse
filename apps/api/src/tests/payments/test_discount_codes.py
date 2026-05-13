@@ -11,6 +11,7 @@ Tests cover all 8 critical security and business logic scenarios:
 7. Refund handling
 8. Course-only restriction
 """
+
 import pytest
 import asyncio
 from datetime import datetime, timedelta
@@ -44,7 +45,7 @@ class TestDiscountCodeValidation:
         db_session: Session,
         expired_discount_code: DiscountCode,
         mock_user: User,
-        mock_course: Course
+        mock_course: Course,
     ):
         """
         CRITICAL TEST #1: Expired Code Rejection
@@ -57,12 +58,15 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=mock_course.id,
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "expired" in error_message
-        assert expired_discount_code.code.lower() in error_message or "discount" in error_message
+        assert (
+            expired_discount_code.code.lower() in error_message
+            or "discount" in error_message
+        )
 
     @pytest.mark.asyncio
     async def test_max_uses_enforcement(
@@ -70,7 +74,7 @@ class TestDiscountCodeValidation:
         db_session: Session,
         max_uses_discount_code: DiscountCode,
         mock_user: User,
-        mock_course: Course
+        mock_course: Course,
     ):
         """
         CRITICAL TEST #2: Max Uses Enforcement
@@ -79,7 +83,7 @@ class TestDiscountCodeValidation:
         # Code is already at max (current_uses=100, max_uses=100)
         assert max_uses_discount_code.current_uses == 100
         assert max_uses_discount_code.max_uses == 100
-        
+
         # Attempt to use code at max capacity
         with pytest.raises(DiscountValidationError) as exc_info:
             await validate_discount_code(
@@ -88,9 +92,9 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=mock_course.id,
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "maximum" in error_message or "max" in error_message
         assert "usage" in error_message or "limit" in error_message
@@ -102,7 +106,7 @@ class TestDiscountCodeValidation:
         sample_discount_code: DiscountCode,
         mock_user: User,
         mock_course: Course,
-        mock_payment_user
+        mock_payment_user,
     ):
         """
         CRITICAL TEST #3: Duplicate Usage Prevention
@@ -117,9 +121,9 @@ class TestDiscountCodeValidation:
             payment_user_id=mock_payment_user.id,
             original_amount=500.0,
             discount_amount=100.0,
-            final_amount=400.0
+            final_amount=400.0,
         )
-        
+
         # Attempt to use same code for same course again
         with pytest.raises(DiscountValidationError) as exc_info:
             await validate_discount_code(
@@ -129,18 +133,15 @@ class TestDiscountCodeValidation:
                 course_id=mock_course.id,
                 original_amount=500.0,
                 db_session=db_session,
-                check_usage=True  # Enable duplicate check
+                check_usage=True,  # Enable duplicate check
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "already used" in error_message or "already" in error_message
 
     @pytest.mark.asyncio
     async def test_course_only_restriction(
-        self,
-        db_session: Session,
-        sample_discount_code: DiscountCode,
-        mock_user: User
+        self, db_session: Session, sample_discount_code: DiscountCode, mock_user: User
     ):
         """
         CRITICAL TEST #8: Course-Only Restriction
@@ -154,12 +155,12 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=None,  # No course_id
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "course" in error_message
-        
+
         # Test with course_id = 0
         with pytest.raises(DiscountValidationError) as exc_info:
             await validate_discount_code(
@@ -168,9 +169,9 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=0,  # Invalid course_id
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "course" in error_message
 
@@ -180,16 +181,16 @@ class TestDiscountCodeValidation:
         db_session: Session,
         mock_org: Organization,
         mock_user: User,
-        mock_course: Course
+        mock_course: Course,
     ):
         """Test that inactive (deactivated) codes are rejected."""
         inactive_code = create_discount_code_helper(
             db_session=db_session,
             org_id=mock_org.id,
             code="INACTIVE2026",
-            is_active=False  # Deactivated
+            is_active=False,  # Deactivated
         )
-        
+
         with pytest.raises(DiscountValidationError) as exc_info:
             await validate_discount_code(
                 code=inactive_code.code,
@@ -197,9 +198,9 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=mock_course.id,
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "invalid" in error_message or "inactive" in error_message
 
@@ -209,7 +210,7 @@ class TestDiscountCodeValidation:
         db_session: Session,
         mock_org: Organization,
         mock_user: User,
-        mock_course: Course
+        mock_course: Course,
     ):
         """Test that nonexistent codes are rejected."""
         with pytest.raises(DiscountValidationError) as exc_info:
@@ -219,9 +220,9 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=mock_course.id,
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "invalid" in error_message
 
@@ -231,7 +232,7 @@ class TestDiscountCodeValidation:
         db_session: Session,
         mock_org: Organization,
         mock_user: User,
-        mock_course: Course
+        mock_course: Course,
     ):
         """Test that codes with future valid_from dates are rejected."""
         future_code = DiscountCode(
@@ -244,11 +245,11 @@ class TestDiscountCodeValidation:
             valid_from=datetime.utcnow() + timedelta(days=7),  # Starts in 7 days
             valid_until=datetime.utcnow() + timedelta(days=30),
             is_active=True,
-            description="Future-dated code"
+            description="Future-dated code",
         )
         db_session.add(future_code)
         db_session.commit()
-        
+
         with pytest.raises(DiscountValidationError) as exc_info:
             await validate_discount_code(
                 code=future_code.code,
@@ -256,9 +257,9 @@ class TestDiscountCodeValidation:
                 user_id=mock_user.id,
                 course_id=mock_course.id,
                 original_amount=500.0,
-                db_session=db_session
+                db_session=db_session,
             )
-        
+
         error_message = str(exc_info.value).lower()
         assert "not yet valid" in error_message or "valid from" in error_message
 
@@ -274,11 +275,11 @@ class TestPriceCalculation:
         original_amount = 500.0
         discount_type = DiscountTypeEnum.PERCENTAGE
         discount_value = 20.0  # 20%
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         assert discount_amount == 100.0  # 20% of 500
         assert final_amount == 400.0  # 500 - 100
 
@@ -287,11 +288,11 @@ class TestPriceCalculation:
         original_amount = 200.0
         discount_type = DiscountTypeEnum.FIXED
         discount_value = 50.0  # $50 off
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         assert discount_amount == 50.0
         assert final_amount == 150.0  # 200 - 50
 
@@ -300,11 +301,11 @@ class TestPriceCalculation:
         original_amount = 300.0
         discount_type = DiscountTypeEnum.PERCENTAGE
         discount_value = 100.0  # 100% off
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         assert discount_amount == 300.0
         assert final_amount == 0.0
 
@@ -313,11 +314,11 @@ class TestPriceCalculation:
         original_amount = 100.0
         discount_type = DiscountTypeEnum.FIXED
         discount_value = 150.0  # $150 off on $100 item
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         # Should cap at original amount
         assert discount_amount == 100.0
         assert final_amount == 0.0
@@ -328,9 +329,9 @@ class TestPriceCalculation:
             calculate_discounted_amount(
                 500.0,
                 DiscountTypeEnum.PERCENTAGE,
-                150.0  # 150% is invalid
+                150.0,  # 150% is invalid
             )
-        
+
         assert "between 0 and 100" in str(exc_info.value)
 
     def test_negative_discount_value_error(self):
@@ -339,14 +340,14 @@ class TestPriceCalculation:
             calculate_discounted_amount(
                 500.0,
                 DiscountTypeEnum.PERCENTAGE,
-                -10.0  # Negative percentage
+                -10.0,  # Negative percentage
             )
-        
+
         with pytest.raises(DiscountValidationError):
             calculate_discounted_amount(
                 500.0,
                 DiscountTypeEnum.FIXED,
-                -50.0  # Negative fixed amount
+                -50.0,  # Negative fixed amount
             )
 
 
@@ -354,11 +355,13 @@ class TestRaceConditions:
     """Tests for atomic operations and race condition prevention."""
 
     @pytest.mark.asyncio
-    async def test_concurrent_max_uses_enforcement(self, db_session: Session, mock_org: Organization):
+    async def test_concurrent_max_uses_enforcement(
+        self, db_session: Session, mock_org: Organization
+    ):
         """
         CRITICAL TEST #4: Race Condition
         50 concurrent payments with max_uses=10 → Only 10 succeed.
-        
+
         This tests the atomic SQL operation that prevents overselling.
         """
         # Create code with max_uses=10
@@ -367,52 +370,53 @@ class TestRaceConditions:
             org_id=mock_org.id,
             code="RACE2026",
             max_uses=10,
-            current_uses=0
+            current_uses=0,
         )
-        
+
         # Spawn 50 concurrent tasks trying to increment usage
         async def attempt_increment():
             # Each task needs its own session for true concurrency
             try:
-                return await increment_discount_usage_atomic(code.id, db_session, auto_commit=False)
+                return await increment_discount_usage_atomic(
+                    code.id, db_session, auto_commit=False
+                )
             except Exception:
                 return False
-        
+
         # Execute 50 concurrent attempts
         results = await asyncio.gather(*[attempt_increment() for _ in range(50)])
-        
+
         # Assert only 10 succeeded (max_uses=10)
         successful = sum(1 for r in results if r is True)
         assert successful == 10, f"Expected 10 successful increments, got {successful}"
-        
+
         # Verify current_uses = 10 (not 11 or more)
         # Re-query from DB since atomic function commits internally
         from sqlmodel import select
+
         db_session.commit()  # Commit to clear session state
-        updated_code = db_session.exec(select(DiscountCode).where(DiscountCode.id == code.id)).first()
-        assert updated_code.current_uses == 10, f"Expected current_uses=10, got {updated_code.current_uses}"
+        updated_code = db_session.exec(
+            select(DiscountCode).where(DiscountCode.id == code.id)
+        ).first()
+        assert (
+            updated_code.current_uses == 10
+        ), f"Expected current_uses=10, got {updated_code.current_uses}"
 
     @pytest.mark.asyncio
     async def test_atomic_increment_returns_false_at_limit(
-        self,
-        db_session: Session,
-        max_uses_discount_code: DiscountCode
+        self, db_session: Session, max_uses_discount_code: DiscountCode
     ):
         """Test that atomic increment returns False when max uses reached."""
         # Code is already at max (100/100)
         result = await increment_discount_usage_atomic(
-            max_uses_discount_code.id,
-            db_session,
-            auto_commit=False
+            max_uses_discount_code.id, db_session, auto_commit=False
         )
-        
+
         assert result is False  # Should fail because already at max
 
     @pytest.mark.asyncio
     async def test_atomic_increment_unlimited_uses(
-        self,
-        db_session: Session,
-        mock_org: Organization
+        self, db_session: Session, mock_org: Organization
     ):
         """Test atomic increment with unlimited uses (max_uses=None)."""
         unlimited_code = create_discount_code_helper(
@@ -420,22 +424,23 @@ class TestRaceConditions:
             org_id=mock_org.id,
             code="UNLIMITED2026",
             max_uses=None,  # Unlimited
-            current_uses=0
+            current_uses=0,
         )
-        
+
         # Should succeed multiple times
         for i in range(5):
             result = await increment_discount_usage_atomic(
-                unlimited_code.id,
-                db_session,
-                auto_commit=False
+                unlimited_code.id, db_session, auto_commit=False
             )
             assert result is True
-        
+
         # Re-query to get updated count
         from sqlmodel import select
+
         db_session.commit()  # Commit to clear session state
-        updated_code = db_session.exec(select(DiscountCode).where(DiscountCode.id == unlimited_code.id)).first()
+        updated_code = db_session.exec(
+            select(DiscountCode).where(DiscountCode.id == unlimited_code.id)
+        ).first()
         assert updated_code.current_uses == 5
 
 
@@ -449,17 +454,17 @@ class TestWebhookIdempotency:
         sample_discount_code: DiscountCode,
         mock_user: User,
         mock_course: Course,
-        mock_payment_user
+        mock_payment_user,
     ):
         """
         CRITICAL TEST #5: Webhook Idempotency
         Same webhook sent 3 times → Only 1 usage record.
-        
+
         This tests the idempotency check that prevents duplicate records
         when Paystack retries webhooks.
         """
         payment_user_id = mock_payment_user.id
-        
+
         # First webhook - creates record
         usage1 = await record_discount_usage(
             discount_code_id=sample_discount_code.id,
@@ -469,9 +474,9 @@ class TestWebhookIdempotency:
             original_amount=500.0,
             discount_amount=100.0,
             final_amount=400.0,
-            db_session=db_session
+            db_session=db_session,
         )
-        
+
         # Retry #1 - should return existing record
         usage2 = await record_discount_usage(
             discount_code_id=sample_discount_code.id,
@@ -481,9 +486,9 @@ class TestWebhookIdempotency:
             original_amount=500.0,
             discount_amount=100.0,
             final_amount=400.0,
-            db_session=db_session
+            db_session=db_session,
         )
-        
+
         # Retry #2 - should return existing record
         usage3 = await record_discount_usage(
             discount_code_id=sample_discount_code.id,
@@ -493,12 +498,12 @@ class TestWebhookIdempotency:
             original_amount=500.0,
             discount_amount=100.0,
             final_amount=400.0,
-            db_session=db_session
+            db_session=db_session,
         )
-        
+
         # All should be the same instance (same ID)
         assert usage1.id == usage2.id == usage3.id
-        
+
         # Only 1 record in database
         all_usage = db_session.exec(select(DiscountCodeUsage)).all()
         assert len(all_usage) == 1
@@ -511,7 +516,7 @@ class TestWebhookIdempotency:
         sample_discount_code: DiscountCode,
         mock_user: User,
         mock_course: Course,
-        mock_payments_product
+        mock_payments_product,
     ):
         """Test that usage recording creates proper database record."""
         # Create a payment user for this test
@@ -519,11 +524,11 @@ class TestWebhookIdempotency:
             id=77,
             user_id=mock_user.id,
             org_id=mock_payments_product.org_id,
-            payment_product_id=mock_payments_product.id
+            payment_product_id=mock_payments_product.id,
         )
         db_session.add(payment)
         db_session.commit()
-        
+
         usage = await record_discount_usage(
             discount_code_id=sample_discount_code.id,
             user_id=mock_user.id,
@@ -532,9 +537,9 @@ class TestWebhookIdempotency:
             original_amount=500.0,
             discount_amount=100.0,
             final_amount=400.0,
-            db_session=db_session
+            db_session=db_session,
         )
-        
+
         assert usage.id is not None
         assert usage.discount_code_id == sample_discount_code.id
         assert usage.user_id == mock_user.id
@@ -550,7 +555,7 @@ class TestWebhookIdempotency:
         sample_discount_code: DiscountCode,
         mock_user: User,
         mock_course: Course,
-        mock_payments_product
+        mock_payments_product,
     ):
         """Test that different payment_user_ids create separate records."""
         # Create two different payment records
@@ -558,18 +563,18 @@ class TestWebhookIdempotency:
             id=101,
             user_id=mock_user.id,
             org_id=mock_payments_product.org_id,
-            payment_product_id=mock_payments_product.id
+            payment_product_id=mock_payments_product.id,
         )
         payment2 = PaymentsUser(
             id=102,
             user_id=mock_user.id,
             org_id=mock_payments_product.org_id,
-            payment_product_id=mock_payments_product.id
+            payment_product_id=mock_payments_product.id,
         )
         db_session.add(payment1)
         db_session.add(payment2)
         db_session.commit()
-        
+
         usage1 = await record_discount_usage(
             discount_code_id=sample_discount_code.id,
             user_id=mock_user.id,
@@ -578,9 +583,9 @@ class TestWebhookIdempotency:
             original_amount=500.0,
             discount_amount=100.0,
             final_amount=400.0,
-            db_session=db_session
+            db_session=db_session,
         )
-        
+
         usage2 = await record_discount_usage(
             discount_code_id=sample_discount_code.id,
             user_id=mock_user.id,
@@ -589,9 +594,9 @@ class TestWebhookIdempotency:
             original_amount=500.0,
             discount_amount=100.0,
             final_amount=400.0,
-            db_session=db_session
+            db_session=db_session,
         )
-        
+
         # Should create two separate records
         assert usage1.id != usage2.id
         all_usage = db_session.exec(select(DiscountCodeUsage)).all()
@@ -608,12 +613,12 @@ class TestRefundHandling:
         sample_discount_code: DiscountCode,
         mock_user: User,
         mock_course: Course,
-        mock_payments_product
+        mock_payments_product,
     ):
         """
         CRITICAL TEST #7: Refund Handling
         Refund uses final_amount (discounted price) not original_amount.
-        
+
         This ensures refunds process the correct amount that was actually paid.
         """
         # Create payment with discount
@@ -622,11 +627,11 @@ class TestRefundHandling:
             user_id=mock_user.id,
             org_id=mock_payments_product.org_id,
             payment_product_id=mock_payments_product.id,
-            final_amount=400.0  # What was actually paid after discount
+            final_amount=400.0,  # What was actually paid after discount
         )
         db_session.add(payment)
         db_session.commit()
-        
+
         # Create usage record
         usage = create_usage_record_helper(
             db_session=db_session,
@@ -636,19 +641,19 @@ class TestRefundHandling:
             payment_user_id=payment.id,
             original_amount=500.0,  # Before discount
             discount_amount=100.0,
-            final_amount=400.0  # After discount (what was actually paid)
+            final_amount=400.0,  # After discount (what was actually paid)
         )
-        
+
         # Process refund
         result = await decrement_discount_usage(
             discount_code_id=sample_discount_code.id,
             payment_user_id=payment.id,
             db_session=db_session,
-            auto_commit=False
+            auto_commit=False,
         )
-        
+
         assert result is True
-        
+
         # Usage record should be deleted
         deleted_usage = db_session.exec(
             select(DiscountCodeUsage).where(DiscountCodeUsage.id == usage.id)
@@ -662,60 +667,61 @@ class TestRefundHandling:
         sample_discount_code: DiscountCode,
         mock_user: User,
         mock_course: Course,
-        mock_payments_product
+        mock_payments_product,
     ):
         """Test that refund decrements the current_uses counter."""
         # Set current usage to 5
         sample_discount_code.current_uses = 5
         db_session.commit()
-        
+
         # Create payment and usage
         payment = PaymentsUser(
             id=201,
             user_id=mock_user.id,
             org_id=mock_payments_product.org_id,
-            payment_product_id=mock_payments_product.id
+            payment_product_id=mock_payments_product.id,
         )
         db_session.add(payment)
         db_session.commit()
-        
+
         create_usage_record_helper(
             db_session=db_session,
             discount_code_id=sample_discount_code.id,
             user_id=mock_user.id,
             course_id=mock_course.id,
-            payment_user_id=payment.id
+            payment_user_id=payment.id,
         )
-        
+
         # Process refund
         result = await decrement_discount_usage(
             discount_code_id=sample_discount_code.id,
             payment_user_id=payment.id,
             db_session=db_session,
-            auto_commit=False
+            auto_commit=False,
         )
-        
+
         assert result is True
-        
+
         # Counter should be decremented
         # Re-query from DB since decrement function commits internally
         from sqlmodel import select
+
         db_session.commit()  # Commit to clear session state
-        updated_code = db_session.exec(select(DiscountCode).where(DiscountCode.id == sample_discount_code.id)).first()
+        updated_code = db_session.exec(
+            select(DiscountCode).where(DiscountCode.id == sample_discount_code.id)
+        ).first()
         assert updated_code.current_uses == 4  # 5 - 1
 
     @pytest.mark.asyncio
     async def test_refund_nonexistent_usage_returns_false(
-        self,
-        db_session: Session,
-        sample_discount_code: DiscountCode
+        self, db_session: Session, sample_discount_code: DiscountCode
     ):
         """Test that refunding nonexistent usage returns False."""
         result = await decrement_discount_usage(
             discount_code_id=sample_discount_code.id,
             payment_user_id=999999,  # Doesn't exist
             db_session=db_session,
-            auto_commit=False
+            auto_commit=False,
         )
-        
+
         assert result is False

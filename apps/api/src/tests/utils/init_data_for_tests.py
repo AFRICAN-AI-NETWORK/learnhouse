@@ -9,6 +9,7 @@ from src.services.setup.setup import (
     install_default_elements,
 )
 
+
 # TODO: Depreceated and need to be removed and remade
 async def create_initial_data_for_tests(db_session: Session):
     # Install default elements
@@ -54,7 +55,7 @@ async def create_initial_data_for_tests(db_session: Session):
     statement = select(UserOrganization).join(User).where(User.username == "robin")
     user_org = db_session.exec(statement).first()
 
-    user_org.role_id = 3 # type: ignore
+    user_org.role_id = 3  # type: ignore
     db_session.add(user_org)
     db_session.commit()
 

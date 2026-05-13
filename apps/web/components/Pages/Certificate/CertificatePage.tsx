@@ -140,7 +140,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           color: ${theme.secondary};
           font-weight: 500;
         ">ID: ${certificateId}</div>
-        
+
         <div style="
           position: absolute;
           top: 20px;
@@ -156,7 +156,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         ">
           <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
         </div>
-        
+
         <div style="
           display: flex;
           align-items: center;
@@ -173,7 +173,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           Certificate
           <div style="width: 24px; height: 1px; background: linear-gradient(90deg, transparent, ${theme.secondary}, transparent);"></div>
         </div>
-        
+
         <div style="
           width: 80px;
           height: 80px;
@@ -186,7 +186,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           font-size: 40px;
           line-height: 1;
         ">🏆</div>
-        
+
         <div style="
           font-size: 32px;
           font-weight: bold;
@@ -195,7 +195,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           line-height: 1.2;
           max-width: 600px;
         ">${userCertificate.certification.config.certification_name}</div>
-        
+
         <div style="
           font-size: 18px;
           color: #6b7280;
@@ -203,7 +203,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           line-height: 1.5;
           max-width: 500px;
         ">${userCertificate.certification.config.certification_description || 'This is to certify that the course has been successfully completed.'}</div>
-        
+
         <div style="
           display: flex;
           align-items: center;
@@ -215,7 +215,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
           <div style="width: 4px; height: 4px; background: ${theme.primary}; border-radius: 50%; opacity: 0.6;"></div>
           <div style="width: 8px; height: 1px; background: ${theme.secondary}; opacity: 0.5;"></div>
         </div>
-        
+
         <div style="
           display: inline-flex;
           align-items: center;
@@ -262,7 +262,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
                               : 'Course Completion'
           }</span>
         </div>
-        
+
         <div style="
           margin-top: 30px;
           padding: 24px;
@@ -291,7 +291,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
               : ''
           }
         </div>
-        
+
         <div style="
           margin-top: 20px;
           font-size: 12px;

@@ -2,9 +2,9 @@
 import React from 'react'
 import { getUriWithOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { 
-  Shield, 
-  Users, 
+import {
+  Shield,
+  Users,
   Crown,
   User,
   UserCog,
@@ -85,7 +85,7 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
     <div className="min-h-screen bg-[#f8f8f8] flex items-center justify-center p-6 pt-16 w-full">
       <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Icon */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
@@ -96,13 +96,13 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
         </motion.div>
 
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="text-center mb-12"
         >
-          <Link 
+          <Link
             href={getUriWithOrg(org?.slug, '/dash')}
             className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
           >
@@ -118,7 +118,7 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
         </motion.div>
 
         {/* Role Hierarchy Section */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -156,7 +156,7 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
         </motion.section>
 
         {/* Course Ownership Types */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -197,4 +197,4 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
   )
 }
 
-export default RightsDocumentation 
+export default RightsDocumentation

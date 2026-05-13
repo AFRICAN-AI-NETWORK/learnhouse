@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "LearnHouse यूनिवर्सिटी"
     },
-    "courses": {
-      "title": "कोर्स",
-      "rights_guide": "अधिकार मार्गदर्शिका",
-      "create_course": "कोर्स बनाएं",
-      "create_new_course": "एक नया कोर्स बनाएं",
-      "no_courses": "अभी तक कोई कोर्स नहीं",
-      "create_course_placeholder": "सामग्री जोड़ने के लिए कोर्स बनाएं",
-      "no_courses_available": "अभी तक कोई कोर्स उपलब्ध नहीं है"
-    },
     "organization": {
       "settings": {
         "title": "संगठन सेटिंग्स",

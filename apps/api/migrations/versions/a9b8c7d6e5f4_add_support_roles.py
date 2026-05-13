@@ -6,6 +6,7 @@ Revises: f2b3c4d5e6f7
 Create Date: 2026-03-15 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 import json
 from datetime import datetime
@@ -23,42 +24,140 @@ depends_on: str | Sequence[str] | None = None
 
 _READ_ONLY_RIGHTS = {
     "courses": {
-        "action_create": False, "action_read": True, "action_read_own": True,
-        "action_update": False, "action_update_own": False,
-        "action_delete": False, "action_delete_own": False,
+        "action_create": False,
+        "action_read": True,
+        "action_read_own": True,
+        "action_update": False,
+        "action_update_own": False,
+        "action_delete": False,
+        "action_delete_own": False,
     },
-    "users": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
-    "usergroups": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
-    "collections": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
-    "organizations": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
-    "coursechapters": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
-    "activities": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
-    "roles": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
-    "communications": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
+    "users": {
+        "action_create": False,
+        "action_read": False,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "usergroups": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "collections": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "organizations": {
+        "action_create": False,
+        "action_read": False,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "coursechapters": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "activities": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "roles": {
+        "action_create": False,
+        "action_read": False,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "communications": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
     "dashboard": {"action_access": False},
 }
 
 _TEACHING_RIGHTS = {
     "courses": {
-        "action_create": True, "action_read": True, "action_read_own": True,
-        "action_update": False, "action_update_own": True,
-        "action_delete": False, "action_delete_own": True,
+        "action_create": True,
+        "action_read": True,
+        "action_read_own": True,
+        "action_update": False,
+        "action_update_own": True,
+        "action_delete": False,
+        "action_delete_own": True,
     },
-    "users": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
-    "usergroups": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
-    "collections": {"action_create": True, "action_read": True, "action_update": False, "action_delete": False},
-    "organizations": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
-    "coursechapters": {"action_create": True, "action_read": True, "action_update": False, "action_delete": False},
-    "activities": {"action_create": True, "action_read": True, "action_update": False, "action_delete": False},
-    "roles": {"action_create": False, "action_read": False, "action_update": False, "action_delete": False},
-    "communications": {"action_create": True, "action_read": True, "action_update": True, "action_delete": False},
+    "users": {
+        "action_create": False,
+        "action_read": False,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "usergroups": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "collections": {
+        "action_create": True,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "organizations": {
+        "action_create": False,
+        "action_read": False,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "coursechapters": {
+        "action_create": True,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "activities": {
+        "action_create": True,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "roles": {
+        "action_create": False,
+        "action_read": False,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "communications": {
+        "action_create": True,
+        "action_read": True,
+        "action_update": True,
+        "action_delete": False,
+    },
     "dashboard": {"action_access": True},
 }
 
 _COORDINATOR_RIGHTS = {
     **_READ_ONLY_RIGHTS,
-    "users": {"action_create": False, "action_read": True, "action_update": False, "action_delete": False},
-    "communications": {"action_create": True, "action_read": True, "action_update": True, "action_delete": False},
+    "users": {
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
+    },
+    "communications": {
+        "action_create": True,
+        "action_read": True,
+        "action_update": True,
+        "action_delete": False,
+    },
     "dashboard": {"action_access": True},
 }
 

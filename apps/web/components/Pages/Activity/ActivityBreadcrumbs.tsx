@@ -20,17 +20,17 @@ export default function ActivityBreadcrumbs({ course, activity, orgslug }: Activ
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-gray-200/60 shadow-xs">
           <BookCopy size={13} className="text-black" />
         </div>
-        <Link 
+        <Link
           href={getUriWithOrg(orgslug, '') + `/courses`}
           className="text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em]"
         >
           {t('courses.courses')}
         </Link>
       </div>
-      
+
       <ChevronRight size={12} className="text-gray-300 shrink-0" />
-      
-      <Link 
+
+      <Link
         href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
         className="text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em] truncate max-w-[150px]"
       >

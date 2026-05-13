@@ -12,6 +12,9 @@ ADD . /app
 ARG LEARNHOUSE_PUBLIC=false
 RUN if [ "$LEARNHOUSE_PUBLIC" = "true" ]; then rm -rf /app/ee; fi
 
+ARG SENTRY_RELEASE=unknown
+ENV SENTRY_RELEASE=${SENTRY_RELEASE}
+
 # Sync the project into a new environment, using the frozen lockfile
 WORKDIR /app
 RUN uv sync --frozen

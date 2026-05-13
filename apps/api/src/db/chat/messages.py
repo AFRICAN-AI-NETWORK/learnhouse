@@ -15,7 +15,7 @@ class MessageBase(SQLModel):
 
 class Message(MessageBase, table=True):
     __tablename__ = "message"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     message_uuid: str = Field(unique=True, index=True)
     is_edited: bool = False
@@ -24,23 +24,27 @@ class Message(MessageBase, table=True):
     deleted_at: Optional[datetime] = None
     deleted_by_user_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
     reply_to_message_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("message.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("message.id", ondelete="SET NULL")),
     )
     message_metadata: dict = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     __table_args__ = (
-        CheckConstraint('sender_id != receiver_id', name='message_sender_receiver_different'),
+        CheckConstraint(
+            "sender_id != receiver_id", name="message_sender_receiver_different"
+        ),
     )
 
 
 class MessageCreate(BaseModel):
-    conversation_id: Union[str, int]  # Accepts conversation UUID (e.g., conv_xxx) or integer
+    conversation_id: Union[
+        str, int
+    ]  # Accepts conversation UUID (e.g., conv_xxx) or integer
     receiver_id: int
     content: str
     message_type: str = "text"
@@ -67,7 +71,7 @@ class MessageRead(MessageBase):
 
 class MessageEditHistory(SQLModel, table=True):
     __tablename__ = "message_edit_history"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     message_id: int = Field(foreign_key="message.id", ondelete="CASCADE")
     previous_content: str
@@ -77,13 +81,15 @@ class MessageEditHistory(SQLModel, table=True):
 
 class MessageReadReceipt(SQLModel, table=True):
     __tablename__ = "message_read_receipt"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     message_id: int = Field(foreign_key="message.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     delivered_at: datetime = Field(default_factory=datetime.utcnow)
     read_at: Optional[datetime] = None
-    
+
     __table_args__ = (
-        UniqueConstraint('message_id', 'user_id', name='unique_receipt_per_message_user'),
+        UniqueConstraint(
+            "message_id", "user_id", name="unique_receipt_per_message_user"
+        ),
     )

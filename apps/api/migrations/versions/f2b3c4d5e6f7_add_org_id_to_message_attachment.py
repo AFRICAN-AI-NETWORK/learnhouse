@@ -5,6 +5,7 @@ Revises: e8f9a0b1c2d3
 Create Date: 2026-03-04 21:25:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -33,8 +34,7 @@ def _index_exists(index_name: str) -> bool:
     conn = op.get_bind()
     result = conn.execute(
         sa.text(
-            "SELECT EXISTS (SELECT 1 FROM pg_indexes "
-            "WHERE indexname = :index_name)"
+            "SELECT EXISTS (SELECT 1 FROM pg_indexes " "WHERE indexname = :index_name)"
         ),
         {"index_name": index_name},
     )

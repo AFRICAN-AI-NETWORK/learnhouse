@@ -163,6 +163,7 @@ class AssignmentTask(AssignmentTaskBase, table=True):
 
 class AssignmentTaskSubmissionBase(SQLModel):
     """Represents the common fields for an assignment task submission."""
+
     assignment_task_submission_uuid: str
     task_submission: Dict = Field(default={}, sa_column=Column(JSON))
     grade: int = 0  # Value is always between 0-100

@@ -1,0 +1,80 @@
+name: Weekly Code Audit
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: "LearnHouse Pattern Audit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: sudo apt-get install -y ripgrep
+
+      - name: "Audit - Hardcoded secrets (Python)"
+        run: |
+          echo "=== Hardcoded secrets (Python) ==="
+          rg '(secret|password|token|key)\s*=\s*["\x27][^"\x27]{6,}["\x27]' \
+            apps/api/src apps/api/ee \
+            --type py -n || echo "None found"
+
+      - name: "Audit - Raw SQL queries"
+        run: |
+          echo "=== Raw SQL in service layer ==="
+          rg 'execute\s*\(\s*["\x27]SELECT|INSERT|UPDATE|DELETE' \
+            apps/api/src apps/api/ee \
+            --type py -n || echo "None found"
+
+      - name: "Audit - console.log with user data (TypeScript)"
+        run: |
+          echo "=== console.log with user/auth data (web) ==="
+          rg 'console\.(log|info|debug).*\b(user|email|token|password|session)\b' \
+            apps/web/app apps/web/lib \
+            --type ts --type tsx -n || echo "None found"
+
+      - name: "Audit - Student PII in logging calls"
+        run: |
+          echo "=== PII in Python logging ==="
+          rg 'logging\.(info|debug|warning|error).*\.(email|phone|password)' \
+            apps/api/src apps/api/ee \
+            --type py -n || echo "None found"
+
+      - name: "Audit - Unprotected admin routes"
+        run: |
+          echo "=== Admin routes without Depends() ==="
+          rg '@router\.(get|post|put|delete|patch).*admin' \
+            apps/api/src/routers apps/api/ee/routers \
+            --type py -n -A 5 || echo "None found"
+
+      - name: "Audit - File uploads missing content-type check"
+        run: |
+          echo "=== File upload handlers ==="
+          rg 'UploadFile' apps/api/src/routers \
+            --type py -n -B 2 -A 10 || echo "None found"
+
+      - name: "Audit - TODO/FIXME security markers"
+        run: |
+          echo "=== Security TODOs ==="
+          rg '(TODO|FIXME|HACK|XXX).*(security|auth|secret|token|pii|sql)' \
+            apps/api/src apps/api/ee apps/web/app \
+            -i -n || echo "None found"
+
+      - name: "Audit - Dependencies with known CVEs (pip-audit)"
+        run: |
+          pip install pip-audit
+          cd apps/api
+          pip-audit --requirement <(grep -E '^[a-z]' pyproject.toml | sed 's/.*"\(.*\)".*/\1/') \
+            --format markdown 2>/dev/null || true
+
+      - name: Post audit summary to GitHub Step Summary
+        if: always()
+        run: |
+          echo "## Weekly Security Audit - $(date '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Audit completed. Review artifacts for full results." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Reviewers: Check the job logs above for any flagged patterns." >> $GITHUB_STEP_SUMMARY

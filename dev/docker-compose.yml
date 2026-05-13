@@ -51,7 +51,19 @@ services:
     volumes:
       - learnhouse_piston_data:/piston/packages
 
+  signoz:
+    image: signoz/signoz:latest
+    container_name: learnhouse-signoz-dev
+    restart: unless-stopped
+    profiles:
+      - observability
+    ports:
+      - "3301:3301"
+      - "4317:4317"
+      - "4318:4318"
+
 volumes:
   learnhouse_db_dev_data:
   learnhouse_redis_dev_data:
   learnhouse_piston_data:
+  learnhouse_signoz_dev_data:

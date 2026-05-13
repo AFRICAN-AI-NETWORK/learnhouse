@@ -22,7 +22,14 @@ from src.db.organization_config import (
     UserGroupOrgConfig,
 )
 from src.db.organizations import Organization, OrganizationCreate
-from src.db.roles import DashboardPermission, Permission, PermissionsWithOwn, Rights, Role, RoleTypeEnum
+from src.db.roles import (
+    DashboardPermission,
+    Permission,
+    PermissionsWithOwn,
+    Rights,
+    Role,
+    RoleTypeEnum,
+)
 from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate, UserRead
 from src.security.security import security_hash_password
@@ -316,7 +323,7 @@ def install_default_elements(db_session: Session):
             activities=Permission(
                 action_create=False,
                 action_read=True,
-                action_update=False,    
+                action_update=False,
                 action_delete=False,
             ),
             roles=Permission(
@@ -547,7 +554,9 @@ def install_default_elements(db_session: Session):
     role_global_instructor.rights = role_global_instructor.rights.dict()  # type: ignore
     role_global_user.rights = role_global_user.rights.dict()  # type: ignore
     role_teaching_assistant.rights = role_teaching_assistant.rights.dict()  # type: ignore
-    role_student_success_coordinator.rights = role_student_success_coordinator.rights.dict()  # type: ignore
+    role_student_success_coordinator.rights = (
+        role_student_success_coordinator.rights.dict()
+    )  # type: ignore
     role_student_mentor.rights = role_student_mentor.rights.dict()  # type: ignore
     role_community_manager.rights = role_community_manager.rights.dict()  # type: ignore
     role_lead_instructor.rights = role_lead_instructor.rights.dict()  # type: ignore
@@ -608,11 +617,8 @@ def install_create_organization(org_object: OrganizationCreate, db_session: Sess
             collaboration=CollaborationOrgConfig(enabled=True, limit=0),
             api=APIOrgConfig(enabled=True, limit=0),
         ),
-        cloud=OrgCloudConfig(
-            plan='free',
-            custom_domain=False
-        ),
-        landing={}
+        cloud=OrgCloudConfig(plan="free", custom_domain=False),
+        landing={},
     )
 
     org_config = json.loads(org_config.json())
@@ -708,4 +714,3 @@ def install_create_organization_user(
     user = UserRead.model_validate(user)
 
     return user
-

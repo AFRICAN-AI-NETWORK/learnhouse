@@ -75,7 +75,7 @@ class TestRBACUtils:
         """Test element type checking for unknown element"""
         with pytest.raises(HTTPException) as exc_info:
             await check_element_type("unknown_123")
-        
+
         assert exc_info.value.status_code == 409
         assert "Issue verifying element nature" in exc_info.value.detail
 
@@ -84,7 +84,7 @@ class TestRBACUtils:
         """Test element type checking for empty UUID"""
         with pytest.raises(HTTPException) as exc_info:
             await check_element_type("")
-        
+
         assert exc_info.value.status_code == 409
         assert "Issue verifying element nature" in exc_info.value.detail
 
@@ -158,11 +158,11 @@ class TestRBACUtils:
             ("activity_123", "activities", "activity"),
             ("org_123", "organizations", "organization"),
         ]
-        
+
         for uuid, expected_plural, expected_singular in test_cases:
             element_type = await check_element_type(uuid)
             singular_form = await get_singular_form_of_element(uuid)
-            
+
             assert element_type == expected_plural
             assert singular_form == expected_singular
 
@@ -176,7 +176,7 @@ class TestRBACUtils:
             ("activity_123", "activity_id"),
             ("org_123", "org_id"),
         ]
-        
+
         for uuid, expected_id_identifier in test_cases:
             id_identifier = await get_id_identifier_of_element(uuid)
             assert id_identifier == expected_id_identifier
@@ -187,10 +187,10 @@ class TestRBACUtils:
         # Test with multiple underscores
         result = await check_element_type("course_123_456")
         assert result == "courses"
-        
+
         result = await get_singular_form_of_element("course_123_456")
         assert result == "course"
-        
+
         result = await get_id_identifier_of_element("course_123_456")
         assert result == "course_id"
 
@@ -199,9 +199,9 @@ class TestRBACUtils:
         """Test edge cases with numbers only after prefix"""
         result = await check_element_type("course_123456")
         assert result == "courses"
-        
+
         result = await get_singular_form_of_element("course_123456")
         assert result == "course"
-        
+
         result = await get_id_identifier_of_element("course_123456")
-        assert result == "course_id" 
+        assert result == "course_id"

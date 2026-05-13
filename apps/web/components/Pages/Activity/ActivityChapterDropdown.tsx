@@ -81,19 +81,19 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
         <ListTree size={17} />
         <span className="text-xs font-bold">{t('courses.chapters')}</span>
       </button>
-      
+
       {isOpen && (
         <div className={`absolute z-50 mt-2 ${isMobile ? 'right-0 w-[90vw] sm:w-72' : 'right-0 w-72'} max-h-[70vh] cursor-pointer overflow-y-auto bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-in fade-in duration-200`}>
           <div className="px-3 py-1.5 border-b border-gray-100 flex justify-between items-center">
             <h3 className="text-sm font-semibold text-gray-800">{t('courses.course_content')}</h3>
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
             >
               <X size={14} />
             </button>
           </div>
-          
+
           <div className="py-0.5">
             {props.course.chapters.map((chapter: any, index: number) => (
               <div key={chapter.id} className="mb-1">
@@ -109,7 +109,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
                   {chapter.activities.map((activity: any) => {
                     const cleanActivityUuid = activity.activity_uuid?.replace('activity_', '');
                     const isCurrent = cleanActivityUuid === props.currentActivityId.replace('activity_', '');
-                    
+
                     // Find the correct run and check if activity is complete
                     const run = props.trailData?.runs?.find(
                       (run: any) => {
@@ -117,11 +117,11 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
                         return cleanRunCourseUuid === cleanCourseUuid;
                       }
                     );
-                    
+
                     const isComplete = run?.steps?.find(
                       (step: any) => step.activity_id === activity.id && step.complete === true
                     );
-                    
+
                     return (
                       <Link
                         key={activity.id}
@@ -129,7 +129,7 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
                         prefetch={false}
                         onClick={() => setIsOpen(false)}
                       >
-                        <div 
+                        <div
                           className={`group hover:bg-neutral-50 transition-colors px-3 py-2 ${
                             isCurrent ? 'bg-neutral-50 border-l-2 border-neutral-300 pl-2.5 font-medium' : ''
                           }`}
@@ -180,4 +180,4 @@ export default function ActivityChapterDropdown(props: ActivityChapterDropdownPr
       )}
     </div>
   );
-} 
+}

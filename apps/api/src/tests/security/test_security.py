@@ -14,7 +14,7 @@ class TestSecurity:
         """Test password hashing functionality"""
         password = "test_password_123"
         hashed = security_hash_password(password)
-        
+
         # Verify the hash is different from original password
         assert hashed != password
         # Verify the hash is a string
@@ -26,7 +26,7 @@ class TestSecurity:
         """Test password verification with correct password"""
         password = "test_password_123"
         hashed = security_hash_password(password)
-        
+
         # Verify correct password returns True
         assert security_verify_password(password, hashed) is True
 
@@ -35,7 +35,7 @@ class TestSecurity:
         password = "test_password_123"
         wrong_password = "wrong_password_456"
         hashed = security_hash_password(password)
-        
+
         # Verify incorrect password returns False
         assert security_verify_password(wrong_password, hashed) is False
 
@@ -43,7 +43,7 @@ class TestSecurity:
         """Test password verification with empty password"""
         password = "test_password_123"
         hashed = security_hash_password(password)
-        
+
         # Verify empty password returns False
         assert security_verify_password("", hashed) is False
 
@@ -51,7 +51,7 @@ class TestSecurity:
         """Test password verification with empty string"""
         password = "test_password_123"
         hashed = security_hash_password(password)
-        
+
         # Verify empty string returns False
         assert security_verify_password("", hashed) is False
 
@@ -69,10 +69,10 @@ class TestSecurity:
         password = "consistent_test_password"
         hashed1 = security_hash_password(password)
         hashed2 = security_hash_password(password)
-        
+
         # Each hash should be different (due to salt)
         assert hashed1 != hashed2
-        
+
         # But both should verify correctly
         assert security_verify_password(password, hashed1) is True
         assert security_verify_password(password, hashed2) is True
@@ -81,7 +81,7 @@ class TestSecurity:
         """Test password hashing with special characters"""
         password = "!@#$%^&*()_+-=[]{}|;':\",./<>?"
         hashed = security_hash_password(password)
-        
+
         assert security_verify_password(password, hashed) is True
         assert security_verify_password("wrong", hashed) is False
 
@@ -89,7 +89,7 @@ class TestSecurity:
         """Test password hashing with unicode characters"""
         password = "测试密码123🚀🌟"
         hashed = security_hash_password(password)
-        
+
         assert security_verify_password(password, hashed) is True
         assert security_verify_password("wrong", hashed) is False
 
@@ -97,6 +97,6 @@ class TestSecurity:
         """Test password hashing with very long password"""
         password = "a" * 1000
         hashed = security_hash_password(password)
-        
+
         assert security_verify_password(password, hashed) is True
-        assert security_verify_password("wrong", hashed) is False 
+        assert security_verify_password("wrong", hashed) is False

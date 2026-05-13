@@ -34,4 +34,3 @@ export const getCurrentLanguageNativeName = (currentLang: string): string => {
   const language = getLanguageByCode(currentLang)
   return language?.nativeName || 'English'
 }
-

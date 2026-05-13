@@ -37,43 +37,40 @@ async def signWithGoogle(
 
     # Use Google email with fallback to parameter email
     user_email = google_user.get("email", email)
-    
+
     # Validate we have a valid email
     if not user_email:
         raise HTTPException(
-            status_code=400,
-            detail="No email address available from Google or request"
+            status_code=400, detail="No email address available from Google or request"
         )
 
-    user = db_session.exec(
-        select(User).where(User.email == user_email)
-    ).first()
+    user = db_session.exec(select(User).where(User.email == user_email)).first()
 
     if not user:
         # Extract user data with safe defaults
         given_name = google_user.get("given_name", "")
         family_name = google_user.get("family_name", "")
         picture = google_user.get("picture", "")
-        
+
         # Generate username more robustly
         username_parts = []
         if given_name:
             username_parts.append(given_name)
         if family_name:
             username_parts.append(family_name)
-        
+
         # If no name parts available, use part of email
         if not username_parts and user_email and "@" in user_email:
             email_prefix = user_email.split("@")[0]
             if email_prefix:  # Make sure it's not empty
                 username_parts.append(email_prefix)
-        
+
         # If still no parts, use a default
         if not username_parts:
             username_parts.append("user")
-        
+
         username = "".join(username_parts) + str(random.randint(10, 99))
-        
+
         user_object = UserCreate(
             email=user_email,
             username=username,

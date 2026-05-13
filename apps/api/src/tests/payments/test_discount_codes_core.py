@@ -10,6 +10,7 @@ that doesn't require complex Payment User schema dependencies:
 Tests requiring PaymentsProduct/PaymentsUser integration will be added
 after those schema issues are resolved.
 """
+
 import pytest
 import asyncio
 
@@ -38,11 +39,11 @@ class TestPriceCalculation:
         original_amount = 500.0
         discount_type = DiscountTypeEnum.PERCENTAGE
         discount_value = 20.0  # 20%
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         assert discount_amount == 100.0  # 20% of 500
         assert final_amount == 400.0  # 500 - 100
 
@@ -51,26 +52,24 @@ class TestPriceCalculation:
         original_amount = 200.0
         discount_type = DiscountTypeEnum.FIXED
         discount_value = 50.0  # $50 off
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         assert discount_amount == 50.0
         assert final_amount == 150.0  # 200 - 50
-
-
 
     def test_percentage_discount_edge_case_100_percent(self):
         """Test 100% discount (free course)."""
         original_amount = 300.0
         discount_type = DiscountTypeEnum.PERCENTAGE
         discount_value = 100.0  # 100% off
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         assert discount_amount == 300.0
         assert final_amount == 0.0
 
@@ -79,11 +78,11 @@ class TestPriceCalculation:
         original_amount = 100.0
         discount_type = DiscountTypeEnum.FIXED
         discount_value = 150.0  # $150 off on $100 item
-        
+
         discount_amount, final_amount = calculate_discounted_amount(
             original_amount, discount_type, discount_value
         )
-        
+
         # Should cap at original amount
         assert discount_amount == 100.0
         assert final_amount == 0.0
@@ -94,9 +93,9 @@ class TestPriceCalculation:
             calculate_discounted_amount(
                 500.0,
                 DiscountTypeEnum.PERCENTAGE,
-                150.0  # 150% is invalid
+                150.0,  # 150% is invalid
             )
-        
+
         assert "between 0 and 100" in str(exc_info.value)
 
     def test_negative_discount_value_error(self):
@@ -105,14 +104,14 @@ class TestPriceCalculation:
             calculate_discounted_amount(
                 500.0,
                 DiscountTypeEnum.PERCENTAGE,
-                -10.0  # Negative percentage
+                -10.0,  # Negative percentage
             )
-        
+
         with pytest.raises(DiscountValidationError):
             calculate_discounted_amount(
                 500.0,
                 DiscountTypeEnum.FIXED,
-                -50.0  # Negative fixed amount
+                -50.0,  # Negative fixed amount
             )
 
 
@@ -120,11 +119,13 @@ class TestRaceConditions:
     """Tests for atomic operations and race condition prevention - CRITICAL TEST #4."""
 
     @pytest.mark.asyncio
-    async def test_concurrent_max_uses_enforcement(self, db_session: Session, mock_org: Organization):
+    async def test_concurrent_max_uses_enforcement(
+        self, db_session: Session, mock_org: Organization
+    ):
         """
         CRITICAL TEST #4: Race Condition
         50 concurrent payments with max_uses=10 → Only 10 succeed.
-        
+
         This tests the atomic SQL operation that prevents overselling.
         """
         # Create code with max_uses=10
@@ -133,51 +134,52 @@ class TestRaceConditions:
             org_id=mock_org.id,
             code="RACE2026",
             max_uses=10,
-            current_uses=0
+            current_uses=0,
         )
-        
+
         # Spawn 50 concurrent tasks trying to increment usage
         async def attempt_increment():
             try:
-                return await increment_discount_usage_atomic(code.id, db_session, auto_commit=False)
+                return await increment_discount_usage_atomic(
+                    code.id, db_session, auto_commit=False
+                )
             except Exception:
                 return False
-        
+
         # Execute 50 concurrent attempts
         results = await asyncio.gather(*[attempt_increment() for _ in range(50)])
-        
+
         # Assert only 10 succeeded (max_uses=10)
         successful = sum(1 for r in results if r is True)
         assert successful == 10, f"Expected 10 successful increments, got {successful}"
-        
+
         # Verify current_uses = 10 (not 11 or more)
         # Re-query from DB since atomic function commits internally
         from sqlmodel import select
+
         db_session.commit()  # Commit to clear session state
-        updated_code = db_session.exec(select(DiscountCode).where(DiscountCode.id == code.id)).first()
-        assert updated_code.current_uses == 10, f"Expected current_uses=10, got {updated_code.current_uses}"
+        updated_code = db_session.exec(
+            select(DiscountCode).where(DiscountCode.id == code.id)
+        ).first()
+        assert (
+            updated_code.current_uses == 10
+        ), f"Expected current_uses=10, got {updated_code.current_uses}"
 
     @pytest.mark.asyncio
     async def test_atomic_increment_returns_false_at_limit(
-        self,
-        db_session: Session,
-        max_uses_discount_code: DiscountCode
+        self, db_session: Session, max_uses_discount_code: DiscountCode
     ):
         """CRITICAL TEST #2: Max Uses Enforcement - Atomic operation test."""
         # Code is already at max (100/100)
         result = await increment_discount_usage_atomic(
-            max_uses_discount_code.id,
-            db_session,
-            auto_commit=False
+            max_uses_discount_code.id, db_session, auto_commit=False
         )
-        
+
         assert result is False  # Should fail because already at max
 
     @pytest.mark.asyncio
     async def test_atomic_increment_unlimited_uses(
-        self,
-        db_session: Session,
-        mock_org: Organization
+        self, db_session: Session, mock_org: Organization
     ):
         """Test atomic increment with unlimited uses (max_uses=None)."""
         unlimited_code = create_discount_code_helper(
@@ -185,20 +187,21 @@ class TestRaceConditions:
             org_id=mock_org.id,
             code="UNLIMITED2026",
             max_uses=None,  # Unlimited
-            current_uses=0
+            current_uses=0,
         )
-        
+
         # Should succeed multiple times
         for i in range(5):
             result = await increment_discount_usage_atomic(
-                unlimited_code.id,
-                db_session,
-                auto_commit=False
+                unlimited_code.id, db_session, auto_commit=False
             )
             assert result is True
-        
+
         # Re-query to get updated count
         from sqlmodel import select
+
         db_session.commit()  # Commit to clear session state
-        updated_code = db_session.exec(select(DiscountCode).where(DiscountCode.id == unlimited_code.id)).first()
+        updated_code = db_session.exec(
+            select(DiscountCode).where(DiscountCode.id == unlimited_code.id)
+        ).first()
         assert updated_code.current_uses == 5

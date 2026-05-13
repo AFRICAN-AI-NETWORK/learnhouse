@@ -27,6 +27,7 @@ from src.services.courses.activities.assignments import (
 
 # ─── Minimal stand-ins (no DB / SQLModel machinery needed) ───────────────────
 
+
 class _Task:
     """Minimal substitute for AssignmentTask – only attributes the graders read."""
 
@@ -54,9 +55,9 @@ class _Submission:
 
 _Q1 = "question_q1"
 _Q2 = "question_q2"
-_OA = "option_a"   # assigned_right_answer = True
-_OB = "option_b"   # assigned_right_answer = False
-_OC = "option_c"   # assigned_right_answer = True  (used in multi-question tests)
+_OA = "option_a"  # assigned_right_answer = True
+_OB = "option_b"  # assigned_right_answer = False
+_OC = "option_c"  # assigned_right_answer = True  (used in multi-question tests)
 _B1 = "blank_1"
 _B2 = "blank_2"
 _QF = "question_f1"
@@ -64,11 +65,12 @@ _QF = "question_f1"
 
 # ─── Factory helpers ─────────────────────────────────────────────────────────
 
+
 def _quiz_task(q_uuid=_Q1, opts=None, max_grade=100) -> _Task:
     """Single-question QUIZ task; defaults to option_a=correct, option_b=wrong."""
     if opts is None:
         opts = [
-            {"optionUUID": _OA, "text": "Paris",  "assigned_right_answer": True},
+            {"optionUUID": _OA, "text": "Paris", "assigned_right_answer": True},
             {"optionUUID": _OB, "text": "London", "assigned_right_answer": False},
         ]
     return _Task(
@@ -82,7 +84,11 @@ def _form_task(q_uuid=_QF, blanks=None, max_grade=100) -> _Task:
     """Single-question FORM task; defaults to one blank with correctAnswer='Paris'."""
     if blanks is None:
         blanks = [
-            {"blankUUID": _B1, "placeholder": "Capital of France", "correctAnswer": "Paris"},
+            {
+                "blankUUID": _B1,
+                "placeholder": "Capital of France",
+                "correctAnswer": "Paris",
+            },
         ]
     return _Task(
         AssignmentTaskTypeEnum.FORM,
@@ -94,6 +100,7 @@ def _form_task(q_uuid=_QF, blanks=None, max_grade=100) -> _Task:
 # ═════════════════════════════════════════════════════════════════════════════
 # 1.  _is_form_answer_correct  (pure function — no async needed)
 # ═════════════════════════════════════════════════════════════════════════════
+
 
 class TestIsFormAnswerCorrect:
     """Tests for the comma-separated, case-insensitive blank-matching helper."""
@@ -144,6 +151,7 @@ class TestIsFormAnswerCorrect:
 # 2.  perform_quiz_auto_grading
 # ═════════════════════════════════════════════════════════════════════════════
 
+
 class TestPerformQuizAutoGrading:
     """Tests for per-option QUIZ auto-grading."""
 
@@ -152,12 +160,14 @@ class TestPerformQuizAutoGrading:
         """Student selects the only correct option (A=True). B is a wrong option and is
         skipped entirely. 1/1 correct option selected → 100."""
         task = _quiz_task()
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                ]
+            }
+        )
         await perform_quiz_auto_grading(task, sub)
         assert sub.grade == 100
 
@@ -165,12 +175,14 @@ class TestPerformQuizAutoGrading:
     async def test_zero_score_all_options_inverted(self):
         """Student inverts every answer: A=False (wrong), B=True (wrong) → 0/2 → 0."""
         task = _quiz_task()
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": False},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": True},
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": False},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": True},
+                ]
+            }
+        )
         await perform_quiz_auto_grading(task, sub)
         assert sub.grade == 0
 
@@ -182,12 +194,18 @@ class TestPerformQuizAutoGrading:
         total_correct_options=1, correct_selections=1 → 1/1 → 100.
         """
         task = _quiz_task()
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": True},   # wrong option selected
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {
+                        "questionUUID": _Q1,
+                        "optionUUID": _OB,
+                        "answer": True,
+                    },  # wrong option selected
+                ]
+            }
+        )
         await perform_quiz_auto_grading(task, sub)
         assert sub.grade == 100
 
@@ -211,12 +229,14 @@ class TestPerformQuizAutoGrading:
     async def test_grade_scales_with_max_grade_value(self):
         """max_grade_value=50, perfect score → grade=50 not 100."""
         task = _quiz_task(max_grade=50)
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                ]
+            }
+        )
         await perform_quiz_auto_grading(task, sub)
         assert sub.grade == 50
 
@@ -247,16 +267,18 @@ class TestPerformQuizAutoGrading:
         """grading_results[0] reflects only correct options.
         A (correct, selected) → correct=1. B (wrong) → excluded from total."""
         task = _quiz_task()
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                ]
+            }
+        )
         await perform_quiz_auto_grading(task, sub)
         r = sub.task_submission["grading_results"][0]
         assert r["correct"] == 1  # A was selected and is correct
-        assert r["total"] == 1   # only 1 correct option (A); B is wrong, excluded
+        assert r["total"] == 1  # only 1 correct option (A); B is wrong, excluded
 
     @pytest.mark.asyncio
     async def test_multi_question_partial_credit(self):
@@ -288,20 +310,26 @@ class TestPerformQuizAutoGrading:
             },
             100,
         )
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
-                {"questionUUID": _Q2, "optionUUID": _OC, "answer": False},  # missed correct option
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                    {
+                        "questionUUID": _Q2,
+                        "optionUUID": _OC,
+                        "answer": False,
+                    },  # missed correct option
+                ]
+            }
+        )
         await perform_quiz_auto_grading(task, sub)
-        assert sub.grade == 50   # 1/2 correct options selected
+        assert sub.grade == 50  # 1/2 correct options selected
         results = sub.task_submission["grading_results"]
-        assert results[0]["correct"] == 1   # A selected+correct
-        assert results[0]["total"] == 1     # only A counts (B is wrong option)
-        assert results[1]["correct"] == 0   # C not selected
-        assert results[1]["total"] == 1     # C is the only correct option
+        assert results[0]["correct"] == 1  # A selected+correct
+        assert results[0]["total"] == 1  # only A counts (B is wrong option)
+        assert results[1]["correct"] == 0  # C not selected
+        assert results[1]["total"] == 1  # C is the only correct option
 
     @pytest.mark.asyncio
     async def test_feedback_string_format(self):
@@ -325,33 +353,46 @@ class TestPerformQuizAutoGrading:
 # 3.  perform_form_auto_grading
 # ═════════════════════════════════════════════════════════════════════════════
 
+
 class TestPerformFormAutoGrading:
     """Tests for per-blank FORM (fill-in-the-blank) auto-grading."""
 
     @pytest.mark.asyncio
     async def test_perfect_score_exact_match(self):
         task = _form_task()
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.grade == 100
 
     @pytest.mark.asyncio
     async def test_case_insensitive_match(self):
         task = _form_task()
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "paris"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "paris"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.grade == 100
 
     @pytest.mark.asyncio
     async def test_wrong_answer_zero_score(self):
         task = _form_task()
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Berlin"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Berlin"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.grade == 0
 
@@ -359,11 +400,17 @@ class TestPerformFormAutoGrading:
     async def test_comma_separated_accepted_answers(self):
         """Second accepted answer is used; correctAnswer='Paris,Pairs' → 'Pairs' matches."""
         task = _form_task(
-            blanks=[{"blankUUID": _B1, "placeholder": "", "correctAnswer": "Paris,Pairs"}]
+            blanks=[
+                {"blankUUID": _B1, "placeholder": "", "correctAnswer": "Paris,Pairs"}
+            ]
         )
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Pairs"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Pairs"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.grade == 100
 
@@ -384,12 +431,14 @@ class TestPerformFormAutoGrading:
                 {"blankUUID": _B2, "placeholder": "", "correctAnswer": "France"},
             ]
         )
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"},
-                {"questionUUID": _QF, "blankUUID": _B2, "answer": "Germany"},
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"},
+                    {"questionUUID": _QF, "blankUUID": _B2, "answer": "Germany"},
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.grade == 50
 
@@ -414,9 +463,13 @@ class TestPerformFormAutoGrading:
     @pytest.mark.asyncio
     async def test_grading_results_correct_count_on_pass(self):
         task = _form_task()
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         r = sub.task_submission["grading_results"][0]
         assert r["correct"] == 1
@@ -425,18 +478,26 @@ class TestPerformFormAutoGrading:
     @pytest.mark.asyncio
     async def test_grade_scales_with_max_grade_value(self):
         task = _form_task(max_grade=60)
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.grade == 60
 
     @pytest.mark.asyncio
     async def test_feedback_string_format(self):
         task = _form_task()
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}
+                ]
+            }
+        )
         await perform_form_auto_grading(task, sub)
         assert sub.task_submission_grade_feedback.startswith("Auto-graded:")
         assert "blanks correct" in sub.task_submission_grade_feedback
@@ -453,6 +514,7 @@ class TestPerformFormAutoGrading:
 # 4.  dispatch_auto_grading
 # ═════════════════════════════════════════════════════════════════════════════
 
+
 class TestDispatchAutoGrading:
     """Tests that dispatch_auto_grading routes to the correct handler per task type."""
 
@@ -460,12 +522,14 @@ class TestDispatchAutoGrading:
     async def test_quiz_task_is_graded(self):
         """QUIZ task gets graded end-to-end through the dispatcher."""
         task = _quiz_task()
-        sub = _Submission({
-            "submissions": [
-                {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
-                {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
-            ]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                ]
+            }
+        )
         await dispatch_auto_grading(task, sub)
         assert sub.grade == 100
 
@@ -473,9 +537,13 @@ class TestDispatchAutoGrading:
     async def test_form_task_is_graded(self):
         """FORM task gets graded end-to-end through the dispatcher."""
         task = _form_task()
-        sub = _Submission({
-            "submissions": [{"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}]
-        })
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _QF, "blankUUID": _B1, "answer": "Paris"}
+                ]
+            }
+        )
         await dispatch_auto_grading(task, sub)
         assert sub.grade == 100
 
@@ -517,14 +585,21 @@ class TestDispatchAutoGrading:
 # 5.  _AUTO_GRADE_DISPATCH  (dispatch table structure)
 # ═════════════════════════════════════════════════════════════════════════════
 
+
 class TestAutoGradeDispatchTable:
     """Verify the dispatch table contains exactly the expected handlers."""
 
     def test_quiz_entry_points_to_quiz_grader(self):
-        assert _AUTO_GRADE_DISPATCH[AssignmentTaskTypeEnum.QUIZ] is perform_quiz_auto_grading
+        assert (
+            _AUTO_GRADE_DISPATCH[AssignmentTaskTypeEnum.QUIZ]
+            is perform_quiz_auto_grading
+        )
 
     def test_form_entry_points_to_form_grader(self):
-        assert _AUTO_GRADE_DISPATCH[AssignmentTaskTypeEnum.FORM] is perform_form_auto_grading
+        assert (
+            _AUTO_GRADE_DISPATCH[AssignmentTaskTypeEnum.FORM]
+            is perform_form_auto_grading
+        )
 
     def test_file_submission_has_no_entry(self):
         assert AssignmentTaskTypeEnum.FILE_SUBMISSION not in _AUTO_GRADE_DISPATCH
@@ -539,6 +614,7 @@ class TestAutoGradeDispatchTable:
 # ═════════════════════════════════════════════════════════════════════════════
 # 6.  _AUTO_GRADABLE_TYPES  (membership & immutability)
 # ═════════════════════════════════════════════════════════════════════════════
+
 
 class TestAutoGradableTypes:
     """_AUTO_GRADABLE_TYPES must contain QUIZ/FORM/CODE_EDITOR and be immutable."""
