@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from 'react'
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCourseButton'
-import NewCollectionButton from '@components/Objects/StyledElements/Buttons/NewCollectionButton'
 import ContentPlaceHolderIfUserIsNotAdmin from '@components/Objects/ContentPlaceHolder'
 import Link from 'next/link'
 import { getAPIUrl, getUriWithOrg } from '@services/config/config'
@@ -18,8 +17,6 @@ import {
   CheckCircle2,
   Clock3,
   FilePenLine,
-  Grid2X2,
-  List,
   MoreVertical,
   Play,
   Settings2,
@@ -197,16 +194,6 @@ function LandingClassic({
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <AuthenticatedClientElement
-                checkMethod="roles"
-                ressourceType="collections"
-                action="create"
-                orgId={org_id}
-              >
-                <Link href={getUriWithOrg(orgslug, '/collections/new')}>
-                  <NewCollectionButton />
-                </Link>
-              </AuthenticatedClientElement>
-              <AuthenticatedClientElement
                 ressourceType="courses"
                 action="create"
                 checkMethod="roles"
@@ -219,14 +206,6 @@ function LandingClassic({
               <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm">
                 Recently Added
               </button>
-              <div className="flex rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
-                <button className="rounded-md bg-blue-50 p-2 text-blue-600">
-                  <Grid2X2 size={18} />
-                </button>
-                <button className="rounded-md p-2 text-gray-500">
-                  <List size={18} />
-                </button>
-              </div>
             </div>
           </div>
 
@@ -294,7 +273,7 @@ function LandingClassic({
         </section>
 
         <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <InfoPanel title="Upcoming Deadlines" action="View Calendar">
+          <InfoPanel title="Upcoming Deadlines">
             {continueCourse ? (
               <PanelRow
                 icon={<CalendarDays size={16} />}
@@ -307,7 +286,11 @@ function LandingClassic({
               </p>
             )}
           </InfoPanel>
-          <InfoPanel title="Recent Activity" action="View All">
+          <InfoPanel
+            title="Recent Activity"
+            action="View All"
+            actionHref={getUriWithOrg(orgslug, '/trail')}
+          >
             {trailRuns.length > 0 ? (
               trailRuns
                 .slice(0, 3)
@@ -594,7 +577,7 @@ const CourseImage = ({
 
   return (
     <div
-      className={`w-full bg-gray-900 bg-cover bg-center rounded-2xl ${className}`}
+      className={`w-full bg-gray-900 bg-cover bg-center rounded-b-2xl ${className}`}
       style={{ backgroundImage: `url(${image})` }}
     />
   )
@@ -665,16 +648,25 @@ const StatCard = ({
 const InfoPanel = ({
   title,
   action,
+  actionHref,
   children,
 }: {
   title: string
-  action: string
+  action?: string
+  actionHref?: string
   children: React.ReactNode
 }) => (
   <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
       <h3 className="font-bold text-gray-950">{title}</h3>
-      <button className="text-sm font-semibold text-blue-600">{action}</button>
+      {action && actionHref && (
+        <Link
+          href={actionHref}
+          className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+        >
+          {action}
+        </Link>
+      )}
     </div>
     <div className="divide-y divide-gray-100">{children}</div>
   </div>
