@@ -503,7 +503,6 @@ async def get_certificate_by_user_certification_uuid(
     from src.db.users import User
 
     statement = select(User).where(User.id == certificate_user.user_id)
-    user = db_session.exec(statement).first()
 
     return {
         "certificate_user": CertificateUserRead(**certificate_user.model_dump()),
