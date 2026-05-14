@@ -44,7 +44,9 @@ const validate = (values: any, t: any) => {
   if (!values.phone_number) {
     errors.phone_number = t('validation.required')
   } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
-    errors.phone_number = t('validation.invalid_phone')
+    errors.phone_number =
+      t('validation.invalid_phone_with_country_code') ||
+      'Invalid phone. Please include country code (e.g. +234)'
   }
   if (!values.email) {
     errors.email = t('validation.required')
@@ -196,11 +198,19 @@ function OpenSignUpComponent() {
         res.status === 409
       ) {
         // If error is referral-related, surface inline without blocking signup
-        const detail: string = response.detail ?? ''
+        const detail = response.detail
+        const errorMessage = Array.isArray(detail)
+          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+          : typeof detail === 'string'
+            ? detail
+            : detail?.msg ||
+              JSON.stringify(detail) ||
+              t('common.something_went_wrong')
+
         if (
           referralCode.trim() &&
-          (detail.toLowerCase().includes('referral') ||
-            detail.toLowerCase().includes('code'))
+          (errorMessage.toLowerCase().includes('referral') ||
+            errorMessage.toLowerCase().includes('code'))
         ) {
           setReferralCodeError(
             'Invalid referral code — your account was created without it.'
@@ -227,7 +237,17 @@ function OpenSignUpComponent() {
             }, 3000)
           } else {
             const retryRes_json = await retryRes.json()
-            setError(retryRes_json.detail ?? t('common.something_went_wrong'))
+            const retryDetail = retryRes_json.detail
+            const retryErrorMessage = Array.isArray(retryDetail)
+              ? retryDetail
+                  .map((e: any) => e.msg || JSON.stringify(e))
+                  .join(', ')
+              : typeof retryDetail === 'string'
+                ? retryDetail
+                : retryDetail?.msg ||
+                  JSON.stringify(retryDetail) ||
+                  t('common.something_went_wrong')
+            setError(retryErrorMessage)
             // Clear stored referral code after failed signup attempt
             try {
               localStorage.removeItem('referral_code')
@@ -236,7 +256,7 @@ function OpenSignUpComponent() {
             }
           }
         } else {
-          setError(detail || t('common.something_went_wrong'))
+          setError(errorMessage)
           // Clear stored referral code after failed signup attempt
           try {
             localStorage.removeItem('referral_code')
@@ -540,7 +560,7 @@ function OpenSignUpComponent() {
                   value={formik.values.phone_number}
                   type="tel"
                   required
-                  placeholder="e.g. +254090000000"
+                  placeholder="e.g. +2340900000000"
                 />
               </Form.Control>
             </FormField>

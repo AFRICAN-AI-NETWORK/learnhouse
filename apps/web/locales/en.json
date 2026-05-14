@@ -300,7 +300,8 @@
     "contributor_application_success": "Your application to contribute has been submitted successfully",
     "contributor_application_error": "Failed to submit your application. Please try again later.",
     "contribute": "Contribute",
-    "enroll_for_free": "Enroll for Free"
+    "enroll_for_free": "Enroll for Free",
+    "finish_course": "Finish Course"
   },
   "collections": {
     "collections": "Collections",
@@ -478,7 +479,9 @@
     "continuing_education": "Continuing Education",
     "workshop_attendance": "Workshop Attendance",
     "specialization": "Specialization",
-    "dedication_message": "Your dedication and hard work have paid off. You've mastered all the content in this course."
+    "dedication_message": "Your dedication and hard work have paid off. You've mastered all the content in this course.",
+    "get_certificate": "Get Certificate",
+    "certificate_of_completion": "Certificate of Completion"
   },
   "search": {
     "search_placeholder": "Search courses, users, collections...",

@@ -65,7 +65,7 @@ const SettingsNavigation = ({
 }) => {
   const { t } = useTranslation()
   return (
-    <div className="flex space-x-5 font-black text-sm">
+    <div className="flex space-x-5 font-black text-sm dark:text-white/80">
       {items.map((item) => (
         <Link
           key={item.id}
@@ -75,7 +75,7 @@ const SettingsNavigation = ({
           )}
         >
           <div
-            className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+            className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
               currentPage === item.id ? 'border-b-4' : 'opacity-50'
             } cursor-pointer`}
           >
@@ -102,12 +102,12 @@ function SettingsPage({ params }: { params: Promise<SettingsParams> }) {
   )?.component
 
   return (
-    <div className="m-h-full w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden mb-10 md:mb-0">
-      <div className="pl-10 pr-10 tracking-tight bg-[#fcfbfc] z-10 nice-shadow flex-shrink-0">
+    <div className="m-h-full w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden mb-10 md:mb-0 dark:bg-[#0f0f13]">
+      <div className="pl-10 pr-10 tracking-tight bg-[#fcfbfc] z-10 nice-shadow flex-shrink-0 dark:border-b dark:border-white/8 dark:bg-[#13131a]">
         <BreadCrumbs type="user" last_breadcrumb={session?.user?.username} />
         <div className="my-2 tracking-tighter">
           <div className="w-100 flex justify-between">
-            <div className="pt-3 flex font-bold text-4xl">
+            <div className="pt-3 flex font-bold text-4xl dark:text-white">
               {t('user.settings.title')}
             </div>
           </div>

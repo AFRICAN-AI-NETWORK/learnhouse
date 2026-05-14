@@ -33,7 +33,7 @@ export default function RootLayout(props: {
 
   return (
     <div
-      className={`theme-landing bg-background text-foreground flex flex-col ${
+      className={`${shouldShowLandingNavbar ? 'theme-landing' : ''} bg-background text-foreground flex flex-col ${
         isLandingPage
           ? 'min-h-screen overflow-visible'
           : 'h-screen overflow-hidden'

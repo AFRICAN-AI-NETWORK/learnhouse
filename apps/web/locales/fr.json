@@ -255,7 +255,8 @@
     "contributor_application_success": "Candidature envoyée avec succès",
     "contributor_application_error": "Erreur lors de l'envoi",
     "contribute": "Contribuer",
-    "enroll_for_free": "S'inscrire gratuitement"
+    "enroll_for_free": "S'inscrire gratuitement",
+    "finish_course": "Terminer le cours"
   },
   "collections": {
     "collections": "Collections",
@@ -422,7 +423,9 @@
     "continuing_education": "Formation continue",
     "workshop_attendance": "Présence atelier",
     "specialization": "Spécialisation",
-    "dedication_message": "Félicitations pour votre travail acharné. Vous maîtrisez désormais ce sujet."
+    "dedication_message": "Félicitations pour votre travail acharné. Vous maîtrisez désormais ce sujet.",
+    "get_certificate": "Obtenir le certificat",
+    "certificate_of_completion": "Certificat de réussite"
   },
   "search": {
     "search_placeholder": "Rechercher cours, membres...",

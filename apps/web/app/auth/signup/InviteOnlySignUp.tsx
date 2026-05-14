@@ -115,7 +115,15 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         res.status == 404 ||
         res.status == 409
       ) {
-        setError(message.detail)
+        const detail = message.detail
+        const errorMessage = Array.isArray(detail)
+          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+          : typeof detail === 'string'
+            ? detail
+            : detail?.msg ||
+              JSON.stringify(detail) ||
+              t('common.something_went_wrong')
+        setError(errorMessage)
         setIsSubmitting(false)
       } else {
         setError(t('common.something_went_wrong'))
