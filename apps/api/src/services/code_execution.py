@@ -1,5 +1,5 @@
 import httpx
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 import os
 import time

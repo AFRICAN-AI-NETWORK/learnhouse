@@ -37,7 +37,7 @@ def _index_exists(index_name: str) -> bool:
     conn = op.get_bind()
     result = conn.execute(
         sa.text(
-            "SELECT EXISTS (SELECT 1 FROM pg_indexes " "WHERE indexname = :index_name)"
+            "SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = :index_name)"
         ),
         {"index_name": index_name},
     )

@@ -134,7 +134,7 @@ def validate_upload(
     if len(content) > size_limit:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large ({len(content)/1024/1024:.1f}MB > {size_limit/1024/1024:.1f}MB)",
+            detail=f"File too large ({len(content) / 1024 / 1024:.1f}MB > {size_limit / 1024 / 1024:.1f}MB)",
         )
 
     # Validate file content

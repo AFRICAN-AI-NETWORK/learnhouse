@@ -70,7 +70,7 @@ def send_account_creation_email(
 
                 <p style="margin-top: 30px;">Get started by exploring our courses and connecting with fellow learners.</p>
 
-                <p style="margin-top: 30px;">Need help getting started? Visit our <a href="https://lms.africanainetwork.com/org/{organization.slug if organization else 'default'}/courses" style="color: #4F46E5; text-decoration: none; font-weight: 600;">Course Catalog</a></p>
+                <p style="margin-top: 30px;">Need help getting started? Visit our <a href="https://lms.africanainetwork.com/org/{organization.slug if organization else "default"}/courses" style="color: #4F46E5; text-decoration: none; font-weight: 600;">Course Catalog</a></p>
 
                 <p style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #E5E7EB;">
                     If you did not create this account, please ignore this email.

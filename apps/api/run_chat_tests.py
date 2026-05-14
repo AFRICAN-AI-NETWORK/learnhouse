@@ -19,9 +19,9 @@ from pathlib import Path
 
 def run_command(cmd, description):
     """Run a command and handle output."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {description}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     result = subprocess.run(cmd, shell=True)
 

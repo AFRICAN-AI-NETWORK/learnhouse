@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-import random
+import secrets
 import redis
 import string
 import uuid
@@ -70,7 +70,7 @@ async def send_reset_password_code(
     # Generate reset code
     def generate_code(length=5):
         letters_and_digits = string.ascii_letters + string.digits
-        return "".join(random.choice(letters_and_digits) for _ in range(length))
+        return "".join(secrets.choice(letters_and_digits) for _ in range(length))
 
     generated_reset_code = generate_code()
     reset_email_invite_uuid = f"reset_email_invite_code_{uuid.uuid4()}"

@@ -305,10 +305,10 @@ async def create_certificate_user(
     user_uuid_short = user.user_uuid[-4:] if user.user_uuid else "USER"
 
     # Generate random 2-letter prefix
-    import random
+    import secrets
     import string
 
-    random_prefix = "".join(random.choices(string.ascii_uppercase, k=2))
+    random_prefix = "".join(secrets.choice(string.ascii_uppercase) for _ in range(2))
 
     # Get the count of existing certificate users for this user today
     today_user_prefix = f"{random_prefix}-{current_year}{current_month:02d}{current_day:02d}-{user_uuid_short}-"

@@ -326,8 +326,8 @@ class TestMultipleWaitlistCampaigns:
             ).isoformat()
             config_data = WaitlistConfigCreate(
                 org_id=sample_org.id,
-                name=f"Campaign {i+1}",
-                interest_category=f"Category {i+1}",
+                name=f"Campaign {i + 1}",
+                interest_category=f"Category {i + 1}",
                 launch_datetime=future_date,
             )
             await create_waitlist_config(mock_request, db_session, config_data)

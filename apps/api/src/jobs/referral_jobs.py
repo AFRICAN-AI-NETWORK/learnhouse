@@ -138,7 +138,7 @@ async def process_payout_requests_job():
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(_job_executor, _sync_process_payouts)
         logger.info(
-            "Payout processing job completed in %.2fs — " "processed: %d, failed: %d",
+            "Payout processing job completed in %.2fs — processed: %d, failed: %d",
             result["elapsed_s"],
             result["processed_count"],
             result["failed_count"],

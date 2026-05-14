@@ -398,9 +398,9 @@ class TestRaceConditions:
         updated_code = db_session.exec(
             select(DiscountCode).where(DiscountCode.id == code.id)
         ).first()
-        assert (
-            updated_code.current_uses == 10
-        ), f"Expected current_uses=10, got {updated_code.current_uses}"
+        assert updated_code.current_uses == 10, (
+            f"Expected current_uses=10, got {updated_code.current_uses}"
+        )
 
     @pytest.mark.asyncio
     async def test_atomic_increment_returns_false_at_limit(

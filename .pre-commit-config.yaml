@@ -1,12 +1,12 @@
 repos:
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.2
+    rev: v8.30.0
     hooks:
       - id: gitleaks
         name: "Gitleaks - secret scan"
 
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         name: "detect-secrets"
@@ -19,7 +19,7 @@ repos:
           )$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
+    rev: v0.15.12
     hooks:
       - id: ruff
         name: "Ruff lint (API)"
@@ -30,14 +30,15 @@ repos:
         files: ^apps/api/
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.8
+    rev: 1.9.4
     hooks:
       - id: bandit
         name: "Bandit - Python security"
-        args: ["-c", "apps/api/bandit.yaml", "-r", "apps/api/src", "apps/api/ee"]
+        args: ["-c", "apps/api/bandit.yaml"]
+        files: ^apps/api/(src/(?!tests/).+\.py|ee/.+\.py)$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: check-merge-conflict
       - id: check-added-large-files

@@ -1,4 +1,4 @@
-import random
+import secrets
 from typing import Optional
 from fastapi import Depends, HTTPException, Request
 import httpx
@@ -69,12 +69,13 @@ async def signWithGoogle(
         if not username_parts:
             username_parts.append("user")
 
-        username = "".join(username_parts) + str(random.randint(10, 99))
+        username = "".join(username_parts) + str(secrets.randbelow(90) + 10)
+        temporary_password = secrets.token_urlsafe(32)
 
         user_object = UserCreate(
             email=user_email,
             username=username,
-            password="",
+            password=temporary_password,
             first_name=given_name,
             last_name=family_name,
             avatar_image=picture,

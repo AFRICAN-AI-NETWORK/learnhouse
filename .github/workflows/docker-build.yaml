@@ -12,7 +12,7 @@ on:
 
 # Default permissions
 permissions:
-  contents: read  # PRs and workflow can read repo contents
+  contents: read # PRs and workflow can read repo contents
   # packages write only enabled in jobs that require it
 
 env:
