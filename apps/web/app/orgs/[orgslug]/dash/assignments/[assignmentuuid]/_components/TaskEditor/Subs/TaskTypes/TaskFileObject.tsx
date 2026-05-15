@@ -537,23 +537,18 @@ export default function TaskFileObject({
                 <input
                   type="file"
                   id={'fileInput_' + assignmentTaskUUID}
-                  style={{ display: 'none' }}
+                  className="hidden"
                   onChange={handleFileChange}
                 />
-                <button
-                  type="button"
-                  className="font-medium antialiased items-center text-white text-xs sm:text-sm rounded-md px-4 sm:px-5 py-2.5 flex bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 transition-colors shadow-xs w-full sm:w-auto justify-center"
-                  onClick={() =>
-                    document
-                      .getElementById('fileInput_' + assignmentTaskUUID)
-                      ?.click()
-                  }
+                <label
+                  htmlFor={'fileInput_' + assignmentTaskUUID}
+                  className="font-medium antialiased items-center text-white text-xs sm:text-sm rounded-md px-4 sm:px-5 py-2.5 flex bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 transition-colors shadow-xs w-full sm:w-auto justify-center cursor-pointer"
                 >
                   <UploadCloud size={15} className="mr-2" />
                   <span>
                     {userSubmissions.fileUUID ? 'Replace File' : 'Choose File'}
                   </span>
-                </button>
+                </label>
               </div>
             )}
           </div>

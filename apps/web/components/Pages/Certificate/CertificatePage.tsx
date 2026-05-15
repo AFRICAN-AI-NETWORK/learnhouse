@@ -70,23 +70,38 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         throw new Error('Certificate element not found')
       }
 
+      // Add a small delay to ensure everything is rendered (like QR code)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       // Convert to canvas using the live element
       const canvas = await html2canvas(certificateElement, {
-        scale: 4, // Higher resolution for better quality
+        scale: 2, // 2 is enough for high quality without crashing browsers
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#ffffff',
+        windowWidth: 1200, // Fixed width for consistent layout during capture
       })
 
       // Create PDF
-      const imgData = canvas.toDataURL('image/png')
+      const imgData = canvas.toDataURL('image/png', 1.0)
       const pdf = new jsPDF('landscape', 'mm', 'a4')
 
-      // Calculate dimensions to center the certificate
+      // Calculate dimensions to fit the certificate on A4 while maintaining aspect ratio
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = 280 // mm
-      const imgHeight = 210 // mm
+
+      const canvasWidth = canvas.width
+      const canvasHeight = canvas.height
+      const aspectRatio = canvasWidth / canvasHeight
+
+      // Maximize the certificate on the page with 10mm margins
+      let imgWidth = pdfWidth - 20
+      let imgHeight = imgWidth / aspectRatio
+
+      if (imgHeight > pdfHeight - 20) {
+        imgHeight = pdfHeight - 20
+        imgWidth = imgHeight * aspectRatio
+      }
 
       // Center the image
       const x = (pdfWidth - imgWidth) / 2
