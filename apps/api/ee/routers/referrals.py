@@ -470,21 +470,25 @@ async def api_get_all_partners(
     results = []
     for code in codes:
         user = db_session.get(User, code.user_id)
-        
+
         # Count referrals for this partner
-        count_stmt = select(func.count()).select_from(ReferralTracking).where(
-            ReferralTracking.referral_code_id == code.id
+        count_stmt = (
+            select(func.count())
+            .select_from(ReferralTracking)
+            .where(ReferralTracking.referral_code_id == code.id)
         )
         referral_count = db_session.exec(count_stmt).one() or 0
 
-        results.append({
-            "user_id": code.user_id,
-            "username": user.username if user else "unknown",
-            "email": user.email if user else "unknown",
-            "referral_code": code.code,
-            "referral_count": referral_count,
-            "created_at": str(code.creation_date)
-        })
+        results.append(
+            {
+                "user_id": code.user_id,
+                "username": user.username if user else "unknown",
+                "email": user.email if user else "unknown",
+                "referral_code": code.code,
+                "referral_count": referral_count,
+                "created_at": str(code.creation_date),
+            }
+        )
 
     return {"partners": results}
 
@@ -508,11 +512,8 @@ async def api_get_partner_students(
 
     # Reuse the same logic used by partners, but for the target partner_id
     target_user = InternalPublicUser(id=partner_id)
-    
+
     # We call the service function directly
     return await get_commission_history(
-        request=request,
-        org_id=org_id,
-        current_user=target_user,
-        db_session=db_session
+        request=request, org_id=org_id, current_user=target_user, db_session=db_session
     )

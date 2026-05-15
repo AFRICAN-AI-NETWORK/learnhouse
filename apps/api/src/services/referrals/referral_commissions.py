@@ -360,9 +360,6 @@ async def get_commission_history(
     # Build response using pre-fetched data (no N+1 queries)
     history = []
 
-    # Track which users we've already added via commission records
-    processed_user_ids = set()
-
     # First, add all commissions (these are "Paid" or "Pending Payout" events)
     for commission in commissions:
         referred_user = user_map.get(commission.referred_user_id)

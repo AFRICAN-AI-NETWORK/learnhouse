@@ -239,7 +239,7 @@ async def create_user(
 
     # Link user and organization
     # Determine role_id based on signup_type
-    target_role_id = 4 # Default: User
+    target_role_id = 4  # Default: User
     if getattr(user_object, "signup_type", "student") == "partner":
         partner_role_statement = select(Role).where(Role.role_uuid == "partner_role")
         partner_role = db_session.exec(partner_role_statement).first()
