@@ -10,10 +10,10 @@ type MetadataProps = {
 }
 
 export async function generateMetadata(
-  params: MetadataProps
+  props: MetadataProps
 ): Promise<Metadata> {
-  const orgslug =
-    ((await params.searchParams).orgslug as string) || 'african-ai'
+  const params = await props.params
+  const orgslug = params.orgslug || 'african-ai'
   const org = await getOrganizationContextInfo(orgslug, {
     revalidate: 0,
     tags: ['organizations'],
@@ -26,9 +26,9 @@ export async function generateMetadata(
   }
 }
 
-const AffiliationSignUp = async (params: any) => {
-  const orgslug =
-    ((await params.searchParams).orgslug as string) || 'african-ai'
+const AffiliationSignUp = async (props: any) => {
+  const params = await props.params
+  const orgslug = params.orgslug || 'african-ai'
   const org = await getOrganizationContextInfo(orgslug, {
     revalidate: 0,
     tags: ['organizations'],
