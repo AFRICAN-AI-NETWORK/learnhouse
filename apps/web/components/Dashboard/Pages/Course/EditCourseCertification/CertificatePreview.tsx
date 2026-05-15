@@ -66,6 +66,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-amber-600',
           icon: 'text-amber-600',
           badge: 'bg-amber-50 text-amber-700 border-amber-200',
+          hex: {
+            primary: '#b45309',
+            secondary: '#d97706',
+            icon: '#d97706',
+            bg: '#fffbeb',
+            border: '#fde68a',
+            gradient: ['#fffbeb', '#fef3c7'],
+          },
         }
       case 'tech':
         return {
@@ -73,6 +81,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-cyan-600',
           icon: 'text-cyan-600',
           badge: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+          hex: {
+            primary: '#0e7490',
+            secondary: '#0891b2',
+            icon: '#0891b2',
+            bg: '#ecfeff',
+            border: '#a5f3fc',
+            gradient: ['#ecfeff', '#cffafe'],
+          },
         }
       case 'nature':
         return {
@@ -80,6 +96,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-green-600',
           icon: 'text-green-600',
           badge: 'bg-green-50 text-green-700 border-green-200',
+          hex: {
+            primary: '#15803d',
+            secondary: '#16a34a',
+            icon: '#16a34a',
+            bg: '#f0fdf4',
+            border: '#bbf7d0',
+            gradient: ['#f0fdf4', '#dcfce7'],
+          },
         }
       case 'geometric':
         return {
@@ -87,6 +111,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-purple-600',
           icon: 'text-purple-600',
           badge: 'bg-purple-50 text-purple-700 border-purple-200',
+          hex: {
+            primary: '#7e22ce',
+            secondary: '#9333ea',
+            icon: '#9333ea',
+            bg: '#faf5ff',
+            border: '#e9d5ff',
+            gradient: ['#faf5ff', '#f3e8ff'],
+          },
         }
       case 'vintage':
         return {
@@ -94,6 +126,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-orange-600',
           icon: 'text-orange-600',
           badge: 'bg-orange-50 text-orange-700 border-orange-200',
+          hex: {
+            primary: '#c2410c',
+            secondary: '#ea580c',
+            icon: '#ea580c',
+            bg: '#fff7ed',
+            border: '#fed7aa',
+            gradient: ['#fff7ed', '#ffedd5'],
+          },
         }
       case 'waves':
         return {
@@ -101,6 +141,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-blue-600',
           icon: 'text-blue-600',
           badge: 'bg-blue-50 text-blue-700 border-blue-200',
+          hex: {
+            primary: '#1d4ed8',
+            secondary: '#2563eb',
+            icon: '#2563eb',
+            bg: '#eff6ff',
+            border: '#bfdbfe',
+            gradient: ['#eff6ff', '#dbeafe'],
+          },
         }
       case 'minimal':
         return {
@@ -108,6 +156,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-gray-600',
           icon: 'text-gray-600',
           badge: 'bg-gray-50 text-gray-700 border-gray-200',
+          hex: {
+            primary: '#374151',
+            secondary: '#4b5563',
+            icon: '#4b5563',
+            bg: '#f9fafb',
+            border: '#e5e7eb',
+            gradient: ['#f9fafb', '#f3f4f6'],
+          },
         }
       case 'professional':
         return {
@@ -115,6 +171,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-slate-600',
           icon: 'text-slate-600',
           badge: 'bg-slate-50 text-slate-700 border-slate-200',
+          hex: {
+            primary: '#334155',
+            secondary: '#475569',
+            icon: '#475569',
+            bg: '#f8fafc',
+            border: '#e2e8f0',
+            gradient: ['#f8fafc', '#f1f5f9'],
+          },
         }
       case 'academic':
         return {
@@ -122,6 +186,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-indigo-600',
           icon: 'text-indigo-600',
           badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          hex: {
+            primary: '#4338ca',
+            secondary: '#4f46e5',
+            icon: '#4f46e5',
+            bg: '#eef2ff',
+            border: '#c7d2fe',
+            gradient: ['#eef2ff', '#e0e7ff'],
+          },
         }
       case 'modern':
         return {
@@ -129,6 +201,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-blue-600',
           icon: 'text-blue-600',
           badge: 'bg-blue-50 text-blue-700 border-blue-200',
+          hex: {
+            primary: '#1d4ed8',
+            secondary: '#2563eb',
+            icon: '#2563eb',
+            bg: '#eff6ff',
+            border: '#bfdbfe',
+            gradient: ['#eff6ff', '#dbeafe'],
+          },
         }
       default:
         return {
@@ -136,6 +216,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           secondary: 'text-gray-600',
           icon: 'text-gray-600',
           badge: 'bg-gray-50 text-gray-700 border-gray-200',
+          hex: {
+            primary: '#374151',
+            secondary: '#4b5563',
+            icon: '#4b5563',
+            bg: '#f9fafb',
+            border: '#e5e7eb',
+            gradient: ['#f9fafb', '#f3f4f6'],
+          },
         }
     }
   }
@@ -153,8 +241,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             {/* Crown-like decorations in corners */}
             <div className="absolute top-1 left-1/2 transform -translate-x-1/2">
               <div
-                className="w-8 h-4 bg-amber-200 opacity-50"
+                className="w-8 h-4 opacity-50"
                 style={{
+                  backgroundColor: theme.hex?.border,
                   clipPath:
                     'polygon(0% 100%, 20% 0%, 40% 100%, 60% 0%, 80% 100%, 100% 0%, 100% 100%)',
                 }}
@@ -162,8 +251,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             </div>
             <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 rotate-180">
               <div
-                className="w-8 h-4 bg-amber-200 opacity-50"
+                className="w-8 h-4 opacity-50"
                 style={{
+                  backgroundColor: theme.hex?.border,
                   clipPath:
                     'polygon(0% 100%, 20% 0%, 40% 100%, 60% 0%, 80% 100%, 100% 0%, 100% 100%)',
                 }}
@@ -211,7 +301,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div
                 className="w-full h-full"
                 style={{
-                  backgroundImage: `linear-gradient(90deg, #06b6d4 1px, transparent 1px), linear-gradient(0deg, #06b6d4 1px, transparent 1px)`,
+                  backgroundImage: `linear-gradient(90deg, ${theme.hex?.secondary} 1px, transparent 1px), linear-gradient(0deg, ${theme.hex?.secondary} 1px, transparent 1px)`,
                   backgroundSize: '8px 8px',
                 }}
               ></div>
@@ -326,7 +416,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div
                 className="w-full h-full"
                 style={{
-                  backgroundImage: `repeating-conic-gradient(from 0deg at 50% 50%, #f97316 0deg, #f97316 2deg, transparent 2deg, transparent 8deg)`,
+                  backgroundImage: `repeating-conic-gradient(from 0deg at 50% 50%, ${theme.hex?.secondary} 0deg, ${theme.hex?.secondary} 2deg, transparent 2deg, transparent 8deg)`,
                   backgroundSize: '100% 100%',
                 }}
               ></div>
@@ -377,7 +467,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div
                 className="w-full h-full"
                 style={{
-                  backgroundImage: `repeating-linear-gradient(45deg, #3b82f6 0px, #3b82f6 1px, transparent 1px, transparent 8px), repeating-linear-gradient(-45deg, #3b82f6 0px, #3b82f6 1px, transparent 1px, transparent 8px)`,
+                  backgroundImage: `repeating-linear-gradient(45deg, ${theme.hex?.secondary} 0px, ${theme.hex?.secondary} 1px, transparent 1px, transparent 8px), repeating-linear-gradient(-45deg, ${theme.hex?.secondary} 0px, ${theme.hex?.secondary} 1px, transparent 1px, transparent 8px)`,
                   backgroundSize: '12px 12px',
                 }}
               ></div>
@@ -503,7 +593,12 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   const theme = getPatternTheme(certificatePattern)
 
   return (
-    <div className="bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 w-full h-full">
+    <div
+      className="border border-blue-200 rounded-xl p-4 w-full h-full"
+      style={{
+        background: `linear-gradient(to bottom right, #eff6ff, #eef2ff)`,
+      }}
+    >
       <div className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden w-full h-full flex flex-col">
         {/* Dynamic Certificate Pattern */}
         {renderCertificatePattern(certificatePattern)}
@@ -544,37 +639,54 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           {/* Header with decorative line */}
           <div className="flex items-center justify-center space-x-2 mb-2">
             <div
-              className={`w-6 sm:w-8 h-px bg-linear-to-r from-transparent ${theme.secondary.replace('text-', 'to-')}`}
+              className={`w-6 sm:w-8 h-px opacity-60`}
+              style={{
+                background: `linear-gradient(to right, transparent, ${theme.hex?.secondary})`,
+              }}
             ></div>
             <div
-              className={`text-xs sm:text-sm ${theme.secondary} font-medium uppercase tracking-wider`}
+              className={`text-xs sm:text-sm font-medium uppercase tracking-wider`}
+              style={{ color: theme.hex?.secondary }}
             >
               Certificate
             </div>
             <div
-              className={`w-6 sm:w-8 h-px bg-linear-to-l from-transparent ${theme.secondary.replace('text-', 'to-')}`}
+              className={`w-6 sm:w-8 h-px opacity-60`}
+              style={{
+                background: `linear-gradient(to left, transparent, ${theme.hex?.secondary})`,
+              }}
             ></div>
           </div>
 
           {/* Award Icon with decorative elements */}
           <div className="flex justify-center relative">
             <div
-              className={`w-12 h-12 sm:w-16 sm:h-16 bg-linear-to-br ${theme.icon.replace('text-', 'from-')}-100 ${theme.icon.replace('text-', 'to-')}-200 rounded-full flex items-center justify-center relative`}
+              className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center relative`}
+              style={{
+                background: `linear-gradient(to bottom right, ${theme.hex?.bg}, ${theme.hex?.border})`,
+              }}
             >
-              <Award className={`w-6 h-6 sm:w-8 sm:h-8 ${theme.icon}`} />
+              <Award
+                className={`w-6 h-6 sm:w-8 sm:h-8`}
+                style={{ color: theme.hex?.icon }}
+              />
               {/* Decorative rays */}
               <div className="absolute inset-0 rounded-full">
                 <div
-                  className={`absolute top-0 left-1/2 w-px h-2 sm:h-3 ${theme.secondary.replace('text-', 'bg-')} transform -translate-x-1/2 -translate-y-1 opacity-60`}
+                  className={`absolute top-0 left-1/2 w-px h-2 sm:h-3 transform -translate-x-1/2 -translate-y-1 opacity-60`}
+                  style={{ backgroundColor: theme.hex?.secondary }}
                 ></div>
                 <div
-                  className={`absolute bottom-0 left-1/2 w-px h-2 sm:h-3 ${theme.secondary.replace('text-', 'bg-')} transform -translate-x-1/2 translate-y-1 opacity-60`}
+                  className={`absolute bottom-0 left-1/2 w-px h-2 sm:h-3 transform -translate-x-1/2 translate-y-1 opacity-60`}
+                  style={{ backgroundColor: theme.hex?.secondary }}
                 ></div>
                 <div
-                  className={`absolute left-0 top-1/2 w-2 sm:w-3 h-px ${theme.secondary.replace('text-', 'bg-')} transform -translate-y-1/2 -translate-x-1 opacity-60`}
+                  className={`absolute left-0 top-1/2 w-2 sm:w-3 h-px transform -translate-y-1/2 -translate-x-1 opacity-60`}
+                  style={{ backgroundColor: theme.hex?.secondary }}
                 ></div>
                 <div
-                  className={`absolute right-0 top-1/2 w-2 sm:w-3 h-px ${theme.secondary.replace('text-', 'bg-')} transform -translate-y-1/2 translate-x-1 opacity-60`}
+                  className={`absolute right-0 top-1/2 w-2 sm:w-3 h-px transform -translate-y-1/2 translate-x-1 opacity-60`}
+                  style={{ backgroundColor: theme.hex?.secondary }}
                 ></div>
               </div>
             </div>
@@ -626,7 +738,12 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
           {/* Certification Type Badge */}
           <div
-            className={`inline-flex items-center space-x-1 text-xs sm:text-sm ${theme.badge} px-3 py-1 rounded-full border`}
+            className={`inline-flex items-center space-x-1 text-xs sm:text-sm px-3 py-1 rounded-full border`}
+            style={{
+              backgroundColor: theme.hex?.bg,
+              color: theme.hex?.primary,
+              borderColor: theme.hex?.border,
+            }}
           >
             <CheckCircle size={12} />
             <span className="font-medium">
@@ -659,20 +776,26 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             {/* Left: Chief Instructor */}
             <div className="flex flex-col items-start space-y-1 flex-1">
               <div className="flex items-center space-x-1">
-                <User className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${theme.icon}`} />
+                <User
+                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3`}
+                  style={{ color: theme.hex?.icon }}
+                />
                 <span
-                  className={`text-[10px] sm:text-xs ${theme.secondary} font-bold uppercase tracking-wider`}
+                  className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider`}
+                  style={{ color: theme.hex?.secondary }}
                 >
                   Chief Instructor
                 </span>
               </div>
               <div
-                className={`text-xs sm:text-sm ${theme.primary} font-extrabold`}
+                className={`text-xs sm:text-sm font-extrabold`}
+                style={{ color: theme.hex?.primary }}
               >
                 {certificateInstructor || 'Dr. Jane Smith'}
               </div>
               <div
-                className={`h-px w-12 sm:w-16 ${theme.secondary.replace('text-', 'bg-')} opacity-50`}
+                className={`h-px w-12 sm:w-16 opacity-50`}
+                style={{ backgroundColor: theme.hex?.secondary }}
               ></div>
             </div>
 
@@ -689,16 +812,19 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   />
                 ) : (
                   <div
-                    className={`w-full h-full ${theme.icon.replace('text-', 'bg-')}-100 rounded-full flex items-center justify-center`}
+                    className={`w-full h-full rounded-full flex items-center justify-center`}
+                    style={{ backgroundColor: theme.hex?.bg }}
                   >
                     <Building
-                      className={`w-8 h-8 sm:w-12 sm:h-12 ${theme.icon}`}
+                      className={`w-8 h-8 sm:w-12 sm:h-12`}
+                      style={{ color: theme.hex?.icon }}
                     />
                   </div>
                 )}
               </div>
               <div
-                className={`text-[10px] sm:text-xs ${theme.secondary} font-bold uppercase`}
+                className={`text-[10px] sm:text-xs font-bold uppercase`}
+                style={{ color: theme.hex?.secondary }}
               >
                 {org?.name || 'LearnHouse'}
               </div>
@@ -707,20 +833,26 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             {/* Right: CEO */}
             <div className="flex flex-col items-end space-y-1 flex-1">
               <div className="flex items-center space-x-1">
-                <User className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${theme.icon}`} />
+                <User
+                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3`}
+                  style={{ color: theme.hex?.icon }}
+                />
                 <span
-                  className={`text-[10px] sm:text-xs ${theme.secondary} font-bold uppercase tracking-wider`}
+                  className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider`}
+                  style={{ color: theme.hex?.secondary }}
                 >
                   CEO
                 </span>
               </div>
               <div
-                className={`text-xs sm:text-sm ${theme.primary} font-extrabold`}
+                className={`text-xs sm:text-sm font-extrabold`}
+                style={{ color: theme.hex?.primary }}
               >
                 {certificateCeo || 'CEO Name'}
               </div>
               <div
-                className={`h-px w-12 sm:w-16 ${theme.secondary.replace('text-', 'bg-')} opacity-50`}
+                className={`h-px w-12 sm:w-16 opacity-50`}
+                style={{ backgroundColor: theme.hex?.secondary }}
               ></div>
             </div>
           </div>
@@ -728,7 +860,8 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           {/* Absolute bottom: Awarded Date */}
           <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 opacity-60">
             <span
-              className={`text-[8px] sm:text-[10px] ${theme.secondary} font-medium italic`}
+              className={`text-[8px] sm:text-[10px] font-medium italic`}
+              style={{ color: theme.hex?.secondary }}
             >
               Awarded: {awardedDate || 'Dec 15, 2024'}
             </span>

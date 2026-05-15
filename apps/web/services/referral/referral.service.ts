@@ -278,3 +278,53 @@ export async function rejectPayoutRequest(
     return { success: false, error: 'Network error' }
   }
 }
+
+/**
+ * Get all partners for the organization (admin only).
+ */
+export async function getAdminPartners(
+  access_token: string,
+  org_id: string
+): Promise<{ success: boolean; data: any; error?: string }> {
+  try {
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/partners`,
+      RequestBodyWithAuthHeader('GET', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success) return { success: true, data: res.data }
+    return {
+      success: false,
+      data: null,
+      error: res.data?.detail ?? 'Failed to load partners',
+    }
+  } catch {
+    return { success: false, data: null, error: 'Network error' }
+  }
+}
+
+/**
+ * Get students for a specific partner (admin only).
+ */
+export async function getPartnerStudents(
+  access_token: string,
+  org_id: string,
+  partner_id: number
+): Promise<{ success: boolean; data: CommissionRecord[]; error?: string }> {
+  try {
+    const result = await fetch(
+      `${getAPIUrl()}${REFERRAL_BASE}/${org_id}/admin/partners/${partner_id}/students`,
+      RequestBodyWithAuthHeader('GET', null, null, access_token)
+    )
+    const res = await getResponseMetadata(result)
+    if (res.success)
+      return { success: true, data: res.data as CommissionRecord[] }
+    return {
+      success: false,
+      data: [],
+      error: res.data?.detail ?? 'Failed to load partner students',
+    }
+  } catch {
+    return { success: false, data: [], error: 'Network error' }
+  }
+}

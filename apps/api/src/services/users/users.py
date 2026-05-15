@@ -238,10 +238,21 @@ async def create_user(
             )
 
     # Link user and organization
+    # Determine role_id based on signup_type
+    target_role_id = 4 # Default: User
+    if getattr(user_object, "signup_type", "student") == "partner":
+        partner_role_statement = select(Role).where(Role.role_uuid == "partner_role")
+        partner_role = db_session.exec(partner_role_statement).first()
+        if partner_role:
+            target_role_id = partner_role.id
+        else:
+            # Fallback if role doesn't exist for some reason
+            target_role_id = 4
+
     user_organization = UserOrganization(
         user_id=user.id if user.id else 0,
         org_id=int(org_id),
-        role_id=4,
+        role_id=target_role_id,
         creation_date=str(datetime.now()),
         update_date=str(datetime.now()),
     )

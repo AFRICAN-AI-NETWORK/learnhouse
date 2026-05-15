@@ -91,6 +91,7 @@ function DashLeftMenu() {
   const canSeeOrg = isAdmin || rights?.organizations?.action_read
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
   const canSeeHandbook = isAdmin || rights?.handbook?.action_read
+  const isPartner = isAdmin || rights?.affiliation?.action_read
 
   if (!org || !session || loading) return null
 
@@ -180,6 +181,14 @@ function DashLeftMenu() {
               href="/dash/referrals"
               icon={<Link2 size={18} />}
               label="Referrals"
+              isCollapsed={isCollapsed}
+            />
+          )}
+          {isPartner && !isAdmin && (
+            <MenuLink
+              href="/dash/affiliation"
+              icon={<Users size={18} />}
+              label="Affiliation"
               isCollapsed={isCollapsed}
             />
           )}

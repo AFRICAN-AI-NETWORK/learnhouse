@@ -32,6 +32,7 @@ class UserCreate(UserBase):
     referral_code: Optional[str] = None  # Optional referral code during signup
     device_id: Optional[str] = None  # Device fingerprint hash
     browser_fingerprint: Optional[dict] = None  # Full browser fingerprint
+    signup_type: Optional[str] = "student"  # "student" or "partner"
 
 
 class SignupUserCreate(UserCreate):

@@ -442,3 +442,77 @@ async def api_get_referral_stats(
         "total_referrers": len(leaderboard),
         "leaderboard": leaderboard,
     }
+
+
+@router.get("/{org_id}/admin/partners")
+async def api_get_all_partners(
+    request: Request,
+    org_id: int,
+    limit: int = 100,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Get all users who have a referral code in this organization.
+    Admin-only endpoint.
+    """
+    from sqlmodel import select, func
+    from src.db.referrals.referral_codes import ReferralCode
+    from src.db.referrals.referral_tracking import ReferralTracking
+    from src.db.users import User
+
+    _require_admin(current_user, org_id, db_session)
+
+    # Fetch all referral codes for this org
+    statement = select(ReferralCode).where(ReferralCode.org_id == org_id).limit(limit)
+    codes = db_session.exec(statement).all()
+
+    results = []
+    for code in codes:
+        user = db_session.get(User, code.user_id)
+        
+        # Count referrals for this partner
+        count_stmt = select(func.count()).select_from(ReferralTracking).where(
+            ReferralTracking.referral_code_id == code.id
+        )
+        referral_count = db_session.exec(count_stmt).one() or 0
+
+        results.append({
+            "user_id": code.user_id,
+            "username": user.username if user else "unknown",
+            "email": user.email if user else "unknown",
+            "referral_code": code.code,
+            "referral_count": referral_count,
+            "created_at": str(code.creation_date)
+        })
+
+    return {"partners": results}
+
+
+@router.get("/{org_id}/admin/partners/{partner_id}/students")
+async def api_get_partner_students(
+    request: Request,
+    org_id: int,
+    partner_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Get detailed student tracking for a specific partner.
+    Admin-only endpoint.
+    """
+    from src.services.referrals.referral_commissions import get_commission_history
+    from src.db.users import PublicUser as InternalPublicUser
+
+    _require_admin(current_user, org_id, db_session)
+
+    # Reuse the same logic used by partners, but for the target partner_id
+    target_user = InternalPublicUser(id=partner_id)
+    
+    # We call the service function directly
+    return await get_commission_history(
+        request=request,
+        org_id=org_id,
+        current_user=target_user,
+        db_session=db_session
+    )

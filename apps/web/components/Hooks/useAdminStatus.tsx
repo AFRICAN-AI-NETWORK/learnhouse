@@ -76,6 +76,9 @@ interface Rights {
   dashboard: {
     action_access: boolean
   }
+  affiliation: {
+    action_read: boolean
+  }
 }
 
 interface UseAdminStatusReturn {
@@ -170,6 +173,9 @@ function useAdminStatus(): UseAdminStatusReturn {
       },
       dashboard: {
         action_access: false,
+      },
+      affiliation: {
+        action_read: false,
       },
     }
 
