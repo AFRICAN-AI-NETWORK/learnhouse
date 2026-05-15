@@ -133,13 +133,14 @@ export default function CommunicationsPage({
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 max-w-6xl mx-auto min-h-screen">
+    <div className="p-4 md:p-8 space-y-8 max-w-6xl mx-auto min-h-screen bg-[#f8f8f8] dark:bg-[#0f0f13]">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-zinc-900 tracking-tight flex items-center gap-3">
-            <Megaphone className="text-zinc-400" /> Communications Hub
+          <h1 className="text-3xl font-black text-zinc-900 tracking-tight flex items-center gap-3 dark:text-white">
+            <Megaphone className="text-zinc-400 dark:text-white/45" />{' '}
+            Communications Hub
           </h1>
-          <p className="text-zinc-500 font-medium">
+          <p className="text-zinc-500 font-medium dark:text-white/50">
             Broadcast messages to your organization community.
           </p>
         </div>
@@ -150,15 +151,15 @@ export default function CommunicationsPage({
         <div className="lg:col-span-2 space-y-6">
           <form
             onSubmit={handleSend}
-            className="bg-white border border-zinc-200 rounded-3xl p-8 shadow-sm space-y-6"
+            className="bg-white border border-zinc-200 rounded-3xl p-8 shadow-sm space-y-6 dark:border-white/8 dark:bg-[#13131a] dark:shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
           >
-            <div className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-50 pb-4">
+            <div className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-widest border-b border-zinc-50 pb-4 dark:border-white/8 dark:text-white/40">
               <Send size={16} /> New Campaign
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1">
+                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 dark:text-white/45">
                   Campaign Subject
                 </label>
                 <input
@@ -166,17 +167,17 @@ export default function CommunicationsPage({
                   onChange={(e) => setSubject(e.target.value)}
                   type="text"
                   placeholder="e.g. Important Update: New Course Requirements"
-                  className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium"
+                  className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium dark:border-white/8 dark:bg-white/5 dark:text-white dark:placeholder:text-white/25 dark:focus:ring-indigo-500/15"
                   required
                 />
               </div>
 
               {/* Header Image */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 flex items-center justify-between">
+                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 flex items-center justify-between dark:text-white/45">
                   <div className="flex items-center gap-2">
                     <ImagePlus size={14} /> Header Image
-                    <span className="text-zinc-300 font-medium normal-case tracking-normal">
+                    <span className="text-zinc-300 font-medium normal-case tracking-normal dark:text-white/25">
                       (optional banner for email)
                     </span>
                   </div>
@@ -188,7 +189,7 @@ export default function CommunicationsPage({
                     onChange={(e) => setHeaderImageUrl(e.target.value)}
                     type="url"
                     placeholder="https://example.com/banner.png or upload..."
-                    className="flex-1 bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium"
+                    className="flex-1 bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium dark:border-white/8 dark:bg-white/5 dark:text-white dark:placeholder:text-white/25 dark:focus:ring-indigo-500/15"
                   />
                   <input
                     type="file"
@@ -201,7 +202,7 @@ export default function CommunicationsPage({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="bg-zinc-50 border border-zinc-100 p-3 rounded-2xl hover:bg-zinc-100 transition-all text-zinc-500 hover:text-zinc-900 disabled:opacity-50"
+                    className="bg-zinc-50 border border-zinc-100 p-3 rounded-2xl hover:bg-zinc-100 transition-all text-zinc-500 hover:text-zinc-900 disabled:opacity-50 dark:border-white/8 dark:bg-white/5 dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white"
                   >
                     {isUploading ? (
                       <Loader2 size={18} className="animate-spin" />
@@ -212,7 +213,7 @@ export default function CommunicationsPage({
                 </div>
 
                 {headerImageUrl && (
-                  <div className="relative mt-2 rounded-2xl overflow-hidden border border-zinc-100 bg-zinc-50 group">
+                  <div className="relative mt-2 rounded-2xl overflow-hidden border border-zinc-100 bg-zinc-50 group dark:border-white/8 dark:bg-white/5">
                     <img
                       src={headerImageUrl}
                       alt="Header preview"
@@ -233,7 +234,7 @@ export default function CommunicationsPage({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1">
+                <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 dark:text-white/45">
                   Message Content
                 </label>
                 <textarea
@@ -241,23 +242,23 @@ export default function CommunicationsPage({
                   onChange={(e) => setBody(e.target.value)}
                   rows={8}
                   placeholder="Write your email and announcement content here..."
-                  className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium resize-none"
+                  className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-medium resize-none dark:border-white/8 dark:bg-white/5 dark:text-white dark:placeholder:text-white/25 dark:focus:ring-indigo-500/15"
                   required
                 />
-                <p className="ml-1 text-[10px] text-zinc-400 font-bold uppercase tracking-tight">
+                <p className="ml-1 text-[10px] text-zinc-400 font-bold uppercase tracking-tight dark:text-white/35">
                   Email & Chat Announcement
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1">
+                  <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 dark:text-white/45">
                     Target Audience
                   </label>
                   <select
                     value={targetType}
                     onChange={(e) => setTargetType(e.target.value)}
-                    className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-bold appearance-none cursor-pointer"
+                    className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-bold appearance-none cursor-pointer dark:border-white/8 dark:bg-white/5 dark:text-white dark:focus:ring-indigo-500/15"
                   >
                     <option value="ALL">All Users</option>
                     <option value="WAITLIST">Waitlist Only</option>
@@ -268,13 +269,13 @@ export default function CommunicationsPage({
 
                 {targetType === 'COURSE' && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1">
+                    <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 dark:text-white/45">
                       Select Course
                     </label>
                     <select
                       value={targetValue}
                       onChange={(e) => setTargetValue(e.target.value)}
-                      className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-bold appearance-none cursor-pointer"
+                      className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-bold appearance-none cursor-pointer dark:border-white/8 dark:bg-white/5 dark:text-white dark:focus:ring-indigo-500/15"
                       required
                     >
                       <option value="">Select a course...</option>
@@ -289,13 +290,13 @@ export default function CommunicationsPage({
 
                 {targetType === 'ROLES' && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1">
+                    <label className="text-xs font-black text-zinc-500 uppercase tracking-wider pl-1 dark:text-white/45">
                       Select Role
                     </label>
                     <select
                       value={targetValue}
                       onChange={(e) => setTargetValue(e.target.value)}
-                      className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-bold appearance-none cursor-pointer"
+                      className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all font-bold appearance-none cursor-pointer dark:border-white/8 dark:bg-white/5 dark:text-white dark:focus:ring-indigo-500/15"
                       required
                     >
                       <option value="">Select a role...</option>
@@ -319,7 +320,7 @@ export default function CommunicationsPage({
               </div>
             </div>
 
-            <div className="pt-6 flex items-center justify-between border-t border-zinc-50">
+            <div className="pt-6 flex items-center justify-between border-t border-zinc-50 dark:border-white/8">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div className="relative">
                   <input
@@ -328,11 +329,11 @@ export default function CommunicationsPage({
                     onChange={(e) => setIncludeChat(e.target.checked)}
                     className="peer hidden"
                   />
-                  <div className="w-5 h-5 border-2 border-zinc-200 rounded-md peer-checked:bg-zinc-950 peer-checked:border-zinc-950 transition-all flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-zinc-200 rounded-md peer-checked:bg-zinc-950 peer-checked:border-zinc-950 transition-all flex items-center justify-center dark:border-white/15 dark:peer-checked:bg-blue-600 dark:peer-checked:border-blue-600">
                     <div className="w-1.5 h-1.5 bg-white rounded-sm opacity-0 peer-checked:opacity-100 transition-opacity" />
                   </div>
                 </div>
-                <span className="text-[10px] font-black text-zinc-400 group-hover:text-zinc-900 transition-colors uppercase tracking-widest flex items-center gap-2">
+                <span className="text-[10px] font-black text-zinc-400 group-hover:text-zinc-900 transition-colors uppercase tracking-widest flex items-center gap-2 dark:text-white/40 dark:group-hover:text-white/80">
                   <MessageSquare size={14} /> Global Chat Post
                 </span>
               </label>
@@ -340,7 +341,7 @@ export default function CommunicationsPage({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-zinc-900 text-white px-10 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all flex items-center gap-3 shadow-xl hover:shadow-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-300"
+                className="bg-zinc-900 text-white px-10 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all flex items-center gap-3 shadow-xl hover:shadow-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:hover:shadow-blue-950/30 dark:disabled:bg-white/10 dark:disabled:text-white/30"
               >
                 {isSubmitting ? (
                   <BarLoader width={80} color="#ffffff" />
@@ -356,8 +357,8 @@ export default function CommunicationsPage({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-zinc-50 rounded-3xl p-6 border border-zinc-100 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
+          <div className="bg-zinc-50 rounded-3xl p-6 border border-zinc-100 space-y-4 dark:border-white/8 dark:bg-[#13131a]">
+            <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4 dark:text-white/40">
               <History size={16} /> Campaign History
             </div>
 
@@ -366,7 +367,7 @@ export default function CommunicationsPage({
                 <BarLoader width={100} color="#e5e7eb" />
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="text-center py-16 space-y-3 opacity-20">
+              <div className="text-center py-16 space-y-3 opacity-20 dark:text-white">
                 <Mail size={40} className="mx-auto" />
                 <p className="text-[10px] font-black uppercase tracking-widest">
                   No campaigns sent
@@ -377,7 +378,7 @@ export default function CommunicationsPage({
                 {campaigns.map((camp: any) => (
                   <div
                     key={camp.id}
-                    className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-xs space-y-2 hover:border-zinc-200 transition-colors"
+                    className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-xs space-y-2 hover:border-zinc-200 transition-colors dark:border-white/8 dark:bg-white/5 dark:hover:border-white/15"
                   >
                     <div className="flex items-center justify-between">
                       <span
@@ -386,19 +387,19 @@ export default function CommunicationsPage({
                             ? 'bg-emerald-50 text-emerald-600'
                             : camp.status === 'PROCESSING'
                               ? 'bg-blue-50 text-blue-600 animate-pulse'
-                              : 'bg-zinc-100 text-zinc-500'
+                              : 'bg-zinc-100 text-zinc-500 dark:bg-white/10 dark:text-white/45'
                         }`}
                       >
                         {camp.status}
                       </span>
-                      <span className="text-[9px] text-zinc-400 font-bold">
+                      <span className="text-[9px] text-zinc-400 font-bold dark:text-white/35">
                         {new Date(camp.creation_date).toLocaleDateString()}
                       </span>
                     </div>
-                    <h4 className="font-bold text-xs text-zinc-900 truncate tracking-tight">
+                    <h4 className="font-bold text-xs text-zinc-900 truncate tracking-tight dark:text-white/85">
                       {camp.subject}
                     </h4>
-                    <div className="flex items-center gap-2 text-[9px] text-zinc-400 font-bold uppercase tracking-tight">
+                    <div className="flex items-center gap-2 text-[9px] text-zinc-400 font-bold uppercase tracking-tight dark:text-white/35">
                       <Users size={10} />{' '}
                       {typeof camp.target_type === 'string'
                         ? camp.target_type.split('.').pop()
@@ -410,7 +411,7 @@ export default function CommunicationsPage({
             )}
           </div>
 
-          <div className="bg-zinc-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+          <div className="bg-zinc-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden group dark:border dark:border-white/8">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
               <AlertCircle size={60} className="text-white" />
             </div>
@@ -428,7 +429,7 @@ export default function CommunicationsPage({
       {/* Live Sessions Management Section */}
       {liveSessions.length > 0 && (
         <div className="space-y-6">
-          <div className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-widest dark:text-white/40">
             <Video size={16} /> Manage Live Sessions
           </div>
 
@@ -437,25 +438,25 @@ export default function CommunicationsPage({
               <Link
                 key={session.id}
                 href={`/dash/communications/participants/${session.activity_uuid}`}
-                className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm hover:border-zinc-900 transition-all group"
+                className="bg-white border border-zinc-200 rounded-3xl p-6 shadow-sm hover:border-zinc-900 transition-all group dark:border-white/8 dark:bg-[#13131a] dark:hover:border-white/18"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                  <div className="w-10 h-10 bg-zinc-50 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-colors dark:bg-white/5 dark:text-white/40 dark:group-hover:bg-blue-600 dark:group-hover:text-white">
                     <Video size={20} />
                   </div>
                   <ChevronRight
                     size={18}
-                    className="text-zinc-300 group-hover:text-zinc-900 transition-colors"
+                    className="text-zinc-300 group-hover:text-zinc-900 transition-colors dark:text-white/25 dark:group-hover:text-white"
                   />
                 </div>
-                <h4 className="font-black text-zinc-900 tracking-tight mb-1 truncate">
+                <h4 className="font-black text-zinc-900 tracking-tight mb-1 truncate dark:text-white/90">
                   {session.name}
                 </h4>
-                <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest flex items-center justify-between">
+                <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest flex items-center justify-between dark:text-white/40">
                   <span>
                     {new Date(session.details?.start_time).toLocaleDateString()}
                   </span>
-                  <span className="bg-zinc-50 px-2 py-0.5 rounded text-[8px] border border-zinc-100">
+                  <span className="bg-zinc-50 px-2 py-0.5 rounded text-[8px] border border-zinc-100 dark:border-white/8 dark:bg-white/5">
                     {session.course_name}
                   </span>
                 </div>

@@ -115,7 +115,7 @@ const OrgEditGeneral: React.FC = () => {
   }
 
   return (
-    <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow ">
+    <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow dark:border dark:border-white/8 dark:bg-[#13131a]">
       <Formik
         enableReinitialize
         initialValues={initialValues}
@@ -137,11 +137,11 @@ const OrgEditGeneral: React.FC = () => {
         }) => (
           <Form>
             <div className="flex flex-col gap-0">
-              <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mx-3 my-3 rounded-md">
-                <h1 className="font-bold text-xl text-gray-800">
+              <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mx-3 my-3 rounded-md dark:bg-white/5">
+                <h1 className="font-bold text-xl text-gray-800 dark:text-white/90">
                   {t('dashboard.organization.settings.title')}
                 </h1>
-                <h2 className="text-gray-500 text-md">
+                <h2 className="text-gray-500 text-md dark:text-white/50">
                   {t('dashboard.organization.settings.subtitle')}
                 </h2>
               </div>
@@ -152,7 +152,7 @@ const OrgEditGeneral: React.FC = () => {
                     <div>
                       <Label htmlFor="name">
                         {t('dashboard.organization.settings.name')}
-                        <span className="text-gray-500 text-sm ml-2">
+                        <span className="text-gray-500 text-sm ml-2 dark:text-white/40">
                           ({60 - (values.name?.length || 0)} characters left)
                         </span>
                       </Label>
@@ -176,7 +176,7 @@ const OrgEditGeneral: React.FC = () => {
                     <div>
                       <Label htmlFor="description">
                         {t('dashboard.organization.settings.short_description')}
-                        <span className="text-gray-500 text-sm ml-2">
+                        <span className="text-gray-500 text-sm ml-2 dark:text-white/40">
                           ({100 - (values.description?.length || 0)} characters
                           left)
                         </span>
@@ -231,7 +231,7 @@ const OrgEditGeneral: React.FC = () => {
                     <div>
                       <Label htmlFor="about">
                         {t('dashboard.organization.settings.about')}
-                        <span className="text-gray-500 text-sm ml-2">
+                        <span className="text-gray-500 text-sm ml-2 dark:text-white/40">
                           ({400 - (values.about?.length || 0)} characters left)
                         </span>
                       </Label>
@@ -259,7 +259,7 @@ const OrgEditGeneral: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="bg-black text-white hover:bg-black/90"
+                  className="bg-black text-white hover:bg-black/90 dark:bg-blue-600 dark:hover:bg-blue-700"
                 >
                   {isSubmitting
                     ? t('dashboard.organization.settings.saving')

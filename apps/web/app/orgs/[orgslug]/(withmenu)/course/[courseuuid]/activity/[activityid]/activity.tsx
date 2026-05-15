@@ -1009,7 +1009,7 @@ function ActivityClient(props: ActivityClientProps) {
                     })()}
                   </AnimatePresence>
                 ) : (
-                  <div className="min-h-screen bg-[#f7f9fc]">
+                  <div className="min-h-screen bg-[#f7f9fc] dark:bg-[#0f0f13]">
                     {activityid === 'end' ? (
                       <div className="mx-auto max-w-5xl px-4 py-8">
                         <CourseEndView
@@ -1071,21 +1071,42 @@ function ActivityClient(props: ActivityClientProps) {
                                       course={course}
                                     />
                                   ) : (
-                                    <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm">
-                                      <div
-                                        className={`relative mx-auto ${
-                                          activity.activity_type ===
-                                          'TYPE_VIDEO'
-                                            ? 'max-w-5xl'
-                                            : activity.activity_type ===
-                                                'TYPE_SMART_ARTICLE'
-                                              ? 'max-w-full'
-                                              : 'max-w-6xl'
-                                        }`}
-                                      >
-                                        {activityContent}
+                                    <>
+                                      <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500 dark:text-white/40">
+                                        <Link
+                                          href={
+                                            getUriWithOrg(orgslug, '') +
+                                            `/course/${courseuuid}`
+                                          }
+                                          className="truncate hover:text-slate-900 dark:hover:text-white"
+                                        >
+                                          {course.name}
+                                        </Link>
+                                        <ChevronRight
+                                          size={14}
+                                          className="shrink-0 text-slate-300 dark:text-white/20"
+                                        />
+                                        <span className="truncate text-slate-800 dark:text-white/75">
+                                          {activity?.name}
+                                        </span>
                                       </div>
-                                    </div>
+
+                                      <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]">
+                                        <div
+                                          className={`relative mx-auto ${
+                                            activity.activity_type ===
+                                            'TYPE_VIDEO'
+                                              ? 'max-w-5xl'
+                                              : activity.activity_type ===
+                                                  'TYPE_SMART_ARTICLE'
+                                                ? 'max-w-full'
+                                                : 'max-w-6xl'
+                                          }`}
+                                        >
+                                          {activityContent}
+                                        </div>
+                                      </div>
+                                    </>
                                   )}
                                 </>
                               )}
@@ -1161,13 +1182,13 @@ function ActivityPageNavbar({
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
   return (
-    <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur">
+    <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
         <div className="flex gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 items-center gap-4 gap-5">
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
-              className="hidden shrink-0 bg-white p-1 shadow-xs sm:block"
+              className="hidden shrink-0 bg-white p-1 shadow-xs dark:bg-transparent sm:block"
             >
               <img
                 className="w-32"
@@ -1176,30 +1197,18 @@ function ActivityPageNavbar({
               />
             </Link>
             <div className="min-w-0 flex flex-row gap-10">
-              <div className="flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500">
-                <Link
-                  href={getUriWithOrg(orgslug, '') + `/course/${courseuuid}`}
-                  className="truncate hover:text-slate-900"
-                >
-                  {course.name}
-                </Link>
-                <ChevronRight size={14} className="shrink-0 text-slate-300" />
-                <span className="truncate text-slate-800">
-                  {activity?.name}
-                </span>
-              </div>
               <div className="flex flex-col gap-3">
-                <p className="text-xs font-semibold text-slate-500">
+                <p className="text-xs font-semibold text-slate-500 dark:text-white/45">
                   {t('courses.course_progress')}
                 </p>
                 <div className="flex items-center justify-center gap-3">
-                  <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200 sm:w-72">
+                  <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:w-72">
                     <div
                       className="h-full rounded-full bg-blue-600"
                       style={{ width: `${progressPercentage}%` }}
                     />
                   </div>
-                  <span className="text-xs font-bold text-slate-600">
+                  <span className="text-xs font-bold text-slate-600 dark:text-white/70">
                     {progressPercentage}%
                   </span>
                 </div>
@@ -1223,7 +1232,7 @@ function ActivityPageNavbar({
                           getUriWithOrg(orgslug, '') +
                           `/course/${courseuuid}/activity/${activityid}/edit`
                         }
-                        className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                        className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
                       >
                         <Edit2 size={16} />
                         {t('courses.contribute')}
@@ -1261,8 +1270,8 @@ function ActivityPageNavbar({
                           course.course_uuid,
                           trailData
                         )
-                          ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100'
-                          : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50'
+                          ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
+                          : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
                       } disabled:cursor-not-allowed disabled:opacity-70`}
                     >
                       {loadingMarkComplete ? (
@@ -1365,16 +1374,16 @@ function CourseContentSidebar({
   }
 
   return (
-    <aside className="border-b border-slate-200 bg-white lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
-      <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4">
+    <aside className="scrollbar-hide border-b border-slate-200 bg-white dark:border-white/8 dark:bg-[#13131a] lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4 dark:border-white/8 dark:bg-[#13131a]/95">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white/90">
             {t('courses.course_content')}
           </h2>
         </div>
       </div>
 
-      <div className="max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
+      <div className="scrollbar-hide max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
         {course.chapters?.map((chapter: any, index: number) => {
           const chapterKey = chapter.id ?? index
           const isOpen = openChapterKey === chapterKey
@@ -1382,7 +1391,7 @@ function CourseContentSidebar({
           return (
             <section
               key={chapterKey}
-              className="border-b border-slate-100 pb-3"
+              className="border-b border-slate-100 pb-3 dark:border-white/8"
             >
               <button
                 type="button"
@@ -1392,19 +1401,19 @@ function CourseContentSidebar({
                   )
                 }
                 aria-expanded={isOpen}
-                className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+                className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white/5"
               >
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
                   {index + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900">
+                  <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900 dark:text-white/85">
                     {chapter.name}
                   </h3>
                 </div>
                 <ChevronDown
                   size={18}
-                  className={`mt-1 shrink-0 text-slate-500 transition-transform ${
+                  className={`mt-1 shrink-0 text-slate-500 transition-transform dark:text-white/45 ${
                     isOpen ? 'rotate-180' : ''
                   }`}
                 />
@@ -1434,8 +1443,8 @@ function CourseContentSidebar({
                         prefetch={false}
                         className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
                           isCurrent
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-transparent hover:bg-slate-50'
+                            ? 'border-blue-600 bg-blue-50 dark:bg-indigo-500/15'
+                            : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
                         }`}
                       >
                         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
@@ -1449,7 +1458,9 @@ function CourseContentSidebar({
                             <Circle
                               size={12}
                               className={
-                                isCurrent ? 'text-blue-600' : 'text-slate-300'
+                                isCurrent
+                                  ? 'text-blue-600 dark:text-indigo-300'
+                                  : 'text-slate-300 dark:text-white/20'
                               }
                               fill={isCurrent ? 'currentColor' : 'none'}
                             />
@@ -1460,18 +1471,20 @@ function CourseContentSidebar({
                           <div className="flex items-center gap-2">
                             <p
                               className={`line-clamp-2 text-sm font-semibold leading-5 ${
-                                isCurrent ? 'text-slate-950' : 'text-slate-700'
+                                isCurrent
+                                  ? 'text-slate-950 dark:text-white'
+                                  : 'text-slate-700 dark:text-white/65'
                               }`}
                             >
                               {chapterActivity.name}
                             </p>
                             {isCurrent && (
-                              <span className="shrink-0 text-[11px] font-semibold text-blue-600">
+                              <span className="shrink-0 text-[11px] font-semibold text-blue-600 dark:text-indigo-300">
                                 {t('activities.current')}
                               </span>
                             )}
                           </div>
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/40">
                             <ActivityIcon size={13} />
                             <span>{activityMeta.label}</span>
                           </div>
@@ -1836,7 +1849,7 @@ function NextActivityButton({
   return (
     <div
       onClick={navigateToActivity}
-      className="bg-blue-600 rounded-md px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-gray-200"
+      className="bg-blue-600 rounded-md px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-blue-700"
     >
       <span className="text-[10px] font-bold text-white mb-1 uppercase">
         {t('common.next')}
@@ -1906,9 +1919,9 @@ function PreviousActivityButton({
   return (
     <div
       onClick={navigateToActivity}
-      className="bg-white rounded-md px-4 nice-shadow flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out"
+      className="bg-white rounded-md px-4 nice-shadow flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-gray-50 dark:border dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
     >
-      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase">
+      <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase dark:text-white/40">
         {t('common.previous')}
       </span>
       <div className="flex items-center space-x-1">
