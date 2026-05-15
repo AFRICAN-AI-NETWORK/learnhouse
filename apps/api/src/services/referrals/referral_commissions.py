@@ -12,6 +12,8 @@ from src.db.referrals.referral_commissions import (
     ReferralCommission,
     CommissionStatus,
 )
+from src.db.referrals.referral_tracking import ReferralTracking
+from src.db.referrals.referral_codes import ReferralCode
 from src.db.users import User, PublicUser
 
 logger = logging.getLogger(__name__)
@@ -291,58 +293,75 @@ async def get_commission_history(
     limit: int = 50
 ) -> List[dict]:
     """
-    Get commission history for current user    
-    Args:
-        request: FastAPI request
-        org_id: Organization ID
-        current_user: Current authenticated user
-        db_session: Database session
-        limit: Maximum number of records to return
-        
-    Returns:
-        List of commission records
+    Get unified referral tracking history for current user.
+    Includes both registrations (from tracking) and payments (from commissions).
     """
     
-    # Query commissions - fetch all data upfront
-    statement = select(ReferralCommission).where(
-        ReferralCommission.referrer_user_id == current_user.id
+    # 1. Fetch all tracking records for this referrer in this org
+    # We join with ReferralCode to filter by org_id
+    tracking_statement = select(ReferralTracking).join(
+        ReferralCode, ReferralTracking.referral_code_id == ReferralCode.id
+    ).where(
+        and_(
+            ReferralTracking.referrer_user_id == current_user.id,
+            ReferralCode.org_id == org_id
+        )
+    ).order_by(ReferralTracking.creation_date.desc()).limit(limit)
+    
+    tracking_records = db_session.exec(tracking_statement).all()
+    
+    # 2. Fetch all commission records for this referrer in this org
+    commission_statement = select(ReferralCommission).where(
+        and_(
+            ReferralCommission.referrer_user_id == current_user.id,
+            ReferralCommission.org_id == org_id
+        )
     ).order_by(ReferralCommission.creation_date.desc()).limit(limit)
     
-    commissions = db_session.exec(statement).all()
+    commissions = db_session.exec(commission_statement).all()
     
-    if not commissions:
-        return []
-    
-    # Collect unique user IDs and course IDs for batch fetching
-    referred_user_ids = {c.referred_user_id for c in commissions}
-    course_ids = {c.course_id for c in commissions if c.course_id}
-    
-    # Batch fetch all referred users
+    # 3. Batch fetch all unique referred users
+    referred_user_ids = {t.referred_user_id for t in tracking_records} | {c.referred_user_id for c in commissions}
     user_map = {}
     if referred_user_ids:
         user_statement = select(User).where(User.id.in_(referred_user_ids))
         users = db_session.exec(user_statement).all()
         user_map = {user.id: user for user in users}
-    
-    # Batch fetch all courses
+        
+    # 4. Batch fetch all courses for commissions
+    course_ids = {c.course_id for c in commissions if c.course_id}
     course_map = {}
     if course_ids:
         from src.db.courses.courses import Course
         course_statement = select(Course).where(Course.id.in_(course_ids))
         courses = db_session.exec(course_statement).all()
         course_map = {course.id: course for course in courses}
+        
+    # 5. Group commissions by referred_user_id for merging
+    commissions_by_user = defaultdict(list)
+    for c in commissions:
+        commissions_by_user[c.referred_user_id].append(c)
+        
+    # 6. Merge logic:
+    # For every student referred:
+    # - If they have paid (commissions exist), show the commission records.
+    # - If they haven't paid (no commissions), show the registration record.
     
-    # Build response using pre-fetched data (no N+1 queries)
     history = []
+    
+    # Track which users we've already added via commission records
+    processed_user_ids = set()
+    
+    # First, add all commissions (these are "Paid" or "Pending Payout" events)
     for commission in commissions:
         referred_user = user_map.get(commission.referred_user_id)
         course = course_map.get(commission.course_id) if commission.course_id else None
         
         history.append({
-            "id": commission.id,
+            "id": f"comm_{commission.id}",
             "referred_username": referred_user.username if referred_user else "Unknown",
             "referred_user_email": referred_user.email if referred_user else "Unknown",
-            "course_name": course.name if course else "Platform Registration",
+            "course_name": course.name if course else "Course Enrollment",
             "amount": commission.commission_amount,
             "status": commission.status.value,
             "payment_completion_date": commission.payment_completion_date.isoformat() if commission.payment_completion_date else None,
@@ -350,5 +369,29 @@ async def get_commission_history(
             "payout_date": commission.payout_date.isoformat() if commission.payout_date else None,
             "created_at": commission.creation_date.isoformat() if commission.creation_date else None
         })
+        processed_user_ids.add(commission.referred_user_id)
+        
+    # Second, add tracking records for students who HAVEN'T paid yet
+    for tracking in tracking_records:
+        if tracking.referred_user_id in processed_user_ids:
+            continue
+            
+        referred_user = user_map.get(tracking.referred_user_id)
+        
+        history.append({
+            "id": f"track_{tracking.id}",
+            "referred_username": referred_user.username if referred_user else "Unknown",
+            "referred_user_email": referred_user.email if referred_user else "Unknown",
+            "course_name": "Registered Student",
+            "amount": 0.0,
+            "status": "registered", # Mapping to "Registered" in the UI
+            "payment_completion_date": None,
+            "eligible_date": None,
+            "payout_date": None,
+            "created_at": tracking.creation_date.isoformat() if tracking.creation_date else None
+        })
+        
+    # Sort final list by date descending
+    history.sort(key=lambda x: x['created_at'] or '', reverse=True)
     
-    return history
+    return history[:limit]

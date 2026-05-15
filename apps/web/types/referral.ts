@@ -5,6 +5,7 @@ export enum CommissionStatus {
   ELIGIBLE = 'eligible',
   PAID = 'paid',
   CANCELLED = 'cancelled',
+  REGISTERED = 'registered',
 }
 
 export enum PayoutStatus {

@@ -20,17 +20,22 @@ interface StudentTrackingListProps {
 }
 
 const STATUS_CONFIG: Record<
-  CommissionStatus,
+  string,
   {
     label: string
     variant: 'default' | 'secondary' | 'outline' | 'success' | 'warning'
     icon: any
   }
 > = {
-  [CommissionStatus.PENDING]: {
+  [CommissionStatus.REGISTERED]: {
     label: 'Registered',
     variant: 'secondary',
     icon: Clock,
+  },
+  [CommissionStatus.PENDING]: {
+    label: 'Paid',
+    variant: 'default',
+    icon: CheckCircle2,
   },
   [CommissionStatus.ELIGIBLE]: {
     label: 'Paid',
@@ -38,7 +43,7 @@ const STATUS_CONFIG: Record<
     icon: CheckCircle2,
   },
   [CommissionStatus.PAID]: {
-    label: 'Commission Paid',
+    label: 'Commission Sent',
     variant: 'outline',
     icon: UserCheck,
   },
@@ -163,7 +168,8 @@ function StudentTrackingList({
                         variant={config.variant as any}
                         className={`flex items-center gap-1.5 w-fit ${
                           record.status === CommissionStatus.ELIGIBLE ||
-                          record.status === CommissionStatus.PAID
+                          record.status === CommissionStatus.PAID ||
+                          record.status === CommissionStatus.PENDING
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                             : 'bg-slate-100 text-slate-600 border-slate-200'
                         }`}
