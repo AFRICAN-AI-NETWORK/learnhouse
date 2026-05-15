@@ -340,13 +340,15 @@ async def get_commission_history(
         
         history.append({
             "id": commission.id,
+            "referred_username": referred_user.username if referred_user else "Unknown",
             "referred_user_email": referred_user.email if referred_user else "Unknown",
-            "course_name": course.name if course else "N/A",
+            "course_name": course.name if course else "Platform Registration",
             "amount": commission.commission_amount,
             "status": commission.status.value,
             "payment_completion_date": commission.payment_completion_date.isoformat() if commission.payment_completion_date else None,
             "eligible_date": commission.refund_period_expiration_date.isoformat() if commission.refund_period_expiration_date else None,
-            "payout_date": commission.payout_date.isoformat() if commission.payout_date else None
+            "payout_date": commission.payout_date.isoformat() if commission.payout_date else None,
+            "created_at": commission.creation_date.isoformat() if commission.creation_date else None
         })
     
     return history

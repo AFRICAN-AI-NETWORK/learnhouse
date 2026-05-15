@@ -23,6 +23,7 @@ function DashboardHome() {
   const canSeeUsers = isAdmin || rights?.users?.action_read
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
   const canSeeHandbook = isAdmin || rights?.handbook?.action_read
+  const isPartner = isAdmin || rights?.affiliation?.action_read
 
   return (
     <div className="flex items-center justify-center mx-auto min-h-screen flex-col p-4 sm:mb-0 mb-16">
@@ -66,6 +67,14 @@ function DashboardHome() {
             icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
             title="Referrals"
             description="Earn commissions by referring new users"
+          />
+        )}
+        {isPartner && !isAdmin && (
+          <DashboardCard
+            href="/dash/affiliation"
+            icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
+            title="Affiliation"
+            description="Track your impact and manage your earnings"
           />
         )}
         {canSeeCommunications && (

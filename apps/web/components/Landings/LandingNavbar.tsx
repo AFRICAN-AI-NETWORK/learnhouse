@@ -33,13 +33,14 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
   const navLinks = [
     { name: 'Programs', href: '/#available' },
     { name: 'Roadmap', href: '/#roadmap' },
+    { name: 'Partners', href: '/affiliation/signup' },
     { name: 'Specializations', href: '/#specializations' },
     { name: 'Privacy Policy', href: '/policy' },
   ]
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out
+      className={`fixed top-0 left-0 right-0 z-100 transition-all duration-500 ease-in-out
         ${
           variant === 'policy'
             ? isScrolled
@@ -126,7 +127,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black z-[90] flex flex-col items-center justify-center p-6">
+        <div className="fixed inset-0 bg-black z-90 flex flex-col items-center justify-center p-6">
           <div className="flex flex-col items-center gap-8 text-center">
             {navLinks.map((link) => (
               <a

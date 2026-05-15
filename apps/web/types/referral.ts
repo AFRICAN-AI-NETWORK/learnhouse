@@ -40,6 +40,8 @@ export interface CommissionRecord {
   referral_code: string
   referred_user_id: number
   referred_username: string
+  referred_user_email?: string
+  course_name?: string
   amount: number
   currency: string
   status: CommissionStatus

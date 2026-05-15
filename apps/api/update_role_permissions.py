@@ -6,9 +6,24 @@ from datetime import datetime
 from sqlmodel import Session, select
 from src.core.events.database import engine
 from src.db.roles import Role, RoleTypeEnum
+from src.db.organizations import Organization
 
+from sqlalchemy import text
 def update_roles():
     with Session(engine) as session:
+        # Fix sequence if out of sync
+        try:
+            session.execute(text("SELECT setval('role_id_seq', (SELECT max(id) FROM role))"))
+            session.commit()
+            print("Reset role_id_seq successfully.")
+        except Exception as e:
+            session.rollback()
+            print(f"Warning: Could not reset sequence: {e}")
+
+        # Debug: List all existing roles
+        all_roles = session.exec(select(Role)).all()
+        print(f"Current roles in database: {[(r.id, r.name, r.role_uuid) for r in all_roles]}")
+
         # Define the rights for Support and Community Manager
         support_rights = {
             "dashboard": {"action_access": True},
@@ -29,6 +44,13 @@ def update_roles():
                 "action_read": True,
                 "action_update": False,
                 "action_delete": False
+            }
+        }
+
+        partner_rights = {
+            "dashboard": {"action_access": True},
+            "affiliation": {
+                "action_read": True
             }
         }
 
@@ -56,7 +78,8 @@ def update_roles():
 
         roles_to_update = [
             ("Support", "support_role", "Role for support staff to manage communications", support_rights),
-            ("Community Manager", "community_manager_role", "Role for managing community activities and communications", community_manager_rights)
+            ("Community Manager", "community_manager_role", "Role for managing community activities and communications", community_manager_rights),
+            ("Partner", "partner_role", "Role for external partners to track referrals and commissions", partner_rights)
         ]
 
         for name, uuid, desc, rights in roles_to_update:
