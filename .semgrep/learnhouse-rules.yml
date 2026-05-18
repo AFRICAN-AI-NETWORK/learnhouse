@@ -43,16 +43,10 @@ rules:
       File upload handler missing content-type or size validation.
       Check upload_content.py for the approved upload helper.
     patterns:
-      - pattern: |
-          async def $FUNC(..., $FILE: UploadFile, ...):
-              ...
-              await $FILE.read()
-              ...
-      - pattern-not: |
-          async def $FUNC(..., $FILE: UploadFile, ...):
-              ...
-              if $FILE.content_type not in ...
-              ...
+      - pattern-regex: |
+          (?s)async\s+def\s+\w+\(.*UploadFile.*\):.*await\s+\w+\.read\(\)
+      - pattern-not-regex: |
+          if\s+\w+\.content_type\s+not\s+in
     languages: [python]
     severity: WARNING
     paths:
