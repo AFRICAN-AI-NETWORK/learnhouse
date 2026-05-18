@@ -527,6 +527,7 @@ class TestGetCommissionHistory:
         mock_course.name = "Test Course"
 
         mock_session.exec.return_value.all.side_effect = [
+            [],  # Tracking records
             [mock_comm1],  # Commissions
             [mock_referred_user],  # Users batch fetch
             [mock_course],  # Courses batch fetch
@@ -541,8 +542,8 @@ class TestGetCommissionHistory:
         assert result[0]["course_name"] == "Test Course"
         assert result[0]["amount"] == 4.0
 
-        # Should only call exec 3 times (commissions, users, courses)
-        assert mock_session.exec.call_count == 3
+        # Should only call exec 4 times (tracking, commissions, users, courses)
+        assert mock_session.exec.call_count == 4
 
     @pytest.mark.asyncio
     async def test_history_returns_empty_for_no_commissions(self):
