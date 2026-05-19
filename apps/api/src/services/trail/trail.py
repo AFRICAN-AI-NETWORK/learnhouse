@@ -3,6 +3,7 @@ from uuid import uuid4
 from src.db.courses.chapter_activities import ChapterActivity
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
+from sqlalchemy import func
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
 from src.db.trail_runs import TrailRun, TrailRunRead
@@ -74,12 +75,10 @@ async def get_user_trails(
         trail_run.course = course.model_dump() if course else {}
 
         # Add number of activities (steps) in a course
-        statement = select(ChapterActivity).where(
+        count_statement = select(func.count()).select_from(ChapterActivity).where(
             ChapterActivity.course_id == trail_run.course_id
         )
-        course_total_steps = db_session.exec(statement)
-        # count number of activities in a this list
-        trail_run.course_total_steps = len(course_total_steps.all())
+        trail_run.course_total_steps = db_session.exec(count_statement).one()
 
     for trail_run in trail_runs:
         statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id)
@@ -158,12 +157,10 @@ async def get_user_trail_with_orgid(
         trail_run.course = course.model_dump() if course else {}
 
         # Add number of activities (steps) in a course
-        statement = select(ChapterActivity).where(
+        count_statement = select(func.count()).select_from(ChapterActivity).where(
             ChapterActivity.course_id == trail_run.course_id
         )
-        course_total_steps = db_session.exec(statement)
-        # count number of activities in a this list
-        trail_run.course_total_steps = len(course_total_steps.all())
+        trail_run.course_total_steps = db_session.exec(count_statement).one()
 
     for trail_run in trail_runs:
         statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id)

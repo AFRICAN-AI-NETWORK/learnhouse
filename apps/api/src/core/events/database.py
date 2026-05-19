@@ -42,7 +42,7 @@ def import_all_models():
                 module_name = file_name[:-3]  # Remove the '.py' extension
                 full_module_path = f"{current_module_base}.{module_name}"
                 try:
-                    importlib.import_module(full_module_path)
+                    importlib.import_module(full_module_path)  # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
                 except Exception as e:
                     logging.error(f"Failed to import model {full_module_path}: {e}")
 

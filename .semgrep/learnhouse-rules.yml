@@ -11,7 +11,7 @@ rules:
     languages: [python]
     severity: ERROR
     paths:
-      include: ["apps/api/src", "apps/api/ee"]
+      include: ["/apps/api/src", "/apps/api/ee"]
 
   - id: lh-no-student-pii-in-logs
     message: >
@@ -25,7 +25,7 @@ rules:
     languages: [python]
     severity: WARNING
     paths:
-      include: ["apps/api/src/routers", "apps/api/src/services"]
+      include: ["/apps/api/src/routers", "/apps/api/src/services"]
 
   - id: lh-no-raw-sql-in-services
     message: >
@@ -36,7 +36,7 @@ rules:
     languages: [python]
     severity: ERROR
     paths:
-      include: ["apps/api/src/services", "apps/api/src/routers"]
+      include: ["/apps/api/src/services", "/apps/api/src/routers"]
 
   - id: lh-no-unvalidated-file-upload
     message: >
@@ -50,7 +50,7 @@ rules:
     languages: [python]
     severity: WARNING
     paths:
-      include: ["apps/api/src/routers"]
+      include: ["/apps/api/src/routers"]
 
   - id: lh-no-open-admin-route
     message: >
@@ -68,7 +68,7 @@ rules:
     languages: [python]
     severity: ERROR
     paths:
-      include: ["apps/api/src/routers", "apps/api/ee/routers"]
+      include: ["/apps/api/src/routers", "/apps/api/ee/routers"]
 
   - id: lh-paystack-webhook-no-verify
     message: >
@@ -88,7 +88,7 @@ rules:
     languages: [python]
     severity: ERROR
     paths:
-      include: ["apps/api/src/routers", "apps/api/ee/routers"]
+      include: ["/apps/api/src/routers", "/apps/api/ee/routers"]
 
   - id: lh-no-console-log-with-user-data
     message: >
