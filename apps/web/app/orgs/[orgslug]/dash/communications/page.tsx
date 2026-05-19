@@ -246,7 +246,7 @@ export default function CommunicationsPage({
                   required
                 />
                 <p className="ml-1 text-[10px] text-zinc-400 font-bold uppercase tracking-tight dark:text-white/35">
-                  Email & Chat Announcement
+                  Email &amp; Chat Announcement
                 </p>
               </div>
 

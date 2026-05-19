@@ -102,7 +102,7 @@ rules:
     languages: [typescript, javascript]
     severity: WARNING
     paths:
-      include: ["apps/web/app", "apps/web/lib"]
+      include: ["/apps/web/app", "/apps/web/lib"]
 
   - id: lh-global-error-must-capture-sentry
     message: >
@@ -122,4 +122,4 @@ rules:
     languages: [typescript]
     severity: ERROR
     paths:
-      include: ["apps/web/app/global-error.tsx"]
+      include: ["/apps/web/app/global-error.tsx"]

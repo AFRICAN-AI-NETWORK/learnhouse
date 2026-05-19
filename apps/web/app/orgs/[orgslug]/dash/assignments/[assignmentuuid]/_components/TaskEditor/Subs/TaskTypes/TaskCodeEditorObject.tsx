@@ -1249,7 +1249,7 @@ function TaskCodeEditorObject({
                 <h4
                   className={`text-[11px] font-bold uppercase tracking-widest ${isFocusMode ? 'text-zinc-200' : 'text-slate-500'}`}
                 >
-                  Exercises & Challenges
+                  Exercises &amp; Challenges
                 </h4>
               </div>
 
