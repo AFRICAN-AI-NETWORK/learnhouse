@@ -269,11 +269,16 @@ function LandingClassic({
             value={completedCourses}
             label="Certificates Earned"
             helper="View all certificates"
+            helperHref={getUriWithOrg(orgslug, '/trail')}
           />
         </section>
 
         <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <InfoPanel title="Upcoming Deadlines">
+          <InfoPanel
+            title="Upcoming Deadlines"
+            action="View Calender"
+            actionHref={getUriWithOrg(orgslug, '/trail')}
+          >
             {continueCourse ? (
               <PanelRow
                 icon={<CalendarDays size={16} />}
@@ -408,7 +413,7 @@ const DashboardCourseCard = ({
       )}
     >
       <div className="relative">
-        <CourseImage course={course} org={org} className="h-44" />
+        <CourseImage course={course} org={org} className="h-50" />
         <span
           className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[10px] font-bold uppercase text-white ${
             course.is_paid ? 'bg-blue-600' : 'bg-emerald-600'
@@ -562,10 +567,12 @@ const CourseImage = ({
   course,
   org,
   className,
+  fit = 'cover',
 }: {
   course: any
   org: any
   className: string
+  fit?: 'cover' | 'contain'
 }) => {
   const image = course.thumbnail_image
     ? getCourseThumbnailMediaDirectory(
@@ -577,7 +584,9 @@ const CourseImage = ({
 
   return (
     <div
-      className={`w-full bg-gray-900 bg-cover bg-center rounded-b-2xl ${className}`}
+      className={`w-full bg-gray-900 bg-cover rounded-b-2xl ${
+        fit === 'contain' ? 'bg-contain bg-no-repeat' : 'bg-cover'
+      } ${className}`}
       style={{ backgroundImage: `url(${image})` }}
     />
   )
@@ -624,12 +633,14 @@ const StatCard = ({
   value,
   label,
   helper,
+  helperHref,
 }: {
   icon: React.ReactElement<{ size?: number }>
   iconClassName: string
   value: string | number
   label: string
   helper: string
+  helperHref?: string
 }) => (
   <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
     <div
@@ -640,7 +651,16 @@ const StatCard = ({
     <div>
       <p className="text-xl font-bold text-gray-950">{value}</p>
       <p className="text-sm text-gray-600">{label}</p>
-      <p className="mt-1 text-xs font-medium text-emerald-600">{helper}</p>
+      {helperHref ? (
+        <Link
+          href={helperHref}
+          className="mt-1 inline-flex text-xs font-medium text-blue-600 hover:text-blue-700"
+        >
+          {helper}
+        </Link>
+      ) : (
+        <p className="mt-1 text-xs font-medium text-emerald-600">{helper}</p>
+      )}
     </div>
   </div>
 )
