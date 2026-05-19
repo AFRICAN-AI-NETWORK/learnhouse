@@ -85,13 +85,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v2
+      - name: Generate requirements.txt for Snyk
+        run: uv pip compile apps/api/pyproject.toml -o apps/api/requirements.txt
       - name: Snyk Python scan
         if: env.SNYK_TOKEN != ''
         uses: snyk/actions/python@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=apps/api/pyproject.toml --severity-threshold=high
+          args: --file=apps/api/requirements.txt --package-manager=pip --severity-threshold=high
 
   snyk-node:
     name: "Snyk - Node.js Dependencies"
