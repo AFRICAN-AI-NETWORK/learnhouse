@@ -8,6 +8,8 @@ import { nextAuthOptions } from 'app/auth/options'
 import { getOrgThumbnailMediaDirectory } from '@services/media/media'
 import LandingPremium from '@components/Landings/LandingPremium'
 import LandingClassic from '@components/Landings/LandingClassic'
+import { redirect } from 'next/navigation'
+import { getUriWithOrg } from '@services/config/config'
 
 type MetadataProps = {
   params: Promise<{ orgslug: string }>
@@ -78,6 +80,15 @@ const OrgHomePage = async (props: OrgHomePageProps) => {
       revalidate: 0,
       tags: ['organizations'],
     })
+
+    // Handle partner redirection
+    if (session && session.roles) {
+      const isPartner = session.roles.affiliation?.action_read
+      const isAdmin = session.roles.organizations?.action_update
+      if (isPartner && !isAdmin) {
+        redirect(getUriWithOrg(orgslug, '/dash/affiliation'))
+      }
+    }
 
     // Fetch courses and collections in parallel with fallbacks
     const [courses, collections] = await Promise.allSettled([

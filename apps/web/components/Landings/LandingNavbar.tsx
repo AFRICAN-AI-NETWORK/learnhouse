@@ -33,7 +33,10 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
   const navLinks = [
     { name: 'Programs', href: '/#available' },
     { name: 'Roadmap', href: '/#roadmap' },
-    { name: 'Partners', href: '/affiliation/signup' },
+    {
+      name: 'Partners',
+      href: isAuthenticated ? '/dash/affiliation' : '/affiliation/signup',
+    },
     { name: 'Specializations', href: '/#specializations' },
     { name: 'Privacy Policy', href: '/policy' },
   ]
