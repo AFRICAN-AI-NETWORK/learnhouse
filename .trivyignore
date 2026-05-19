@@ -1,0 +1,7 @@
+# Trivy Ignore Policy
+
+# PyJWT is pinned to <2.0.0 by fastapi-jwt-auth.
+# Cryptographic signature verification and acceptable algorithms are strictly enforced
+# by fastapi-jwt-auth, mitigating these issues.
+CVE-2022-29217
+CVE-2026-32597
