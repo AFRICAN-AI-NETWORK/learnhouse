@@ -50,6 +50,7 @@ async def api_get_activity(
         request, activity_uuid, current_user=current_user, db_session=db_session
     )
 
+
 @router.get("/id/{activity_id}")
 async def api_get_activityby_id(
     request: Request,
@@ -63,7 +64,8 @@ async def api_get_activityby_id(
     return await get_activityby_id(
         request, activity_id, current_user=current_user, db_session=db_session
     )
-            
+
+
 @router.get("/chapter/{chapter_id}")
 async def api_get_chapter_activities(
     request: Request,
@@ -234,7 +236,10 @@ async def api_ai_interact(
         )
     else:
         from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Invalid action. Use 'translate' or 'ask'.")
+
+        raise HTTPException(
+            status_code=400, detail="Invalid action. Use 'translate' or 'ask'."
+        )
 
     # Try Gemini first, then OpenAI
     result_text = None
@@ -257,6 +262,7 @@ async def api_ai_interact(
     if result_text is None and openai_key:
         try:
             from openai import OpenAI
+
             client = OpenAI(api_key=openai_key)
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -270,6 +276,7 @@ async def api_ai_interact(
 
     if result_text is None:
         from fastapi import HTTPException
+
         raise HTTPException(
             status_code=502,
             detail="AI service unavailable. Check your API keys.",
@@ -282,15 +289,19 @@ async def api_ai_interact(
             if "```" in cleaned_text:
                 # Extract content between ```json and ``` or just ```
                 import re
-                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_text, re.DOTALL)
+
+                match = re.search(
+                    r"```(?:json)?\s*(.*?)\s*```", cleaned_text, re.DOTALL
+                )
                 if match:
                     cleaned_text = match.group(1)
-            
+
             import json
+
             translated_data = json.loads(cleaned_text)
             return {
                 "result": translated_data.get("content", result_text),
-                "title": translated_data.get("title", "")
+                "title": translated_data.get("title", ""),
             }
         except Exception:
             return {"result": result_text, "title": ""}

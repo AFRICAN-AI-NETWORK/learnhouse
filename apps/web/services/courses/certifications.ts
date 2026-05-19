@@ -98,4 +98,4 @@ export async function getAllUserCertificates(
   )
   const res = await getResponseMetadata(result)
   return res
-} 
+}

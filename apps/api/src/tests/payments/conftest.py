@@ -6,6 +6,7 @@ discount code testing.  Tables are auto-created via ``SQLModel.metadata.create_a
 so the tests work both in CI (PostgreSQL service container) and locally (fallback
 to SQLite in-memory).
 """
+
 import os
 import pytest
 from datetime import datetime, timedelta
@@ -19,9 +20,17 @@ from src.db.courses.courses import Course
 from src.db.roles import Role  # noqa: F401
 from src.db.user_organizations import UserOrganization  # noqa: F401
 from src.db.resource_authors import ResourceAuthor  # noqa: F401
-from src.db.payments.discount_codes import DiscountCode, DiscountCodeUsage, DiscountTypeEnum
+from src.db.payments.discount_codes import (
+    DiscountCode,
+    DiscountCodeUsage,
+    DiscountTypeEnum,
+)
 from src.db.payments.payments import PaymentsConfig, PaymentProviderEnum  # noqa: F401
-from src.db.payments.payments_products import PaymentsProduct, PaymentProductTypeEnum, PaymentPriceTypeEnum  # noqa: F401
+from src.db.payments.payments_products import (
+    PaymentsProduct,
+    PaymentProductTypeEnum,
+    PaymentPriceTypeEnum,
+)  # noqa: F401
 from src.db.payments.payments_users import PaymentsUser
 
 
@@ -30,7 +39,7 @@ TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
     os.getenv(
         "LEARNHOUSE_SQL_CONNECTION_STRING",
-        "sqlite://",           # local fallback – no PG needed
+        "sqlite://",  # local fallback – no PG needed
     ),
 )
 
@@ -68,6 +77,7 @@ def test_engine():
     # PostgreSQL enum type won't exist in a fresh DB and CREATE TABLE would
     # fail.  Using String() is fine for tests.
     from sqlalchemy import String
+
     table = SQLModel.metadata.tables.get("payments_config")
     if table is not None:
         for col in table.columns:
@@ -92,9 +102,9 @@ def db_session(test_engine):
     connection = test_engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
-    
+
     yield session
-    
+
     # Rollback transaction to ensure test isolation
     session.close()
     transaction.rollback()
@@ -110,7 +120,7 @@ def mock_org(db_session: Session) -> Organization:
         slug="test-org",
         email="test@testorg.com",  # Required field
         creation_date="2024-01-01",  # Required NOT NULL field
-        update_date="2024-01-01"  # Required NOT NULL field
+        update_date="2024-01-01",  # Required NOT NULL field
     )
     db_session.add(org)
     db_session.commit()
@@ -130,7 +140,7 @@ def mock_user(db_session: Session) -> User:
         last_name="User",  # Required NOT NULL field
         email_verified=True,  # Required NOT NULL field
         creation_date="2024-01-01",  # Required NOT NULL field
-        update_date="2024-01-01"  # Required NOT NULL field
+        update_date="2024-01-01",  # Required NOT NULL field
     )
     db_session.add(user)
     db_session.commit()
@@ -149,7 +159,7 @@ def mock_course(db_session: Session, mock_org: Organization) -> Course:
         public=True,  # Required NOT NULL field
         open_to_contributors=False,  # Required NOT NULL field
         creation_date="2024-01-01",  # Required NOT NULL field
-        update_date="2024-01-01"  # Required NOT NULL field
+        update_date="2024-01-01",  # Required NOT NULL field
     )
     db_session.add(course)
     db_session.commit()
@@ -173,7 +183,7 @@ def sample_discount_code(db_session: Session, mock_org: Organization) -> Discoun
         valid_from=datetime.utcnow() - timedelta(days=1),
         valid_until=datetime.utcnow() + timedelta(days=30),
         is_active=True,
-        description="Test discount code - 20% off"
+        description="Test discount code - 20% off",
     )
     db_session.add(code)
     db_session.commit()
@@ -197,7 +207,7 @@ def expired_discount_code(db_session: Session, mock_org: Organization) -> Discou
         valid_from=datetime.utcnow() - timedelta(days=60),
         valid_until=datetime.utcnow() - timedelta(days=1),  # Expired yesterday
         is_active=True,
-        description="Expired discount code for testing"
+        description="Expired discount code for testing",
     )
     db_session.add(code)
     db_session.commit()
@@ -221,7 +231,7 @@ def max_uses_discount_code(db_session: Session, mock_org: Organization) -> Disco
         valid_from=datetime.utcnow() - timedelta(days=10),
         valid_until=datetime.utcnow() + timedelta(days=20),
         is_active=True,
-        description="Maxed out discount code for testing"
+        description="Maxed out discount code for testing",
     )
     db_session.add(code)
     db_session.commit()
@@ -233,7 +243,7 @@ def max_uses_discount_code(db_session: Session, mock_org: Organization) -> Disco
 def mock_payments_config(db_session: Session, mock_org: Organization):
     """Create a test payments configuration."""
     from datetime import datetime
-    
+
     config = PaymentsConfig(
         org_id=mock_org.id,
         enabled=True,  # Required NOT NULL
@@ -242,7 +252,7 @@ def mock_payments_config(db_session: Session, mock_org: Organization):
         provider_specific_id="test_provider_id",
         provider_config={"test_key": "test_value"},
         creation_date=datetime.now(),  # Required NOT NULL
-        update_date=datetime.now()  # Required NOT NULL
+        update_date=datetime.now(),  # Required NOT NULL
     )
     db_session.add(config)
     db_session.commit()
@@ -251,10 +261,12 @@ def mock_payments_config(db_session: Session, mock_org: Organization):
 
 
 @pytest.fixture
-def mock_payments_product(db_session: Session, mock_org: Organization, mock_payments_config):
+def mock_payments_product(
+    db_session: Session, mock_org: Organization, mock_payments_config
+):
     """Create a test payments product."""
     from datetime import datetime
-    
+
     product = PaymentsProduct(
         org_id=mock_org.id,
         payments_config_id=mock_payments_config.id,
@@ -267,7 +279,7 @@ def mock_payments_product(db_session: Session, mock_org: Organization, mock_paym
         provider_product_id="test_product_paystack_id",
         benefits="Access to test course",  # Required NOT NULL
         creation_date=datetime.now(),  # Required NOT NULL
-        update_date=datetime.now()  # Required NOT NULL
+        update_date=datetime.now(),  # Required NOT NULL
     )
     db_session.add(product)
     db_session.commit()
@@ -276,11 +288,13 @@ def mock_payments_product(db_session: Session, mock_org: Organization, mock_paym
 
 
 @pytest.fixture
-def mock_payment_user(db_session: Session, mock_user: User, mock_org: Organization, mock_payments_product):
+def mock_payment_user(
+    db_session: Session, mock_user: User, mock_org: Organization, mock_payments_product
+):
     """Create a test payment user record."""
     from datetime import datetime
     from src.db.payments.payments_users import PaymentStatusEnum
-    
+
     payment = PaymentsUser(
         user_id=mock_user.id,
         org_id=mock_org.id,
@@ -290,7 +304,7 @@ def mock_payment_user(db_session: Session, mock_user: User, mock_org: Organizati
         discount_amount=100.0,
         final_amount=400.0,
         creation_date=datetime.now(),  # Required NOT NULL
-        update_date=datetime.now()  # Required NOT NULL
+        update_date=datetime.now(),  # Required NOT NULL
     )
     db_session.add(payment)
     db_session.commit()
@@ -298,8 +312,8 @@ def mock_payment_user(db_session: Session, mock_user: User, mock_org: Organizati
     return payment
 
 
-
 # Helper functions for test data creation
+
 
 def create_discount_code_helper(
     db_session: Session,
@@ -309,7 +323,7 @@ def create_discount_code_helper(
     discount_value: float = 10.0,
     max_uses: int = None,
     current_uses: int = 0,
-    is_active: bool = True
+    is_active: bool = True,
 ) -> DiscountCode:
     """
     Helper function to create discount codes in tests.
@@ -325,7 +339,7 @@ def create_discount_code_helper(
         valid_from=datetime.utcnow() - timedelta(days=1),
         valid_until=datetime.utcnow() + timedelta(days=30),
         is_active=is_active,
-        description=f"Helper-created code: {code}"
+        description=f"Helper-created code: {code}",
     )
     db_session.add(discount_code)
     db_session.commit()
@@ -341,7 +355,7 @@ def create_usage_record_helper(
     payment_user_id: int,
     original_amount: float = 500.0,
     discount_amount: float = 100.0,
-    final_amount: float = 400.0
+    final_amount: float = 400.0,
 ) -> DiscountCodeUsage:
     """
     Helper function to create discount code usage records in tests.
@@ -353,7 +367,7 @@ def create_usage_record_helper(
         payment_user_id=payment_user_id,
         original_amount=original_amount,
         discount_amount=discount_amount,
-        final_amount=final_amount
+        final_amount=final_amount,
     )
     db_session.add(usage)
     db_session.commit()

@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel, Column, JSON
 
 class ChatNotification(SQLModel, table=True):
     __tablename__ = "chat_notification"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     notification_uuid: str = Field(unique=True, index=True)
     user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
@@ -16,6 +16,6 @@ class ChatNotification(SQLModel, table=True):
     read_at: Optional[datetime] = None
     delivery_status: dict = Field(
         default={"email": "pending", "push": "pending", "in_app": "delivered"},
-        sa_column=Column(JSON)
+        sa_column=Column(JSON),
     )
     created_at: datetime = Field(default_factory=datetime.utcnow)

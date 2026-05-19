@@ -3,6 +3,7 @@
 These tests use FastAPI's dependency_overrides to mock authentication
 and database session, enabling proper endpoint testing.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -43,12 +44,12 @@ class TestConversationEndpoints:
         client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test creating a new conversation."""
         response = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
 
         assert response.status_code == 200
@@ -57,15 +58,10 @@ class TestConversationEndpoints:
         assert data["conversation_uuid"].startswith("conv_")
 
     def test_get_conversations(
-        self,
-        client_as_student: TestClient,
-        org: Organization,
-        student_user: User
+        self, client_as_student: TestClient, org: Organization, student_user: User
     ):
         """Test getting user conversations."""
-        response = client_as_student.get(
-            f"/api/v1/chat/conversations/?org_id={org.id}"
-        )
+        response = client_as_student.get(f"/api/v1/chat/conversations/?org_id={org.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -78,13 +74,13 @@ class TestConversationEndpoints:
         client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test archiving a conversation."""
         # First create a conversation
         create_resp = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
         conv_uuid = create_resp.json()["conversation_uuid"]
 
@@ -96,10 +92,7 @@ class TestConversationEndpoints:
         assert response.status_code == 200
 
     def test_get_chatable_users(
-        self,
-        client_as_student: TestClient,
-        org: Organization,
-        instructor_user: User
+        self, client_as_student: TestClient, org: Organization, instructor_user: User
     ):
         """Test getting list of users to chat with."""
         response = client_as_student.get(
@@ -119,13 +112,13 @@ class TestMessageEndpoints:
         client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test sending a message."""
         # Create conversation first
         conv_resp = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
@@ -143,13 +136,13 @@ class TestMessageEndpoints:
         client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test getting messages from a conversation."""
         # Create conversation and send a message first
         conv_resp = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
@@ -159,8 +152,8 @@ class TestMessageEndpoints:
                 "conversation_id": conv_uuid,
                 "receiver_id": instructor_user.id,
                 "content": "Test message",
-                "message_type": "text"
-            }
+                "message_type": "text",
+            },
         )
 
         response = client_as_student.get(
@@ -176,13 +169,13 @@ class TestMessageEndpoints:
         client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test editing a message."""
         # Create conversation and message
         conv_resp = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
@@ -193,7 +186,7 @@ class TestMessageEndpoints:
 
         response = client_as_student.patch(
             f"/api/v1/chat/messages/{msg_uuid}?org_id={org.id}",
-            json={"content": "Updated content"}
+            json={"content": "Updated content"},
         )
 
         assert response.status_code == 200
@@ -206,13 +199,13 @@ class TestMessageEndpoints:
         client_as_student: TestClient,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test deleting a message."""
         # Create conversation and message
         conv_resp = client_as_student.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
@@ -232,7 +225,7 @@ class TestMessageEndpoints:
         session: Session,
         org: Organization,
         student_user: User,
-        instructor_user: User
+        instructor_user: User,
     ):
         """Test marking a message as read."""
         # Use student identity first
@@ -243,7 +236,7 @@ class TestMessageEndpoints:
         # Student creates conversation and sends a message
         conv_resp = student_client.post(
             f"/api/v1/chat/conversations/?org_id={org.id}",
-            json={"participant_two_id": instructor_user.id}
+            json={"participant_two_id": instructor_user.id},
         )
         conv_uuid = conv_resp.json()["conversation_uuid"]
 
@@ -284,7 +277,7 @@ class TestAttachmentEndpoints:
     @pytest.fixture(autouse=True)
     def mock_upload(self):
         """Patch upload_file in the attachment service to avoid filesystem writes.
-        
+
         This is the correct patch target because attachment_service.py does:
             from src.services.utils.upload_content import upload_file
         so we patch it where it is *used*, not where it is *defined*.
@@ -427,8 +420,16 @@ class TestAttachmentEndpoints:
         """
         from src.security.file_validation import validate_upload
 
-        async def _real_validate_but_no_disk(file, *, directory, type_of_dir, uuid,
-                                              allowed_types, filename_prefix, max_size=None):
+        async def _real_validate_but_no_disk(
+            file,
+            *,
+            directory,
+            type_of_dir,
+            uuid,
+            allowed_types,
+            filename_prefix,
+            max_size=None,
+        ):
             # This calls the real validation which raises HTTP 415 for SVGs
             validate_upload(file, allowed_types, max_size)
             return "fake_file.bin"
@@ -449,7 +450,6 @@ class TestAttachmentEndpoints:
 
         app.dependency_overrides.clear()
         assert response.status_code == 415
-
 
     def test_upload_by_non_sender_rejected(
         self,
@@ -567,7 +567,9 @@ class TestSendEndpoint:
         assert data["message_type"] == "text"
         assert "message_uuid" in data
 
-    def test_send_file_only_no_preexisting_message(self, session, org, student_user, instructor_user):
+    def test_send_file_only_no_preexisting_message(
+        self, session, org, student_user, instructor_user
+    ):
         """File-only — user starts a conversation with just an attachment. No message_uuid pre-required."""
         client = self._make_client(session, student_user)
         conv_uuid = self._create_conversation(client, org, instructor_user)
@@ -587,7 +589,9 @@ class TestSendEndpoint:
         # Placeholder content set automatically
         assert data["content"] == "📎"
 
-    def test_send_text_and_file_together(self, session, org, student_user, instructor_user):
+    def test_send_text_and_file_together(
+        self, session, org, student_user, instructor_user
+    ):
         """Text + file in one request — message_type stays 'text'."""
         client = self._make_client(session, student_user)
         conv_uuid = self._create_conversation(client, org, instructor_user)
@@ -629,7 +633,9 @@ class TestSendEndpoint:
         app.dependency_overrides.clear()
         assert reply.status_code == 200
 
-    def test_send_reply_to_zero_treated_as_no_reply(self, session, org, student_user, instructor_user):
+    def test_send_reply_to_zero_treated_as_no_reply(
+        self, session, org, student_user, instructor_user
+    ):
         """reply_to_message_id=0 treated as None — must not error."""
         client = self._make_client(session, student_user)
         conv_uuid = self._create_conversation(client, org, instructor_user)
@@ -657,7 +663,9 @@ class TestSendEndpoint:
         app.dependency_overrides.clear()
         assert resp.status_code == 200  # Empty content is now allowed
 
-    def test_send_file_appears_in_conversation_history(self, session, org, student_user, instructor_user):
+    def test_send_file_appears_in_conversation_history(
+        self, session, org, student_user, instructor_user
+    ):
         """After /send with a file, the attachment must appear in GET /messages/conversation/."""
         client = self._make_client(session, student_user)
         conv_uuid = self._create_conversation(client, org, instructor_user)

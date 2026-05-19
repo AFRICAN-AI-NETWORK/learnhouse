@@ -30,7 +30,7 @@ async def create_certification(
     db_session: Session,
 ) -> CertificationRead:
     """Create a new certification for a course"""
-    
+
     # Check if course exists
     statement = select(Course).where(Course.id == certification_object.course_id)
     course = db_session.exec(statement).first()
@@ -42,7 +42,9 @@ async def create_certification(
         )
 
     # RBAC check
-    await courses_rbac_check_for_certifications(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_certifications(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # Create certification
     certification = Certifications(
@@ -68,8 +70,10 @@ async def get_certification(
     db_session: Session,
 ) -> CertificationRead:
     """Get a single certification by certification_id"""
-    
-    statement = select(Certifications).where(Certifications.certification_uuid == certification_uuid)
+
+    statement = select(Certifications).where(
+        Certifications.certification_uuid == certification_uuid
+    )
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -89,7 +93,9 @@ async def get_certification(
         )
 
     # RBAC check
-    await courses_rbac_check_for_certifications(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_certifications(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     return CertificationRead(**certification.model_dump())
 
@@ -101,7 +107,7 @@ async def get_certifications_by_course(
     db_session: Session,
 ) -> List[CertificationRead]:
     """Get all certifications for a course"""
-    
+
     # Get course for RBAC check
     statement = select(Course).where(Course.course_uuid == course_uuid)
     course = db_session.exec(statement).first()
@@ -113,13 +119,18 @@ async def get_certifications_by_course(
         )
 
     # RBAC check
-    await courses_rbac_check_for_certifications(request, course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_certifications(
+        request, course_uuid, current_user, "read", db_session
+    )
 
     # Get certifications for this course
     statement = select(Certifications).where(Certifications.course_id == course.id)
     certifications = db_session.exec(statement).all()
 
-    return [CertificationRead(**certification.model_dump()) for certification in certifications]
+    return [
+        CertificationRead(**certification.model_dump())
+        for certification in certifications
+    ]
 
 
 async def update_certification(
@@ -130,8 +141,10 @@ async def update_certification(
     db_session: Session,
 ) -> CertificationRead:
     """Update a certification"""
-    
-    statement = select(Certifications).where(Certifications.certification_uuid == certification_uuid)
+
+    statement = select(Certifications).where(
+        Certifications.certification_uuid == certification_uuid
+    )
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -151,7 +164,9 @@ async def update_certification(
         )
 
     # RBAC check
-    await courses_rbac_check_for_certifications(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_certifications(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Update only the fields that were passed in
     for var, value in vars(certification_object).items():
@@ -175,8 +190,10 @@ async def delete_certification(
     db_session: Session,
 ) -> dict:
     """Delete a certification"""
-    
-    statement = select(Certifications).where(Certifications.certification_uuid == certification_uuid)
+
+    statement = select(Certifications).where(
+        Certifications.certification_uuid == certification_uuid
+    )
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -196,7 +213,9 @@ async def delete_certification(
         )
 
     # RBAC check
-    await courses_rbac_check_for_certifications(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_certifications(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
     db_session.delete(certification)
     db_session.commit()
@@ -218,13 +237,13 @@ async def create_certificate_user(
 ) -> CertificateUserRead:
     """
     Create a certificate user link
-    
+
     SECURITY NOTES:
     - This function should only be called by authorized users (course owners, instructors, or system)
     - When called from check_course_completion_and_create_certificate, it's a system operation
     - When called directly, requires proper RBAC checks
     """
-    
+
     # Check if certification exists
     statement = select(Certifications).where(Certifications.id == certification_id)
     certification = db_session.exec(statement).first()
@@ -248,12 +267,14 @@ async def create_certificate_user(
             )
 
         # Require course ownership or instructor role for creating certificates
-        await courses_rbac_check_for_certifications(request, course.course_uuid, current_user, "create", db_session)
+        await courses_rbac_check_for_certifications(
+            request, course.course_uuid, current_user, "create", db_session
+        )
 
     # Check if certificate user already exists
     statement = select(CertificateUser).where(
         CertificateUser.user_id == user_id,
-        CertificateUser.certification_id == certification_id
+        CertificateUser.certification_id == certification_id,
     )
     existing_certificate_user = db_session.exec(statement).first()
 
@@ -267,37 +288,41 @@ async def create_certificate_user(
     current_year = datetime.now().year
     current_month = datetime.now().month
     current_day = datetime.now().day
-    
+
     # Get user to extract user_uuid
     from src.db.users import User
+
     statement = select(User).where(User.id == user_id)
     user = db_session.exec(statement).first()
-    
+
     if not user:
         raise HTTPException(
             status_code=404,
             detail="User not found",
         )
-    
+
     # Extract last 4 characters from user_uuid for uniqueness (since all start with "user_")
     user_uuid_short = user.user_uuid[-4:] if user.user_uuid else "USER"
-    
+
     # Generate random 2-letter prefix
-    import random
+    import secrets
     import string
-    random_prefix = ''.join(random.choices(string.ascii_uppercase, k=2))
-    
+
+    random_prefix = "".join(secrets.choice(string.ascii_uppercase) for _ in range(2))
+
     # Get the count of existing certificate users for this user today
     today_user_prefix = f"{random_prefix}-{current_year}{current_month:02d}{current_day:02d}-{user_uuid_short}-"
     statement = select(CertificateUser).where(
         CertificateUser.user_certification_uuid.startswith(today_user_prefix)
     )
     existing_certificates = db_session.exec(statement).all()
-    
+
     # Generate next sequential number for this user today
     next_number = len(existing_certificates) + 1
-    certificate_number = f"{next_number:03d}"  # Format as 3-digit number with leading zeros
-    
+    certificate_number = (
+        f"{next_number:03d}"  # Format as 3-digit number with leading zeros
+    )
+
     user_certification_uuid = f"{today_user_prefix}{certificate_number}"
 
     # Create certificate user
@@ -323,7 +348,7 @@ async def get_user_certificates_for_course(
     db_session: Session,
 ) -> List[dict]:
     """Get all certificates for a user in a specific course with certification details"""
-    
+
     # Check if course exists
     statement = select(Course).where(Course.course_uuid == course_uuid)
     course = db_session.exec(statement).first()
@@ -335,7 +360,9 @@ async def get_user_certificates_for_course(
         )
 
     # RBAC check
-    await courses_rbac_check_for_certifications(request, course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_certifications(
+        request, course_uuid, current_user, "read", db_session
+    )
 
     # Get all certifications for this course
     statement = select(Certifications).where(Certifications.course_id == course.id)
@@ -354,18 +381,22 @@ async def get_user_certificates_for_course(
     for cert_id in certification_ids:
         statement = select(CertificateUser).where(
             CertificateUser.user_id == current_user.id,
-            CertificateUser.certification_id == cert_id
+            CertificateUser.certification_id == cert_id,
         )
         cert_user = db_session.exec(statement).first()
         if cert_user:
             # Get the associated certification
             statement = select(Certifications).where(Certifications.id == cert_id)
             certification = db_session.exec(statement).first()
-            
-            result.append({
-                "certificate_user": CertificateUserRead(**cert_user.model_dump()),
-                "certification": CertificationRead(**certification.model_dump()) if certification else None
-            })
+
+            result.append(
+                {
+                    "certificate_user": CertificateUserRead(**cert_user.model_dump()),
+                    "certification": CertificationRead(**certification.model_dump())
+                    if certification
+                    else None,
+                }
+            )
 
     return result
 
@@ -378,39 +409,41 @@ async def check_course_completion_and_create_certificate(
 ) -> bool:
     """
     Check if all activities in a course are completed and create certificate if so
-    
+
     SECURITY NOTES:
     - This function is called by the system when activities are completed
     - It should only create certificates for users who have actually completed the course
     - The function is called from mark_activity_as_done_for_user which already has RBAC checks
     """
-    
+
     # Get all activities in the course
     statement = select(ChapterActivity).where(ChapterActivity.course_id == course_id)
     course_activities = db_session.exec(statement).all()
-    
+
     if not course_activities:
         return False  # No activities in course
-    
+
     # Get all completed activities for this user in this course
     statement = select(TrailStep).where(
         TrailStep.user_id == user_id,
         TrailStep.course_id == course_id,
-        TrailStep.complete == True
+        TrailStep.complete == True,
     )
     completed_activities = db_session.exec(statement).all()
-    
+
     # Check if all activities are completed
     if len(completed_activities) >= len(course_activities):
         # All activities completed, check if certification exists for this course
         statement = select(Certifications).where(Certifications.course_id == course_id)
         certification = db_session.exec(statement).first()
-        
+
         if certification and certification.id:
             # SECURITY: Create certificate user link (system operation, no RBAC needed here)
             # This is called from mark_activity_as_done_for_user which already has proper RBAC checks
             try:
-                await create_certificate_user(request, user_id, certification.id, db_session)
+                await create_certificate_user(
+                    request, user_id, certification.id, db_session
+                )
                 return True
             except HTTPException as e:
                 if e.status_code == 400 and "already has a certificate" in e.detail:
@@ -418,7 +451,7 @@ async def check_course_completion_and_create_certificate(
                     return True
                 else:
                     raise e
-        
+
     return False
 
 
@@ -429,7 +462,7 @@ async def get_certificate_by_user_certification_uuid(
     db_session: Session,
 ) -> dict:
     """Get a certificate by user_certification_uuid with certification details"""
-    
+
     # Get certificate user by user_certification_uuid
     statement = select(CertificateUser).where(
         CertificateUser.user_certification_uuid == user_certification_uuid
@@ -443,7 +476,9 @@ async def get_certificate_by_user_certification_uuid(
         )
 
     # Get the associated certification
-    statement = select(Certifications).where(Certifications.id == certificate_user.certification_id)
+    statement = select(Certifications).where(
+        Certifications.id == certificate_user.certification_id
+    )
     certification = db_session.exec(statement).first()
 
     if not certification:
@@ -466,8 +501,8 @@ async def get_certificate_by_user_certification_uuid(
 
     # Get user information
     from src.db.users import User
+
     statement = select(User).where(User.id == certificate_user.user_id)
-    user = db_session.exec(statement).first()
 
     return {
         "certificate_user": CertificateUserRead(**certificate_user.model_dump()),
@@ -479,14 +514,6 @@ async def get_certificate_by_user_certification_uuid(
             "description": course.description,
             "thumbnail_image": course.thumbnail_image,
         },
-        "user": {
-            "id": user.id if user else None,
-            "user_uuid": user.user_uuid if user else None,
-            "username": user.username if user else None,
-            "email": user.email if user else None,
-            "first_name": user.first_name if user else None,
-            "last_name": user.last_name if user else None,
-        } if user else None
     }
 
 
@@ -496,9 +523,11 @@ async def get_all_user_certificates(
     db_session: Session,
 ) -> List[dict]:
     """Get all certificates for the current user with complete linked information"""
-    
+
     # Get all certificate users for this user
-    statement = select(CertificateUser).where(CertificateUser.user_id == current_user.id)
+    statement = select(CertificateUser).where(
+        CertificateUser.user_id == current_user.id
+    )
     certificate_users = db_session.exec(statement).all()
 
     if not certificate_users:
@@ -507,7 +536,9 @@ async def get_all_user_certificates(
     result = []
     for cert_user in certificate_users:
         # Get the associated certification
-        statement = select(Certifications).where(Certifications.id == cert_user.certification_id)
+        statement = select(Certifications).where(
+            Certifications.id == cert_user.certification_id
+        )
         certification = db_session.exec(statement).first()
 
         if not certification:
@@ -522,27 +553,32 @@ async def get_all_user_certificates(
 
         # Get user information
         from src.db.users import User
+
         statement = select(User).where(User.id == cert_user.user_id)
         user = db_session.exec(statement).first()
 
-        result.append({
-            "certificate_user": CertificateUserRead(**cert_user.model_dump()),
-            "certification": CertificationRead(**certification.model_dump()),
-            "course": {
-                "id": course.id,
-                "course_uuid": course.course_uuid,
-                "name": course.name,
-                "description": course.description,
-                "thumbnail_image": course.thumbnail_image,
-            },
-            "user": {
-                "id": user.id if user else None,
-                "user_uuid": user.user_uuid if user else None,
-                "username": user.username if user else None,
-                "email": user.email if user else None,
-                "first_name": user.first_name if user else None,
-                "last_name": user.last_name if user else None,
-            } if user else None
-        })
+        result.append(
+            {
+                "certificate_user": CertificateUserRead(**cert_user.model_dump()),
+                "certification": CertificationRead(**certification.model_dump()),
+                "course": {
+                    "id": course.id,
+                    "course_uuid": course.course_uuid,
+                    "name": course.name,
+                    "description": course.description,
+                    "thumbnail_image": course.thumbnail_image,
+                },
+                "user": {
+                    "id": user.id if user else None,
+                    "user_uuid": user.user_uuid if user else None,
+                    "username": user.username if user else None,
+                    "email": user.email if user else None,
+                    "first_name": user.first_name if user else None,
+                    "last_name": user.last_name if user else None,
+                }
+                if user
+                else None,
+            }
+        )
 
-    return result 
+    return result

@@ -138,6 +138,4 @@ async def api_get_all_user_certificates(
     """
     Get all certificates obtained by the current user with complete linked information
     """
-    return await get_all_user_certificates(
-        request, current_user, db_session
-    ) 
+    return await get_all_user_certificates(request, current_user, db_session)

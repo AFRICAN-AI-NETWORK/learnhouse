@@ -5,7 +5,13 @@ import httpx
 import time
 from collections import defaultdict
 from config.config import LearnHouseConfig, get_learnhouse_config
-from src.services.code_execution import execute_and_grade, run_python_locally, TestCaseResult, CodeExecutionResponse, PISTON_URL
+from src.services.code_execution import (
+    execute_and_grade,
+    run_python_locally,
+    TestCaseResult,
+    CodeExecutionResponse,
+    PISTON_URL,
+)
 
 router = APIRouter()
 
@@ -14,24 +20,31 @@ _rate_limit_store = defaultdict(list)
 RATE_LIMIT_MAX_REQUESTS = 20
 RATE_LIMIT_WINDOW_SECONDS = 60
 
+
 def rate_limit_dependency(request: Request) -> str:
     client_ip = request.client.host if request.client else "unknown"
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         client_ip = forwarded.split(",")[0].strip()
-        
+
     current_time = time.time()
-    
+
     timestamps = _rate_limit_store[client_ip]
-    timestamps = [ts for ts in timestamps if current_time - ts < RATE_LIMIT_WINDOW_SECONDS]
-    
+    timestamps = [
+        ts for ts in timestamps if current_time - ts < RATE_LIMIT_WINDOW_SECONDS
+    ]
+
     if len(timestamps) >= RATE_LIMIT_MAX_REQUESTS:
         _rate_limit_store[client_ip] = timestamps
-        raise HTTPException(status_code=429, detail="Too many code execution requests. Limit is 20 per minute.")
-        
+        raise HTTPException(
+            status_code=429,
+            detail="Too many code execution requests. Limit is 20 per minute.",
+        )
+
     timestamps.append(current_time)
     _rate_limit_store[client_ip] = timestamps
     return client_ip
+
 
 class CodeExecutionRequest(BaseModel):
     language: str
@@ -45,7 +58,7 @@ class CodeExecutionRequest(BaseModel):
 async def execute_code(
     request: CodeExecutionRequest,
     client_ip: str = Depends(rate_limit_dependency),
-    config: LearnHouseConfig = Depends(get_learnhouse_config)
+    config: LearnHouseConfig = Depends(get_learnhouse_config),
 ):
     try:
         # Check if Piston is available
@@ -59,7 +72,14 @@ async def execute_code(
 
         # If Piston is available, use it
         if piston_available:
-            res = await execute_and_grade(request.language, request.code, request.test_cases, request.stdin, client_ip, request.dataset_files)
+            res = await execute_and_grade(
+                request.language,
+                request.code,
+                request.test_cases,
+                request.stdin,
+                client_ip,
+                request.dataset_files,
+            )
             if res:
                 return res
 
@@ -84,14 +104,16 @@ async def execute_code(
                     if passed:
                         passed_count += 1
 
-                    test_results.append(TestCaseResult(
-                        testUUID=tc.get("testUUID", ""),
-                        input=tc.get("input", ""),
-                        expected_output=expected,
-                        actual_output=actual,
-                        passed=passed,
-                        status="passed" if passed else "failed"
-                    ))
+                    test_results.append(
+                        TestCaseResult(
+                            testUUID=tc.get("testUUID", ""),
+                            input=tc.get("input", ""),
+                            expected_output=expected,
+                            actual_output=actual,
+                            passed=passed,
+                            status="passed" if passed else "failed",
+                        )
+                    )
 
             return CodeExecutionResponse(
                 stdout=main_run["stdout"],
@@ -100,18 +122,19 @@ async def execute_code(
                 execution_time_ms=elapsed_ms,
                 test_results=test_results,
                 passed_count=passed_count,
-                total_count=len(request.test_cases)
+                total_count=len(request.test_cases),
             )
 
         # If not Python or not dev mode and Piston is down
         raise HTTPException(
             status_code=503,
-            detail="Code execution service unavailable. Piston is not running and local fallback only supports Python."
+            detail="Code execution service unavailable. Piston is not running and local fallback only supports Python.",
         )
     except HTTPException:
         raise
     except Exception as e:
         import traceback
+
         print(f"[CodeExecution] Error executing {request.language} code: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Code execution failed: {str(e)}")

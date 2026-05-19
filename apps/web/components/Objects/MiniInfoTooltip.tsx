@@ -44,4 +44,4 @@ export default function MiniInfoTooltip({
       </button>
     </motion.div>
   );
-} 
+}

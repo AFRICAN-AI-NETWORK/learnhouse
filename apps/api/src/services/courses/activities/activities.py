@@ -1,7 +1,13 @@
 from sqlmodel import Session, select
 from src.db.courses.courses import Course
 from src.db.courses.chapters import Chapter
-from src.db.courses.activities import ActivityCreate, Activity, ActivityRead, ActivityUpdate, ActivityTypeEnum
+from src.db.courses.activities import (
+    ActivityCreate,
+    Activity,
+    ActivityRead,
+    ActivityUpdate,
+    ActivityTypeEnum,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
@@ -29,7 +35,6 @@ async def create_activity(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-
     # CHeck if org exists
     statement = select(Chapter).where(Chapter.id == activity_object.chapter_id)
     chapter = db_session.exec(statement).first()
@@ -50,7 +55,9 @@ async def create_activity(
             detail="Course not found",
         )
 
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # Create Activity
     activity = Activity(**activity_object.model_dump())
@@ -70,42 +77,51 @@ async def create_activity(
     if activity.activity_type == ActivityTypeEnum.TYPE_LIVE_SESSION:
         try:
             # Fetch Org Config
-            statement = select(OrganizationConfig).where(OrganizationConfig.org_id == activity.org_id)
+            statement = select(OrganizationConfig).where(
+                OrganizationConfig.org_id == activity.org_id
+            )
             org_config_obj = db_session.exec(statement).first()
-            
+
             if org_config_obj and org_config_obj.config:
                 # Expecting config['integrations']['youtube'] to contain a JSON string of credentials
-                yt_config = org_config_obj.config.get('integrations', {}).get('youtube')
-                
+                yt_config = org_config_obj.config.get("integrations", {}).get("youtube")
+
                 if yt_config:
                     # Create the broadcast
                     yt_data = await create_automated_youtube_session(
                         org_credentials=yt_config,
                         title=f"{course.name} - {activity.name}",
-                        start_time=activity.details.get('start_time') if activity.details else str(datetime.now())
+                        start_time=activity.details.get("start_time")
+                        if activity.details
+                        else str(datetime.now()),
                     )
-                    
+
                     # Update activity details with the stream info
                     details = activity.details or {}
-                    details.update({
-                        'recording_url': yt_data['watch_url'],
-                        'youtube_video_id': yt_data['video_id'],
-                        'youtube_stream_key': yt_data['stream_key'],
-                        'auto_stream_enabled': True
-                    })
+                    details.update(
+                        {
+                            "recording_url": yt_data["watch_url"],
+                            "youtube_video_id": yt_data["video_id"],
+                            "youtube_stream_key": yt_data["stream_key"],
+                            "auto_stream_enabled": True,
+                        }
+                    )
                     activity.details = details
                     db_session.add(activity)
                     db_session.commit()
                     db_session.refresh(activity)
         except Exception as e:
-            print(f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {str(e)}", file=sys.stderr)
+            print(
+                f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {str(e)}",
+                file=sys.stderr,
+            )
             # We don't fail the whole creation if YouTube fails, just log it.
 
     # Find the last activity in the Chapter and add it to the list
     statement = (
         select(ChapterActivity)
         .where(ChapterActivity.chapter_id == activity_object.chapter_id)
-        .order_by(ChapterActivity.order) # type: ignore
+        .order_by(ChapterActivity.order)  # type: ignore
     )
     chapter_activities = db_session.exec(statement).all()
 
@@ -155,22 +171,27 @@ async def get_activity(
     activity, course, organization = result
 
     # RBAC check
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # Paid access check
     has_paid_access = await payments_access.check_activity_paid_access(
         request=request,
         activity_id=activity.id if activity.id else 0,
         user=current_user,
-        db_session=db_session
+        db_session=db_session,
     )
 
     activity_read = ActivityRead.model_validate(activity)
     activity_read.course_uuid = course.course_uuid
     activity_read.org_slug = organization.slug
-    activity_read.content = activity_read.content if has_paid_access else { "paid_access": False }
+    activity_read.content = (
+        activity_read.content if has_paid_access else {"paid_access": False}
+    )
 
     return activity_read
+
 
 async def get_activityby_id(
     request: Request,
@@ -196,7 +217,9 @@ async def get_activityby_id(
     activity, course, organization = result
 
     # RBAC check
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     activity_read = ActivityRead.model_validate(activity)
     activity_read.course_uuid = course.course_uuid
@@ -230,7 +253,9 @@ async def update_activity(
             detail="Course not found",
         )
 
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Update only the fields that were passed in
     for var, value in vars(activity_object).items():
@@ -271,7 +296,9 @@ async def delete_activity(
             detail="Course not found",
         )
 
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
     # Delete activity from chapter
     statement = select(ChapterActivity).where(
@@ -308,8 +335,7 @@ async def get_activities(
         select(Activity)
         .join(ChapterActivity)
         .where(
-            ChapterActivity.chapter_id == coursechapter_id,
-            Activity.published == True
+            ChapterActivity.chapter_id == coursechapter_id, Activity.published == True
         )
     )
     activities = db_session.exec(statement).all()
@@ -323,7 +349,7 @@ async def get_activities(
     # RBAC check
     statement = select(Chapter).where(Chapter.id == coursechapter_id)
     chapter = db_session.exec(statement).first()
-    
+
     if not chapter:
         raise HTTPException(
             status_code=404,
@@ -339,7 +365,9 @@ async def get_activities(
             detail="Course not found",
         )
 
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     activities = [ActivityRead.model_validate(activity) for activity in activities]
 

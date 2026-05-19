@@ -6,4 +6,4 @@ export default function DocumentationLayout({
   children: React.ReactNode
 }) {
   return <>{children}</>
-} 
+}

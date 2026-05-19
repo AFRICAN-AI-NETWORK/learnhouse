@@ -84,7 +84,7 @@ const UserCertificates: React.FC<UserCertificatesProps> = ({ orgslug }) => {
           {certificatesData.length}
         </span>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {certificatesData.map((certificate: any) => {
           const verificationLink = getUriWithOrg(orgslug, `/certificates/${certificate.certificate_user.user_certification_uuid}/verify`)
@@ -103,18 +103,18 @@ const UserCertificates: React.FC<UserCertificatesProps> = ({ orgslug }) => {
                     {certificate.certification.config.certification_name}
                   </h3>
                 </div>
-                
+
                 <div className="space-y-2 text-xs text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Building className="w-3 h-3" />
                     <span className="truncate">{certificate.course.name}</span>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-3 h-3" />
                     <span>{t('certificate.awarded')} {awardedDate}</span>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Hash className="w-3 h-3" />
                     <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded truncate">
@@ -122,7 +122,7 @@ const UserCertificates: React.FC<UserCertificatesProps> = ({ orgslug }) => {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                   <div className="text-xs text-gray-500 capitalize">
                     {certificate.certification.config.certification_type.replace('_', ' ')}
@@ -146,4 +146,4 @@ const UserCertificates: React.FC<UserCertificatesProps> = ({ orgslug }) => {
   )
 }
 
-export default UserCertificates 
+export default UserCertificates

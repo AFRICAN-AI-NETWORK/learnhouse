@@ -5,14 +5,15 @@ import os
 
 router = APIRouter()
 
+
 class ContactForm(BaseModel):
     name: str
     email: EmailStr
     message: str
 
+
 @router.post("/contact")
 async def contact_submit(form: ContactForm, request: Request):
-
     # Compose email
     subject = f"Contact Form Submission from {form.name}"
     body = f"""
@@ -27,7 +28,7 @@ async def contact_submit(form: ContactForm, request: Request):
         send_email(
             to=os.getenv("CONTACT_RECEIVER_EMAIL", "education@africanainetwork.com"),
             subject=subject,
-            body=body
+            body=body,
         )
         return {"success": True, "message": "Email sent successfully."}
     except Exception as e:

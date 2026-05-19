@@ -5,16 +5,17 @@ Revises: 040ccb1d456e
 Create Date: 2024-11-23 19:41:14.064680
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa # noqa: F401
-import sqlmodel # noqa: F401
+import sqlalchemy as sa  # noqa: F401
+import sqlmodel  # noqa: F401
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '0314ec7791e1'
-down_revision: Union[str, None] = '040ccb1d456e'
+revision: str = "0314ec7791e1"
+down_revision: Union[str, None] = "040ccb1d456e"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -24,126 +25,213 @@ def upgrade() -> None:
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     tables = inspector.get_table_names()
-    
+
     # Check if enum exists
     enum_exists = False
     try:
-        result = bind.execute(sa.text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentproviderenum')"))
+        result = bind.execute(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentproviderenum')"
+            )
+        )
         enum_exists = result.scalar()
     except Exception:
         pass
 
     if not enum_exists:
-        payment_provider_enum = postgresql.ENUM('STRIPE', name='paymentproviderenum')
+        payment_provider_enum = postgresql.ENUM("STRIPE", name="paymentproviderenum")
         payment_provider_enum.create(bind)
 
-    if 'paymentsconfig' not in tables and 'payments_config' not in tables:
-        op.create_table('paymentsconfig',
-        sa.Column('enabled', sa.Boolean(), nullable=False),
-        sa.Column('active', sa.Boolean(), nullable=False),
-        sa.Column('provider', postgresql.ENUM('STRIPE', name='paymentproviderenum', create_type=False), nullable=False),
-        sa.Column('provider_specific_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column('provider_config', sa.JSON(), nullable=True),
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('org_id', sa.BigInteger(), nullable=True),
-        sa.Column('creation_date', sa.DateTime(), nullable=False),
-        sa.Column('update_date', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['org_id'], ['organization.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
+    if "paymentsconfig" not in tables and "payments_config" not in tables:
+        op.create_table(
+            "paymentsconfig",
+            sa.Column("enabled", sa.Boolean(), nullable=False),
+            sa.Column("active", sa.Boolean(), nullable=False),
+            sa.Column(
+                "provider",
+                postgresql.ENUM(
+                    "STRIPE", name="paymentproviderenum", create_type=False
+                ),
+                nullable=False,
+            ),
+            sa.Column(
+                "provider_specific_id",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            ),
+            sa.Column("provider_config", sa.JSON(), nullable=True),
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("org_id", sa.BigInteger(), nullable=True),
+            sa.Column("creation_date", sa.DateTime(), nullable=False),
+            sa.Column("update_date", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
-        
+
     # Check if paymentproducttypeenum exists
     prod_enum_exists = False
     try:
-        result = bind.execute(sa.text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentproducttypeenum')"))
+        result = bind.execute(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentproducttypeenum')"
+            )
+        )
         prod_enum_exists = result.scalar()
     except Exception:
         pass
-        
+
     if not prod_enum_exists:
-        prod_enum = postgresql.ENUM('SUBSCRIPTION', 'ONE_TIME', name='paymentproducttypeenum')
+        prod_enum = postgresql.ENUM(
+            "SUBSCRIPTION", "ONE_TIME", name="paymentproducttypeenum"
+        )
         prod_enum.create(bind)
 
     # Check if paymentpricetypeenum exists
     price_enum_exists = False
     try:
-        result = bind.execute(sa.text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentpricetypeenum')"))
+        result = bind.execute(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentpricetypeenum')"
+            )
+        )
         price_enum_exists = result.scalar()
     except Exception:
         pass
-        
+
     if not price_enum_exists:
-        price_enum = postgresql.ENUM('CUSTOMER_CHOICE', 'FIXED_PRICE', name='paymentpricetypeenum')
+        price_enum = postgresql.ENUM(
+            "CUSTOMER_CHOICE", "FIXED_PRICE", name="paymentpricetypeenum"
+        )
         price_enum.create(bind)
 
-    if 'paymentsproduct' not in tables:
-        op.create_table('paymentsproduct',
-        sa.Column('name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column('description', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column('product_type', postgresql.ENUM('SUBSCRIPTION', 'ONE_TIME', name='paymentproducttypeenum', create_type=False), nullable=False),
-        sa.Column('price_type', postgresql.ENUM('CUSTOMER_CHOICE', 'FIXED_PRICE', name='paymentpricetypeenum', create_type=False), nullable=False),
-        sa.Column('benefits', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column('amount', sa.Float(), nullable=False),
-        sa.Column('currency', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('org_id', sa.BigInteger(), nullable=True),
-        sa.Column('payments_config_id', sa.BigInteger(), nullable=True),
-        sa.Column('provider_product_id', sa.String(), nullable=True),
-        sa.Column('creation_date', sa.DateTime(), nullable=False),
-        sa.Column('update_date', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['org_id'], ['organization.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['payments_config_id'], ['paymentsconfig.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
+    if "paymentsproduct" not in tables:
+        op.create_table(
+            "paymentsproduct",
+            sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+            sa.Column("description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+            sa.Column(
+                "product_type",
+                postgresql.ENUM(
+                    "SUBSCRIPTION",
+                    "ONE_TIME",
+                    name="paymentproducttypeenum",
+                    create_type=False,
+                ),
+                nullable=False,
+            ),
+            sa.Column(
+                "price_type",
+                postgresql.ENUM(
+                    "CUSTOMER_CHOICE",
+                    "FIXED_PRICE",
+                    name="paymentpricetypeenum",
+                    create_type=False,
+                ),
+                nullable=False,
+            ),
+            sa.Column("benefits", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+            sa.Column("amount", sa.Float(), nullable=False),
+            sa.Column("currency", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("org_id", sa.BigInteger(), nullable=True),
+            sa.Column("payments_config_id", sa.BigInteger(), nullable=True),
+            sa.Column("provider_product_id", sa.String(), nullable=True),
+            sa.Column("creation_date", sa.DateTime(), nullable=False),
+            sa.Column("update_date", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
+            sa.ForeignKeyConstraint(
+                ["payments_config_id"], ["paymentsconfig.id"], ondelete="CASCADE"
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
 
-    if 'paymentscourse' not in tables:
-        op.create_table('paymentscourse',
-        sa.Column('course_id', sa.BigInteger(), nullable=True),
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('payment_product_id', sa.BigInteger(), nullable=True),
-        sa.Column('org_id', sa.BigInteger(), nullable=True),
-        sa.Column('creation_date', sa.DateTime(), nullable=False),
-        sa.Column('update_date', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['course_id'], ['course.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['org_id'], ['organization.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['payment_product_id'], ['paymentsproduct.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
+    if "paymentscourse" not in tables:
+        op.create_table(
+            "paymentscourse",
+            sa.Column("course_id", sa.BigInteger(), nullable=True),
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("payment_product_id", sa.BigInteger(), nullable=True),
+            sa.Column("org_id", sa.BigInteger(), nullable=True),
+            sa.Column("creation_date", sa.DateTime(), nullable=False),
+            sa.Column("update_date", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
+            sa.ForeignKeyConstraint(
+                ["payment_product_id"], ["paymentsproduct.id"], ondelete="CASCADE"
+            ),
+            sa.PrimaryKeyConstraint("id"),
         )
 
     # Check if paymentstatusenum exists
     status_enum_exists = False
     try:
-        result = bind.execute(sa.text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentstatusenum')"))
+        result = bind.execute(
+            sa.text(
+                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentstatusenum')"
+            )
+        )
         status_enum_exists = result.scalar()
     except Exception:
         pass
-        
+
     if not status_enum_exists:
-        status_enum = postgresql.ENUM('PENDING', 'COMPLETED', 'ACTIVE', 'CANCELLED', 'FAILED', 'REFUNDED', name='paymentstatusenum')
+        status_enum = postgresql.ENUM(
+            "PENDING",
+            "COMPLETED",
+            "ACTIVE",
+            "CANCELLED",
+            "FAILED",
+            "REFUNDED",
+            name="paymentstatusenum",
+        )
         status_enum.create(bind)
 
-    if 'paymentsuser' not in tables:
-        op.create_table('paymentsuser',
-        sa.Column('status', postgresql.ENUM('PENDING', 'COMPLETED', 'ACTIVE', 'CANCELLED', 'FAILED', 'REFUNDED', name='paymentstatusenum', create_type=False), nullable=False),
-        sa.Column('provider_specific_data', sa.JSON(), nullable=True),
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.BigInteger(), nullable=True),
-        sa.Column('org_id', sa.BigInteger(), nullable=True),
-        sa.Column('payment_product_id', sa.BigInteger(), nullable=True),
-        sa.Column('creation_date', sa.DateTime(), nullable=False),
-        sa.Column('update_date', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['org_id'], ['organization.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['payment_product_id'], ['paymentsproduct.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
+    if "paymentsuser" not in tables:
+        op.create_table(
+            "paymentsuser",
+            sa.Column(
+                "status",
+                postgresql.ENUM(
+                    "PENDING",
+                    "COMPLETED",
+                    "ACTIVE",
+                    "CANCELLED",
+                    "FAILED",
+                    "REFUNDED",
+                    name="paymentstatusenum",
+                    create_type=False,
+                ),
+                nullable=False,
+            ),
+            sa.Column("provider_specific_data", sa.JSON(), nullable=True),
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("user_id", sa.BigInteger(), nullable=True),
+            sa.Column("org_id", sa.BigInteger(), nullable=True),
+            sa.Column("payment_product_id", sa.BigInteger(), nullable=True),
+            sa.Column("creation_date", sa.DateTime(), nullable=False),
+            sa.Column("update_date", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
+            sa.ForeignKeyConstraint(
+                ["payment_product_id"], ["paymentsproduct.id"], ondelete="CASCADE"
+            ),
+            sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
         )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('paymentsuser')
-    op.drop_table('paymentscourse')
-    op.drop_table('paymentsproduct')
-    op.drop_table('paymentsconfig')
+    op.drop_table("paymentsuser")
+    op.drop_table("paymentscourse")
+    op.drop_table("paymentsproduct")
+    op.drop_table("paymentsconfig")
     # ### end Alembic commands ###

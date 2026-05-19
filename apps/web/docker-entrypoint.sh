@@ -15,4 +15,3 @@ export PORT="${PORT:-3000}"
 # The wrapper will inject NEXT_PUBLIC_* env vars before starting
 # Using 'env' ensures all Kubernetes-injected environment variables are passed through
 exec env node server-wrapper.js
-

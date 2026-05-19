@@ -320,8 +320,8 @@ function SearchPage() {
                 value={effectiveSearchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('search.search_placeholder')}
-                className="w-full h-12 pl-12 pr-4 rounded-xl nice-shadow bg-white 
-                         focus:outline-none focus:ring-1 focus:ring-black/5 focus:border-black/20 
+                className="w-full h-12 pl-12 pr-4 rounded-xl nice-shadow bg-white
+                         focus:outline-none focus:ring-1 focus:ring-black/5 focus:border-black/20
                          text-sm placeholder:text-black/40 transition-all"
               />
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

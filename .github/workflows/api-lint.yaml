@@ -13,8 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Ruff lint
-        uses: chartboost/ruff-action@v1
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          src: "./apps/api"
+          python-version: "3.12"
+      - name: Install lint dependencies
+        run: pip install ruff mypy
+      - name: Ruff lint
+        run: ruff check apps/api
+
+  # mypy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #     - name: Install type-check dependencies
+  #       run: pip install mypy
+  #     - name: Mypy type check
+  #       run: mypy apps/api/src --ignore-missing-imports

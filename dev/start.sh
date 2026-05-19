@@ -37,23 +37,23 @@ read -p "This will start both and show logs. (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${BLUE}Starting servers... (Press Ctrl+C to stop)${NC}"
-    
+
     # Load nvm if available (for Node.js version management)
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    
+
     # Use Node.js 20 if nvm is available
     if command -v nvm &> /dev/null; then
         nvm use 20 > /dev/null 2>&1 || true
     fi
-    
+
     # Cleanup background processes on exit
     trap 'kill $(jobs -p) 2>/dev/null' EXIT
 
     # Start API
     (cd apps/api && uv run python app.py) &
-    
+
     # Start Web (with nvm loaded in subshell)
     (export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm use 20 > /dev/null 2>&1; cd apps/web && pnpm dev) &
 
@@ -66,4 +66,3 @@ else
 fi
 
 echo -e "\n${GREEN}Happy coding! 🚀${NC}"
-

@@ -33,14 +33,14 @@ function AssignmentEdit() {
           <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center p-4">
             <div className="bg-white p-6 rounded-lg shadow-md text-center">
               <h2 className="text-xl font-bold mb-4">{t('dashboard.assignments.detail.mobile.title')}</h2>
-              <Monitor className='mx-auto my-5' size={60} />    
+              <Monitor className='mx-auto my-5' size={60} />
               <p>{t('dashboard.assignments.detail.mobile.message1')}</p>
               <p>{t('dashboard.assignments.detail.mobile.message2')}</p>
             </div>
           </div>
         )
     }
-    
+
     return (
         <div className='flex w-full flex-col'>
             <AssignmentProvider assignment_uuid={'assignment_' + params.assignmentuuid}>
@@ -206,7 +206,7 @@ function PublishingState() {
 function AssignmentTitle() {
     const { t } = useTranslation()
     const assignment = useAssignments() as any;
-    
+
     return (
         <div className="flex items-center gap-2">
             {t('dashboard.assignments.detail.title')}

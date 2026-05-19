@@ -716,9 +716,6 @@ function TaskCodeEditorObject({
       }))
 
       try {
-        // eslint-disable-next-line no-console
-        console.log('[RunCode] Executing', exercise.language, 'code...')
-
         const res = await executeCode(
           {
             language: exercise.language,
@@ -729,9 +726,6 @@ function TaskCodeEditorObject({
           },
           access_token
         )
-
-        // eslint-disable-next-line no-console
-        console.log('[RunCode] Response:', JSON.stringify(res, null, 2))
 
         if (res.success) {
           setConsoleOutput((prev) => ({
@@ -1249,7 +1243,7 @@ function TaskCodeEditorObject({
                 <h4
                   className={`text-[11px] font-bold uppercase tracking-widest ${isFocusMode ? 'text-zinc-200' : 'text-slate-500'}`}
                 >
-                  Exercises & Challenges
+                  Exercises &amp; Challenges
                 </h4>
               </div>
 

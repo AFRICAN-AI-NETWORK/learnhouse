@@ -153,14 +153,14 @@ const FlipcardExtension: React.FC = (props: any) => {
   return (
     <NodeViewWrapper className={`flipcard-wrapper flex ${getAlignmentClass()} my-4`}>
       <div className={`flipcard-container ${getSizeClass()} relative`}>
-        <div 
+        <div
           className={`flipcard-inner cursor-pointer ${
             isFlipped ? 'flipped' : ''
           }`}
           onClick={handleFlip}
         >
           {/* Front Side (Question) */}
-          <div 
+          <div
             className={twMerge(
               'flipcard-front border-2 text-white p-6 nice-shadow flex flex-col items-center justify-center text-center',
               getCardColor(color, false)
@@ -183,7 +183,7 @@ const FlipcardExtension: React.FC = (props: any) => {
                 <div className={`text-center font-medium ${getFontSizeClass()} leading-relaxed flex items-center justify-center select-none`}>
                   <span className="select-none pointer-events-none">{question}</span>
                   {isEditable && (
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleQuestionEdit()
@@ -202,7 +202,7 @@ const FlipcardExtension: React.FC = (props: any) => {
           </div>
 
           {/* Back Side (Answer) */}
-          <div 
+          <div
             className={twMerge(
               'flipcard-back border-2 text-white p-6 nice-shadow flex flex-col items-center justify-center text-center',
               getCardColor(color, true)
@@ -225,7 +225,7 @@ const FlipcardExtension: React.FC = (props: any) => {
                 <div className={`text-center font-medium ${getFontSizeClass()} leading-relaxed flex items-center justify-center select-none`}>
                   <span className="select-none pointer-events-none">{answer}</span>
                   {isEditable && (
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleAnswerEdit()
@@ -247,78 +247,78 @@ const FlipcardExtension: React.FC = (props: any) => {
         {/* Editor Controls */}
         {isEditable && (
           <div className="flex mt-3 space-x-1 justify-center opacity-60 hover:opacity-100 transition-opacity">
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleAlignmentChange('left')
-              }} 
+              }}
               className={`p-1.5 rounded-md transition-colors text-xs ${alignment === 'left' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
               title={t('activities.align_left')}
             >
               <AlignLeft size={12} />
             </button>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleAlignmentChange('center')
-              }} 
+              }}
               className={`p-1.5 rounded-md transition-colors text-xs ${alignment === 'center' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
               title={t('activities.align_center')}
             >
               <AlignCenter size={12} />
             </button>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleAlignmentChange('right')
-              }} 
+              }}
               className={`p-1.5 rounded-md transition-colors text-xs ${alignment === 'right' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
               title={t('activities.align_right')}
             >
               <AlignRight size={12} />
             </button>
-            
+
             {/* Size Controls */}
             <div className="w-px h-4 bg-gray-300 self-center mx-1"></div>
-            
-            <button 
+
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleSizeChange('small')
-              }} 
+              }}
               className={`p-1.5 rounded-md transition-colors text-xs ${size === 'small' ? 'bg-green-100 text-green-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
               title={t('activities.size_small')}
             >
               <Minimize2 size={12} />
             </button>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleSizeChange('medium')
-              }} 
+              }}
               className={`p-1.5 rounded-md transition-colors text-xs ${size === 'medium' ? 'bg-green-100 text-green-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
               title={t('activities.size_medium')}
             >
               <Square size={12} />
             </button>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleSizeChange('large')
-              }} 
+              }}
               className={`p-1.5 rounded-md transition-colors text-xs ${size === 'large' ? 'bg-green-100 text-green-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
               title={t('activities.size_large')}
             >
               <Maximize2 size={12} />
             </button>
-            
+
             <div className="w-px h-4 bg-gray-300 self-center mx-1"></div>
-            
-            <button 
+
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 setShowColorPicker(!showColorPicker)
-              }} 
+              }}
               className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md transition-colors text-xs"
               title={t('activities.change_color')}
             >

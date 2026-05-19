@@ -15,18 +15,18 @@ interface FixedActivitySecondaryBarProps {
 }
 
 // Memoized navigation buttons component
-const NavigationButtons = memo(({ 
-  prevActivity, 
-  nextActivity, 
-  currentIndex, 
-  allActivities, 
-  navigateToActivity 
-}: { 
-  prevActivity: any, 
-  nextActivity: any, 
-  currentIndex: number, 
-  allActivities: any[], 
-  navigateToActivity: (activity: any) => void 
+const NavigationButtons = memo(({
+  prevActivity,
+  nextActivity,
+  currentIndex,
+  allActivities,
+  navigateToActivity
+}: {
+  prevActivity: any,
+  nextActivity: any,
+  currentIndex: number,
+  allActivities: any[],
+  navigateToActivity: (activity: any) => void
 }) => {
   const { t } = useTranslation();
   return (
@@ -34,8 +34,8 @@ const NavigationButtons = memo(({
       <button
         onClick={() => navigateToActivity(prevActivity)}
         className={`flex items-center space-x-1 sm:space-x-2 py-1.5 px-1.5 sm:px-2 rounded-md transition-all duration-200 ${
-          prevActivity 
-            ? 'text-gray-700 hover:bg-gray-100' 
+          prevActivity
+            ? 'text-gray-700 hover:bg-gray-100'
             : 'text-gray-300 cursor-not-allowed'
         }`}
         disabled={!prevActivity}
@@ -111,7 +111,7 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
   const { allActivities, currentIndex } = useMemo(() => {
     let allActivities: any[] = [];
     let currentIndex = -1;
-    
+
     props.course.chapters.forEach((chapter: any) => {
       chapter.activities.forEach((activity: any) => {
         const cleanActivityUuid = activity.activity_uuid?.replace('activity_', '');
@@ -120,22 +120,22 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
           cleanUuid: cleanActivityUuid,
           chapterName: chapter.name
         });
-        
+
         if (cleanActivityUuid === props.currentActivityId.replace('activity_', '')) {
           currentIndex = allActivities.length - 1;
         }
       });
     });
-    
+
     return { allActivities, currentIndex };
   }, [props.course, props.currentActivityId]);
-  
+
   const prevActivity = currentIndex > 0 ? allActivities[currentIndex - 1] : null;
   const nextActivity = currentIndex < allActivities.length - 1 ? allActivities[currentIndex + 1] : null;
-  
+
   const navigateToActivity = (activity: any) => {
     if (!activity) return;
-    
+
     const cleanCourseUuid = props.course.course_uuid?.replace('course_', '');
     router.push(getUriWithOrg(props.orgslug, '') + `/course/${cleanCourseUuid}/activity/${activity.cleanUuid}`);
   };
@@ -162,7 +162,7 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
     }
 
     window.addEventListener('scroll', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (mainActivityInfoRef.current) {
@@ -174,7 +174,7 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
   if (!shouldShow) return null;
 
   return (
-    <div 
+    <div
       className={`fixed top-[60px] left-0 right-0 z-40 bg-white/90 backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-top ${
         isScrolled ? 'nice-shadow' : ''
       }`}
@@ -182,7 +182,7 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 py-2">
           <CourseInfo course={props.course} org={org} />
-          
+
           <div className="flex items-center flex-shrink-0">
             <NavigationButtons
               prevActivity={prevActivity}
@@ -196,4 +196,4 @@ export default function FixedActivitySecondaryBar(props: FixedActivitySecondaryB
       </div>
     </div>
   );
-} 
+}

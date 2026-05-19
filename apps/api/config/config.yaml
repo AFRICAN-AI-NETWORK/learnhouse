@@ -32,10 +32,10 @@ mailing_config:
   system_email_address: ""
 
 database_config:
-  sql_connection_string: postgresql://learnhouse:learnhouse@localhost:5432/learnhouse
+  sql_connection_string: postgresql://learnhouse:learnhouse@127.0.0.1:5435/learnhouse
 
 redis_config:
-  redis_connection_string: redis://localhost:6379/learnhouse
+  redis_connection_string: redis://127.0.0.1:6379/learnhouse
 
 payments_config:
   paystack:

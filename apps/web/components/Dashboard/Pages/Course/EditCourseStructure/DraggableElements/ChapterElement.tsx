@@ -156,8 +156,8 @@ function ChapterElement(props: ChapterElementProps) {
             type="activity"
           >
             {(provided, snapshot) => (
-              <div 
-                {...provided.droppableProps} 
+              <div
+                {...provided.droppableProps}
                 ref={provided.innerRef}
                 className={`min-h-[60px] rounded-lg transition-colors duration-75 ${
                   snapshot.isDraggingOver ? 'bg-blue-50/50' : ''

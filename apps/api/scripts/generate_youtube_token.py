@@ -6,10 +6,11 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 # 'youtube.force-ssl' for creating/managing Live Broadcasts.
 # 'youtube.upload' for finalizing recordings.
 SCOPES = [
-    'https://www.googleapis.com/auth/youtube.force-ssl',
-    'https://www.googleapis.com/auth/youtube.upload',
-    'https://www.googleapis.com/auth/youtube.readonly'
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
 ]
+
 
 def main():
     print("YouTube Token Generator for LearnHouse")
@@ -18,7 +19,12 @@ def main():
     print("Explain that LearnHouse automates Live Session creation for workshops.")
     print("-" * 40)
 
-    secret_file = input("Enter path to client_secrets.json (default: client_secrets.json): ").strip() or "client_secrets.json"
+    secret_file = (
+        input(
+            "Enter path to client_secrets.json (default: client_secrets.json): "
+        ).strip()
+        or "client_secrets.json"
+    )
 
     if not os.path.exists(secret_file):
         print(f"Error: File '{secret_file}' not found.")
@@ -37,18 +43,19 @@ def main():
             "client_id": creds.client_id,
             "client_secret": creds.client_secret,
             "scopes": creds.scopes,
-            "universe_domain": getattr(creds, 'universe_domain', 'googleapis.com'),
-            "account": ""
+            "universe_domain": getattr(creds, "universe_domain", "googleapis.com"),
+            "account": "",
         }
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("SUCCESS! Paste the JSON block below into your Integration Settings:")
-        print("="*60 + "\n")
+        print("=" * 60 + "\n")
         print(json.dumps(token_data, indent=2))
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
 
     except Exception as e:
         print(f"\nAn error occurred: {str(e)}")
+
 
 if __name__ == "__main__":
     main()

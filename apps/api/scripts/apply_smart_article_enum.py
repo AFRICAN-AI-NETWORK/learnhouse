@@ -1,4 +1,5 @@
 """Apply Smart Article enum values directly to Postgres."""
+
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
@@ -9,10 +10,12 @@ engine = create_engine(db_url)
 
 with engine.connect() as conn:
     # Check existing activity types
-    result = conn.execute(text(
-        "SELECT enumlabel FROM pg_enum "
-        "WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'activitytypeenum')"
-    ))
+    result = conn.execute(
+        text(
+            "SELECT enumlabel FROM pg_enum "
+            "WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'activitytypeenum')"
+        )
+    )
     existing = [r[0] for r in result]
     print("Existing activity types:", existing)
 
@@ -24,15 +27,19 @@ with engine.connect() as conn:
         print(">> TYPE_SMART_ARTICLE already exists")
 
     # Check existing sub types
-    result2 = conn.execute(text(
-        "SELECT enumlabel FROM pg_enum "
-        "WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'activitysubtypeenum')"
-    ))
+    result2 = conn.execute(
+        text(
+            "SELECT enumlabel FROM pg_enum "
+            "WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'activitysubtypeenum')"
+        )
+    )
     existing2 = [r[0] for r in result2]
     print("Existing sub types:", existing2)
 
     if "SUBTYPE_SMART_ARTICLE_PDF" not in existing2:
-        conn.execute(text("ALTER TYPE activitysubtypeenum ADD VALUE 'SUBTYPE_SMART_ARTICLE_PDF'"))
+        conn.execute(
+            text("ALTER TYPE activitysubtypeenum ADD VALUE 'SUBTYPE_SMART_ARTICLE_PDF'")
+        )
         conn.commit()
         print(">> Added SUBTYPE_SMART_ARTICLE_PDF")
     else:

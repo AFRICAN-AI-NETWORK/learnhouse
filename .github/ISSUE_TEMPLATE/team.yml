@@ -12,4 +12,3 @@ body:
       label: Is this issue planned ?
       options:
         - label: Planned
-          

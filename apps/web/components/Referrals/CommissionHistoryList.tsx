@@ -23,6 +23,7 @@ const STATUS_BADGE: Record<
   CommissionStatus,
   { label: string; variant: 'default' | 'secondary' | 'outline' }
 > = {
+  [CommissionStatus.REGISTERED]: { label: 'Registered', variant: 'secondary' },
   [CommissionStatus.PENDING]: { label: 'Pending', variant: 'secondary' },
   [CommissionStatus.ELIGIBLE]: { label: 'Eligible', variant: 'default' },
   [CommissionStatus.PAID]: { label: 'Paid', variant: 'outline' },

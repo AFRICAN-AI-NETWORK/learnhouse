@@ -11,8 +11,8 @@ import {
 import { getResponseMetadata } from '@services/utils/ts/requests'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
+import { sentryAuthEvents } from '@/app/api/auth/[...nextauth]/sentry-wrapper'
 
-// Add type declarations at the top of the file
 declare global {
   var sessionCache: {
     [key: string]: {
@@ -21,7 +21,6 @@ declare global {
     }
   }
 }
-
 export const isDevEnv =
   getLEARNHOUSE_TOP_DOMAIN_VAL() == 'localhost' ? true : false
 
@@ -196,4 +195,5 @@ export const nextAuthOptions = {
       return session
     },
   },
+  events: sentryAuthEvents,
 }

@@ -2,6 +2,7 @@
 API Endpoints for Email Domain Management (Admin only)
 Allows manual triggering of domain list updates
 """
+
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlmodel import Session
@@ -26,31 +27,31 @@ async def trigger_domain_list_update(
     org_id: int,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db_session: Session = Depends(get_db_session)
+    db_session: Session = Depends(get_db_session),
 ):
     """
     Manually trigger email domain list update from external source
     Requires admin permissions
-    
+
     Returns update statistics
     """
     # Get organization to get UUID
     org = db_session.get(Organization, org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-    
+
     # Check admin permissions
     await rbac_check(request, org.org_uuid, current_user, "update", db_session)
-    
+
     try:
         stats = await update_disposable_email_list(db_session)
-        
+
         if not stats["success"]:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Domain list update failed: {stats.get('error', 'Unknown error')}"
+                detail=f"Domain list update failed: {stats.get('error', 'Unknown error')}",
             )
-        
+
         return {
             "success": True,
             "message": "Email domain lists updated successfully",
@@ -58,14 +59,14 @@ async def trigger_domain_list_update(
                 "added": stats["added"],
                 "deactivated": stats["deactivated"],
                 "total": stats["total"],
-                "source": stats["source"]
-            }
+                "source": stats["source"],
+            },
         }
     except Exception as e:
         logger.error(f"Failed to update domain lists: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update email domain lists"
+            detail="Failed to update email domain lists",
         )
 
 
@@ -74,7 +75,7 @@ async def trigger_domain_list_seed(
     org_id: int,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db_session: Session = Depends(get_db_session)
+    db_session: Session = Depends(get_db_session),
 ):
     """
     Manually trigger initial seeding of domain lists
@@ -85,20 +86,17 @@ async def trigger_domain_list_seed(
     org = db_session.get(Organization, org_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-    
+
     # Check admin permissions
     await rbac_check(request, org.org_uuid, current_user, "update", db_session)
-    
+
     try:
         await seed_initial_domain_lists(db_session)
-        
-        return {
-            "success": True,
-            "message": "Email domain lists seeded successfully"
-        }
+
+        return {"success": True, "message": "Email domain lists seeded successfully"}
     except Exception as e:
         logger.error(f"Failed to seed domain lists: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to seed email domain lists"
+            detail="Failed to seed email domain lists",
         )

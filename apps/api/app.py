@@ -3,9 +3,12 @@ import logging as _logging
 
 import uvicorn
 import logfire
+import sentry_sdk
 from fastapi import FastAPI, Request
 from config.config import LearnHouseConfig, get_learnhouse_config
 from src.core.events.events import shutdown_app, startup_app
+from src.core.sentry import init_sentry
+from src.core.middleware.sentry_context import SentryContextMiddleware
 from src.router import v1_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -24,13 +27,19 @@ from starlette.middleware.base import BaseHTTPMiddleware
 # Get LearnHouse Config
 learnhouse_config: LearnHouseConfig = get_learnhouse_config()
 
-# Global Config
+# Initialize Sentry if enabled
+if learnhouse_config.general_config.sentry_enabled:
+    init_sentry(
+        site_name=learnhouse_config.site_name,
+        development_mode=learnhouse_config.general_config.development_mode,
+    )
+
+
 app = FastAPI(
     title=learnhouse_config.site_name,
     description=learnhouse_config.site_description,
     docs_url="/docs" if learnhouse_config.general_config.development_mode else None,
     redoc_url="/redoc" if learnhouse_config.general_config.development_mode else None,
-    version="0.1.0",
 )
 
 # Custom middleware to add CORS headers to all responses including errors
@@ -38,7 +47,7 @@ class CORSHeaderMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         origin = request.headers.get("origin")
-        
+
         # Check if origin is in allowed origins
         if origin in learnhouse_config.hosting_config.allowed_origins:
             response.headers["Access-Control-Allow-Origin"] = origin
@@ -46,8 +55,13 @@ class CORSHeaderMiddleware(BaseHTTPMiddleware):
             response.headers["Access-Control-Allow-Methods"] = "*"
             response.headers["Access-Control-Allow-Headers"] = "*"
             response.headers["Access-Control-Expose-Headers"] = "*"
-        
+
         return response
+
+
+# Add Sentry context middleware if enabled
+if learnhouse_config.general_config.sentry_enabled:
+    app.add_middleware(SentryContextMiddleware)
 
 # Add CORS header middleware first
 app.add_middleware(CORSHeaderMiddleware)
@@ -67,12 +81,13 @@ if learnhouse_config.general_config.logfire_enabled:
     logfire.configure(
         console=False,
         service_name=learnhouse_config.site_name,
-        scrubbing_patterns=['token', 'password', 'authorization', 'jwt'],
-        scrubbing_callback=lambda key, value: '***REDACTED***'
+        scrubbing_patterns=["token", "password", "authorization", "jwt"],
+        scrubbing_callback=lambda key, value: "***REDACTED***",
     )
     logfire.instrument_fastapi(app)
     # Instrument database after logfire is configured
     from src.core.events.database import engine
+
     logfire.instrument_sqlalchemy(engine=engine)
 
 # Gzip Middleware (will add brotli later)
@@ -123,9 +138,15 @@ async def start_scheduler():
     if not _APSCHEDULER_AVAILABLE:
         return
 
-    WAITLIST_PROCESSOR_ENABLED = os.getenv("WAITLIST_PROCESSOR_ENABLED", "true").lower() == "true"
-    REFERRAL_PROCESSOR_ENABLED = os.getenv("REFERRAL_PROCESSOR_ENABLED", "true").lower() == "true"
-    REFERRAL_COMMISSION_CHECK_HOUR = int(os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0"))
+    WAITLIST_PROCESSOR_ENABLED = (
+        os.getenv("WAITLIST_PROCESSOR_ENABLED", "true").lower() == "true"
+    )
+    REFERRAL_PROCESSOR_ENABLED = (
+        os.getenv("REFERRAL_PROCESSOR_ENABLED", "true").lower() == "true"
+    )
+    REFERRAL_COMMISSION_CHECK_HOUR = int(
+        os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0")
+    )
 
     if not (WAITLIST_PROCESSOR_ENABLED or REFERRAL_PROCESSOR_ENABLED):
         print("  [X] Background jobs disabled by environment config")
@@ -188,9 +209,13 @@ async def start_scheduler():
         _log = _logging.getLogger("scheduler.heartbeat")
         job_id = event.job_id
         if event.exception:
-            _log.error("HEARTBEAT | job=%s | status=FAILED | error=%s", job_id, event.exception)
+            _log.error(
+                "HEARTBEAT | job=%s | status=FAILED | error=%s", job_id, event.exception
+            )
         else:
-            _log.info("HEARTBEAT | job=%s | status=OK | return=%s", job_id, event.retval)
+            _log.info(
+                "HEARTBEAT | job=%s | status=OK | return=%s", job_id, event.retval
+            )
 
     scheduler.add_listener(_job_heartbeat, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
@@ -219,6 +244,7 @@ async def stop_scheduler():
         scheduler.shutdown()
         _logging.getLogger("scheduler").info("Background job scheduler stopped")
 
+
 # JWT Exception Handler
 @app.exception_handler(AuthJWTException)
 def authjwt_exception_handler(request: Request, exc: AuthJWTException):
@@ -227,27 +253,35 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
         content={"detail": exc.message},  # type: ignore
     )
 
+
 # Global Exception Handler to ensure CORS on all errors
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    if learnhouse_config.general_config.sentry_enabled:
+        sentry_sdk.capture_exception(exc)
+
     origin = request.headers.get("origin")
     headers = {}
-    
+
     if origin in learnhouse_config.hosting_config.allowed_origins:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
-    
+
     return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"},
-        headers=headers
+        status_code=500, content={"detail": "Internal server error"}, headers=headers
     )
+
 
 # Static Files
 app.mount("/content", StaticFiles(directory="content"), name="content")
 
 # Global Routes
 app.include_router(v1_router)
+
+# General Routes
+@app.get("/")
+async def root():
+    return {"Message": "Welcome to LearnHouse"}
 
 if __name__ == "__main__":
     uvicorn.run(
@@ -256,8 +290,3 @@ if __name__ == "__main__":
         port=learnhouse_config.hosting_config.port,
         reload=learnhouse_config.general_config.development_mode,
     )
-
-# General Routes
-@app.get("/")
-async def root():
-    return {"Message": "Welcome to LearnHouse"}

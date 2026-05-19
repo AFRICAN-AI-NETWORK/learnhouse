@@ -49,7 +49,7 @@ export async function updatePaymentAccountID(orgId: number, data: any, access_to
 
 export async function getPaymentOnboardingLink(orgId: number, access_token: string, redirect_uri: string) {
   // This is no longer used for Paystack as it uses a manual setup
-  // But we return a dummy to not break the UI immediately 
+  // But we return a dummy to not break the UI immediately
   return { connect_url: '' };
 }
 

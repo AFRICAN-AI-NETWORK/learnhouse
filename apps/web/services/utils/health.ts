@@ -10,7 +10,7 @@ export async function checkHealth() {
       `${getAPIUrl()}health`,
       RequestBody('GET', null, null)
     )
-    
+
     if (!result.ok) {
       return {
         success: false,
@@ -19,7 +19,7 @@ export async function checkHealth() {
         data: null
       }
     }
-    
+
     const res = await getResponseMetadata(result)
     return res
   } catch (error) {

@@ -2,15 +2,15 @@
 import React from 'react'
 import { getUriWithOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { 
-  Shield, 
-  Users, 
+import {
+  Shield,
+  Users,
   Crown,
   User,
   UserCog,
   GraduationCap,
   CheckCircle,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -28,24 +28,35 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
       icon: <Crown className="w-6 h-6 text-purple-600" />,
       color: 'bg-purple-50 border-purple-200',
       description: 'Full platform control with all permissions',
-      permissions: ['All permissions', 'Manage organization', 'Manage users', 'Manage courses', 'Manage roles'],
-      level: 4
+      permissions: [
+        'All permissions',
+        'Manage organization',
+        'Manage users',
+        'Manage courses',
+        'Manage roles',
+      ],
+      level: 4,
     },
     {
       name: 'Maintainer',
       icon: <Shield className="w-6 h-6 text-blue-600" />,
       color: 'bg-blue-50 border-blue-200',
       description: 'Mid-level manager with wide permissions',
-      permissions: ['Manage courses', 'Manage users', 'Manage assignments', ],
-      level: 3
+      permissions: ['Manage courses', 'Manage users', 'Manage assignments'],
+      level: 3,
     },
     {
       name: 'Instructor',
       icon: <GraduationCap className="w-6 h-6 text-green-600" />,
       color: 'bg-green-50 border-green-200',
       description: 'Can create courses but need ownership for content creation',
-      permissions: ['Create courses', 'Manage own courses', 'Create assignments', 'Grade assignments'],
-      level: 2
+      permissions: [
+        'Create courses',
+        'Manage own courses',
+        'Create assignments',
+        'Grade assignments',
+      ],
+      level: 2,
     },
     {
       name: 'User',
@@ -53,8 +64,8 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
       color: 'bg-gray-50 border-gray-200',
       description: 'Read-Only Learner',
       permissions: ['View courses', 'Submit assignments', 'Take assessments'],
-      level: 1
-    }
+      level: 1,
+    },
   ]
 
   const courseOwnershipTypes = [
@@ -63,29 +74,44 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
       icon: <Crown className="w-5 h-5 text-yellow-600" />,
       color: 'bg-yellow-50 border-yellow-200',
       description: 'Original course creator with full control',
-      permissions: ['Full course control', 'Manage contributors', 'Change access settings', 'Delete course']
+      permissions: [
+        'Full course control',
+        'Manage contributors',
+        'Change access settings',
+        'Delete course',
+      ],
     },
     {
       name: 'Maintainer',
       icon: <Shield className="w-5 h-5 text-blue-600" />,
       color: 'bg-blue-50 border-blue-200',
       description: 'Course maintainer with extensive permissions',
-      permissions: ['Manage course content', 'Manage contributors', 'Change access settings', 'Cannot delete course']
+      permissions: [
+        'Manage course content',
+        'Manage contributors',
+        'Change access settings',
+        'Cannot delete course',
+      ],
     },
     {
       name: 'Contributor',
       icon: <UserCog className="w-5 h-5 text-green-600" />,
       color: 'bg-green-50 border-green-200',
       description: 'Course contributor with limited permissions',
-      permissions: ['Edit course content', 'Create activities', 'Cannot manage contributors', 'Cannot change access']
-    }
+      permissions: [
+        'Edit course content',
+        'Create activities',
+        'Cannot manage contributors',
+        'Cannot change access',
+      ],
+    },
   ]
 
   return (
     <div className="min-h-screen bg-[#f8f8f8] flex items-center justify-center p-6 pt-16 w-full">
       <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Icon */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
@@ -96,13 +122,13 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
         </motion.div>
 
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="text-center mb-12"
         >
-          <Link 
+          <Link
             href={getUriWithOrg(org?.slug, '/dash')}
             className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
           >
@@ -110,15 +136,18 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
             <span className="font-medium">Back to Dashboard</span>
           </Link>
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">Authorizations & Rights Guide</h1>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Authorizations &amp; Rights Guide
+            </h1>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Understanding LearnHouse permissions, roles, and access controls based on RBAC system
+            Understanding LearnHouse permissions, roles, and access controls
+            based on RBAC system
           </p>
         </motion.div>
 
         {/* Role Hierarchy Section */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -139,12 +168,17 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
               >
                 <div className="flex items-center justify-center space-x-3 mb-4">
                   {role.icon}
-                  <h3 className="text-lg font-semibold text-gray-900">{role.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {role.name}
+                  </h3>
                 </div>
                 <p className="text-gray-600 text-sm mb-4">{role.description}</p>
                 <ul className="space-y-2 text-left">
                   {role.permissions.map((permission, permIndex) => (
-                    <li key={permIndex} className="flex items-center space-x-2 text-sm text-gray-700">
+                    <li
+                      key={permIndex}
+                      className="flex items-center space-x-2 text-sm text-gray-700"
+                    >
                       <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
                       <span>{permission}</span>
                     </li>
@@ -156,7 +190,7 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
         </motion.section>
 
         {/* Course Ownership Types */}
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -177,12 +211,17 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
               >
                 <div className="flex items-center justify-center space-x-3 mb-4">
                   {type.icon}
-                  <h3 className="text-lg font-semibold text-gray-900">{type.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {type.name}
+                  </h3>
                 </div>
                 <p className="text-gray-600 text-sm mb-4">{type.description}</p>
                 <ul className="space-y-2 text-left">
                   {type.permissions.map((permission, permIndex) => (
-                    <li key={permIndex} className="flex items-center space-x-2 text-sm text-gray-700">
+                    <li
+                      key={permIndex}
+                      className="flex items-center space-x-2 text-sm text-gray-700"
+                    >
                       <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
                       <span>{permission}</span>
                     </li>
@@ -197,4 +236,4 @@ const RightsDocumentation = ({ params }: RightsDocumentationProps) => {
   )
 }
 
-export default RightsDocumentation 
+export default RightsDocumentation

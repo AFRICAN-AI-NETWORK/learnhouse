@@ -22,11 +22,9 @@ async def init_payments_config(
 ) -> PaymentsConfig:
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Validate organization exists
-    org = db_session.exec(
-        select(Organization).where(Organization.id == org_id)
-    ).first()
+    org = db_session.exec(select(Organization).where(Organization.id == org_id)).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -36,14 +34,18 @@ async def init_payments_config(
     # Check for existing config
     # Use raw SQL to avoid enum validation issues with old STRIPE configs
     result = db_session.exec(
-        text("SELECT id FROM payments_config WHERE org_id = :org_id").bindparams(org_id=org_id)
+        text("SELECT id FROM payments_config WHERE org_id = :org_id").bindparams(
+            org_id=org_id
+        )
     ).first()
-    
+
     if result:
         # If there's an existing config (possibly with STRIPE), delete it first
         # This handles migration from STRIPE to PAYSTACK
         db_session.exec(
-            text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(org_id=org_id)
+            text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(
+                org_id=org_id
+            )
         )
         db_session.commit()
 
@@ -56,7 +58,7 @@ async def init_payments_config(
         provider_config={
             "onboarding_completed": True,  # Set to True since config is active
         },
-        provider_specific_id=None
+        provider_specific_id=None,
     )
 
     # Save to database
@@ -75,7 +77,7 @@ async def get_payments_config(
 ) -> list[PaymentsConfigRead]:
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -101,7 +103,7 @@ async def update_payments_config(
 ) -> PaymentsConfig:
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -137,7 +139,7 @@ async def delete_payments_config(
 ) -> None:
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -149,10 +151,12 @@ async def delete_payments_config(
 
     # Delete config using raw SQL to avoid enum validation issues
     result = db_session.execute(
-        text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(org_id=org_id)
+        text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(
+            org_id=org_id
+        )
     )
     db_session.commit()
-    
+
     # Check if any rows were deleted
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Payments config not found")

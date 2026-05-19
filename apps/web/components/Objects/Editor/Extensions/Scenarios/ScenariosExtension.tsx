@@ -34,7 +34,7 @@ const ScenariosExtension: React.FC = (props: any) => {
     setTitle(newTitle)
     setScenarios(newScenarios)
     setCurrentScenarioId(newCurrentScenarioId)
-    
+
     props.updateAttributes({
       title: newTitle,
       scenarios: newScenarios,
@@ -71,16 +71,16 @@ const ScenariosExtension: React.FC = (props: any) => {
               Interactive Scenario
             </p>
           </div>
-          
+
           {/* Completion message */}
           {scenarioComplete && !isEditable && (
             <div className="text-xs font-medium px-2 py-1 rounded-md bg-lime-100 text-lime-700">
               Scenario Complete!
             </div>
           )}
-          
+
           <div className="grow"></div>
-          
+
           {/* Action buttons */}
           {isEditable ? (
             <div>
@@ -121,7 +121,7 @@ const ScenariosExtension: React.FC = (props: any) => {
                   />
                 </div>
               </div>
-              
+
               <div className="mt-3 p-3 bg-white rounded-lg border-2 border-dotted border-gray-200">
                 <p className="text-slate-600 text-sm text-center">
                   {scenarios.length}/40 scenarios configured
@@ -173,8 +173,8 @@ const ScenariosExtension: React.FC = (props: any) => {
                   <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                     {currentScenario.imageUrl && (
                       <div className="mb-4">
-                        <img 
-                          src={currentScenario.imageUrl} 
+                        <img
+                          src={currentScenario.imageUrl}
                           alt="Scenario illustration"
                           className="w-full h-48 object-cover rounded-lg border border-slate-200"
                           onError={(e) => {
@@ -187,7 +187,7 @@ const ScenariosExtension: React.FC = (props: any) => {
                       {currentScenario.text}
                     </p>
                   </div>
-                  
+
                   {/* Response Options */}
                   <div className="space-y-2">
                     {currentScenario.options.map((option, index) => (

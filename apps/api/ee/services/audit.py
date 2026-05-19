@@ -12,21 +12,25 @@ logger = logging.getLogger(__name__)
 LH_CONFIG = get_learnhouse_config()
 REDIS_AUDIT_LOG_KEY = "learnhouse:audit_logs"
 
+
 def is_enterprise_plan(session: Session, org_id: int) -> bool:
     """
     Check if an organization is on the enterprise plan.
     """
     try:
-        statement = select(OrganizationConfig).where(OrganizationConfig.org_id == org_id)
+        statement = select(OrganizationConfig).where(
+            OrganizationConfig.org_id == org_id
+        )
         org_config = session.exec(statement).first()
         if not org_config:
             return False
-        
+
         config = OrganizationConfigBase(**org_config.config)
         return config.cloud.plan == "enterprise"
     except Exception as e:
         logger.error(f"Error checking enterprise plan for org {org_id}: {e}")
         return False
+
 
 def get_redis_client():
     redis_conn_string = LH_CONFIG.redis_config.redis_connection_string
@@ -37,6 +41,7 @@ def get_redis_client():
     except Exception as e:
         logger.error(f"Failed to connect to Redis: {e}")
         return None
+
 
 def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
     """
@@ -52,11 +57,12 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             from src.db.organizations import Organization
             from sqlalchemy import or_
             from sqlmodel import select
+
             try:
                 statement = select(Organization.id).where(
                     or_(
                         Organization.org_uuid == str(org_id),
-                        Organization.slug == str(org_id)
+                        Organization.slug == str(org_id),
                     )
                 )
                 return session.exec(statement).first()
@@ -67,13 +73,17 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
     chapter_id = data.get("chapter_id") or data.get("chapterId")
     if chapter_id:
         from src.db.courses.chapters import Chapter
+
         try:
             try:
                 chid = int(chapter_id)
                 chapter = session.get(Chapter, chid)
             except (ValueError, TypeError):
                 from sqlmodel import select
-                statement = select(Chapter).where(Chapter.chapter_uuid == str(chapter_id))
+
+                statement = select(Chapter).where(
+                    Chapter.chapter_uuid == str(chapter_id)
+                )
                 chapter = session.exec(statement).first()
             if chapter:
                 return chapter.org_id
@@ -84,30 +94,38 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
     course_id = data.get("course_id") or data.get("courseId")
     if course_id:
         from src.db.courses.courses import Course
+
         try:
             try:
                 cid = int(course_id)
                 course = session.get(Course, cid)
             except (ValueError, TypeError):
                 from sqlmodel import select
+
                 statement = select(Course).where(Course.course_uuid == str(course_id))
                 course = session.exec(statement).first()
             if course:
                 return course.org_id
         except Exception:
             pass
-            
+
     # 4. From activity_id
-    activity_id = data.get("activity_id") or data.get("activityId") or data.get("activity_uuid")
+    activity_id = (
+        data.get("activity_id") or data.get("activityId") or data.get("activity_uuid")
+    )
     if activity_id:
         from src.db.courses.activities import Activity
+
         try:
             try:
                 aid = int(activity_id)
                 activity = session.get(Activity, aid)
             except (ValueError, TypeError):
                 from sqlmodel import select
-                statement = select(Activity).where(Activity.activity_uuid == str(activity_id))
+
+                statement = select(Activity).where(
+                    Activity.activity_uuid == str(activity_id)
+                )
                 activity = session.exec(statement).first()
             if activity:
                 return activity.org_id
@@ -115,16 +133,24 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             pass
 
     # 5. From collection_id
-    collection_id = data.get("collection_id") or data.get("collectionId") or data.get("collection_uuid")
+    collection_id = (
+        data.get("collection_id")
+        or data.get("collectionId")
+        or data.get("collection_uuid")
+    )
     if collection_id:
         from src.db.collections import Collection
+
         try:
             try:
                 coid = int(collection_id)
                 collection = session.get(Collection, coid)
             except (ValueError, TypeError):
                 from sqlmodel import select
-                statement = select(Collection).where(Collection.collection_uuid == str(collection_id))
+
+                statement = select(Collection).where(
+                    Collection.collection_uuid == str(collection_id)
+                )
                 collection = session.exec(statement).first()
             if collection:
                 return collection.org_id
@@ -132,16 +158,24 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             pass
 
     # 6. From usergroup_id
-    usergroup_id = data.get("usergroup_id") or data.get("usergroupId") or data.get("usergroup_uuid")
+    usergroup_id = (
+        data.get("usergroup_id")
+        or data.get("usergroupId")
+        or data.get("usergroup_uuid")
+    )
     if usergroup_id:
         from src.db.usergroups import UserGroup
+
         try:
             try:
                 ugid = int(usergroup_id)
                 usergroup = session.get(UserGroup, ugid)
             except (ValueError, TypeError):
                 from sqlmodel import select
-                statement = select(UserGroup).where(UserGroup.usergroup_uuid == str(usergroup_id))
+
+                statement = select(UserGroup).where(
+                    UserGroup.usergroup_uuid == str(usergroup_id)
+                )
                 usergroup = session.exec(statement).first()
             if usergroup:
                 return usergroup.org_id
@@ -152,12 +186,14 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
     role_id = data.get("role_id") or data.get("roleId") or data.get("role_uuid")
     if role_id:
         from src.db.roles import Role
+
         try:
             try:
                 rid = int(role_id)
                 role = session.get(Role, rid)
             except (ValueError, TypeError):
                 from sqlmodel import select
+
                 statement = select(Role).where(Role.role_uuid == str(role_id))
                 role = session.exec(statement).first()
             if role:
@@ -166,16 +202,24 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             pass
 
     # 8. From assignment_id
-    assignment_id = data.get("assignment_id") or data.get("assignmentId") or data.get("assignment_uuid")
+    assignment_id = (
+        data.get("assignment_id")
+        or data.get("assignmentId")
+        or data.get("assignment_uuid")
+    )
     if assignment_id:
         from src.db.courses.assignments import Assignment
+
         try:
             try:
                 asid = int(assignment_id)
                 assignment = session.get(Assignment, asid)
             except (ValueError, TypeError):
                 from sqlmodel import select
-                statement = select(Assignment).where(Assignment.assignment_uuid == str(assignment_id))
+
+                statement = select(Assignment).where(
+                    Assignment.assignment_uuid == str(assignment_id)
+                )
                 assignment = session.exec(statement).first()
             if assignment:
                 return assignment.org_id
@@ -183,19 +227,28 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             pass
 
     # 9. From certification_id
-    certification_id = data.get("certification_id") or data.get("certificationId") or data.get("certification_uuid")
+    certification_id = (
+        data.get("certification_id")
+        or data.get("certificationId")
+        or data.get("certification_uuid")
+    )
     if certification_id:
         from src.db.courses.certifications import Certifications
+
         try:
             try:
                 ceid = int(certification_id)
                 certification = session.get(Certifications, ceid)
             except (ValueError, TypeError):
                 from sqlmodel import select
-                statement = select(Certifications).where(Certifications.certification_uuid == str(certification_id))
+
+                statement = select(Certifications).where(
+                    Certifications.certification_uuid == str(certification_id)
+                )
                 certification = session.exec(statement).first()
             if certification:
                 from src.db.courses.courses import Course
+
                 course = session.get(Course, certification.course_id)
                 if course:
                     return course.org_id
@@ -203,6 +256,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             pass
 
     return None
+
 
 async def queue_audit_log(
     user_id: Optional[int],
@@ -238,6 +292,7 @@ async def queue_audit_log(
     except Exception as e:
         logger.error(f"Failed to queue audit log: {e}")
 
+
 def flush_audit_logs_to_db(db_session: Session):
     r = get_redis_client()
     if not r:
@@ -249,7 +304,7 @@ def flush_audit_logs_to_db(db_session: Session):
         log_json = r.rpop(REDIS_AUDIT_LOG_KEY)
         if not log_json:
             break
-        
+
         try:
             data = json.loads(log_json)
             # Convert ISO string back to datetime object

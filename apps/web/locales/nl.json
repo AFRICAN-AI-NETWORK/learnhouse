@@ -663,15 +663,6 @@
       },
       "learnhouse_university": "LearnHouse University"
     },
-    "courses": {
-      "title": "Cursussen",
-      "rights_guide": "Gids voor rechten",
-      "create_course": "Cursus aanmaken",
-      "create_new_course": "Maak een nieuwe cursus aan",
-      "no_courses": "Nog geen cursussen",
-      "create_course_placeholder": "Maak een cursus aan om inhoud toe te voegen",
-      "no_courses_available": "Nog geen cursussen beschikbaar"
-    },
     "organization": {
       "settings": {
         "title": "Organisatie-instellingen",

@@ -27,7 +27,7 @@ const TableOfContents = ({ editor }: TableOfContentsProps) => {
         if (node.type.name.startsWith('heading')) {
           const level = node.attrs.level || 1
           const headingText = node.textContent || ''
-          
+
           // Create slug from heading text (same logic as CustomHeading in DynamicCanva)
           const slug = headingText
             .toLowerCase()
@@ -35,9 +35,9 @@ const TableOfContents = ({ editor }: TableOfContentsProps) => {
             .replace(/[^\w\s-]/g, '') // Remove special characters
             .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
             .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-          
+
           const id = slug ? `heading-${slug}` : `heading-${Math.random().toString(36).substr(2, 9)}`
-          
+
           items.push({
             level,
             text: node.textContent,
@@ -123,11 +123,11 @@ const TOCItem = styled.li<{ level: number }>`
     min-width: 0;
     word-break: break-word;
     hyphens: auto;
-    
+
     &:hover {
       color: #007acc;
     }
   }
 `
 
-export default TableOfContents 
+export default TableOfContents

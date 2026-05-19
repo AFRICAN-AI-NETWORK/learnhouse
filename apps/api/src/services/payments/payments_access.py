@@ -1,5 +1,8 @@
 from sqlmodel import Session, select
-from src.security.rbac.rbac import authorization_verify_if_user_is_author, authorization_verify_based_on_org_admin_status
+from src.security.rbac.rbac import (
+    authorization_verify_if_user_is_author,
+    authorization_verify_based_on_org_admin_status,
+)
 from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import PublicUser, AnonymousUser, InternalUser
 from src.db.payments.payments_courses import PaymentsCourse
@@ -9,6 +12,7 @@ from fastapi import Request
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 async def check_activity_paid_access(
     request: Request,
@@ -29,7 +33,7 @@ async def check_activity_paid_access(
     activity = db_session.exec(statement).first()
     if not activity:
         return False
-    
+
     statement = select(Course).where(Course.id == activity.course_id)
     course = db_session.exec(statement).first()
     if not course:
@@ -66,15 +70,18 @@ async def check_activity_paid_access(
     # Anonymous users cannot access paid courses
     if isinstance(user, AnonymousUser):
         return False
-    
+
     # 4. Paid access check: Verify payment status in the database.
     statement = select(PaymentsUser).where(
         PaymentsUser.user_id == user.id,
         PaymentsUser.payment_product_id == course_payment.payment_product_id,
-        PaymentsUser.status.in_([PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]),
+        PaymentsUser.status.in_(
+            [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+        ),
     )
     access = db_session.exec(statement).first()
     return bool(access)
+
 
 async def check_course_paid_access(
     course_id: int,
@@ -87,7 +94,7 @@ async def check_course_paid_access(
     """
     if isinstance(user, InternalUser):
         return True
-    
+
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
     if not course:
@@ -101,7 +108,7 @@ async def check_course_paid_access(
             )
             if is_admin:
                 return True
-            
+
             is_author = await authorization_verify_if_user_is_author(
                 request, int(user.id), "read", course.course_uuid, db_session
             )
@@ -121,7 +128,9 @@ async def check_course_paid_access(
     statement = select(PaymentsUser).where(
         PaymentsUser.user_id == user.id,
         PaymentsUser.payment_product_id == course_payment.payment_product_id,
-        PaymentsUser.status.in_([PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]),
+        PaymentsUser.status.in_(
+            [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+        ),
     )
     subscription = db_session.exec(statement).first()
     return bool(subscription)

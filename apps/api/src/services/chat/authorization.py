@@ -9,6 +9,7 @@ from src.db.roles import Role
 
 class ChatRole(str, Enum):
     """Chat role definitions to avoid hardcoded strings."""
+
     STUDENT = "student"
     LEARNER = "learner"
     USER = "user"
@@ -58,10 +59,17 @@ def _resolve_chat_role(role_name: str) -> ChatRole:
 
 # Roles that can chat with everyone
 _PRIVILEGED_ROLES = [
-    ChatRole.STUDENT, ChatRole.LEARNER, ChatRole.USER,
-    ChatRole.INSTRUCTOR, ChatRole.ADMIN, ChatRole.MAINTAINER,
-    ChatRole.TEACHING_ASSISTANT, ChatRole.STUDENT_SUCCESS_COORDINATOR,
-    ChatRole.STUDENT_MENTOR, ChatRole.COMMUNITY_MANAGER, ChatRole.LEAD_INSTRUCTOR,
+    ChatRole.STUDENT,
+    ChatRole.LEARNER,
+    ChatRole.USER,
+    ChatRole.INSTRUCTOR,
+    ChatRole.ADMIN,
+    ChatRole.MAINTAINER,
+    ChatRole.TEACHING_ASSISTANT,
+    ChatRole.STUDENT_SUCCESS_COORDINATOR,
+    ChatRole.STUDENT_MENTOR,
+    ChatRole.COMMUNITY_MANAGER,
+    ChatRole.LEAD_INSTRUCTOR,
 ]
 
 # Roles that students/learners/users are allowed to reach
@@ -106,14 +114,11 @@ CHATABLE_TARGETS = {
 
 
 async def verify_chat_permission(
-    db: Session,
-    current_user_id: int,
-    target_user_id: int,
-    org_id: int
+    db: Session, current_user_id: int, target_user_id: int, org_id: int
 ) -> bool:
     """
     Verify if current user has permission to chat with target user.
-    
+
         Rules:
         - Students/Learners/Users can chat with Instructors and support staff roles
             (Teaching Assistant, Students Success Coordinator, Students Mentor,
@@ -124,53 +129,51 @@ async def verify_chat_permission(
         - Instructors/Admins/Maintainers can chat with all supported roles
         - All chats must be within same organization
     """
-    
+
     # Get both users' roles in the organization
     current_user_role = await get_user_role_in_org(db, current_user_id, org_id)
     target_user_role = await get_user_role_in_org(db, target_user_id, org_id)
-    
+
     if not current_user_role or not target_user_role:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="One or both users are not members of this organization"
+            detail="One or both users are not members of this organization",
         )
-    
+
     # Extract role names and map to canonical ChatRole enum
     current_role_name = _normalize_role_name(current_user_role.name)
     target_role_name = _normalize_role_name(target_user_role.name)
-    
+
     try:
         current_chat_role = _resolve_chat_role(current_role_name)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Unknown role '{current_role_name}' for chat permissions"
+            detail=f"Unknown role '{current_role_name}' for chat permissions",
         )
-    
+
     try:
         target_chat_role = _resolve_chat_role(target_role_name)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Unknown role '{target_role_name}' for chat permissions"
+            detail=f"Unknown role '{target_role_name}' for chat permissions",
         )
-    
+
     # Check if current user's role allows chatting with target user's role
     allowed_targets = CHAT_PERMISSION_MATRIX.get(current_chat_role, [])
-    
+
     if target_chat_role not in allowed_targets:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Users with role '{current_role_name}' cannot chat with users with role '{target_role_name}'"
+            detail=f"Users with role '{current_role_name}' cannot chat with users with role '{target_role_name}'",
         )
-    
+
     return True
 
 
 async def get_user_role_in_org(
-    db: Session,
-    user_id: int,
-    org_id: int
+    db: Session, user_id: int, org_id: int
 ) -> Optional[Role]:
     """Get user's role in specific organization."""
     statement = (
@@ -184,31 +187,29 @@ async def get_user_role_in_org(
 
 
 async def get_chatable_users_for_user(
-    db: Session,
-    current_user_id: int,
-    org_id: int
+    db: Session, current_user_id: int, org_id: int
 ) -> List[User]:
     """
     Get list of users that current user can chat with in organization.
     """
     current_user_role = await get_user_role_in_org(db, current_user_id, org_id)
-    
+
     if not current_user_role:
         return []
-    
+
     current_role_name = _normalize_role_name(current_user_role.name)
-    
+
     # Look up allowed target roles from the centralized permission map
     try:
         current_chat_role = _resolve_chat_role(current_role_name)
     except ValueError:
         return []
-    
+
     target_role_names = CHATABLE_TARGETS.get(current_chat_role, [])
-    
+
     if not target_role_names:
         return []
-    
+
     # Query users with target roles in the organization (case-insensitive role matching)
     statement = (
         select(User)
@@ -218,6 +219,6 @@ async def get_chatable_users_for_user(
         .where(func.lower(Role.name).in_(target_role_names))
         .where(User.id != current_user_id)
     )
-    
+
     results = db.exec(statement).all()
     return list(results)

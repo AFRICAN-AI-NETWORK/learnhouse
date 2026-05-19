@@ -15,14 +15,17 @@ from src.services.setup.setup import (
 
 cli = typer.Typer()
 
+
 @cli.command()
 def install(
-    short: Annotated[bool, typer.Option(help="Install with predefined values")] = False
+    short: Annotated[bool, typer.Option(help="Install with predefined values")] = False,
 ):
     # Get the database session
     learnhouse_config = get_learnhouse_config()
     engine = create_engine(
-        learnhouse_config.database_config.sql_connection_string, echo=False, pool_pre_ping=True  # type: ignore
+        learnhouse_config.database_config.sql_connection_string,
+        echo=False,
+        pool_pre_ping=True,  # type: ignore
     )
     SQLModel.metadata.create_all(engine)
 
@@ -56,15 +59,21 @@ def install(
         # Require password from environment variable
         password = os.environ.get("LEARNHOUSE_INITIAL_ADMIN_PASSWORD")
         if not password:
-            print("❌ Error: LEARNHOUSE_INITIAL_ADMIN_PASSWORD environment variable is required")
-            print("Please set LEARNHOUSE_INITIAL_ADMIN_PASSWORD environment variable before running installation.")
+            print(
+                "❌ Error: LEARNHOUSE_INITIAL_ADMIN_PASSWORD environment variable is required"
+            )
+            print(
+                "Please set LEARNHOUSE_INITIAL_ADMIN_PASSWORD environment variable before running installation."
+            )
             raise typer.Exit(code=1)
-        print("Using password from LEARNHOUSE_INITIAL_ADMIN_PASSWORD environment variable")
-        if email != "admin@school.dev":
-            print(f"Using email from LEARNHOUSE_INITIAL_ADMIN_EMAIL environment variable: {email}")
-        user = UserCreate(
-            username="admin", email=EmailStr(email), password=password
+        print(
+            "Using password from LEARNHOUSE_INITIAL_ADMIN_PASSWORD environment variable"
         )
+        if email != "admin@school.dev":
+            print(
+                f"Using email from LEARNHOUSE_INITIAL_ADMIN_EMAIL environment variable: {email}"
+            )
+        user = UserCreate(username="admin", email=EmailStr(email), password=password)
         install_create_organization_user(user, "default", db_session)
         print("Default organization user created ✅")
 
@@ -116,8 +125,6 @@ def install(
         print("Login with the following credentials:")
         print("email: " + email)
         print("password: The password you entered")
-
-
 
 
 @cli.command()

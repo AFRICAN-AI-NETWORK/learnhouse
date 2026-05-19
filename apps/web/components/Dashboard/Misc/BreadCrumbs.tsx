@@ -64,7 +64,7 @@ function BreadCrumbs(props: BreadCrumbsProps) {
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-gray-200/60 shadow-xs">
             {config.icon}
           </div>
-          <Link 
+          <Link
             href={config.href}
             className="text-gray-400 hover:text-black transition-colors"
           >
@@ -72,7 +72,7 @@ function BreadCrumbs(props: BreadCrumbsProps) {
           </Link>
         </div>
       )}
-      
+
       {props.last_breadcrumb && (
         <div className="flex items-center gap-2.5">
           <ChevronRight size={12} className="text-gray-300" />

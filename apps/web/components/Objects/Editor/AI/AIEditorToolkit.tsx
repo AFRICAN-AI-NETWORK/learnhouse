@@ -398,7 +398,7 @@ const UserFeedbackModal = (props: AIEditorToolkitProps) => {
               interface Question {
                 question_id: string;
                 question: string;
-                type: "multiple_choice" 
+                type: "multiple_choice"
                 answers: Answer[];
               }
             " `

@@ -45,7 +45,7 @@ async def get_collection(
         .join(CollectionCourse)
         .where(
             CollectionCourse.collection_id == collection.id,
-            CollectionCourse.org_id == collection.org_id
+            CollectionCourse.org_id == collection.org_id,
         )
         .distinct()
     )
@@ -56,7 +56,7 @@ async def get_collection(
         .where(
             CollectionCourse.collection_id == collection.id,
             CollectionCourse.org_id == collection.org_id,
-            Course.public == True
+            Course.public == True,
         )
         .distinct()
     )
@@ -84,7 +84,9 @@ async def create_collection(
     # SECURITY: Check if user has permission to create collections in this organization
     # Since collections are organization-level resources, we need to check org permissions
     # For now, we'll use the existing RBAC check but with proper organization context
-    await courses_rbac_check_for_collections(request, "collection_x", current_user, "create", db_session)
+    await courses_rbac_check_for_collections(
+        request, "collection_x", current_user, "create", db_session
+    )
 
     # Complete the collection object
     collection.collection_uuid = f"collection_{uuid4()}"
@@ -102,17 +104,19 @@ async def create_collection(
             # Check if user has access to this course
             statement = select(Course).where(Course.id == course_id)
             course = db_session.exec(statement).first()
-            
+
             if course:
                 # Verify user has read access to the course before adding it to collection
                 try:
-                    await courses_rbac_check_for_collections(request, course.course_uuid, current_user, "read", db_session)
+                    await courses_rbac_check_for_collections(
+                        request, course.course_uuid, current_user, "read", db_session
+                    )
                 except HTTPException:
                     raise HTTPException(
                         status_code=403,
-                        detail=f"You don't have permission to add course {course.name} to this collection"
+                        detail=f"You don't have permission to add course {course.name} to this collection",
                     )
-                
+
                 collection_course = CollectionCourse(
                     collection_id=int(collection.id),  # type: ignore
                     course_id=course_id,
@@ -254,12 +258,11 @@ async def get_collections(
     page: int = 1,
     limit: int = 10,
 ) -> List[CollectionRead]:
-
     statement_public = select(Collection).where(
         Collection.org_id == org_id, Collection.public == True
     )
     statement_all = (
-        select(Collection).where(Collection.org_id == org_id).distinct(Collection.id) # type: ignore
+        select(Collection).where(Collection.org_id == org_id).distinct(Collection.id)  # type: ignore
     )
 
     if current_user.id == 0:
@@ -277,7 +280,7 @@ async def get_collections(
             .join(CollectionCourse)
             .where(
                 CollectionCourse.collection_id == collection.id,
-                CollectionCourse.org_id == collection.org_id
+                CollectionCourse.org_id == collection.org_id,
             )
             .distinct()
         )
@@ -287,7 +290,7 @@ async def get_collections(
             .where(
                 CollectionCourse.collection_id == collection.id,
                 CollectionCourse.org_id == org_id,
-                Course.public == True
+                Course.public == True,
             )
             .distinct()
         )

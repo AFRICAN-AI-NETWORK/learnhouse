@@ -19,16 +19,16 @@ export default function CourseBreadcrumbs({ course, orgslug }: CourseBreadcrumbs
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-gray-200/60 shadow-xs">
           <BookCopy size={13} className="text-black" />
         </div>
-        <Link 
+        <Link
           href={getUriWithOrg(orgslug, '') + `/courses`}
           className="text-[10px] font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em]"
         >
           {t('courses.courses')}
         </Link>
       </div>
-      
+
       <ChevronRight size={12} className="text-gray-300" />
-      
+
       <span className="text-[10px] font-bold text-gray-900 uppercase tracking-[0.2em] line-clamp-1">
         {course.name}
       </span>

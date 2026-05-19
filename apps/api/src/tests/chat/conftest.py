@@ -1,4 +1,5 @@
 """Fixtures for chat tests."""
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
@@ -35,7 +36,7 @@ def organization_fixture(session: Session):
         slug="test-org",
         email="test@testorg.com",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(org)
     session.commit()
@@ -51,7 +52,7 @@ def student_role_fixture(session: Session):
         description="Student role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -67,7 +68,7 @@ def instructor_role_fixture(session: Session):
         description="Instructor role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -83,7 +84,7 @@ def admin_role_fixture(session: Session):
         description="Admin role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -102,23 +103,23 @@ def student_user_fixture(session: Session, org: Organization, student_role: Role
         first_name="Student",
         last_name="Test",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
-    
+
     # Add user to organization
     user_org = UserOrganization(
         user_id=user.id,
         org_id=org.id,
         role_id=student_role.id,
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user_org)
     session.commit()
-    
+
     return user
 
 
@@ -133,23 +134,23 @@ def instructor_user_fixture(session: Session, org: Organization, instructor_role
         first_name="Instructor",
         last_name="Test",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
-    
+
     # Add user to organization
     user_org = UserOrganization(
         user_id=user.id,
         org_id=org.id,
         role_id=instructor_role.id,
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user_org)
     session.commit()
-    
+
     return user
 
 
@@ -164,23 +165,23 @@ def admin_user_fixture(session: Session, org: Organization, admin_role: Role):
         first_name="Admin",
         last_name="Test",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
-    
+
     # Add user to organization
     user_org = UserOrganization(
         user_id=user.id,
         org_id=org.id,
         role_id=admin_role.id,
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user_org)
     session.commit()
-    
+
     return user
 
 
@@ -195,27 +196,28 @@ def student_user_two_fixture(session: Session, org: Organization, student_role: 
         first_name="Student",
         last_name="Two",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
-    
+
     # Add user to organization
     user_org = UserOrganization(
         user_id=user.id,
         org_id=org.id,
         role_id=student_role.id,
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user_org)
     session.commit()
-    
+
     return user
 
 
 # ── Support / staff role fixtures ─────────────────────────────────────────────
+
 
 @pytest.fixture(name="teaching_assistant_role")
 def teaching_assistant_role_fixture(session: Session):
@@ -225,7 +227,7 @@ def teaching_assistant_role_fixture(session: Session):
         description="Teaching Assistant role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -241,7 +243,7 @@ def student_success_coordinator_role_fixture(session: Session):
         description="Students Success Coordinator role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -257,7 +259,7 @@ def student_mentor_role_fixture(session: Session):
         description="Students Mentor role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -273,7 +275,7 @@ def community_manager_role_fixture(session: Session):
         description="Community Manager role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -289,7 +291,7 @@ def lead_instructor_role_fixture(session: Session):
         description="Lead Instructor role",
         role_uuid=f"role_{uuid4()}",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(role)
     session.commit()
@@ -297,8 +299,14 @@ def lead_instructor_role_fixture(session: Session):
     return role
 
 
-def _make_user_with_role(session: Session, org: Organization, role: Role,
-                         username: str, email: str, first_name: str) -> User:
+def _make_user_with_role(
+    session: Session,
+    org: Organization,
+    role: Role,
+    username: str,
+    email: str,
+    first_name: str,
+) -> User:
     """Helper: create a user and associate them with the given role in the org."""
     user = User(
         user_uuid=f"usr_{uuid4()}",
@@ -308,7 +316,7 @@ def _make_user_with_role(session: Session, org: Organization, role: Role,
         first_name=first_name,
         last_name="Test",
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user)
     session.commit()
@@ -318,7 +326,7 @@ def _make_user_with_role(session: Session, org: Organization, role: Role,
         org_id=org.id,
         role_id=role.id,
         creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow())
+        update_date=str(datetime.utcnow()),
     )
     session.add(user_org)
     session.commit()
@@ -326,38 +334,79 @@ def _make_user_with_role(session: Session, org: Organization, role: Role,
 
 
 @pytest.fixture(name="teaching_assistant_user")
-def teaching_assistant_user_fixture(session: Session, org: Organization, teaching_assistant_role: Role):
-    return _make_user_with_role(session, org, teaching_assistant_role,
-                                "ta_test", "ta@test.com", "TeachingAssistant")
+def teaching_assistant_user_fixture(
+    session: Session, org: Organization, teaching_assistant_role: Role
+):
+    return _make_user_with_role(
+        session,
+        org,
+        teaching_assistant_role,
+        "ta_test",
+        "ta@test.com",
+        "TeachingAssistant",
+    )
 
 
 @pytest.fixture(name="student_success_coordinator_user")
-def student_success_coordinator_user_fixture(session: Session, org: Organization,
-                                              student_success_coordinator_role: Role):
-    return _make_user_with_role(session, org, student_success_coordinator_role,
-                                "ssc_test", "ssc@test.com", "SuccessCoordinator")
+def student_success_coordinator_user_fixture(
+    session: Session, org: Organization, student_success_coordinator_role: Role
+):
+    return _make_user_with_role(
+        session,
+        org,
+        student_success_coordinator_role,
+        "ssc_test",
+        "ssc@test.com",
+        "SuccessCoordinator",
+    )
 
 
 @pytest.fixture(name="student_mentor_user")
-def student_mentor_user_fixture(session: Session, org: Organization, student_mentor_role: Role):
-    return _make_user_with_role(session, org, student_mentor_role,
-                                "mentor_test", "mentor@test.com", "StudentMentor")
+def student_mentor_user_fixture(
+    session: Session, org: Organization, student_mentor_role: Role
+):
+    return _make_user_with_role(
+        session,
+        org,
+        student_mentor_role,
+        "mentor_test",
+        "mentor@test.com",
+        "StudentMentor",
+    )
 
 
 @pytest.fixture(name="community_manager_user")
-def community_manager_user_fixture(session: Session, org: Organization, community_manager_role: Role):
-    return _make_user_with_role(session, org, community_manager_role,
-                                "cm_test", "cm@test.com", "CommunityManager")
+def community_manager_user_fixture(
+    session: Session, org: Organization, community_manager_role: Role
+):
+    return _make_user_with_role(
+        session,
+        org,
+        community_manager_role,
+        "cm_test",
+        "cm@test.com",
+        "CommunityManager",
+    )
 
 
 @pytest.fixture(name="lead_instructor_user")
-def lead_instructor_user_fixture(session: Session, org: Organization, lead_instructor_role: Role):
-    return _make_user_with_role(session, org, lead_instructor_role,
-                                "lead_instructor_test", "lead_instructor@test.com", "LeadInstructor")
+def lead_instructor_user_fixture(
+    session: Session, org: Organization, lead_instructor_role: Role
+):
+    return _make_user_with_role(
+        session,
+        org,
+        lead_instructor_role,
+        "lead_instructor_test",
+        "lead_instructor@test.com",
+        "LeadInstructor",
+    )
 
 
 @pytest.fixture(name="conversation")
-def conversation_fixture(session: Session, org: Organization, student_user: User, instructor_user: User):
+def conversation_fixture(
+    session: Session, org: Organization, student_user: User, instructor_user: User
+):
     """Create test conversation."""
     conversation = Conversation(
         conversation_uuid=f"conv_{uuid4()}",
@@ -365,7 +414,7 @@ def conversation_fixture(session: Session, org: Organization, student_user: User
         participant_one_id=min(student_user.id, instructor_user.id),
         participant_two_id=max(student_user.id, instructor_user.id),
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     session.add(conversation)
     session.commit()
@@ -374,7 +423,12 @@ def conversation_fixture(session: Session, org: Organization, student_user: User
 
 
 @pytest.fixture(name="message")
-def message_fixture(session: Session, conversation: Conversation, student_user: User, instructor_user: User):
+def message_fixture(
+    session: Session,
+    conversation: Conversation,
+    student_user: User,
+    instructor_user: User,
+):
     """Create test message."""
     message = Message(
         message_uuid=f"msg_{uuid4()}",
@@ -384,7 +438,7 @@ def message_fixture(session: Session, conversation: Conversation, student_user: 
         content="Test message",
         message_type="text",
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     session.add(message)
     session.commit()

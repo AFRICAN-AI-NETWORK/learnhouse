@@ -12,10 +12,12 @@ from ee.routers import audit_logs
 
 logger = logging.getLogger(__name__)
 
+
 def register_middlewares(app: FastAPI):
     """Register Enterprise Edition middlewares."""
     app.add_middleware(EEAuditLogMiddleware)
     logger.info("EE Middlewares registered")
+
 
 def register_routers(v1_router: APIRouter):
     """Register Enterprise Edition routers."""
@@ -26,49 +28,36 @@ def register_routers(v1_router: APIRouter):
         tags=["cloud_internal"],
         dependencies=[Depends(cloud_internal.check_internal_cloud_key)],
     )
-    
+
     # Payments
-    v1_router.include_router(
-        payments.router, 
-        prefix="/payments", 
-        tags=["payments"]
-    )
-    
+    v1_router.include_router(payments.router, prefix="/payments", tags=["payments"])
+
     # Referrals
     from ee.routers import referrals
-    v1_router.include_router(
-        referrals.router, 
-        prefix="/referrals", 
-        tags=["referrals"]
-    )
-    
+
+    v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+
     # Email Domains (Admin)
     from ee.routers import email_domains
+
     v1_router.include_router(
-        email_domains.router, 
-        prefix="/email-domains", 
-        tags=["email_domains", "admin"]
+        email_domains.router, prefix="/email-domains", tags=["email_domains", "admin"]
     )
-    
+
     # EE Info
-    v1_router.include_router(
-        info.router,
-        prefix="/ee",
-        tags=["ee"]
-    )
+    v1_router.include_router(info.router, prefix="/ee", tags=["ee"])
 
     # Audit Logs
     v1_router.include_router(
-        audit_logs.router,
-        prefix="/ee/audit_logs",
-        tags=["ee", "audit_logs"]
+        audit_logs.router, prefix="/ee/audit_logs", tags=["ee", "audit_logs"]
     )
-    
+
     logger.info("EE Routers registered")
+
 
 def on_startup(app: FastAPI):
     """Run Enterprise Edition startup tasks."""
-    
+
     # Start Audit Log Flusher
     async def audit_log_flusher():
         while True:
@@ -81,4 +70,3 @@ def on_startup(app: FastAPI):
 
     asyncio.create_task(audit_log_flusher())
     logger.info("EE Startup tasks initiated")
-

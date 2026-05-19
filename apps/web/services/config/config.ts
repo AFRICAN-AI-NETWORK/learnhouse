@@ -190,8 +190,8 @@ const getLEARNHOUSE_API_URL = () => {
   // Use 127.0.0.1 for server-side (Node.js), localhost for client-side
   const fallbackUrl =
     typeof window === 'undefined'
-      ? 'http://127.0.0.1:8000/api/v1/'
-      : 'http://localhost:8000/api/v1/'
+      ? 'http://127.0.0.1:1338/api/v1/'
+      : 'http://localhost:1338/api/v1/'
 
   if (
     typeof process !== 'undefined' &&
@@ -234,7 +234,7 @@ const getLEARNHOUSE_BACKEND_URL = () => {
     // Remove /api/v1/ if present to get base URL
     return backendUrl.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') + '/'
   }
-  return 'http://localhost:8000/'
+  return 'http://localhost:1338/'
 }
 const getLEARNHOUSE_DOMAIN = () =>
   getConfig('NEXT_PUBLIC_LEARNHOUSE_DOMAIN', 'localhost:3000')

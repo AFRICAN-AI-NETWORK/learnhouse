@@ -88,7 +88,6 @@ class AttachmentService:
         # ── Generate unique attachment ID ────────────────────────────────────
         attachment_uuid = f"att_{uuid4()}"
 
-        
         # Windows MAX_PATH (260 chars) when combined with the CWD.
         directory = f"chat/{attachment_uuid}"
 
@@ -109,7 +108,9 @@ class AttachmentService:
         except HTTPException:
             raise  # Re-raise validation errors as-is (4xx)
         except Exception as exc:
-            logger.error("Attachment upload failed for message %s: %s", message_uuid, exc)
+            logger.error(
+                "Attachment upload failed for message %s: %s", message_uuid, exc
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to upload attachment",
@@ -125,8 +126,9 @@ class AttachmentService:
             file_size = 0
 
         # ── Build absolute URL (served by StaticFiles at /content) ──────────
-        
+
         from config.config import get_learnhouse_config
+
         _config = get_learnhouse_config()
         api_base = _config.hosting_config.app_base_url.rstrip("/")
         file_url = f"{api_base}/content/orgs/{org_uuid}/{directory}/{saved_filename}"
@@ -190,9 +192,7 @@ class AttachmentService:
             )
 
         attachments = db.exec(
-            select(MessageAttachment).where(
-                MessageAttachment.message_id == message.id
-            )
+            select(MessageAttachment).where(MessageAttachment.message_id == message.id)
         ).all()
 
         return list(attachments)

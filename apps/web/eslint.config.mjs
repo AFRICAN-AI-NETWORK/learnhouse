@@ -3,6 +3,9 @@ import nextConfig from "eslint-config-next";
 import js from "@eslint/js";
 
 const config = [
+    {
+        ignores: ["public/**", ".next/**", "node_modules/**"]
+    },
     js.configs.recommended,
     ...nextConfig,
     {

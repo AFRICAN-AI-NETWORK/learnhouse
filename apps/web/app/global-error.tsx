@@ -3,6 +3,7 @@
 import '../styles/globals.css'
 import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 export default function GlobalError({
   error,
@@ -12,6 +13,8 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
+    Sentry.captureException(error)
+
     // Check if it's a Server Action version mismatch error
     if (
       error.message.includes('Failed to find Server Action') ||

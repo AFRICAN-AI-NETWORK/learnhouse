@@ -12,7 +12,7 @@ on:
 
 # Default permissions
 permissions:
-  contents: read  # PRs and workflow can read repo contents
+  contents: read # PRs and workflow can read repo contents
   # packages write only enabled in jobs that require it
 
 env:
@@ -60,10 +60,10 @@ jobs:
             echo "Error: github.sha is empty. Cannot proceed with build."
             exit 1
           fi
-          
+
           SHORT=$(echo ${{ github.sha }} | cut -c1-7)
           echo "short=$SHORT" >> $GITHUB_OUTPUT
-          
+
           if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/dev" ]; then
             echo "branch=dev" >> $GITHUB_OUTPUT
             echo "tag_prefix=dev" >> $GITHUB_OUTPUT
@@ -135,7 +135,7 @@ jobs:
             echo "Error: github.sha is empty. Cannot proceed with manifest creation."
             exit 1
           fi
-          
+
           echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
           echo "tag_prefix=dev" >> $GITHUB_OUTPUT
 
@@ -176,6 +176,19 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Sentry release
+        if: env.SENTRY_AUTH_TOKEN != ''
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          version: ${{ github.sha }}
+
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
         with:

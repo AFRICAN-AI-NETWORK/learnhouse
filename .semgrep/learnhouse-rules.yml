@@ -1,0 +1,125 @@
+rules:
+  - id: lh-no-hardcoded-jwt-secret
+    message: >
+      Hardcoded JWT secret detected in LearnHouse config. Use
+      config/config.py SecurityConfig.auth_jwt_secret_key from env only.
+    patterns:
+      - pattern: $KEY = "..."
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (jwt|JWT|secret|SECRET|token|TOKEN)
+    languages: [python]
+    severity: ERROR
+    paths:
+      include: ["/apps/api/src", "/apps/api/ee"]
+
+  - id: lh-no-student-pii-in-logs
+    message: >
+      Potential student PII logged. LearnHouse must not log email, phone, or
+      user data to console/file. Scrub before logging.
+    patterns:
+      - pattern: logging.$LEVEL(..., $DATA, ...)
+      - metavariable-regex:
+          metavariable: $DATA
+          regex: .*(email|phone|password|user\.|req\.).*
+    languages: [python]
+    severity: WARNING
+    paths:
+      include: ["/apps/api/src/routers", "/apps/api/src/services"]
+
+  - id: lh-no-raw-sql-in-services
+    message: >
+      Raw SQL string detected. Use SQLModel ORM queries in LearnHouse services.
+      Raw SQL in course/user/payment handlers risks injection.
+    pattern: |
+      $DB.execute("SELECT ...")
+    languages: [python]
+    severity: ERROR
+    paths:
+      include: ["/apps/api/src/services", "/apps/api/src/routers"]
+
+  - id: lh-no-unvalidated-file-upload
+    message: >
+      File upload handler missing content-type or size validation.
+      Check upload_content.py for the approved upload helper.
+    patterns:
+      - pattern-regex: |
+          (?s)async\s+def\s+\w+\(.*UploadFile.*\):.*await\s+\w+\.read\(\)
+      - pattern-not-regex: |
+          if\s+\w+\.content_type\s+not\s+in
+    languages: [python]
+    severity: WARNING
+    paths:
+      include: ["/apps/api/src/routers"]
+
+  - id: lh-no-open-admin-route
+    message: >
+      Admin route missing role-based dependency. Inject
+      require_org_roles([RoleType.owner, ...]) as a FastAPI dependency.
+    patterns:
+      - pattern: |
+          @router.$METHOD("/admin/...")
+          async def $FUNC($ARGS):
+              ...
+      - pattern-not: |
+          @router.$METHOD("/admin/...")
+          async def $FUNC($ARGS, $DEP = Depends(...)):
+              ...
+    languages: [python]
+    severity: ERROR
+    paths:
+      include: ["/apps/api/src/routers", "/apps/api/ee/routers"]
+
+  - id: lh-paystack-webhook-no-verify
+    message: >
+      Paystack webhook handler must verify HMAC signature before processing.
+      Use the verify_paystack_signature helper from services/payments.
+    patterns:
+      - pattern: |
+          @router.post("/.../webhook/...")
+          async def $FUNC($REQUEST: Request, ...):
+              ...
+      - pattern-not: |
+          @router.post("/.../webhook/...")
+          async def $FUNC($REQUEST: Request, ...):
+              ...
+              verify_paystack_signature(...)
+              ...
+    languages: [python]
+    severity: ERROR
+    paths:
+      include: ["/apps/api/src/routers", "/apps/api/ee/routers"]
+
+  - id: lh-no-console-log-with-user-data
+    message: >
+      console.log with potential user/auth data in Next.js. Use
+      Sentry.captureException for errors and remove debug logs before merge.
+    pattern: |
+      console.log(..., $DATA, ...)
+    metavariable-regex:
+      metavariable: $DATA
+      regex: .*(user|auth|token|password|email|session).*
+    languages: [typescript, javascript]
+    severity: WARNING
+    paths:
+      include: ["/apps/web/app", "/apps/web/lib"]
+
+  - id: lh-global-error-must-capture-sentry
+    message: >
+      global-error.tsx must call Sentry.captureException(error) in its
+      useEffect so that all unhandled Next.js errors reach Sentry.
+    patterns:
+      - pattern: |
+          export default function GlobalError({ error, reset }) {
+            ...
+          }
+      - pattern-not: |
+          export default function GlobalError({ error, reset }) {
+            ...
+            Sentry.captureException(error)
+            ...
+          }
+    languages: [typescript]
+    severity: ERROR
+    paths:
+      include: ["/apps/web/app/global-error.tsx"]

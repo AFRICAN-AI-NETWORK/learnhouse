@@ -58,7 +58,7 @@ async def get_organization_users(
         user_org = result.first()
 
         if not user_org:
-            logging.error(f"User {user.id} not found")
+            logging.error("UserOrganization record found but user missing")
 
             # skip this user
             continue
@@ -292,7 +292,7 @@ async def invite_batch_users(
         invited_user = r.get(f"invited_user:{email}:org:{org.org_uuid}")
 
         if invited_user:
-            logging.error(f"User {email} already invited")
+            logging.error("Skipping already-invited recipient")
             # skip this user
             continue
 

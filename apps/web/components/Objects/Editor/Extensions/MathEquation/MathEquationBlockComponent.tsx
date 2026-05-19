@@ -10,53 +10,53 @@ import { motion } from 'framer-motion'
 
 // Predefined LaTeX templates
 const mathTemplates = [
-  { 
-    name: 'Fraction', 
+  {
+    name: 'Fraction',
     latex: '\\frac{a}{b}',
     description: 'Simple fraction'
   },
-  { 
-    name: 'Square Root', 
+  {
+    name: 'Square Root',
     latex: '\\sqrt{x}',
     description: 'Square root'
   },
-  { 
-    name: 'Summation', 
+  {
+    name: 'Summation',
     latex: '\\sum_{i=1}^{n} x_i',
     description: 'Sum with limits'
   },
-  { 
-    name: 'Integral', 
+  {
+    name: 'Integral',
     latex: '\\int_{a}^{b} f(x) \\, dx',
     description: 'Definite integral'
   },
-  { 
-    name: 'Limit', 
+  {
+    name: 'Limit',
     latex: '\\lim_{x \\to \\infty} f(x)',
     description: 'Limit expression'
   },
-  { 
-    name: 'Matrix 2×2', 
+  {
+    name: 'Matrix 2×2',
     latex: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}',
     description: '2×2 matrix with parentheses'
   },
-  { 
-    name: 'Binomial', 
+  {
+    name: 'Binomial',
     latex: '\\binom{n}{k}',
     description: 'Binomial coefficient'
   },
-  { 
-    name: 'Quadratic Formula', 
+  {
+    name: 'Quadratic Formula',
     latex: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}',
     description: 'Solution to quadratic equation'
   },
-  { 
-    name: 'Vector', 
+  {
+    name: 'Vector',
     latex: '\\vec{v} = \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}',
     description: '3D vector'
   },
-  { 
-    name: 'System of Equations', 
+  {
+    name: 'System of Equations',
     latex: '\\begin{cases} a_1x + b_1y = c_1 \\\\ a_2x + b_2y = c_2 \\end{cases}',
     description: 'System of linear equations'
   }
@@ -99,7 +99,7 @@ const EditBar = styled.div`
   height: 45px;
   border: solid 1px #e2e2e2;
   transition: all 0.2s ease;
-  
+
   &:focus-within {
     border-color: #d1d1d1;
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.03);
@@ -112,7 +112,7 @@ const EditBar = styled.div`
     color: #494949;
     width: 100%;
     font-family: 'DM Sans', sans-serif;
-    
+
     &:focus {
       outline: none;
     }
@@ -164,7 +164,7 @@ const TemplateItem = styled.div`
   padding: 8px 12px;
   cursor: pointer;
   transition: background 0.15s;
-  
+
   &:hover {
     background: rgba(217, 217, 217, 0.24);
   }
@@ -254,7 +254,7 @@ function MathEquationBlockComponent(props: any) {
       math_equation: template,
     })
     setShowTemplates(false)
-    
+
     // Focus the input and place cursor at the end
     if (inputRef.current) {
       inputRef.current.focus()
@@ -265,12 +265,12 @@ function MathEquationBlockComponent(props: any) {
   const insertSymbol = (symbol: string) => {
     const cursorPosition = inputRef.current?.selectionStart || equation.length
     const newEquation = equation.substring(0, cursorPosition) + symbol + equation.substring(cursorPosition)
-    
+
     setEquation(newEquation)
     props.updateAttributes({
       math_equation: newEquation,
     })
-    
+
     // Focus the input and place cursor after the inserted symbol
     setTimeout(() => {
       if (inputRef.current) {
@@ -292,11 +292,11 @@ function MathEquationBlockComponent(props: any) {
             <Sigma size={16} />
             <span className="font-medium">Math Equation</span>
           </div>
-          
+
           <div className="bg-white p-4 rounded-md nice-shadow">
             <BlockMath>{equation}</BlockMath>
           </div>
-          
+
           {isEditing && isEditable && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -306,7 +306,7 @@ function MathEquationBlockComponent(props: any) {
             >
               <div className="flex space-x-2">
                 <div ref={templatesRef} className="relative">
-                  <TemplateButton 
+                  <TemplateButton
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="flex items-center space-x-1"
                   >
@@ -314,15 +314,15 @@ function MathEquationBlockComponent(props: any) {
                     <span>Templates</span>
                     <ChevronDown size={14} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
                   </TemplateButton>
-                  
+
                   {showTemplates && (
                     <TemplateDropdown className="absolute left-0 mt-1 z-10 w-64 max-h-80 overflow-y-auto">
                       <div className="p-2 text-xs text-zinc-500 border-b">
                         Select a template to insert
                       </div>
                       {mathTemplates.map((template, index) => (
-                        <TemplateItem 
-                          key={index} 
+                        <TemplateItem
+                          key={index}
                           onClick={() => insertTemplate(template.latex)}
                         >
                           <div className="flex flex-col">
@@ -334,9 +334,9 @@ function MathEquationBlockComponent(props: any) {
                     </TemplateDropdown>
                   )}
                 </div>
-                
+
                 <div ref={symbolsRef} className="relative">
-                  <TemplateButton 
+                  <TemplateButton
                     onClick={() => setShowSymbols(!showSymbols)}
                     className="flex items-center space-x-1"
                   >
@@ -344,7 +344,7 @@ function MathEquationBlockComponent(props: any) {
                     <span>Symbols</span>
                     <ChevronDown size={14} className={`transition-transform ${showSymbols ? 'rotate-180' : ''}`} />
                   </TemplateButton>
-                  
+
                   {showSymbols && (
                     <SymbolsDropdown className="absolute left-0 mt-1 z-10 w-64">
                       <div className="p-2 text-xs text-zinc-500 border-b">
@@ -352,8 +352,8 @@ function MathEquationBlockComponent(props: any) {
                       </div>
                       <div className="flex flex-wrap p-2">
                         {mathSymbols.map((symbol, index) => (
-                          <SymbolButton 
-                            key={index} 
+                          <SymbolButton
+                            key={index}
                             onClick={() => insertSymbol(symbol.symbol)}
                             title={symbol.symbol}
                           >
@@ -364,9 +364,9 @@ function MathEquationBlockComponent(props: any) {
                     </SymbolsDropdown>
                   )}
                 </div>
-                
+
                 <div ref={helpRef} className="relative">
-                  <TemplateButton 
+                  <TemplateButton
                     onClick={() => setShowHelp(!showHelp)}
                     className="flex items-center space-x-1"
                   >
@@ -374,7 +374,7 @@ function MathEquationBlockComponent(props: any) {
                     <span>Help</span>
                     <ChevronDown size={14} className={`transition-transform ${showHelp ? 'rotate-180' : ''}`} />
                   </TemplateButton>
-                  
+
                   {showHelp && (
                     <HelpDropdown className="absolute left-0 mt-1 z-10 w-72">
                       <div className="p-2 text-xs font-medium text-zinc-700 border-b">
@@ -414,7 +414,7 @@ function MathEquationBlockComponent(props: any) {
                   )}
                 </div>
               </div>
-              
+
               <EditBar>
                 <input
                   ref={inputRef}
@@ -424,7 +424,7 @@ function MathEquationBlockComponent(props: any) {
                   type="text"
                   className="focus:ring-1 focus:ring-blue-300"
                 />
-                <SaveButton 
+                <SaveButton
                   onClick={() => saveEquation()}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -432,7 +432,7 @@ function MathEquationBlockComponent(props: any) {
                   <Save size={15} />
                 </SaveButton>
               </EditBar>
-              
+
               <InfoLink className="flex items-center text-zinc-500 text-sm">
                 <span>Please refer to this</span>
                 <Link

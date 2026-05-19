@@ -15,19 +15,24 @@ class ConversationBase(SQLModel):
 
 class Conversation(ConversationBase, table=True):
     __tablename__ = "conversation"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     conversation_uuid: str = Field(unique=True, index=True)
     archived_by_user_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
     archived_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     __table_args__ = (
-        UniqueConstraint('org_id', 'participant_one_id', 'participant_two_id', name='unique_conversation_pair'),
+        UniqueConstraint(
+            "org_id",
+            "participant_one_id",
+            "participant_two_id",
+            name="unique_conversation_pair",
+        ),
     )
 
 
@@ -50,21 +55,21 @@ class ConversationWithLastMessage(ConversationRead):
 
 class ConversationParticipantState(SQLModel, table=True):
     __tablename__ = "conversation_participant_state"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     conversation_id: int = Field(foreign_key="conversation.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     is_muted: bool = False
     last_read_message_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("message.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("message.id", ondelete="SET NULL")),
     )
     last_read_at: Optional[datetime] = None
     is_typing: bool = False
     typing_updated_at: Optional[datetime] = None
     notification_enabled: bool = True
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     __table_args__ = (
-        UniqueConstraint('conversation_id', 'user_id', name='unique_participant_state'),
+        UniqueConstraint("conversation_id", "user_id", name="unique_participant_state"),
     )

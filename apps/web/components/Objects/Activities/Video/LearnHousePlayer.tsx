@@ -202,4 +202,4 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
   )
 }
 
-export default LearnHousePlayer 
+export default LearnHousePlayer

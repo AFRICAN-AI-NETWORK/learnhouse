@@ -12,29 +12,31 @@ def send_email(to: EmailStr, subject: str, body: str):
     """
     try:
         # SMTP configuration from environment variables
-        smtp_host = os.getenv('EMAIL_HOST', 'smtp.zoho.com')
-        smtp_port = int(os.getenv('EMAIL_PORT', '587'))
-        smtp_address = os.getenv('EMAIL_ADDRESS')
-        smtp_username = os.getenv('EMAIL_USERNAME', '') or smtp_address
-        smtp_password = os.getenv('EMAIL_PASSWORD')
-        smtp_secure = os.getenv('EMAIL_SECURE', 'false').lower() == 'true'
-        sender_name = os.getenv('EMAIL_SENDER_NAME', 'AFRICAN AI NETWORK LMS')
+        smtp_host = os.getenv("EMAIL_HOST", "smtp.zoho.com")
+        smtp_port = int(os.getenv("EMAIL_PORT", "587"))
+        smtp_address = os.getenv("EMAIL_ADDRESS")
+        smtp_username = os.getenv("EMAIL_USERNAME", "") or smtp_address
+        smtp_password = os.getenv("EMAIL_PASSWORD")
+        smtp_secure = os.getenv("EMAIL_SECURE", "false").lower() == "true"
+        sender_name = os.getenv("EMAIL_SENDER_NAME", "AFRICAN AI NETWORK LMS")
 
         # Validate required credentials
         if not smtp_address or not smtp_password:
-            raise ValueError("EMAIL_ADDRESS and EMAIL_PASSWORD must be set in environment variables")
+            raise ValueError(
+                "EMAIL_ADDRESS and EMAIL_PASSWORD must be set in environment variables"
+            )
 
         # Use EMAIL_ADDRESS as the from/sender address always
         from_email = f"{sender_name} <{smtp_address}>"
 
         # Create message
-        msg = MIMEMultipart('alternative')
-        msg['From'] = from_email
-        msg['To'] = to
-        msg['Subject'] = subject
+        msg = MIMEMultipart("alternative")
+        msg["From"] = from_email
+        msg["To"] = to
+        msg["Subject"] = subject
 
         # Add HTML content
-        html_part = MIMEText(body, 'html', 'utf-8')
+        html_part = MIMEText(body, "html", "utf-8")
         msg.attach(html_part)
 
         # Send email based on security settings
@@ -57,13 +59,15 @@ def send_email(to: EmailStr, subject: str, body: str):
             "id": f"smtp_{to}_{subject}",
             "from": from_email,
             "to": to,
-            "created_at": None
+            "created_at": None,
         }
 
     except smtplib.SMTPAuthenticationError as e:
         error_msg = f"SMTP Authentication failed: {str(e)}"
         print(f"❌ {error_msg}")
-        raise Exception(f"Email authentication failed. Check your EMAIL_ADDRESS and EMAIL_PASSWORD: {str(e)}")
+        raise Exception(
+            f"Email authentication failed. Check your EMAIL_ADDRESS and EMAIL_PASSWORD: {str(e)}"
+        )
 
     except smtplib.SMTPException as e:
         error_msg = f"SMTP Error: {str(e)}"

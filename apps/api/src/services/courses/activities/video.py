@@ -64,7 +64,9 @@ async def create_video_activity(
         )
 
     # RBAC check
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # Get org_uuid
     statement = select(Organization).where(Organization.id == coursechapter.org_id)
@@ -194,7 +196,9 @@ async def create_external_video_activity(
         )
 
     # RBAC check
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # generate activity_uuid
     activity_uuid = str(f"activity_{uuid4()}")

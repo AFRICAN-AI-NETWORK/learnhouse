@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, Request
+import sentry_sdk
 from sqlmodel import Session, select
 from src.db.organization_config import OrganizationConfig
 from src.db.organizations import Organization
@@ -11,7 +12,11 @@ from src.core.events.database import get_db_session
 from src.db.users import PublicUser
 from src.db.courses.activities import Activity, ActivityRead
 from src.security.auth import get_current_user
-from src.services.ai.base import ask_ai, get_chat_session_history, save_message_to_history
+from src.services.ai.base import (
+    ask_ai,
+    get_chat_session_history,
+    save_message_to_history,
+)
 
 from src.services.ai.schemas.ai import (
     ActivityAIChatSessionResponse,
@@ -49,18 +54,18 @@ def ai_start_activity_chat_session(
         .where(Activity.activity_uuid == chat_session_object.activity_uuid)
     )
     course = db_session.exec(statement).first()
-    
+
     if not course:
         raise HTTPException(
             status_code=404,
             detail="Course not found",
         )
-    
+
     # Get course authors
     from src.db.resource_authors import ResourceAuthor
     from src.db.users import User
     from src.services.courses.courses import AuthorWithRole, UserRead
-    
+
     authors_statement = (
         select(ResourceAuthor, User)
         .join(User, ResourceAuthor.user_id == User.id)  # type: ignore
@@ -68,7 +73,7 @@ def ai_start_activity_chat_session(
         .order_by(ResourceAuthor.id.asc())  # type: ignore
     )
     author_results = db_session.exec(authors_statement).all()
-    
+
     # Convert to AuthorWithRole objects
     authors = [
         AuthorWithRole(
@@ -76,11 +81,11 @@ def ai_start_activity_chat_session(
             authorship=resource_author.authorship,
             authorship_status=resource_author.authorship_status,
             creation_date=resource_author.creation_date,
-            update_date=resource_author.update_date
+            update_date=resource_author.update_date,
         )
         for resource_author, user in author_results
     ]
-    
+
     course = CourseRead(**course.model_dump(), authors=authors)
 
     # Get the Organization
@@ -132,7 +137,9 @@ def ai_start_activity_chat_session(
     chat_session = get_chat_session_history()
 
     message = "You are a helpful Education Assistant, and you are helping a student with the associated Course. "
-    message += "Use the course content provided to answer questions about the course material."
+    message += (
+        "Use the course content provided to answer questions about the course material."
+    )
     message += "For context, this is the Course name: "
     message += course.name
     message += " and this is the Lecture name: "
@@ -140,19 +147,18 @@ def ai_start_activity_chat_session(
     message += "."
     message += "Use your knowledge to help the student if the context is not enough."
 
-    response = ask_ai(
-        chat_session_object.message,
-        chat_session["message_history"],
-        ai_friendly_text,
-        message,
-        ai_model,
-    )
+    with sentry_sdk.start_span(op="ai.ask", description="Start AI chat session"):
+        response = ask_ai(
+            chat_session_object.message,
+            chat_session["message_history"],
+            ai_friendly_text,
+            message,
+            ai_model,
+        )
 
     # Save the message exchange to history
     save_message_to_history(
-        chat_session["aichat_uuid"],
-        chat_session_object.message,
-        response["output"]
+        chat_session["aichat_uuid"], chat_session_object.message, response["output"]
     )
 
     return ActivityAIChatSessionResponse(
@@ -186,18 +192,18 @@ def ai_send_activity_chat_message(
         .where(Activity.activity_uuid == chat_session_object.activity_uuid)
     )
     course = db_session.exec(statement).first()
-    
+
     if not course:
         raise HTTPException(
             status_code=404,
             detail="Course not found",
         )
-    
+
     # Get course authors
     from src.db.resource_authors import ResourceAuthor
     from src.db.users import User
     from src.services.courses.courses import AuthorWithRole, UserRead
-    
+
     authors_statement = (
         select(ResourceAuthor, User)
         .join(User, ResourceAuthor.user_id == User.id)  # type: ignore
@@ -205,7 +211,7 @@ def ai_send_activity_chat_message(
         .order_by(ResourceAuthor.id.asc())  # type: ignore
     )
     author_results = db_session.exec(authors_statement).all()
-    
+
     # Convert to AuthorWithRole objects
     authors = [
         AuthorWithRole(
@@ -213,11 +219,11 @@ def ai_send_activity_chat_message(
             authorship=resource_author.authorship,
             authorship_status=resource_author.authorship_status,
             creation_date=resource_author.creation_date,
-            update_date=resource_author.update_date
+            update_date=resource_author.update_date,
         )
         for resource_author, user in author_results
     ]
-    
+
     course = CourseRead(**course.model_dump(), authors=authors)
 
     # Get the Organization
@@ -260,7 +266,9 @@ def ai_send_activity_chat_message(
     chat_session = get_chat_session_history(chat_session_object.aichat_uuid)
 
     message = "You are a helpful Education Assistant, and you are helping a student with the associated Course. "
-    message += "Use the course content provided to answer questions about the course material."
+    message += (
+        "Use the course content provided to answer questions about the course material."
+    )
     message += "For context, this is the Course name: "
     message += course.name
     message += " and this is the Lecture name: "
@@ -268,19 +276,18 @@ def ai_send_activity_chat_message(
     message += "."
     message += "Use your knowledge to help the student if the context is not enough."
 
-    response = ask_ai(
-        chat_session_object.message,
-        chat_session["message_history"],
-        ai_friendly_text,
-        message,
-        ai_model,
-    )
+    with sentry_sdk.start_span(op="ai.ask", description="Send AI chat message"):
+        response = ask_ai(
+            chat_session_object.message,
+            chat_session["message_history"],
+            ai_friendly_text,
+            message,
+            ai_model,
+        )
 
     # Save the message exchange to history
     save_message_to_history(
-        chat_session["aichat_uuid"],
-        chat_session_object.message,
-        response["output"]
+        chat_session["aichat_uuid"], chat_session_object.message, response["output"]
     )
 
     return ActivityAIChatSessionResponse(

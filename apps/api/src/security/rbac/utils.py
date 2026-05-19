@@ -31,24 +31,22 @@ async def check_element_type(element_uuid):
 
 
 async def check_course_permissions_with_own(
-    element_rights,
-    action: str,
-    is_author: bool = False
+    element_rights, action: str, is_author: bool = False
 ) -> bool:
     """
     Check course-specific permissions including "own" permissions.
-    
+
     Args:
         element_rights: The rights object for courses (PermissionsWithOwn)
         action: The action to check ("read", "update", "delete", "create")
         is_author: Whether the user is the author of the course
-    
+
     Returns:
         bool: True if permission is granted, False otherwise
     """
     if not element_rights:
         return False
-    
+
     # Check for general permission first
     action_key = f"action_{action}"
     has_general_permission = False
@@ -59,7 +57,7 @@ async def check_course_permissions_with_own(
 
     if has_general_permission:
         return True
-    
+
     # Check for "own" permission if user is the author
     if is_author:
         own_action_key = f"action_{action}_own"
@@ -68,10 +66,10 @@ async def check_course_permissions_with_own(
             has_own_permission = element_rights.get(own_action_key, False)
         else:
             has_own_permission = getattr(element_rights, own_action_key, False)
-            
+
         if has_own_permission:
             return True
-    
+
     return False
 
 

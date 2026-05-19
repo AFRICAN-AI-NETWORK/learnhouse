@@ -17,7 +17,7 @@ function PaidCourseActivityDisclaimer({ course }: PaidCourseActivityProps) {
           <h3 className="text-amber-800 font-semibold">{t('payments.paid_content')}</h3>
         </div>
         <p className="text-amber-700 text-sm mt-1">
-          {t('payments.paid_content_description')} 
+          {t('payments.paid_content_description')}
         </p>
       </div>
       <CoursePaidOptions course={course} />

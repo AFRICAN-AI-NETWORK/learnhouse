@@ -130,7 +130,7 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
                         {t('dashboard.assignments.modals.edit.form.grading_type_required')}
                     </FormMessage>
                 </Flex>
-                <select 
+                <select
                     id="grading_type"
                     name="grading_type"
                     className='w-full bg-gray-100/40 rounded-lg px-3 py-2 outline outline-1 outline-gray-100'
@@ -193,4 +193,4 @@ const EditAssignmentModal: React.FC<EditAssignmentModalProps> = ({
     );
 };
 
-export default EditAssignmentModal; 
+export default EditAssignmentModal;

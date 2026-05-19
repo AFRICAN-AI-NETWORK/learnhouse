@@ -7,6 +7,7 @@ from fastapi import HTTPException, UploadFile
 from config.config import get_learnhouse_config
 from src.security.file_validation import validate_upload
 
+
 # new method to handle windows long path issues when saving files locally
 def _to_windows_safe_path(path: Path) -> str:
     resolved = str(path.resolve())
@@ -41,7 +42,7 @@ async def upload_file(
 ) -> str:
     """
     Secure file upload with validation.
-    
+
     Args:
         file: The uploaded file
         directory: Target directory (e.g., "logos", "avatars")
@@ -50,19 +51,19 @@ async def upload_file(
         allowed_types: List of allowed file types ('image', 'video', 'document')
         filename_prefix: Prefix for the generated filename
         max_size: Maximum file size in bytes (optional)
-        
+
     Returns:
         The saved filename
     """
     from uuid import uuid4
     from src.security.file_validation import get_safe_filename
-    
+
     # Validate the file
     _, content = validate_upload(file, allowed_types, max_size)
-    
+
     # Generate safe filename
     filename = get_safe_filename(file.filename, f"{uuid4()}_{filename_prefix}")
-    
+
     # Save the file
     await upload_content(
         directory=directory,
@@ -72,7 +73,7 @@ async def upload_file(
         file_and_format=filename,
         allowed_formats=None,  # Already validated
     )
-    
+
     return filename
 
 

@@ -39,7 +39,7 @@ class DashboardPermission(BaseModel):
 class Rights(BaseModel):
     courses: PermissionsWithOwn
     users: Permission
-    usergroups : Permission
+    usergroups: Permission
     collections: Permission
     organizations: Permission
     coursechapters: Permission
@@ -57,7 +57,8 @@ class Rights(BaseModel):
 
 class RoleTypeEnum(str, Enum):
     TYPE_ORGANIZATION = "TYPE_ORGANIZATION"  # Organization roles are associated with an organization, they are used to define the rights of a user in an organization
-    TYPE_ORGANIZATION_API_TOKEN = "TYPE_ORGANIZATION_API_TOKEN"  # Organization API Token roles are associated with an organization, they are used to define the rights of an API Token in an organization
+    # Organization API Token roles are associated with an organization, they are used to define the rights of an API Token in an organization.
+    TYPE_ORGANIZATION_API_TOKEN = "TYPE_ORGANIZATION_API_TOKEN"  # nosec B105
     TYPE_GLOBAL = "TYPE_GLOBAL"  # Global roles are not associated with an organization, they are used to define the default rights of a user
 
 
@@ -71,7 +72,7 @@ class Role(RoleBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     org_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
+        sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE")),
     )
     role_type: RoleTypeEnum = RoleTypeEnum.TYPE_GLOBAL
     role_uuid: str = ""
