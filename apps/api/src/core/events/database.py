@@ -100,6 +100,21 @@ else:
 
 # Only create tables if not in test mode (tests will handle this themselves)
 if not is_testing:
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text(
+                    "DO $$ BEGIN "
+                    "IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentproviderenum') THEN "
+                    "CREATE TYPE paymentproviderenum AS ENUM ('paystack'); "
+                    "END IF; END $$;"
+                )
+            )
+            conn.commit()
+    except Exception as e:
+        logging.warning(f"Could not pre-create paymentproviderenum type: {e}")
+
     SQLModel.metadata.create_all(engine)
     # Note: logfire instrumentation will be handled in app.py after configuration
 

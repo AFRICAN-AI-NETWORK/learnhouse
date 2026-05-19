@@ -22,7 +22,7 @@ class PaymentProviderEnumType(TypeDecorator):
         super().__init__(
             "paystack",  # Only paystack is valid in the database enum
             name="paymentproviderenum",
-            create_type=False,
+            create_type=True,
         )
 
     def process_bind_param(self, value, dialect):

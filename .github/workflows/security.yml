@@ -83,10 +83,10 @@ jobs:
   snyk-python:
     name: "Snyk - Python Dependencies"
     runs-on: ubuntu-latest
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Snyk Python scan
+        if: env.SNYK_TOKEN != ''
         uses: snyk/actions/python@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -96,7 +96,6 @@ jobs:
   snyk-node:
     name: "Snyk - Node.js Dependencies"
     runs-on: ubuntu-latest
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -107,6 +106,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: ./apps/web
       - name: Snyk Node scan
+        if: env.SNYK_TOKEN != ''
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

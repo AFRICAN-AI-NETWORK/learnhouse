@@ -84,9 +84,11 @@ if REDIS_ENABLED:
 _exchange_rate_cache = {}
 
 # Encryption configuration
-# CRITICAL: Set BANK_DATA_ENCRYPTION_KEY environment variable in production
-# Generate key: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 _ENCRYPTION_KEY = os.getenv("BANK_DATA_ENCRYPTION_KEY")
+if not _ENCRYPTION_KEY and getattr(_config.general_config, "development_mode", False):
+    from cryptography.fernet import Fernet
+    _ENCRYPTION_KEY = Fernet.generate_key().decode()
+    logger.warning("No BANK_DATA_ENCRYPTION_KEY set — using auto-generated ephemeral key (dev only)")
 
 # Strict validation: Fail fast if encryption key is missing
 if not _ENCRYPTION_KEY:

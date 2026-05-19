@@ -35,15 +35,12 @@ if learnhouse_config.general_config.sentry_enabled:
     )
 
 
-# Global Config
 app = FastAPI(
     title=learnhouse_config.site_name,
     description=learnhouse_config.site_description,
     docs_url="/docs" if learnhouse_config.general_config.development_mode else None,
     redoc_url="/redoc" if learnhouse_config.general_config.development_mode else None,
-    version="0.1.0",
 )
-
 
 # Custom middleware to add CORS headers to all responses including errors
 class CORSHeaderMiddleware(BaseHTTPMiddleware):
@@ -281,6 +278,11 @@ app.mount("/content", StaticFiles(directory="content"), name="content")
 # Global Routes
 app.include_router(v1_router)
 
+# General Routes
+@app.get("/")
+async def root():
+    return {"Message": "Welcome to LearnHouse"}
+
 if __name__ == "__main__":
     uvicorn.run(
         "app:app",
@@ -288,9 +290,3 @@ if __name__ == "__main__":
         port=learnhouse_config.hosting_config.port,
         reload=learnhouse_config.general_config.development_mode,
     )
-
-
-# General Routes
-@app.get("/")
-async def root():
-    return {"Message": "Welcome to LearnHouse"}
