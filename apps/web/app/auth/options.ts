@@ -11,7 +11,7 @@ import {
 import { getResponseMetadata } from '@services/utils/ts/requests'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
-import { sentryAuthEvents } from '@api/auth/[...nextauth]/sentry-wrapper'
+import { sentryAuthEvents } from '@/app/api/auth/[...nextauth]/sentry-wrapper'
 
 declare global {
   var sessionCache: {
