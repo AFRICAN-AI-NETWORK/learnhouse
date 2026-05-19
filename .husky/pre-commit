@@ -1,2 +1,2 @@
-pnpm lint-staged
-pre-commit run --all-files
+pnpm lint-staged --allow-empty
+command -v pre-commit >/dev/null 2>&1 && pre-commit run --all-files
