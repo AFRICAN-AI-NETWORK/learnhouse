@@ -83,6 +83,7 @@ jobs:
   snyk-python:
     name: "Snyk - Python Dependencies"
     runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Snyk Python scan
@@ -95,6 +96,7 @@ jobs:
   snyk-node:
     name: "Snyk - Node.js Dependencies"
     runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
