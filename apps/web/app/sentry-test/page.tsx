@@ -26,6 +26,7 @@ export default function SentryTestPage() {
       // Capture exception manually to guarantee immediate delivery to Sentry dashboard
       Sentry.captureException(err)
       
+      // eslint-disable-next-line no-console
       console.error('Captured Sentry Test Error:', err)
     }
   }
@@ -53,7 +54,7 @@ export default function SentryTestPage() {
 
         <div className="space-y-6">
           <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 text-xs font-mono space-y-2 text-slate-300">
-            <div className="text-slate-500">// Action Triggers</div>
+            <div className="text-slate-500">{"// Action Triggers"}</div>
             <div>Sentry.metrics.count('test_counter', 1);</div>
             <div className="text-rose-400">myUndefinedFunction();</div>
           </div>
