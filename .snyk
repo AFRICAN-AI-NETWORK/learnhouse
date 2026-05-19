@@ -1,0 +1,19 @@
+# Snyk policy file
+version: v1.25.0
+ignore:
+  SNYK-PYTHON-PYJWT-15518059:
+    - "*":
+        reason: "Transitive dependency of fastapi-jwt-auth which pins pyjwt<2.0.0; signature verification is handled securely by fastapi-jwt-auth."
+        expires: 2027-05-19T00:00:00.000Z
+  SNYK-PYTHON-PYJWT-2840625:
+    - "*":
+        reason: "Transitive dependency of fastapi-jwt-auth which pins pyjwt<2.0.0; secure algorithms are enforced in app config."
+        expires: 2027-05-19T00:00:00.000Z
+  SNYK-PYTHON-ECDSA-6184115:
+    - "*":
+        reason: "No upgrade or patch available for ecdsa timing attack vulnerability."
+        expires: 2027-05-19T00:00:00.000Z
+  SNYK-PYTHON-ECDSA-6219992:
+    - "*":
+        reason: "No upgrade or patch available for ecdsa missing encryption vulnerability."
+        expires: 2027-05-19T00:00:00.000Z
