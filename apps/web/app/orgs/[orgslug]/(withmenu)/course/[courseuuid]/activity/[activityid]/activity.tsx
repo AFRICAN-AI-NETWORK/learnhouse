@@ -944,7 +944,13 @@ function ActivityClient(props: ActivityClientProps) {
                                         className={`rounded-2xl ${bgColor} ${isSmartArticle ? 'mt-0' : 'mt-4 md:mt-8 p-3 md:p-8 shadow-2xl border border-white/5'}`}
                                       >
                                         {/* Activity Types */}
-                                        <div className="relative z-10 w-full overflow-visible">
+                                        <div
+                                          className="relative z-10 w-full overflow-visible"
+                                          style={{
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                          }}
+                                        >
                                           {activityContent}
                                         </div>
                                       </motion.div>
@@ -1102,6 +1108,10 @@ function ActivityClient(props: ActivityClientProps) {
                                                 ? 'max-w-full'
                                                 : 'max-w-6xl'
                                           }`}
+                                          style={{
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                          }}
                                         >
                                           {activityContent}
                                         </div>
