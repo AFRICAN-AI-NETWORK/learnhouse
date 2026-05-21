@@ -407,12 +407,6 @@ function EditCourseSchedule() {
                     Delete
                   </button>
                 </div>
-                {/* 
-                {selectedEvent && (
-                  <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
-                    API id: {selectedEvent.event_uuid}
-                  </div>
-                )} */}
               </div>
             ) : (
               <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
