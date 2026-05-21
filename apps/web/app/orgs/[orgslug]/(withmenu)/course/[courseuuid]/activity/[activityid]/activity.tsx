@@ -119,9 +119,7 @@ function WatermarkedActivityContent({
     user?.email ||
     user?.user_uuid
 
-  const watermarkText = [displayName, user?.email, org?.name]
-    .filter(Boolean)
-    .join(' - ')
+  const watermarkText = [org?.name].filter(Boolean).join(' - ')
 
   if (!watermarkEnabled || !watermarkText) {
     return <>{children}</>
