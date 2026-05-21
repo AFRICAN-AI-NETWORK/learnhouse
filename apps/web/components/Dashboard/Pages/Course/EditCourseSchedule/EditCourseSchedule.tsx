@@ -48,6 +48,16 @@ const frequencyOptions: { value: RegisterFrequency; label: string }[] = [
   { value: 'manual', label: 'Instructor opens manually' },
 ]
 
+const timetableDays = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+]
+
 function EditCourseSchedule() {
   const course = useCourse() as any
   const session = useLHSession() as any
@@ -99,12 +109,24 @@ function EditCourseSchedule() {
 
   useEffect(() => {
     setEvents(initialEvents)
-    if (!selectedEventUuid && initialEvents.length > 0) {
+    if (initialEvents.length > 0) {
       const first = initialEvents[0]
-      setSelectedEventUuid(first.event_uuid)
-      setDraft(toDraft(first))
+      const selectedStillExists = initialEvents.some(
+        (event) => event.event_uuid === selectedEventUuid
+      )
+
+      if (!selectedEventUuid || !selectedStillExists) {
+        setSelectedEventUuid(first.event_uuid)
+        setDraft(toDraft(first))
+      }
+    } else {
+      setSelectedEventUuid(null)
+      setDraft(null)
     }
-  }, [initialEvents, selectedEventUuid])
+    // This effect should only reconcile when SWR provides a fresh event list.
+    // Selection changes are local UI state and must not reset unsaved sessions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEvents])
 
   useEffect(() => {
     if (initialPolicy) {
@@ -145,12 +167,28 @@ function EditCourseSchedule() {
           : await createCourseTimetableEvent(courseUuid, draft, accessToken)
 
       if (!result.success) {
-        throw new Error(result.HTTPmessage)
+        throw new Error(getApiErrorMessage(result))
       }
 
+      const savedEvent = result.data as CourseTimetableEvent
+      if (savedEvent?.event_uuid) {
+        setEvents((current) => {
+          const exists = current.some(
+            (event) => event.event_uuid === selectedEventUuid
+          )
+          if (!exists) {
+            return [savedEvent, ...current]
+          }
+          return current.map((event) =>
+            event.event_uuid === selectedEventUuid ? savedEvent : event
+          )
+        })
+        setSelectedEventUuid(savedEvent.event_uuid)
+        setDraft(toDraft(savedEvent))
+      }
       toast.success('Schedule saved')
       mutateTimetable()
-    } catch {
+    } catch (error) {
       const localUuid = selectedEventUuid || `local_${Date.now()}`
       setEvents((current) =>
         current.map((event) =>
@@ -165,7 +203,11 @@ function EditCourseSchedule() {
         )
       )
       setSelectedEventUuid(localUuid)
-      toast('Backend endpoint not connected yet. Preview changes kept locally.')
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not save this timetable session.'
+      )
     } finally {
       setIsSavingEvent(false)
     }
@@ -266,9 +308,9 @@ function EditCourseSchedule() {
                 <CalendarDays size={20} className="text-gray-400" />
               </div>
 
-              <div className="grid grid-cols-1 divide-y divide-gray-100 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-                {['Monday', 'Wednesday', 'Friday'].map((day) => (
-                  <DayColumn
+              <div className="divide-y divide-gray-100">
+                {timetableDays.map((day) => (
+                  <DayRow
                     key={day}
                     day={day}
                     events={events.filter((event) => eventDay(event) === day)}
@@ -317,23 +359,13 @@ function EditCourseSchedule() {
                     label="Starts"
                     type="datetime-local"
                     value={toDateTimeLocal(draft.starts_at)}
-                    onChange={(value) =>
-                      setDraft({
-                        ...draft,
-                        starts_at: new Date(value).toISOString(),
-                      })
-                    }
+                    onChange={(value) => setDraft(updateDraftStart(draft, value))}
                   />
                   <TextField
                     label="Ends"
                     type="datetime-local"
                     value={toDateTimeLocal(draft.ends_at)}
-                    onChange={(value) =>
-                      setDraft({
-                        ...draft,
-                        ends_at: new Date(value).toISOString(),
-                      })
-                    }
+                    onChange={(value) => setDraft(updateDraftEnd(draft, value))}
                   />
                 </div>
                 <TextField
@@ -426,7 +458,7 @@ function EditCourseSchedule() {
   )
 }
 
-function DayColumn({
+function DayRow({
   day,
   events,
   selectedEventUuid,
@@ -437,16 +469,20 @@ function DayColumn({
   selectedEventUuid: string | null
   onSelect: (event: CourseTimetableEvent) => void
 }) {
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+  )
+
   return (
-    <div className="min-h-[280px] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-bold text-gray-800">{day}</h3>
+    <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-[150px_minmax(0,1fr)]">
+      <div className="flex items-center justify-between gap-2 lg:items-start">
+        <h3 className="text-sm font-bold text-gray-800">{day}</h3>
         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
           {events.length}
         </span>
       </div>
-      <div className="space-y-3">
-        {events.map((event) => {
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+        {sortedEvents.map((event) => {
           const isSelected = event.event_uuid === selectedEventUuid
           return (
             <button
@@ -752,6 +788,66 @@ function toDateTimeLocal(value: string) {
   const offset = date.getTimezoneOffset()
   const local = new Date(date.getTime() - offset * 60 * 1000)
   return local.toISOString().slice(0, 16)
+}
+
+function updateDraftStart(
+  draft: CourseTimetableEventInput,
+  value: string
+): CourseTimetableEventInput {
+  const nextStart = new Date(value)
+  const currentEnd = new Date(draft.ends_at)
+  const nextEnd =
+    Number.isNaN(currentEnd.getTime()) || currentEnd <= nextStart
+      ? new Date(nextStart.getTime() + 60 * 60 * 1000)
+      : currentEnd
+
+  return {
+    ...draft,
+    starts_at: nextStart.toISOString(),
+    ends_at: nextEnd.toISOString(),
+  }
+}
+
+function updateDraftEnd(
+  draft: CourseTimetableEventInput,
+  value: string
+): CourseTimetableEventInput {
+  const nextEnd = new Date(value)
+  const currentStart = new Date(draft.starts_at)
+
+  if (!Number.isNaN(currentStart.getTime()) && nextEnd <= currentStart) {
+    const adjustedStart = new Date(nextEnd.getTime() - 60 * 60 * 1000)
+    return {
+      ...draft,
+      starts_at: adjustedStart.toISOString(),
+      ends_at: nextEnd.toISOString(),
+    }
+  }
+
+  return {
+    ...draft,
+    ends_at: nextEnd.toISOString(),
+  }
+}
+
+function getApiErrorMessage(result: {
+  data: any
+  HTTPmessage: string
+  status: number
+}) {
+  const detail = result.data?.detail
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        const field = Array.isArray(item.loc) ? item.loc.join('.') : ''
+        return `${field}: ${item.msg}`
+      })
+      .join(', ')
+  }
+  if (typeof detail === 'string') {
+    return detail
+  }
+  return result.HTTPmessage || `Request failed with status ${result.status}`
 }
 
 export default EditCourseSchedule
