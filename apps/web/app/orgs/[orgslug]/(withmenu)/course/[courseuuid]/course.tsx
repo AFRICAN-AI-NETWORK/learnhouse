@@ -31,6 +31,7 @@ import { useMediaQuery } from 'usehooks-ts'
 import CoursesActions from '@components/Objects/Courses/CourseActions/CoursesActions'
 import CourseActionsMobile from '@components/Objects/Courses/CourseActions/CourseActionsMobile'
 import CourseAuthors from '@components/Objects/Courses/CourseAuthors/CourseAuthors'
+import CourseSchedulePanel from '@components/Objects/Courses/CourseSchedule/CourseSchedulePanel'
 import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs'
 import BundleUpsellBanner from '@components/Objects/BundleUpsellBanner'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -238,6 +239,8 @@ const CourseClient = (props: any) => {
                     />
                   </div>
                 )}
+
+                <CourseSchedulePanel courseUuid={props.course.course_uuid} />
 
                 {course.about && (
                   <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
