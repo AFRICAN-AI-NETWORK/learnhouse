@@ -82,9 +82,23 @@ const OrgHomePage = async (props: OrgHomePageProps) => {
     })
 
     // Handle partner redirection
-    if (session && session.roles) {
-      const isPartner = session.roles.affiliation?.action_read
-      const isAdmin = session.roles.organizations?.action_update
+    if (session && Array.isArray(session.roles) && org?.id) {
+      const orgRoles = session.roles.filter((r: any) => r.org?.id === org.id)
+      let isPartner = false
+      let isAdmin = false
+
+      orgRoles.forEach((r: any) => {
+        if (r.role?.rights?.affiliation?.action_read) {
+          isPartner = true
+        }
+        if (
+          r.role?.rights?.dashboard?.action_access ||
+          r.role?.rights?.organizations?.action_update
+        ) {
+          isAdmin = true
+        }
+      })
+
       if (isPartner && !isAdmin) {
         redirect(getUriWithOrg(orgslug, '/dash/affiliation'))
       }
