@@ -20,7 +20,7 @@ Sentry.init({
     }),
     Sentry.browserTracingIntegration(),
   ],
-  beforeSend(event) {
+  beforeSend(event: any) {
     if (event.request?.data) {
       delete event.request.data
     }

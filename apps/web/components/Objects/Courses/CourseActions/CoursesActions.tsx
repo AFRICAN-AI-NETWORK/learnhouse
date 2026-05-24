@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { removeCourse, startCourse } from '@services/courses/activity'
-import { revalidateTags } from '@services/utils/ts/requests'
+import { revalidateTags, swrFetcher } from '@services/utils/ts/requests'
 import { useRouter } from 'next/navigation'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import {
@@ -29,7 +30,7 @@ import { useContributorStatus } from '../../../../hooks/useContributorStatus'
 import CourseProgress from '../CourseProgress/CourseProgress'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { mutate } from 'swr'
+import useSWR, { mutate } from 'swr'
 import { useTranslation } from 'react-i18next'
 
 interface CourseRun {
@@ -89,8 +90,23 @@ function CoursesActions({
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const org = useOrg() as any
 
-  // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+
+  const { data: prerequisites } = useSWR<any[]>(
+    `${getAPIUrl()}prerequisites/course_${courseuuid}`,
+    (url: string) =>
+      swrFetcher(url, session.data?.tokens?.access_token || undefined)
+  )
+
+  const missingPrerequisites = React.useMemo(() => {
+    if (!prerequisites || !trailData?.runs) return []
+    return prerequisites.filter((prereq: any) => {
+      const run = trailData.runs.find(
+        (r: any) => r.course_id === prereq.prerequisite_course_id
+      )
+      return !run || run.status !== 'STATUS_COMPLETED'
+    })
+  }, [prerequisites, trailData])
 
   const isStarted =
     trailData?.runs?.find((run: any) => {
@@ -582,9 +598,42 @@ function CoursesActions({
                   </p>
                 </div>
               )}
+              {!isStarted && missingPrerequisites.length > 0 && (
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg nice-shadow mb-3">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-rose-900 font-semibold text-sm">
+                        Prerequisites Required
+                      </h4>
+                      <p className="text-rose-700 text-xs mt-1">
+                        You must complete the following courses first:
+                      </p>
+                      <ul className="list-disc list-inside text-rose-800 text-xs mt-2 space-y-1">
+                        {missingPrerequisites.map((prereq: any) => (
+                          <li key={prereq.id}>
+                            <Link
+                              href={getUriWithOrg(
+                                orgslug,
+                                `/course/${prereq.prerequisite_course_uuid.replace('course_', '')}`
+                              )}
+                              className="underline hover:text-rose-950 font-medium"
+                            >
+                              {prereq.prerequisite_course_name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
               <button
                 onClick={handleCourseAction}
-                disabled={isActionLoading}
+                disabled={
+                  isActionLoading ||
+                  (!isStarted && missingPrerequisites.length > 0)
+                }
                 aria-label={
                   isStarted
                     ? t('courses.leave_course')
@@ -593,11 +642,18 @@ function CoursesActions({
                 className={`w-full py-3 rounded-lg nice-shadow font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                   isStarted
                     ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
-                    : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
+                    : !isStarted && missingPrerequisites.length > 0
+                      ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                      : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
                 }`}
               >
                 {isActionLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : !isStarted && missingPrerequisites.length > 0 ? (
+                  <>
+                    <BookOpen className="w-5 h-5 text-neutral-400" />
+                    <span>Start Course (Locked)</span>
+                  </>
                 ) : (
                   renderActionButton(isStarted ? 'leave' : 'start')
                 )}
@@ -674,21 +730,62 @@ function CoursesActions({
         {/* Progress Section */}
         {renderProgressSection()}
 
+        {/* Prerequisite warning box */}
+        {!isStarted && missingPrerequisites.length > 0 && (
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg nice-shadow">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-rose-900 font-semibold text-sm">
+                  Prerequisites Required
+                </h4>
+                <p className="text-rose-700 text-xs mt-1">
+                  You must complete the following courses first:
+                </p>
+                <ul className="list-disc list-inside text-rose-800 text-xs mt-2 space-y-1">
+                  {missingPrerequisites.map((prereq: any) => (
+                    <li key={prereq.id}>
+                      <Link
+                        href={getUriWithOrg(
+                          orgslug,
+                          `/course/${prereq.prerequisite_course_uuid.replace('course_', '')}`
+                        )}
+                        className="underline hover:text-rose-950 font-medium"
+                      >
+                        {prereq.prerequisite_course_name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Start/Leave Course Button */}
         <button
           onClick={handleCourseAction}
-          disabled={isActionLoading}
+          disabled={
+            isActionLoading || (!isStarted && missingPrerequisites.length > 0)
+          }
           aria-label={
             isStarted ? t('courses.leave_course') : t('courses.start_course')
           }
           className={`w-full py-3 rounded-lg nice-shadow font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
             isStarted
               ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
-              : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
+              : !isStarted && missingPrerequisites.length > 0
+                ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
           }`}
         >
           {isActionLoading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : !isStarted && missingPrerequisites.length > 0 ? (
+            <>
+              <BookOpen className="w-5 h-5 text-neutral-400" />
+              <span>Start Course (Locked)</span>
+            </>
           ) : (
             renderActionButton(isStarted ? 'leave' : 'start')
           )}

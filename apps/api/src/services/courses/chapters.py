@@ -175,6 +175,21 @@ async def update_chapter(
         if value is not None:
             setattr(chapter, var, value)
 
+    # Publish Validation
+    if chapter.published:
+        statement = (
+            select(Activity.points)
+            .join(ChapterActivity, ChapterActivity.activity_id == Activity.id)
+            .where(ChapterActivity.chapter_id == chapter.id)
+        )
+        activity_points = db_session.exec(statement).all()
+        total_points = sum(activity_points)
+        if total_points != 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Total points for activities in a module must equal 100. Current total: {total_points}"
+            )
+
     chapter.update_date = str(datetime.now())
 
     db_session.commit()
@@ -238,7 +253,7 @@ async def get_course_chapters(
     course_id: int,
     db_session: Session,
     current_user: PublicUser | AnonymousUser,
-    with_unpublished_activities: bool,
+    with_unpublished_activities: bool = False,
     page: int = 1,
     limit: int = 10,
 ) -> List[ChapterRead]:
@@ -287,6 +302,65 @@ async def get_course_chapters(
 
             if activity:
                 chapter.activities.append(ActivityRead(**activity.model_dump()))
+
+    # Determine if user is editor (admin/maintainer/instructor)
+    is_editor = False
+    if current_user and current_user.id != 0:
+        try:
+            from src.security.courses_security import courses_rbac_check
+            is_editor = await courses_rbac_check(
+                request, course.course_uuid, current_user, "update", db_session
+            )
+        except Exception:
+            is_editor = False
+
+    # Get completed activity ids if user is enrolled
+    completed_activity_ids = set()
+    has_trail_run = False
+    if not is_editor and current_user and current_user.id != 0:
+        from src.db.trail_runs import TrailRun
+        from src.db.trail_steps import TrailStep
+        # Get trail run
+        trail_run = db_session.exec(
+            select(TrailRun).where(
+                TrailRun.course_id == course.id,
+                TrailRun.user_id == current_user.id
+            )
+        ).first()
+        if trail_run:
+            has_trail_run = True
+            completed_steps = db_session.exec(
+                select(TrailStep.activity_id).where(
+                    TrailStep.trailrun_id == trail_run.id,
+                    TrailStep.complete == True
+                )
+            ).all()
+            completed_activity_ids = set(completed_steps)
+
+    # Compute locking state sequentially
+    all_previous_completed = True
+    for i, chapter in enumerate(chapters):
+        if is_editor:
+            chapter.is_locked = False
+            for activity in chapter.activities:
+                activity.is_locked = False
+        else:
+            # Chapter N is locked if not all previous chapters' activities are completed
+            chapter.is_locked = not all_previous_completed
+            
+            for activity in chapter.activities:
+                # Activity is locked if we haven't completed all previous activities
+                activity.is_locked = not all_previous_completed
+                
+                # If they don't have a trail run, only the very first activity of the course is unlocked
+                if not has_trail_run:
+                    if i == 0 and activity.id == chapter.activities[0].id:
+                        activity.is_locked = False
+                
+                # Update all_previous_completed for the NEXT activity
+                is_completed = activity.id in completed_activity_ids
+                all_previous_completed = all_previous_completed and is_completed
+
 
     return chapters
 

@@ -12,6 +12,7 @@ class ActivityTypeEnum(str, Enum):
     TYPE_CUSTOM = "TYPE_CUSTOM"
     TYPE_SMART_ARTICLE = "TYPE_SMART_ARTICLE"
     TYPE_LIVE_SESSION = "TYPE_LIVE_SESSION"
+    TYPE_ATTENDANCE = "TYPE_ATTENDANCE"
 
 
 class ActivitySubTypeEnum(str, Enum):
@@ -32,6 +33,9 @@ class ActivitySubTypeEnum(str, Enum):
     # Live Session
     SUBTYPE_LIVE_JITSI = "SUBTYPE_LIVE_JITSI"
     SUBTYPE_LIVE_HOSTED = "SUBTYPE_LIVE_HOSTED"
+    # Attendance
+    SUBTYPE_ATTENDANCE_WEEKLY = "SUBTYPE_ATTENDANCE_WEEKLY"
+    SUBTYPE_ATTENDANCE_ONETIME = "SUBTYPE_ATTENDANCE_ONETIME"
 
 
 class ActivityBase(SQLModel):
@@ -41,6 +45,7 @@ class ActivityBase(SQLModel):
     content: dict = Field(default={}, sa_column=Column(JSON))
     details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     published: bool = False
+    points: int = Field(default=0)
 
 
 class Activity(ActivityBase, table=True):
@@ -72,6 +77,7 @@ class ActivityUpdate(ActivityBase):
     details: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # type: ignore
     published_version: Optional[int] = None
     version: Optional[int] = None
+    points: Optional[int] = None
 
 
 class ActivityRead(ActivityBase):
@@ -84,4 +90,5 @@ class ActivityRead(ActivityBase):
     creation_date: str
     update_date: str
     details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    pass
+    is_locked: Optional[bool] = False
+

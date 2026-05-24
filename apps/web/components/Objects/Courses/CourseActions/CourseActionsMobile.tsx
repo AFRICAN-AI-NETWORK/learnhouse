@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { getUriWithoutOrg, getUriWithOrg } from '@services/config/config'
+import {
+  getUriWithoutOrg,
+  getUriWithOrg,
+  getAPIUrl,
+} from '@services/config/config'
 import { getProductsByCourse } from '@services/payments/products'
-import { LogIn, LogOut, ShoppingCart, AlertCircle } from 'lucide-react'
+import {
+  LogIn,
+  LogOut,
+  ShoppingCart,
+  AlertCircle,
+  BookOpen,
+} from 'lucide-react'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import CoursePaidOptions from './CoursePaidOptions'
 import { checkPaidAccess } from '@services/payments/payments'
 import { removeCourse, startCourse } from '@services/courses/activity'
-import { revalidateTags } from '@services/utils/ts/requests'
+import { revalidateTags, swrFetcher } from '@services/utils/ts/requests'
 import UserAvatar from '../../UserAvatar'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
+import useSWR from 'swr'
 
 interface Author {
   user: {
@@ -142,8 +154,23 @@ const CourseActionsMobile = ({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
 
-  // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+
+  const { data: prerequisites } = useSWR<any[]>(
+    `${getAPIUrl()}prerequisites/course_${courseuuid}`,
+    (url: string) =>
+      swrFetcher(url, session.data?.tokens?.access_token || undefined)
+  )
+
+  const missingPrerequisites = React.useMemo(() => {
+    if (!prerequisites || !trailData?.runs) return []
+    return prerequisites.filter((prereq: any) => {
+      const run = trailData.runs.find(
+        (r: any) => r.course_id === prereq.prerequisite_course_id
+      )
+      return !run || run.status !== 'STATUS_COMPLETED'
+    })
+  }, [prerequisites, trailData])
 
   const isStarted =
     trailData?.runs?.find((run: any) => {
@@ -294,29 +321,68 @@ const CourseActionsMobile = ({
             )}
 
             {hasAccess ? (
-              <button
-                onClick={handleCourseAction}
-                disabled={isActionLoading}
-                className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
-                  isStarted
-                    ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
-                    : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
-                }`}
-              >
-                {isActionLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : isStarted ? (
-                  <>
-                    <LogOut className="w-4 h-4" />
-                    Leave Course
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4" />
-                    Start Course
-                  </>
+              <>
+                {!isStarted && missingPrerequisites.length > 0 && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg mb-2">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-rose-900 text-xs font-semibold block">
+                          Prerequisites Required
+                        </span>
+                        <ul className="list-disc list-inside text-rose-800 text-[10px] mt-1 space-y-1">
+                          {missingPrerequisites.map((prereq: any) => (
+                            <li key={prereq.id}>
+                              <Link
+                                href={getUriWithOrg(
+                                  orgslug,
+                                  `/course/${prereq.prerequisite_course_uuid.replace('course_', '')}`
+                                )}
+                                className="underline hover:text-rose-950"
+                              >
+                                {prereq.prerequisite_course_name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
+                <button
+                  onClick={handleCourseAction}
+                  disabled={
+                    isActionLoading ||
+                    (!isStarted && missingPrerequisites.length > 0)
+                  }
+                  className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+                    isStarted
+                      ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
+                      : !isStarted && missingPrerequisites.length > 0
+                        ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                        : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
+                  }`}
+                >
+                  {isActionLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : isStarted ? (
+                    <>
+                      <LogOut className="w-4 h-4" />
+                      Leave Course
+                    </>
+                  ) : !isStarted && missingPrerequisites.length > 0 ? (
+                    <>
+                      <BookOpen className="w-4 h-4 text-neutral-400" />
+                      Start Course (Locked)
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      Start Course
+                    </>
+                  )}
+                </button>
+              </>
             ) : (
               <>
                 <Modal
@@ -345,34 +411,73 @@ const CourseActionsMobile = ({
             )}
           </div>
         ) : (
-          <button
-            onClick={handleCourseAction}
-            disabled={isActionLoading}
-            className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
-              isStarted
-                ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
-                : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
-            }`}
-          >
-            {isActionLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : !session.data?.user ? (
-              <>
-                <LogIn className="w-4 h-4" />
-                Sign In
-              </>
-            ) : isStarted ? (
-              <>
-                <LogOut className="w-4 h-4" />
-                Leave Course
-              </>
-            ) : (
-              <>
-                <LogIn className="w-4 h-4" />
-                Start Course
-              </>
+          <>
+            {!isStarted && missingPrerequisites.length > 0 && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg mb-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-rose-900 text-xs font-semibold block">
+                      Prerequisites Required
+                    </span>
+                    <ul className="list-disc list-inside text-rose-800 text-[10px] mt-1 space-y-1">
+                      {missingPrerequisites.map((prereq: any) => (
+                        <li key={prereq.id}>
+                          <Link
+                            href={getUriWithOrg(
+                              orgslug,
+                              `/course/${prereq.prerequisite_course_uuid.replace('course_', '')}`
+                            )}
+                            className="underline hover:text-rose-950"
+                          >
+                            {prereq.prerequisite_course_name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
             )}
-          </button>
+            <button
+              onClick={handleCourseAction}
+              disabled={
+                isActionLoading ||
+                (!isStarted && missingPrerequisites.length > 0)
+              }
+              className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+                isStarted
+                  ? 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-400'
+                  : !isStarted && missingPrerequisites.length > 0
+                    ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                    : 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-700'
+              }`}
+            >
+              {isActionLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : !session.data?.user ? (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </>
+              ) : isStarted ? (
+                <>
+                  <LogOut className="w-4 h-4" />
+                  Leave Course
+                </>
+              ) : !isStarted && missingPrerequisites.length > 0 ? (
+                <>
+                  <BookOpen className="w-4 h-4 text-neutral-400" />
+                  Start Course (Locked)
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Start Course
+                </>
+              )}
+            </button>
+          </>
         )}
       </div>
     </div>

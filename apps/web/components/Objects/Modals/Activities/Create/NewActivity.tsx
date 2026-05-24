@@ -12,6 +12,8 @@ import DocumentPdfModal from './NewActivityModal/DocumentActivityModal'
 import Assignment from './NewActivityModal/AssignmentActivityModal'
 import SmartActivityModal from './NewActivityModal/SmartActivityModal'
 import LiveSessionModal from './NewActivityModal/LiveSessionModal'
+import AttendanceActivityModal from './NewActivityModal/AttendanceActivityModal'
+import { ClipboardCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 function NewActivityModal({
@@ -134,6 +136,18 @@ function NewActivityModal({
               <span>Live Session</span>
             </div>
           </ActivityOption>
+          <ActivityOption
+            onClick={() => {
+              setSelectedView('attendance')
+            }}
+          >
+            <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-center text-center bg-white hover:cursor-pointer">
+              <ClipboardCheck size={32} className="text-emerald-500" />
+            </div>
+            <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center">
+              Attendance
+            </div>
+          </ActivityOption>
         </div>
       )}
 
@@ -185,6 +199,14 @@ function NewActivityModal({
           chapterId={chapterId}
           course={course}
           closeModal={closeModal}
+        />
+      )}
+
+      {selectedView === 'attendance' && (
+        <AttendanceActivityModal
+          submitActivity={submitActivity}
+          chapterId={chapterId}
+          course={course}
         />
       )}
     </>
