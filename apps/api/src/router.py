@@ -20,6 +20,7 @@ from src.routers.courses import (
     assignments,
     certifications,
     live_sessions,
+    schedules,
 )
 from src.routers.courses.activities import activities, blocks
 from src.routers.chat import conversations as chat_conversations
@@ -60,6 +61,7 @@ v1_router.include_router(
 v1_router.include_router(
     live_sessions.router, prefix="/live_sessions", tags=["live_sessions"]
 )
+v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
