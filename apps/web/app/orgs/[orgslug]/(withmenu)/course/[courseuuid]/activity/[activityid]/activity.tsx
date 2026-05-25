@@ -103,6 +103,41 @@ const LoadingFallback = () => (
   </div>
 )
 
+function WatermarkedActivityContent({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const org = useOrg() as any
+  const session = useLHSession() as any
+  const user = session?.data?.user
+  const watermarkEnabled = org?.config?.config?.general?.watermark !== false
+
+  const displayName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() ||
+    user?.username ||
+    user?.email ||
+    user?.user_uuid
+
+  const watermarkText = [org?.name].filter(Boolean).join(' - ')
+
+  if (!watermarkEnabled || !watermarkText) {
+    return <>{children}</>
+  }
+
+  return (
+    <div className="relative overflow-hidden">
+      {children}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-4 right-4 z-[80] max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
+      >
+        {watermarkText}
+      </div>
+    </div>
+  )
+}
+
 interface ActivityClientProps {
   activityid: string
   courseuuid: string
@@ -167,7 +202,7 @@ function ActivityActions({
   )
 
   return (
-    <div className="flex space-x-2 items-center">
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
       {activity &&
         activity.published == true &&
         activity.content.paid_access != false && (
@@ -596,8 +631,8 @@ function ActivityClient(props: ActivityClientProps) {
                               transition={{ duration: 0.3 }}
                               className="fixed top-0 left-0 right-0 z-50 bg-zinc-900/80 backdrop-blur-xl border-b border-white/5"
                             >
-                              <div className="container mx-auto px-4 py-2">
-                                <div className="flex items-center justify-between h-14">
+                              <div className="container mx-auto px-3 py-2 sm:px-4">
+                                <div className="flex min-h-14 flex-wrap items-center justify-between gap-3">
                                   {/* Progress Indicator - Moved to left */}
                                   <motion.div
                                     initial={
@@ -703,7 +738,7 @@ function ActivityClient(props: ActivityClientProps) {
                                     }
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.1 }}
-                                    className="flex items-center space-x-4"
+                                    className="flex min-w-0 items-center space-x-3 sm:space-x-4"
                                   >
                                     <div className="flex">
                                       <Link
@@ -742,7 +777,7 @@ function ActivityClient(props: ActivityClientProps) {
                                     }
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.2 }}
-                                    className="flex items-center space-x-3"
+                                    className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-none sm:space-x-3"
                                   >
                                     <ActivityStatusBadge
                                       activity={activity}
@@ -761,7 +796,7 @@ function ActivityClient(props: ActivityClientProps) {
                                           )
                                         )
                                       }
-                                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all h-[36px] flex items-center shadow-lg ${
+                                      className={`min-w-0 px-3 py-2 sm:px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all min-h-[36px] flex items-center justify-center shadow-lg ${
                                         isActivityComplete(
                                           activity.activity_uuid,
                                           course.course_uuid,
@@ -781,12 +816,16 @@ function ActivityClient(props: ActivityClientProps) {
                                           course.course_uuid,
                                           trailData
                                         ) ? (
-                                        <span className="flex items-center gap-2">
+                                        <span className="flex min-w-0 items-center gap-2">
                                           <CheckCircle size={14} />
-                                          {t('activities.completed')}
+                                          <span className="truncate">
+                                            {t('activities.completed')}
+                                          </span>
                                         </span>
                                       ) : (
-                                        t('activities.mark_as_complete')
+                                        <span className="truncate">
+                                          {t('activities.mark_as_complete')}
+                                        </span>
                                       )}
                                     </button>
 
@@ -944,8 +983,16 @@ function ActivityClient(props: ActivityClientProps) {
                                         className={`rounded-2xl ${bgColor} ${isSmartArticle ? 'mt-0' : 'mt-4 md:mt-8 p-3 md:p-8 shadow-2xl border border-white/5'}`}
                                       >
                                         {/* Activity Types */}
-                                        <div className="relative z-10 w-full overflow-visible">
-                                          {activityContent}
+                                        <div
+                                          className="relative z-10 w-full overflow-visible"
+                                          style={{
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                          }}
+                                        >
+                                          <WatermarkedActivityContent>
+                                            {activityContent}
+                                          </WatermarkedActivityContent>
                                         </div>
                                       </motion.div>
                                     )}
@@ -960,7 +1007,7 @@ function ActivityClient(props: ActivityClientProps) {
                             <motion.div
                               initial={{ y: 100 }}
                               animate={{ y: 0 }}
-                              className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/90 backdrop-blur-xl border-t border-white/5 py-3 px-6 flex items-center justify-between"
+                              className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/90 backdrop-blur-xl border-t border-white/5 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] flex items-center justify-between"
                             >
                               <button
                                 onClick={() => navigateToActivity(prevActivity)}
@@ -1102,8 +1149,14 @@ function ActivityClient(props: ActivityClientProps) {
                                                 ? 'max-w-full'
                                                 : 'max-w-6xl'
                                           }`}
+                                          style={{
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                          }}
                                         >
-                                          {activityContent}
+                                          <WatermarkedActivityContent>
+                                            {activityContent}
+                                          </WatermarkedActivityContent>
                                         </div>
                                       </div>
                                     </>
@@ -1114,7 +1167,7 @@ function ActivityClient(props: ActivityClientProps) {
                               {activity &&
                                 activity.published == true &&
                                 activity.content.paid_access != false && (
-                                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="mt-4 flex gap-3 md:flex-row md:items-center md:justify-between">
                                     <PreviousActivityButton
                                       course={course}
                                       currentActivityId={activity.id}
@@ -1183,9 +1236,9 @@ function ActivityPageNavbar({
 
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
-      <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
-        <div className="flex gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 items-center gap-4 gap-5">
+      <div className="flex flex-col gap-2 px-4 py-2 sm:gap-4 sm:px-6 sm:py-4 xl:px-8">
+        <div className="flex flex-col gap-2 sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
               className="hidden shrink-0 bg-white p-1 shadow-xs dark:bg-transparent sm:block"
@@ -1196,19 +1249,19 @@ function ActivityPageNavbar({
                 alt=""
               />
             </Link>
-            <div className="min-w-0 flex flex-row gap-10">
-              <div className="flex flex-col gap-3">
-                <p className="text-xs font-semibold text-slate-500 dark:text-white/45">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 flex-col gap-2 sm:gap-3">
+                <p className="text-[10px] font-semibold uppercase text-slate-500 dark:text-white/45 sm:text-xs sm:normal-case">
                   {t('courses.course_progress')}
                 </p>
-                <div className="flex items-center justify-center gap-3">
-                  <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:w-72">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-[10rem] xl:w-[12rem]">
                     <div
                       className="h-full rounded-full bg-blue-600"
                       style={{ width: `${progressPercentage}%` }}
                     />
                   </div>
-                  <span className="text-xs font-bold text-slate-600 dark:text-white/70">
+                  <span className="text-[10px] font-bold text-slate-600 dark:text-white/70 sm:text-xs">
                     {progressPercentage}%
                   </span>
                 </div>
@@ -1220,7 +1273,7 @@ function ActivityPageNavbar({
             activity.published == true &&
             activity.content.paid_access != false && (
               <AuthenticatedClientElement checkMethod="authentication">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end xl:max-w-[60vw]">
                   {activity.activity_type !== 'TYPE_SMART_ARTICLE' && (
                     <AIActivityAsk activity={activity} />
                   )}
@@ -1232,7 +1285,7 @@ function ActivityPageNavbar({
                           getUriWithOrg(orgslug, '') +
                           `/course/${courseuuid}/activity/${activityid}/edit`
                         }
-                        className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
+                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:h-10 sm:w-auto sm:px-4 sm:text-xs"
                       >
                         <Edit2 size={16} />
                         {t('courses.contribute')}
@@ -1264,7 +1317,7 @@ function ActivityPageNavbar({
                         )
                       }
                       disabled={loadingMarkComplete}
-                      className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-xs font-bold uppercase transition ${
+                      className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition sm:h-10 sm:w-auto sm:px-4 sm:text-xs ${
                         isActivityComplete(
                           activity.activity_uuid,
                           course.course_uuid,
@@ -1285,13 +1338,15 @@ function ActivityPageNavbar({
                       ) : (
                         <Circle size={16} />
                       )}
-                      {isActivityComplete(
-                        activity.activity_uuid,
-                        course.course_uuid,
-                        trailData
-                      )
-                        ? t('common.completed')
-                        : t('activities.mark_as_complete')}
+                      <span className="truncate">
+                        {isActivityComplete(
+                          activity.activity_uuid,
+                          course.course_uuid,
+                          trailData
+                        )
+                          ? t('common.completed')
+                          : t('activities.mark_as_complete')}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -1316,6 +1371,21 @@ function CourseContentSidebar({
 }) {
   const { t } = useTranslation()
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const currentActivity = useMemo(() => {
+    const cleanCurrentActivityId = currentActivityId.replace('activity_', '')
+
+    for (const chapter of course.chapters || []) {
+      const activity = chapter.activities?.find(
+        (chapterActivity: any) =>
+          chapterActivity.activity_uuid?.replace('activity_', '') ===
+          cleanCurrentActivityId
+      )
+
+      if (activity) return activity
+    }
+
+    return null
+  }, [course.chapters, currentActivityId])
   const currentChapterKey = useMemo(() => {
     const cleanCurrentActivityId = currentActivityId.replace('activity_', '')
 
@@ -1334,6 +1404,7 @@ function CourseContentSidebar({
     return course.chapters?.[currentChapterIndex]?.id ?? currentChapterIndex
   }, [course.chapters, currentActivityId])
   const [openChapterKey, setOpenChapterKey] = useState<any>(currentChapterKey)
+  const [isMobileContentOpen, setIsMobileContentOpen] = useState(false)
   const run = trailData?.runs?.find((run: any) => {
     const runCourseUuid =
       run.course?.course_uuid || run.course_uuid || run.course?.uuid
@@ -1373,130 +1444,163 @@ function CourseContentSidebar({
     }
   }
 
-  return (
-    <aside className="scrollbar-hide border-b border-slate-200 bg-white dark:border-white/8 dark:bg-[#13131a] lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
-      <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4 dark:border-white/8 dark:bg-[#13131a]/95">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white/90">
-            {t('courses.course_content')}
-          </h2>
-        </div>
-      </div>
+  const chapterList = (
+    <div className="scrollbar-hide max-h-[70vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
+      {course.chapters?.map((chapter: any, index: number) => {
+        const chapterKey = chapter.id ?? index
+        const isOpen = openChapterKey === chapterKey
 
-      <div className="scrollbar-hide max-h-[60vh] overflow-y-auto py-3 lg:max-h-none lg:overflow-visible">
-        {course.chapters?.map((chapter: any, index: number) => {
-          const chapterKey = chapter.id ?? index
-          const isOpen = openChapterKey === chapterKey
-
-          return (
-            <section
-              key={chapterKey}
-              className="border-b border-slate-100 pb-3 dark:border-white/8"
+        return (
+          <section
+            key={chapterKey}
+            className="border-b border-slate-100 pb-3 dark:border-white/8"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setOpenChapterKey((currentKey: any) =>
+                  currentKey === chapterKey ? null : chapterKey
+                )
+              }
+              aria-expanded={isOpen}
+              className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white/5"
             >
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenChapterKey((currentKey: any) =>
-                    currentKey === chapterKey ? null : chapterKey
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                {index + 1}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900 dark:text-white/85">
+                  {chapter.name}
+                </h3>
+              </div>
+              <ChevronDown
+                size={18}
+                className={`mt-1 shrink-0 text-slate-500 transition-transform dark:text-white/45 ${
+                  isOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {isOpen && (
+              <div className="space-y-1">
+                {chapter.activities?.map((chapterActivity: any) => {
+                  const cleanActivityUuid =
+                    chapterActivity.activity_uuid?.replace('activity_', '')
+                  const isCurrent =
+                    cleanActivityUuid ===
+                    currentActivityId.replace('activity_', '')
+                  const complete = isComplete(chapterActivity)
+                  const activityMeta = getActivityMeta(
+                    chapterActivity.activity_type
                   )
-                }
-                aria-expanded={isOpen}
-                className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white/5"
-              >
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                  {index + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900 dark:text-white/85">
-                    {chapter.name}
-                  </h3>
-                </div>
-                <ChevronDown
-                  size={18}
-                  className={`mt-1 shrink-0 text-slate-500 transition-transform dark:text-white/45 ${
-                    isOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+                  const ActivityIcon = activityMeta.icon
 
-              {isOpen && (
-                <div className="space-y-1">
-                  {chapter.activities?.map((chapterActivity: any) => {
-                    const cleanActivityUuid =
-                      chapterActivity.activity_uuid?.replace('activity_', '')
-                    const isCurrent =
-                      cleanActivityUuid ===
-                      currentActivityId.replace('activity_', '')
-                    const complete = isComplete(chapterActivity)
-                    const activityMeta = getActivityMeta(
-                      chapterActivity.activity_type
-                    )
-                    const ActivityIcon = activityMeta.icon
+                  return (
+                    <Link
+                      key={chapterActivity.id}
+                      href={
+                        getUriWithOrg(orgslug, '') +
+                        `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
+                      }
+                      prefetch={false}
+                      onClick={() => setIsMobileContentOpen(false)}
+                      className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
+                        isCurrent
+                          ? 'border-blue-600 bg-blue-50 dark:bg-indigo-500/15'
+                          : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
+                        {complete ? (
+                          <CheckCircle
+                            size={17}
+                            className="text-teal-600"
+                            strokeWidth={2.5}
+                          />
+                        ) : (
+                          <Circle
+                            size={12}
+                            className={
+                              isCurrent
+                                ? 'text-blue-600 dark:text-indigo-300'
+                                : 'text-slate-300 dark:text-white/20'
+                            }
+                            fill={isCurrent ? 'currentColor' : 'none'}
+                          />
+                        )}
+                      </div>
 
-                    return (
-                      <Link
-                        key={chapterActivity.id}
-                        href={
-                          getUriWithOrg(orgslug, '') +
-                          `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
-                        }
-                        prefetch={false}
-                        className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
-                          isCurrent
-                            ? 'border-blue-600 bg-blue-50 dark:bg-indigo-500/15'
-                            : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
-                          {complete ? (
-                            <CheckCircle
-                              size={17}
-                              className="text-teal-600"
-                              strokeWidth={2.5}
-                            />
-                          ) : (
-                            <Circle
-                              size={12}
-                              className={
-                                isCurrent
-                                  ? 'text-blue-600 dark:text-indigo-300'
-                                  : 'text-slate-300 dark:text-white/20'
-                              }
-                              fill={isCurrent ? 'currentColor' : 'none'}
-                            />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={`line-clamp-2 text-sm font-semibold leading-5 ${
+                              isCurrent
+                                ? 'text-slate-950 dark:text-white'
+                                : 'text-slate-700 dark:text-white/65'
+                            }`}
+                          >
+                            {chapterActivity.name}
+                          </p>
+                          {isCurrent && (
+                            <span className="shrink-0 text-[11px] font-semibold text-blue-600 dark:text-indigo-300">
+                              {t('activities.current')}
+                            </span>
                           )}
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p
-                              className={`line-clamp-2 text-sm font-semibold leading-5 ${
-                                isCurrent
-                                  ? 'text-slate-950 dark:text-white'
-                                  : 'text-slate-700 dark:text-white/65'
-                              }`}
-                            >
-                              {chapterActivity.name}
-                            </p>
-                            {isCurrent && (
-                              <span className="shrink-0 text-[11px] font-semibold text-blue-600 dark:text-indigo-300">
-                                {t('activities.current')}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/40">
-                            <ActivityIcon size={13} />
-                            <span>{activityMeta.label}</span>
-                          </div>
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/40">
+                          <ActivityIcon size={13} />
+                          <span>{activityMeta.label}</span>
                         </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </section>
-          )
-        })}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )
+      })}
+    </div>
+  )
+
+  return (
+    <aside className="scrollbar-hide border-b border-slate-200 bg-white dark:border-white/8 dark:bg-[#13131a] lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px)] lg:w-[350px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsMobileContentOpen((isOpen) => !isOpen)}
+          aria-expanded={isMobileContentOpen}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        >
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase text-slate-500 dark:text-white/45">
+              {t('courses.course_content')}
+            </p>
+            <h2 className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-white/90">
+              {currentActivity?.name || t('activities.current')}
+            </h2>
+          </div>
+          <ChevronDown
+            size={20}
+            className={`shrink-0 text-slate-500 transition-transform dark:text-white/45 ${
+              isMobileContentOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+
+        {isMobileContentOpen && chapterList}
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4 dark:border-white/8 dark:bg-[#13131a]/95">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white/90">
+              {t('courses.course_content')}
+            </h2>
+          </div>
+        </div>
+
+        {chapterList}
       </div>
     </aside>
   )
@@ -1672,11 +1776,11 @@ export function MarkStatus(props: {
               confirmationMessage={t('activities.unmark_activity_confirm')}
               dialogTitle={t('activities.unmark_activity_title')}
               dialogTrigger={
-                <div className="bg-teal-600 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out">
+                <div className="nice-shadow flex w-full min-w-0 flex-col rounded-md bg-teal-600 px-4 p-2.5 text-white transition delay-150 duration-300 ease-in-out hover:cursor-pointer sm:w-auto">
                   <span className="text-[10px] font-bold mb-1 uppercase">
                     {t('common.status')}
                   </span>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex min-w-0 items-center space-x-2">
                     <svg
                       width="17"
                       height="17"
@@ -1690,7 +1794,7 @@ export function MarkStatus(props: {
                       <rect x="3" y="3" width="18" height="18" rx="2" />
                       <path d="M7 12l3 3 7-7" />
                     </svg>
-                    <span className="text-xs font-bold">
+                    <span className="min-w-0 truncate text-xs font-bold">
                       {t('common.complete')}
                     </span>
                   </div>
@@ -1715,13 +1819,13 @@ export function MarkStatus(props: {
         <div className="flex items-center space-x-2">
           <div className="relative">
             <div
-              className={`${isLoading ? 'opacity-90' : ''} bg-gray-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition-all duration-200 ${isLoading ? 'cursor-not-allowed' : 'hover:bg-gray-700'}`}
+              className={`${isLoading ? 'opacity-90' : ''} nice-shadow flex w-full min-w-0 flex-col rounded-md bg-gray-800 px-4 p-2.5 text-white transition-all duration-200 hover:cursor-pointer sm:w-auto ${isLoading ? 'cursor-not-allowed' : 'hover:bg-gray-700'}`}
               onClick={!isLoading ? markActivityAsCompleteFront : undefined}
             >
               <span className="text-[10px] font-bold mb-1 uppercase">
                 {t('common.status')}
               </span>
-              <div className="flex items-center space-x-2">
+              <div className="flex min-w-0 items-center space-x-2">
                 {isLoading ? (
                   <div className="animate-spin">
                     <svg
@@ -1751,7 +1855,7 @@ export function MarkStatus(props: {
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                   </svg>
                 )}
-                <span className="text-xs font-bold min-w-[90px]">
+                <span className="min-w-0 truncate text-xs font-bold sm:min-w-[90px]">
                   {isLoading
                     ? t('activities.marking')
                     : t('activities.mark_as_complete')}
@@ -1831,16 +1935,16 @@ function NextActivityButton({
     return (
       <div
         onClick={navigateToActivity}
-        className="bg-emerald-600 rounded-md px-4 shadow-lg flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-emerald-700"
+        className="flex w-full min-w-0 flex-col rounded-md bg-emerald-600 px-4 p-2.5 text-white shadow-lg transition delay-150 duration-300 ease-in-out hover:cursor-pointer hover:bg-emerald-700 sm:flex-1 md:max-w-xs"
       >
         <span className="text-[10px] font-bold text-emerald-100 mb-1 uppercase">
           {t('common.next')}
         </span>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-semibold truncate max-w-[200px]">
+        <div className="flex min-w-0 items-center space-x-2">
+          <span className="min-w-0 truncate text-sm font-semibold">
             {t('courses.finish_course')}
           </span>
-          <Trophy size={17} />
+          <Trophy size={17} className="shrink-0" />
         </div>
       </div>
     )
@@ -1849,16 +1953,16 @@ function NextActivityButton({
   return (
     <div
       onClick={navigateToActivity}
-      className="bg-blue-600 rounded-md px-4 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] flex flex-col p-2.5 text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-blue-700"
+      className="flex w-full min-w-0 flex-col rounded-md bg-blue-600 px-4 p-2.5 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] transition delay-150 duration-300 ease-in-out hover:cursor-pointer hover:bg-blue-700 sm:flex-1 md:max-w-xs"
     >
       <span className="text-[10px] font-bold text-white mb-1 uppercase">
         {t('common.next')}
       </span>
-      <div className="flex items-center space-x-1">
-        <span className="text-sm font-semibold truncate max-w-[200px] text-white">
+      <div className="flex min-w-0 items-center space-x-1">
+        <span className="min-w-0 truncate text-sm font-semibold text-white">
           {nextActivity.name}
         </span>
-        <ChevronRight size={17} className="text-white" />
+        <ChevronRight size={17} className="shrink-0 text-white" />
       </div>
     </div>
   )
@@ -1919,14 +2023,14 @@ function PreviousActivityButton({
   return (
     <div
       onClick={navigateToActivity}
-      className="bg-white rounded-md px-4 nice-shadow flex flex-col p-2.5 text-gray-600 hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:bg-gray-50 dark:border dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10"
+      className="nice-shadow flex w-full min-w-0 flex-col rounded-md bg-white px-4 p-2.5 text-gray-600 transition delay-150 duration-300 ease-in-out hover:cursor-pointer hover:bg-gray-50 dark:border dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 sm:flex-1 md:max-w-xs"
     >
       <span className="text-[10px] font-bold text-gray-500 mb-1 uppercase dark:text-white/40">
         {t('common.previous')}
       </span>
-      <div className="flex items-center space-x-1">
-        <ChevronLeft size={17} />
-        <span className="text-sm font-semibold truncate max-w-[200px]">
+      <div className="flex min-w-0 items-center space-x-1">
+        <ChevronLeft size={17} className="shrink-0" />
+        <span className="min-w-0 truncate text-sm font-semibold">
           {previousActivity.name}
         </span>
       </div>
@@ -2044,11 +2148,11 @@ function AssignmentTools(props: {
 
   if (!submission || submission.length === 0) {
     return (
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
         {!isComplete && totalTasks > 0 && (
-          <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 animate-pulse">
-            <Info size={14} />
-            <p className="text-[10px] font-bold uppercase tracking-tight">
+          <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:w-auto sm:px-3 sm:py-1.5">
+            <Info size={14} className="shrink-0" />
+            <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
               {t('assignments.unsaved_tasks_warning')}
             </p>
           </div>
@@ -2063,14 +2167,14 @@ function AssignmentTools(props: {
           dialogTitle={t('assignments.submit_assignment_title')}
           dialogTrigger={
             <div
-              className={`${!isComplete ? 'bg-amber-600 hover:bg-amber-700' : 'bg-cyan-800 hover:bg-cyan-900'} rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white hover:cursor-pointer transition-all duration-300 ease-in-out`}
+              className={`${!isComplete ? 'bg-amber-600 hover:bg-amber-700' : 'bg-cyan-800 hover:bg-cyan-900'} nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5`}
             >
-              <span className="text-[10px] font-bold mb-1 uppercase opacity-80">
+              <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
                 {t('common.status')}
               </span>
-              <div className="flex items-center space-x-2">
-                <BookOpenCheck size={17} />
-                <span className="text-xs font-bold">
+              <div className="flex min-w-0 items-center space-x-2">
+                <BookOpenCheck size={17} className="shrink-0" />
+                <span className="min-w-0 truncate text-xs font-bold">
                   {t('assignments.submit_for_grading')}
                 </span>
               </div>
@@ -2085,13 +2189,13 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'SUBMITTED') {
     return (
-      <div className="bg-amber-800 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white transition delay-150 duration-300 ease-in-out">
-        <span className="text-[10px] font-bold mb-1 uppercase">
+      <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-3 text-white transition delay-150 duration-300 ease-in-out sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
+        <span className="mb-1 hidden text-[10px] font-bold uppercase sm:block">
           {t('common.status')}
         </span>
-        <div className="flex items-center space-x-2">
-          <UserRoundPen size={17} />
-          <span className="text-xs font-bold">
+        <div className="flex min-w-0 items-center space-x-2">
+          <UserRoundPen size={17} className="shrink-0" />
+          <span className="min-w-0 truncate text-xs font-bold">
             {t('assignments.grading_in_progress')}
           </span>
         </div>
@@ -2101,15 +2205,15 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'GRADED') {
     return (
-      <div className="bg-teal-600 rounded-md px-4 nice-shadow flex flex-col p-2.5 text-white transition delay-150 duration-300 ease-in-out">
-        <span className="text-[10px] font-bold mb-1 uppercase">
+      <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-3 text-white transition delay-150 duration-300 ease-in-out sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
+        <span className="mb-1 hidden text-[10px] font-bold uppercase sm:block">
           {t('common.status')}
         </span>
-        <div className="flex items-center space-x-2">
-          <CheckCircle size={17} />
-          <span className="text-xs flex space-x-2 font-bold items-center">
-            <span>{t('assignments.graded')} </span>
-            <span className="bg-white text-teal-800 px-1 py-0.5 rounded-md">
+        <div className="flex min-w-0 items-center space-x-2">
+          <CheckCircle size={17} className="shrink-0" />
+          <span className="flex min-w-0 items-center space-x-2 text-xs font-bold">
+            <span className="truncate">{t('assignments.graded')} </span>
+            <span className="shrink-0 rounded-md bg-white px-1 py-0.5 text-teal-800">
               {finalGrade}
             </span>
           </span>
