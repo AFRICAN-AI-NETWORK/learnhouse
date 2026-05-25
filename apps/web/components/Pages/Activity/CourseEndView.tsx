@@ -16,8 +16,11 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUserCertificates } from '@services/courses/certifications'
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
+import CertificateExport from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificateExport'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
+import { createRoot } from 'react-dom/client'
+import QRCode from 'qrcode'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
@@ -45,6 +48,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
   const [userCertificate, setUserCertificate] = useState<any>(null)
   const [isLoadingCertificate, setIsLoadingCertificate] = useState(false)
   const [certificateError, setCertificateError] = useState<string | null>(null)
+
   const qrCodeLink = userCertificate?.certificate_user?.user_certification_uuid
     ? getUriWithOrg(
         orgslug,
@@ -132,17 +136,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
     if (!userCertificate) return
 
     let captureContainer: HTMLDivElement | null = null
+    let exportRoot: ReturnType<typeof createRoot> | null = null
 
     try {
-      // Get the existing certificate element
-      const certificateElement = document.getElementById('certificate-content')
-      if (!certificateElement) {
-        throw new Error('Certificate element not found')
-      }
-
-      // Add a small delay to ensure everything is rendered (like QR code)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
       captureContainer = document.createElement('div')
       captureContainer.style.position = 'fixed'
       captureContainer.style.left = '-10000px'
@@ -153,16 +149,86 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       captureContainer.style.overflow = 'visible'
       captureContainer.style.width = 'fit-content'
       captureContainer.style.height = 'fit-content'
-
-      const captureElement = certificateElement.cloneNode(true) as HTMLElement
-      captureElement.style.width = 'fit-content'
-      captureElement.style.height = 'fit-content'
-      captureElement.style.overflow = 'visible'
-
-      captureContainer.appendChild(captureElement)
       document.body.appendChild(captureContainer)
 
+      const certificationName =
+        userCertificate?.certification?.config?.certification_name ||
+        courseName ||
+        'Certificate'
+      const certificationDescription =
+        userCertificate?.certification?.config?.certification_description ||
+        'Certification description will appear here...'
+      const certificationType =
+        userCertificate?.certification?.config?.certification_type ||
+        'Course Completion'
+      const certificateId =
+        userCertificate?.certificate_user?.user_certification_uuid
+      const studentName =
+        `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
+        'Student Name'
+      const instructorName =
+        userCertificate?.certification?.config?.certificate_instructor ||
+        'LearnHouse Instructor'
+      const ceoName =
+        userCertificate?.certification?.config?.certificate_ceo ||
+        'LearnHouse CEO'
+      const organizationName = org?.name || 'DEFAULT ORGANIZATION'
+      const qrCodeValue = qrCodeLink || certificateId || 'LH-CERT'
+      const qrCodeUrl = await QRCode.toDataURL(qrCodeValue, {
+        width: 185,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+      })
+
+      exportRoot = createRoot(captureContainer)
+      exportRoot.render(
+        <CertificateExport
+          id={certificateId}
+          studentName={studentName}
+          certificationName={certificationName}
+          certificationDescription={certificationDescription}
+          certificationType={certificationType}
+          instructor={instructorName}
+          orgName={organizationName}
+          ceo={ceoName}
+          awardedDate={new Date(
+            userCertificate.certificate_user.created_at
+          ).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+          qrCodeUrl={qrCodeUrl}
+        />
+      )
+
       await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+
+      const captureElement = captureContainer.querySelector(
+        '#certificate-export-root'
+      ) as HTMLElement | null
+      if (!captureElement)
+        throw new Error('Certificate export element not found')
+
+      await Promise.all(
+        Array.from(captureElement.querySelectorAll('img')).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                img.onload = () => resolve()
+                img.onerror = () => resolve()
+              })
+        )
+      )
+
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
 
       const captureWidth = Math.max(
         captureElement.scrollWidth,
@@ -206,26 +272,28 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       const canvasHeight = canvas.height
       const aspectRatio = canvasWidth / canvasHeight
 
-      // Maximize the certificate on the page with 10mm margins
-      let imgWidth = pdfWidth - 20
-      let imgHeight = imgWidth / aspectRatio
+      // Convert canvas px -> mm (assume 96 DPI) and scale to fit A4 with 10mm margins
+      const pxPerMm = 96 / 25.4
+      let imgWidthMm = canvasWidth / pxPerMm
+      let imgHeightMm = canvasHeight / pxPerMm
 
-      if (imgHeight > pdfHeight - 20) {
-        imgHeight = pdfHeight - 20
-        imgWidth = imgHeight * aspectRatio
-      }
+      const maxWidth = pdfWidth - 20
+      const maxHeight = pdfHeight - 20
+
+      const widthScale = maxWidth / imgWidthMm
+      const heightScale = maxHeight / imgHeightMm
+      const scale = Math.min(1, widthScale, heightScale)
+
+      const finalImgWidth = imgWidthMm * scale
+      const finalImgHeight = imgHeightMm * scale
 
       // Center the image
-      const x = (pdfWidth - imgWidth) / 2
-      const y = (pdfHeight - imgHeight) / 2
+      const x = (pdfWidth - finalImgWidth) / 2
+      const y = (pdfHeight - finalImgHeight) / 2
 
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight)
+      pdf.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight)
 
       // Save the PDF
-      const certificationName =
-        userCertificate?.certification?.config?.certification_name ||
-        courseName ||
-        'Certificate'
       const fileName = `${certificationName.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
       pdf.save(fileName)
     } catch (error) {
@@ -238,6 +306,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         )
       )
     } finally {
+      exportRoot?.unmount()
       captureContainer?.remove()
     }
   }
