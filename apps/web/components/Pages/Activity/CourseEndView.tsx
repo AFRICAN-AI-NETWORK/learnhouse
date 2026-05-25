@@ -131,6 +131,8 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
   const downloadCertificate = async () => {
     if (!userCertificate) return
 
+    let captureContainer: HTMLDivElement | null = null
+
     try {
       // Get the existing certificate element
       const certificateElement = document.getElementById('certificate-content')
@@ -141,19 +143,60 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       // Add a small delay to ensure everything is rendered (like QR code)
       await new Promise((resolve) => setTimeout(resolve, 500))
 
+      captureContainer = document.createElement('div')
+      captureContainer.style.position = 'fixed'
+      captureContainer.style.left = '-10000px'
+      captureContainer.style.top = '0'
+      captureContainer.style.background = '#ffffff'
+      captureContainer.style.padding = '0'
+      captureContainer.style.margin = '0'
+      captureContainer.style.overflow = 'visible'
+      captureContainer.style.width = 'fit-content'
+      captureContainer.style.height = 'fit-content'
+
+      const captureElement = certificateElement.cloneNode(true) as HTMLElement
+      captureElement.style.width = 'fit-content'
+      captureElement.style.height = 'fit-content'
+      captureElement.style.overflow = 'visible'
+
+      captureContainer.appendChild(captureElement)
+      document.body.appendChild(captureContainer)
+
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+
+      const captureWidth = Math.max(
+        captureElement.scrollWidth,
+        captureElement.offsetWidth,
+        captureElement.clientWidth
+      )
+      const captureHeight = Math.max(
+        captureElement.scrollHeight,
+        captureElement.offsetHeight,
+        captureElement.clientHeight
+      )
+
       // Convert to canvas using the live element
-      const canvas = await html2canvas(certificateElement, {
-        scale: 2, // 2 is enough for high quality without crashing browsers
+      const canvas = await html2canvas(captureElement, {
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
-        foreignObjectRendering: true,
-        windowWidth: 1200, // Fixed width for consistent layout during capture
+        foreignObjectRendering: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
+        width: captureWidth,
+        height: captureHeight,
       })
 
       // Create PDF
       const imgData = canvas.toDataURL('image/png', 1.0)
-      const pdf = new jsPDF('landscape', 'mm', 'a4')
+      const pdf = new jsPDF(
+        canvas.width >= canvas.height ? 'landscape' : 'portrait',
+        'mm',
+        'a4'
+      )
 
       // Calculate dimensions to fit the certificate on A4 while maintaining aspect ratio
       const pdfWidth = pdf.internal.pageSize.getWidth()
@@ -194,6 +237,8 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
           'Failed to generate PDF. Please try again.'
         )
       )
+    } finally {
+      captureContainer?.remove()
     }
   }
 

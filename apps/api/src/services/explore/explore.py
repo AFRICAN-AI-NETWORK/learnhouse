@@ -15,7 +15,9 @@ def _get_sort_expression(salt: str):
         return Organization.name
 
     # Create a deterministic ordering using md5(salt + id)
-    return text(f"md5('{salt}' || id)")  # nosemgrep: python.sqlalchemy.security.audit.avoid-sqlalchemy-text.avoid-sqlalchemy-text
+    return text(
+        f"md5('{salt}' || id)"
+    )  # nosemgrep: python.sqlalchemy.security.audit.avoid-sqlalchemy-text.avoid-sqlalchemy-text
 
 
 async def get_orgs_for_explore(

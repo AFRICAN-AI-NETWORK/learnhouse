@@ -19,4 +19,3 @@ class DetailedHealthResponse(BaseModel):
 @router.get("", response_model=DetailedHealthResponse)
 async def health(db_session: Session = Depends(get_db_session)):
     return await check_health(db_session)
-
