@@ -18,6 +18,7 @@ import { getUserCertificates } from '@services/courses/certifications'
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
+import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
 interface CourseEndViewProps {
@@ -146,6 +147,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
+        foreignObjectRendering: true,
         windowWidth: 1200, // Fixed width for consistent layout during capture
       })
 
@@ -177,12 +179,21 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight)
 
       // Save the PDF
-      const fileName = `${userCertificate.certification.config.certification_name.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
+      const certificationName =
+        userCertificate?.certification?.config?.certification_name ||
+        courseName ||
+        'Certificate'
+      const fileName = `${certificationName.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
       pdf.save(fileName)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error(
+        t(
+          'certificate.failed_generate_pdf',
+          'Failed to generate PDF. Please try again.'
+        )
+      )
     }
   }
 

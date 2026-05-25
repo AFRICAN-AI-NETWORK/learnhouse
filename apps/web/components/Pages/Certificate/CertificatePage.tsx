@@ -79,6 +79,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
+        foreignObjectRendering: true,
         windowWidth: 1200, // Fixed width for consistent layout during capture
       })
 
