@@ -276,8 +276,8 @@ function LandingClassic({
         <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
           <InfoPanel
             title="Upcoming Deadlines"
-            action="View Calender"
-            actionHref={getUriWithOrg(orgslug, '/trail')}
+            action="View Calendar"
+            actionHref={getUriWithOrg(orgslug, '/calendar')}
           >
             {continueCourse ? (
               <PanelRow
