@@ -31,6 +31,12 @@ export type CourseTimetableEvent = {
   update_date?: string
 }
 
+export type StudentTimetableEvent = CourseTimetableEvent & {
+  course_id: number
+  course_name: string
+  course_description?: string | null
+}
+
 export type CourseTimetableEventInput = Omit<
   CourseTimetableEvent,
   'id' | 'event_uuid' | 'course_uuid' | 'creation_date' | 'update_date'
@@ -86,6 +92,17 @@ export async function getCourseTimetable(
 ): Promise<CourseTimetableEvent[]> {
   const result = await fetch(
     `${api()}courses/${course_uuid}/timetable`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
+
+export async function getMyTimetable(
+  org_id: string | number,
+  access_token?: string
+): Promise<StudentTimetableEvent[]> {
+  const result = await fetch(
+    `${api()}courses/timetable/me?org_id=${org_id}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   return await errorHandling(result)
