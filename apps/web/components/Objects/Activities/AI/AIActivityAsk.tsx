@@ -32,7 +32,7 @@ function AIActivityAsk(props: AIActivityAskProps) {
   return (
     <>
       {isButtonAvailable && (
-        <div>
+        <div className="w-full min-w-0 sm:w-auto">
           <ActivityChatMessageBox activity={props.activity} />
           <div
             onClick={() => dispatchAIChatBot({ type: 'setIsModalOpen' })}
@@ -40,7 +40,7 @@ function AIActivityAsk(props: AIActivityAskProps) {
               background:
                 'conic-gradient(from 32deg at 53.75% 50%, rgb(35, 40, 93) 4deg, rgba(20, 0, 52, 0.95) 59deg, rgba(164, 45, 238, 0.88) 281deg)',
             }}
-            className="rounded-full px-5 drop-shadow-md flex  items-center space-x-1.5 p-2.5 text-sm text-white hover:cursor-pointer transition delay-150 duration-300 ease-in-out hover:scale-105"
+            className="flex h-9 w-full min-w-0 items-center justify-center space-x-1.5 rounded-full px-3 text-sm text-white drop-shadow-md transition delay-150 duration-300 ease-in-out hover:scale-105 hover:cursor-pointer sm:h-auto sm:w-auto sm:px-5 sm:p-2.5"
           >
             {' '}
             <i>
@@ -51,7 +51,9 @@ function AIActivityAsk(props: AIActivityAskProps) {
                 alt=""
               />
             </i>{' '}
-            <i className="not-italic text-xs font-bold">{t('ai.ask_ai')}</i>
+            <i className="min-w-0 truncate text-[11px] font-bold not-italic sm:text-xs">
+              {t('ai.ask_ai')}
+            </i>
           </div>
         </div>
       )}
@@ -200,7 +202,7 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
               mass: 0.2,
               velocity: 2,
             }}
-            className="fixed left-0 top-[73px] z-20 flex h-[calc(100dvh-73px)] w-full justify-center overflow-y-auto"
+            className="fixed left-0 top-[73px] z-20 flex h-[calc(100dvh-73px)] w-full justify-center overflow-y-auto px-3 sm:px-0"
             style={{ pointerEvents: 'none' }}
           >
             <div
@@ -209,9 +211,9 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
                 background:
                   'linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%), radial-gradient(105.16% 105.16% at 50% -5.16%, rgba(255, 255, 255, 0.18) 0%, rgba(0, 0, 0, 0) 100%), rgb(2 1 25 / 98%)',
               }}
-              className="fixed left-1/2 top-[89px] z-20 h-[350px] max-h-[calc(100dvh-105px)] w-10/12 max-w-(--breakpoint-2xl) -translate-x-1/2 transform rounded-2xl bg-black p-4 text-white shadow-lg ring-1 ring-inset ring-white/10 backdrop-blur-md"
+              className="fixed left-1/2 top-[89px] z-20 h-[min(520px,calc(100dvh-105px))] max-h-[calc(100dvh-105px)] w-[calc(100vw-1.5rem)] max-w-(--breakpoint-2xl) -translate-x-1/2 transform rounded-2xl bg-black p-4 text-white shadow-lg ring-1 ring-inset ring-white/10 backdrop-blur-md sm:w-10/12"
             >
-              <div className="flex flex-row-reverse pb-3 justify-between items-center">
+              <div className="flex flex-row-reverse items-center justify-between gap-2 pb-3">
                 <div className="flex space-x-2 items-center">
                   <X
                     size={20}
@@ -220,7 +222,7 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
                   />
                 </div>
                 <div
-                  className={`flex space-x-2 items-center -ml-[100px] ${
+                  className={`flex min-w-0 items-center space-x-2 ${
                     aiChatBotState.isWaitingForResponse ? 'animate-pulse' : ''
                   }`}
                 >
@@ -237,9 +239,9 @@ function ActivityChatMessageBox(props: ActivityChatMessageBoxProps) {
                     AI
                   </span>
                 </div>
-                <div className="bg-white/5 text-white/40 py-0.5 px-3 flex space-x-1 rounded-full items-center">
+                <div className="flex min-w-0 items-center space-x-1 rounded-full bg-white/5 px-3 py-0.5 text-white/40">
                   <FlaskConical size={14} />
-                  <span className="text-xs font-semibold antialiased ">
+                  <span className="truncate text-xs font-semibold antialiased">
                     {t('ai.experimental')}
                   </span>
                 </div>
