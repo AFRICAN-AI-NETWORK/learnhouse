@@ -13,8 +13,11 @@ interface CertificatePreviewProps {
   certificateId?: string
   awardedDate?: string
   qrCodeLink?: string
+  qrCodeUrl?: string
   studentName?: string
   certificateCeo?: string
+  orgName?: string
+  orgLogoUrl?: string
 }
 
 const CertificatePreview: React.FC<CertificatePreviewProps> = ({
@@ -26,14 +29,21 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   certificateId,
   awardedDate,
   qrCodeLink,
+  qrCodeUrl: providedQrCodeUrl,
   studentName,
   certificateCeo,
+  orgName,
+  orgLogoUrl,
 }) => {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  const [generatedQrCodeUrl, setGeneratedQrCodeUrl] = useState<string>('')
   const org = useOrg() as any
 
   // Generate QR code
   useEffect(() => {
+    if (providedQrCodeUrl) {
+      return
+    }
+
     const generateQRCode = async () => {
       try {
         const certificateData =
@@ -48,7 +58,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           errorCorrectionLevel: 'M',
           type: 'image/png',
         })
-        setQrCodeUrl(qrUrl)
+        setGeneratedQrCodeUrl(qrUrl)
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Error generating QR code:', error)
@@ -56,7 +66,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
     }
 
     generateQRCode()
-  }, [certificateId, qrCodeLink])
+  }, [certificateId, providedQrCodeUrl, qrCodeLink])
   // Function to get theme colors for each pattern
   const getPatternTheme = (pattern: string) => {
     switch (pattern) {
@@ -591,6 +601,33 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   }
 
   const theme = getPatternTheme(certificatePattern)
+  const displayOrgLogoUrl =
+    orgLogoUrl ||
+    (org?.logo_image
+      ? getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)
+      : '')
+  const displayOrgName = orgName || org?.name || 'LearnHouse'
+  const qrCodeUrl = providedQrCodeUrl || generatedQrCodeUrl
+  const certificationTypeLabel =
+    certificationType === 'completion'
+      ? 'Course Completion'
+      : certificationType === 'achievement'
+        ? 'Achievement Based'
+        : certificationType === 'assessment'
+          ? 'Assessment Based'
+          : certificationType === 'participation'
+            ? 'Participation'
+            : certificationType === 'mastery'
+              ? 'Skill Mastery'
+              : certificationType === 'professional'
+                ? 'Professional Development'
+                : certificationType === 'continuing'
+                  ? 'Continuing Education'
+                  : certificationType === 'workshop'
+                    ? 'Workshop Attendance'
+                    : certificationType === 'specialization'
+                      ? 'Specialization'
+                      : 'Course Completion'
 
   return (
     <div
@@ -738,34 +775,52 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
           {/* Certification Type Badge */}
           <div
-            className={`inline-flex items-center space-x-1 text-xs sm:text-sm px-3 py-1 rounded-full border`}
+            className={`text-xs sm:text-sm px-3 py-1 rounded-full border`}
             style={{
+              position: 'relative',
+              display: 'inline-block',
               backgroundColor: theme.hex?.bg,
               color: theme.hex?.primary,
               borderColor: theme.hex?.border,
+              lineHeight: 1,
+              minHeight: 24,
+              paddingLeft: 27,
+              paddingRight: 12,
+              paddingTop: 6,
+              paddingBottom: 6,
             }}
           >
-            <CheckCircle size={12} />
-            <span className="font-medium">
-              {certificationType === 'completion'
-                ? 'Course Completion'
-                : certificationType === 'achievement'
-                  ? 'Achievement Based'
-                  : certificationType === 'assessment'
-                    ? 'Assessment Based'
-                    : certificationType === 'participation'
-                      ? 'Participation'
-                      : certificationType === 'mastery'
-                        ? 'Skill Mastery'
-                        : certificationType === 'professional'
-                          ? 'Professional Development'
-                          : certificationType === 'continuing'
-                            ? 'Continuing Education'
-                            : certificationType === 'workshop'
-                              ? 'Workshop Attendance'
-                              : certificationType === 'specialization'
-                                ? 'Specialization'
-                                : 'Course Completion'}
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                width: 12,
+                height: 12,
+                lineHeight: 0,
+                transform: 'translateY(-50%)',
+              }}
+            >
+              <CheckCircle
+                size={12}
+                style={{
+                  display: 'block',
+                  width: 12,
+                  height: 12,
+                  verticalAlign: 'top',
+                }}
+              />
+            </span>
+            <span
+              className="font-medium"
+              style={{
+                display: 'block',
+                lineHeight: '12px',
+                paddingTop: 0,
+              }}
+            >
+              {certificationTypeLabel}
             </span>
           </div>
         </div>
@@ -804,11 +859,18 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div
                 className={`w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center`}
               >
-                {org?.logo_image ? (
+                {displayOrgLogoUrl ? (
                   <img
-                    src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
+                    src={displayOrgLogoUrl}
                     alt="Organization Logo"
-                    className="w-full h-full object-contain"
+                    style={{
+                      display: 'block',
+                      width: 'auto',
+                      height: 'auto',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      objectFit: 'contain',
+                    }}
                   />
                 ) : (
                   <div
@@ -826,7 +888,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 className={`text-[10px] sm:text-xs font-bold uppercase`}
                 style={{ color: theme.hex?.secondary }}
               >
-                {org?.name || 'LearnHouse'}
+                {displayOrgName}
               </div>
             </div>
 
