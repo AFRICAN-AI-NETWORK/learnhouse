@@ -109,6 +109,7 @@
     "invalid_email": "अमान्य ईमेल पता",
     "password_min_length": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
     "username_min_length": "उपयोगकर्ता नाम कम से कम 4 अक्षरों का होना चाहिए",
+    "invalid_phone_with_country_code": "अमान्य फ़ोन नंबर। कृपया देश कोड शामिल करें (जैसे +254)",
     "title_required": "शीर्षक आवश्यक है",
     "content_required": "सामग्री आवश्यक है"
   },

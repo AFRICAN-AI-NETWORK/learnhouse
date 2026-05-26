@@ -7,6 +7,7 @@ import FormLayout, {
   FormLabelAndMessage,
   Input,
 } from '@components/Objects/StyledElements/Form/Form'
+import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -25,23 +26,22 @@ import {
 import { signup } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
-
-// Helper to format phone number to E.164
-function formatE164(phone: string) {
-  let cleaned = phone.replace(/[^\d+]/g, '')
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned
-  }
-  return cleaned
-}
+import {
+  DEFAULT_COUNTRY_CODE,
+  formatE164,
+  validatePhoneFields,
+} from '@/lib/phone-number'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
-  if (!values.phone_number) {
-    errors.phone_number = t('validation.required')
-  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
+  const phoneErrors = validatePhoneFields(values)
+  if (phoneErrors.country_code) {
+    errors.country_code = phoneErrors.country_code
+  }
+  if (phoneErrors.phone_number) {
     errors.phone_number =
-      'Invalid phone. Please include country code (e.g. +234)'
+      t('validation.invalid_phone_with_country_code') ||
+      phoneErrors.phone_number
   }
   if (!values.email) {
     errors.email = t('validation.required')
@@ -86,6 +86,7 @@ function PartnerSignUpComponent() {
       password: '',
       username: '',
       bio: 'African AI Partner',
+      country_code: DEFAULT_COUNTRY_CODE,
       phone_number: '',
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
@@ -99,8 +100,16 @@ function PartnerSignUpComponent() {
       setIsSubmitting(true)
 
       const payload: any = {
-        ...values,
-        phone_number: formatE164(values.phone_number),
+        org_slug: values.org_slug,
+        org_id: values.org_id,
+        email: values.email,
+        password: values.password,
+        username: values.username,
+        bio: values.bio,
+        phone_number: formatE164(values.country_code, values.phone_number),
+        first_name: values.first_name,
+        last_name: values.last_name,
+        signup_type: values.signup_type,
       }
 
       const res = await signup(payload)
@@ -306,18 +315,7 @@ function PartnerSignUpComponent() {
               </div>
             </FormField>
 
-            <FormField name="phone_number">
-              <FormLabelAndMessage label="Phone Number" />
-              <Form.Control asChild>
-                <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.phone_number}
-                  type="tel"
-                  placeholder="e.g. +234..."
-                  required
-                />
-              </Form.Control>
-            </FormField>
+            <PhoneNumberFields formik={formik} phoneNumberLabel="Phone number" />
 
             <div className="flex gap-3 pt-4">
               <button
