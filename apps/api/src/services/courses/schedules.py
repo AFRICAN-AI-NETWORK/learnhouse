@@ -312,9 +312,7 @@ async def mark_register(
         return CourseRegisterEntryRead(**existing.model_dump())
 
     entry_status = (
-        RegisterEntryStatusEnum.late
-        if now > closes_at
-        else RegisterEntryStatusEnum.marked
+        RegisterEntryStatusEnum.late if now > closes_at else RegisterEntryStatusEnum.marked
     )
     now_string = _datetime_to_api_string(now)
     entry = CourseRegisterEntry(
@@ -542,8 +540,12 @@ def _resolve_current_period(
     if policy.frequency == RegisterFrequencyEnum.per_session and event:
         event_start = _parse_datetime(event.starts_at)
         event_end = _parse_datetime(event.ends_at)
-        opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
-        closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
+        opens_at = event_start - timedelta(
+            minutes=policy.checkin_opens_minutes_before
+        )
+        closes_at = event_end + timedelta(
+            minutes=policy.checkin_closes_minutes_after
+        )
         return _period_from_bounds(event_start, event_end, opens_at, closes_at, now)
 
     if policy.frequency in [
@@ -556,8 +558,12 @@ def _resolve_current_period(
     if event and policy.linked_timetable_event_uuid:
         event_start = _parse_datetime(event.starts_at)
         event_end = _parse_datetime(event.ends_at)
-        opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
-        closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
+        opens_at = event_start - timedelta(
+            minutes=policy.checkin_opens_minutes_before
+        )
+        closes_at = event_end + timedelta(
+            minutes=policy.checkin_closes_minutes_after
+        )
     else:
         opens_at = now
         closes_at = None
@@ -607,7 +613,8 @@ def _resolve_current_timetable_event(
 
     now = _utcnow()
     events = db_session.exec(
-        statement.where(CourseTimetableEvent.register_required == True)  # noqa: E712
+        statement
+        .where(CourseTimetableEvent.register_required == True)  # noqa: E712
         .where(CourseTimetableEvent.visibility == TimetableVisibilityEnum.published)
         .order_by(col(CourseTimetableEvent.starts_at).asc())
     ).all()
@@ -615,8 +622,12 @@ def _resolve_current_timetable_event(
     for event in events:
         event_start = _parse_datetime(event.starts_at)
         event_end = _parse_datetime(event.ends_at)
-        opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
-        closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
+        opens_at = event_start - timedelta(
+            minutes=policy.checkin_opens_minutes_before
+        )
+        closes_at = event_end + timedelta(
+            minutes=policy.checkin_closes_minutes_after
+        )
         if opens_at <= now <= closes_at:
             return event
 
