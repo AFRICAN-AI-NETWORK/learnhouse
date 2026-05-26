@@ -118,15 +118,18 @@ const OrgScripts: React.FC = () => {
               }
               scriptElement.onerror = (error) => {
                 // eslint-disable-next-line no-console
-                console.error(
-                  `Failed to load external script "${scriptName}":`,
-                  error
-                )
+                console.error('Failed to load external script', {
+                  scriptName,
+                  error,
+                })
                 cleanupExistingScript(safeScriptId)
               }
             } catch (error) {
               // eslint-disable-next-line no-console
-              console.error(`Invalid script URL in "${scriptName}":`, error)
+              console.error('Invalid script URL in script', {
+                scriptName,
+                error,
+              })
               return
             }
           } else {
@@ -192,7 +195,7 @@ const OrgScripts: React.FC = () => {
         }
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error(`Failed to load script ${scriptName}:`, error)
+        console.error('Failed to load script', { scriptName, error })
       }
     },
     [org, isScriptLoaded, cleanupExistingScript, sanitizeScriptContent]

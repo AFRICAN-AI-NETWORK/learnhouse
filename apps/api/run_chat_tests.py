@@ -23,7 +23,7 @@ def run_command(cmd, description):
     print(f"  {description}")
     print(f"{'=' * 60}\n")
 
-    result = subprocess.run(cmd, shell=True)
+    result = subprocess.run(cmd)
 
     if result.returncode != 0:
         print(f"\n❌ {description} FAILED")
@@ -103,8 +103,7 @@ def main():
     cmd_parts.append("--color=yes")
 
     # Run tests
-    cmd = " ".join(cmd_parts)
-    success = run_command(cmd, "Chat System Tests")
+    success = run_command(cmd_parts, "Chat System Tests")
 
     if args.coverage and success:
         print("\n" + "=" * 60)

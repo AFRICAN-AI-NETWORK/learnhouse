@@ -6,24 +6,41 @@ type FeatureType = {
   defaultValue?: boolean
 }
 
+function getNestedValue(source: unknown, path: string[], index = 0): unknown {
+  if (index >= path.length) {
+    return source
+  }
+
+  if (!source || typeof source !== 'object') {
+    return undefined
+  }
+
+  const key = path[index]
+
+  if (key === '__proto__' || key === 'prototype' || key === 'constructor') {
+    return undefined
+  }
+
+  const descriptor = Object.getOwnPropertyDescriptor(source, key)
+  if (!descriptor) {
+    return undefined
+  }
+
+  return getNestedValue(descriptor.value, path, index + 1)
+}
+
 function useFeatureFlag(feature: FeatureType) {
   const org = useOrg() as any
 
   const isEnabled = useMemo(() => {
     if (org?.config?.config) {
-      let currentValue = org.config.config
+      const currentValue = getNestedValue(org.config.config, feature.path)
 
-      // Traverse the path to get the feature flag value
-      for (const key of feature.path) {
-        if (currentValue && typeof currentValue === 'object') {
-          currentValue = currentValue[key]
-        } else {
-          currentValue = feature.defaultValue || false
-          break
-        }
+      if (currentValue !== undefined) {
+        return !!currentValue
       }
 
-      return !!currentValue
+      return !!(feature.defaultValue ?? false)
     }
 
     return !!feature.defaultValue
