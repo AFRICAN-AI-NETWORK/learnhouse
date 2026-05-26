@@ -10,7 +10,10 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
-import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import {
+  getCourseThumbnailMediaDirectory,
+  getOrgLogoMediaDirectory,
+} from '@services/media/media'
 import { useWindowSize } from 'usehooks-ts'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -23,6 +26,7 @@ import { createRoot } from 'react-dom/client'
 import QRCode from 'qrcode'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import copyExportSafeStyles from '@/utils/certificateExport'
 
 interface CourseEndViewProps {
   courseName: string
@@ -173,6 +177,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         userCertificate?.certification?.config?.certificate_ceo ||
         'LearnHouse CEO'
       const organizationName = org?.name || 'DEFAULT ORGANIZATION'
+      const organizationLogoUrl = org?.logo_image
+        ? getOrgLogoMediaDirectory(org.org_uuid, org.logo_image)
+        : undefined
       const qrCodeValue = qrCodeLink || certificateId || 'LH-CERT'
       const qrCodeUrl = await QRCode.toDataURL(qrCodeValue, {
         width: 185,
@@ -193,8 +200,12 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
           certificationName={certificationName}
           certificationDescription={certificationDescription}
           certificationType={certificationType}
+          certificatePattern={
+            userCertificate?.certification?.config?.certificate_pattern
+          }
           instructor={instructorName}
           orgName={organizationName}
+          orgLogoUrl={organizationLogoUrl}
           ceo={ceoName}
           awardedDate={new Date(
             userCertificate.certificate_user.created_at
@@ -230,19 +241,36 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         await document.fonts.ready
       }
 
-      const captureWidth = Math.max(
-        captureElement.scrollWidth,
-        captureElement.offsetWidth,
-        captureElement.clientWidth
-      )
-      const captureHeight = Math.max(
-        captureElement.scrollHeight,
-        captureElement.offsetHeight,
-        captureElement.clientHeight
+      const exportSafeElement = captureElement.cloneNode(true) as HTMLElement
+      exportSafeElement.id = 'certificate-export-root-export-safe'
+      copyExportSafeStyles(captureElement, exportSafeElement)
+      captureContainer.appendChild(exportSafeElement)
+      captureElement.style.display = 'none'
+
+      await Promise.all(
+        Array.from(exportSafeElement.querySelectorAll('img')).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                img.onload = () => resolve()
+                img.onerror = () => resolve()
+              })
+        )
       )
 
-      // Convert to canvas using the live element
-      const canvas = await html2canvas(captureElement, {
+      const captureWidth = Math.max(
+        exportSafeElement.scrollWidth,
+        exportSafeElement.offsetWidth,
+        exportSafeElement.clientWidth
+      )
+      const captureHeight = Math.max(
+        exportSafeElement.scrollHeight,
+        exportSafeElement.offsetHeight,
+        exportSafeElement.clientHeight
+      )
+
+      // Convert to canvas using an export-safe clone of the live element.
+      const canvas = await html2canvas(exportSafeElement, {
         scale: 2,
         useCORS: true,
         allowTaint: false,
