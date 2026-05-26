@@ -8,6 +8,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
+import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -35,8 +36,6 @@ import toast from 'react-hot-toast'
 import {
   DEFAULT_COUNTRY_CODE,
   formatE164,
-  normalizeCountryCode,
-  normalizeLocalPhoneNumber,
   validatePhoneFields,
 } from '@/lib/phone-number'
 
@@ -615,58 +614,10 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               )}
             </FormField>
 
-            <div>
-              <div className="grid grid-cols-[112px_1fr] gap-3">
-                <FormField name="country_code">
-                  <FormLabelAndMessage label="Country code" />
-                  <Form.Control asChild>
-                    <Input
-                      className={`h-12 text-center focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.country_code && formik.touched.country_code ? 'border-red-400' : ''}`}
-                      onChange={(e) =>
-                        formik.setFieldValue(
-                          'country_code',
-                          normalizeCountryCode(e.target.value)
-                        )
-                      }
-                      onBlur={formik.handleBlur}
-                      value={formik.values.country_code}
-                      placeholder="+254"
-                      type="tel"
-                      inputMode="tel"
-                      required
-                    />
-                  </Form.Control>
-                </FormField>
-                <FormField name="phone_number">
-                  <FormLabelAndMessage
-                    label={t('user.phone_number') || 'Phone number'}
-                  />
-                  <Form.Control asChild>
-                    <Input
-                      className={`h-12 focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.phone_number && formik.touched.phone_number ? 'border-red-400' : formik.values.phone_number && !formik.errors.phone_number ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
-                      onChange={(e) =>
-                        formik.setFieldValue(
-                          'phone_number',
-                          normalizeLocalPhoneNumber(e.target.value)
-                        )
-                      }
-                      onBlur={formik.handleBlur}
-                      value={formik.values.phone_number}
-                      placeholder="712345678"
-                      type="tel"
-                      inputMode="numeric"
-                      required
-                    />
-                  </Form.Control>
-                </FormField>
-              </div>
-              {(formik.errors.country_code || formik.errors.phone_number) &&
-                (formik.touched.country_code || formik.touched.phone_number) && (
-                  <p className="mt-1 text-xs text-red-600 font-medium">
-                    {formik.errors.country_code || formik.errors.phone_number}
-                  </p>
-                )}
-            </div>
+            <PhoneNumberFields
+              formik={formik}
+              phoneNumberLabel={t('user.phone_number') || 'Phone number'}
+            />
 
             <FormField name="bio">
               <FormLabelAndMessage label={t('user.bio')} />
