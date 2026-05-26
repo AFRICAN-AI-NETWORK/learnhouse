@@ -11,11 +11,14 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
+<<<<<<< HEAD
 import { createRoot } from 'react-dom/client'
 import QRCode from 'qrcode'
 import toast from 'react-hot-toast'
 import CertificateExport from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificateExport'
 import copyExportSafeStyles from '@/utils/certificateExport'
+=======
+>>>>>>> 5d422d74dd70e841b0ccaf138061055f056eb696
 
 interface CertificatePageProps {
   orgslug: string
@@ -34,6 +37,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Fetch user certificate
   useEffect(() => {
     const fetchCertificate = async () => {
       if (!session?.data?.tokens?.access_token) {
@@ -66,13 +70,12 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
     fetchCertificate()
   }, [courseid, session?.data?.tokens?.access_token])
 
+  // Generate PDF using canvas
   const downloadCertificate = async () => {
     if (!userCertificate) return
 
-    let captureContainer: HTMLDivElement | null = null
-    let exportRoot: ReturnType<typeof createRoot> | null = null
-
     try {
+<<<<<<< HEAD
       captureContainer = document.createElement('div')
       captureContainer.style.position = 'fixed'
       captureContainer.style.left = '-10000px'
@@ -155,19 +158,18 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
 
       if (!captureElement) {
         throw new Error('Certificate export element not found')
+=======
+      // Get the existing certificate element
+      const certificateElement = document.getElementById('certificate-content')
+      if (!certificateElement) {
+        throw new Error('Certificate element not found')
+>>>>>>> 5d422d74dd70e841b0ccaf138061055f056eb696
       }
 
-      await Promise.all(
-        Array.from(captureElement.querySelectorAll('img')).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise<void>((resolve) => {
-                img.onload = () => resolve()
-                img.onerror = () => resolve()
-              })
-        )
-      )
+      // Add a small delay to ensure everything is rendered (like QR code)
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
+<<<<<<< HEAD
       if (document.fonts?.ready) {
         await document.fonts.ready
       }
@@ -202,59 +204,52 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
 
       const canvas = await html2canvas(exportSafeElement, {
         scale: 2,
+=======
+      // Convert to canvas using the live element
+      const canvas = await html2canvas(certificateElement, {
+        scale: 2, // 2 is enough for high quality without crashing browsers
+>>>>>>> 5d422d74dd70e841b0ccaf138061055f056eb696
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
-        foreignObjectRendering: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: captureWidth,
-        windowHeight: captureHeight,
-        width: captureWidth,
-        height: captureHeight,
+        foreignObjectRendering: true,
+        windowWidth: 1200, // Fixed width for consistent layout during capture
       })
 
+      // Create PDF
       const imgData = canvas.toDataURL('image/png', 1.0)
-      const pdf = new jsPDF(
-        canvas.width >= canvas.height ? 'landscape' : 'portrait',
-        'mm',
-        'a4'
-      )
+      const pdf = new jsPDF('landscape', 'mm', 'a4')
 
+      // Calculate dimensions to fit the certificate on A4 while maintaining aspect ratio
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
       const canvasWidth = canvas.width
       const canvasHeight = canvas.height
+      const aspectRatio = canvasWidth / canvasHeight
 
-      const pxPerMm = 96 / 25.4
-      const imgWidthMm = canvasWidth / pxPerMm
-      const imgHeightMm = canvasHeight / pxPerMm
+      // Maximize the certificate on the page with 10mm margins
+      let imgWidth = pdfWidth - 20
+      let imgHeight = imgWidth / aspectRatio
 
-      const maxWidth = pdfWidth - 20
-      const maxHeight = pdfHeight - 20
+      if (imgHeight > pdfHeight - 20) {
+        imgHeight = pdfHeight - 20
+        imgWidth = imgHeight * aspectRatio
+      }
 
-      const widthScale = maxWidth / imgWidthMm
-      const heightScale = maxHeight / imgHeightMm
-      const scale = Math.min(1, widthScale, heightScale)
+      // Center the image
+      const x = (pdfWidth - imgWidth) / 2
+      const y = (pdfHeight - imgHeight) / 2
 
-      const finalImgWidth = imgWidthMm * scale
-      const finalImgHeight = imgHeightMm * scale
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight)
 
-      const x = (pdfWidth - finalImgWidth) / 2
-      const y = (pdfHeight - finalImgHeight) / 2
-
-      pdf.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight)
-
-      const fileName = `${certificationName.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
+      // Save the PDF
+      const fileName = `${userCertificate.certification.config.certification_name.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
       pdf.save(fileName)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error generating PDF:', error)
-      toast.error('Failed to generate PDF. Please try again.')
-    } finally {
-      exportRoot?.unmount()
-      captureContainer?.remove()
+      alert('Failed to generate PDF. Please try again.')
     }
   }
 

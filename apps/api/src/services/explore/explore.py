@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
-from sqlalchemy import text
+from sqlalchemy import String, cast, func, literal
 
 from src.db.courses.courses import Course, CourseRead, AuthorWithRole
 from src.db.organizations import Organization, OrganizationRead
@@ -15,9 +15,7 @@ def _get_sort_expression(salt: str):
         return Organization.name
 
     # Create a deterministic ordering using md5(salt + id)
-    return text(
-        f"md5('{salt}' || id)"
-    )  # nosemgrep: python.sqlalchemy.security.audit.avoid-sqlalchemy-text.avoid-sqlalchemy-text
+    return func.md5(literal(salt) + cast(Organization.id, String))
 
 
 async def get_orgs_for_explore(

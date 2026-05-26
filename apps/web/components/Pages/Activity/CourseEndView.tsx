@@ -19,12 +19,8 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUserCertificates } from '@services/courses/certifications'
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
-import CertificateExport from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificateExport'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import { createRoot } from 'react-dom/client'
-import QRCode from 'qrcode'
-import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import copyExportSafeStyles from '@/utils/certificateExport'
 
@@ -52,7 +48,6 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
   const [userCertificate, setUserCertificate] = useState<any>(null)
   const [isLoadingCertificate, setIsLoadingCertificate] = useState(false)
   const [certificateError, setCertificateError] = useState<string | null>(null)
-
   const qrCodeLink = userCertificate?.certificate_user?.user_certification_uuid
     ? getUriWithOrg(
         orgslug,
@@ -275,22 +270,13 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
-        foreignObjectRendering: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: captureWidth,
-        windowHeight: captureHeight,
-        width: captureWidth,
-        height: captureHeight,
+        foreignObjectRendering: true,
+        windowWidth: 1200, // Fixed width for consistent layout during capture
       })
 
       // Create PDF
       const imgData = canvas.toDataURL('image/png', 1.0)
-      const pdf = new jsPDF(
-        canvas.width >= canvas.height ? 'landscape' : 'portrait',
-        'mm',
-        'a4'
-      )
+      const pdf = new jsPDF('landscape', 'mm', 'a4')
 
       // Calculate dimensions to fit the certificate on A4 while maintaining aspect ratio
       const pdfWidth = pdf.internal.pageSize.getWidth()
@@ -300,42 +286,28 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       const canvasHeight = canvas.height
       const aspectRatio = canvasWidth / canvasHeight
 
-      // Convert canvas px -> mm (assume 96 DPI) and scale to fit A4 with 10mm margins
-      const pxPerMm = 96 / 25.4
-      let imgWidthMm = canvasWidth / pxPerMm
-      let imgHeightMm = canvasHeight / pxPerMm
+      // Maximize the certificate on the page with 10mm margins
+      let imgWidth = pdfWidth - 20
+      let imgHeight = imgWidth / aspectRatio
 
-      const maxWidth = pdfWidth - 20
-      const maxHeight = pdfHeight - 20
-
-      const widthScale = maxWidth / imgWidthMm
-      const heightScale = maxHeight / imgHeightMm
-      const scale = Math.min(1, widthScale, heightScale)
-
-      const finalImgWidth = imgWidthMm * scale
-      const finalImgHeight = imgHeightMm * scale
+      if (imgHeight > pdfHeight - 20) {
+        imgHeight = pdfHeight - 20
+        imgWidth = imgHeight * aspectRatio
+      }
 
       // Center the image
-      const x = (pdfWidth - finalImgWidth) / 2
-      const y = (pdfHeight - finalImgHeight) / 2
+      const x = (pdfWidth - imgWidth) / 2
+      const y = (pdfHeight - imgHeight) / 2
 
-      pdf.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight)
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight)
 
       // Save the PDF
-      const fileName = `${certificationName.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
+      const fileName = `${userCertificate.certification.config.certification_name.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
       pdf.save(fileName)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error generating PDF:', error)
-      toast.error(
-        t(
-          'certificate.failed_generate_pdf',
-          'Failed to generate PDF. Please try again.'
-        )
-      )
-    } finally {
-      exportRoot?.unmount()
-      captureContainer?.remove()
+      alert('Failed to generate PDF. Please try again.')
     }
   }
 
