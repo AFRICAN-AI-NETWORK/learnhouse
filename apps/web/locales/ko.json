@@ -109,6 +109,7 @@
     "invalid_email": "유효하지 않은 이메일 주소입니다",
     "password_min_length": "비밀번호는 최소 8자 이상이어야 합니다",
     "username_min_length": "사용자 이름은 최소 4자 이상이어야 합니다",
+    "invalid_phone_with_country_code": "잘못된 전화번호입니다. 국가 코드를 포함하세요(예: +254)",
     "title_required": "제목은 필수입니다",
     "content_required": "내용은 필수입니다"
   },

@@ -109,6 +109,7 @@
     "invalid_email": "অবৈধ ইমেল",
     "password_min_length": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে",
     "username_min_length": "ব্যবহারকারীর নাম কমপক্ষে ৪ অক্ষরের হতে হবে",
+    "invalid_phone_with_country_code": "অবৈধ ফোন নম্বর। দেশের কোড অন্তর্ভুক্ত করুন (যেমন +254)",
     "title_required": "শিরোনাম প্রয়োজন",
     "content_required": "বিষয়বস্তু প্রয়োজন"
   },

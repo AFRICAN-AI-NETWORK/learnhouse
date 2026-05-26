@@ -29,24 +29,24 @@ import Link from 'next/link'
 import { signup } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
-
-// Helper to format phone number to E.164 (basic, assumes user enters digits only or with +)
-function formatE164(phone: string) {
-  let cleaned = phone.replace(/[^\d+]/g, '')
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned
-  }
-  return cleaned
-}
+import {
+  DEFAULT_COUNTRY_CODE,
+  formatE164,
+  normalizeCountryCode,
+  normalizeLocalPhoneNumber,
+  validatePhoneFields,
+} from '@/lib/phone-number'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
-  if (!values.phone_number) {
-    errors.phone_number = t('validation.required')
-  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
+  const phoneErrors = validatePhoneFields(values)
+  if (phoneErrors.country_code) {
+    errors.country_code = phoneErrors.country_code
+  }
+  if (phoneErrors.phone_number) {
     errors.phone_number =
       t('validation.invalid_phone_with_country_code') ||
-      'Invalid phone. Please include country code (e.g. +234)'
+      phoneErrors.phone_number
   }
   if (!values.email) {
     errors.email = t('validation.required')
@@ -134,6 +134,7 @@ function OpenSignUpComponent() {
       confirmPassword: '',
       username: '',
       bio: '',
+      country_code: DEFAULT_COUNTRY_CODE,
       phone_number: '',
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
@@ -167,7 +168,7 @@ function OpenSignUpComponent() {
         password: values.password,
         username: values.username,
         bio: values.bio,
-        phone_number: formatE164(values.phone_number),
+        phone_number: formatE164(values.country_code, values.phone_number),
         first_name: values.first_name,
         last_name: values.last_name,
         ...(device_id ? { device_id } : {}),
@@ -217,7 +218,18 @@ function OpenSignUpComponent() {
           )
           // Retry without referral code
           const payloadWithoutRef = {
-            ...values,
+            org_slug: values.org_slug,
+            org_id: values.org_id,
+            email: values.email,
+            password: values.password,
+            username: values.username,
+            bio: values.bio,
+            phone_number: formatE164(
+              values.country_code,
+              values.phone_number
+            ),
+            first_name: values.first_name,
+            last_name: values.last_name,
             device_id,
             browser_fingerprint,
           }
@@ -549,21 +561,58 @@ function OpenSignUpComponent() {
               </Form.Control>
             </FormField>
 
-            <FormField name="phone_number">
-              <FormLabelAndMessage
-                label={t('user.phone_number') || 'Phone Number'}
-                message={formik.errors.phone_number}
-              />
-              <Form.Control asChild>
-                <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.phone_number}
-                  type="tel"
-                  required
-                  placeholder="e.g. +2340900000000"
-                />
-              </Form.Control>
-            </FormField>
+            <div>
+              <div className="grid grid-cols-[112px_1fr] gap-3">
+                <FormField name="country_code">
+                  <FormLabelAndMessage label="Country code" />
+                  <Form.Control asChild>
+                    <Input
+                      className={`h-12 text-center focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.country_code && formik.touched.country_code ? 'border-red-400' : ''}`}
+                      onChange={(e) =>
+                        formik.setFieldValue(
+                          'country_code',
+                          normalizeCountryCode(e.target.value)
+                        )
+                      }
+                      onBlur={formik.handleBlur}
+                      value={formik.values.country_code}
+                      type="tel"
+                      inputMode="tel"
+                      required
+                      placeholder="+254"
+                    />
+                  </Form.Control>
+                </FormField>
+                <FormField name="phone_number">
+                  <FormLabelAndMessage
+                    label={t('user.phone_number') || 'Phone number'}
+                  />
+                  <Form.Control asChild>
+                    <Input
+                      className={`h-12 focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.phone_number && formik.touched.phone_number ? 'border-red-400' : formik.values.phone_number && !formik.errors.phone_number ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
+                      onChange={(e) =>
+                        formik.setFieldValue(
+                          'phone_number',
+                          normalizeLocalPhoneNumber(e.target.value)
+                        )
+                      }
+                      onBlur={formik.handleBlur}
+                      value={formik.values.phone_number}
+                      type="tel"
+                      inputMode="numeric"
+                      required
+                      placeholder="712345678"
+                    />
+                  </Form.Control>
+                </FormField>
+              </div>
+              {(formik.errors.country_code || formik.errors.phone_number) &&
+                (formik.touched.country_code || formik.touched.phone_number) && (
+                  <p className="mt-1 text-xs text-red-600 font-medium">
+                    {formik.errors.country_code || formik.errors.phone_number}
+                  </p>
+                )}
+            </div>
 
             {/* Referral Code — optional */}
             <div>

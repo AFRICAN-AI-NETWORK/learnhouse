@@ -109,6 +109,7 @@
     "invalid_email": "Niepoprawny adres email",
     "password_min_length": "Hasło musi mieć co najmniej 8 znaków",
     "username_min_length": "Nazwa użytkownika musi mieć co najmniej 4 znaki",
+    "invalid_phone_with_country_code": "Nieprawidłowy numer telefonu. Podaj numer kierunkowy kraju (np. +254)",
     "title_required": "Tytuł jest wymagany",
     "content_required": "Treść jest wymagana"
   },

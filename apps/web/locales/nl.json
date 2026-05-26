@@ -109,6 +109,7 @@
     "invalid_email": "Ongeldig e-mailadres",
     "password_min_length": "Wachtwoord moet minimaal 8 tekens lang zijn",
     "username_min_length": "Gebruikersnaam moet minimaal 4 tekens lang zijn",
+    "invalid_phone_with_country_code": "Ongeldig telefoonnummer. Voeg de landcode toe (bijv. +254)",
     "title_required": "Titel is verplicht",
     "content_required": "Inhoud is verplicht"
   },
