@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import sys
 import importlib
 import importlib.util
 from config.config import get_learnhouse_config
@@ -70,13 +71,20 @@ def import_all_models():
                     continue
 
                 try:
+                    # Avoid re-executing already imported modules to prevent duplicate SQLModel table registration.
+                    if full_module_path in sys.modules:
+                        continue
+
                     # Load module via spec loader rather than import_module() to satisfy non-literal-import guardrails.
                     module = importlib.util.module_from_spec(spec)
                     if spec.loader is None:
                         logging.debug(f"No loader available for {full_module_path}")
                         continue
+                    sys.modules[full_module_path] = module
                     spec.loader.exec_module(module)
                 except Exception as e:
+                    # Remove partial module entries on failure.
+                    sys.modules.pop(full_module_path, None)
                     logging.error(f"Failed to import model {full_module_path}: {e}")
 
 
