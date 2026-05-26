@@ -1274,9 +1274,9 @@ function ActivityPageNavbar({
             activity.content.paid_access != false && (
               <AuthenticatedClientElement checkMethod="authentication">
                 <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end xl:max-w-[60vw]">
-                  {activity.activity_type !== 'TYPE_SMART_ARTICLE' && (
+                  {/* {activity.activity_type !== 'TYPE_SMART_ARTICLE' && (
                     <AIActivityAsk activity={activity} />
-                  )}
+                  )} */}
 
                   {contributorStatus === 'ACTIVE' &&
                     activity.activity_type == 'TYPE_DYNAMIC' && (
