@@ -1,5 +1,4 @@
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useMemo } from 'react'
 
 type FeatureType = {
   path: string[]
@@ -32,21 +31,17 @@ function getNestedValue(source: unknown, path: string[], index = 0): unknown {
 function useFeatureFlag(feature: FeatureType) {
   const org = useOrg() as any
 
-  const isEnabled = useMemo(() => {
-    if (org?.config?.config) {
-      const currentValue = getNestedValue(org.config.config, feature.path)
+  if (org?.config?.config) {
+    const currentValue = getNestedValue(org.config.config, feature.path)
 
-      if (currentValue !== undefined) {
-        return !!currentValue
-      }
-
-      return !!(feature.defaultValue ?? false)
+    if (currentValue !== undefined) {
+      return !!currentValue
     }
 
-    return !!feature.defaultValue
-  }, [org?.config?.config, feature])
+    return !!(feature.defaultValue ?? false)
+  }
 
-  return isEnabled
+  return !!feature.defaultValue
 }
 
 export default useFeatureFlag
