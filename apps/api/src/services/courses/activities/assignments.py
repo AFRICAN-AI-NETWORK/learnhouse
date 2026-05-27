@@ -131,68 +131,60 @@ async def perform_quiz_auto_grading(
 ) -> None:
     """
     Auto-grade a QUIZ task.
-    Only awards credit for correctly selected options (true positives).
-    grade = round((correct_selections / total_correct_options) * max_grade_value)
-
-    Wrong options that were not selected are intentionally ignored — they do NOT
-    contribute to the score. This prevents students from earning points simply by
-    submitting blank answers.
+    Awards credit only when the selected option set exactly matches the correct
+    option set for a question.
+    grade = round((correct_questions / total_gradable_questions) * max_grade_value)
 
     Stores per-question results in task_submission["grading_results"].
     """
     questions = assignment_task.contents.get("questions", [])
     student_subs = submission.task_submission.get("submissions", [])
 
-    total_correct_options = 0  # denominator: options where assigned_right_answer=True
-    correct_selections = 0  # numerator: correct options the student actually selected
+    total_gradable_questions = 0
+    correct_questions = 0
     question_results = []
 
     for question in questions:
         q_uuid = question.get("questionUUID")
         options = question.get("options", [])
-        q_correct = 0
-        q_total = 0  # correct options for this question
+        correct_option_uuids = {
+            option.get("optionUUID")
+            for option in options
+            if option.get("assigned_right_answer", False)
+            and option.get("optionUUID")
+        }
 
-        for option in options:
-            assigned_right = option.get("assigned_right_answer", False)
-            opt_uuid = option.get("optionUUID")
+        if not correct_option_uuids:
+            question_results.append({"questionUUID": q_uuid, "correct": 0, "total": 0})
+            continue
 
-            if not assigned_right:
-                # Wrong option: no credit gained or lost — skip entirely.
-                # Counting "correctly unselected" wrong options would let students
-                # earn points without selecting any correct answers.
-                continue
+        total_gradable_questions += 1
+        selected_option_uuids = {
+            s.get("optionUUID")
+            for s in student_subs
+            if s.get("questionUUID") == q_uuid
+            and s.get("answer", False)
+            and s.get("optionUUID")
+        }
+        is_correct = selected_option_uuids == correct_option_uuids
 
-            q_total += 1
-            total_correct_options += 1
-
-            student_entry = next(
-                (
-                    s
-                    for s in student_subs
-                    if s.get("questionUUID") == q_uuid
-                    and s.get("optionUUID") == opt_uuid
-                ),
-                None,
-            )
-            student_answer = (
-                student_entry.get("answer", False) if student_entry else False
-            )
-
-            if student_answer:  # student explicitly selected this correct option
-                correct_selections += 1
-                q_correct += 1
+        if is_correct:
+            correct_questions += 1
 
         question_results.append(
-            {"questionUUID": q_uuid, "correct": q_correct, "total": q_total}
+            {
+                "questionUUID": q_uuid,
+                "correct": 1 if is_correct else 0,
+                "total": 1,
+            }
         )
 
     submission.grade = (
         round(
-            (correct_selections / total_correct_options)
+            (correct_questions / total_gradable_questions)
             * assignment_task.max_grade_value
         )
-        if total_correct_options > 0
+        if total_gradable_questions > 0
         else 0
     )
 
@@ -201,7 +193,7 @@ async def perform_quiz_auto_grading(
     submission.task_submission = updated
 
     submission.task_submission_grade_feedback = (
-        f"Auto-graded: {correct_selections}/{total_correct_options} options correct."
+        f"Auto-graded: {correct_questions}/{total_gradable_questions} questions correct."
     )
 
 

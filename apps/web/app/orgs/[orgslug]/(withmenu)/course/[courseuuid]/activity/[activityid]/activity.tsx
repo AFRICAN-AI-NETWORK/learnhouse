@@ -1159,6 +1159,25 @@ function ActivityClient(props: ActivityClientProps) {
                                           </WatermarkedActivityContent>
                                         </div>
                                       </div>
+
+                                      {activity.activity_type ===
+                                        'TYPE_ASSIGNMENT' && (
+                                        <div className="mt-4 flex justify-end rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/8 dark:bg-[#13131a]">
+                                          <AssignmentSubmissionProvider
+                                            assignment_uuid={
+                                              assignment?.assignment_uuid
+                                            }
+                                          >
+                                            <AssignmentTools
+                                              assignment={assignment}
+                                              activity={activity}
+                                              activityid={activityid}
+                                              course={course}
+                                              orgslug={orgslug}
+                                            />
+                                          </AssignmentSubmissionProvider>
+                                        </div>
+                                      )}
                                     </>
                                   )}
                                 </>
@@ -1292,19 +1311,7 @@ function ActivityPageNavbar({
                       </Link>
                     )}
 
-                  {activity.activity_type === 'TYPE_ASSIGNMENT' ? (
-                    <AssignmentSubmissionProvider
-                      assignment_uuid={assignment?.assignment_uuid}
-                    >
-                      <AssignmentTools
-                        assignment={assignment}
-                        activity={activity}
-                        activityid={activityid}
-                        course={course}
-                        orgslug={orgslug}
-                      />
-                    </AssignmentSubmissionProvider>
-                  ) : (
+                  {activity.activity_type !== 'TYPE_ASSIGNMENT' && (
                     <button
                       onClick={() =>
                         handleMarkAsComplete(
