@@ -234,7 +234,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
   if (isCourseCompleted) {
     // Show congratulations for completed course
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 relative overflow-hidden">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-3 sm:px-4 pb-28 sm:pb-0 relative overflow-hidden">
         <div className="fixed inset-0 pointer-events-none">
           <ReactConfetti
             width={width}
@@ -245,11 +245,11 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
           />
         </div>
 
-        <div className="bg-card rounded-2xl p-8 nice-shadow max-w-4xl w-full space-y-6 relative z-10">
-          <div className="flex flex-col items-center space-y-6">
+        <div className="bg-card rounded-lg sm:rounded-2xl p-4 sm:p-8 nice-shadow max-w-4xl w-full space-y-4 sm:space-y-6 relative z-10">
+          <div className="flex flex-col items-center space-y-4 sm:space-y-6">
             {thumbnailImage && (
               <img
-                className="w-[200px] h-[114px] rounded-lg shadow-md object-cover"
+                className="w-[150px] h-[86px] sm:w-[200px] sm:h-[114px] rounded-lg shadow-md object-cover"
                 src={`${getCourseThumbnailMediaDirectory(
                   org?.org_uuid,
                   courseUuid,
@@ -259,16 +259,16 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
               />
             )}
 
-            <div className="bg-emerald-100 p-4 rounded-full">
-              <Trophy className="w-16 h-16 text-emerald-600" />
+            <div className="bg-emerald-100 p-3 sm:p-4 rounded-full">
+              <Trophy className="w-10 h-10 sm:w-16 sm:h-16 text-emerald-600" />
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-card-foreground">
+          <h1 className="text-2xl sm:text-4xl font-bold text-card-foreground">
             {t('courses.congratulations')}
           </h1>
 
-          <p className="text-xl text-muted-foreground">
+          <p className="text-sm sm:text-xl text-muted-foreground">
             {t('courses.successfully_completed')}
             <span className="font-semibold text-card-foreground">
               {' '}
@@ -276,7 +276,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </span>
           </p>
 
-          <p className="text-muted-foreground/80">
+          <p className="text-sm sm:text-base text-muted-foreground/80">
             {t('certificate.dedication_message')}
           </p>
 
@@ -293,11 +293,14 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           ) : userCertificate ? (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold text-card-foreground">
+              <h2 className="text-lg sm:text-2xl font-semibold text-card-foreground">
                 {t('certificate.your_certificate')}
               </h2>
-              <div className="max-w-2xl mx-auto" id="certificate-preview">
-                <div id="certificate-content">
+              <div
+                className="mx-auto w-full max-w-2xl"
+                id="certificate-preview"
+              >
+                <div id="certificate-content" className="mx-auto w-full">
                   <CertificatePreview
                     certificationName={
                       userCertificate.certification.config.certification_name
@@ -340,12 +343,12 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                   />
                 </div>
               </div>
-              <div className="flex justify-center space-x-4">
+              <div className="grid gap-2 sm:flex sm:justify-center sm:space-x-4">
                 <button
                   onClick={downloadCertificate}
-                  className="inline-flex items-center space-x-2 bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition duration-200"
+                  className="inline-flex items-center justify-center space-x-2 bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-md sm:rounded-full hover:bg-green-700 transition duration-200 text-sm sm:text-base"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>{t('certificate.download_certificate')}</span>
                 </button>
                 <Link
@@ -355,9 +358,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition duration-200"
+                  className="inline-flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-md sm:rounded-full hover:bg-blue-700 transition duration-200 text-sm sm:text-base"
                 >
-                  <Shield className="w-5 h-5" />
+                  <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>{t('certificate.verify_certificate')}</span>
                 </Link>
               </div>
@@ -370,15 +373,15 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           )}
 
-          <div className="pt-6">
+          <div className="pt-2 sm:pt-6">
             <Link
               href={getUriWithOrg(
                 orgslug,
                 `/course/${courseUuid.replace('course_', '')}`
               )}
-              className="inline-flex items-center space-x-2 bg-gray-800 text-white px-6 py-3 rounded-full hover:bg-gray-700 transition duration-200"
+              className="inline-flex w-full sm:w-auto items-center justify-center space-x-2 bg-gray-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-md sm:rounded-full hover:bg-gray-700 transition duration-200 text-sm sm:text-base"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>{t('courses.back_to_course')}</span>
             </Link>
           </div>
@@ -388,12 +391,12 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
   } else {
     // Show progress and encouragement for incomplete course
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-        <div className="bg-card rounded-2xl p-8 nice-shadow max-w-2xl w-full space-y-6">
-          <div className="flex flex-col items-center space-y-6">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-3 sm:px-4 pb-28 sm:pb-0">
+        <div className="bg-card rounded-lg sm:rounded-2xl p-4 sm:p-8 nice-shadow max-w-2xl w-full space-y-4 sm:space-y-6">
+          <div className="flex flex-col items-center space-y-4 sm:space-y-6">
             {thumbnailImage && (
               <img
-                className="w-[200px] h-[114px] rounded-lg shadow-md object-cover"
+                className="w-[150px] h-[86px] sm:w-[200px] sm:h-[114px] rounded-lg shadow-md object-cover"
                 src={`${getCourseThumbnailMediaDirectory(
                   org?.org_uuid,
                   courseUuid,
@@ -403,16 +406,16 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
               />
             )}
 
-            <div className="bg-blue-100 p-4 rounded-full">
-              <Target className="w-16 h-16 text-blue-600" />
+            <div className="bg-blue-100 p-3 sm:p-4 rounded-full">
+              <Target className="w-10 h-10 sm:w-16 sm:h-16 text-blue-600" />
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-card-foreground">
+          <h1 className="text-2xl sm:text-4xl font-bold text-card-foreground">
             {t('courses.keep_going')}
           </h1>
 
-          <p className="text-xl text-muted-foreground">
+          <p className="text-sm sm:text-xl text-muted-foreground">
             {t('courses.making_great_progress')}
             <span className="font-semibold text-card-foreground">
               {' '}
@@ -421,10 +424,10 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
           </p>
 
           {progressInfo && (
-            <div className="bg-muted rounded-lg p-6 space-y-4">
+            <div className="bg-muted rounded-lg p-4 sm:p-6 space-y-4">
               <div className="flex items-center justify-center space-x-2">
                 <BookOpen className="w-5 h-5 text-muted-foreground" />
-                <span className="text-lg font-semibold text-foreground">
+                <span className="text-base sm:text-lg font-semibold text-foreground">
                   {t('courses.course_progress')}
                 </span>
               </div>
@@ -456,19 +459,19 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             </div>
           )}
 
-          <p className="text-muted-foreground/80">
+          <p className="text-sm sm:text-base text-muted-foreground/80">
             {t('courses.keep_going_description')}
           </p>
 
-          <div className="pt-6">
+          <div className="pt-2 sm:pt-6">
             <Link
               href={getUriWithOrg(
                 orgslug,
                 `/course/${courseUuid.replace('course_', '')}`
               )}
-              className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition duration-200"
+              className="inline-flex w-full sm:w-auto items-center justify-center space-x-2 bg-blue-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-md sm:rounded-full hover:bg-blue-700 transition duration-200 text-sm sm:text-base"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>{t('courses.continue_learning')}</span>
             </Link>
           </div>
