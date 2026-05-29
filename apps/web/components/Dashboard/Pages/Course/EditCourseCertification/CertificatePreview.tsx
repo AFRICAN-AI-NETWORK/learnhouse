@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Award, CheckCircle, QrCode, Building, User, Hash } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -36,6 +36,10 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   orgLogoUrl,
 }) => {
   const [generatedQrCodeUrl, setGeneratedQrCodeUrl] = useState<string>('')
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  const [scale, setScale] = useState(1)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const CERT_NATURAL_WIDTH = 672
   const org = useOrg() as any
 
   // Generate QR code
@@ -67,6 +71,20 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
     generateQRCode()
   }, [certificateId, providedQrCodeUrl, qrCodeLink])
+  }, [certificateId, qrCodeLink])
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const available = containerRef.current.offsetWidth
+        setScale(available < CERT_NATURAL_WIDTH ? available / CERT_NATURAL_WIDTH : 1)
+      }
+    }
+    updateScale()
+    window.addEventListener('resize', updateScale)
+    return () => window.removeEventListener('resize', updateScale)
+  }, [])
+
   // Function to get theme colors for each pattern
   const getPatternTheme = (pattern: string) => {
     switch (pattern) {
@@ -630,18 +648,27 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                       : 'Course Completion'
 
   return (
-    <div
-      className="border border-blue-200 rounded-xl p-4 w-full h-full"
-      style={{
-        background: `linear-gradient(to bottom right, #eff6ff, #eef2ff)`,
-      }}
-    >
-      <div className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden w-full h-full flex flex-col">
+    <div ref={containerRef} className="w-full overflow-visible">
+      <div
+        style={{
+          width: `${CERT_NATURAL_WIDTH}px`,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          marginBottom: `-${CERT_NATURAL_WIDTH * 0.6 * (1 - scale)}px`,
+        }}
+      >
+        <div
+          className="border border-blue-200 rounded-xl p-2 sm:p-4 w-full"
+          style={{
+            background: `linear-gradient(to bottom right, #eff6ff, #eef2ff)`,
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6 relative overflow-hidden w-full flex flex-col">
         {/* Dynamic Certificate Pattern */}
         {renderCertificatePattern(certificatePattern)}
 
         {/* Certificate ID - Top Left */}
-        <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20">
+        <div className="absolute top-2 left-2 sm:top-6 sm:left-6 z-20">
           <div className="flex items-center space-x-1">
             <Hash className={`w-3 h-3 sm:w-4 sm:h-4 ${theme.icon}`} />
             <span
@@ -653,9 +680,9 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         </div>
 
         {/* QR Code Box - Top Right */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+        <div className="absolute top-2 right-2 sm:top-6 sm:right-6 z-20">
           <div
-            className={`w-16 h-16 sm:w-24 sm:h-24 border-2 ${theme.secondary.replace('text-', 'border-')} rounded-md bg-white/90 backdrop-blur-sm p-1`}
+            className={`w-12 h-12 sm:w-24 sm:h-24 border-2 ${theme.secondary.replace('text-', 'border-')} rounded-md bg-white/90 backdrop-blur-sm p-1`}
           >
             {qrCodeUrl ? (
               <img
@@ -672,7 +699,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         </div>
 
         {/* Main Content */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center space-y-3 px-6 py-6">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3 px-2 sm:px-6 py-3 sm:py-6">
           {/* Header with decorative line */}
           <div className="flex items-center justify-center space-x-2 mb-2">
             <div
@@ -826,7 +853,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         </div>
 
         {/* Bottom Section */}
-        <div className="relative z-10 mt-auto p-6 pt-8">
+        <div className="relative z-10 mt-auto p-2 sm:p-6 pt-4 sm:pt-8">
           <div className="flex items-end justify-between w-full">
             {/* Left: Chief Instructor */}
             <div className="flex flex-col items-start space-y-1 flex-1">
@@ -857,7 +884,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             {/* Center: Logo */}
             <div className="flex flex-col items-center space-y-1 flex-1">
               <div
-                className={`w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center`}
+                className={`w-12 h-12 sm:w-32 sm:h-32 flex items-center justify-center`}
               >
                 {displayOrgLogoUrl ? (
                   <img
@@ -930,6 +957,8 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
           </div>
         </div>
       </div>
+      </div>
+    </div>
     </div>
   )
 }

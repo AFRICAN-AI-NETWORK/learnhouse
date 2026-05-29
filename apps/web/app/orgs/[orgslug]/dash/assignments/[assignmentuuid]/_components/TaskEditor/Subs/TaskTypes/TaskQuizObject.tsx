@@ -210,22 +210,23 @@ function TaskQuizObject({
 
     if (!questionUUID || !optionUUID) return
 
-    const submissionIndex = updatedSubmissions.findIndex(
-      (submission) =>
-        submission.questionUUID === questionUUID &&
-        submission.optionUUID === optionUUID
+    const submissionsForOtherQuestions = updatedSubmissions.filter(
+      (submission) => submission.questionUUID !== questionUUID
     )
-
-    if (submissionIndex === -1) {
-      updatedSubmissions.push({ questionUUID, optionUUID, answer: true })
-    } else {
-      updatedSubmissions[submissionIndex].answer =
-        !updatedSubmissions[submissionIndex].answer
-    }
+    const updatedQuestionSubmissions = question.options
+      .filter((questionOption) => questionOption.optionUUID)
+      .map((questionOption) => ({
+        questionUUID,
+        optionUUID: questionOption.optionUUID || '',
+        answer: questionOption.optionUUID === optionUUID,
+      }))
 
     setUserSubmissions({
       ...userSubmissions,
-      submissions: updatedSubmissions,
+      submissions: [
+        ...submissionsForOtherQuestions,
+        ...updatedQuestionSubmissions,
+      ],
     })
   }
 
@@ -513,7 +514,9 @@ function TaskQuizObject({
                     <div className="flex" key={oIndex}>
                       <div
                         onClick={() =>
-                          view === 'student' && chooseOption(qIndex, oIndex)
+                          view === 'student' &&
+                          !hasSubmitted &&
+                          chooseOption(qIndex, oIndex)
                         }
                         className={
                           `answer outline-3 pr-2 shadow-sm w-full flex items-center space-x-2 h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg text-sm duration-150 cursor-pointer ease-linear nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10 outline-white/10' : 'bg-white outline-white'} ` +

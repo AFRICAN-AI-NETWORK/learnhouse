@@ -131,6 +131,7 @@
     "invalid_email": "Email invalide",
     "password_min_length": "8 caractères minimum",
     "username_min_length": "4 caractères minimum",
+    "invalid_phone_with_country_code": "Numéro de téléphone invalide. Veuillez inclure l'indicatif du pays (ex. +254)",
     "title_required": "Titre requis",
     "content_required": "Contenu requis"
   },

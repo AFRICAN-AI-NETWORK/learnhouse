@@ -153,12 +153,12 @@ class TestIsFormAnswerCorrect:
 
 
 class TestPerformQuizAutoGrading:
-    """Tests for per-option QUIZ auto-grading."""
+    """Tests for per-question QUIZ auto-grading."""
 
     @pytest.mark.asyncio
     async def test_perfect_score_all_options_matched(self):
         """Student selects the only correct option (A=True). B is a wrong option and is
-        skipped entirely. 1/1 correct option selected → 100."""
+        unselected. 1/1 question correct → 100."""
         task = _quiz_task()
         sub = _Submission(
             {
@@ -173,7 +173,7 @@ class TestPerformQuizAutoGrading:
 
     @pytest.mark.asyncio
     async def test_zero_score_all_options_inverted(self):
-        """Student inverts every answer: A=False (wrong), B=True (wrong) → 0/2 → 0."""
+        """Student selects a wrong answer instead of the correct one → 0."""
         task = _quiz_task()
         sub = _Submission(
             {
@@ -187,11 +187,11 @@ class TestPerformQuizAutoGrading:
         assert sub.grade == 0
 
     @pytest.mark.asyncio
-    async def test_partial_credit_wrong_option_selected_ignored(self):
+    async def test_wrong_option_selected_with_correct_option_scores_zero(self):
         """
-        A=True (correct option, student selected) → +1.
-        B=True (wrong option, student selected) → ignored (no penalty, no credit).
-        total_correct_options=1, correct_selections=1 → 1/1 → 100.
+        A=True (correct option, student selected).
+        B=True (wrong option, student selected).
+        The selected set does not exactly match the correct set → 0.
         """
         task = _quiz_task()
         sub = _Submission(
@@ -207,15 +207,14 @@ class TestPerformQuizAutoGrading:
             }
         )
         await perform_quiz_auto_grading(task, sub)
-        assert sub.grade == 100
+        assert sub.grade == 0
 
     @pytest.mark.asyncio
     async def test_unsubmitted_options_default_to_zero(self):
         """
         Missing submission entries default to answer=False.
         A: assigned=True, student=False → correct option not selected → 0.
-        B: assigned=False → wrong option, skipped entirely.
-        total_correct_options=1, correct_selections=0 → 0/1 → 0.
+        B: assigned=False → wrong option, not selected.
 
         This was the root bug: the old code gave 50 here because it counted
         B's non-selection as a 'correct match' (False == False).
@@ -251,7 +250,7 @@ class TestPerformQuizAutoGrading:
     @pytest.mark.asyncio
     async def test_grading_results_written_back(self):
         """task_submission["grading_results"] is populated after grading.
-        total reflects only correct options (A=1); wrong options are excluded."""
+        total reflects one gradable question."""
         task = _quiz_task()
         sub = _Submission({"submissions": []})
         await perform_quiz_auto_grading(task, sub)
@@ -260,12 +259,11 @@ class TestPerformQuizAutoGrading:
         results = sub.task_submission["grading_results"]
         assert len(results) == 1
         assert results[0]["questionUUID"] == _Q1
-        assert results[0]["total"] == 1  # only the 1 correct option counts
+        assert results[0]["total"] == 1
 
     @pytest.mark.asyncio
     async def test_grading_results_correct_count_per_question(self):
-        """grading_results[0] reflects only correct options.
-        A (correct, selected) → correct=1. B (wrong) → excluded from total."""
+        """grading_results[0] reflects whether the question was answered correctly."""
         task = _quiz_task()
         sub = _Submission(
             {
@@ -277,17 +275,17 @@ class TestPerformQuizAutoGrading:
         )
         await perform_quiz_auto_grading(task, sub)
         r = sub.task_submission["grading_results"][0]
-        assert r["correct"] == 1  # A was selected and is correct
-        assert r["total"] == 1  # only 1 correct option (A); B is wrong, excluded
+        assert r["correct"] == 1
+        assert r["total"] == 1
 
     @pytest.mark.asyncio
     async def test_multi_question_partial_credit(self):
         """
         Q1: A(correct), B(wrong). Student: A=True, B=False.
-          → A selected+correct → 1/1. B is wrong option, excluded.
+          → selected option set matches the correct option set.
         Q2: C(correct). Student: C=False (not selected).
-          → 0/1 correct.
-        Total correct options = 2, correct selections = 1 → 1/2 = 50.
+          → selected option set does not match.
+        Total correct questions = 1/2 → 50.
         """
         task = _Task(
             AssignmentTaskTypeEnum.QUIZ,
@@ -324,21 +322,21 @@ class TestPerformQuizAutoGrading:
             }
         )
         await perform_quiz_auto_grading(task, sub)
-        assert sub.grade == 50  # 1/2 correct options selected
+        assert sub.grade == 50
         results = sub.task_submission["grading_results"]
-        assert results[0]["correct"] == 1  # A selected+correct
-        assert results[0]["total"] == 1  # only A counts (B is wrong option)
+        assert results[0]["correct"] == 1
+        assert results[0]["total"] == 1
         assert results[1]["correct"] == 0  # C not selected
-        assert results[1]["total"] == 1  # C is the only correct option
+        assert results[1]["total"] == 1
 
     @pytest.mark.asyncio
     async def test_feedback_string_format(self):
-        """Feedback starts with 'Auto-graded:' and contains 'options correct'."""
+        """Feedback starts with 'Auto-graded:' and contains 'questions correct'."""
         task = _quiz_task()
         sub = _Submission({"submissions": []})
         await perform_quiz_auto_grading(task, sub)
         assert sub.task_submission_grade_feedback.startswith("Auto-graded:")
-        assert "options correct" in sub.task_submission_grade_feedback
+        assert "questions correct" in sub.task_submission_grade_feedback
 
     @pytest.mark.asyncio
     async def test_pre_existing_submission_fields_preserved(self):
