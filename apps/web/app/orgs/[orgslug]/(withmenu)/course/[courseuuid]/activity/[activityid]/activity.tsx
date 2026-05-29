@@ -1102,7 +1102,13 @@ function ActivityClient(props: ActivityClientProps) {
                           />
 
                           <main className="min-w-0 flex-1">
-                            <div className="px-4 py-5 sm:px-6 xl:px-8">
+                            <div
+                              className={`py-5 sm:px-6 xl:px-8 ${
+                                activity?.activity_type === 'TYPE_ASSIGNMENT'
+                                  ? 'px-0 pb-32 md:px-4 md:pb-5'
+                                  : 'px-4'
+                              }`}
+                            >
                               {activity && activity.published == false && (
                                 <div className="rounded-lg border border-slate-200 bg-slate-900 p-7 text-white shadow-sm">
                                   <h1 className="text-2xl font-bold">
@@ -1138,7 +1144,14 @@ function ActivityClient(props: ActivityClientProps) {
                                         </span>
                                       </div>
 
-                                      <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]">
+                                      <div
+                                        className={`activity-info-section ${
+                                          activity.activity_type ===
+                                          'TYPE_ASSIGNMENT'
+                                            ? 'bg-transparent shadow-none md:rounded-lg md:border md:border-slate-200 md:bg-white md:shadow-sm md:dark:border-white/8 md:dark:bg-[#13131a]'
+                                            : 'rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]'
+                                        }`}
+                                      >
                                         <div
                                           className={`relative mx-auto ${
                                             activity.activity_type ===
@@ -1159,6 +1172,25 @@ function ActivityClient(props: ActivityClientProps) {
                                           </WatermarkedActivityContent>
                                         </div>
                                       </div>
+
+                                      {activity.activity_type ===
+                                        'TYPE_ASSIGNMENT' && (
+                                        <div className="mt-4 hidden justify-end rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/8 dark:bg-[#13131a] md:flex">
+                                          <AssignmentSubmissionProvider
+                                            assignment_uuid={
+                                              assignment?.assignment_uuid
+                                            }
+                                          >
+                                            <AssignmentTools
+                                              assignment={assignment}
+                                              activity={activity}
+                                              activityid={activityid}
+                                              course={course}
+                                              orgslug={orgslug}
+                                            />
+                                          </AssignmentSubmissionProvider>
+                                        </div>
+                                      )}
                                     </>
                                   )}
                                 </>
@@ -1167,7 +1199,14 @@ function ActivityClient(props: ActivityClientProps) {
                               {activity &&
                                 activity.published == true &&
                                 activity.content.paid_access != false && (
-                                  <div className="mt-4 flex gap-3 md:flex-row md:items-center md:justify-between">
+                                  <div
+                                    className={`mt-4 gap-3 md:flex-row md:items-center md:justify-between ${
+                                      activity.activity_type ===
+                                      'TYPE_ASSIGNMENT'
+                                        ? 'hidden md:flex'
+                                        : 'flex'
+                                    }`}
+                                  >
                                     <PreviousActivityButton
                                       course={course}
                                       currentActivityId={activity.id}
@@ -1179,6 +1218,20 @@ function ActivityClient(props: ActivityClientProps) {
                                       orgslug={orgslug}
                                     />
                                   </div>
+                                )}
+
+                              {activity &&
+                                activity.published == true &&
+                                activity.content.paid_access != false &&
+                                activity.activity_type ===
+                                  'TYPE_ASSIGNMENT' && (
+                                  <MobileAssignmentActionDock
+                                    assignment={assignment}
+                                    activity={activity}
+                                    activityid={activityid}
+                                    course={course}
+                                    orgslug={orgslug}
+                                  />
                                 )}
 
                               <div className="h-12" />
@@ -1292,19 +1345,7 @@ function ActivityPageNavbar({
                       </Link>
                     )}
 
-                  {activity.activity_type === 'TYPE_ASSIGNMENT' ? (
-                    <AssignmentSubmissionProvider
-                      assignment_uuid={assignment?.assignment_uuid}
-                    >
-                      <AssignmentTools
-                        assignment={assignment}
-                        activity={activity}
-                        activityid={activityid}
-                        course={course}
-                        orgslug={orgslug}
-                      />
-                    </AssignmentSubmissionProvider>
-                  ) : (
+                  {activity.activity_type !== 'TYPE_ASSIGNMENT' && (
                     <button
                       onClick={() =>
                         handleMarkAsComplete(
@@ -1876,6 +1917,87 @@ export function MarkStatus(props: {
         </div>
       )}
     </>
+  )
+}
+
+function MobileAssignmentActionDock({
+  activity,
+  activityid,
+  assignment,
+  course,
+  orgslug,
+}: {
+  activity: any
+  activityid: string
+  assignment: any
+  course: any
+  orgslug: string
+}) {
+  const { t } = useTranslation()
+  const router = useRouter()
+  const { allActivities, currentIndex } = useActivityPosition(
+    course,
+    activityid
+  )
+  const previousActivity =
+    currentIndex > 0 ? allActivities[currentIndex - 1] : null
+  const nextActivity =
+    currentIndex < allActivities.length - 1
+      ? allActivities[currentIndex + 1]
+      : null
+
+  const navigateToActivity = (targetActivity: any | 'end' | null) => {
+    if (!targetActivity) return
+
+    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+    const targetActivityId =
+      targetActivity === 'end' ? 'end' : targetActivity.cleanUuid
+
+    router.push(
+      getUriWithOrg(orgslug, '') +
+        `/course/${cleanCourseUuid}/activity/${targetActivityId}`
+    )
+  }
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 py-3 pl-3 pr-20 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur md:hidden dark:border-white/8 dark:bg-[#13131a]/95">
+      <div className="mx-auto grid max-w-xl grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2 pb-[env(safe-area-inset-bottom)]">
+        <button
+          type="button"
+          onClick={() => navigateToActivity(previousActivity)}
+          disabled={!previousActivity}
+          aria-label={t('common.previous')}
+          className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/8 dark:bg-white/5 dark:text-white/70"
+        >
+          <ChevronLeft size={19} />
+        </button>
+
+        <AssignmentSubmissionProvider
+          assignment_uuid={assignment?.assignment_uuid}
+        >
+          <AssignmentTools
+            assignment={assignment}
+            activity={activity}
+            activityid={activityid}
+            course={course}
+            orgslug={orgslug}
+          />
+        </AssignmentSubmissionProvider>
+
+        <button
+          type="button"
+          onClick={() => navigateToActivity(nextActivity || 'end')}
+          aria-label={
+            nextActivity ? t('common.next') : t('courses.finish_course')
+          }
+          className={`flex h-11 w-11 items-center justify-center rounded-md text-white shadow-sm transition ${
+            nextActivity ? 'bg-blue-600' : 'bg-emerald-600'
+          }`}
+        >
+          {nextActivity ? <ChevronRight size={19} /> : <Trophy size={18} />}
+        </button>
+      </div>
+    </div>
   )
 }
 
