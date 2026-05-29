@@ -1,6 +1,6 @@
 'use client'
 import { useFormik } from 'formik'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import FormLayout, {
   FormField,
@@ -35,6 +35,10 @@ import {
   formatE164,
   validatePhoneFields,
 } from '@/lib/phone-number'
+import { SiWhatsapp } from '@icons-pack/react-simple-icons'
+
+const whatsappGroupUrl =
+  'https://chat.whatsapp.com/BohSUrcVlPREw5KUS2vEPr?mode=gi_t'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
@@ -96,7 +100,6 @@ function OpenSignUpComponent() {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const org = useOrg() as any
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
@@ -187,10 +190,6 @@ function OpenSignUpComponent() {
         setMessage(
           'Account created successfully! Please check your email to verify your account before logging in.'
         )
-        setTimeout(() => {
-          const orgSlug = org?.slug || 'default'
-          router.push(`/login?orgslug=${orgSlug}`)
-        }, 3000)
       } else if (
         res.status === 401 ||
         res.status === 400 ||
@@ -242,10 +241,6 @@ function OpenSignUpComponent() {
             setMessage(
               'Account created successfully! Please check your email to verify your account before logging in.'
             )
-            setTimeout(() => {
-              const orgSlug = org?.slug || 'default'
-              router.push(`/login?orgslug=${orgSlug}`)
-            }, 3000)
           } else {
             const retryRes_json = await retryRes.json()
             const retryDetail = retryRes_json.detail
@@ -318,6 +313,34 @@ function OpenSignUpComponent() {
             {formik.values.email}
           </span>
         </p>
+
+        <div className="mb-6 w-full rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+                <SiWhatsapp size={22} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900">
+                  Stay updated on WhatsApp
+                </p>
+                <p className="text-xs leading-5 text-slate-600">
+                  Join the official group for updates and helpful information.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={whatsappGroupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
+            >
+              <SiWhatsapp size={16} />
+              Join Group
+            </a>
+          </div>
+        </div>
 
         <div className="w-full space-y-3 mb-8">
           <button
