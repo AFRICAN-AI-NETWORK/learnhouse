@@ -30,14 +30,14 @@ function AssignmentEditorSubPage({
   const { t } = useTranslation()
   return (
     <AssignmentsTaskProvider>
-      <div className="flex w-[400px] flex-col h-full custom-dots-bg">
+      <div className="flex w-full shrink-0 flex-col border-b border-slate-100 custom-dots-bg lg:h-full lg:w-[320px] xl:w-[400px] lg:border-b-0 lg:border-r">
         <div className="flex mx-auto px-3.5 py-1 bg-neutral-600/80 space-x-2 my-5 items-center text-sm font-bold text-white rounded-full">
           <LayoutList size={18} />
           <p>{t('dashboard.assignments.editor.tasks_title')}</p>
         </div>
         <AssignmentTasks assignment_uuid={'assignment_' + assignmentuuid} />
       </div>
-      <div className="flex grow bg-[#fefcfe] nice-shadow h-full w-full">
+      <div className="flex min-w-0 grow bg-[#fefcfe] nice-shadow h-full w-full">
         <AssignmentProvider assignment_uuid={'assignment_' + assignmentuuid}>
           <KeyedAssignmentTaskEditor />
         </AssignmentProvider>
