@@ -90,7 +90,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Generate requirements.txt for Snyk
-        run: uv pip compile apps/api/pyproject.toml -o apps/api/requirements.txt
+        run: cd apps/api && uv pip compile pyproject.toml -o requirements.txt
       - name: Install dependencies in system python for Snyk
         run: uv pip install -r apps/api/requirements.txt --system
       - name: Install Snyk CLI
