@@ -98,8 +98,8 @@ function DocumentPdfModal({ submitFileActivity, chapterId, course }: any) {
             </FormMessage>
           </div>
 
-          <Form.Control asChild>
-            <div className="relative">
+          <div className="relative">
+            <Form.Control asChild>
               <input
                 ref={fileInputRef}
                 accept={SUPPORTED_FILES}
@@ -108,11 +108,12 @@ function DocumentPdfModal({ submitFileActivity, chapterId, course }: any) {
                 required
                 className="hidden"
               />
-              <motion.div
-                whileHover={{ scale: 0.995 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={triggerFileSelect}
-                className={`
+            </Form.Control>
+            <motion.div
+              whileHover={{ scale: 0.995 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={triggerFileSelect}
+              className={`
                   relative border-2 border-dashed rounded-2xl p-8 transition-all cursor-pointer group flex flex-col items-center justify-center text-center gap-3
                   ${
                     documentpdf
@@ -120,35 +121,30 @@ function DocumentPdfModal({ submitFileActivity, chapterId, course }: any) {
                       : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100/80 hover:border-zinc-300'
                   }
                 `}
-              >
-                <div
-                  className={`
+            >
+              <div
+                className={`
                   w-12 h-12 rounded-full flex items-center justify-center transition-colors
                   ${documentpdf ? 'bg-emerald-100 text-emerald-600' : 'bg-zinc-100 text-zinc-400 group-hover:text-zinc-500'}
                 `}
-                >
-                  {documentpdf ? (
-                    <CheckCircle2 size={24} />
-                  ) : (
-                    <FileUp size={24} />
-                  )}
-                </div>
+              >
+                {documentpdf ? <CheckCircle2 size={24} /> : <FileUp size={24} />}
+              </div>
 
-                <div className="space-y-1">
-                  <p
-                    className={`font-bold text-sm ${documentpdf ? 'text-emerald-900' : 'text-zinc-900'}`}
-                  >
-                    {documentpdf ? documentpdf.name : 'Choose a PDF file'}
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    {documentpdf
-                      ? `${(documentpdf.size / 1024 / 1024).toFixed(2)} MB`
-                      : 'Drag and drop or click to browse'}
-                  </p>
-                </div>
-              </motion.div>
-            </div>
-          </Form.Control>
+              <div className="space-y-1">
+                <p
+                  className={`font-bold text-sm ${documentpdf ? 'text-emerald-900' : 'text-zinc-900'}`}
+                >
+                  {documentpdf ? documentpdf.name : 'Choose a PDF file'}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {documentpdf
+                    ? `${(documentpdf.size / 1024 / 1024).toFixed(2)} MB`
+                    : 'Drag and drop or click to browse'}
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </FormField>
 
