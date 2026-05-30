@@ -12,6 +12,21 @@ from datetime import datetime, timedelta, timezone
 from src.services.dev.dev import isDevModeEnabled
 from src.services.users.users import security_verify_password
 from src.security.security import ALGORITHM, SECRET_KEY
+
+import jwt as pyjwt_lib
+if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
+    _original_encode = pyjwt_lib.encode
+    class DecodableStr(str):
+        def decode(self, *args, **kwargs):
+            return self
+    def patched_encode(*args, **kwargs):
+        result = _original_encode(*args, **kwargs)
+        if isinstance(result, str):
+            return DecodableStr(result)
+        return result
+    patched_encode.__wrapped_for_fastapi_jwt_auth__ = True
+    pyjwt_lib.encode = patched_encode
+
 from fastapi_jwt_auth import AuthJWT
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
