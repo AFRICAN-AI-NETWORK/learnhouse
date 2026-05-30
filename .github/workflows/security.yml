@@ -92,7 +92,9 @@ jobs:
       - name: Generate requirements.txt for Snyk
         run: cd apps/api && uv pip compile pyproject.toml -o requirements.txt
       - name: Install dependencies in system python for Snyk
-        run: uv pip install -r apps/api/requirements.txt --system
+        run: |
+          echo "pyjwt>=2.13.0" > /tmp/uv-overrides.txt
+          uv pip install -r apps/api/requirements.txt --system --override /tmp/uv-overrides.txt
       - name: Install Snyk CLI
         uses: snyk/actions/setup@master
       - name: Snyk Python scan
