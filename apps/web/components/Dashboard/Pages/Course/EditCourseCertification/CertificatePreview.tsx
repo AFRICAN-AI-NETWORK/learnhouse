@@ -36,7 +36,6 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   orgLogoUrl,
 }) => {
   const [generatedQrCodeUrl, setGeneratedQrCodeUrl] = useState<string>('')
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
   const [scale, setScale] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
   const CERT_NATURAL_WIDTH = 672
