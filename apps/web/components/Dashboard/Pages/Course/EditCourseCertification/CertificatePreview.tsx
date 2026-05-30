@@ -71,7 +71,6 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
     generateQRCode()
   }, [certificateId, providedQrCodeUrl, qrCodeLink])
-  }, [certificateId, qrCodeLink])
 
   useEffect(() => {
     const updateScale = () => {
