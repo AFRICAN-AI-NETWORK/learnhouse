@@ -75,3 +75,9 @@ filterwarnings = [
 dev = [
     "ruff>=0.14.14",
 ]
+
+[tool.uv]
+override-dependencies = [
+    "pyjwt>=2.13.0",
+]
+
