@@ -87,8 +87,11 @@ _exchange_rate_cache = {}
 _ENCRYPTION_KEY = os.getenv("BANK_DATA_ENCRYPTION_KEY")
 if not _ENCRYPTION_KEY and getattr(_config.general_config, "development_mode", False):
     from cryptography.fernet import Fernet
+
     _ENCRYPTION_KEY = Fernet.generate_key().decode()
-    logger.warning("No BANK_DATA_ENCRYPTION_KEY set — using auto-generated ephemeral key (dev only)")
+    logger.warning(
+        "No BANK_DATA_ENCRYPTION_KEY set — using auto-generated ephemeral key (dev only)"
+    )
 
 # Strict validation: Fail fast if encryption key is missing
 if not _ENCRYPTION_KEY:

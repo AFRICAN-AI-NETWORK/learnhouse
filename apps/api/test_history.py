@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 
 import requests
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 # We will need the auth token again. You should grab the current admin token from a previous run or authenticate.
 URL = "http://127.0.0.1:8000/api/v1/auth/login"
@@ -16,10 +16,9 @@ if response.status_code != 200:
 # Get a Task UUID
 engine = create_engine("postgresql://learnhouse:learnhouse@localhost:5432/learnhouse")
 with engine.connect() as conn:
-    res = conn.execute(
-        text(
-            "SELECT id, assignment_task_uuid, assignment_id, assignment_type FROM assignmenttask WHERE assignment_type='CODE_EDITOR' LIMIT 1"
-        )
+    res = conn.exec_driver_sql(
+        "SELECT id, assignment_task_uuid, assignment_id, assignment_type FROM assignmenttask WHERE assignment_type = %(assignment_type)s LIMIT 1",
+        {"assignment_type": "CODE_EDITOR"},
     ).first()
     if not res:
         print("No CODE_EDITOR tasks found")
@@ -31,18 +30,18 @@ with engine.connect() as conn:
     task_type = res[3]
 
     # Get Assignment info
-    res2 = conn.execute(
-        text(
-            f"SELECT activity_id, course_id, chapter_id FROM assignment WHERE id={assign_id}"
-        )
+    res2 = conn.exec_driver_sql(
+        "SELECT activity_id, course_id, chapter_id FROM assignment WHERE id = %(assignment_id)s",
+        {"assignment_id": assign_id},
     ).first()
     activity_id = res2[0]
     course_id = res2[1]
     chapter_id = res2[2]
 
     # Get Admin User ID
-    res3 = conn.execute(
-        text("SELECT id FROM \"user\" WHERE email='admin@school.dev'")
+    res3 = conn.exec_driver_sql(
+        'SELECT id FROM "user" WHERE email = %(email)s',
+        {"email": "admin@school.dev"},
     ).first()
     user_id = res3[0]
 
@@ -51,8 +50,9 @@ print(f"Targeting Task: {task_uuid} for User: {user_id}")
 with engine.begin() as conn:
     # Check if submission exists
     sub = conn.execute(
-        text(
-            f"SELECT id, task_submission FROM assignmenttasksubmission WHERE user_id={user_id} AND assignment_task_id={task_id}"
+        conn.exec_driver_sql(
+            "SELECT id, task_submission FROM assignmenttasksubmission WHERE user_id = %(user_id)s AND assignment_task_id = %(task_id)s",
+            {"user_id": user_id, "task_id": task_id},
         )
     ).first()
 
@@ -74,10 +74,8 @@ with engine.begin() as conn:
         )
         existing_json["history"] = existing_history
 
-        conn.execute(
-            text(
-                "UPDATE assignmenttasksubmission SET task_submission = :ts WHERE id = :id"
-            ),
+        conn.exec_driver_sql(
+            "UPDATE assignmenttasksubmission SET task_submission = %(ts)s WHERE id = %(id)s",
             {"ts": json.dumps(existing_json), "id": sub[0]},
         )
         print(f"Updated existing submission. History length: {len(existing_history)}")
@@ -93,14 +91,28 @@ with engine.begin() as conn:
                 }
             ],
         }
-        conn.execute(
-            text(f"""
+        now = datetime.now()
+        conn.exec_driver_sql(
+            """
             INSERT INTO assignmenttasksubmission
             (assignment_task_submission_uuid, task_submission, grade, task_submission_grade_feedback, assignment_type, user_id, activity_id, course_id, chapter_id, assignment_task_id, creation_date, update_date)
             VALUES
-            ('test_hist_uuid', :ts, 0, '', '{task_type}', {user_id}, {activity_id}, {course_id}, {chapter_id}, {task_id}, '{datetime.now()}', '{datetime.now()}')
-        """),
-            {"ts": json.dumps(new_json)},
+            (%(submission_uuid)s, %(ts)s, %(grade)s, %(feedback)s, %(assignment_type)s, %(user_id)s, %(activity_id)s, %(course_id)s, %(chapter_id)s, %(task_id)s, %(creation_date)s, %(update_date)s)
+        """,
+            {
+                "submission_uuid": "test_hist_uuid",
+                "ts": json.dumps(new_json),
+                "grade": 0,
+                "feedback": "",
+                "assignment_type": task_type,
+                "user_id": user_id,
+                "activity_id": activity_id,
+                "course_id": course_id,
+                "chapter_id": chapter_id,
+                "task_id": task_id,
+                "creation_date": now,
+                "update_date": now,
+            },
         )
         print("Inserted new submission with history length: 1")
 

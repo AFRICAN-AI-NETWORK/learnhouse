@@ -7,6 +7,9 @@ services:
     image: postgres:16-alpine
     container_name: learnhouse-db-dev
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     environment:
       - POSTGRES_USER=learnhouse
       - POSTGRES_PASSWORD=learnhouse
@@ -25,6 +28,9 @@ services:
     image: redis:7.2.3-alpine
     container_name: learnhouse-redis-dev
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     command: redis-server --appendonly yes
     ports:
       - "6379:6379"
@@ -40,7 +46,9 @@ services:
     image: ghcr.io/engineer-man/piston
     container_name: learnhouse-piston-dev
     restart: unless-stopped
-    privileged: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     environment:
       - PISTON_RUN_TIMEOUT=15000
       - PISTON_COMPILE_TIMEOUT=15000
@@ -57,6 +65,9 @@ services:
     restart: unless-stopped
     profiles:
       - observability
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "3301:3301"
       - "4317:4317"

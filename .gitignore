@@ -76,6 +76,8 @@ token.json
 .sentryclirc
 sentry-release
 .semgrep-results*
+semgrep-results*.json
+semgrep-touched.json
 trivy-report.sarif
 gitleaks-report.sarif
 bandit-report.sarif
