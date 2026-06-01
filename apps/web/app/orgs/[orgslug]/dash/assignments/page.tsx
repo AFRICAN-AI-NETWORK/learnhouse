@@ -59,11 +59,11 @@ function AssignmentsHome() {
   }, [courses, getAvailableAssignmentsForCourse])
 
   return (
-    <div className="flex w-full">
-      <div className="pl-4 sm:pl-10 mr-4 sm:mr-10 tracking-tighter flex flex-col space-y-5 w-full mb-8 md:mb-0">
+    <div className="flex w-full min-w-0">
+      <div className="flex w-full min-w-0 flex-col space-y-5 px-4 tracking-tighter sm:px-10 mb-8 md:mb-0">
         <div className="flex flex-col space-y-2">
           <BreadCrumbs type="assignments" />
-          <h1 className="pt-3 flex font-bold text-4xl">
+          <h1 className="flex pt-3 text-3xl font-bold sm:text-4xl">
             {t('dashboard.assignments.home.title')}
           </h1>
         </div>
@@ -74,14 +74,14 @@ function AssignmentsHome() {
               className="flex flex-col space-y-2 bg-white nice-shadow p-3 sm:p-4 rounded-xl w-full"
             >
               <div>
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 items-start sm:items-center justify-between w-full">
-                  <div className="flex space-x-2 items-center">
+                <div className="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 items-center space-x-2">
                     <MiniThumbnail course={courses[index]} />
-                    <div className="flex flex-col font-bold text-lg">
+                    <div className="flex min-w-0 flex-col text-lg font-bold">
                       <p className="bg-gray-200 text-gray-700 px-2 text-xs py-0.5 rounded-full w-fit">
                         {t('dashboard.assignments.home.course_label')}
                       </p>
-                      <p>{courses[index].name}</p>
+                      <p className="min-w-0 truncate">{courses[index].name}</p>
                     </div>
                   </div>
                   <Link
@@ -93,7 +93,7 @@ function AssignmentsHome() {
                       query: { subpage: 'editor' },
                     }}
                     prefetch
-                    className="bg-black font-semibold text-sm text-zinc-100 rounded-md flex space-x-1.5 nice-shadow items-center px-3 py-1"
+                    className="flex min-h-10 w-full items-center justify-center space-x-1.5 rounded-md bg-black px-3 py-1 text-sm font-semibold text-zinc-100 nice-shadow sm:w-auto"
                   >
                     <GalleryVerticalEnd size={15} />
                     <p>{t('dashboard.assignments.home.course_editor')}</p>
@@ -104,23 +104,26 @@ function AssignmentsHome() {
                   assignments.map((assignment: any) => (
                     <div
                       key={assignment.assignment_uuid}
-                      className="flex mt-3 p-2 sm:p-3 rounded flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full light-shadow justify-between bg-gray-50 items-start sm:items-center"
+                      className="mt-3 flex w-full flex-col items-start justify-between gap-3 rounded bg-gray-50 p-2 light-shadow sm:p-3 lg:flex-row lg:items-center"
                     >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                        <div className="flex text-xs font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full h-fit">
+                      <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                        <div className="flex h-fit rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold text-gray-700">
                           <p>
                             {t('dashboard.assignments.home.assignment_label')}
                           </p>
                         </div>
-                        <div className="flex font-semibold text-lg">
+                        <div className="min-w-0 text-lg font-semibold">
                           {assignment.title}
                         </div>
-                        <div className="flex font-semibold text-gray-600 px-2 py-0.5 rounded outline outline-gray-200/70">
+                        <div className="max-w-full truncate rounded px-2 py-0.5 font-semibold text-gray-600 outline outline-gray-200/70 sm:max-w-[320px] xl:max-w-[520px]">
                           {assignment.description}
                         </div>
                       </div>
-                      <div className="flex space-x-2 font-bold text-sm items-center">
-                        <EllipsisVertical className="text-gray-500" size={17} />
+                      <div className="flex w-full flex-col gap-2 text-sm font-bold sm:flex-row sm:items-center lg:w-auto">
+                        <EllipsisVertical
+                          className="hidden text-gray-500 lg:block"
+                          size={17}
+                        />
                         <Link
                           href={{
                             pathname: getUriWithOrg(
@@ -130,7 +133,7 @@ function AssignmentsHome() {
                             query: { subpage: 'editor' },
                           }}
                           prefetch
-                          className="bg-white rounded-full flex space-x-2 nice-shadow items-center px-3 py-0.5"
+                          className="flex min-h-10 w-full items-center justify-center space-x-2 rounded-full bg-white px-3 py-1.5 nice-shadow sm:w-auto"
                         >
                           <Layers2 size={15} />
                           <p>{t('dashboard.assignments.home.editor')}</p>
@@ -144,7 +147,7 @@ function AssignmentsHome() {
                             query: { subpage: 'submissions' },
                           }}
                           prefetch
-                          className="bg-white rounded-full flex space-x-2 nice-shadow items-center px-3 py-0.5"
+                          className="flex min-h-10 w-full items-center justify-center space-x-2 rounded-full bg-white px-3 py-1.5 nice-shadow sm:w-auto"
                         >
                           <UserRoundPen size={15} />
                           <p>{t('dashboard.assignments.home.submissions')}</p>

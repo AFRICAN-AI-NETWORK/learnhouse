@@ -243,6 +243,7 @@ class AssignmentUserSubmissionStatus(str, Enum):
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
     GRADED = "GRADED"
+    NEEDS_REVISION = "NEEDS_REVISION"
     LATE = "LATE"
     NOT_SUBMITTED = "NOT_SUBMITTED"
 
@@ -254,6 +255,7 @@ class AssignmentUserSubmissionBase(SQLModel):
         AssignmentUserSubmissionStatus.SUBMITTED
     )
     grade: int
+    submission_feedback: Optional[str] = ""
     user_id: int = Field(
         sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
     )
@@ -271,6 +273,12 @@ class AssignmentUserSubmissionCreate(SQLModel):
     pass  # Inherits all fields from AssignmentUserSubmissionBase
 
 
+class AssignmentUserSubmissionRevisionCreate(SQLModel):
+    """Model for requesting assignment revisions."""
+
+    submission_feedback: Optional[str] = ""
+
+
 class AssignmentUserSubmissionRead(AssignmentUserSubmissionBase):
     """Model for reading an assignment user submission."""
 
@@ -284,6 +292,7 @@ class AssignmentUserSubmissionUpdate(SQLModel):
 
     submission_status: Optional[AssignmentUserSubmissionStatus]
     grade: Optional[str]
+    submission_feedback: Optional[str]
     user_id: Optional[int]
     assignment_id: Optional[int]
 
@@ -300,6 +309,7 @@ class AssignmentUserSubmission(AssignmentUserSubmissionBase, table=True):
         AssignmentUserSubmissionStatus.SUBMITTED
     )
     grade: int
+    submission_feedback: Optional[str] = ""
     user_id: int = Field(
         sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
     )

@@ -20,6 +20,7 @@ from src.db.courses.assignments import (
     AssignmentUserSubmission,
     AssignmentUserSubmissionCreate,
     AssignmentUserSubmissionRead,
+    AssignmentUserSubmissionRevisionCreate,
     AssignmentUserSubmissionStatus,
     AssignmentTaskTypeEnum,
 )
@@ -1590,7 +1591,11 @@ async def create_assignment_submission(
 
     assignment_user_submission = db_session.exec(statement).first()
 
-    if assignment_user_submission:
+    if (
+        assignment_user_submission
+        and assignment_user_submission.submission_status
+        != AssignmentUserSubmissionStatus.NEEDS_REVISION
+    ):
         raise HTTPException(
             status_code=400,
             detail="Assignment User Submission already exists",
@@ -1604,19 +1609,6 @@ async def create_assignment_submission(
         raise HTTPException(
             status_code=404,
             detail="Course not found",
-        )
-
-    # Check if User already submitted the assignment
-    statement = select(AssignmentUserSubmission).where(
-        AssignmentUserSubmission.assignment_id == assignment.id,
-        AssignmentUserSubmission.user_id == current_user.id,
-    )
-    assignment_user_submission = db_session.exec(statement).first()
-
-    if assignment_user_submission:
-        raise HTTPException(
-            status_code=400,
-            detail="Assignment User Submission already exists",
         )
 
     # RBAC check
@@ -1636,7 +1628,32 @@ async def create_assignment_submission(
     )
     task_submissions = db_session.exec(statement).all()
 
-    total_grade = sum(sub.grade for sub in task_submissions)
+    task_ids = {task.id for task in tasks if task.id is not None}
+    submitted_task_ids = {
+        task_submission.assignment_task_id
+        for task_submission in task_submissions
+        if task_submission.assignment_task_id in task_ids
+    }
+
+    if not tasks:
+        raise HTTPException(
+            status_code=400,
+            detail="This assignment has no tasks to submit.",
+        )
+
+    if submitted_task_ids != task_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Please save every assignment task before submitting for grading.",
+        )
+
+    current_task_submissions = [
+        task_submission
+        for task_submission in task_submissions
+        if task_submission.assignment_task_id in task_ids
+    ]
+
+    total_grade = sum(sub.grade for sub in current_task_submissions)
 
     # Check if all tasks are auto-gradable (CODE_EDITOR, QUIZ, or FORM)
     all_auto_gradable = (
@@ -1646,19 +1663,27 @@ async def create_assignment_submission(
     )
 
     status = AssignmentUserSubmissionStatus.SUBMITTED
-    if all_auto_gradable and len(task_submissions) == len(tasks):
+    if all_auto_gradable and submitted_task_ids == task_ids:
         status = AssignmentUserSubmissionStatus.GRADED
 
-    # Create Assignment User Submission
-    assignment_user_submission = AssignmentUserSubmission(
-        user_id=current_user.id,
-        assignment_id=assignment.id,  # type: ignore
-        grade=total_grade,
-        assignmentusersubmission_uuid=str(f"assignmentusersubmission_{uuid4()}"),
-        submission_status=status,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
-    )
+    current_time = str(datetime.now())
+
+    if assignment_user_submission:
+        assignment_user_submission.grade = total_grade
+        assignment_user_submission.submission_status = status
+        assignment_user_submission.submission_feedback = ""
+        assignment_user_submission.update_date = current_time
+    else:
+        assignment_user_submission = AssignmentUserSubmission(
+            user_id=current_user.id,
+            assignment_id=assignment.id,  # type: ignore
+            grade=total_grade,
+            submission_feedback="",
+            assignmentusersubmission_uuid=str(f"assignmentusersubmission_{uuid4()}"),
+            submission_status=status,
+            creation_date=current_time,
+            update_date=current_time,
+        )
 
     # Insert Assignment User Submission in DB
     db_session.add(assignment_user_submission)
@@ -1952,6 +1977,67 @@ async def update_assignment_submission(
     db_session.refresh(assignment_user_submission)
 
     # return assignment user submission read
+    return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
+
+
+async def reject_assignment_submission(
+    request: Request,
+    user_id: str,
+    assignment_uuid: str,
+    revision_object: AssignmentUserSubmissionRevisionCreate,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+):
+    # Check if assignment exists
+    statement = select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
+    assignment = db_session.exec(statement).first()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found",
+        )
+
+    # Check if course exists
+    statement = select(Course).where(Course.id == assignment.course_id)
+    course = db_session.exec(statement).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found",
+        )
+
+    # SECURITY: Require course ownership or instructor role for review actions
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
+
+    # Check if assignment user submission exists
+    statement = select(AssignmentUserSubmission).where(
+        AssignmentUserSubmission.user_id == user_id,
+        AssignmentUserSubmission.assignment_id == assignment.id,
+    )
+    assignment_user_submission = db_session.exec(statement).first()
+
+    if not assignment_user_submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment User Submission not found",
+        )
+
+    assignment_user_submission.submission_status = (
+        AssignmentUserSubmissionStatus.NEEDS_REVISION
+    )
+    assignment_user_submission.submission_feedback = (
+        revision_object.submission_feedback or ""
+    )
+    assignment_user_submission.update_date = str(datetime.now())
+
+    db_session.add(assignment_user_submission)
+    db_session.commit()
+    db_session.refresh(assignment_user_submission)
+
     return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
 
 

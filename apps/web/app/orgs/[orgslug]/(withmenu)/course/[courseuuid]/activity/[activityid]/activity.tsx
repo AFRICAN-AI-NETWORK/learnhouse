@@ -2198,11 +2198,35 @@ function AssignmentTools(props: {
     [assignmentTasksRes]
   )
   const totalTasks = assignmentTasks.length || 0
+  const assignmentTaskIds = React.useMemo(
+    () =>
+      new Set(
+        assignmentTasks
+          .map((assignmentTask: any) => assignmentTask.id)
+          .filter(Boolean)
+      ),
+    [assignmentTasks]
+  )
 
-  const isComplete = taskSubmissions.length >= totalTasks && totalTasks > 0
+  const savedTaskSubmissionIds = React.useMemo(
+    () =>
+      new Set(
+        taskSubmissions
+          .map((taskSubmission: any) => taskSubmission.assignment_task_id)
+          .filter((taskId: any) => assignmentTaskIds.has(taskId))
+      ),
+    [taskSubmissions, assignmentTaskIds]
+  )
+  const isComplete =
+    totalTasks > 0 && savedTaskSubmissionIds.size === assignmentTaskIds.size
 
   const submitForGradingUI = async () => {
     if (props.assignment) {
+      if (!isComplete) {
+        toast.error(t('assignments.submit_incomplete_warning'))
+        return
+      }
+
       const res = await submitAssignmentForGrading(
         props.assignment?.assignment_uuid,
         session.data?.tokens?.access_token
@@ -2213,7 +2237,9 @@ function AssignmentTools(props: {
           `${getAPIUrl()}assignments/${props.assignment?.assignment_uuid}/submissions/me`
         )
       } else {
-        toast.error(t('assignments.failed_submit_assignment'))
+        toast.error(
+          res.data?.detail || t('assignments.failed_submit_assignment')
+        )
       }
     }
   }
@@ -2268,9 +2294,26 @@ function AssignmentTools(props: {
     }
   }, [finalGradeRes, convertNumericToAlphabet])
 
-  if (!submission || submission.length === 0) {
+  const needsRevision = submission?.[0]?.submission_status === 'NEEDS_REVISION'
+
+  if (!submission || submission.length === 0 || needsRevision) {
     return (
       <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+        {needsRevision && (
+          <div className="flex w-full min-w-0 flex-col gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-sky-700 sm:w-[280px] sm:px-3">
+            <div className="flex items-center gap-2">
+              <Info size={14} className="shrink-0" />
+              <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
+                {t('assignments.needs_revision')}
+              </p>
+            </div>
+            {submission?.[0]?.submission_feedback && (
+              <p className="text-xs font-medium leading-snug">
+                {submission[0].submission_feedback}
+              </p>
+            )}
+          </div>
+        )}
         {!isComplete && totalTasks > 0 && (
           <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:w-auto sm:px-3 sm:py-1.5">
             <Info size={14} className="shrink-0" />
@@ -2279,32 +2322,43 @@ function AssignmentTools(props: {
             </p>
           </div>
         )}
-        <ConfirmationModal
-          confirmationButtonText={t('assignments.submit_assignment')}
-          confirmationMessage={
-            !isComplete
-              ? t('assignments.submit_incomplete_warning')
-              : t('assignments.submit_assignment_confirm')
-          }
-          dialogTitle={t('assignments.submit_assignment_title')}
-          dialogTrigger={
-            <div
-              className={`${!isComplete ? 'bg-amber-600 hover:bg-amber-700' : 'bg-cyan-800 hover:bg-cyan-900'} nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5`}
-            >
-              <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
-                {t('common.status')}
+        {!isComplete ? (
+          <div
+            onClick={submitForGradingUI}
+            className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-amber-600 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-amber-700 sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5"
+          >
+            <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
+              {t('common.status')}
+            </span>
+            <div className="flex min-w-0 items-center space-x-2">
+              <BookOpenCheck size={17} className="shrink-0" />
+              <span className="min-w-0 truncate text-xs font-bold">
+                {t('assignments.submit_for_grading')}
               </span>
-              <div className="flex min-w-0 items-center space-x-2">
-                <BookOpenCheck size={17} className="shrink-0" />
-                <span className="min-w-0 truncate text-xs font-bold">
-                  {t('assignments.submit_for_grading')}
-                </span>
-              </div>
             </div>
-          }
-          functionToExecute={submitForGradingUI}
-          status={!isComplete ? 'warning' : 'info'}
-        />
+          </div>
+        ) : (
+          <ConfirmationModal
+            confirmationButtonText={t('assignments.submit_assignment')}
+            confirmationMessage={t('assignments.submit_assignment_confirm')}
+            dialogTitle={t('assignments.submit_assignment_title')}
+            dialogTrigger={
+              <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-cyan-800 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-cyan-900 sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
+                <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
+                  {t('common.status')}
+                </span>
+                <div className="flex min-w-0 items-center space-x-2">
+                  <BookOpenCheck size={17} className="shrink-0" />
+                  <span className="min-w-0 truncate text-xs font-bold">
+                    {t('assignments.submit_for_grading')}
+                  </span>
+                </div>
+              </div>
+            }
+            functionToExecute={submitForGradingUI}
+            status="info"
+          />
+        )}
       </div>
     )
   }

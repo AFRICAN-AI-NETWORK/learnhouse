@@ -3,6 +3,7 @@ import {
   useAssignmentsTask,
   useAssignmentsTaskDispatch,
 } from '@components/Contexts/Assignments/AssignmentsTaskContext'
+import { useAssignmentSubmission } from '@components/Contexts/Assignments/AssignmentSubmissionContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import AssignmentBoxUI from '@components/Objects/Activities/Assignment/AssignmentBoxUI'
 import {
@@ -60,6 +61,9 @@ function TaskFormObject({
   const assignmentTaskState = useAssignmentsTask() as any
   const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
   const assignment = useAssignments() as any
+  const assignmentSubmission = useAssignmentSubmission() as any
+  const assignmentNeedsRevision =
+    assignmentSubmission?.[0]?.submission_status === 'NEEDS_REVISION'
 
   /* TEACHER VIEW CODE */
   const [questions, setQuestions] = useState<FormSchema[]>(
@@ -774,74 +778,78 @@ function TaskFormObject({
                             )}
                           </div>
                         )}
-                        {view === 'student' && !hasSubmitted && (
-                          <div
-                            className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
-                              userSubmissions.submissions
+                        {view === 'student' &&
+                          (!hasSubmitted || assignmentNeedsRevision) && (
+                            <div
+                              className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
+                                userSubmissions.submissions
+                                  .find(
+                                    (submission) =>
+                                      submission.questionUUID ===
+                                        question.questionUUID &&
+                                      submission.blankUUID === blank.blankUUID
+                                  )
+                                  ?.answer?.trim()
+                                  ? 'bg-green-200/60 text-green-500'
+                                  : 'bg-slate-200/60 text-slate-500'
+                              } text-sm transition-all ease-linear`}
+                            >
+                              {userSubmissions.submissions
                                 .find(
                                   (submission) =>
                                     submission.questionUUID ===
                                       question.questionUUID &&
                                     submission.blankUUID === blank.blankUUID
                                 )
-                                ?.answer?.trim()
-                                ? 'bg-green-200/60 text-green-500'
-                                : 'bg-slate-200/60 text-slate-500'
-                            } text-sm transition-all ease-linear`}
-                          >
-                            {userSubmissions.submissions
-                              .find(
-                                (submission) =>
-                                  submission.questionUUID ===
-                                    question.questionUUID &&
-                                  submission.blankUUID === blank.blankUUID
-                              )
-                              ?.answer?.trim() ? (
-                              <Check size={12} className="mx-auto" />
-                            ) : (
-                              <X size={12} className="mx-auto" />
-                            )}
-                          </div>
-                        )}
-                        {view === 'student' && hasSubmitted && (
-                          <div
-                            className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
-                              isFormAnswerCorrect(
+                                ?.answer?.trim() ? (
+                                <Check size={12} className="mx-auto" />
+                              ) : (
+                                <X size={12} className="mx-auto" />
+                              )}
+                            </div>
+                          )}
+                        {view === 'student' &&
+                          hasSubmitted &&
+                          !assignmentNeedsRevision && (
+                            <div
+                              className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                                isFormAnswerCorrect(
+                                  userSubmissions.submissions.find(
+                                    (s) =>
+                                      s.questionUUID ===
+                                        question.questionUUID &&
+                                      s.blankUUID === blank.blankUUID
+                                  )?.answer ?? '',
+                                  blank.correctAnswer
+                                )
+                                  ? 'bg-lime-200 text-lime-600'
+                                  : 'bg-rose-200/60 text-rose-500'
+                              } text-sm`}
+                            >
+                              {isFormAnswerCorrect(
                                 userSubmissions.submissions.find(
                                   (s) =>
                                     s.questionUUID === question.questionUUID &&
                                     s.blankUUID === blank.blankUUID
                                 )?.answer ?? '',
                                 blank.correctAnswer
-                              )
-                                ? 'bg-lime-200 text-lime-600'
-                                : 'bg-rose-200/60 text-rose-500'
-                            } text-sm`}
-                          >
-                            {isFormAnswerCorrect(
-                              userSubmissions.submissions.find(
-                                (s) =>
-                                  s.questionUUID === question.questionUUID &&
-                                  s.blankUUID === blank.blankUUID
-                              )?.answer ?? '',
-                              blank.correctAnswer
-                            ) ? (
-                              <>
-                                <Check size={12} className="mx-auto" />
-                                <p className="mx-auto font-bold text-xs">
-                                  Correct
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <X size={12} className="mx-auto" />
-                                <p className="mx-auto font-bold text-xs">
-                                  Wrong
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        )}
+                              ) ? (
+                                <>
+                                  <Check size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Correct
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <X size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Wrong
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          )}
                       </div>
                       {view === 'teacher' &&
                         bIndex === question.blanks.length - 1 &&

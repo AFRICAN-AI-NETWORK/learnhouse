@@ -4,7 +4,7 @@ import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import { getAPIUrl } from '@services/config/config'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { swrFetcher } from '@services/utils/ts/requests'
-import { SendHorizonal, UserCheck, X } from 'lucide-react'
+import { RotateCcw, SendHorizonal, UserCheck, X } from 'lucide-react'
 import React from 'react'
 import useSWR from 'swr'
 import EvaluateAssignment from './Modals/EvaluateAssignment'
@@ -49,7 +49,7 @@ function AssignmentSubmissionsSubPage({
 
   if (assignmentError) {
     return (
-      <div className="pl-10 mr-10 flex flex-col pt-3 w-full">
+      <div className="flex w-full flex-col px-4 pt-3 sm:px-6 lg:px-10">
         <div className="text-sm font-medium text-red-600">
           {t('common.something_went_wrong')}
         </div>
@@ -59,7 +59,7 @@ function AssignmentSubmissionsSubPage({
 
   if (!assignmentSubmission) {
     return (
-      <div className="pl-10 mr-10 flex flex-col pt-3 w-full">
+      <div className="flex w-full flex-col px-4 pt-3 sm:px-6 lg:px-10">
         <div className="text-sm font-medium text-slate-500">
           {t('common.loading')}
         </div>
@@ -68,8 +68,8 @@ function AssignmentSubmissionsSubPage({
   }
 
   return (
-    <div className="pl-10 mr-10 flex flex-col pt-3 w-full">
-      <div className="flex flex-row w-full">
+    <div className="flex w-full min-w-0 flex-col px-4 pt-3 sm:px-6 lg:px-10">
+      <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-4">
         <div className="flex-1">
           <div className="flex w-fit mx-auto px-3.5 py-1 bg-rose-600/80 space-x-2 my-5 items-center text-sm font-bold text-white rounded-full">
             <X size={18} />
@@ -84,6 +84,17 @@ function AssignmentSubmissionsSubPage({
           </div>
           <div className="flex flex-col gap-4">
             {renderSubmissions('SUBMITTED')}
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="flex w-fit mx-auto px-3.5 py-1 bg-sky-600/80 space-x-2 my-5 items-center text-sm font-bold text-white rounded-full">
+            <RotateCcw size={18} />
+            <h3>
+              {t('dashboard.assignments.submissions.status.needs_revision')}
+            </h3>
+          </div>
+          <div className="flex flex-col gap-4">
+            {renderSubmissions('NEEDS_REVISION')}
           </div>
         </div>
         <div className="flex-1">
@@ -115,9 +126,9 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
   )
 
   return (
-    <div className="flex flex-row bg-white shadow-[0px_4px_16px_rgba(0,0,0,0.06)] nice-shadow rounded-lg p-4 w-[350px] mx-auto">
+    <div className="mx-auto flex w-full max-w-[350px] flex-row rounded-lg bg-white p-4 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] nice-shadow">
       <div className="flex flex-col space-y-2 w-full">
-        <div className="flex justify-between w-full">
+        <div className="flex w-full flex-col gap-1 sm:flex-row sm:justify-between">
           <h2 className="uppercase text-slate-400 text-xs tracking-tight font-semibold">
             {t('dashboard.assignments.submissions.submission_label')}
           </h2>
@@ -129,8 +140,8 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
             })}
           </p>
         </div>
-        <div className="flex justify-between space-x-2">
-          <div className="flex space-x-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:space-x-2">
+          <div className="flex min-w-0 space-x-2">
             <UserAvatar
               border="border-4"
               avatar_url={getUserAvatarMediaDirectory(
@@ -140,18 +151,20 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
               predefined_avatar={user?.avatar_image ? undefined : 'empty'}
               width={40}
             />
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-col">
               {user?.first_name && user?.last_name ? (
-                <p className="text-sm font-semibold">
+                <p className="truncate text-sm font-semibold">
                   {user?.first_name} {user?.last_name}
                 </p>
               ) : (
-                <p className="text-sm font-semibold">@{user?.username}</p>
+                <p className="truncate text-sm font-semibold">
+                  @{user?.username}
+                </p>
               )}
-              <p className="text-xs text-slate-400">{user?.email}</p>
+              <p className="truncate text-xs text-slate-400">{user?.email}</p>
             </div>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col sm:items-end">
             <Modal
               isDialogOpen={
                 gradeSudmissionModal.open &&
@@ -185,7 +198,7 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
                 'dashboard.assignments.submissions.evaluate_modal.description'
               )}
               dialogTrigger={
-                <div className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded text-xs cursor-pointer">
+                <div className="min-h-10 rounded bg-slate-800 px-4 py-2 text-center text-xs font-bold text-white cursor-pointer hover:bg-slate-700">
                   {submission.submission_status === 'GRADED'
                     ? t('dashboard.assignments.submissions.review')
                     : t('dashboard.assignments.submissions.evaluate')}
@@ -194,6 +207,11 @@ function SubmissionBox({ assignment_uuid, user_id, submission }: any) {
             />
           </div>
         </div>
+        {submission.submission_feedback && (
+          <div className="rounded-md border border-sky-100 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800">
+            {submission.submission_feedback}
+          </div>
+        )}
       </div>
     </div>
   )
