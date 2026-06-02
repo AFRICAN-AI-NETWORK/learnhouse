@@ -46,16 +46,15 @@ def upgrade() -> None:
         op.add_column('chapter', sa.Column('due_date', sqlmodel.sql.sqltypes.AutoString(), nullable=True))
     # Guard index/constraint drops — they may have already been applied
     def _safe_drop_index(name, table_name, **kw):
-        try:
+        indexes = inspector.get_indexes(table_name)
+        if any(idx['name'] == name for idx in indexes):
             op.drop_index(op.f(name), table_name=table_name, **kw)
-        except Exception:
-            pass
 
     def _safe_drop_constraint(name, table_name, **kw):
-        try:
+        fkeys = inspector.get_foreign_keys(table_name)
+        # also check unique/check constraints if possible, but foreign keys is primary here
+        if any(fk['name'] == name for fk in fkeys):
             op.drop_constraint(op.f(name), table_name, **kw)
-        except Exception:
-            pass
 
     _safe_drop_index('idx_chat_audit_log_action', table_name='chat_audit_log')
     _safe_drop_index('idx_chat_audit_log_created_at', table_name='chat_audit_log')
