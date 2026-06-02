@@ -479,27 +479,38 @@ async def add_course_to_trail(
         )
 
     # Check prerequisites
-    prereqs = db_session.exec(
-        select(CoursePrerequisite).where(CoursePrerequisite.course_id == course.id)
-    ).all()
-    if prereqs:
-        for prereq in prereqs:
-            prereq_run = db_session.exec(
-                select(TrailRun).where(
-                    TrailRun.course_id == prereq.prerequisite_course_id,
-                    TrailRun.user_id == user.id,
-                    TrailRun.status == StatusEnum.STATUS_COMPLETED
-                )
-            ).first()
-            if not prereq_run:
-                prereq_course = db_session.exec(
-                    select(Course).where(Course.id == prereq.prerequisite_course_id)
+    is_editor = False
+    if user and user.id != 0:
+        try:
+            from src.security.courses_security import courses_rbac_check
+            is_editor = await courses_rbac_check(
+                request, course.course_uuid, user, "update", db_session
+            )
+        except Exception:
+            is_editor = False
+
+    if not is_editor:
+        prereqs = db_session.exec(
+            select(CoursePrerequisite).where(CoursePrerequisite.course_id == course.id)
+        ).all()
+        if prereqs:
+            for prereq in prereqs:
+                prereq_run = db_session.exec(
+                    select(TrailRun).where(
+                        TrailRun.course_id == prereq.prerequisite_course_id,
+                        TrailRun.user_id == user.id,
+                        TrailRun.status == StatusEnum.STATUS_COMPLETED
+                    )
                 ).first()
-                course_name = prereq_course.name if prereq_course else "a prerequisite course"
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"You must complete {course_name} before starting this course."
-                )
+                if not prereq_run:
+                    prereq_course = db_session.exec(
+                        select(Course).where(Course.id == prereq.prerequisite_course_id)
+                    ).first()
+                    course_name = prereq_course.name if prereq_course else "a prerequisite course"
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"You must complete {course_name} before starting this course."
+                    )
 
     statement = select(Trail).where(
         Trail.org_id == course.org_id, Trail.user_id == user.id
