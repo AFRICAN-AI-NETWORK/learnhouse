@@ -11,7 +11,7 @@ from src.services.waitlist.emails import (
 )
 from src.db.users import UserRead
 from src.db.organizations import OrganizationRead
-from src.db.waitlist import WaitlistEmailLog
+from src.db.waitlist import WaitlistEmailLog, UserStatusEnum
 
 
 class TestSendWaitlistConfirmationEmail:
@@ -305,6 +305,10 @@ class TestActivateWaitlist:
         if len(logs) > 0:
             assert logs[0].email_sent is False
             assert logs[0].email_error is not None
+
+        db_session.refresh(waitlist_user)
+        assert waitlist_user.user_status == UserStatusEnum.WAITLIST_ACTIVATED.value
+        assert waitlist_user.waitlist_activated_date is not None
 
     @pytest.mark.asyncio
     @patch("src.services.waitlist.emails.send_waitlist_activation_email")

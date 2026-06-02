@@ -151,8 +151,7 @@ async def perform_quiz_auto_grading(
         correct_option_uuids = {
             option.get("optionUUID")
             for option in options
-            if option.get("assigned_right_answer", False)
-            and option.get("optionUUID")
+            if option.get("assigned_right_answer", False) and option.get("optionUUID")
         }
 
         if not correct_option_uuids:
@@ -193,9 +192,7 @@ async def perform_quiz_auto_grading(
     updated["grading_results"] = question_results
     submission.task_submission = updated
 
-    submission.task_submission_grade_feedback = (
-        f"Auto-graded: {correct_questions}/{total_gradable_questions} questions correct."
-    )
+    submission.task_submission_grade_feedback = f"Auto-graded: {correct_questions}/{total_gradable_questions} questions correct."
 
 
 def _is_form_answer_correct(student_answer: str, correct_answer: str) -> bool:
