@@ -7,6 +7,7 @@ from src.db.courses.assignments import (
     AssignmentTaskUpdate,
     AssignmentUpdate,
     AssignmentUserSubmissionCreate,
+    AssignmentUserSubmissionRevisionCreate,
 )
 from src.db.users import PublicUser
 from src.core.events.database import get_db_session
@@ -27,6 +28,7 @@ from src.services.courses.activities.assignments import (
     mark_activity_as_done_for_user,
     put_assignment_task_reference_file,
     put_assignment_task_submission_file,
+    reject_assignment_submission,
     read_assignment,
     read_assignment_from_activity_uuid,
     read_assignment_submissions,
@@ -449,6 +451,28 @@ async def api_delete_user_assignment_submissions(
     """
     return await delete_assignment_submission(
         request, user_id, assignment_uuid, current_user, db_session
+    )
+
+
+@router.post("/{assignment_uuid}/submissions/{user_id}/revision")
+async def api_reject_user_assignment_submission(
+    request: Request,
+    assignment_uuid: str,
+    user_id: str,
+    revision_object: AssignmentUserSubmissionRevisionCreate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session=Depends(get_db_session),
+):
+    """
+    Send an assignment submission back to the learner for revision.
+    """
+    return await reject_assignment_submission(
+        request,
+        user_id,
+        assignment_uuid,
+        revision_object,
+        current_user,
+        db_session,
     )
 
 

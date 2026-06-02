@@ -316,8 +316,7 @@ const UserFeedbackModal = (props: AIEditorToolkitProps) => {
     const original = originalText.toLowerCase()
 
     if (original.includes(phrase)) {
-      const regex = new RegExp(phrase, 'g')
-      const newText = original.replace(regex, '')
+      const newText = original.split(phrase).join('')
       return newText
     } else {
       return originalText

@@ -242,12 +242,12 @@ const LoginClient = (props: LoginClientProps) => {
                 label={t('auth.email')}
                 message={formik.errors.email}
               />
-              <Form.Control asChild>
-                <div className="relative group">
-                  <Mail
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
-                    size={18}
-                  />
+              <div className="relative group">
+                <Mail
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
+                  size={18}
+                />
+                <Form.Control asChild>
                   <input
                     name="email"
                     className={`w-full h-12 pl-12 pr-4 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('email')}`}
@@ -257,8 +257,8 @@ const LoginClient = (props: LoginClientProps) => {
                     type="email"
                     placeholder={t('auth.email_placeholder')}
                   />
-                </div>
-              </Form.Control>
+                </Form.Control>
+              </div>
             </FormField>
 
             <FormField name="password">
@@ -278,12 +278,12 @@ const LoginClient = (props: LoginClientProps) => {
                   {t('auth.forgot_password')}
                 </Link>
               </div>
-              <Form.Control asChild>
-                <div className="relative group">
-                  <Lock
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
-                    size={18}
-                  />
+              <div className="relative group">
+                <Lock
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
+                  size={18}
+                />
+                <Form.Control asChild>
                   <input
                     name="password"
                     className={`w-full h-12 pl-12 pr-12 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('password')}`}
@@ -294,15 +294,15 @@ const LoginClient = (props: LoginClientProps) => {
                     autoComplete="current-password"
                     placeholder={t('auth.password_placeholder')}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </Form.Control>
+                </Form.Control>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </FormField>
 
             <div className="pt-4">

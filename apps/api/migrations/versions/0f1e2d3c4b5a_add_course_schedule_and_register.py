@@ -136,7 +136,9 @@ def upgrade() -> None:
             sa.Column("creation_date", sa.String(), nullable=False),
             sa.Column("update_date", sa.String(), nullable=False),
             sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint("event_uuid"),
         )
@@ -171,7 +173,9 @@ def upgrade() -> None:
             sa.Column("creation_date", sa.String(), nullable=False),
             sa.Column("update_date", sa.String(), nullable=False),
             sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint("course_uuid"),
             sa.UniqueConstraint("policy_uuid"),
@@ -208,7 +212,9 @@ def upgrade() -> None:
             sa.Column("creation_date", sa.String(), nullable=False),
             sa.Column("update_date", sa.String(), nullable=False),
             sa.ForeignKeyConstraint(["course_id"], ["course.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
             sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint("entry_uuid"),

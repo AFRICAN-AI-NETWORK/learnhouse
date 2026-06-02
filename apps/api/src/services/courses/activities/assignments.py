@@ -20,6 +20,7 @@ from src.db.courses.assignments import (
     AssignmentUserSubmission,
     AssignmentUserSubmissionCreate,
     AssignmentUserSubmissionRead,
+    AssignmentUserSubmissionRevisionCreate,
     AssignmentUserSubmissionStatus,
     AssignmentTaskTypeEnum,
 )
@@ -131,68 +132,59 @@ async def perform_quiz_auto_grading(
 ) -> None:
     """
     Auto-grade a QUIZ task.
-    Only awards credit for correctly selected options (true positives).
-    grade = round((correct_selections / total_correct_options) * max_grade_value)
-
-    Wrong options that were not selected are intentionally ignored — they do NOT
-    contribute to the score. This prevents students from earning points simply by
-    submitting blank answers.
+    Awards credit only when the selected option set exactly matches the correct
+    option set for a question.
+    grade = round((correct_questions / total_gradable_questions) * max_grade_value)
 
     Stores per-question results in task_submission["grading_results"].
     """
     questions = assignment_task.contents.get("questions", [])
     student_subs = submission.task_submission.get("submissions", [])
 
-    total_correct_options = 0  # denominator: options where assigned_right_answer=True
-    correct_selections = 0  # numerator: correct options the student actually selected
+    total_gradable_questions = 0
+    correct_questions = 0
     question_results = []
 
     for question in questions:
         q_uuid = question.get("questionUUID")
         options = question.get("options", [])
-        q_correct = 0
-        q_total = 0  # correct options for this question
+        correct_option_uuids = {
+            option.get("optionUUID")
+            for option in options
+            if option.get("assigned_right_answer", False) and option.get("optionUUID")
+        }
 
-        for option in options:
-            assigned_right = option.get("assigned_right_answer", False)
-            opt_uuid = option.get("optionUUID")
+        if not correct_option_uuids:
+            question_results.append({"questionUUID": q_uuid, "correct": 0, "total": 0})
+            continue
 
-            if not assigned_right:
-                # Wrong option: no credit gained or lost — skip entirely.
-                # Counting "correctly unselected" wrong options would let students
-                # earn points without selecting any correct answers.
-                continue
+        total_gradable_questions += 1
+        selected_option_uuids = {
+            s.get("optionUUID")
+            for s in student_subs
+            if s.get("questionUUID") == q_uuid
+            and s.get("answer", False)
+            and s.get("optionUUID")
+        }
+        is_correct = selected_option_uuids == correct_option_uuids
 
-            q_total += 1
-            total_correct_options += 1
-
-            student_entry = next(
-                (
-                    s
-                    for s in student_subs
-                    if s.get("questionUUID") == q_uuid
-                    and s.get("optionUUID") == opt_uuid
-                ),
-                None,
-            )
-            student_answer = (
-                student_entry.get("answer", False) if student_entry else False
-            )
-
-            if student_answer:  # student explicitly selected this correct option
-                correct_selections += 1
-                q_correct += 1
+        if is_correct:
+            correct_questions += 1
 
         question_results.append(
-            {"questionUUID": q_uuid, "correct": q_correct, "total": q_total}
+            {
+                "questionUUID": q_uuid,
+                "correct": 1 if is_correct else 0,
+                "total": 1,
+            }
         )
 
     submission.grade = (
         round(
-            (correct_selections / total_correct_options)
+            (correct_questions / total_gradable_questions)
             * assignment_task.max_grade_value
         )
-        if total_correct_options > 0
+        if total_gradable_questions > 0
         else 0
     )
 
@@ -200,9 +192,7 @@ async def perform_quiz_auto_grading(
     updated["grading_results"] = question_results
     submission.task_submission = updated
 
-    submission.task_submission_grade_feedback = (
-        f"Auto-graded: {correct_selections}/{total_correct_options} options correct."
-    )
+    submission.task_submission_grade_feedback = f"Auto-graded: {correct_questions}/{total_gradable_questions} questions correct."
 
 
 def _is_form_answer_correct(student_answer: str, correct_answer: str) -> bool:
@@ -1598,7 +1588,11 @@ async def create_assignment_submission(
 
     assignment_user_submission = db_session.exec(statement).first()
 
-    if assignment_user_submission:
+    if (
+        assignment_user_submission
+        and assignment_user_submission.submission_status
+        != AssignmentUserSubmissionStatus.NEEDS_REVISION
+    ):
         raise HTTPException(
             status_code=400,
             detail="Assignment User Submission already exists",
@@ -1612,19 +1606,6 @@ async def create_assignment_submission(
         raise HTTPException(
             status_code=404,
             detail="Course not found",
-        )
-
-    # Check if User already submitted the assignment
-    statement = select(AssignmentUserSubmission).where(
-        AssignmentUserSubmission.assignment_id == assignment.id,
-        AssignmentUserSubmission.user_id == current_user.id,
-    )
-    assignment_user_submission = db_session.exec(statement).first()
-
-    if assignment_user_submission:
-        raise HTTPException(
-            status_code=400,
-            detail="Assignment User Submission already exists",
         )
 
     # RBAC check
@@ -1644,7 +1625,32 @@ async def create_assignment_submission(
     )
     task_submissions = db_session.exec(statement).all()
 
-    total_grade = sum(sub.grade for sub in task_submissions)
+    task_ids = {task.id for task in tasks if task.id is not None}
+    submitted_task_ids = {
+        task_submission.assignment_task_id
+        for task_submission in task_submissions
+        if task_submission.assignment_task_id in task_ids
+    }
+
+    if not tasks:
+        raise HTTPException(
+            status_code=400,
+            detail="This assignment has no tasks to submit.",
+        )
+
+    if submitted_task_ids != task_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Please save every assignment task before submitting for grading.",
+        )
+
+    current_task_submissions = [
+        task_submission
+        for task_submission in task_submissions
+        if task_submission.assignment_task_id in task_ids
+    ]
+
+    total_grade = sum(sub.grade for sub in current_task_submissions)
 
     # Check if all tasks are auto-gradable (CODE_EDITOR, QUIZ, or FORM)
     all_auto_gradable = (
@@ -1654,19 +1660,27 @@ async def create_assignment_submission(
     )
 
     status = AssignmentUserSubmissionStatus.SUBMITTED
-    if all_auto_gradable and len(task_submissions) == len(tasks):
+    if all_auto_gradable and submitted_task_ids == task_ids:
         status = AssignmentUserSubmissionStatus.GRADED
 
-    # Create Assignment User Submission
-    assignment_user_submission = AssignmentUserSubmission(
-        user_id=current_user.id,
-        assignment_id=assignment.id,  # type: ignore
-        grade=total_grade,
-        assignmentusersubmission_uuid=str(f"assignmentusersubmission_{uuid4()}"),
-        submission_status=status,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
-    )
+    current_time = str(datetime.now())
+
+    if assignment_user_submission:
+        assignment_user_submission.grade = total_grade
+        assignment_user_submission.submission_status = status
+        assignment_user_submission.submission_feedback = ""
+        assignment_user_submission.update_date = current_time
+    else:
+        assignment_user_submission = AssignmentUserSubmission(
+            user_id=current_user.id,
+            assignment_id=assignment.id,  # type: ignore
+            grade=total_grade,
+            submission_feedback="",
+            assignmentusersubmission_uuid=str(f"assignmentusersubmission_{uuid4()}"),
+            submission_status=status,
+            creation_date=current_time,
+            update_date=current_time,
+        )
 
     # Insert Assignment User Submission in DB
     db_session.add(assignment_user_submission)
@@ -1960,6 +1974,67 @@ async def update_assignment_submission(
     db_session.refresh(assignment_user_submission)
 
     # return assignment user submission read
+    return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
+
+
+async def reject_assignment_submission(
+    request: Request,
+    user_id: str,
+    assignment_uuid: str,
+    revision_object: AssignmentUserSubmissionRevisionCreate,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+):
+    # Check if assignment exists
+    statement = select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
+    assignment = db_session.exec(statement).first()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found",
+        )
+
+    # Check if course exists
+    statement = select(Course).where(Course.id == assignment.course_id)
+    course = db_session.exec(statement).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found",
+        )
+
+    # SECURITY: Require course ownership or instructor role for review actions
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
+
+    # Check if assignment user submission exists
+    statement = select(AssignmentUserSubmission).where(
+        AssignmentUserSubmission.user_id == user_id,
+        AssignmentUserSubmission.assignment_id == assignment.id,
+    )
+    assignment_user_submission = db_session.exec(statement).first()
+
+    if not assignment_user_submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment User Submission not found",
+        )
+
+    assignment_user_submission.submission_status = (
+        AssignmentUserSubmissionStatus.NEEDS_REVISION
+    )
+    assignment_user_submission.submission_feedback = (
+        revision_object.submission_feedback or ""
+    )
+    assignment_user_submission.update_date = str(datetime.now())
+
+    db_session.add(assignment_user_submission)
+    db_session.commit()
+    db_session.refresh(assignment_user_submission)
+
     return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
 
 

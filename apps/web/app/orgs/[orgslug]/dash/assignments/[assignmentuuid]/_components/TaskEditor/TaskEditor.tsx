@@ -52,29 +52,29 @@ function AssignmentTaskEditor({ page }: any) {
   }
 
   return (
-    <div className="flex flex-col font-black text-sm w-full z-20">
+    <div className="flex min-w-0 flex-col font-black text-sm w-full z-20">
       {assignmentTaskState.assignmentTask &&
         Object.keys(assignmentTaskState.assignmentTask).length > 0 && (
-          <div className="flex flex-col space-y-3">
-            <div className="flex flex-col bg-white pl-10 pr-10 text-sm tracking-tight z-10 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] pt-5 mb-3 nice-shadow">
-              <div className="flex py-1 justify-between items-center">
-                <div className="font-semibold text-lg ">
+          <div className="flex min-w-0 flex-col space-y-3">
+            <div className="flex flex-col bg-white px-4 text-sm tracking-tight z-10 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] pt-5 mb-3 nice-shadow sm:px-6 lg:px-10">
+              <div className="flex flex-col gap-3 py-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 truncate font-semibold text-lg">
                   {assignmentTaskState?.assignmentTask.title}
                 </div>
-                <div>
+                <div className="shrink-0">
                   <div
                     onClick={() => deleteTaskUI()}
-                    className="flex px-2 py-1.5 cursor-pointer rounded-md space-x-2 items-center bg-linear-to-bl text-red-800 bg-rose-100 border border-rose-600/10 shadow-rose-900/10 shadow-lg"
+                    className="flex min-h-10 cursor-pointer items-center justify-center space-x-2 rounded-md border border-rose-600/10 bg-linear-to-bl bg-rose-100 px-3 py-1.5 text-red-800 shadow-lg shadow-rose-900/10"
                   >
                     <Trash size={18} />
                     <p className="text-xs font-semibold">Delete Task</p>
                   </div>
                 </div>
               </div>
-              <div className="flex space-x-2 ">
+              <div className="flex gap-2 overflow-x-auto">
                 <div
                   onClick={() => setSelectedSubPage('general')}
-                  className={`flex space-x-4 py-2 w-fit text-center border-black transition-all ease-linear ${
+                  className={`flex shrink-0 py-2 text-center border-black transition-all ease-linear ${
                     selectedSubPage === 'general' ? 'border-b-4' : 'opacity-50'
                   } cursor-pointer`}
                 >
@@ -85,7 +85,7 @@ function AssignmentTaskEditor({ page }: any) {
                 </div>
                 <div
                   onClick={() => setSelectedSubPage('content')}
-                  className={`flex space-x-4 py-2 w-fit text-center border-black transition-all ease-linear ${
+                  className={`flex shrink-0 py-2 text-center border-black transition-all ease-linear ${
                     selectedSubPage === 'content' ? 'border-b-4' : 'opacity-50'
                   } cursor-pointer`}
                 >
@@ -96,14 +96,14 @@ function AssignmentTaskEditor({ page }: any) {
                 </div>
               </div>
             </div>
-            <div className="mt-10 mx-auto w-full max-w-[95%] lg:max-w-5xl bg-white rounded-xl shadow-xs px-4 sm:px-6 py-5 nice-shadow overflow-hidden min-w-0">
+            <div className="mx-auto mt-4 w-full max-w-[95%] bg-white rounded-xl shadow-xs px-3 py-4 nice-shadow overflow-hidden min-w-0 sm:px-6 sm:py-5 lg:mt-10 lg:max-w-5xl">
               {selectedSubPage === 'general' && <AssignmentTaskGeneralEdit />}
               {selectedSubPage === 'content' && <AssignmentTaskContentEdit />}
             </div>
           </div>
         )}
       {Object.keys(assignmentTaskState.assignmentTask).length == 0 && (
-        <div className="flex flex-col h-full bg-white pl-10 pr-10 text-sm tracking-tight z-10 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] pt-5">
+        <div className="flex flex-col h-full bg-white px-4 text-sm tracking-tight z-10 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] pt-5 sm:px-6 lg:px-10">
           <div className="flex justify-center items-center h-full text-gray-300 antialiased">
             <div className="flex flex-col space-y-2 items-center">
               <TentTree size={60} />

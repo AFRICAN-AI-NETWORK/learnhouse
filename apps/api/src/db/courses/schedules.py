@@ -88,6 +88,12 @@ class CourseTimetableEventRead(CourseTimetableEventBase):
     update_date: str
 
 
+class StudentTimetableEventRead(CourseTimetableEventRead):
+    course_id: int
+    course_name: str
+    course_description: Optional[str] = None
+
+
 class CourseRegisterPolicyBase(SQLModel):
     enabled: bool = True
     frequency: RegisterFrequencyEnum = RegisterFrequencyEnum.weekly

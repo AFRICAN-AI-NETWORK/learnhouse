@@ -2,6 +2,9 @@ version = 1
 revision = 3
 requires-python = ">=3.12.3, <3.13.0"
 
+[manifest]
+overrides = [{ name = "pyjwt", specifier = ">=2.13.0" }]
+
 [[package]]
 name = "alembic"
 version = "1.18.4"
@@ -654,6 +657,7 @@ dependencies = [
     { name = "passlib" },
     { name = "psycopg2-binary" },
     { name = "pydantic", extra = ["email"] },
+    { name = "pyjwt" },
     { name = "pypdf" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -706,6 +710,7 @@ requires-dist = [
     { name = "passlib", specifier = ">=1.7.4" },
     { name = "psycopg2-binary", specifier = ">=2.9.9" },
     { name = "pydantic", extras = ["email"], specifier = ">=1.8.0,<2.0.0" },
+    { name = "pyjwt", specifier = ">=1.7.1,<2.0.0" },
     { name = "pypdf", specifier = ">=6.7.5" },
     { name = "pytest", specifier = ">=8.2.2" },
     { name = "pytest-asyncio", specifier = ">=1.1.0" },
@@ -1111,11 +1116,11 @@ wheels = [
 
 [[package]]
 name = "pyjwt"
-version = "1.7.1"
+version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2f/38/ff37a24c0243c5f45f5798bd120c0f873eeed073994133c084e1cf13b95c/PyJWT-1.7.1.tar.gz", hash = "sha256:8d59a976fb773f3e6a39c85636357c4f0e242707394cadadd9814f5cbaa20e96", size = 41979, upload-time = "2018-12-07T13:40:09.26Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/81/58d0ac84e1ef3a3843791d6954d94c0b33d526c75eeb1efbce9d0a4c4077/pyjwt-2.13.0.tar.gz", hash = "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423", size = 107515, upload-time = "2026-05-21T19:54:36.618Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/8b/6a9f14b5f781697e51259d81657e6048fd31a113229cf346880bb7545565/PyJWT-1.7.1-py2.py3-none-any.whl", hash = "sha256:5c6eca3c2940464d106b99ba83b00c6add741c9becaec087fb7ccdefea71350e", size = 18928, upload-time = "2018-12-07T13:40:06.872Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/5e/ecf12fdb62546d64385c158514e9b2b671f7832108ef2ecd2020ce0af2d1/pyjwt-2.13.0-py3-none-any.whl", hash = "sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728", size = 31274, upload-time = "2026-05-21T19:54:35.362Z" },
 ]
 
 [[package]]

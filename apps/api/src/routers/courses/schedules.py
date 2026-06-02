@@ -14,6 +14,7 @@ from src.db.courses.schedules import (
     CourseTimetableEventRead,
     CourseTimetableEventUpdate,
     RegisterEntryStatusEnum,
+    StudentTimetableEventRead,
 )
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
@@ -23,6 +24,7 @@ from src.services.courses.schedules import (
     get_register_entries,
     get_register_policy,
     get_register_summary,
+    get_my_timetable_events,
     get_timetable_events,
     mark_register,
     update_register_entry,
@@ -31,6 +33,19 @@ from src.services.courses.schedules import (
 )
 
 router = APIRouter()
+
+
+@router.get("/timetable/me")
+async def api_get_my_timetable(
+    request: Request,
+    org_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[StudentTimetableEventRead]:
+    """
+    Get published timetable events for the current user across courses in an org.
+    """
+    return await get_my_timetable_events(request, org_id, current_user, db_session)
 
 
 @router.get("/{course_uuid}/timetable")
