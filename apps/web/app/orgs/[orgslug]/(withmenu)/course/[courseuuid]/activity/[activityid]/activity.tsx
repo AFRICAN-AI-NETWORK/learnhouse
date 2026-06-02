@@ -183,6 +183,82 @@ function useActivityPosition(course: any, activityId: string) {
   }, [course, activityId])
 }
 
+function getCourseTrailRun(courseUuid: string, trailData: any) {
+  const cleanCourseUuid = courseUuid?.replace('course_', '')
+
+  return trailData?.runs?.find((run: any) => {
+    const runCourseUuid =
+      run.course?.course_uuid || run.course_uuid || run.course?.uuid
+
+    return runCourseUuid?.replace('course_', '') === cleanCourseUuid
+  })
+}
+
+function getCompletedActivityStep(activity: any, course: any, trailData: any) {
+  const run = getCourseTrailRun(course.course_uuid, trailData)
+
+  return run?.steps?.find(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
+      step.complete === true
+  )
+}
+
+function getActivityPoints(activity: any) {
+  const points = Number(activity?.points || 0)
+  return Number.isFinite(points) ? points : 0
+}
+
+function ActivityPointsSummary({
+  activity,
+  course,
+  trailData,
+}: {
+  activity: any
+  course: any
+  trailData: any
+}) {
+  const assignedPoints = getActivityPoints(activity)
+
+  if (assignedPoints <= 0) {
+    return null
+  }
+
+  const completedStep = getCompletedActivityStep(activity, course, trailData)
+  const hasEarnedPoints = Boolean(completedStep)
+  const storedEarnedPoints = Number(completedStep?.points_earned || 0)
+  const earnedPoints =
+    hasEarnedPoints && storedEarnedPoints > 0
+      ? storedEarnedPoints
+      : assignedPoints
+  const displayedPoints = hasEarnedPoints ? earnedPoints : assignedPoints
+
+  return (
+    <div
+      className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase sm:h-10 sm:w-auto sm:px-4 sm:text-xs ${
+        hasEarnedPoints
+          ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300'
+          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/8 dark:bg-white/5 dark:text-white/60'
+      }`}
+      title={
+        hasEarnedPoints
+          ? `${displayedPoints}/${assignedPoints} points earned`
+          : `${assignedPoints} points available`
+      }
+    >
+      <Trophy size={16} />
+      <span className="truncate">
+        {hasEarnedPoints
+          ? `${displayedPoints}/${assignedPoints} pts earned`
+          : `0/${assignedPoints} pts earned`}
+      </span>
+    </div>
+  )
+}
+
 function ActivityActions({
   activity,
   activityid,
@@ -533,7 +609,12 @@ function ActivityClient(props: ActivityClientProps) {
     }
   }, [activity.activity_type, isFocusMode])
 
-  const totalActivities = useMemo(
+  const currentTrailRun = useMemo(
+    () => getCourseTrailRun(course.course_uuid, trailData),
+    [course.course_uuid, trailData]
+  )
+
+  const fallbackTotalActivities = useMemo(
     () =>
       course.chapters?.reduce(
         (acc: number, chapter: any) => acc + (chapter.activities?.length || 0),
@@ -542,16 +623,12 @@ function ActivityClient(props: ActivityClientProps) {
     [course.chapters]
   )
 
-  const completedActivities = useMemo(() => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((run: any) => {
-      const runCourseUuid =
-        run.course?.course_uuid || run.course_uuid || run.course?.uuid
-      return runCourseUuid?.replace('course_', '') === cleanCourseUuid
-    })
+  const totalActivities =
+    currentTrailRun?.course_total_steps || fallbackTotalActivities
 
-    return run?.steps?.filter((step: any) => step.complete === true).length || 0
-  }, [course.course_uuid, trailData])
+  const completedActivities =
+    currentTrailRun?.steps?.filter((step: any) => step.complete === true)
+      .length || 0
 
   const progressPercentage =
     totalActivities > 0
@@ -1358,6 +1435,12 @@ function ActivityPageNavbar({
                       />
                     </AssignmentSubmissionProvider>
                   )}
+
+                  <ActivityPointsSummary
+                    activity={activity}
+                    course={course}
+                    trailData={trailData}
+                  />
 
                   <button
                     onClick={() =>

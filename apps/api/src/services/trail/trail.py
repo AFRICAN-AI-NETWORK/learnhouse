@@ -90,6 +90,7 @@ async def get_user_trails(
     for trail_run in trail_runs:
         statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id)
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -130,6 +131,38 @@ async def check_trail_presence(
         return trail
 
     return trail
+
+
+def get_activity_points_earned(activity: Activity, is_late: bool) -> int:
+    points = activity.points or 0
+    return int(points * 0.8) if is_late else points
+
+
+def backfill_completed_trail_step_points(
+    trail_steps: list[TrailStep],
+    db_session: Session,
+) -> None:
+    updated = False
+
+    for trail_step in trail_steps:
+        if not trail_step.complete or trail_step.points_earned:
+            continue
+
+        activity = db_session.exec(
+            select(Activity).where(Activity.id == trail_step.activity_id)
+        ).first()
+        if not activity or not activity.points:
+            continue
+
+        trail_step.points_earned = get_activity_points_earned(
+            activity, trail_step.is_late
+        )
+        trail_step.update_date = str(datetime.now())
+        db_session.add(trail_step)
+        updated = True
+
+    if updated:
+        db_session.commit()
 
 
 async def get_user_trail_with_orgid(
@@ -174,6 +207,7 @@ async def get_user_trail_with_orgid(
     for trail_run in trail_runs:
         statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id)
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -321,6 +355,8 @@ async def add_activity_to_trail(
                                 detail="You must complete the previous module before accessing this one."
                             )
 
+    points_earned = get_activity_points_earned(activity, is_late)
+
     if not trailstep:
         trailstep = TrailStep(
             trailrun_id=trailrun.id if trailrun.id is not None else 0,
@@ -332,11 +368,19 @@ async def add_activity_to_trail(
             teacher_verified=False,
             grade="",
             user_id=user.id,
-            points_earned=activity.points if not is_late else int(activity.points * 0.8), # 20% late penalty
+            points_earned=points_earned,
             is_late=is_late,
             creation_date=str(datetime.now()),
             update_date=str(datetime.now()),
         )
+        db_session.add(trailstep)
+        db_session.commit()
+        db_session.refresh(trailstep)
+    else:
+        trailstep.complete = True
+        trailstep.points_earned = points_earned
+        trailstep.is_late = is_late
+        trailstep.update_date = str(datetime.now())
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -362,6 +406,7 @@ async def add_activity_to_trail(
             TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
         )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -440,6 +485,7 @@ async def remove_activity_from_trail(
             TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
         )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -561,6 +607,7 @@ async def add_course_to_trail(
             TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
         )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -638,6 +685,7 @@ async def remove_course_from_trail(
             TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
         )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps

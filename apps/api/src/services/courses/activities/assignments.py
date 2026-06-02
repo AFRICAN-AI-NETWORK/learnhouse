@@ -1753,9 +1753,17 @@ async def create_assignment_submission(
             teacher_verified=False,
             grade="",
             user_id=user.id,  # type: ignore
+            points_earned=activity.points or 0,
             creation_date=str(datetime.now()),
             update_date=str(datetime.now()),
         )
+        db_session.add(trailstep)
+        db_session.commit()
+        db_session.refresh(trailstep)
+    else:
+        trailstep.complete = True
+        trailstep.points_earned = activity.points or 0
+        trailstep.update_date = str(datetime.now())
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -2298,6 +2306,7 @@ async def mark_activity_as_done_for_user(
 
     # Mark activity as done
     trailstep.complete = True
+    trailstep.points_earned = activity.points or 0
     trailstep.update_date = str(datetime.now())
 
     # Insert TrailStep in DB

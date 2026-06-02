@@ -28,11 +28,14 @@ function TrailCourseElement(props: TrailCourseElementProps) {
   const course = props.course
   const router = useRouter()
   const course_total_steps = props.run.course_total_steps
-  const course_completed_steps = props.run.steps.length
+  const course_completed_steps = props.run.steps.filter(
+    (step: any) => step.complete === true
+  ).length
   const orgID = org?.id
-  const course_progress = Math.round(
-    (course_completed_steps / course_total_steps) * 100
-  )
+  const course_progress =
+    course_total_steps > 0
+      ? Math.round((course_completed_steps / course_total_steps) * 100)
+      : 0
 
   const [courseCertificate, setCourseCertificate] = useState<any>(null)
   const [isLoadingCertificate, setIsLoadingCertificate] = useState(false)
