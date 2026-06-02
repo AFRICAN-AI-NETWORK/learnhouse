@@ -130,7 +130,7 @@ function WatermarkedActivityContent({
       {children}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-4 right-4 z-[80] max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
+        className="pointer-events-none absolute bottom-4 right-4 z-80 max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
       >
         {watermarkText}
       </div>
@@ -1234,7 +1234,7 @@ function ActivityPageNavbar({
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
         <div className="flex gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 items-center gap-4 gap-5">
+          <div className="flex min-w-0 items-center gap-4">
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
               className="hidden shrink-0 bg-white p-1 shadow-xs dark:bg-transparent sm:block"
@@ -1288,7 +1288,7 @@ function ActivityPageNavbar({
                       </Link>
                     )}
 
-                  {activity.activity_type === 'TYPE_ASSIGNMENT' ? (
+                  {activity.activity_type === 'TYPE_ASSIGNMENT' && (
                     <AssignmentSubmissionProvider
                       assignment_uuid={assignment?.assignment_uuid}
                     >
@@ -1300,49 +1300,49 @@ function ActivityPageNavbar({
                         orgslug={orgslug}
                       />
                     </AssignmentSubmissionProvider>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        handleMarkAsComplete(
-                          activity.activity_uuid,
-                          !isActivityComplete(
-                            activity.activity_uuid,
-                            course.course_uuid,
-                            trailData
-                          )
-                        )
-                      }
-                      disabled={loadingMarkComplete}
-                      className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-xs font-bold uppercase transition ${
-                        isActivityComplete(
+                  )}
+
+                  <button
+                    onClick={() =>
+                      handleMarkAsComplete(
+                        activity.activity_uuid,
+                        !isActivityComplete(
                           activity.activity_uuid,
                           course.course_uuid,
                           trailData
                         )
-                          ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
-                          : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
-                      } disabled:cursor-not-allowed disabled:opacity-70`}
-                    >
-                      {loadingMarkComplete ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        ) ? (
-                        <CheckCircle size={16} />
-                      ) : (
-                        <Circle size={16} />
-                      )}
-                      {isActivityComplete(
+                      )
+                    }
+                    disabled={loadingMarkComplete}
+                    className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-xs font-bold uppercase transition ${
+                      isActivityComplete(
                         activity.activity_uuid,
                         course.course_uuid,
                         trailData
                       )
-                        ? t('common.completed')
-                        : t('activities.mark_as_complete')}
-                    </button>
-                  )}
+                        ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
+                        : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {loadingMarkComplete ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : isActivityComplete(
+                        activity.activity_uuid,
+                        course.course_uuid,
+                        trailData
+                      ) ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <Circle size={16} />
+                    )}
+                    {isActivityComplete(
+                      activity.activity_uuid,
+                      course.course_uuid,
+                      trailData
+                    )
+                      ? t('common.completed')
+                      : t('activities.mark_as_complete')}
+                  </button>
                 </div>
               </AuthenticatedClientElement>
             )}
