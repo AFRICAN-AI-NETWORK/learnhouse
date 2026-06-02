@@ -183,6 +183,82 @@ function useActivityPosition(course: any, activityId: string) {
   }, [course, activityId])
 }
 
+function getCourseTrailRun(courseUuid: string, trailData: any) {
+  const cleanCourseUuid = courseUuid?.replace('course_', '')
+
+  return trailData?.runs?.find((run: any) => {
+    const runCourseUuid =
+      run.course?.course_uuid || run.course_uuid || run.course?.uuid
+
+    return runCourseUuid?.replace('course_', '') === cleanCourseUuid
+  })
+}
+
+function getCompletedActivityStep(activity: any, course: any, trailData: any) {
+  const run = getCourseTrailRun(course.course_uuid, trailData)
+
+  return run?.steps?.find(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
+      step.complete === true
+  )
+}
+
+function getActivityPoints(activity: any) {
+  const points = Number(activity?.points || 0)
+  return Number.isFinite(points) ? points : 0
+}
+
+function ActivityPointsSummary({
+  activity,
+  course,
+  trailData,
+}: {
+  activity: any
+  course: any
+  trailData: any
+}) {
+  const assignedPoints = getActivityPoints(activity)
+
+  if (assignedPoints <= 0) {
+    return null
+  }
+
+  const completedStep = getCompletedActivityStep(activity, course, trailData)
+  const hasEarnedPoints = Boolean(completedStep)
+  const storedEarnedPoints = Number(completedStep?.points_earned || 0)
+  const earnedPoints =
+    hasEarnedPoints && storedEarnedPoints > 0
+      ? storedEarnedPoints
+      : assignedPoints
+  const displayedPoints = hasEarnedPoints ? earnedPoints : assignedPoints
+
+  return (
+    <div
+      className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase sm:w-auto sm:px-4 sm:text-xs ${
+        hasEarnedPoints
+          ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300'
+          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/8 dark:bg-white/5 dark:text-white/60'
+      }`}
+      title={
+        hasEarnedPoints
+          ? `${displayedPoints}/${assignedPoints} points earned`
+          : `${assignedPoints} points available`
+      }
+    >
+      <Trophy size={16} />
+      <span className="truncate">
+        {hasEarnedPoints
+          ? `${displayedPoints}/${assignedPoints} pts earned`
+          : `0/${assignedPoints} pts earned`}
+      </span>
+    </div>
+  )
+}
+
 function ActivityActions({
   activity,
   activityid,
@@ -381,7 +457,24 @@ function ActivityClient(props: ActivityClientProps) {
       case 'TYPE_VIDEO':
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <VideoActivity course={course} activity={activity} />
+            <VideoActivity
+              course={course}
+              activity={activity}
+              enforceLinearPlayback={
+                activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED'
+              }
+              onComplete={() => {
+                if (
+                  !isActivityComplete(
+                    activity.activity_uuid,
+                    course.course_uuid,
+                    trailData
+                  )
+                ) {
+                  handleMarkAsComplete(activity.activity_uuid, true)
+                }
+              }}
+            />
           </Suspense>
         )
       case 'TYPE_DOCUMENT':
@@ -533,7 +626,12 @@ function ActivityClient(props: ActivityClientProps) {
     }
   }, [activity.activity_type, isFocusMode])
 
-  const totalActivities = useMemo(
+  const currentTrailRun = useMemo(
+    () => getCourseTrailRun(course.course_uuid, trailData),
+    [course.course_uuid, trailData]
+  )
+
+  const fallbackTotalActivities = useMemo(
     () =>
       course.chapters?.reduce(
         (acc: number, chapter: any) => acc + (chapter.activities?.length || 0),
@@ -542,16 +640,12 @@ function ActivityClient(props: ActivityClientProps) {
     [course.chapters]
   )
 
-  const completedActivities = useMemo(() => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((run: any) => {
-      const runCourseUuid =
-        run.course?.course_uuid || run.course_uuid || run.course?.uuid
-      return runCourseUuid?.replace('course_', '') === cleanCourseUuid
-    })
+  const totalActivities =
+    currentTrailRun?.course_total_steps || fallbackTotalActivities
 
-    return run?.steps?.filter((step: any) => step.complete === true).length || 0
-  }, [course.course_uuid, trailData])
+  const completedActivities =
+    currentTrailRun?.steps?.filter((step: any) => step.complete === true)
+      .length || 0
 
   const progressPercentage =
     totalActivities > 0
@@ -1286,29 +1380,38 @@ function ActivityPageNavbar({
 }) {
   const { t } = useTranslation()
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const activityComplete = isActivityComplete(
+    activity.activity_uuid,
+    course.course_uuid,
+    trailData
+  )
+  const requiresVideoWatch =
+    activity.activity_type === 'TYPE_VIDEO' &&
+    activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
+    !activityComplete
 
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
-      <div className="flex flex-col gap-2 px-4 py-2 sm:gap-4 sm:px-6 sm:py-4 xl:px-8">
-        <div className="flex flex-col gap-2 sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+      <div className="px-4 py-3 sm:px-6 xl:px-8">
+        <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_auto] lg:items-center lg:gap-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
               className="hidden shrink-0 bg-white p-1 shadow-xs dark:bg-transparent sm:block"
             >
               <img
-                className="w-32"
+                className="h-9 w-auto max-w-32 object-contain"
                 src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
                 alt=""
               />
             </Link>
             <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 flex-col gap-2 sm:gap-3">
+              <div className="flex min-w-0 flex-col gap-2">
                 <p className="text-[10px] font-semibold uppercase text-slate-500 dark:text-white/45 sm:text-xs sm:normal-case">
                   {t('courses.course_progress')}
                 </p>
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-40 xl:w-48">
+                  <div className="h-1.5 w-full max-w-72 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 lg:max-w-80">
                     <div
                       className="h-full rounded-full bg-blue-600"
                       style={{ width: `${progressPercentage}%` }}
@@ -1326,7 +1429,7 @@ function ActivityPageNavbar({
             activity.published == true &&
             activity.content.paid_access != false && (
               <AuthenticatedClientElement checkMethod="authentication">
-                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end xl:max-w-[60vw]">
+                <div className="grid w-full grid-cols-2 items-center gap-2 sm:grid-cols-[repeat(auto-fit,minmax(150px,max-content))] sm:justify-end lg:flex lg:w-auto lg:flex-nowrap">
                   {/* {activity.activity_type !== 'TYPE_SMART_ARTICLE' && (
                     <AIActivityAsk activity={activity} />
                   )} */}
@@ -1338,7 +1441,7 @@ function ActivityPageNavbar({
                           getUriWithOrg(orgslug, '') +
                           `/course/${courseuuid}/activity/${activityid}/edit`
                         }
-                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:h-10 sm:w-auto sm:px-4 sm:text-xs"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:w-auto sm:px-4 sm:text-xs"
                       >
                         <Edit2 size={16} />
                         {t('courses.contribute')}
@@ -1359,46 +1462,38 @@ function ActivityPageNavbar({
                     </AssignmentSubmissionProvider>
                   )}
 
+                  <ActivityPointsSummary
+                    activity={activity}
+                    course={course}
+                    trailData={trailData}
+                  />
+
                   <button
                     onClick={() =>
                       handleMarkAsComplete(
                         activity.activity_uuid,
-                        !isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        )
+                        !activityComplete
                       )
                     }
-                    disabled={loadingMarkComplete}
-                    className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition ${
-                      isActivityComplete(
-                        activity.activity_uuid,
-                        course.course_uuid,
-                        trailData
-                      )
+                    disabled={loadingMarkComplete || requiresVideoWatch}
+                    className={`col-span-2 inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition sm:col-auto sm:min-w-48 sm:px-4 sm:text-xs ${
+                      activityComplete
                         ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
                         : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
                     } disabled:cursor-not-allowed disabled:opacity-70`}
                   >
                     {loadingMarkComplete ? (
                       <Loader2 size={16} className="animate-spin" />
-                    ) : isActivityComplete(
-                        activity.activity_uuid,
-                        course.course_uuid,
-                        trailData
-                      ) ? (
+                    ) : activityComplete ? (
                       <CheckCircle size={16} />
                     ) : (
                       <Circle size={16} />
                     )}
-                    {isActivityComplete(
-                      activity.activity_uuid,
-                      course.course_uuid,
-                      trailData
-                    )
-                      ? t('common.completed')
-                      : t('activities.mark_as_complete')}
+                    {requiresVideoWatch
+                      ? 'Watch video to complete'
+                      : activityComplete
+                        ? t('common.completed')
+                        : t('activities.mark_as_complete')}
                   </button>
                 </div>
               </AuthenticatedClientElement>
@@ -2308,9 +2403,9 @@ function AssignmentTools(props: {
 
   if (!submission || submission.length === 0 || needsRevision) {
     return (
-      <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+      <div className="contents">
         {needsRevision && (
-          <div className="flex w-full min-w-0 flex-col gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-sky-700 sm:w-[280px] sm:px-3">
+          <div className="col-span-2 flex min-w-0 flex-col gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-sky-700 sm:col-auto sm:w-64 sm:px-3">
             <div className="flex items-center gap-2">
               <Info size={14} className="shrink-0" />
               <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
@@ -2325,7 +2420,7 @@ function AssignmentTools(props: {
           </div>
         )}
         {!isComplete && totalTasks > 0 && (
-          <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:w-auto sm:px-3 sm:py-1.5">
+          <div className="col-span-2 flex h-8 min-w-0 items-center justify-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:col-auto sm:h-10 sm:px-3">
             <Info size={14} className="shrink-0" />
             <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
               {t('assignments.unsaved_tasks_warning')}
@@ -2335,14 +2430,11 @@ function AssignmentTools(props: {
         {!isComplete ? (
           <div
             onClick={submitForGradingUI}
-            className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-amber-600 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-amber-700 sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5"
+            className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-600 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-amber-700 sm:w-auto sm:min-w-44 sm:px-4"
           >
-            <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
-              {t('common.status')}
-            </span>
-            <div className="flex min-w-0 items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <BookOpenCheck size={17} className="shrink-0" />
-              <span className="min-w-0 truncate text-xs font-bold">
+              <span className="whitespace-nowrap text-xs font-bold">
                 {t('assignments.submit_for_grading')}
               </span>
             </div>
@@ -2353,13 +2445,10 @@ function AssignmentTools(props: {
             confirmationMessage={t('assignments.submit_assignment_confirm')}
             dialogTitle={t('assignments.submit_assignment_title')}
             dialogTrigger={
-              <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-cyan-800 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-cyan-900 sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
-                <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
-                  {t('common.status')}
-                </span>
-                <div className="flex min-w-0 items-center space-x-2">
+              <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-cyan-800 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-cyan-900 sm:w-auto sm:min-w-44 sm:px-4">
+                <div className="flex items-center space-x-2">
                   <BookOpenCheck size={17} className="shrink-0" />
-                  <span className="min-w-0 truncate text-xs font-bold">
+                  <span className="whitespace-nowrap text-xs font-bold">
                     {t('assignments.submit_for_grading')}
                   </span>
                 </div>
@@ -2375,13 +2464,10 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'SUBMITTED') {
     return (
-      <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-3 text-white transition delay-150 duration-300 ease-in-out sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
-        <span className="mb-1 hidden text-[10px] font-bold uppercase sm:block">
-          {t('common.status')}
-        </span>
-        <div className="flex min-w-0 items-center space-x-2">
+      <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-3 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-44 sm:px-4">
+        <div className="flex items-center space-x-2">
           <UserRoundPen size={17} className="shrink-0" />
-          <span className="min-w-0 truncate text-xs font-bold">
+          <span className="whitespace-nowrap text-xs font-bold">
             {t('assignments.grading_in_progress')}
           </span>
         </div>
@@ -2391,14 +2477,11 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'GRADED') {
     return (
-      <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-3 text-white transition delay-150 duration-300 ease-in-out sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
-        <span className="mb-1 hidden text-[10px] font-bold uppercase sm:block">
-          {t('common.status')}
-        </span>
-        <div className="flex min-w-0 items-center space-x-2">
+      <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-3 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-32 sm:px-4">
+        <div className="flex items-center space-x-2">
           <CheckCircle size={17} className="shrink-0" />
-          <span className="flex min-w-0 items-center space-x-2 text-xs font-bold">
-            <span className="truncate">{t('assignments.graded')} </span>
+          <span className="flex items-center space-x-2 whitespace-nowrap text-xs font-bold">
+            <span>{t('assignments.graded')} </span>
             <span className="shrink-0 rounded-md bg-white px-1 py-0.5 text-teal-800">
               {finalGrade}
             </span>
