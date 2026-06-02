@@ -24,9 +24,16 @@ interface VideoActivityProps {
   course: {
     course_uuid: string
   }
+  enforceLinearPlayback?: boolean
+  onComplete?: () => void
 }
 
-function VideoActivity({ activity, course }: VideoActivityProps) {
+function VideoActivity({
+  activity,
+  course,
+  enforceLinearPlayback = false,
+  onComplete,
+}: VideoActivityProps) {
   const org = useOrg() as any
   const [videoId, setVideoId] = React.useState('')
 
@@ -58,7 +65,12 @@ function VideoActivity({ activity, course }: VideoActivityProps) {
                 {(() => {
                   const src = getVideoSrc()
                   return src ? (
-                    <LearnHousePlayer src={src} details={activity.details} />
+                    <LearnHousePlayer
+                      src={src}
+                      details={activity.details}
+                      enforceLinearPlayback={enforceLinearPlayback}
+                      onComplete={onComplete}
+                    />
                   ) : null
                 })()}
               </div>

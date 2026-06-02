@@ -457,7 +457,24 @@ function ActivityClient(props: ActivityClientProps) {
       case 'TYPE_VIDEO':
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <VideoActivity course={course} activity={activity} />
+            <VideoActivity
+              course={course}
+              activity={activity}
+              enforceLinearPlayback={
+                activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED'
+              }
+              onComplete={() => {
+                if (
+                  !isActivityComplete(
+                    activity.activity_uuid,
+                    course.course_uuid,
+                    trailData
+                  )
+                ) {
+                  handleMarkAsComplete(activity.activity_uuid, true)
+                }
+              }}
+            />
           </Suspense>
         )
       case 'TYPE_DOCUMENT':
@@ -1363,6 +1380,15 @@ function ActivityPageNavbar({
 }) {
   const { t } = useTranslation()
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const activityComplete = isActivityComplete(
+    activity.activity_uuid,
+    course.course_uuid,
+    trailData
+  )
+  const requiresVideoWatch =
+    activity.activity_type === 'TYPE_VIDEO' &&
+    activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
+    !activityComplete
 
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
@@ -1446,42 +1472,28 @@ function ActivityPageNavbar({
                     onClick={() =>
                       handleMarkAsComplete(
                         activity.activity_uuid,
-                        !isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        )
+                        !activityComplete
                       )
                     }
-                    disabled={loadingMarkComplete}
+                    disabled={loadingMarkComplete || requiresVideoWatch}
                     className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition ${
-                      isActivityComplete(
-                        activity.activity_uuid,
-                        course.course_uuid,
-                        trailData
-                      )
+                      activityComplete
                         ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
                         : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
                     } disabled:cursor-not-allowed disabled:opacity-70`}
                   >
                     {loadingMarkComplete ? (
                       <Loader2 size={16} className="animate-spin" />
-                    ) : isActivityComplete(
-                        activity.activity_uuid,
-                        course.course_uuid,
-                        trailData
-                      ) ? (
+                    ) : activityComplete ? (
                       <CheckCircle size={16} />
                     ) : (
                       <Circle size={16} />
                     )}
-                    {isActivityComplete(
-                      activity.activity_uuid,
-                      course.course_uuid,
-                      trailData
-                    )
-                      ? t('common.completed')
-                      : t('activities.mark_as_complete')}
+                    {requiresVideoWatch
+                      ? 'Watch video to complete'
+                      : activityComplete
+                        ? t('common.completed')
+                        : t('activities.mark_as_complete')}
                   </button>
                 </div>
               </AuthenticatedClientElement>
