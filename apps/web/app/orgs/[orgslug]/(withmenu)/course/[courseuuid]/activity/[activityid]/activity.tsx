@@ -1314,7 +1314,7 @@ function ActivityPageNavbar({
                       )
                     }
                     disabled={loadingMarkComplete}
-                    className={`inline-flex h-10 items-center gap-2 rounded-md border px-4 text-xs font-bold uppercase transition ${
+                    className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition ${
                       isActivityComplete(
                         activity.activity_uuid,
                         course.course_uuid,
