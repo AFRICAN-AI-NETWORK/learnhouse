@@ -14,6 +14,7 @@ import {
   BookOpen,
   Check,
   ChevronDown,
+  ClipboardCheck,
   Clock3,
   File,
   Image as ImageIcon,
@@ -130,6 +131,8 @@ const CourseClient = (props: any) => {
         return t('activities.assignment')
       case 'TYPE_SMART_ARTICLE':
         return 'Interactive Article'
+      case 'TYPE_ATTENDANCE':
+        return 'Attendance'
       default:
         return t('activities.learning_material')
     }
@@ -553,51 +556,102 @@ const ChapterCard = ({
   isActivityDone: (activity: any) => any
   isActivityCurrent: (activity: any) => boolean
   t: any
-}) => (
-  <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-    <button
-      onClick={onToggle}
-      className="flex w-full items-center gap-4 px-4 py-4 text-left hover:bg-gray-50"
-    >
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-700">
-        {chapterIndex + 1}
-      </span>
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate text-base font-bold text-gray-950">
-          {chapter.name}
-        </h3>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
-          <Layers size={15} />
-          {completedInChapter}/{chapter.activities.length}{' '}
-          {t('common.completed')}
-        </p>
-      </div>
-      <ChevronDown
-        size={20}
-        className={`text-gray-500 transition-transform ${
-          isExpanded ? 'rotate-180' : ''
-        }`}
-      />
-    </button>
+}) => {
+  const isExpired = React.useMemo(() => {
+    if (!chapter.due_date) return false
+    try {
+      return new Date(chapter.due_date) < new Date()
+    } catch {
+      return false
+    }
+  }, [chapter.due_date])
 
-    {isExpanded && (
-      <div className="divide-y divide-gray-100 border-t border-gray-100">
-        {chapter.activities.map((activity: any) => (
-          <ActivityRow
-            key={activity.activity_uuid}
-            activity={activity}
-            courseuuid={courseuuid}
-            orgslug={orgslug}
-            getActivityTypeLabel={getActivityTypeLabel}
-            isActivityDone={isActivityDone}
-            isActivityCurrent={isActivityCurrent}
-            t={t}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-)
+  return (
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-4 px-4 py-4 text-left hover:bg-gray-50"
+      >
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+            chapter.is_locked
+              ? 'bg-gray-100 text-gray-400'
+              : 'bg-blue-50 text-blue-700'
+          }`}
+        >
+          {chapter.is_locked ? (
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          ) : (
+            chapterIndex + 1
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3
+              className={`truncate text-base font-bold ${chapter.is_locked ? 'text-gray-500' : 'text-gray-950'}`}
+            >
+              {chapter.name}
+            </h3>
+            {chapter.due_date && (
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  isExpired
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}
+              >
+                <Clock3 size={10} />
+                {isExpired
+                  ? 'Expired'
+                  : `Due: ${new Date(chapter.due_date).toLocaleDateString()}`}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
+            <Layers size={15} />
+            {completedInChapter}/{chapter.activities.length}{' '}
+            {t('common.completed')}
+          </p>
+        </div>
+        <ChevronDown
+          size={20}
+          className={`text-gray-500 transition-transform ${
+            isExpanded ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {isExpanded && (
+        <div className="divide-y divide-gray-100 border-t border-gray-100">
+          {chapter.activities.map((activity: any) => (
+            <ActivityRow
+              key={activity.activity_uuid}
+              activity={activity}
+              courseuuid={courseuuid}
+              orgslug={orgslug}
+              getActivityTypeLabel={getActivityTypeLabel}
+              isActivityDone={isActivityDone}
+              isActivityCurrent={isActivityCurrent}
+              t={t}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const ActivityRow = ({
   activity,
@@ -618,6 +672,97 @@ const ActivityRow = ({
 }) => {
   const isDone = isActivityDone(activity)
   const isCurrent = isActivityCurrent(activity)
+  const isLocked = activity.is_locked
+
+  const content = (
+    <div className="flex items-center gap-3">
+      <div className="relative shrink-0">
+        {isLocked ? (
+          <svg
+            className="w-[17px] h-[17px] text-gray-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+        ) : (
+          <>
+            <Square
+              size={17}
+              className={isDone ? 'text-emerald-600' : 'text-gray-300'}
+            />
+            {isDone && (
+              <Check
+                size={17}
+                className="absolute left-0 top-0 text-emerald-600"
+              />
+            )}
+          </>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p
+            className={`font-semibold ${
+              isLocked
+                ? 'text-gray-400'
+                : 'text-gray-950 group-hover:text-blue-600'
+            }`}
+          >
+            {activity.name}
+          </p>
+          {activity.points !== undefined && activity.points > 0 && (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+              {activity.points} pts
+            </span>
+          )}
+          {isCurrent && (
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+              {t('activities.current')}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
+          <ActivityTypeIcon activityType={activity.activity_type} />
+          {getActivityTypeLabel(activity.activity_type)}
+        </div>
+      </div>
+      {isLocked ? (
+        <svg
+          className="w-4 h-4 text-gray-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      ) : (
+        <ArrowRight
+          size={16}
+          className="text-gray-300 group-hover:text-gray-500"
+        />
+      )}
+    </div>
+  )
+
+  if (isLocked) {
+    return (
+      <div className="px-4 py-4 bg-gray-50/50 cursor-not-allowed select-none">
+        {content}
+      </div>
+    )
+  }
 
   return (
     <Link
@@ -632,40 +777,7 @@ const ActivityRow = ({
       prefetch={false}
       className="group block px-4 py-4 transition-colors hover:bg-gray-50"
     >
-      <div className="flex items-center gap-3">
-        <div className="relative shrink-0">
-          <Square
-            size={17}
-            className={isDone ? 'text-emerald-600' : 'text-gray-300'}
-          />
-          {isDone && (
-            <Check
-              size={17}
-              className="absolute left-0 top-0 text-emerald-600"
-            />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold text-gray-950 group-hover:text-blue-600">
-              {activity.name}
-            </p>
-            {isCurrent && (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
-                {t('activities.current')}
-              </span>
-            )}
-          </div>
-          <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
-            <ActivityTypeIcon activityType={activity.activity_type} />
-            {getActivityTypeLabel(activity.activity_type)}
-          </div>
-        </div>
-        <ArrowRight
-          size={16}
-          className="text-gray-300 group-hover:text-gray-500"
-        />
-      </div>
+      {content}
     </Link>
   )
 }
@@ -676,6 +788,7 @@ const ActivityTypeIcon = ({ activityType }: { activityType: string }) => {
   if (activityType === 'TYPE_DOCUMENT') return <File size={12} />
   if (activityType === 'TYPE_ASSIGNMENT') return <Backpack size={12} />
   if (activityType === 'TYPE_SMART_ARTICLE') return <Sparkles size={12} />
+  if (activityType === 'TYPE_ATTENDANCE') return <ClipboardCheck size={12} />
   return <BookOpen size={12} />
 }
 

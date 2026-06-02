@@ -6,19 +6,26 @@ import {
   Pencil,
   Save,
   Trash2,
+  Lock,
+  Globe,
+  Clock3,
 } from 'lucide-react'
 import React from 'react'
 import { Draggable, Droppable } from '@hello-pangea/dnd'
 import ActivityElement from './ActivityElement'
 import NewActivityButton from '../Buttons/NewActivityButton'
 import { deleteChapter, updateChapter } from '@services/courses/chapters'
-import { revalidateTags } from '@services/utils/ts/requests'
+import {
+  revalidateTags,
+  RequestBodyWithAuthHeader,
+} from '@services/utils/ts/requests'
 import { useRouter } from 'next/navigation'
 import { getAPIUrl } from '@services/config/config'
 import { mutate } from 'swr'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 type ChapterElementProps = {
   chapter: any
@@ -34,23 +41,34 @@ interface ModifiedChapterInterface {
 
 function ChapterElement(props: ChapterElementProps) {
   const { t } = useTranslation()
-  const activities = props.chapter.activities || []
-  const session = useLHSession() as any;
-  const access_token = session?.data?.tokens?.access_token;
+  const activities = props.chapter.activities
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
   const [modifiedChapter, setModifiedChapter] = React.useState<
     ModifiedChapterInterface | undefined
   >(undefined)
   const [selectedChapter, setSelectedChapter] = React.useState<
     string | undefined
   >(undefined)
-  const course = useCourse() as any;
-  const withUnpublishedActivities = course ? course.withUnpublishedActivities : false
+  const course = useCourse() as any
+  const withUnpublishedActivities = course
+    ? course.withUnpublishedActivities
+    : false
+
+  const totalPoints = React.useMemo(() => {
+    return (activities || []).reduce(
+      (sum: number, act: any) => sum + (act.points || 0),
+      0
+    )
+  }, [activities])
 
   const router = useRouter()
 
   const deleteChapterUI = async () => {
     await deleteChapter(props.chapter.id, access_token)
-    mutate(`${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+    mutate(
+      `${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+    )
     await revalidateTags(['courses'], props.orgslug)
     router.refresh()
   }
@@ -61,7 +79,9 @@ function ChapterElement(props: ChapterElementProps) {
         name: modifiedChapter.chapterName,
       }
       await updateChapter(chapterId, modifiedChapterCopy, access_token)
-      mutate(`${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`)
+      mutate(
+        `${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+      )
       await revalidateTags(['courses'], props.orgslug)
       router.refresh()
     }
@@ -77,7 +97,9 @@ function ChapterElement(props: ChapterElementProps) {
       {(provided, snapshot) => (
         <div
           className={`mx-2 sm:mx-4 md:mx-6 lg:mx-10 bg-white rounded-xl nice-shadow px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 ${
-            snapshot.isDragging ? 'shadow-xl ring-2 ring-blue-500/20 rotate-1' : ''
+            snapshot.isDragging
+              ? 'shadow-xl ring-2 ring-blue-500/20 rotate-1'
+              : ''
           }`}
           key={props.chapter.chapter_uuid}
           {...provided.draggableProps}
@@ -99,7 +121,9 @@ function ChapterElement(props: ChapterElementProps) {
                     <input
                       type="text"
                       className="bg-transparent outline-hidden text-sm text-neutral-700 w-full max-w-[150px] sm:max-w-none"
-                      placeholder={t('dashboard.courses.structure.chapter_element.chapter_name_placeholder')}
+                      placeholder={t(
+                        'dashboard.courses.structure.chapter_element.chapter_name_placeholder'
+                      )}
                       value={
                         modifiedChapter
                           ? modifiedChapter?.chapterName
@@ -132,11 +156,85 @@ function ChapterElement(props: ChapterElementProps) {
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              <button
+                onClick={async () => {
+                  const targetPublishState = !props.chapter.published
+                  const loadingToast = toast.loading(
+                    targetPublishState
+                      ? 'Publishing chapter...'
+                      : 'Unpublishing chapter...'
+                  )
+                  try {
+                    const response = await fetch(
+                      `${getAPIUrl()}chapters/${props.chapter.id}`,
+                      RequestBodyWithAuthHeader(
+                        'PUT',
+                        { published: targetPublishState },
+                        null,
+                        access_token
+                      )
+                    )
+                    if (!response.ok) {
+                      const text = await response.text()
+                      let errMsg = response.statusText
+                      try {
+                        const errJson = JSON.parse(text)
+                        if (errJson && errJson.detail) {
+                          errMsg = errJson.detail
+                        }
+                      } catch {
+                        // Ignore JSON parse errors and use statusText
+                      }
+                      throw new Error(errMsg)
+                    }
+
+                    mutate(
+                      `${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+                    )
+                    await revalidateTags(['courses'], props.orgslug)
+                    toast.success(
+                      targetPublishState
+                        ? 'Chapter published successfully!'
+                        : 'Chapter unpublished successfully!',
+                      { id: loadingToast }
+                    )
+                    router.refresh()
+                  } catch (error: any) {
+                    toast.error(
+                      error.message || 'Failed to update chapter status.',
+                      { id: loadingToast }
+                    )
+                  }
+                }}
+                className={`p-1.5 px-3 border shadow-sm rounded-md font-bold text-xs flex items-center space-x-1.5 transition-colors duration-200 hover:cursor-pointer ${
+                  props.chapter.published
+                    ? 'bg-linear-to-bl text-gray-800 from-gray-400/50 to-gray-200/80 border-gray-600/10 hover:from-gray-500/50 hover:to-gray-300/80'
+                    : 'bg-linear-to-bl text-green-800 from-green-400/50 to-lime-200/80 border-green-600/10 hover:from-green-500/50 hover:to-lime-300/80'
+                }`}
+              >
+                {props.chapter.published ? (
+                  <Lock strokeWidth={2.5} size={12} className="text-gray-600" />
+                ) : (
+                  <Globe
+                    strokeWidth={2.5}
+                    size={12}
+                    className="text-green-600"
+                  />
+                )}
+                <span>{props.chapter.published ? 'Unpublish' : 'Publish'}</span>
+              </button>
               <MoreVertical size={15} className="text-gray-300" />
               <ConfirmationModal
-                confirmationButtonText={t('dashboard.courses.structure.modals.delete_chapter.button')}
-                confirmationMessage={t('dashboard.courses.structure.modals.delete_chapter.message')}
-                dialogTitle={t('dashboard.courses.structure.modals.delete_chapter.title', { name: props.chapter.name })}
+                confirmationButtonText={t(
+                  'dashboard.courses.structure.modals.delete_chapter.button'
+                )}
+                confirmationMessage={t(
+                  'dashboard.courses.structure.modals.delete_chapter.message'
+                )}
+                dialogTitle={t(
+                  'dashboard.courses.structure.modals.delete_chapter.title',
+                  { name: props.chapter.name }
+                )}
                 dialogTrigger={
                   <button
                     className="hover:cursor-pointer p-1 px-2 sm:px-3 bg-red-600 rounded-md shadow-sm flex items-center text-rose-100 text-sm"
@@ -180,6 +278,28 @@ function ChapterElement(props: ChapterElementProps) {
             orgslug={props.orgslug}
             chapterId={props.chapter.id}
           />
+          <div className="flex items-center justify-between border-t border-neutral-100 pt-3 pb-1 mt-4">
+            <div className="flex items-center space-x-2">
+              <span
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${totalPoints === 100 ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}
+              >
+                {totalPoints} / 100 pts
+              </span>
+              {totalPoints !== 100 && (
+                <span className="text-[11px] text-neutral-400">
+                  (Must be exactly 100 pts to publish)
+                </span>
+              )}
+            </div>
+            {props.chapter.due_date && (
+              <span className="text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-full flex items-center space-x-1">
+                <Clock3 size={11} className="text-neutral-400" />
+                <span>
+                  Due: {new Date(props.chapter.due_date).toLocaleDateString()}
+                </span>
+              </span>
+            )}
+          </div>
           <div className="h-6">
             <div className="flex items-center">
               <MoreHorizontal size={19} className="text-gray-300 mx-auto" />

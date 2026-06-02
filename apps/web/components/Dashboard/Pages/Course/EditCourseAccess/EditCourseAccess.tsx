@@ -14,6 +14,8 @@ import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import useSWR, { mutate } from 'swr'
 import { useTranslation } from 'react-i18next'
+import { useOrg } from '@components/Contexts/OrgContext'
+import { getOrgCourses } from '@services/courses/courses'
 
 function EditCourseAccess() {
   const { t } = useTranslation()
@@ -129,6 +131,10 @@ function EditCourseAccess() {
               />
             </div>
             {!isClientPublic && <UserGroupsSection usergroups={usergroups} />}
+            <PrerequisitesSection
+              courseStructure={courseStructure}
+              access_token={access_token}
+            />
           </div>
         </div>
       )}
@@ -256,6 +262,197 @@ function UserGroupsSection({ usergroups }: { usergroups: any[] }) {
           }
         />
       </div>
+    </>
+  )
+}
+
+interface PrerequisitesSectionProps {
+  courseStructure: any
+  access_token: string
+}
+
+function PrerequisitesSection({
+  courseStructure,
+  access_token,
+}: PrerequisitesSectionProps) {
+  const { t } = useTranslation()
+  const org = useOrg() as any
+  const [selectedPrereqId, setSelectedPrereqId] = useState<number | null>(null)
+
+  // Fetch prerequisites
+  const { data: prerequisites, mutate: mutatePrereqs } = useSWR<any[]>(
+    courseStructure
+      ? `${getAPIUrl()}prerequisites/${courseStructure.course_uuid}`
+      : null,
+    (url: string) => swrFetcher(url, access_token)
+  )
+
+  // Fetch all courses in the organization
+  const { data: allCourses } = useSWR(
+    org?.org_slug && access_token
+      ? [`${org.org_slug}_courses`, access_token]
+      : null,
+    () => getOrgCourses(org.org_slug, null, access_token)
+  )
+
+  const otherCourses = React.useMemo(() => {
+    if (!allCourses || !courseStructure) return []
+    return allCourses.filter(
+      (c: any) => c.course_uuid !== courseStructure.course_uuid
+    )
+  }, [allCourses, courseStructure])
+
+  const handleAddPrerequisite = async () => {
+    if (!selectedPrereqId || !courseStructure) return
+    const currentPrereqIds =
+      prerequisites?.map((p: any) => p.prerequisite_course_id) || []
+    if (currentPrereqIds.includes(selectedPrereqId)) return
+
+    const newPrereqIds = [...currentPrereqIds, selectedPrereqId]
+
+    const loadingToast = toast.loading('Adding prerequisite...')
+    try {
+      const response = await fetch(
+        `${getAPIUrl()}prerequisites/${courseStructure.course_uuid}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${access_token}`,
+          },
+          body: JSON.stringify({ prerequisite_course_ids: newPrereqIds }),
+        }
+      )
+      if (!response.ok) {
+        throw new Error('Failed to update prerequisites')
+      }
+      mutatePrereqs()
+      setSelectedPrereqId(null)
+      toast.success('Prerequisite added successfully!', { id: loadingToast })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add prerequisite', {
+        id: loadingToast,
+      })
+    }
+  }
+
+  const handleRemovePrerequisite = async (prereqCourseId: number) => {
+    if (!courseStructure) return
+    const currentPrereqIds =
+      prerequisites?.map((p: any) => p.prerequisite_course_id) || []
+    const newPrereqIds = currentPrereqIds.filter((id) => id !== prereqCourseId)
+
+    const loadingToast = toast.loading('Removing prerequisite...')
+    try {
+      const response = await fetch(
+        `${getAPIUrl()}prerequisites/${courseStructure.course_uuid}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${access_token}`,
+          },
+          body: JSON.stringify({ prerequisite_course_ids: newPrereqIds }),
+        }
+      )
+      if (!response.ok) {
+        throw new Error('Failed to update prerequisites')
+      }
+      mutatePrereqs()
+      toast.success('Prerequisite removed successfully!', { id: loadingToast })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove prerequisite', {
+        id: loadingToast,
+      })
+    }
+  }
+
+  return (
+    <>
+      <div className="h-8"></div>
+      <div className="flex flex-col bg-gray-50 -space-y-1 px-3 sm:px-5 py-3 rounded-md mb-3 mt-6">
+        <h1 className="font-bold text-lg sm:text-xl text-gray-800">
+          Course Prerequisites (Gating)
+        </h1>
+        <h2 className="text-gray-500 text-xs sm:text-sm">
+          Define the sequence in which students must complete courses. Students will not be able to enroll or start this course until they finish all required prerequisites.
+        </h2>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="table-auto w-full text-left whitespace-nowrap rounded-md overflow-hidden">
+          <thead className="bg-gray-100 text-gray-500 rounded-xl uppercase">
+            <tr className="font-bolder text-sm">
+              <th className="py-3 px-4">Prerequisite Course</th>
+              <th className="py-3 px-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="mt-5 bg-white rounded-md">
+            {prerequisites && prerequisites.length > 0 ? (
+              prerequisites.map((prereq: any) => (
+                <tr
+                  key={prereq.id}
+                  className="border-b border-gray-100 text-sm"
+                >
+                  <td className="py-3 px-4 font-medium text-gray-800">
+                    {prereq.prerequisite_course_name}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() =>
+                        handleRemovePrerequisite(prereq.prerequisite_course_id)
+                      }
+                      className="flex space-x-1.5 hover:cursor-pointer p-1 px-3 bg-rose-700 rounded-md font-bold items-center text-xs text-rose-100"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={2}
+                  className="py-6 px-4 text-center text-gray-400 font-medium"
+                >
+                  No prerequisites set. This course is unlocked for all eligible students.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {otherCourses.length > 0 && (
+        <div className="flex items-center gap-3 mt-4 border-t border-neutral-100 pt-4">
+          <select
+            value={selectedPrereqId || ''}
+            onChange={(e) => setSelectedPrereqId(Number(e.target.value))}
+            className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-semibold text-neutral-700 max-w-[300px]"
+          >
+            <option value="">Select a course to require...</option>
+            {otherCourses
+              .filter((c: any) => {
+                return !prerequisites?.some(
+                  (p: any) => p.prerequisite_course_id === c.id
+                )
+              })
+              .map((c: any) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+          <button
+            onClick={handleAddPrerequisite}
+            disabled={!selectedPrereqId}
+            className="bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-lg text-sm transition-all"
+          >
+            Add Prerequisite
+          </button>
+        </div>
+      )}
     </>
   )
 }

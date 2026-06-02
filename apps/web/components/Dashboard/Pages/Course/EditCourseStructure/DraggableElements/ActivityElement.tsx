@@ -4,6 +4,7 @@ import { deleteActivity, updateActivity } from '@services/courses/activities'
 import { revalidateTags } from '@services/utils/ts/requests'
 import {
   Backpack,
+  ClipboardCheck,
   Eye,
   File,
   FilePenLine,
@@ -58,12 +59,40 @@ function ActivityElement(props: ActivitiyElementProps) {
     undefined
   )
   const [isUpdatingName, setIsUpdatingName] = useState<boolean>(false)
-  const activityUUID = props.activity.activity_uuid
   const isMobile = useMediaQuery('(max-width: 767px)')
+  const activityUUID = props.activity.activity_uuid
   const course = useCourse() as any
   const withUnpublishedActivities = course
     ? course.withUnpublishedActivities
     : false
+  const [points, setPoints] = useState<number>(props.activity.points || 0)
+  const [isUpdatingPoints, setIsUpdatingPoints] = useState<boolean>(false)
+
+  React.useEffect(() => {
+    setPoints(props.activity.points || 0)
+  }, [props.activity.points])
+
+  async function updateActivityPoints(newPoints: number) {
+    setIsUpdatingPoints(true)
+    try {
+      await updateActivity(
+        {
+          ...props.activity,
+          points: newPoints,
+        },
+        props.activity.activity_uuid,
+        access_token
+      )
+      mutate(
+        `${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+      )
+      await revalidateTags(['courses'], props.orgslug)
+    } catch {
+      toast.error('Failed to update activity points')
+    } finally {
+      setIsUpdatingPoints(false)
+    }
+  }
 
   async function deleteActivityUI() {
     const toast_loading = toast.loading(
@@ -155,7 +184,7 @@ function ActivityElement(props: ActivitiyElementProps) {
     >
       {(provided, snapshot) => (
         <div
-          className={`grid grid-cols-[auto_1fr_auto] gap-2 py-2 px-3 my-2 w-full rounded-md text-gray-500
+          className={`grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto] gap-2 py-2 px-3 my-2 w-full rounded-md text-gray-500
             ${
               snapshot.isDragging
                 ? 'nice-shadow bg-white ring-2 ring-blue-500/20 z-50 rotate-1 scale-[1.04]'
@@ -222,6 +251,23 @@ function ActivityElement(props: ActivitiyElementProps) {
                 !isUpdatingName && setSelectedActivity(props.activity.id)
               }
               className={`text-neutral-400 hover:cursor-pointer size-3 min-w-3 ${isUpdatingName ? 'opacity-50 cursor-not-allowed' : ''}`}
+            />
+          </div>
+
+          {/*   Points input  */}
+          <div className="flex items-center space-x-1.5 justify-self-center sm:justify-self-end bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-inner select-none">
+            <span className="text-[10px] font-bold text-gray-400 uppercase">
+              Points
+            </span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              disabled={isUpdatingPoints}
+              className="w-10 bg-transparent text-xs text-center font-bold text-gray-700 outline-hidden focus:text-blue-600 disabled:opacity-50"
+              value={points}
+              onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+              onBlur={() => updateActivityPoints(points)}
             />
           </div>
 
@@ -329,6 +375,10 @@ const ACTIVITIES = {
   TYPE_LIVE_SESSION: {
     displayNameKey: 'live_session',
     Icon: Video,
+  },
+  TYPE_ATTENDANCE: {
+    displayNameKey: 'attendance',
+    Icon: ClipboardCheck,
   },
 }
 

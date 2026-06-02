@@ -149,14 +149,16 @@ export default function ActivityNavigation(
             <button
               onClick={() => navigateToActivity(nextActivity)}
               className={`flex items-center space-x-1.5 p-2 rounded-md transition-all duration-200 cursor-pointer ${
-                nextActivity
+                nextActivity && !nextActivity.is_locked
                   ? 'text-gray-700'
                   : 'opacity-50 text-gray-400 cursor-not-allowed'
               }`}
-              disabled={!nextActivity}
+              disabled={!nextActivity || nextActivity.is_locked}
               title={
                 nextActivity
-                  ? `${t('common.next')}: ${nextActivity.name}`
+                  ? nextActivity.is_locked
+                    ? 'Next activity is locked'
+                    : `${t('common.next')}: ${nextActivity.name}`
                   : t('activities.no_next_activity')
               }
             >
@@ -166,7 +168,9 @@ export default function ActivityNavigation(
                 </span>
                 <span className="text-sm capitalize font-semibold text-right">
                   {nextActivity
-                    ? nextActivity.name
+                    ? nextActivity.is_locked
+                      ? 'Locked'
+                      : nextActivity.name
                     : t('activities.no_next_activity')}
                 </span>
               </div>
@@ -213,14 +217,16 @@ export default function ActivityNavigation(
               <button
                 onClick={() => navigateToActivity(nextActivity)}
                 className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-md transition-all duration-200 cursor-pointer ${
-                  nextActivity
+                  nextActivity && !nextActivity.is_locked
                     ? 'bg-white nice-shadow text-gray-700'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
-                disabled={!nextActivity}
+                disabled={!nextActivity || nextActivity.is_locked}
                 title={
                   nextActivity
-                    ? `${t('common.next')}: ${nextActivity.name}`
+                    ? nextActivity.is_locked
+                      ? 'Next activity is locked'
+                      : `${t('common.next')}: ${nextActivity.name}`
                     : t('activities.no_next_activity')
                 }
               >
@@ -230,7 +236,9 @@ export default function ActivityNavigation(
                   </span>
                   <span className="text-sm capitalize font-semibold text-right">
                     {nextActivity
-                      ? nextActivity.name
+                      ? nextActivity.is_locked
+                        ? 'Locked'
+                        : nextActivity.name
                       : t('activities.no_next_activity')}
                   </span>
                 </div>
