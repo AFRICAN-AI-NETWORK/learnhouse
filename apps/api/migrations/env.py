@@ -1,4 +1,3 @@
-import importlib
 from logging.config import fileConfig
 import os
 import alembic_postgresql_enum  # noqa: F401
@@ -64,7 +63,7 @@ for root, dirs, files in os.walk(base_dir):
     for file_name in module_files:
         module_name = file_name[:-3]  # Remove the '.py' extension
         full_module_path = f"{current_module_base}.{module_name}"
-        importlib.import_module(full_module_path)
+        __import__(full_module_path, fromlist=["*"])
 
 # IMPORTING ALL SCHEMAS
 

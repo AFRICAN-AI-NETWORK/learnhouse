@@ -80,8 +80,10 @@ async def get_user_trails(
         trail_run.course = course.model_dump() if course else {}
 
         # Add number of activities (steps) in a course
-        count_statement = select(func.count()).select_from(ChapterActivity).where(
-            ChapterActivity.course_id == trail_run.course_id
+        count_statement = (
+            select(func.count())
+            .select_from(ChapterActivity)
+            .where(ChapterActivity.course_id == trail_run.course_id)
         )
         trail_run.course_total_steps = db_session.exec(count_statement).one()
 
@@ -162,8 +164,10 @@ async def get_user_trail_with_orgid(
         trail_run.course = course.model_dump() if course else {}
 
         # Add number of activities (steps) in a course
-        count_statement = select(func.count()).select_from(ChapterActivity).where(
-            ChapterActivity.course_id == trail_run.course_id
+        count_statement = (
+            select(func.count())
+            .select_from(ChapterActivity)
+            .where(ChapterActivity.course_id == trail_run.course_id)
         )
         trail_run.course_total_steps = db_session.exec(count_statement).one()
 

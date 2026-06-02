@@ -38,7 +38,9 @@ const AdminAuthorization: React.FC<AuthorizationProps> = ({
     let isPathAdmin = false
 
     const checkPath = (pattern: string) =>
-      pathname.startsWith(pattern.replace('*', ''))
+      pathname.startsWith(
+        pattern.endsWith('*') ? pattern.slice(0, -1) : pattern
+      )
 
     // Specific granular permission checks
     if (checkPath('/dash/communications')) {

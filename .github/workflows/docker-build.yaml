@@ -54,26 +54,32 @@ jobs:
 
       - name: Get short SHA and branch info
         id: vars
+        env:
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          GITHUB_EVENT_NAME_VALUE: ${{ github.event_name }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
+          GITHUB_PR_NUMBER_VALUE: ${{ github.event.pull_request.number }}
+          GITHUB_HEAD_REF_VALUE: ${{ github.head_ref }}
         run: |
-          # Validate github.sha is not empty
-          if [ -z "${{ github.sha }}" ]; then
+          # Validate the SHA is not empty
+          if [ -z "$GITHUB_SHA_VALUE" ]; then
             echo "Error: github.sha is empty. Cannot proceed with build."
             exit 1
           fi
 
-          SHORT=$(echo ${{ github.sha }} | cut -c1-7)
+          SHORT=$(printf '%s' "$GITHUB_SHA_VALUE" | cut -c1-7)
           echo "short=$SHORT" >> $GITHUB_OUTPUT
 
-          if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/dev" ]; then
+          if [ "$GITHUB_EVENT_NAME_VALUE" = "push" ] && [ "$GITHUB_REF_VALUE" = "refs/heads/dev" ]; then
             echo "branch=dev" >> $GITHUB_OUTPUT
             echo "tag_prefix=dev" >> $GITHUB_OUTPUT
           else
             echo "branch=pr" >> $GITHUB_OUTPUT
             # Handle empty PR number gracefully
-            PR_NUMBER="${{ github.event.pull_request.number }}"
+            PR_NUMBER="$GITHUB_PR_NUMBER_VALUE"
             if [ -z "$PR_NUMBER" ]; then
               # Fallback to branch name or generic identifier
-              BRANCH_NAME="${{ github.head_ref }}"
+              BRANCH_NAME="$GITHUB_HEAD_REF_VALUE"
               if [ -z "$BRANCH_NAME" ]; then
                 PR_NUMBER="unknown"
               else
@@ -129,14 +135,16 @@ jobs:
 
       - name: Get short SHA and branch info
         id: vars
+        env:
+          GITHUB_SHA_VALUE: ${{ github.sha }}
         run: |
           # Validate github.sha is not empty
-          if [ -z "${{ github.sha }}" ]; then
+          if [ -z "$GITHUB_SHA_VALUE" ]; then
             echo "Error: github.sha is empty. Cannot proceed with manifest creation."
             exit 1
           fi
 
-          echo "short=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "short=$(echo $GITHUB_SHA_VALUE | cut -c1-7)" >> $GITHUB_OUTPUT
           echo "tag_prefix=dev" >> $GITHUB_OUTPUT
 
       - name: Extract metadata for manifest
@@ -151,11 +159,11 @@ jobs:
             type=raw,value=latest
 
       - name: Create and push manifest list
+        env:
+          SHORT_SHA: ${{ steps.vars.outputs.short }}
+          TAG_PREFIX: ${{ steps.vars.outputs.tag_prefix }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
         run: |
-          SHORT_SHA="${{ steps.vars.outputs.short }}"
-          TAG_PREFIX="${{ steps.vars.outputs.tag_prefix }}"
-          IMAGE="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
-
           # Create manifest list for each tag
           for TAG in "$SHORT_SHA" "$TAG_PREFIX" "${TAG_PREFIX}-${SHORT_SHA}"; do
             docker buildx imagetools create --tag "${IMAGE}:${TAG}" \

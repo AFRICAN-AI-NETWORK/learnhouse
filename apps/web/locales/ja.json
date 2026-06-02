@@ -109,6 +109,7 @@
     "invalid_email": "無効なメールアドレスです",
     "password_min_length": "パスワードは8文字以上である必要があります",
     "username_min_length": "ユーザー名は4文字以上である必要があります",
+    "invalid_phone_with_country_code": "無効な電話番号です。国番号を含めてください（例: +254）",
     "title_required": "タイトルは必須です",
     "content_required": "内容は必須です"
   },

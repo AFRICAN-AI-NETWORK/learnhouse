@@ -109,6 +109,7 @@
     "invalid_email": "Indirizzo email non valido",
     "password_min_length": "La password deve contenere almeno 8 caratteri",
     "username_min_length": "Il nome utente deve contenere almeno 4 caratteri",
+    "invalid_phone_with_country_code": "Numero di telefono non valido. Includi il prefisso internazionale (es. +254)",
     "title_required": "Il titolo è obbligatorio",
     "content_required": "Il contenuto è obbligatorio"
   },

@@ -174,6 +174,7 @@
     "invalid_email": "Invalid email address",
     "password_min_length": "Password must be at least 8 characters",
     "username_min_length": "Username must be at least 4 characters",
+    "invalid_phone_with_country_code": "Invalid phone number. Please include the country code (e.g. +254)",
     "title_required": "Title is required",
     "content_required": "Content is required",
     "invalid_phone": "Invalid phone number"
@@ -441,6 +442,7 @@
     "submit_for_grading": "Submit for grading",
     "grading_in_progress": "Grading in progress",
     "graded": "Graded",
+    "needs_revision": "Needs revision",
     "assignment_submitted_success": "Assignment submitted for grading",
     "failed_submit_assignment": "Failed to submit assignment for grading",
     "assignment_description": "Assignment Description",
@@ -451,8 +453,8 @@
     "current_points": "Current points: {{points}}",
     "grade": "Grade",
     "due_date": "Due Date",
-    "unsaved_tasks_warning": "You have unsaved tasks",
-    "submit_incomplete_warning": "You have unsaved tasks! If you submit now, these tasks will receive a 0% score. Are you sure you want to proceed?"
+    "unsaved_tasks_warning": "Save every task before final submission",
+    "submit_incomplete_warning": "Save every assignment task before submitting for grading. Unsaved or incomplete work cannot be submitted."
   },
   "certificate": {
     "certificate": "Certificate",
@@ -1770,6 +1772,7 @@
         "status": {
           "late": "Late",
           "submitted": "Submitted",
+          "needs_revision": "Needs Revision",
           "graded": "Graded"
         },
         "submission_label": "Submission",
@@ -1782,14 +1785,16 @@
         "task_label": "Task {{number}} :",
         "hint": "Hint",
         "reference_document": "Reference Document",
+        "revision_feedback_placeholder": "Tell the learner what to revise",
         "actions": {
-          "reject": "Reject Assignment",
+          "reject": "Request Revision",
           "set_final_grade": "Set final grade",
           "grade_and_complete": "Grade & Complete",
           "mark_as_done": "Mark Activity as Done for User"
         },
         "toasts": {
-          "reject_success": "Assignment rejected successfully",
+          "reject_success": "Revision requested successfully",
+          "reject_failed": "Failed to request revision",
           "grade_complete_success": "Assignment graded and marked as done",
           "grade_success_done_failed": "Grading succeeded but failed to mark as done",
           "grade_failed": "Failed to grade assignment",

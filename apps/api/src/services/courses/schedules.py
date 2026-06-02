@@ -22,6 +22,7 @@ from src.db.courses.schedules import (
     RegisterEntryMethodEnum,
     RegisterEntryStatusEnum,
     RegisterFrequencyEnum,
+    StudentTimetableEventRead,
     TimetableVisibilityEnum,
 )
 from src.db.users import AnonymousUser, PublicUser
@@ -50,6 +51,45 @@ async def get_timetable_events(
 
     events = db_session.exec(statement).all()
     return [CourseTimetableEventRead(**event.model_dump()) for event in events]
+
+
+async def get_my_timetable_events(
+    request: Request,
+    org_id: int,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+) -> list[StudentTimetableEventRead]:
+    await _require_authenticated(current_user)
+
+    statement = (
+        select(CourseTimetableEvent, Course)
+        .where(CourseTimetableEvent.course_id == Course.id)
+        .where(Course.org_id == org_id)
+        .where(CourseTimetableEvent.visibility == TimetableVisibilityEnum.published)
+        .where(CourseTimetableEvent.status != "cancelled")
+        .order_by(col(CourseTimetableEvent.starts_at).asc())
+    )
+    rows = db_session.exec(statement).all()
+    events: list[StudentTimetableEventRead] = []
+
+    for event, course in rows:
+        try:
+            await courses_rbac_check(
+                request, course.course_uuid, current_user, "read", db_session
+            )
+        except HTTPException:
+            continue
+
+        events.append(
+            StudentTimetableEventRead(
+                **event.model_dump(exclude={"course_id", "org_id"}),
+                course_id=course.id,
+                course_name=course.name,
+                course_description=course.description,
+            )
+        )
+
+    return events
 
 
 async def create_timetable_event(
@@ -272,7 +312,9 @@ async def mark_register(
         return CourseRegisterEntryRead(**existing.model_dump())
 
     entry_status = (
-        RegisterEntryStatusEnum.late if now > closes_at else RegisterEntryStatusEnum.marked
+        RegisterEntryStatusEnum.late
+        if now > closes_at
+        else RegisterEntryStatusEnum.marked
     )
     now_string = _datetime_to_api_string(now)
     entry = CourseRegisterEntry(
@@ -500,12 +542,8 @@ def _resolve_current_period(
     if policy.frequency == RegisterFrequencyEnum.per_session and event:
         event_start = _parse_datetime(event.starts_at)
         event_end = _parse_datetime(event.ends_at)
-        opens_at = event_start - timedelta(
-            minutes=policy.checkin_opens_minutes_before
-        )
-        closes_at = event_end + timedelta(
-            minutes=policy.checkin_closes_minutes_after
-        )
+        opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
+        closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
         return _period_from_bounds(event_start, event_end, opens_at, closes_at, now)
 
     if policy.frequency in [
@@ -518,12 +556,8 @@ def _resolve_current_period(
     if event and policy.linked_timetable_event_uuid:
         event_start = _parse_datetime(event.starts_at)
         event_end = _parse_datetime(event.ends_at)
-        opens_at = event_start - timedelta(
-            minutes=policy.checkin_opens_minutes_before
-        )
-        closes_at = event_end + timedelta(
-            minutes=policy.checkin_closes_minutes_after
-        )
+        opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
+        closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
     else:
         opens_at = now
         closes_at = None
@@ -573,8 +607,7 @@ def _resolve_current_timetable_event(
 
     now = _utcnow()
     events = db_session.exec(
-        statement
-        .where(CourseTimetableEvent.register_required == True)  # noqa: E712
+        statement.where(CourseTimetableEvent.register_required == True)  # noqa: E712
         .where(CourseTimetableEvent.visibility == TimetableVisibilityEnum.published)
         .order_by(col(CourseTimetableEvent.starts_at).asc())
     ).all()
@@ -582,12 +615,8 @@ def _resolve_current_timetable_event(
     for event in events:
         event_start = _parse_datetime(event.starts_at)
         event_end = _parse_datetime(event.ends_at)
-        opens_at = event_start - timedelta(
-            minutes=policy.checkin_opens_minutes_before
-        )
-        closes_at = event_end + timedelta(
-            minutes=policy.checkin_closes_minutes_after
-        )
+        opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
+        closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
         if opens_at <= now <= closes_at:
             return event
 

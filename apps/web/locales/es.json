@@ -123,6 +123,7 @@
     "invalid_email": "Correo electrónico no válido",
     "password_min_length": "La contraseña debe tener al menos 8 caracteres",
     "username_min_length": "El nombre de usuario debe tener al menos 4 caracteres",
+    "invalid_phone_with_country_code": "Número de teléfono inválido. Incluye el código de país (p. ej., +254)",
     "title_required": "El título es obligatorio",
     "content_required": "El contenido es obligatorio"
   },

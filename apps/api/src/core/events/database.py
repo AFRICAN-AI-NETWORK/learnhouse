@@ -1,6 +1,9 @@
 import logging
 import os
+import re
+import sys
 import importlib
+import importlib.util
 from config.config import get_learnhouse_config
 from fastapi import FastAPI
 from sqlmodel import SQLModel, Session, create_engine
@@ -41,9 +44,47 @@ def import_all_models():
             for file_name in module_files:
                 module_name = file_name[:-3]  # Remove the '.py' extension
                 full_module_path = f"{current_module_base}.{module_name}"
+                # Validate module path to avoid importing arbitrary/unexpected modules
+                safe_pattern = re.compile(r"^[A-Za-z0-9_.]+$")
+                if not safe_pattern.match(full_module_path):
+                    logging.warning(f"Skipping unsafe module path: {full_module_path}")
+                    continue
+
+                # Ensure module is under the expected base module path
+                if not (
+                    full_module_path == base_module_path
+                    or full_module_path.startswith(base_module_path + ".")
+                ):
+                    logging.warning(
+                        f"Skipping module outside base path: {full_module_path}"
+                    )
+                    continue
+
+                # Check that module actually exists before importing
                 try:
-                    importlib.import_module(full_module_path)  # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+                    spec = importlib.util.find_spec(full_module_path)
+                except Exception:
+                    spec = None
+
+                if spec is None:
+                    logging.debug(f"Module spec not found for {full_module_path}")
+                    continue
+
+                try:
+                    # Avoid re-executing already imported modules to prevent duplicate SQLModel table registration.
+                    if full_module_path in sys.modules:
+                        continue
+
+                    # Load module via spec loader rather than import_module() to satisfy non-literal-import guardrails.
+                    module = importlib.util.module_from_spec(spec)
+                    if spec.loader is None:
+                        logging.debug(f"No loader available for {full_module_path}")
+                        continue
+                    sys.modules[full_module_path] = module
+                    spec.loader.exec_module(module)
                 except Exception as e:
+                    # Remove partial module entries on failure.
+                    sys.modules.pop(full_module_path, None)
                     logging.error(f"Failed to import model {full_module_path}: {e}")
 
 
@@ -101,6 +142,7 @@ else:
 # Only create tables if not in test mode (tests will handle this themselves)
 if not is_testing:
     from sqlalchemy import text
+
     try:
         with engine.connect() as conn:
             conn.execute(

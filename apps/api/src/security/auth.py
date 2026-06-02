@@ -12,6 +12,26 @@ from datetime import datetime, timedelta, timezone
 from src.services.dev.dev import isDevModeEnabled
 from src.services.users.users import security_verify_password
 from src.security.security import ALGORITHM, SECRET_KEY
+from src.db.waitlist import UserStatusEnum
+
+import jwt as pyjwt_lib
+
+if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
+    _original_encode = pyjwt_lib.encode
+
+    class DecodableStr(str):
+        def decode(self, *args, **kwargs):
+            return self
+
+    def patched_encode(*args, **kwargs):
+        result = _original_encode(*args, **kwargs)
+        if isinstance(result, str):
+            return DecodableStr(result)
+        return result
+
+    patched_encode.__wrapped_for_fastapi_jwt_auth__ = True
+    pyjwt_lib.encode = patched_encode
+
 from fastapi_jwt_auth import AuthJWT
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -79,7 +99,7 @@ async def authenticate_user(
     # NEW: Check user status for waitlist handling
     user_status = getattr(user, "user_status", "ACTIVE")
 
-    if user_status == "WAITLIST":
+    if user_status == UserStatusEnum.WAITLIST.value:
         # User is on waitlist, cannot login yet
         # Get waitlist details to show launch date
         from src.db.waitlist import WaitlistConfig
@@ -101,14 +121,14 @@ async def authenticate_user(
             detail="Your account is on a waitlist. Please wait for the launch date.",
         )
 
-    elif user_status == "WAITLIST_ACTIVATED":
+    elif user_status == UserStatusEnum.WAITLIST_ACTIVATED.value:
         # User received activation email, allow login and transition to ACTIVE
-        user.user_status = "ACTIVE"
+        user.user_status = UserStatusEnum.ACTIVE.value
         db_session.add(user)
         db_session.commit()
         db_session.refresh(user)
 
-    elif user_status == "SUSPENDED":
+    elif user_status == UserStatusEnum.SUSPENDED.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been suspended. Please contact support.",
