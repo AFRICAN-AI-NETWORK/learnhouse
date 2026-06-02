@@ -103,6 +103,41 @@ const LoadingFallback = () => (
   </div>
 )
 
+function WatermarkedActivityContent({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const org = useOrg() as any
+  const session = useLHSession() as any
+  const user = session?.data?.user
+  const watermarkEnabled = org?.config?.config?.general?.watermark !== false
+
+  const displayName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() ||
+    user?.username ||
+    user?.email ||
+    user?.user_uuid
+
+  const watermarkText = [org?.name].filter(Boolean).join(' - ')
+
+  if (!watermarkEnabled || !watermarkText) {
+    return <>{children}</>
+  }
+
+  return (
+    <div className="relative overflow-hidden">
+      {children}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-4 right-4 z-[80] max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
+      >
+        {watermarkText}
+      </div>
+    </div>
+  )
+}
+
 interface ActivityClientProps {
   activityid: string
   courseuuid: string
@@ -944,8 +979,16 @@ function ActivityClient(props: ActivityClientProps) {
                                         className={`rounded-2xl ${bgColor} ${isSmartArticle ? 'mt-0' : 'mt-4 md:mt-8 p-3 md:p-8 shadow-2xl border border-white/5'}`}
                                       >
                                         {/* Activity Types */}
-                                        <div className="relative z-10 w-full overflow-visible">
-                                          {activityContent}
+                                        <div
+                                          className="relative z-10 w-full overflow-visible"
+                                          style={{
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                          }}
+                                        >
+                                          <WatermarkedActivityContent>
+                                            {activityContent}
+                                          </WatermarkedActivityContent>
                                         </div>
                                       </motion.div>
                                     )}
@@ -1102,8 +1145,14 @@ function ActivityClient(props: ActivityClientProps) {
                                                 ? 'max-w-full'
                                                 : 'max-w-6xl'
                                           }`}
+                                          style={{
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none',
+                                          }}
                                         >
-                                          {activityContent}
+                                          <WatermarkedActivityContent>
+                                            {activityContent}
+                                          </WatermarkedActivityContent>
                                         </div>
                                       </div>
                                     </>
