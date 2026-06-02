@@ -22,28 +22,35 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.sync_enum_values(
-        "public",
-        "assignmentusersubmissionstatus",
-        ["PENDING", "SUBMITTED", "GRADED", "NEEDS_REVISION", "LATE", "NOT_SUBMITTED"],
-        [
-            TableReference(
-                table_schema="public",
-                table_name="assignmentusersubmission",
-                column_name="submission_status",
-            ),
-        ],
-        enum_values_to_rename=[],
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
 
-    op.add_column(
-        "assignmentusersubmission",
-        sa.Column(
-            "submission_feedback",
-            sqlmodel.sql.sqltypes.AutoString(),
-            nullable=True,
-        ),
-    )
+    try:
+        op.sync_enum_values(
+            "public",
+            "assignmentusersubmissionstatus",
+            ["PENDING", "SUBMITTED", "GRADED", "NEEDS_REVISION", "LATE", "NOT_SUBMITTED"],
+            [
+                TableReference(
+                    table_schema="public",
+                    table_name="assignmentusersubmission",
+                    column_name="submission_status",
+                ),
+            ],
+            enum_values_to_rename=[],
+        )
+    except Exception:
+        pass
+
+    if not any(c['name'] == 'submission_feedback' for c in inspector.get_columns('assignmentusersubmission')):
+        op.add_column(
+            "assignmentusersubmission",
+            sa.Column(
+                "submission_feedback",
+                sqlmodel.sql.sqltypes.AutoString(),
+                nullable=True,
+            ),
+        )
 
 
 def downgrade() -> None:
