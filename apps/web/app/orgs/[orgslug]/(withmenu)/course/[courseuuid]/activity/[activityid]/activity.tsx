@@ -1308,7 +1308,7 @@ function ActivityPageNavbar({
                   {t('courses.course_progress')}
                 </p>
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-[10rem] xl:w-[12rem]">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-40 xl:w-48">
                     <div
                       className="h-full rounded-full bg-blue-600"
                       style={{ width: `${progressPercentage}%` }}
