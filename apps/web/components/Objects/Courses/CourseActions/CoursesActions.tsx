@@ -99,6 +99,7 @@ function CoursesActions({
   )
 
   const missingPrerequisites = React.useMemo(() => {
+    if (accessReason === 'ADMIN' || accessReason === 'AUTHOR') return []
     if (!prerequisites || !trailData?.runs) return []
     return prerequisites.filter((prereq: any) => {
       const run = trailData.runs.find(
@@ -106,7 +107,7 @@ function CoursesActions({
       )
       return !run || run.status !== 'STATUS_COMPLETED'
     })
-  }, [prerequisites, trailData])
+  }, [prerequisites, trailData, accessReason])
 
   const isStarted =
     trailData?.runs?.find((run: any) => {

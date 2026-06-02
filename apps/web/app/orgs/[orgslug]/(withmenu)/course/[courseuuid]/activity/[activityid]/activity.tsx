@@ -130,7 +130,7 @@ function WatermarkedActivityContent({
       {children}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-4 right-4 z-[80] max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
+        className="pointer-events-none absolute bottom-4 right-4 z-80 max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
       >
         {watermarkText}
       </div>
@@ -1308,7 +1308,7 @@ function ActivityPageNavbar({
                   {t('courses.course_progress')}
                 </p>
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-[10rem] xl:w-[12rem]">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-40 xl:w-48">
                     <div
                       className="h-full rounded-full bg-blue-600"
                       style={{ width: `${progressPercentage}%` }}
@@ -1345,51 +1345,61 @@ function ActivityPageNavbar({
                       </Link>
                     )}
 
-                  {activity.activity_type !== 'TYPE_ASSIGNMENT' && (
-                    <button
-                      onClick={() =>
-                        handleMarkAsComplete(
-                          activity.activity_uuid,
-                          !isActivityComplete(
-                            activity.activity_uuid,
-                            course.course_uuid,
-                            trailData
-                          )
-                        )
-                      }
-                      disabled={loadingMarkComplete}
-                      className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition sm:h-10 sm:w-auto sm:px-4 sm:text-xs ${
-                        isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        )
-                          ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
-                          : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
-                      } disabled:cursor-not-allowed disabled:opacity-70`}
+                  {activity.activity_type === 'TYPE_ASSIGNMENT' && (
+                    <AssignmentSubmissionProvider
+                      assignment_uuid={assignment?.assignment_uuid}
                     >
-                      {loadingMarkComplete ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        ) ? (
-                        <CheckCircle size={16} />
-                      ) : (
-                        <Circle size={16} />
-                      )}
-                      <span className="truncate">
-                        {isActivityComplete(
+                      <AssignmentTools
+                        assignment={assignment}
+                        activity={activity}
+                        activityid={activityid}
+                        course={course}
+                        orgslug={orgslug}
+                      />
+                    </AssignmentSubmissionProvider>
+                  )}
+
+                  <button
+                    onClick={() =>
+                      handleMarkAsComplete(
+                        activity.activity_uuid,
+                        !isActivityComplete(
                           activity.activity_uuid,
                           course.course_uuid,
                           trailData
                         )
-                          ? t('common.completed')
-                          : t('activities.mark_as_complete')}
-                      </span>
-                    </button>
-                  )}
+                      )
+                    }
+                    disabled={loadingMarkComplete}
+                    className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition ${
+                      isActivityComplete(
+                        activity.activity_uuid,
+                        course.course_uuid,
+                        trailData
+                      )
+                        ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
+                        : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {loadingMarkComplete ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : isActivityComplete(
+                        activity.activity_uuid,
+                        course.course_uuid,
+                        trailData
+                      ) ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <Circle size={16} />
+                    )}
+                    {isActivityComplete(
+                      activity.activity_uuid,
+                      course.course_uuid,
+                      trailData
+                    )
+                      ? t('common.completed')
+                      : t('activities.mark_as_complete')}
+                  </button>
                 </div>
               </AuthenticatedClientElement>
             )}
