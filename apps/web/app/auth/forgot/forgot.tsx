@@ -5,13 +5,18 @@ import africanAiLogo from 'public/african_ai_horizontal.png'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
-  Input,
 } from '@components/Objects/StyledElements/Form/Form'
 import * as Form from '@radix-ui/react-form'
-import { getOrgLogoMediaDirectory } from '@services/media/media'
-import { AlertTriangle, Info } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  LucideLoader2,
+  Mail,
+  Send,
+} from 'lucide-react'
 import Link from 'next/link'
-import { getUriWithOrg } from '@services/config/config'
+import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useFormik } from 'formik'
 import { sendResetLink } from '@services/auth/auth'
@@ -44,6 +49,8 @@ function ForgotPasswordClient() {
     validate: (values) => validate(values, t),
     validateOnBlur: true,
     onSubmit: async (values) => {
+      setError('')
+      setMessage('')
       setIsSubmitting(true)
       let res = await sendResetLink(values.email, org?.id)
       if (res.status == 200) {
@@ -63,102 +70,151 @@ function ForgotPasswordClient() {
       }
     },
   })
+
+  const emailHasError = Boolean(formik.errors.email && formik.touched.email)
+  const emailIsValid = Boolean(formik.values.email && !formik.errors.email)
+
   return (
-    <div className="grid grid-flow-col justify-stretch h-screen">
-      <div className="absolute top-4 right-4 z-50">
-        <LanguageSwitcher />
-      </div>
-      <div
-        className="right-login-part"
-        style={{
-          background:
-            'linear-gradient(041.61deg, #202020 7.15%, #000000 90.96%)',
-        }}
-      >
-        <div className="login-topbar m-10">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center overflow-y-auto bg-slate-50/50">
+      <div className="w-full px-6 py-12 md:w-[500px]">
+        <div className="mb-8 flex items-center justify-between">
           <Link prefetch href={getUriWithOrg(org?.slug, '/')}>
             <Image
               quality={100}
-              width={30}
-              height={30}
+              width={160}
               src={africanAiLogo}
-              alt=""
+              alt="African AI Network"
+              className="h-8 w-auto transition-opacity hover:opacity-80"
             />
           </Link>
+          <LanguageSwitcher />
         </div>
-        <div className="ml-10 h-4/6 flex flex-row text-white">
-          <div className="m-auto flex space-x-4 items-center flex-wrap">
-            <div className="shadow-[0px_4px_16px_rgba(0,0,0,0.02)]">
-              {org?.logo_image ? (
-                <img
-                  src={`${getOrgLogoMediaDirectory(
-                    org?.org_uuid,
-                    org?.logo_image
-                  )}`}
-                  alt="Learnhouse"
-                  style={{ width: 'auto', height: 70 }}
-                  className="rounded-xl shadow-xl inset-0 ring-1 ring-inset ring-black/10 bg-white"
-                />
-              ) : (
-                <Image
-                  quality={100}
-                  width={70}
-                  height={70}
-                  src={africanAiLogo}
-                  alt=""
-                />
-              )}
-            </div>
-            <div className="font-bold text-xl">{org?.name}</div>
-          </div>
-        </div>
-      </div>
-      <div className="left-login-part bg-white flex flex-row">
-        <div className="login-form m-auto w-72">
-          <h1 className="text-2xl font-bold mb-4">
-            {t('auth.forgot_password_title')}
-          </h1>
-          <p className="text-sm mb-4">
-            {t('auth.forgot_password_description')}
-          </p>
 
-          {error && (
-            <div className="flex justify-center bg-red-200 rounded-md text-red-950 space-x-2 items-center p-4 transition-all shadow-xs">
-              <AlertTriangle size={18} />
-              <div className="font-bold text-sm">{error}</div>
+        <div className="space-y-8 rounded-3xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/60 md:p-10">
+          {message ? (
+            <div className="flex flex-col items-center justify-center px-4 py-12 text-center animate-in fade-in zoom-in duration-500">
+              <div className="mb-6 rounded-full bg-emerald-100 p-4 ring-8 ring-emerald-50">
+                <CheckCircle2 size={48} className="text-emerald-600" />
+              </div>
+
+              <h2 className="mb-2 text-2xl font-bold text-slate-900">
+                Check your email
+              </h2>
+              <p className="mx-auto mb-8 max-w-[300px] text-sm leading-6 text-slate-600">
+                {message}
+              </p>
+
+              <Link
+                href={{
+                  pathname: getUriWithoutOrg('/login'),
+                  query: org?.slug ? { orgslug: org.slug } : null,
+                }}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-black font-bold text-white shadow-lg shadow-black/10 transition-all hover:bg-slate-800 active:scale-[0.98]"
+              >
+                <ArrowLeft size={18} />
+                <span>Back to Login</span>
+              </Link>
             </div>
+          ) : (
+            <>
+              <div className="space-y-2 text-center">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                  {t('auth.forgot_password_title')}
+                </h1>
+                <p className="text-sm italic leading-6 text-slate-500">
+                  {t('auth.forgot_password_description')}
+                </p>
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900 shadow-sm animate-in fade-in zoom-in duration-300">
+                  <AlertTriangle size={18} className="mt-1 shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-bold">Reset Link Failed</p>
+                    <p className="opacity-90">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
+                <FormField name="email">
+                  <FormLabelAndMessage label={t('auth.email')} />
+                  <div className="group relative">
+                    <Mail
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-black"
+                      size={18}
+                    />
+                    <Form.Control asChild>
+                      <input
+                        name="email"
+                        className={`h-12 w-full rounded-xl border bg-white pl-12 pr-4 font-medium text-slate-900 outline-none transition-all ${
+                          emailHasError
+                            ? 'border-red-400 focus:ring-2 focus:ring-red-500/10'
+                            : emailIsValid
+                              ? 'border-emerald-500 focus:ring-2 focus:ring-emerald-500/10'
+                              : 'border-slate-200 focus:border-black focus:ring-4 focus:ring-black/5'
+                        }`}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.email}
+                        type="email"
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </Form.Control>
+                  </div>
+                  {emailHasError && (
+                    <p className="mt-1 text-xs font-medium text-red-600">
+                      {formik.errors.email}
+                    </p>
+                  )}
+                </FormField>
+
+                <div className="pt-4">
+                  <Form.Submit asChild>
+                    <button
+                      disabled={isSubmitting}
+                      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-black font-bold text-white shadow-lg shadow-black/10 transition-all hover:bg-slate-800 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <LucideLoader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Send size={18} />
+                      )}
+                      <span>
+                        {isSubmitting
+                          ? t('common.loading')
+                          : t('auth.send_reset_link')}
+                      </span>
+                    </button>
+                  </Form.Submit>
+                </div>
+              </FormLayout>
+
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-100"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-3 font-medium tracking-widest text-slate-400">
+                    {t('common.or')}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-center text-sm text-slate-600">
+                <Link
+                  href={{
+                    pathname: getUriWithoutOrg('/login'),
+                    query: org?.slug ? { orgslug: org.slug } : null,
+                  }}
+                  className="font-bold text-black underline-offset-4 hover:underline"
+                >
+                  Back to Login
+                </Link>
+              </p>
+            </>
           )}
-          {message && (
-            <div className="flex justify-center bg-green-200 rounded-md text-green-950 space-x-2 items-center p-4 transition-all shadow-xs">
-              <Info size={18} />
-              <div className="font-bold text-sm">{message}</div>
-            </div>
-          )}
-          <FormLayout onSubmit={formik.handleSubmit}>
-            <FormField name="email">
-              <FormLabelAndMessage
-                label={t('auth.email')}
-                message={formik.errors.email}
-              />
-              <Form.Control asChild>
-                <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.email}
-                  type="email"
-                  required
-                />
-              </Form.Control>
-            </FormField>
-            <div className="flex  py-4">
-              <Form.Submit asChild>
-                <button className="w-full bg-black text-white font-bold text-center p-2 rounded-md shadow-md hover:cursor-pointer">
-                  {isSubmitting
-                    ? t('common.loading')
-                    : t('auth.send_reset_link')}
-                </button>
-              </Form.Submit>
-            </div>
-          </FormLayout>
         </div>
       </div>
     </div>
