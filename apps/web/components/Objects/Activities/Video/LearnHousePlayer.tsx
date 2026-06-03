@@ -13,31 +13,57 @@ interface LearnHousePlayerProps {
   src: string
   details?: VideoDetails
   onReady?: () => void
+  onComplete?: () => void
+  enforceLinearPlayback?: boolean
 }
 
-const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onReady }) => {
+const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
+  src,
+  details,
+  onReady,
+  onComplete,
+  enforceLinearPlayback = false,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<Plyr | null>(null)
+  const maxWatchedTimeRef = useRef(details?.startTime || 0)
+  const hasCompletedRef = useRef(false)
 
   useEffect(() => {
     if (videoRef.current) {
       // Initialize Plyr
       playerRef.current = new Plyr(videoRef.current, {
-        controls: [
-          'play-large',
-          'play',
-          'progress',
-          'current-time',
-          'mute',
-          'volume',
-          'settings',
-          'pip',
-          'fullscreen'
-        ],
-        settings: ['quality', 'speed', 'loop'],
-        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
-        tooltips: { controls: true, seek: true },
-        keyboard: { focused: true, global: true },
+        controls: enforceLinearPlayback
+          ? [
+              'play-large',
+              'play',
+              'current-time',
+              'duration',
+              'mute',
+              'volume',
+              'fullscreen',
+            ]
+          : [
+              'play-large',
+              'play',
+              'progress',
+              'current-time',
+              'mute',
+              'volume',
+              'settings',
+              'pip',
+              'fullscreen',
+            ],
+        settings: enforceLinearPlayback ? [] : ['quality', 'speed', 'loop'],
+        speed: {
+          selected: 1,
+          options: enforceLinearPlayback ? [1] : [0.5, 0.75, 1, 1.25, 1.5, 2],
+        },
+        tooltips: { controls: true, seek: !enforceLinearPlayback },
+        keyboard: {
+          focused: !enforceLinearPlayback,
+          global: !enforceLinearPlayback,
+        },
         seekTime: 10,
         volume: 1,
         muted: details?.muted ?? false,
@@ -47,22 +73,54 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
         resetOnEnd: false,
         invertTime: false,
         ratio: '16:9',
-        fullscreen: { enabled: true, iosNative: true }
+        fullscreen: { enabled: true, iosNative: true },
       })
 
       // Set initial time if specified
-      if (details?.startTime) {
-        playerRef.current.currentTime = details.startTime
+      const startTime = details?.startTime || 0
+
+      if (startTime) {
+        playerRef.current.currentTime = startTime
+        maxWatchedTimeRef.current = startTime
       }
 
       // Handle end time
-      if (details?.endTime) {
-        playerRef.current.on('timeupdate', () => {
-          if (playerRef.current && playerRef.current.currentTime >= details.endTime!) {
-            playerRef.current.pause()
+      playerRef.current.on('timeupdate', () => {
+        if (!playerRef.current) return
+
+        if (
+          details?.endTime &&
+          playerRef.current.currentTime >= details.endTime
+        ) {
+          playerRef.current.pause()
+          if (!hasCompletedRef.current) {
+            hasCompletedRef.current = true
+            onComplete?.()
           }
-        })
-      }
+          return
+        }
+
+        maxWatchedTimeRef.current = Math.max(
+          maxWatchedTimeRef.current,
+          playerRef.current.currentTime
+        )
+      })
+
+      playerRef.current.on('seeking', () => {
+        if (!enforceLinearPlayback || !playerRef.current) return
+
+        const allowedTime = maxWatchedTimeRef.current + 1
+        if (playerRef.current.currentTime > allowedTime) {
+          playerRef.current.currentTime = maxWatchedTimeRef.current
+        }
+      })
+
+      playerRef.current.on('ended', () => {
+        if (hasCompletedRef.current) return
+
+        hasCompletedRef.current = true
+        onComplete?.()
+      })
 
       // Call onReady if provided
       if (onReady) {
@@ -76,7 +134,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
         }
       }
     }
-  }, [details, onReady])
+  }, [details, enforceLinearPlayback, onComplete, onReady])
 
   return (
     <div className="w-full aspect-video rounded-lg overflow-hidden">
@@ -95,9 +153,12 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
           --plyr-control-icon-size: 18px;
           --plyr-control-spacing: 10px;
           --plyr-control-radius: 4px;
-          --plyr-video-controls-background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5));
+          --plyr-video-controls-background: linear-gradient(
+            rgba(0, 0, 0, 0),
+            rgba(0, 0, 0, 0.5)
+          );
         }
-        .plyr--full-ui input[type=range] {
+        .plyr--full-ui input[type='range'] {
           color: #ffffff;
         }
         .plyr__control--overlaid {
@@ -112,7 +173,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
         }
         .plyr__control.plyr__tab-focus,
         .plyr__control:hover,
-        .plyr__control[aria-expanded=true] {
+        .plyr__control[aria-expanded='true'] {
           background: rgba(0, 0, 0, 0.1);
         }
         .plyr__menu__container {
@@ -128,7 +189,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
         .plyr__menu__container button,
         .plyr__menu__container button:focus,
         .plyr__menu__container button:active,
-        .plyr__menu__container button[aria-selected="true"] {
+        .plyr__menu__container button[aria-selected='true'] {
           color: #000 !important;
         }
         .plyr__menu__container button:hover {
@@ -142,11 +203,13 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
           fill: #ffffff;
         }
         /* Settings (gear) icon: white by default, black on hover/open */
-        .plyr__controls .plyr__control[data-plyr="settings"] svg {
+        .plyr__controls .plyr__control[data-plyr='settings'] svg {
           fill: #fff;
         }
-        .plyr__controls .plyr__control[data-plyr="settings"]:hover svg,
-        .plyr__controls .plyr__control[data-plyr="settings"][aria-expanded="true"] svg {
+        .plyr__controls .plyr__control[data-plyr='settings']:hover svg,
+        .plyr__controls
+          .plyr__control[data-plyr='settings'][aria-expanded='true']
+          svg {
           fill: #000;
         }
         .plyr__time {
@@ -158,10 +221,10 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
         .plyr__volume--display {
           color: #ffffff;
         }
-        .plyr__control[aria-expanded=true] svg {
+        .plyr__control[aria-expanded='true'] svg {
           fill: #000000;
         }
-        .plyr__control[aria-expanded=true] .plyr__tooltip {
+        .plyr__control[aria-expanded='true'] .plyr__tooltip {
           background: #ffffff;
           color: #000000;
         }
@@ -182,20 +245,15 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({ src, details, onRea
           fill: #000000;
         }
         /* Settings button when menu is open */
-        .plyr__control[aria-expanded=true] svg {
+        .plyr__control[aria-expanded='true'] svg {
           fill: #000000;
         }
         /* Settings button hover */
-        .plyr__control[aria-expanded=true]:hover svg {
+        .plyr__control[aria-expanded='true']:hover svg {
           fill: #000000;
         }
       `}</style>
-      <video
-        ref={videoRef}
-        className="plyr-react plyr"
-        playsInline
-        controls
-      >
+      <video ref={videoRef} className="plyr-react plyr" playsInline controls>
         <source src={src} type="video/mp4" />
       </video>
     </div>

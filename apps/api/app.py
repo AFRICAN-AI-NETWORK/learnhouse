@@ -42,6 +42,7 @@ app = FastAPI(
     redoc_url="/redoc" if learnhouse_config.general_config.development_mode else None,
 )
 
+
 # Custom middleware to add CORS headers to all responses including errors
 class CORSHeaderMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -278,10 +279,12 @@ app.mount("/content", StaticFiles(directory="content"), name="content")
 # Global Routes
 app.include_router(v1_router)
 
+
 # General Routes
 @app.get("/")
 async def root():
     return {"Message": "Welcome to LearnHouse"}
+
 
 if __name__ == "__main__":
     uvicorn.run(

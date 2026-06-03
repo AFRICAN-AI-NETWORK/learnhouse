@@ -8,8 +8,9 @@ import { swrFetcher } from '@services/utils/ts/requests'
 import { Info } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
-import useSWR from 'swr'
+import useSWR, { mutate } from 'swr'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 
 type LinkToUserGroupProps = {
   // React function, todo: fix types
@@ -34,11 +35,35 @@ function LinkToUserGroup(props: LinkToUserGroupProps) {
     (usergroups && usergroups.length > 0 ? usergroups[0].id : null)
 
   const handleLink = async () => {
-    const res = (await linkResourcesToUserGroup(
-      activeUserGroup,
-      courseStructure.course_uuid,
-      access_token
-    )) as any
+    try {
+      const res = (await linkResourcesToUserGroup(
+        activeUserGroup,
+        courseStructure.course_uuid,
+        access_token
+      )) as any
+      if (res.status === 200 || res.status === 201) {
+        toast.success(
+          t('dashboard.courses.access.usergroups.toasts.link_success') ||
+            'Linked successfully'
+        )
+        // Trigger SWR mutation to update the list on the parent UI
+        mutate(
+          `${getAPIUrl()}usergroups/resource/${courseStructure.course_uuid}`
+        )
+        // Close modal
+        props.setUserGroupModal(false)
+      } else {
+        toast.error(
+          t('dashboard.courses.access.usergroups.toasts.link_error') ||
+            'Error linking usergroup'
+        )
+      }
+    } catch (e) {
+      toast.error(
+        t('dashboard.courses.access.usergroups.toasts.link_error') ||
+          'Error linking usergroup'
+      )
+    }
   }
 
   return (

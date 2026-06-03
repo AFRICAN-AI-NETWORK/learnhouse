@@ -3,6 +3,7 @@ import {
   useAssignmentsTask,
   useAssignmentsTaskDispatch,
 } from '@components/Contexts/Assignments/AssignmentsTaskContext'
+import { useAssignmentSubmission } from '@components/Contexts/Assignments/AssignmentSubmissionContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import AssignmentBoxUI from '@components/Objects/Activities/Assignment/AssignmentBoxUI'
 import {
@@ -67,6 +68,9 @@ function TaskQuizObject({
   const assignmentTaskState = useAssignmentsTask() as any
   const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
   const assignment = useAssignments() as any
+  const assignmentSubmission = useAssignmentSubmission() as any
+  const assignmentNeedsRevision =
+    assignmentSubmission?.[0]?.submission_status === 'NEEDS_REVISION'
 
   /* TEACHER VIEW CODE */
   const [questions, setQuestions] = useState<QuizSchema[]>([
@@ -210,22 +214,23 @@ function TaskQuizObject({
 
     if (!questionUUID || !optionUUID) return
 
-    const submissionIndex = updatedSubmissions.findIndex(
-      (submission) =>
-        submission.questionUUID === questionUUID &&
-        submission.optionUUID === optionUUID
+    const submissionsForOtherQuestions = updatedSubmissions.filter(
+      (submission) => submission.questionUUID !== questionUUID
     )
-
-    if (submissionIndex === -1) {
-      updatedSubmissions.push({ questionUUID, optionUUID, answer: true })
-    } else {
-      updatedSubmissions[submissionIndex].answer =
-        !updatedSubmissions[submissionIndex].answer
-    }
+    const updatedQuestionSubmissions = question.options
+      .filter((questionOption) => questionOption.optionUUID)
+      .map((questionOption) => ({
+        questionUUID,
+        optionUUID: questionOption.optionUUID || '',
+        answer: questionOption.optionUUID === optionUUID,
+      }))
 
     setUserSubmissions({
       ...userSubmissions,
-      submissions: updatedSubmissions,
+      submissions: [
+        ...submissionsForOtherQuestions,
+        ...updatedQuestionSubmissions,
+      ],
     })
   }
 
@@ -478,11 +483,11 @@ function TaskQuizObject({
         type="quiz"
         isFocusMode={isFocusMode}
       >
-        <div className="flex flex-col space-y-6">
+        <div className="flex min-w-0 flex-col space-y-6">
           {questions &&
             questions.map((question, qIndex) => (
-              <div key={qIndex} className="flex flex-col space-y-1.5">
-                <div className="flex space-x-2 items-center">
+              <div key={qIndex} className="flex min-w-0 flex-col space-y-1.5">
+                <div className="flex min-w-0 items-center gap-2">
                   {view === 'teacher' ? (
                     <input
                       value={question.questionText}
@@ -490,11 +495,11 @@ function TaskQuizObject({
                         handleQuestionChange(qIndex, e.target.value)
                       }
                       placeholder="Question"
-                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
+                      className={`min-w-0 w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
                     />
                   ) : (
                     <p
-                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
+                      className={`min-w-0 w-full break-words px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
                     >
                       {question.questionText}
                     </p>
@@ -508,20 +513,25 @@ function TaskQuizObject({
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col space-y-2">
+                <div className="flex min-w-0 flex-col space-y-2">
                   {question.options.map((option, oIndex) => (
-                    <div className="flex" key={oIndex}>
+                    <div
+                      className="flex min-w-0 items-start gap-2"
+                      key={oIndex}
+                    >
                       <div
                         onClick={() =>
-                          view === 'student' && chooseOption(qIndex, oIndex)
+                          view === 'student' &&
+                          (!hasSubmitted || assignmentNeedsRevision) &&
+                          chooseOption(qIndex, oIndex)
                         }
                         className={
-                          `answer outline-3 pr-2 shadow-sm w-full flex items-center space-x-2 h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg text-sm duration-150 cursor-pointer ease-linear nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10 outline-white/10' : 'bg-white outline-white'} ` +
+                          `answer outline-3 pr-2 shadow-sm min-w-0 w-full flex flex-wrap items-center gap-2 min-h-[44px] py-2 hover:bg-opacity-100 hover:shadow-md rounded-lg text-sm duration-150 cursor-pointer ease-linear nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10 outline-white/10' : 'bg-white outline-white'} ` +
                           (view == 'student' ? 'active:scale-105' : '')
                         }
                       >
                         <div
-                          className={`font-bold text-base flex items-center h-full w-[40px] rounded-l-md ${isFocusMode ? 'text-zinc-100 bg-white/10' : 'text-slate-800 bg-slate-100/80'}`}
+                          className={`font-bold text-base flex flex-none self-stretch items-center min-h-[28px] w-[40px] rounded-l-md ${isFocusMode ? 'text-zinc-100 bg-white/10' : 'text-slate-800 bg-slate-100/80'}`}
                         >
                           <p className="mx-auto font-bold text-sm">
                             {String.fromCharCode(65 + oIndex)}
@@ -535,11 +545,11 @@ function TaskQuizObject({
                               handleOptionChange(qIndex, oIndex, e.target.value)
                             }
                             placeholder="Option"
-                            className={`w-full mx-2 px-3 pr-6 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-200 border-white/10' : 'text-neutral-600 border-gray-200'}`}
+                            className={`min-w-0 flex-1 px-3 pr-6 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-200 border-white/10' : 'text-neutral-600 border-gray-200'}`}
                           />
                         ) : (
                           <p
-                            className={`w-full mx-2 px-3 pr-6 text-sm font-bold ${isFocusMode ? 'text-zinc-200' : 'text-neutral-600'}`}
+                            className={`min-w-0 flex-1 basis-40 break-words px-3 pr-2 text-sm font-bold whitespace-normal ${isFocusMode ? 'text-zinc-200' : 'text-neutral-600'}`}
                           >
                             {option.text}
                           </p>
@@ -547,7 +557,7 @@ function TaskQuizObject({
                         {view === 'teacher' && (
                           <>
                             <div
-                              className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                              className={`w-fit flex-none flex text-xs px-2 py-0.5 gap-1 items-center h-fit rounded-lg ${
                                 option.assigned_right_answer
                                   ? 'bg-lime-200 text-lime-600'
                                   : 'bg-rose-200/60 text-rose-500'
@@ -580,7 +590,7 @@ function TaskQuizObject({
                         {view === 'grading' && (
                           <>
                             <div
-                              className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                              className={`w-fit flex-none flex text-xs px-2 py-0.5 gap-1 items-center h-fit rounded-lg ${
                                 option.assigned_right_answer
                                   ? 'bg-lime-200 text-lime-600'
                                   : 'bg-rose-200/60 text-rose-500'
@@ -603,36 +613,39 @@ function TaskQuizObject({
                             </div>
                           </>
                         )}
-                        {view === 'student' && !hasSubmitted && (
-                          <div
-                            className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
-                              userSubmissions.submissions.find(
+                        {view === 'student' &&
+                          (!hasSubmitted || assignmentNeedsRevision) && (
+                            <div
+                              className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
+                                userSubmissions.submissions.find(
+                                  (submission) =>
+                                    submission.questionUUID ===
+                                      question.questionUUID &&
+                                    submission.optionUUID ===
+                                      option.optionUUID &&
+                                    submission.answer
+                                )
+                                  ? 'bg-green-200/60 text-green-500 hover:bg-green-300'
+                                  : 'bg-slate-200/60 text-slate-500 hover:bg-slate-300'
+                              } text-sm transition-all ease-linear cursor-pointer`}
+                              onClick={() => chooseOption(qIndex, oIndex)}
+                            >
+                              {userSubmissions.submissions.find(
                                 (submission) =>
                                   submission.questionUUID ===
                                     question.questionUUID &&
                                   submission.optionUUID === option.optionUUID &&
                                   submission.answer
-                              )
-                                ? 'bg-green-200/60 text-green-500 hover:bg-green-300'
-                                : 'bg-slate-200/60 text-slate-500 hover:bg-slate-300'
-                            } text-sm transition-all ease-linear cursor-pointer`}
-                            onClick={() => chooseOption(qIndex, oIndex)}
-                          >
-                            {userSubmissions.submissions.find(
-                              (submission) =>
-                                submission.questionUUID ===
-                                  question.questionUUID &&
-                                submission.optionUUID === option.optionUUID &&
-                                submission.answer
-                            ) ? (
-                              <Check size={12} className="mx-auto" />
-                            ) : (
-                              <X size={12} className="mx-auto" />
-                            )}
-                          </div>
-                        )}
+                              ) ? (
+                                <Check size={12} className="mx-auto" />
+                              ) : (
+                                <X size={12} className="mx-auto" />
+                              )}
+                            </div>
+                          )}
                         {view === 'student' &&
                           hasSubmitted &&
+                          !assignmentNeedsRevision &&
                           (() => {
                             const studentAnswer =
                               userSubmissions.submissions.find(
@@ -644,7 +657,7 @@ function TaskQuizObject({
                             // Student selected a correct option ✓
                             if (studentAnswer && isCorrect) {
                               return (
-                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg bg-lime-200 text-lime-600">
+                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 gap-1 items-center h-fit rounded-lg bg-lime-200 text-lime-600">
                                   <Check size={12} className="mx-auto" />
                                   <p className="mx-auto font-bold text-xs">
                                     Correct
@@ -655,7 +668,7 @@ function TaskQuizObject({
                             // Student selected a wrong option ✗
                             if (studentAnswer && !isCorrect) {
                               return (
-                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg bg-rose-200/60 text-rose-500">
+                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 gap-1 items-center h-fit rounded-lg bg-rose-200/60 text-rose-500">
                                   <X size={12} className="mx-auto" />
                                   <p className="mx-auto font-bold text-xs">
                                     Wrong
@@ -666,7 +679,7 @@ function TaskQuizObject({
                             // Student missed a correct option (did not select it)
                             if (!studentAnswer && isCorrect) {
                               return (
-                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg bg-amber-100 text-amber-600">
+                                <div className="w-fit flex-none flex text-xs px-2 py-0.5 gap-1 items-center h-fit rounded-lg bg-amber-100 text-amber-600">
                                   <X size={12} className="mx-auto" />
                                   <p className="mx-auto font-bold text-xs">
                                     Missed

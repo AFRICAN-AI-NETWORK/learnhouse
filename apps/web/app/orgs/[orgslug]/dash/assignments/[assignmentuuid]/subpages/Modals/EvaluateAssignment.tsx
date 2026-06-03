@@ -9,9 +9,9 @@ import TaskCodeEditorObject from '../../_components/TaskEditor/Subs/TaskTypes/Ta
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getTaskRefFileDir } from '@services/media/media'
 import {
-  deleteUserSubmission,
   markActivityAsDoneForUser,
   putFinalGrade,
+  requestAssignmentRevision,
 } from '@services/courses/assignments'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
@@ -22,6 +22,7 @@ function EvaluateAssignment({ user_id }: any) {
   const assignments = useAssignments() as any
   const session = useLHSession() as any
   const org = useOrg() as any
+  const [revisionFeedback, setRevisionFeedback] = React.useState('')
 
   async function gradeAssignment(showToast = true) {
     const res = await putFinalGrade(
@@ -71,38 +72,48 @@ function EvaluateAssignment({ user_id }: any) {
   }
 
   async function rejectAssignment() {
-    const res = await deleteUserSubmission(
+    const res = await requestAssignmentRevision(
+      { submission_feedback: revisionFeedback },
       user_id,
       assignments?.assignment_object.assignment_uuid,
       session.data?.tokens?.access_token
     )
-    toast.success(t('dashboard.assignments.submissions.toasts.reject_success'))
-    window.location.reload()
+    if (res.success) {
+      toast.success(
+        t('dashboard.assignments.submissions.toasts.reject_success')
+      )
+      window.location.reload()
+    } else {
+      toast.error(
+        res.data?.detail ||
+          t('dashboard.assignments.submissions.toasts.reject_failed')
+      )
+    }
   }
 
   return (
-    <div className="flex flex-col space-y-6 px-4 py-8 overflow-y-auto">
+    <div className="flex max-w-full flex-col space-y-6 overflow-y-auto px-3 py-6 sm:px-4 sm:py-8">
       {assignments &&
         assignments?.assignment_tasks
           ?.sort((a: any, b: any) => a.id - b.id)
           .map((task: any, index: number) => {
             return (
               <div
-                className="flex flex-col space-y-4 p-6 bg-white rounded-2xl border border-slate-100 shadow-sm"
+                className="flex flex-col space-y-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6"
                 key={task.assignment_task_uuid}
               >
-                <div className="flex justify-between items-center pb-2 border-b border-slate-50">
-                  <div className="flex flex-col">
-                    <div className="flex items-center space-x-2">
+                <div className="flex flex-col gap-3 border-b border-slate-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-col">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-bold uppercase tracking-wider">
                         Task {index + 1}
                       </span>
-                      <h4 className="font-bold text-slate-800 tracking-tight">
+                      <h4 className="min-w-0 truncate font-bold tracking-tight text-slate-800">
                         {task.description}
                       </h4>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-2">
                     {task.hint && (
                       <div
                         onClick={() => alert(task.hint)}
@@ -180,16 +191,26 @@ function EvaluateAssignment({ user_id }: any) {
               </div>
             )
           })}
-      <div className="flex space-x-4 font-semibold items-center justify-between border-t pt-6 bg-slate-50/50 -mx-4 px-8 mt-4 rounded-b-xl">
-        <button
-          onClick={rejectAssignment}
-          className="flex space-x-2 px-5 py-2.5 text-sm bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-colors nice-shadow items-center cursor-pointer font-bold"
-        >
-          <X size={18} />
-          <span>{t('dashboard.assignments.submissions.actions.reject')}</span>
-        </button>
-        <div className="flex space-x-4 items-center">
-          <div className="flex flex-col items-end mr-4">
+      <div className="-mx-3 mt-4 flex flex-col gap-4 rounded-b-xl border-t bg-slate-50/50 px-4 pt-6 font-semibold sm:-mx-4 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-col gap-2 lg:max-w-[320px]">
+          <textarea
+            value={revisionFeedback}
+            onChange={(e) => setRevisionFeedback(e.target.value)}
+            placeholder={t(
+              'dashboard.assignments.submissions.revision_feedback_placeholder'
+            )}
+            className="min-h-[74px] w-full resize-none rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-rose-300"
+          />
+          <button
+            onClick={rejectAssignment}
+            className="flex min-h-11 items-center justify-center space-x-2 rounded-xl border border-rose-200 bg-white px-5 py-2.5 text-sm font-bold text-rose-600 transition-colors cursor-pointer nice-shadow hover:bg-rose-50"
+          >
+            <X size={18} />
+            <span>{t('dashboard.assignments.submissions.actions.reject')}</span>
+          </button>
+        </div>
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
+          <div className="flex flex-col sm:items-end sm:mr-4">
             <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
               Manual Flow
             </span>
@@ -201,7 +222,7 @@ function EvaluateAssignment({ user_id }: any) {
           </div>
           <button
             onClick={gradeAndComplete}
-            className="flex space-x-2 px-6 py-3 text-sm bg-linear-to-r from-violet-600 to-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98] transition-all items-center cursor-pointer font-bold"
+            className="flex min-h-11 items-center justify-center space-x-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all cursor-pointer hover:scale-[1.02] hover:shadow-indigo-200 active:scale-[0.98]"
           >
             <BookOpenCheck size={18} />
             <span>

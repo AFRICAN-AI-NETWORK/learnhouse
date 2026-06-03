@@ -1,6 +1,6 @@
 'use client'
 import { useFormik } from 'formik'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import FormLayout, {
   FormField,
@@ -8,6 +8,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
+import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -29,24 +30,26 @@ import Link from 'next/link'
 import { signup } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
+import {
+  DEFAULT_COUNTRY_CODE,
+  formatE164,
+  validatePhoneFields,
+} from '@/lib/phone-number'
+import { SiWhatsapp } from '@icons-pack/react-simple-icons'
 
-// Helper to format phone number to E.164 (basic, assumes user enters digits only or with +)
-function formatE164(phone: string) {
-  let cleaned = phone.replace(/[^\d+]/g, '')
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned
-  }
-  return cleaned
-}
+const whatsappGroupUrl =
+  'https://chat.whatsapp.com/BohSUrcVlPREw5KUS2vEPr?mode=gi_t'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
-  if (!values.phone_number) {
-    errors.phone_number = t('validation.required')
-  } else if (!/^\+\d{7,15}$/.test(formatE164(values.phone_number))) {
+  const phoneErrors = validatePhoneFields(values)
+  if (phoneErrors.country_code) {
+    errors.country_code = phoneErrors.country_code
+  }
+  if (phoneErrors.phone_number) {
     errors.phone_number =
       t('validation.invalid_phone_with_country_code') ||
-      'Invalid phone. Please include country code (e.g. +234)'
+      phoneErrors.phone_number
   }
   if (!values.email) {
     errors.email = t('validation.required')
@@ -97,7 +100,6 @@ function OpenSignUpComponent() {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const org = useOrg() as any
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
@@ -134,6 +136,7 @@ function OpenSignUpComponent() {
       confirmPassword: '',
       username: '',
       bio: '',
+      country_code: DEFAULT_COUNTRY_CODE,
       phone_number: '',
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
@@ -167,7 +170,7 @@ function OpenSignUpComponent() {
         password: values.password,
         username: values.username,
         bio: values.bio,
-        phone_number: formatE164(values.phone_number),
+        phone_number: formatE164(values.country_code, values.phone_number),
         first_name: values.first_name,
         last_name: values.last_name,
         ...(device_id ? { device_id } : {}),
@@ -187,10 +190,6 @@ function OpenSignUpComponent() {
         setMessage(
           'Account created successfully! Please check your email to verify your account before logging in.'
         )
-        setTimeout(() => {
-          const orgSlug = org?.slug || 'default'
-          router.push(`/login?orgslug=${orgSlug}`)
-        }, 3000)
       } else if (
         res.status === 401 ||
         res.status === 400 ||
@@ -217,7 +216,18 @@ function OpenSignUpComponent() {
           )
           // Retry without referral code
           const payloadWithoutRef = {
-            ...values,
+            org_slug: values.org_slug,
+            org_id: values.org_id,
+            email: values.email,
+            password: values.password,
+            username: values.username,
+            bio: values.bio,
+            phone_number: formatE164(
+              values.country_code,
+              values.phone_number
+            ),
+            first_name: values.first_name,
+            last_name: values.last_name,
             device_id,
             browser_fingerprint,
           }
@@ -231,10 +241,6 @@ function OpenSignUpComponent() {
             setMessage(
               'Account created successfully! Please check your email to verify your account before logging in.'
             )
-            setTimeout(() => {
-              const orgSlug = org?.slug || 'default'
-              router.push(`/login?orgslug=${orgSlug}`)
-            }, 3000)
           } else {
             const retryRes_json = await retryRes.json()
             const retryDetail = retryRes_json.detail
@@ -307,6 +313,34 @@ function OpenSignUpComponent() {
             {formik.values.email}
           </span>
         </p>
+
+        <div className="mb-6 w-full rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+                <SiWhatsapp size={22} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900">
+                  Stay updated on WhatsApp
+                </p>
+                <p className="text-xs leading-5 text-slate-600">
+                  Join the official group for updates and helpful information.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={whatsappGroupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
+            >
+              <SiWhatsapp size={16} />
+              Join Group
+            </a>
+          </div>
+        </div>
 
         <div className="w-full space-y-3 mb-8">
           <button
@@ -549,21 +583,10 @@ function OpenSignUpComponent() {
               </Form.Control>
             </FormField>
 
-            <FormField name="phone_number">
-              <FormLabelAndMessage
-                label={t('user.phone_number') || 'Phone Number'}
-                message={formik.errors.phone_number}
-              />
-              <Form.Control asChild>
-                <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.phone_number}
-                  type="tel"
-                  required
-                  placeholder="e.g. +2340900000000"
-                />
-              </Form.Control>
-            </FormField>
+            <PhoneNumberFields
+              formik={formik}
+              phoneNumberLabel={t('user.phone_number') || 'Phone number'}
+            />
 
             {/* Referral Code — optional */}
             <div>

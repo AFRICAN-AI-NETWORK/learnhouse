@@ -13,6 +13,7 @@ from src.db.waitlist import (
     WaitlistConfig,
     WaitlistStatusEnum,
     WaitlistEmailLog,
+    UserStatusEnum,
 )
 from src.services.email.utils import send_email
 
@@ -318,6 +319,12 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
     emails_sent = 0
     emails_failed = 0
 
+    def mark_user_activated(user: User) -> None:
+        """Transition a waitlisted user into the post-launch active state."""
+        user.user_status = UserStatusEnum.WAITLIST_ACTIVATED.value
+        user.waitlist_activated_date = str(datetime.now())
+        db_session.add(user)
+
     for i in range(0, len(users), batch_size):
         batch = users[i : i + batch_size]
 
@@ -343,10 +350,8 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
                     waitlist_config=waitlist,
                 )
 
-                # Update user status to WAITLIST_ACTIVATED
-                user.user_status = "WAITLIST_ACTIVATED"
-                user.waitlist_activated_date = str(datetime.now())
-                db_session.add(user)
+                # Email delivery succeeded, unlock the account for login.
+                mark_user_activated(user)
 
                 # Update email log
                 email_log = WaitlistEmailLog(
@@ -363,6 +368,9 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
                 logger.info("Activated user %d (%s)", user.id, user.email)
 
             except Exception as e:
+                # Account activation must not depend on email delivery once the waitlist has launched.
+                mark_user_activated(user)
+
                 # Log error but continue with other users
                 email_log = WaitlistEmailLog(
                     waitlist_config_id=waitlist.id,
@@ -467,7 +475,7 @@ async def retry_failed_waitlist_emails(db_session: Session):
             log.update_date = str(datetime.now())
 
             # Update user status
-            user.user_status = "WAITLIST_ACTIVATED"
+            user.user_status = UserStatusEnum.WAITLIST_ACTIVATED.value
             user.waitlist_activated_date = str(datetime.now())
             db_session.add(user)
 

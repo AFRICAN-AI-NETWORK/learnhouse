@@ -130,7 +130,7 @@ function WatermarkedActivityContent({
       {children}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-4 right-4 z-[80] max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
+        className="pointer-events-none absolute bottom-4 right-4 z-80 max-w-[80%] select-none text-right text-xs font-bold uppercase tracking-wide text-slate-950 opacity-45 md:text-sm"
       >
         {watermarkText}
       </div>
@@ -181,6 +181,82 @@ function useActivityPosition(course: any, activityId: string) {
 
     return { allActivities, currentIndex }
   }, [course, activityId])
+}
+
+function getCourseTrailRun(courseUuid: string, trailData: any) {
+  const cleanCourseUuid = courseUuid?.replace('course_', '')
+
+  return trailData?.runs?.find((run: any) => {
+    const runCourseUuid =
+      run.course?.course_uuid || run.course_uuid || run.course?.uuid
+
+    return runCourseUuid?.replace('course_', '') === cleanCourseUuid
+  })
+}
+
+function getCompletedActivityStep(activity: any, course: any, trailData: any) {
+  const run = getCourseTrailRun(course.course_uuid, trailData)
+
+  return run?.steps?.find(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
+      step.complete === true
+  )
+}
+
+function getActivityPoints(activity: any) {
+  const points = Number(activity?.points || 0)
+  return Number.isFinite(points) ? points : 0
+}
+
+function ActivityPointsSummary({
+  activity,
+  course,
+  trailData,
+}: {
+  activity: any
+  course: any
+  trailData: any
+}) {
+  const assignedPoints = getActivityPoints(activity)
+
+  if (assignedPoints <= 0) {
+    return null
+  }
+
+  const completedStep = getCompletedActivityStep(activity, course, trailData)
+  const hasEarnedPoints = Boolean(completedStep)
+  const storedEarnedPoints = Number(completedStep?.points_earned || 0)
+  const earnedPoints =
+    hasEarnedPoints && storedEarnedPoints > 0
+      ? storedEarnedPoints
+      : assignedPoints
+  const displayedPoints = hasEarnedPoints ? earnedPoints : assignedPoints
+
+  return (
+    <div
+      className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase sm:w-auto sm:px-4 sm:text-xs ${
+        hasEarnedPoints
+          ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300'
+          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/8 dark:bg-white/5 dark:text-white/60'
+      }`}
+      title={
+        hasEarnedPoints
+          ? `${displayedPoints}/${assignedPoints} points earned`
+          : `${assignedPoints} points available`
+      }
+    >
+      <Trophy size={16} />
+      <span className="truncate">
+        {hasEarnedPoints
+          ? `${displayedPoints}/${assignedPoints} pts earned`
+          : `0/${assignedPoints} pts earned`}
+      </span>
+    </div>
+  )
 }
 
 function ActivityActions({
@@ -381,7 +457,24 @@ function ActivityClient(props: ActivityClientProps) {
       case 'TYPE_VIDEO':
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <VideoActivity course={course} activity={activity} />
+            <VideoActivity
+              course={course}
+              activity={activity}
+              enforceLinearPlayback={
+                activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED'
+              }
+              onComplete={() => {
+                if (
+                  !isActivityComplete(
+                    activity.activity_uuid,
+                    course.course_uuid,
+                    trailData
+                  )
+                ) {
+                  handleMarkAsComplete(activity.activity_uuid, true)
+                }
+              }}
+            />
           </Suspense>
         )
       case 'TYPE_DOCUMENT':
@@ -533,7 +626,12 @@ function ActivityClient(props: ActivityClientProps) {
     }
   }, [activity.activity_type, isFocusMode])
 
-  const totalActivities = useMemo(
+  const currentTrailRun = useMemo(
+    () => getCourseTrailRun(course.course_uuid, trailData),
+    [course.course_uuid, trailData]
+  )
+
+  const fallbackTotalActivities = useMemo(
     () =>
       course.chapters?.reduce(
         (acc: number, chapter: any) => acc + (chapter.activities?.length || 0),
@@ -542,16 +640,12 @@ function ActivityClient(props: ActivityClientProps) {
     [course.chapters]
   )
 
-  const completedActivities = useMemo(() => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((run: any) => {
-      const runCourseUuid =
-        run.course?.course_uuid || run.course_uuid || run.course?.uuid
-      return runCourseUuid?.replace('course_', '') === cleanCourseUuid
-    })
+  const totalActivities =
+    currentTrailRun?.course_total_steps || fallbackTotalActivities
 
-    return run?.steps?.filter((step: any) => step.complete === true).length || 0
-  }, [course.course_uuid, trailData])
+  const completedActivities =
+    currentTrailRun?.steps?.filter((step: any) => step.complete === true)
+      .length || 0
 
   const progressPercentage =
     totalActivities > 0
@@ -1102,7 +1196,13 @@ function ActivityClient(props: ActivityClientProps) {
                           />
 
                           <main className="min-w-0 flex-1">
-                            <div className="px-4 py-5 sm:px-6 xl:px-8">
+                            <div
+                              className={`py-5 sm:px-6 xl:px-8 ${
+                                activity?.activity_type === 'TYPE_ASSIGNMENT'
+                                  ? 'px-0 pb-32 md:px-4 md:pb-5'
+                                  : 'px-4'
+                              }`}
+                            >
                               {activity && activity.published == false && (
                                 <div className="rounded-lg border border-slate-200 bg-slate-900 p-7 text-white shadow-sm">
                                   <h1 className="text-2xl font-bold">
@@ -1138,7 +1238,14 @@ function ActivityClient(props: ActivityClientProps) {
                                         </span>
                                       </div>
 
-                                      <div className="activity-info-section rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]">
+                                      <div
+                                        className={`activity-info-section ${
+                                          activity.activity_type ===
+                                          'TYPE_ASSIGNMENT'
+                                            ? 'bg-transparent shadow-none md:rounded-lg md:border md:border-slate-200 md:bg-white md:shadow-sm md:dark:border-white/8 md:dark:bg-[#13131a]'
+                                            : 'rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]'
+                                        }`}
+                                      >
                                         <div
                                           className={`relative mx-auto ${
                                             activity.activity_type ===
@@ -1159,6 +1266,25 @@ function ActivityClient(props: ActivityClientProps) {
                                           </WatermarkedActivityContent>
                                         </div>
                                       </div>
+
+                                      {activity.activity_type ===
+                                        'TYPE_ASSIGNMENT' && (
+                                        <div className="mt-4 hidden justify-end rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/8 dark:bg-[#13131a] md:flex">
+                                          <AssignmentSubmissionProvider
+                                            assignment_uuid={
+                                              assignment?.assignment_uuid
+                                            }
+                                          >
+                                            <AssignmentTools
+                                              assignment={assignment}
+                                              activity={activity}
+                                              activityid={activityid}
+                                              course={course}
+                                              orgslug={orgslug}
+                                            />
+                                          </AssignmentSubmissionProvider>
+                                        </div>
+                                      )}
                                     </>
                                   )}
                                 </>
@@ -1167,7 +1293,14 @@ function ActivityClient(props: ActivityClientProps) {
                               {activity &&
                                 activity.published == true &&
                                 activity.content.paid_access != false && (
-                                  <div className="mt-4 flex gap-3 md:flex-row md:items-center md:justify-between">
+                                  <div
+                                    className={`mt-4 gap-3 md:flex-row md:items-center md:justify-between ${
+                                      activity.activity_type ===
+                                      'TYPE_ASSIGNMENT'
+                                        ? 'hidden md:flex'
+                                        : 'flex'
+                                    }`}
+                                  >
                                     <PreviousActivityButton
                                       course={course}
                                       currentActivityId={activity.id}
@@ -1179,6 +1312,20 @@ function ActivityClient(props: ActivityClientProps) {
                                       orgslug={orgslug}
                                     />
                                   </div>
+                                )}
+
+                              {activity &&
+                                activity.published == true &&
+                                activity.content.paid_access != false &&
+                                activity.activity_type ===
+                                  'TYPE_ASSIGNMENT' && (
+                                  <MobileAssignmentActionDock
+                                    assignment={assignment}
+                                    activity={activity}
+                                    activityid={activityid}
+                                    course={course}
+                                    orgslug={orgslug}
+                                  />
                                 )}
 
                               <div className="h-12" />
@@ -1233,29 +1380,38 @@ function ActivityPageNavbar({
 }) {
   const { t } = useTranslation()
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const activityComplete = isActivityComplete(
+    activity.activity_uuid,
+    course.course_uuid,
+    trailData
+  )
+  const requiresVideoWatch =
+    activity.activity_type === 'TYPE_VIDEO' &&
+    activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
+    !activityComplete
 
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
-      <div className="flex flex-col gap-2 px-4 py-2 sm:gap-4 sm:px-6 sm:py-4 xl:px-8">
-        <div className="flex flex-col gap-2 sm:gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+      <div className="px-4 py-3 sm:px-6 xl:px-8">
+        <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_auto] lg:items-center lg:gap-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
               className="hidden shrink-0 bg-white p-1 shadow-xs dark:bg-transparent sm:block"
             >
               <img
-                className="w-32"
+                className="h-9 w-auto max-w-32 object-contain"
                 src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
                 alt=""
               />
             </Link>
             <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 flex-col gap-2 sm:gap-3">
+              <div className="flex min-w-0 flex-col gap-2">
                 <p className="text-[10px] font-semibold uppercase text-slate-500 dark:text-white/45 sm:text-xs sm:normal-case">
                   {t('courses.course_progress')}
                 </p>
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 md:w-96 lg:w-[10rem] xl:w-[12rem]">
+                  <div className="h-1.5 w-full max-w-72 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 lg:max-w-80">
                     <div
                       className="h-full rounded-full bg-blue-600"
                       style={{ width: `${progressPercentage}%` }}
@@ -1273,10 +1429,10 @@ function ActivityPageNavbar({
             activity.published == true &&
             activity.content.paid_access != false && (
               <AuthenticatedClientElement checkMethod="authentication">
-                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end xl:max-w-[60vw]">
-                  {activity.activity_type !== 'TYPE_SMART_ARTICLE' && (
+                <div className="grid w-full grid-cols-2 items-center gap-2 sm:grid-cols-[repeat(auto-fit,minmax(150px,max-content))] sm:justify-end lg:flex lg:w-auto lg:flex-nowrap">
+                  {/* {activity.activity_type !== 'TYPE_SMART_ARTICLE' && (
                     <AIActivityAsk activity={activity} />
-                  )}
+                  )} */}
 
                   {contributorStatus === 'ACTIVE' &&
                     activity.activity_type == 'TYPE_DYNAMIC' && (
@@ -1285,14 +1441,14 @@ function ActivityPageNavbar({
                           getUriWithOrg(orgslug, '') +
                           `/course/${courseuuid}/activity/${activityid}/edit`
                         }
-                        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:h-10 sm:w-auto sm:px-4 sm:text-xs"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15 sm:w-auto sm:px-4 sm:text-xs"
                       >
                         <Edit2 size={16} />
                         {t('courses.contribute')}
                       </Link>
                     )}
 
-                  {activity.activity_type === 'TYPE_ASSIGNMENT' ? (
+                  {activity.activity_type === 'TYPE_ASSIGNMENT' && (
                     <AssignmentSubmissionProvider
                       assignment_uuid={assignment?.assignment_uuid}
                     >
@@ -1304,51 +1460,41 @@ function ActivityPageNavbar({
                         orgslug={orgslug}
                       />
                     </AssignmentSubmissionProvider>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        handleMarkAsComplete(
-                          activity.activity_uuid,
-                          !isActivityComplete(
-                            activity.activity_uuid,
-                            course.course_uuid,
-                            trailData
-                          )
-                        )
-                      }
-                      disabled={loadingMarkComplete}
-                      className={`inline-flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition sm:h-10 sm:w-auto sm:px-4 sm:text-xs ${
-                        isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        )
-                          ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
-                          : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
-                      } disabled:cursor-not-allowed disabled:opacity-70`}
-                    >
-                      {loadingMarkComplete ? (
-                        <Loader2 size={16} className="animate-spin" />
-                      ) : isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        ) ? (
-                        <CheckCircle size={16} />
-                      ) : (
-                        <Circle size={16} />
-                      )}
-                      <span className="truncate">
-                        {isActivityComplete(
-                          activity.activity_uuid,
-                          course.course_uuid,
-                          trailData
-                        )
-                          ? t('common.completed')
-                          : t('activities.mark_as_complete')}
-                      </span>
-                    </button>
                   )}
+
+                  <ActivityPointsSummary
+                    activity={activity}
+                    course={course}
+                    trailData={trailData}
+                  />
+
+                  <button
+                    onClick={() =>
+                      handleMarkAsComplete(
+                        activity.activity_uuid,
+                        !activityComplete
+                      )
+                    }
+                    disabled={loadingMarkComplete || requiresVideoWatch}
+                    className={`col-span-2 inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition sm:col-auto sm:min-w-48 sm:px-4 sm:text-xs ${
+                      activityComplete
+                        ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
+                        : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {loadingMarkComplete ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : activityComplete ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <Circle size={16} />
+                    )}
+                    {requiresVideoWatch
+                      ? 'Watch video to complete'
+                      : activityComplete
+                        ? t('common.completed')
+                        : t('activities.mark_as_complete')}
+                  </button>
                 </div>
               </AuthenticatedClientElement>
             )}
@@ -1879,6 +2025,87 @@ export function MarkStatus(props: {
   )
 }
 
+function MobileAssignmentActionDock({
+  activity,
+  activityid,
+  assignment,
+  course,
+  orgslug,
+}: {
+  activity: any
+  activityid: string
+  assignment: any
+  course: any
+  orgslug: string
+}) {
+  const { t } = useTranslation()
+  const router = useRouter()
+  const { allActivities, currentIndex } = useActivityPosition(
+    course,
+    activityid
+  )
+  const previousActivity =
+    currentIndex > 0 ? allActivities[currentIndex - 1] : null
+  const nextActivity =
+    currentIndex < allActivities.length - 1
+      ? allActivities[currentIndex + 1]
+      : null
+
+  const navigateToActivity = (targetActivity: any | 'end' | null) => {
+    if (!targetActivity) return
+
+    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+    const targetActivityId =
+      targetActivity === 'end' ? 'end' : targetActivity.cleanUuid
+
+    router.push(
+      getUriWithOrg(orgslug, '') +
+        `/course/${cleanCourseUuid}/activity/${targetActivityId}`
+    )
+  }
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 py-3 pl-3 pr-20 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur md:hidden dark:border-white/8 dark:bg-[#13131a]/95">
+      <div className="mx-auto grid max-w-xl grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2 pb-[env(safe-area-inset-bottom)]">
+        <button
+          type="button"
+          onClick={() => navigateToActivity(previousActivity)}
+          disabled={!previousActivity}
+          aria-label={t('common.previous')}
+          className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/8 dark:bg-white/5 dark:text-white/70"
+        >
+          <ChevronLeft size={19} />
+        </button>
+
+        <AssignmentSubmissionProvider
+          assignment_uuid={assignment?.assignment_uuid}
+        >
+          <AssignmentTools
+            assignment={assignment}
+            activity={activity}
+            activityid={activityid}
+            course={course}
+            orgslug={orgslug}
+          />
+        </AssignmentSubmissionProvider>
+
+        <button
+          type="button"
+          onClick={() => navigateToActivity(nextActivity || 'end')}
+          aria-label={
+            nextActivity ? t('common.next') : t('courses.finish_course')
+          }
+          className={`flex h-11 w-11 items-center justify-center rounded-md text-white shadow-sm transition ${
+            nextActivity ? 'bg-blue-600' : 'bg-emerald-600'
+          }`}
+        >
+          {nextActivity ? <ChevronRight size={19} /> : <Trophy size={18} />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function NextActivityButton({
   course,
   currentActivityId,
@@ -2076,11 +2303,35 @@ function AssignmentTools(props: {
     [assignmentTasksRes]
   )
   const totalTasks = assignmentTasks.length || 0
+  const assignmentTaskIds = React.useMemo(
+    () =>
+      new Set(
+        assignmentTasks
+          .map((assignmentTask: any) => assignmentTask.id)
+          .filter(Boolean)
+      ),
+    [assignmentTasks]
+  )
 
-  const isComplete = taskSubmissions.length >= totalTasks && totalTasks > 0
+  const savedTaskSubmissionIds = React.useMemo(
+    () =>
+      new Set(
+        taskSubmissions
+          .map((taskSubmission: any) => taskSubmission.assignment_task_id)
+          .filter((taskId: any) => assignmentTaskIds.has(taskId))
+      ),
+    [taskSubmissions, assignmentTaskIds]
+  )
+  const isComplete =
+    totalTasks > 0 && savedTaskSubmissionIds.size === assignmentTaskIds.size
 
   const submitForGradingUI = async () => {
     if (props.assignment) {
+      if (!isComplete) {
+        toast.error(t('assignments.submit_incomplete_warning'))
+        return
+      }
+
       const res = await submitAssignmentForGrading(
         props.assignment?.assignment_uuid,
         session.data?.tokens?.access_token
@@ -2091,7 +2342,9 @@ function AssignmentTools(props: {
           `${getAPIUrl()}assignments/${props.assignment?.assignment_uuid}/submissions/me`
         )
       } else {
-        toast.error(t('assignments.failed_submit_assignment'))
+        toast.error(
+          res.data?.detail || t('assignments.failed_submit_assignment')
+        )
       }
     }
   }
@@ -2146,56 +2399,75 @@ function AssignmentTools(props: {
     }
   }, [finalGradeRes, convertNumericToAlphabet])
 
-  if (!submission || submission.length === 0) {
+  const needsRevision = submission?.[0]?.submission_status === 'NEEDS_REVISION'
+
+  if (!submission || submission.length === 0 || needsRevision) {
     return (
-      <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+      <div className="contents">
+        {needsRevision && (
+          <div className="col-span-2 flex min-w-0 flex-col gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-sky-700 sm:col-auto sm:w-64 sm:px-3">
+            <div className="flex items-center gap-2">
+              <Info size={14} className="shrink-0" />
+              <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
+                {t('assignments.needs_revision')}
+              </p>
+            </div>
+            {submission?.[0]?.submission_feedback && (
+              <p className="text-xs font-medium leading-snug">
+                {submission[0].submission_feedback}
+              </p>
+            )}
+          </div>
+        )}
         {!isComplete && totalTasks > 0 && (
-          <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:w-auto sm:px-3 sm:py-1.5">
+          <div className="col-span-2 flex h-8 min-w-0 items-center justify-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:col-auto sm:h-10 sm:px-3">
             <Info size={14} className="shrink-0" />
             <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
               {t('assignments.unsaved_tasks_warning')}
             </p>
           </div>
         )}
-        <ConfirmationModal
-          confirmationButtonText={t('assignments.submit_assignment')}
-          confirmationMessage={
-            !isComplete
-              ? t('assignments.submit_incomplete_warning')
-              : t('assignments.submit_assignment_confirm')
-          }
-          dialogTitle={t('assignments.submit_assignment_title')}
-          dialogTrigger={
-            <div
-              className={`${!isComplete ? 'bg-amber-600 hover:bg-amber-700' : 'bg-cyan-800 hover:bg-cyan-900'} nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5`}
-            >
-              <span className="mb-1 hidden text-[10px] font-bold uppercase opacity-80 sm:block">
-                {t('common.status')}
+        {!isComplete ? (
+          <div
+            onClick={submitForGradingUI}
+            className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-600 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-amber-700 sm:w-auto sm:min-w-44 sm:px-4"
+          >
+            <div className="flex items-center space-x-2">
+              <BookOpenCheck size={17} className="shrink-0" />
+              <span className="whitespace-nowrap text-xs font-bold">
+                {t('assignments.submit_for_grading')}
               </span>
-              <div className="flex min-w-0 items-center space-x-2">
-                <BookOpenCheck size={17} className="shrink-0" />
-                <span className="min-w-0 truncate text-xs font-bold">
-                  {t('assignments.submit_for_grading')}
-                </span>
-              </div>
             </div>
-          }
-          functionToExecute={submitForGradingUI}
-          status={!isComplete ? 'warning' : 'info'}
-        />
+          </div>
+        ) : (
+          <ConfirmationModal
+            confirmationButtonText={t('assignments.submit_assignment')}
+            confirmationMessage={t('assignments.submit_assignment_confirm')}
+            dialogTitle={t('assignments.submit_assignment_title')}
+            dialogTrigger={
+              <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-cyan-800 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-cyan-900 sm:w-auto sm:min-w-44 sm:px-4">
+                <div className="flex items-center space-x-2">
+                  <BookOpenCheck size={17} className="shrink-0" />
+                  <span className="whitespace-nowrap text-xs font-bold">
+                    {t('assignments.submit_for_grading')}
+                  </span>
+                </div>
+              </div>
+            }
+            functionToExecute={submitForGradingUI}
+            status="info"
+          />
+        )}
       </div>
     )
   }
 
   if (submission[0].submission_status === 'SUBMITTED') {
     return (
-      <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-3 text-white transition delay-150 duration-300 ease-in-out sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
-        <span className="mb-1 hidden text-[10px] font-bold uppercase sm:block">
-          {t('common.status')}
-        </span>
-        <div className="flex min-w-0 items-center space-x-2">
+      <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-3 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-44 sm:px-4">
+        <div className="flex items-center space-x-2">
           <UserRoundPen size={17} className="shrink-0" />
-          <span className="min-w-0 truncate text-xs font-bold">
+          <span className="whitespace-nowrap text-xs font-bold">
             {t('assignments.grading_in_progress')}
           </span>
         </div>
@@ -2205,14 +2477,11 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'GRADED') {
     return (
-      <div className="nice-shadow flex h-9 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-3 text-white transition delay-150 duration-300 ease-in-out sm:h-auto sm:w-auto sm:flex-col sm:items-start sm:justify-start sm:px-4 sm:p-2.5">
-        <span className="mb-1 hidden text-[10px] font-bold uppercase sm:block">
-          {t('common.status')}
-        </span>
-        <div className="flex min-w-0 items-center space-x-2">
+      <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-3 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-32 sm:px-4">
+        <div className="flex items-center space-x-2">
           <CheckCircle size={17} className="shrink-0" />
-          <span className="flex min-w-0 items-center space-x-2 text-xs font-bold">
-            <span className="truncate">{t('assignments.graded')} </span>
+          <span className="flex items-center space-x-2 whitespace-nowrap text-xs font-bold">
+            <span>{t('assignments.graded')} </span>
             <span className="shrink-0 rounded-md bg-white px-1 py-0.5 text-teal-800">
               {finalGrade}
             </span>

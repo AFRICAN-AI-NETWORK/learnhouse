@@ -531,51 +531,49 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                           'dashboard.courses.certification.form.certificate_pattern_label'
                         )}
                       />
-                      <Form.Control asChild>
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                          {[
-                            'royal',
-                            'tech',
-                            'nature',
-                            'geometric',
-                            'vintage',
-                            'waves',
-                            'minimal',
-                            'professional',
-                            'academic',
-                            'modern',
-                          ].map((patternValue) => (
-                            <div
-                              key={patternValue}
-                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                formik.values.certificate_pattern ===
+                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                        {[
+                          'royal',
+                          'tech',
+                          'nature',
+                          'geometric',
+                          'vintage',
+                          'waves',
+                          'minimal',
+                          'professional',
+                          'academic',
+                          'modern',
+                        ].map((patternValue) => (
+                          <div
+                            key={patternValue}
+                            className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                              formik.values.certificate_pattern ===
+                              patternValue
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            onClick={() =>
+                              formik.setFieldValue(
+                                'certificate_pattern',
                                 patternValue
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() =>
-                                formik.setFieldValue(
-                                  'certificate_pattern',
-                                  patternValue
-                                )
-                              }
-                            >
-                              <div className="text-center">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {t(
-                                    `dashboard.courses.certification.patterns.${patternValue}.name`
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {t(
-                                    `dashboard.courses.certification.patterns.${patternValue}.description`
-                                  )}
-                                </div>
+                              )
+                            }
+                          >
+                            <div className="text-center">
+                              <div className="text-sm font-medium text-gray-900">
+                                {t(
+                                  `dashboard.courses.certification.patterns.${patternValue}.name`
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {t(
+                                  `dashboard.courses.certification.patterns.${patternValue}.description`
+                                )}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </Form.Control>
+                          </div>
+                        ))}
+                      </div>
                     </FormField>
 
                     {/* Custom Instructor */}

@@ -153,6 +153,7 @@ const CourseActionsMobile = ({
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [accessReason, setAccessReason] = useState<string | null>(null)
 
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
@@ -163,6 +164,7 @@ const CourseActionsMobile = ({
   )
 
   const missingPrerequisites = React.useMemo(() => {
+    if (accessReason === 'ADMIN' || accessReason === 'AUTHOR') return []
     if (!prerequisites || !trailData?.runs) return []
     return prerequisites.filter((prereq: any) => {
       const run = trailData.runs.find(
@@ -170,7 +172,7 @@ const CourseActionsMobile = ({
       )
       return !run || run.status !== 'STATUS_COMPLETED'
     })
-  }, [prerequisites, trailData])
+  }, [prerequisites, trailData, accessReason])
 
   const isStarted =
     trailData?.runs?.find((run: any) => {
@@ -208,6 +210,21 @@ const CourseActionsMobile = ({
           session.data?.tokens?.access_token
         )
         setHasAccess(response.has_access)
+
+        if (response.has_access) {
+          if (response.diagnostics?.is_admin) {
+            setAccessReason('ADMIN')
+          } else if (response.diagnostics?.is_author) {
+            setAccessReason('AUTHOR')
+          } else if (
+            response.diagnostics?.user_has_payment &&
+            response.diagnostics?.payment_status === 'COMPLETED'
+          ) {
+            setAccessReason('PURCHASED')
+          } else if (!response.diagnostics?.course_linked_to_product) {
+            setAccessReason('FREE')
+          }
+        }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to check course access')

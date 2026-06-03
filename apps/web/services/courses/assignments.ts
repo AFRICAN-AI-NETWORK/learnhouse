@@ -226,6 +226,20 @@ export async function deleteUserSubmission(
   return res
 }
 
+export async function requestAssignmentRevision(
+  body: { submission_feedback?: string },
+  user_id: string,
+  assignmentUUID: string,
+  access_token: string
+) {
+  const result: any = await fetch(
+    `${getAPIUrl()}assignments/${assignmentUUID}/submissions/${user_id}/revision`,
+    RequestBodyWithAuthHeader('POST', body, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}
+
 export async function putUserSubmission(
   body: any,
   user_id: string,
