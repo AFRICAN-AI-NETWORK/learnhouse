@@ -170,7 +170,7 @@ const CourseClient = (props: any) => {
             />
 
             <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="space-y-6">
+              <div className="order-2 space-y-6 xl:order-1">
                 <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm lg:p-6">
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
                     <div className="min-w-0">
@@ -341,7 +341,7 @@ const CourseClient = (props: any) => {
                 </section>
               </div>
 
-              <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+              <aside className="order-1 space-y-4 xl:sticky xl:top-24 xl:order-2 xl:self-start">
                 <CoursesActions
                   courseuuid={courseuuid}
                   orgslug={orgslug}
