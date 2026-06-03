@@ -208,6 +208,40 @@ function getCompletedActivityStep(activity: any, course: any, trailData: any) {
   )
 }
 
+function isActivityCompleteInRun(activity: any, run: any) {
+  return run?.steps?.some(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
+      step.complete === true
+  )
+}
+
+function isActivityLockedByProgress(
+  activity: any,
+  allActivities: any[],
+  run: any
+) {
+  if (!activity?.is_locked) return false
+
+  const activityIndex = allActivities.findIndex(
+    (courseActivity: any) =>
+      courseActivity.id === activity.id ||
+      courseActivity.activity_uuid === activity.activity_uuid ||
+      courseActivity.cleanUuid === activity.cleanUuid
+  )
+
+  if (activityIndex <= 0) return false
+
+  return !allActivities
+    .slice(0, activityIndex)
+    .every((courseActivity: any) =>
+      isActivityCompleteInRun(courseActivity, run)
+    )
+}
+
 function getActivityPoints(activity: any) {
   const points = Number(activity?.points || 0)
   return Number.isFinite(points) ? points : 0
@@ -395,6 +429,7 @@ function ActivityActions({
                 course={course}
                 currentActivityId={activity.id}
                 orgslug={orgslug}
+                trailData={trailData}
               />
             )}
           </AuthenticatedClientElement>
@@ -523,6 +558,15 @@ function ActivityClient(props: ActivityClientProps) {
     currentIndex < allActivities.length - 1
       ? allActivities[currentIndex + 1]
       : null
+  const currentTrailRun = useMemo(
+    () => getCourseTrailRun(course.course_uuid, trailData),
+    [course.course_uuid, trailData]
+  )
+  const nextActivityLocked = isActivityLockedByProgress(
+    nextActivity,
+    allActivities,
+    currentTrailRun
+  )
 
   // Memoize activity content
   const activityContent = useMemo(() => {
@@ -643,6 +687,10 @@ function ActivityClient(props: ActivityClientProps) {
     }
 
     if (!activity) return
+    if (isActivityLockedByProgress(activity, allActivities, currentTrailRun)) {
+      toast.error('Complete the previous activity before continuing.')
+      return
+    }
 
     router.push(
       getUriWithOrg(orgslug, '') +
@@ -712,11 +760,6 @@ function ActivityClient(props: ActivityClientProps) {
       return 'bg-zinc-950 nice-shadow'
     }
   }, [activity.activity_type, isFocusMode])
-
-  const currentTrailRun = useMemo(
-    () => getCourseTrailRun(course.course_uuid, trailData),
-    [course.course_uuid, trailData]
-  )
 
   const fallbackTotalActivities = useMemo(
     () =>
@@ -1131,20 +1174,30 @@ function ActivityClient(props: ActivityClientProps) {
                                   }}
                                   whileHover={{ x: 2 }}
                                   onClick={() =>
+                                    !nextActivityLocked &&
                                     navigateToActivity(nextActivity || 'end')
                                   }
-                                  className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl hover:bg-zinc-800 hover:scale-110 ${
-                                    !nextActivity
+                                  disabled={nextActivityLocked}
+                                  className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl ${
+                                    nextActivityLocked
+                                      ? 'cursor-not-allowed opacity-45'
+                                      : 'hover:bg-zinc-800 hover:scale-110'
+                                  } ${
+                                    !nextActivity && !nextActivityLocked
                                       ? 'border-emerald-500/50 text-emerald-400'
                                       : ''
                                   }`}
                                   title={
                                     nextActivity
-                                      ? `${t('common.next')}: ${nextActivity.name}`
+                                      ? nextActivityLocked
+                                        ? 'Complete the previous activity before continuing'
+                                        : `${t('common.next')}: ${nextActivity.name}`
                                       : t('courses.finish_course')
                                   }
                                 >
-                                  {nextActivity ? (
+                                  {nextActivityLocked ? (
+                                    <Lock size={24} />
+                                  ) : nextActivity ? (
                                     <ChevronRight size={24} />
                                   ) : (
                                     <Trophy size={24} />
@@ -1250,23 +1303,31 @@ function ActivityClient(props: ActivityClientProps) {
 
                               <button
                                 onClick={() =>
+                                  !nextActivityLocked &&
                                   navigateToActivity(nextActivity || 'end')
                                 }
+                                disabled={nextActivityLocked}
                                 className={`flex flex-col items-center gap-1 transition-all ${
-                                  nextActivity
-                                    ? 'text-white'
-                                    : 'text-emerald-400'
+                                  nextActivityLocked
+                                    ? 'cursor-not-allowed text-zinc-600 opacity-50'
+                                    : nextActivity
+                                      ? 'text-white'
+                                      : 'text-emerald-400'
                                 }`}
                               >
-                                {nextActivity ? (
+                                {nextActivityLocked ? (
+                                  <Lock size={20} />
+                                ) : nextActivity ? (
                                   <ChevronRight size={20} />
                                 ) : (
                                   <Trophy size={20} />
                                 )}
                                 <span className="text-[10px] font-bold uppercase tracking-widest">
-                                  {nextActivity
-                                    ? t('common.next')
-                                    : t('courses.finish')}
+                                  {nextActivityLocked
+                                    ? 'Locked'
+                                    : nextActivity
+                                      ? t('common.next')
+                                      : t('courses.finish')}
                                 </span>
                               </button>
                             </motion.div>
@@ -1452,6 +1513,7 @@ function ActivityClient(props: ActivityClientProps) {
                                       course={course}
                                       currentActivityId={activity.id}
                                       orgslug={orgslug}
+                                      trailData={trailData}
                                     />
                                   </div>
                                 )}
@@ -1468,6 +1530,7 @@ function ActivityClient(props: ActivityClientProps) {
                                     activityid={activityid}
                                     course={course}
                                     orgslug={orgslug}
+                                    trailData={trailData}
                                   />
                                 )}
 
@@ -2220,12 +2283,14 @@ function MobileAssignmentActionDock({
   assignment,
   course,
   orgslug,
+  trailData,
 }: {
   activity: any
   activityid: string
   assignment: any
   course: any
   orgslug: string
+  trailData: any
 }) {
   const { t } = useTranslation()
   const router = useRouter()
@@ -2239,9 +2304,22 @@ function MobileAssignmentActionDock({
     currentIndex < allActivities.length - 1
       ? allActivities[currentIndex + 1]
       : null
+  const currentTrailRun = getCourseTrailRun(course.course_uuid, trailData)
+  const nextActivityLocked = isActivityLockedByProgress(
+    nextActivity,
+    allActivities,
+    currentTrailRun
+  )
 
   const navigateToActivity = (targetActivity: any | 'end' | null) => {
     if (!targetActivity) return
+    if (
+      targetActivity !== 'end' &&
+      isActivityLockedByProgress(targetActivity, allActivities, currentTrailRun)
+    ) {
+      toast.error('Complete the previous activity before continuing.')
+      return
+    }
 
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
     const targetActivityId =
@@ -2280,15 +2358,32 @@ function MobileAssignmentActionDock({
 
         <button
           type="button"
-          onClick={() => navigateToActivity(nextActivity || 'end')}
+          onClick={() =>
+            !nextActivityLocked && navigateToActivity(nextActivity || 'end')
+          }
+          disabled={nextActivityLocked}
           aria-label={
-            nextActivity ? t('common.next') : t('courses.finish_course')
+            nextActivityLocked
+              ? 'Locked'
+              : nextActivity
+                ? t('common.next')
+                : t('courses.finish_course')
           }
           className={`flex h-11 w-11 items-center justify-center rounded-md text-white shadow-sm transition ${
-            nextActivity ? 'bg-blue-600' : 'bg-emerald-600'
+            nextActivityLocked
+              ? 'cursor-not-allowed bg-slate-300 text-slate-500'
+              : nextActivity
+                ? 'bg-blue-600'
+                : 'bg-emerald-600'
           }`}
         >
-          {nextActivity ? <ChevronRight size={19} /> : <Trophy size={18} />}
+          {nextActivityLocked ? (
+            <Lock size={18} />
+          ) : nextActivity ? (
+            <ChevronRight size={19} />
+          ) : (
+            <Trophy size={18} />
+          )}
         </button>
       </div>
     </div>
@@ -2299,10 +2394,12 @@ function NextActivityButton({
   course,
   currentActivityId,
   orgslug,
+  trailData,
 }: {
   course: any
   currentActivityId: string
   orgslug: string
+  trailData: any
 }) {
   const { t } = useTranslation()
   const router = useRouter()
@@ -2331,15 +2428,29 @@ function NextActivityButton({
       })
     })
 
-    // Get next activity
-    return currentIndex < allActivities.length - 1
-      ? allActivities[currentIndex + 1]
-      : null
+    return {
+      allActivities,
+      nextActivity:
+        currentIndex < allActivities.length - 1
+          ? allActivities[currentIndex + 1]
+          : null,
+    }
   }
 
-  const nextActivity = findNextActivity()
+  const { nextActivity, allActivities } = findNextActivity()
+  const currentTrailRun = getCourseTrailRun(course.course_uuid, trailData)
+  const nextActivityLocked = isActivityLockedByProgress(
+    nextActivity,
+    allActivities,
+    currentTrailRun
+  )
 
   const navigateToActivity = () => {
+    if (nextActivityLocked) {
+      toast.error('Complete the previous activity before continuing.')
+      return
+    }
+
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
     router.push(
       getUriWithOrg(orgslug, '') +
@@ -2368,17 +2479,36 @@ function NextActivityButton({
 
   return (
     <div
-      onClick={navigateToActivity}
-      className="flex w-full min-w-0 flex-col rounded-md bg-blue-600 px-4 p-2.5 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] transition delay-150 duration-300 ease-in-out hover:cursor-pointer hover:bg-blue-700 sm:flex-1 md:max-w-xs"
+      onClick={nextActivityLocked ? undefined : navigateToActivity}
+      aria-disabled={nextActivityLocked}
+      className={`flex w-full min-w-0 flex-col rounded-md px-4 p-2.5 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] transition delay-150 duration-300 ease-in-out sm:flex-1 md:max-w-xs ${
+        nextActivityLocked
+          ? 'cursor-not-allowed bg-slate-300 text-slate-500'
+          : 'bg-blue-600 hover:cursor-pointer hover:bg-blue-700'
+      }`}
     >
-      <span className="text-[10px] font-bold text-white mb-1 uppercase">
-        {t('common.next')}
+      <span
+        className={`text-[10px] font-bold mb-1 uppercase ${
+          nextActivityLocked ? 'text-slate-500' : 'text-white'
+        }`}
+      >
+        {nextActivityLocked ? 'Locked' : t('common.next')}
       </span>
       <div className="flex min-w-0 items-center space-x-1">
-        <span className="min-w-0 truncate text-sm font-semibold text-white">
-          {nextActivity.name}
+        <span
+          className={`min-w-0 truncate text-sm font-semibold ${
+            nextActivityLocked ? 'text-slate-500' : 'text-white'
+          }`}
+        >
+          {nextActivityLocked
+            ? 'Complete previous activity'
+            : nextActivity.name}
         </span>
-        <ChevronRight size={17} className="shrink-0 text-white" />
+        {nextActivityLocked ? (
+          <Lock size={17} className="shrink-0 text-slate-500" />
+        ) : (
+          <ChevronRight size={17} className="shrink-0 text-white" />
+        )}
       </div>
     </div>
   )
