@@ -289,10 +289,8 @@ function PrerequisitesSection({
 
   // Fetch all courses in the organization
   const { data: allCourses } = useSWR(
-    org?.org_slug && access_token
-      ? [`${org.org_slug}_courses`, access_token]
-      : null,
-    () => getOrgCourses(org.org_slug, null, access_token)
+    org?.slug && access_token ? [`${org.slug}_courses`, access_token] : null,
+    () => getOrgCourses(org.slug, null, access_token)
   )
 
   const otherCourses = React.useMemo(() => {
@@ -375,7 +373,9 @@ function PrerequisitesSection({
           Course Prerequisites (Gating)
         </h1>
         <h2 className="text-gray-500 text-xs sm:text-sm">
-          Define the sequence in which students must complete courses. Students will not be able to enroll or start this course until they finish all required prerequisites.
+          Define the sequence in which students must complete courses. Students
+          will not be able to enroll or start this course until they finish all
+          required prerequisites.
         </h2>
       </div>
 
@@ -416,7 +416,8 @@ function PrerequisitesSection({
                   colSpan={2}
                   className="py-6 px-4 text-center text-gray-400 font-medium"
                 >
-                  No prerequisites set. This course is unlocked for all eligible students.
+                  No prerequisites set. This course is unlocked for all eligible
+                  students.
                 </td>
               </tr>
             )}
