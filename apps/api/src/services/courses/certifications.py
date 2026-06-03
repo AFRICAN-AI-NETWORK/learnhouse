@@ -13,6 +13,7 @@ from src.db.courses.certifications import (
 )
 from src.db.courses.courses import Course
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.trail_runs import StatusEnum, TrailRun
 from src.db.trail_steps import TrailStep
 from src.db.users import PublicUser, AnonymousUser
 from src.security.courses_security import courses_rbac_check_for_certifications
@@ -401,6 +402,61 @@ async def get_user_certificates_for_course(
     return result
 
 
+def sync_course_trail_run_completion_status(
+    user_id: int,
+    course_id: int,
+    db_session: Session,
+) -> bool:
+    """
+    Reconcile TrailRun.status with completed TrailStep rows.
+
+    This keeps newly introduced prerequisite gating compatible with courses
+    students completed before TrailRun.status was promoted on completion.
+    """
+
+    course_activity_ids = db_session.exec(
+        select(ChapterActivity.activity_id).where(
+            ChapterActivity.course_id == course_id
+        )
+    ).all()
+
+    if not course_activity_ids:
+        return False
+
+    completed_activity_ids = db_session.exec(
+        select(TrailStep.activity_id).where(
+            TrailStep.user_id == user_id,
+            TrailStep.course_id == course_id,
+            TrailStep.complete == True,
+        )
+    ).all()
+
+    is_complete = len(set(completed_activity_ids)) >= len(set(course_activity_ids))
+
+    trail_run = db_session.exec(
+        select(TrailRun).where(
+            TrailRun.user_id == user_id,
+            TrailRun.course_id == course_id,
+        )
+    ).first()
+
+    if not trail_run:
+        return is_complete
+
+    if is_complete and trail_run.status != StatusEnum.STATUS_COMPLETED:
+        trail_run.status = StatusEnum.STATUS_COMPLETED
+        trail_run.update_date = str(datetime.now())
+        db_session.add(trail_run)
+        db_session.commit()
+    elif not is_complete and trail_run.status == StatusEnum.STATUS_COMPLETED:
+        trail_run.status = StatusEnum.STATUS_IN_PROGRESS
+        trail_run.update_date = str(datetime.now())
+        db_session.add(trail_run)
+        db_session.commit()
+
+    return is_complete
+
+
 async def check_course_completion_and_create_certificate(
     request: Request,
     user_id: int,
@@ -423,16 +479,8 @@ async def check_course_completion_and_create_certificate(
     if not course_activities:
         return False  # No activities in course
 
-    # Get all completed activities for this user in this course
-    statement = select(TrailStep).where(
-        TrailStep.user_id == user_id,
-        TrailStep.course_id == course_id,
-        TrailStep.complete == True,
-    )
-    completed_activities = db_session.exec(statement).all()
-
     # Check if all activities are completed
-    if len(completed_activities) >= len(course_activities):
+    if sync_course_trail_run_completion_status(user_id, course_id, db_session):
         # All activities completed, check if certification exists for this course
         statement = select(Certifications).where(Certifications.course_id == course_id)
         certification = db_session.exec(statement).first()
