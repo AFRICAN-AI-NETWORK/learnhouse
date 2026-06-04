@@ -141,9 +141,9 @@ async def check_trail_presence(
     return trail
 
 
-def get_activity_points_earned(activity: Activity, is_late: bool) -> int:
+def get_activity_points_earned(activity: Activity, is_late: bool) -> float:
     points = activity.points or 0
-    return int(points * 0.8) if is_late else points
+    return points * 0.8 if is_late else points
 
 
 def backfill_completed_trail_step_points(
