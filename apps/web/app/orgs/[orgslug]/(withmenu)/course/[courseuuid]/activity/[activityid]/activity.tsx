@@ -14,6 +14,7 @@ import {
   Minimize2,
   Info,
   Loader2,
+  Lock,
   Trophy,
   Video,
   StickyNote,
@@ -207,9 +208,123 @@ function getCompletedActivityStep(activity: any, course: any, trailData: any) {
   )
 }
 
+function isActivityCompleteInRun(activity: any, run: any) {
+  return run?.steps?.some(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
+      step.complete === true
+  )
+}
+
+function isActivityLockedByProgress(
+  activity: any,
+  allActivities: any[],
+  run: any
+) {
+  if (!activity?.is_locked) return false
+
+  const activityIndex = allActivities.findIndex(
+    (courseActivity: any) =>
+      courseActivity.id === activity.id ||
+      courseActivity.activity_uuid === activity.activity_uuid ||
+      courseActivity.cleanUuid === activity.cleanUuid
+  )
+
+  if (activityIndex <= 0) return false
+
+  return !allActivities
+    .slice(0, activityIndex)
+    .every((courseActivity: any) =>
+      isActivityCompleteInRun(courseActivity, run)
+    )
+}
+
 function getActivityPoints(activity: any) {
   const points = Number(activity?.points || 0)
   return Number.isFinite(points) ? points : 0
+}
+
+function isPrerequisiteComplete(prereq: any, trailData: any) {
+  return trailData?.runs?.some((run: any) => {
+    const runCourseUuid =
+      run.course?.course_uuid || run.course_uuid || run.course?.uuid
+    const prereqCourseUuid = prereq.prerequisite_course_uuid
+
+    return (
+      (run.course_id === prereq.prerequisite_course_id ||
+        runCourseUuid === prereqCourseUuid ||
+        runCourseUuid?.replace('course_', '') ===
+          prereqCourseUuid?.replace('course_', '')) &&
+      run.status === 'STATUS_COMPLETED'
+    )
+  })
+}
+
+function CourseAccessBlockedDisclaimer({
+  course,
+  missingPrerequisites,
+  orgslug,
+  reason,
+}: {
+  course: any
+  missingPrerequisites?: any[]
+  orgslug: string
+  reason: 'prerequisites' | 'activity_locked'
+}) {
+  const hasPrerequisites =
+    reason === 'prerequisites' && missingPrerequisites?.length
+
+  return (
+    <div className="mx-auto max-w-lg space-y-4">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="flex items-center gap-3">
+          <Lock className="h-5 w-5 text-amber-800" />
+          <h3 className="font-semibold text-amber-800">
+            {reason === 'prerequisites'
+              ? 'Prerequisites required'
+              : 'Activity locked'}
+          </h3>
+        </div>
+        <p className="mt-1 text-sm text-amber-700">
+          {reason === 'prerequisites'
+            ? `Complete the required course${missingPrerequisites && missingPrerequisites.length > 1 ? 's' : ''} before accessing ${course.name}.`
+            : 'Complete the previous chapter or activity before opening this content.'}
+        </p>
+      </div>
+
+      {hasPrerequisites && (
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-white/8 dark:bg-[#13131a]">
+          <p className="mb-3 text-xs font-bold uppercase text-slate-500 dark:text-white/45">
+            Required before this course
+          </p>
+          <div className="space-y-2">
+            {missingPrerequisites?.map((prereq: any) => (
+              <Link
+                key={prereq.id ?? prereq.prerequisite_course_id}
+                href={
+                  getUriWithOrg(orgslug, '') +
+                  `/course/${prereq.prerequisite_course_uuid.replace(
+                    'course_',
+                    ''
+                  )}`
+                }
+                className="flex items-center justify-between rounded-md border border-amber-100 bg-amber-50/60 px-3 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+                prefetch={false}
+              >
+                <span className="min-w-0 truncate">
+                  {prereq.prerequisite_course_name}
+                </span>
+                <ChevronRight size={16} className="shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ActivityPointsSummary({
@@ -314,6 +429,7 @@ function ActivityActions({
                 course={course}
                 currentActivityId={activity.id}
                 orgslug={orgslug}
+                trailData={trailData}
               />
             )}
           </AuthenticatedClientElement>
@@ -362,6 +478,12 @@ function ActivityClient(props: ActivityClientProps) {
   const { data: trailData } = useSWR(
     `${getAPIUrl()}trail/org/${org?.id}/trail`,
     (url) => swrFetcher(url, access_token)
+  )
+  const { data: prerequisites } = useSWR<any[]>(
+    course?.course_uuid
+      ? `${getAPIUrl()}prerequisites/${course.course_uuid}`
+      : null,
+    (url: string) => swrFetcher(url, access_token)
   )
   const [loadingMarkComplete, setLoadingMarkComplete] = useState(false)
 
@@ -436,6 +558,15 @@ function ActivityClient(props: ActivityClientProps) {
     currentIndex < allActivities.length - 1
       ? allActivities[currentIndex + 1]
       : null
+  const currentTrailRun = useMemo(
+    () => getCourseTrailRun(course.course_uuid, trailData),
+    [course.course_uuid, trailData]
+  )
+  const nextActivityLocked = isActivityLockedByProgress(
+    nextActivity,
+    allActivities,
+    currentTrailRun
+  )
 
   // Memoize activity content
   const activityContent = useMemo(() => {
@@ -556,6 +687,10 @@ function ActivityClient(props: ActivityClientProps) {
     }
 
     if (!activity) return
+    if (isActivityLockedByProgress(activity, allActivities, currentTrailRun)) {
+      toast.error('Complete the previous activity before continuing.')
+      return
+    }
 
     router.push(
       getUriWithOrg(orgslug, '') +
@@ -626,11 +761,6 @@ function ActivityClient(props: ActivityClientProps) {
     }
   }, [activity.activity_type, isFocusMode])
 
-  const currentTrailRun = useMemo(
-    () => getCourseTrailRun(course.course_uuid, trailData),
-    [course.course_uuid, trailData]
-  )
-
   const fallbackTotalActivities = useMemo(
     () =>
       course.chapters?.reduce(
@@ -647,6 +777,22 @@ function ActivityClient(props: ActivityClientProps) {
     currentTrailRun?.steps?.filter((step: any) => step.complete === true)
       .length || 0
 
+  const canBypassLearnerGates = contributorStatus === 'ACTIVE'
+  const missingPrerequisites = useMemo(() => {
+    if (canBypassLearnerGates || activityid === 'end') return []
+    if (!prerequisites) return []
+
+    return prerequisites.filter(
+      (prereq: any) => !isPrerequisiteComplete(prereq, trailData)
+    )
+  }, [activityid, canBypassLearnerGates, prerequisites, trailData])
+  const hasPrerequisiteGate = missingPrerequisites.length > 0
+  const isCurrentActivityLocked =
+    !canBypassLearnerGates &&
+    activityid !== 'end' &&
+    Boolean(activity?.is_locked)
+  const isActivityAccessBlocked = hasPrerequisiteGate || isCurrentActivityLocked
+
   const progressPercentage =
     totalActivities > 0
       ? Math.min(100, Math.round((completedActivities / totalActivities) * 100))
@@ -658,37 +804,49 @@ function ActivityClient(props: ActivityClientProps) {
     }
   }, [activity.activity_type, getAssignmentUI])
 
+  useEffect(() => {
+    if (isActivityAccessBlocked && isFocusMode) {
+      setIsFocusMode(false)
+    }
+  }, [isActivityAccessBlocked, isFocusMode])
+
   return (
     <>
       {/* Full viewport for Live Sessions in focus mode */}
       <AnimatePresence mode="wait">
-        {activity?.activity_type === 'TYPE_LIVE_SESSION' && isFocusMode && (
-          <motion.div
-            key="live-focus-container"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-zinc-900 z-50 overflow-hidden"
-          >
-            <Suspense fallback={<LoadingFallback />}>
-              <LiveSessionActivity
-                course={course}
-                activity={activity}
-                isFocusMode={isFocusMode}
-                onFocusModeChange={setIsFocusMode}
-              />
-            </Suspense>
-          </motion.div>
-        )}
+        {activity?.activity_type === 'TYPE_LIVE_SESSION' &&
+          isFocusMode &&
+          !isActivityAccessBlocked && (
+            <motion.div
+              key="live-focus-container"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-zinc-900 z-50 overflow-hidden"
+            >
+              <Suspense fallback={<LoadingFallback />}>
+                <LiveSessionActivity
+                  course={course}
+                  activity={activity}
+                  isFocusMode={isFocusMode}
+                  onFocusModeChange={setIsFocusMode}
+                />
+              </Suspense>
+            </motion.div>
+          )}
       </AnimatePresence>
 
       {/* Normal flow for other activities and non-focus Live Sessions */}
-      {!(activity?.activity_type === 'TYPE_LIVE_SESSION' && isFocusMode) && (
+      {!(
+        activity?.activity_type === 'TYPE_LIVE_SESSION' &&
+        isFocusMode &&
+        !isActivityAccessBlocked
+      ) && (
         <>
           <CourseProvider courseuuid={course?.course_uuid}>
             <Suspense fallback={<LoadingFallback />}>
               <AIChatBotProvider>
-                {isFocusMode ? (
+                {isFocusMode && !isActivityAccessBlocked ? (
                   <AnimatePresence>
                     {/* Check if it's a Smart Article to hide standard Focus Mode bars */}
                     {(() => {
@@ -1016,20 +1174,30 @@ function ActivityClient(props: ActivityClientProps) {
                                   }}
                                   whileHover={{ x: 2 }}
                                   onClick={() =>
+                                    !nextActivityLocked &&
                                     navigateToActivity(nextActivity || 'end')
                                   }
-                                  className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl hover:bg-zinc-800 hover:scale-110 ${
-                                    !nextActivity
+                                  disabled={nextActivityLocked}
+                                  className={`fixed right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-white/10 text-white transition-all shadow-2xl ${
+                                    nextActivityLocked
+                                      ? 'cursor-not-allowed opacity-45'
+                                      : 'hover:bg-zinc-800 hover:scale-110'
+                                  } ${
+                                    !nextActivity && !nextActivityLocked
                                       ? 'border-emerald-500/50 text-emerald-400'
                                       : ''
                                   }`}
                                   title={
                                     nextActivity
-                                      ? `${t('common.next')}: ${nextActivity.name}`
+                                      ? nextActivityLocked
+                                        ? 'Complete the previous activity before continuing'
+                                        : `${t('common.next')}: ${nextActivity.name}`
                                       : t('courses.finish_course')
                                   }
                                 >
-                                  {nextActivity ? (
+                                  {nextActivityLocked ? (
+                                    <Lock size={24} />
+                                  ) : nextActivity ? (
                                     <ChevronRight size={24} />
                                   ) : (
                                     <Trophy size={24} />
@@ -1059,6 +1227,19 @@ function ActivityClient(props: ActivityClientProps) {
                                     {activity.content.paid_access == false ? (
                                       <PaidCourseActivityDisclaimer
                                         course={course}
+                                      />
+                                    ) : isActivityAccessBlocked ? (
+                                      <CourseAccessBlockedDisclaimer
+                                        course={course}
+                                        missingPrerequisites={
+                                          missingPrerequisites
+                                        }
+                                        orgslug={orgslug}
+                                        reason={
+                                          hasPrerequisiteGate
+                                            ? 'prerequisites'
+                                            : 'activity_locked'
+                                        }
                                       />
                                     ) : (
                                       <motion.div
@@ -1122,23 +1303,31 @@ function ActivityClient(props: ActivityClientProps) {
 
                               <button
                                 onClick={() =>
+                                  !nextActivityLocked &&
                                   navigateToActivity(nextActivity || 'end')
                                 }
+                                disabled={nextActivityLocked}
                                 className={`flex flex-col items-center gap-1 transition-all ${
-                                  nextActivity
-                                    ? 'text-white'
-                                    : 'text-emerald-400'
+                                  nextActivityLocked
+                                    ? 'cursor-not-allowed text-zinc-600 opacity-50'
+                                    : nextActivity
+                                      ? 'text-white'
+                                      : 'text-emerald-400'
                                 }`}
                               >
-                                {nextActivity ? (
+                                {nextActivityLocked ? (
+                                  <Lock size={20} />
+                                ) : nextActivity ? (
                                   <ChevronRight size={20} />
                                 ) : (
                                   <Trophy size={20} />
                                 )}
                                 <span className="text-[10px] font-bold uppercase tracking-widest">
-                                  {nextActivity
-                                    ? t('common.next')
-                                    : t('courses.finish')}
+                                  {nextActivityLocked
+                                    ? 'Locked'
+                                    : nextActivity
+                                      ? t('common.next')
+                                      : t('courses.finish')}
                                 </span>
                               </button>
                             </motion.div>
@@ -1217,6 +1406,19 @@ function ActivityClient(props: ActivityClientProps) {
                                     <PaidCourseActivityDisclaimer
                                       course={course}
                                     />
+                                  ) : isActivityAccessBlocked ? (
+                                    <CourseAccessBlockedDisclaimer
+                                      course={course}
+                                      missingPrerequisites={
+                                        missingPrerequisites
+                                      }
+                                      orgslug={orgslug}
+                                      reason={
+                                        hasPrerequisiteGate
+                                          ? 'prerequisites'
+                                          : 'activity_locked'
+                                      }
+                                    />
                                   ) : (
                                     <>
                                       <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500 dark:text-white/40">
@@ -1292,7 +1494,8 @@ function ActivityClient(props: ActivityClientProps) {
 
                               {activity &&
                                 activity.published == true &&
-                                activity.content.paid_access != false && (
+                                activity.content.paid_access != false &&
+                                !isActivityAccessBlocked && (
                                   <div
                                     className={`mt-4 gap-3 md:flex-row md:items-center md:justify-between ${
                                       activity.activity_type ===
@@ -1310,6 +1513,7 @@ function ActivityClient(props: ActivityClientProps) {
                                       course={course}
                                       currentActivityId={activity.id}
                                       orgslug={orgslug}
+                                      trailData={trailData}
                                     />
                                   </div>
                                 )}
@@ -1317,6 +1521,7 @@ function ActivityClient(props: ActivityClientProps) {
                               {activity &&
                                 activity.published == true &&
                                 activity.content.paid_access != false &&
+                                !isActivityAccessBlocked &&
                                 activity.activity_type ===
                                   'TYPE_ASSIGNMENT' && (
                                   <MobileAssignmentActionDock
@@ -1325,6 +1530,7 @@ function ActivityClient(props: ActivityClientProps) {
                                     activityid={activityid}
                                     course={course}
                                     orgslug={orgslug}
+                                    trailData={trailData}
                                   />
                                 )}
 
@@ -1611,11 +1817,23 @@ function CourseContentSidebar({
               aria-expanded={isOpen}
               className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-white/5"
             >
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                {index + 1}
+              <div
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  chapter.is_locked
+                    ? 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-white/30'
+                    : 'bg-blue-600 text-white'
+                }`}
+              >
+                {chapter.is_locked ? <Lock size={13} /> : index + 1}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="line-clamp-2 text-sm font-bold uppercase leading-5 text-slate-900 dark:text-white/85">
+                <h3
+                  className={`line-clamp-2 text-sm font-bold uppercase leading-5 ${
+                    chapter.is_locked
+                      ? 'text-slate-400 dark:text-white/35'
+                      : 'text-slate-900 dark:text-white/85'
+                  }`}
+                >
                   {chapter.name}
                 </h3>
               </div>
@@ -1636,28 +1854,30 @@ function CourseContentSidebar({
                     cleanActivityUuid ===
                     currentActivityId.replace('activity_', '')
                   const complete = isComplete(chapterActivity)
+                  const isLocked = Boolean(chapterActivity.is_locked)
                   const activityMeta = getActivityMeta(
                     chapterActivity.activity_type
                   )
                   const ActivityIcon = activityMeta.icon
 
-                  return (
-                    <Link
-                      key={chapterActivity.id}
-                      href={
-                        getUriWithOrg(orgslug, '') +
-                        `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
-                      }
-                      prefetch={false}
-                      onClick={() => setIsMobileContentOpen(false)}
+                  const rowContent = (
+                    <div
                       className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
-                        isCurrent
-                          ? 'border-blue-600 bg-blue-50 dark:bg-indigo-500/15'
-                          : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
+                        isLocked
+                          ? 'border-transparent bg-slate-50/70 opacity-70 dark:bg-white/[0.03]'
+                          : isCurrent
+                            ? 'border-blue-600 bg-blue-50 dark:bg-indigo-500/15'
+                            : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
                       }`}
                     >
                       <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
-                        {complete ? (
+                        {isLocked ? (
+                          <Lock
+                            size={16}
+                            className="text-slate-300 dark:text-white/20"
+                            strokeWidth={2.5}
+                          />
+                        ) : complete ? (
                           <CheckCircle
                             size={17}
                             className="text-teal-600"
@@ -1680,9 +1900,11 @@ function CourseContentSidebar({
                         <div className="flex items-center gap-2">
                           <p
                             className={`line-clamp-2 text-sm font-semibold leading-5 ${
-                              isCurrent
-                                ? 'text-slate-950 dark:text-white'
-                                : 'text-slate-700 dark:text-white/65'
+                              isLocked
+                                ? 'text-slate-400 dark:text-white/35'
+                                : isCurrent
+                                  ? 'text-slate-950 dark:text-white'
+                                  : 'text-slate-700 dark:text-white/65'
                             }`}
                           >
                             {chapterActivity.name}
@@ -1696,8 +1918,38 @@ function CourseContentSidebar({
                         <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-white/40">
                           <ActivityIcon size={13} />
                           <span>{activityMeta.label}</span>
+                          {isLocked && (
+                            <span className="font-semibold text-slate-400">
+                              Locked
+                            </span>
+                          )}
                         </div>
                       </div>
+                    </div>
+                  )
+
+                  if (isLocked) {
+                    return (
+                      <div
+                        key={chapterActivity.id}
+                        className="cursor-not-allowed select-none"
+                      >
+                        {rowContent}
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <Link
+                      key={chapterActivity.id}
+                      href={
+                        getUriWithOrg(orgslug, '') +
+                        `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
+                      }
+                      prefetch={false}
+                      onClick={() => setIsMobileContentOpen(false)}
+                    >
+                      {rowContent}
                     </Link>
                   )
                 })}
@@ -2031,12 +2283,14 @@ function MobileAssignmentActionDock({
   assignment,
   course,
   orgslug,
+  trailData,
 }: {
   activity: any
   activityid: string
   assignment: any
   course: any
   orgslug: string
+  trailData: any
 }) {
   const { t } = useTranslation()
   const router = useRouter()
@@ -2050,9 +2304,22 @@ function MobileAssignmentActionDock({
     currentIndex < allActivities.length - 1
       ? allActivities[currentIndex + 1]
       : null
+  const currentTrailRun = getCourseTrailRun(course.course_uuid, trailData)
+  const nextActivityLocked = isActivityLockedByProgress(
+    nextActivity,
+    allActivities,
+    currentTrailRun
+  )
 
   const navigateToActivity = (targetActivity: any | 'end' | null) => {
     if (!targetActivity) return
+    if (
+      targetActivity !== 'end' &&
+      isActivityLockedByProgress(targetActivity, allActivities, currentTrailRun)
+    ) {
+      toast.error('Complete the previous activity before continuing.')
+      return
+    }
 
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
     const targetActivityId =
@@ -2091,15 +2358,32 @@ function MobileAssignmentActionDock({
 
         <button
           type="button"
-          onClick={() => navigateToActivity(nextActivity || 'end')}
+          onClick={() =>
+            !nextActivityLocked && navigateToActivity(nextActivity || 'end')
+          }
+          disabled={nextActivityLocked}
           aria-label={
-            nextActivity ? t('common.next') : t('courses.finish_course')
+            nextActivityLocked
+              ? 'Locked'
+              : nextActivity
+                ? t('common.next')
+                : t('courses.finish_course')
           }
           className={`flex h-11 w-11 items-center justify-center rounded-md text-white shadow-sm transition ${
-            nextActivity ? 'bg-blue-600' : 'bg-emerald-600'
+            nextActivityLocked
+              ? 'cursor-not-allowed bg-slate-300 text-slate-500'
+              : nextActivity
+                ? 'bg-blue-600'
+                : 'bg-emerald-600'
           }`}
         >
-          {nextActivity ? <ChevronRight size={19} /> : <Trophy size={18} />}
+          {nextActivityLocked ? (
+            <Lock size={18} />
+          ) : nextActivity ? (
+            <ChevronRight size={19} />
+          ) : (
+            <Trophy size={18} />
+          )}
         </button>
       </div>
     </div>
@@ -2110,10 +2394,12 @@ function NextActivityButton({
   course,
   currentActivityId,
   orgslug,
+  trailData,
 }: {
   course: any
   currentActivityId: string
   orgslug: string
+  trailData: any
 }) {
   const { t } = useTranslation()
   const router = useRouter()
@@ -2142,15 +2428,29 @@ function NextActivityButton({
       })
     })
 
-    // Get next activity
-    return currentIndex < allActivities.length - 1
-      ? allActivities[currentIndex + 1]
-      : null
+    return {
+      allActivities,
+      nextActivity:
+        currentIndex < allActivities.length - 1
+          ? allActivities[currentIndex + 1]
+          : null,
+    }
   }
 
-  const nextActivity = findNextActivity()
+  const { nextActivity, allActivities } = findNextActivity()
+  const currentTrailRun = getCourseTrailRun(course.course_uuid, trailData)
+  const nextActivityLocked = isActivityLockedByProgress(
+    nextActivity,
+    allActivities,
+    currentTrailRun
+  )
 
   const navigateToActivity = () => {
+    if (nextActivityLocked) {
+      toast.error('Complete the previous activity before continuing.')
+      return
+    }
+
     const cleanCourseUuid = course.course_uuid?.replace('course_', '')
     router.push(
       getUriWithOrg(orgslug, '') +
@@ -2179,17 +2479,36 @@ function NextActivityButton({
 
   return (
     <div
-      onClick={navigateToActivity}
-      className="flex w-full min-w-0 flex-col rounded-md bg-blue-600 px-4 p-2.5 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] transition delay-150 duration-300 ease-in-out hover:cursor-pointer hover:bg-blue-700 sm:flex-1 md:max-w-xs"
+      onClick={nextActivityLocked ? undefined : navigateToActivity}
+      aria-disabled={nextActivityLocked}
+      className={`flex w-full min-w-0 flex-col rounded-md px-4 p-2.5 text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] transition delay-150 duration-300 ease-in-out sm:flex-1 md:max-w-xs ${
+        nextActivityLocked
+          ? 'cursor-not-allowed bg-slate-300 text-slate-500'
+          : 'bg-blue-600 hover:cursor-pointer hover:bg-blue-700'
+      }`}
     >
-      <span className="text-[10px] font-bold text-white mb-1 uppercase">
-        {t('common.next')}
+      <span
+        className={`text-[10px] font-bold mb-1 uppercase ${
+          nextActivityLocked ? 'text-slate-500' : 'text-white'
+        }`}
+      >
+        {nextActivityLocked ? 'Locked' : t('common.next')}
       </span>
       <div className="flex min-w-0 items-center space-x-1">
-        <span className="min-w-0 truncate text-sm font-semibold text-white">
-          {nextActivity.name}
+        <span
+          className={`min-w-0 truncate text-sm font-semibold ${
+            nextActivityLocked ? 'text-slate-500' : 'text-white'
+          }`}
+        >
+          {nextActivityLocked
+            ? 'Complete previous activity'
+            : nextActivity.name}
         </span>
-        <ChevronRight size={17} className="shrink-0 text-white" />
+        {nextActivityLocked ? (
+          <Lock size={17} className="shrink-0 text-slate-500" />
+        ) : (
+          <ChevronRight size={17} className="shrink-0 text-white" />
+        )}
       </div>
     </div>
   )

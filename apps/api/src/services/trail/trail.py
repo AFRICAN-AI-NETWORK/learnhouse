@@ -12,6 +12,7 @@ from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
+    sync_course_trail_run_completion_status,
 )
 from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.trail_runs import StatusEnum
@@ -66,6 +67,13 @@ async def get_user_trails(
         )
 
     statement = select(TrailRun).where(TrailRun.trail_id == trail.id)
+    trail_runs = db_session.exec(statement).all()
+
+    for trail_run in trail_runs:
+        sync_course_trail_run_completion_status(
+            trail_run.user_id, trail_run.course_id, db_session
+        )
+
     trail_runs = db_session.exec(statement).all()
 
     trail_runs = [
@@ -183,6 +191,13 @@ async def get_user_trail_with_orgid(
     )
 
     statement = select(TrailRun).where(TrailRun.trail_id == trail.id)
+    trail_runs = db_session.exec(statement).all()
+
+    for trail_run in trail_runs:
+        sync_course_trail_run_completion_status(
+            trail_run.user_id, trail_run.course_id, db_session
+        )
+
     trail_runs = db_session.exec(statement).all()
 
     trail_runs = [
@@ -469,6 +484,18 @@ async def remove_activity_from_trail(
         db_session.delete(trail_step)
         db_session.commit()
 
+    statement = select(TrailRun).where(
+        TrailRun.trail_id == trail.id,
+        TrailRun.course_id == course.id,
+        TrailRun.user_id == user.id,
+    )
+    trailrun = db_session.exec(statement).first()
+    if trailrun and trailrun.status == StatusEnum.STATUS_COMPLETED:
+        trailrun.status = StatusEnum.STATUS_IN_PROGRESS
+        trailrun.update_date = str(datetime.now())
+        db_session.add(trailrun)
+        db_session.commit()
+
     # Get updated trail data
     statement = select(TrailRun).where(
         TrailRun.trail_id == trail.id, TrailRun.user_id == user.id
@@ -545,6 +572,17 @@ async def add_course_to_trail(
         ).all()
         if prereqs:
             for prereq in prereqs:
+                existing_prereq_run = db_session.exec(
+                    select(TrailRun).where(
+                        TrailRun.course_id == prereq.prerequisite_course_id,
+                        TrailRun.user_id == user.id,
+                    )
+                ).first()
+                if existing_prereq_run:
+                    sync_course_trail_run_completion_status(
+                        user.id, prereq.prerequisite_course_id, db_session
+                    )
+
                 prereq_run = db_session.exec(
                     select(TrailRun).where(
                         TrailRun.course_id == prereq.prerequisite_course_id,
