@@ -40,11 +40,18 @@ type ActivitiyElementProps = {
   activity: any
   activityIndex: any
   course_uuid: string
+  points: number
 }
 
 interface ModifiedActivityInterface {
   activityId: string
   activityName: string
+}
+
+function formatPoints(points: number) {
+  return Number.isInteger(points)
+    ? points.toString()
+    : points.toFixed(2).replace(/\.?0+$/, '')
 }
 
 function ActivityElement(props: ActivitiyElementProps) {
@@ -65,35 +72,6 @@ function ActivityElement(props: ActivitiyElementProps) {
   const withUnpublishedActivities = course
     ? course.withUnpublishedActivities
     : false
-  const [points, setPoints] = useState<number>(props.activity.points || 0)
-  const [isUpdatingPoints, setIsUpdatingPoints] = useState<boolean>(false)
-
-  React.useEffect(() => {
-    setPoints(props.activity.points || 0)
-  }, [props.activity.points])
-
-  async function updateActivityPoints(newPoints: number) {
-    setIsUpdatingPoints(true)
-    try {
-      await updateActivity(
-        {
-          ...props.activity,
-          points: newPoints,
-        },
-        props.activity.activity_uuid,
-        access_token
-      )
-      mutate(
-        `${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
-      )
-      await revalidateTags(['courses'], props.orgslug)
-    } catch {
-      toast.error('Failed to update activity points')
-    } finally {
-      setIsUpdatingPoints(false)
-    }
-  }
-
   async function deleteActivityUI() {
     const toast_loading = toast.loading(
       t('dashboard.courses.structure.activity.toasts.deleting')
@@ -259,16 +237,9 @@ function ActivityElement(props: ActivitiyElementProps) {
             <span className="text-[10px] font-bold text-gray-400 uppercase">
               Points
             </span>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              disabled={isUpdatingPoints}
-              className="w-10 bg-transparent text-xs text-center font-bold text-gray-700 outline-hidden focus:text-blue-600 disabled:opacity-50"
-              value={points}
-              onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
-              onBlur={() => updateActivityPoints(points)}
-            />
+            <span className="min-w-10 text-xs text-center font-bold text-gray-700">
+              {formatPoints(props.points)}
+            </span>
           </div>
 
           {/*   Edit, View, Publish, and Delete Buttons  */}

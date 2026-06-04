@@ -15,6 +15,7 @@ import { Draggable, Droppable } from '@hello-pangea/dnd'
 import ActivityElement from './ActivityElement'
 import NewActivityButton from '../Buttons/NewActivityButton'
 import { deleteChapter, updateChapter } from '@services/courses/chapters'
+import { updateActivity } from '@services/courses/activities'
 import {
   revalidateTags,
   RequestBodyWithAuthHeader,
@@ -39,9 +40,20 @@ interface ModifiedChapterInterface {
   chapterName: string
 }
 
+const POINT_COMPARISON_EPSILON = 0.000001
+
+function formatPoints(points: number) {
+  return Number.isInteger(points)
+    ? points.toString()
+    : points.toFixed(2).replace(/\.?0+$/, '')
+}
+
 function ChapterElement(props: ChapterElementProps) {
   const { t } = useTranslation()
-  const activities = props.chapter.activities
+  const activities = React.useMemo(
+    () => props.chapter.activities || [],
+    [props.chapter.activities]
+  )
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
   const [modifiedChapter, setModifiedChapter] = React.useState<
@@ -55,12 +67,77 @@ function ChapterElement(props: ChapterElementProps) {
     ? course.withUnpublishedActivities
     : false
 
-  const totalPoints = React.useMemo(() => {
-    return (activities || []).reduce(
-      (sum: number, act: any) => sum + (act.points || 0),
-      0
-    )
-  }, [activities])
+  const activityCount = activities.length
+  const pointsPerActivity = React.useMemo(
+    () => (activityCount > 0 ? 100 / activityCount : 0),
+    [activityCount]
+  )
+  const totalPoints = activityCount > 0 ? 100 : 0
+  const displayedTotalPoints = formatPoints(totalPoints)
+
+  React.useEffect(() => {
+    if (!access_token || activityCount === 0) {
+      return
+    }
+
+    const activitiesToUpdate = activities.filter((activity: any) => {
+      const currentPoints = Number(activity.points || 0)
+      return (
+        !Number.isFinite(currentPoints) ||
+        Math.abs(currentPoints - pointsPerActivity) > POINT_COMPARISON_EPSILON
+      )
+    })
+
+    if (activitiesToUpdate.length === 0) {
+      return
+    }
+
+    let cancelled = false
+
+    async function syncActivityPoints() {
+      try {
+        await Promise.all(
+          activitiesToUpdate.map((activity: any) =>
+            updateActivity(
+              {
+                ...activity,
+                points: pointsPerActivity,
+              },
+              activity.activity_uuid,
+              access_token
+            )
+          )
+        )
+
+        if (cancelled) {
+          return
+        }
+
+        mutate(
+          `${getAPIUrl()}courses/${props.course_uuid}/meta?with_unpublished_activities=${withUnpublishedActivities}`
+        )
+        await revalidateTags(['courses'], props.orgslug)
+      } catch {
+        if (!cancelled) {
+          toast.error('Failed to auto-allocate activity points')
+        }
+      }
+    }
+
+    syncActivityPoints()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    access_token,
+    activities,
+    activityCount,
+    pointsPerActivity,
+    props.course_uuid,
+    props.orgslug,
+    withUnpublishedActivities,
+  ])
 
   const router = useRouter()
 
@@ -268,6 +345,7 @@ function ChapterElement(props: ChapterElementProps) {
                     course_uuid={props.course_uuid}
                     activityIndex={index}
                     activity={activity}
+                    points={pointsPerActivity}
                   />
                 ))}
                 {provided.placeholder}
@@ -283,11 +361,11 @@ function ChapterElement(props: ChapterElementProps) {
               <span
                 className={`text-xs font-semibold px-2.5 py-1 rounded-full ${totalPoints === 100 ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}
               >
-                {totalPoints} / 100 pts
+                {displayedTotalPoints} / 100 pts
               </span>
               {totalPoints !== 100 && (
                 <span className="text-[11px] text-neutral-400">
-                  (Must be exactly 100 pts to publish)
+                  (Add activities to allocate points automatically)
                 </span>
               )}
             </div>
