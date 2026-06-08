@@ -45,7 +45,7 @@ class ActivityBase(SQLModel):
     content: dict = Field(default={}, sa_column=Column(JSON))
     details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     published: bool = False
-    points: int = Field(default=0)
+    points: float = Field(default=0)
 
 
 class Activity(ActivityBase, table=True):
@@ -77,7 +77,7 @@ class ActivityUpdate(ActivityBase):
     details: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # type: ignore
     published_version: Optional[int] = None
     version: Optional[int] = None
-    points: Optional[int] = None
+    points: Optional[float] = None
 
 
 class ActivityRead(ActivityBase):

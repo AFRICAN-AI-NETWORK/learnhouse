@@ -184,7 +184,7 @@ async def update_chapter(
         )
         activity_points = db_session.exec(statement).all()
         total_points = sum(activity_points)
-        if total_points != 100:
+        if abs(total_points - 100) > 0.000001:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Total points for activities in a module must equal 100. Current total: {total_points}"

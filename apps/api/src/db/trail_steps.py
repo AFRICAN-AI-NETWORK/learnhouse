@@ -15,7 +15,7 @@ class TrailStep(SQLModel, table=True):
     complete: bool
     teacher_verified: bool
     grade: str
-    points_earned: int = Field(default=0)
+    points_earned: float = Field(default=0)
     is_late: bool = Field(default=False)
     data: dict = Field(default={}, sa_column=Column(JSON))
     # foreign keys
