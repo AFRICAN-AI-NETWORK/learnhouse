@@ -23,6 +23,41 @@ interface ActivityChapterDropdownProps {
   trailData?: any
 }
 
+function isActivityCompleteInRun(activity: any, run: any) {
+  return run?.steps?.some(
+    (step: any) =>
+      (step.activity_id === activity.id ||
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
+      step.complete === true
+  )
+}
+
+function isActivityLockedByProgress(
+  activity: any,
+  allActivities: any[],
+  run: any
+) {
+  if (!activity?.is_locked) return false
+
+  const activityIndex = allActivities.findIndex(
+    (courseActivity: any) =>
+      courseActivity.id === activity.id ||
+      courseActivity.activity_uuid === activity.activity_uuid ||
+      courseActivity.cleanUuid ===
+        activity.activity_uuid?.replace('activity_', '')
+  )
+
+  if (activityIndex <= 0) return false
+
+  return !allActivities
+    .slice(0, activityIndex)
+    .every((courseActivity: any) =>
+      isActivityCompleteInRun(courseActivity, run)
+    )
+}
+
 export default function ActivityChapterDropdown(
   props: ActivityChapterDropdownProps
 ): React.ReactNode {
@@ -33,6 +68,25 @@ export default function ActivityChapterDropdown(
 
   // Clean up course UUID by removing 'course_' prefix if it exists
   const cleanCourseUuid = props.course.course_uuid?.replace('course_', '')
+  const allActivities = React.useMemo(() => {
+    const activities: any[] = []
+
+    props.course.chapters?.forEach((chapter: any) => {
+      chapter.activities?.forEach((activity: any) => {
+        activities.push({
+          ...activity,
+          cleanUuid: activity.activity_uuid?.replace('activity_', ''),
+        })
+      })
+    })
+
+    return activities
+  }, [props.course.chapters])
+  const run = props.trailData?.runs?.find((run: any) => {
+    const runCourseUuid =
+      run.course?.course_uuid || run.course_uuid || run.course?.uuid
+    return runCourseUuid?.replace('course_', '') === cleanCourseUuid
+  })
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -134,20 +188,12 @@ export default function ActivityChapterDropdown(
                       cleanActivityUuid ===
                       props.currentActivityId.replace('activity_', '')
 
-                    // Find the correct run and check if activity is complete
-                    const run = props.trailData?.runs?.find((run: any) => {
-                      const cleanRunCourseUuid =
-                        run.course?.course_uuid?.replace('course_', '')
-                      return cleanRunCourseUuid === cleanCourseUuid
-                    })
-
-                    const isComplete = run?.steps?.find(
-                      (step: any) =>
-                        step.activity_id === activity.id &&
-                        step.complete === true
+                    const isComplete = isActivityCompleteInRun(activity, run)
+                    const isLocked = isActivityLockedByProgress(
+                      activity,
+                      allActivities,
+                      run
                     )
-
-                    const isLocked = activity.is_locked
 
                     const rowContent = (
                       <div
