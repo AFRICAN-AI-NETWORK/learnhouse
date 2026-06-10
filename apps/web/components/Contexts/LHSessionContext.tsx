@@ -1,53 +1,61 @@
 'use client'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { useSession, signOut } from 'next-auth/react'
-import React, { useContext, createContext, useEffect, useRef } from 'react'
+import React, { useContext, createContext, useEffect } from 'react'
 
 export const SessionContext = createContext({}) as any
 
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000 // 10 minutes in milliseconds
+const LAST_ACTIVE_KEY = 'learnhouse_last_active'
+
 function LHSessionProvider({ children }: { children: React.ReactNode }) {
   const session = useSession()
-  const lastActiveTimeRef = useRef<number>(0)
 
   useEffect(() => {
-    if (session?.status === 'authenticated') {
-      const events = ['mousemove', 'keydown', 'scroll', 'click', 'touchstart']
+    if (session && session.status === 'authenticated') {
+      // Initialize last active time
+      localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString())
 
-      // Update last active time, but throttle it to at most once per second
-      let isThrottled = false
-      const handleActivity = () => {
-        if (!isThrottled) {
-          lastActiveTimeRef.current = Date.now()
-          isThrottled = true
-          setTimeout(() => {
-            isThrottled = false
-          }, 1000)
-        }
+      const updateActivity = () => {
+        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString())
       }
 
-      // Set initial active time
-      lastActiveTimeRef.current = Date.now()
+      // Events to listen to
+      const activityEvents = [
+        'mousemove',
+        'mousedown',
+        'keypress',
+        'scroll',
+        'touchstart',
+        'click',
+      ]
 
-      events.forEach((event) => {
-        window.addEventListener(event, handleActivity, { passive: true })
+      // Add event listeners
+      activityEvents.forEach((event) => {
+        window.addEventListener(event, updateActivity, { passive: true })
       })
 
-      // Check inactivity every 1 minute
-      const intervalId = setInterval(() => {
-        if (Date.now() - lastActiveTimeRef.current > 10 * 60 * 1000) {
-          // 10 minutes
-          signOut()
+      // Check inactivity interval (check every 5 seconds)
+      const interval = setInterval(() => {
+        const lastActiveStr = localStorage.getItem(LAST_ACTIVE_KEY)
+        if (lastActiveStr) {
+          const lastActive = parseInt(lastActiveStr, 10)
+          const now = Date.now()
+          if (now - lastActive >= INACTIVITY_TIMEOUT) {
+            signOut({ callbackUrl: '/' })
+          }
         }
-      }, 60000) // 1 minute
+      }, 5000)
 
       return () => {
-        clearInterval(intervalId)
-        events.forEach((event) => {
-          window.removeEventListener(event, handleActivity)
+        // Cleanup
+        activityEvents.forEach((event) => {
+          window.removeEventListener(event, updateActivity)
         })
+        clearInterval(interval)
       }
     }
-  }, [session?.status])
+  }, [session])
 
   if (session && session.status == 'loading') {
     return <PageLoading />

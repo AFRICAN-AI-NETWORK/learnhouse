@@ -55,7 +55,6 @@ class ChapterRead(ChapterBase):
     is_locked: Optional[bool] = False
 
 
-
 class ActivityOrder(BaseModel):
     activity_id: int
 
