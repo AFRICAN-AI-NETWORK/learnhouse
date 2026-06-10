@@ -29,7 +29,14 @@ def upgrade() -> None:
         op.sync_enum_values(
             "public",
             "assignmentusersubmissionstatus",
-            ["PENDING", "SUBMITTED", "GRADED", "NEEDS_REVISION", "LATE", "NOT_SUBMITTED"],
+            [
+                "PENDING",
+                "SUBMITTED",
+                "GRADED",
+                "NEEDS_REVISION",
+                "LATE",
+                "NOT_SUBMITTED",
+            ],
             [
                 TableReference(
                     table_schema="public",
@@ -42,7 +49,10 @@ def upgrade() -> None:
     except Exception:
         pass
 
-    if not any(c['name'] == 'submission_feedback' for c in inspector.get_columns('assignmentusersubmission')):
+    if not any(
+        c["name"] == "submission_feedback"
+        for c in inspector.get_columns("assignmentusersubmission")
+    ):
         op.add_column(
             "assignmentusersubmission",
             sa.Column(
