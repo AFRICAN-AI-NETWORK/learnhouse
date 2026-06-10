@@ -1762,6 +1762,20 @@ function CourseContentSidebar({
       run.course?.course_uuid || run.course_uuid || run.course?.uuid
     return runCourseUuid?.replace('course_', '') === cleanCourseUuid
   })
+  const sidebarActivities = useMemo(() => {
+    const activities: any[] = []
+
+    course.chapters?.forEach((chapter: any) => {
+      chapter.activities?.forEach((activity: any) => {
+        activities.push({
+          ...activity,
+          cleanUuid: activity.activity_uuid?.replace('activity_', ''),
+        })
+      })
+    })
+
+    return activities
+  }, [course.chapters])
 
   useEffect(() => {
     setOpenChapterKey(currentChapterKey)
@@ -1801,6 +1815,14 @@ function CourseContentSidebar({
       {course.chapters?.map((chapter: any, index: number) => {
         const chapterKey = chapter.id ?? index
         const isOpen = openChapterKey === chapterKey
+        const firstChapterActivity = chapter.activities?.[0]
+        const isChapterLocked = firstChapterActivity
+          ? isActivityLockedByProgress(
+              firstChapterActivity,
+              sidebarActivities,
+              run
+            )
+          : Boolean(chapter.is_locked)
 
         return (
           <section
@@ -1819,17 +1841,17 @@ function CourseContentSidebar({
             >
               <div
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                  chapter.is_locked
+                  isChapterLocked
                     ? 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-white/30'
                     : 'bg-blue-600 text-white'
                 }`}
               >
-                {chapter.is_locked ? <Lock size={13} /> : index + 1}
+                {isChapterLocked ? <Lock size={13} /> : index + 1}
               </div>
               <div className="min-w-0 flex-1">
                 <h3
                   className={`line-clamp-2 text-sm font-bold uppercase leading-5 ${
-                    chapter.is_locked
+                    isChapterLocked
                       ? 'text-slate-400 dark:text-white/35'
                       : 'text-slate-900 dark:text-white/85'
                   }`}
@@ -1854,7 +1876,11 @@ function CourseContentSidebar({
                     cleanActivityUuid ===
                     currentActivityId.replace('activity_', '')
                   const complete = isComplete(chapterActivity)
-                  const isLocked = Boolean(chapterActivity.is_locked)
+                  const isLocked = isActivityLockedByProgress(
+                    chapterActivity,
+                    sidebarActivities,
+                    run
+                  )
                   const activityMeta = getActivityMeta(
                     chapterActivity.activity_type
                   )
