@@ -38,8 +38,18 @@ export default async function proxy(req: NextRequest) {
   const fullhost = req.headers ? req.headers.get('host') : ''
   const cookie_orgslug = req.cookies.get('learnhouse_current_orgslug')?.value
 
+  // Server Action POSTs are rewritten to 127.0.0.1 below, which is a real
+  // network hop back into this same server. That proxied request re-enters
+  // this middleware with the already-rewritten path; it must pass through
+  // untouched, otherwise it gets rewritten again on every hop (growing the
+  // path and x-forwarded-* headers each time) until the request dies with
+  // 431 Request Header Fields Too Large.
+  if (fullhost && fullhost.startsWith('127.0.0.1')) {
+    return NextResponse.next()
+  }
+
   // Helper to safely rewrite URLs, especially for Server Actions
-  // Server Actions (POST requests) need special handling to avoid UND_ERR_HEADERS_TIMEOUT 
+  // Server Actions (POST requests) need special handling to avoid UND_ERR_HEADERS_TIMEOUT
   // caused by loopback network issues in Docker/Nixpacks containers
   const createRewriteUrl = (path: string) => {
     const rewriteUrl = new URL(path, req.url)

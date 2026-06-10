@@ -11,11 +11,13 @@ from src.security.rbac.rbac import authorization_verify_based_on_org_admin_statu
 
 class PrerequisiteCreate(BaseModel):
     """Request body for setting prerequisites on a course."""
+
     prerequisite_course_ids: List[int]  # Ordered list of prerequisite course IDs
 
 
 class PrerequisiteRead(BaseModel):
     """Read model for a single prerequisite entry."""
+
     id: int
     course_id: int
     prerequisite_course_id: int

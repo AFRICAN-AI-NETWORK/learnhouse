@@ -26,6 +26,18 @@ const nextConfig = {
   },
   reactStrictMode: false,
   output: 'standalone',
+  experimental: {
+    serverActions: {
+      // Server Action POSTs are proxied to 127.0.0.1 by proxy.ts, so the Host
+      // header no longer matches the browser's Origin. Without this allowlist
+      // Next.js rejects the action with a 500 (origin/host mismatch).
+      allowedOrigins: [
+        process.env.NEXT_PUBLIC_LEARNHOUSE_DOMAIN || 'localhost:3000',
+        `*.${process.env.NEXT_PUBLIC_LEARNHOUSE_TOP_DOMAIN || 'localhost'}`,
+        '127.0.0.1:3000',
+      ],
+    },
+  },
   // Ensure consistent build IDs across multiple pods in Kubernetes
   generateBuildId: async () => {
     return process.env.BUILD_ID || 'learnhouse-production'
