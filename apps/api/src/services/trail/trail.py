@@ -324,9 +324,11 @@ async def add_activity_to_trail(
         # Activity Sequencing
         prev_activity = db_session.exec(
             select(ChapterActivity)
+            .join(Activity, Activity.id == ChapterActivity.activity_id)
             .where(
                 ChapterActivity.chapter_id == chapter_activity.chapter_id,
                 ChapterActivity.order < chapter_activity.order,
+                Activity.published == True,
             )
             .order_by(ChapterActivity.order.desc())
         ).first()
@@ -363,8 +365,10 @@ async def add_activity_to_trail(
                 if prev_course_chapter:
                     last_activity_prev_chapter = db_session.exec(
                         select(ChapterActivity)
+                        .join(Activity, Activity.id == ChapterActivity.activity_id)
                         .where(
-                            ChapterActivity.chapter_id == prev_course_chapter.chapter_id
+                            ChapterActivity.chapter_id == prev_course_chapter.chapter_id,
+                            Activity.published == True,
                         )
                         .order_by(ChapterActivity.order.desc())
                     ).first()
