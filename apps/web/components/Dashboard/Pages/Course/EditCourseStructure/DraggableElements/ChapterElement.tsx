@@ -41,11 +41,17 @@ interface ModifiedChapterInterface {
 }
 
 const POINT_COMPARISON_EPSILON = 0.000001
+const POINT_DECIMAL_PLACES = 1
+
+function roundPoints(points: number) {
+  const factor = 10 ** POINT_DECIMAL_PLACES
+  return Math.round(points * factor) / factor
+}
 
 function formatPoints(points: number) {
   return Number.isInteger(points)
     ? points.toString()
-    : points.toFixed(2).replace(/\.?0+$/, '')
+    : points.toFixed(POINT_DECIMAL_PLACES).replace(/\.?0+$/, '')
 }
 
 function ChapterElement(props: ChapterElementProps) {
@@ -69,7 +75,7 @@ function ChapterElement(props: ChapterElementProps) {
 
   const activityCount = activities.length
   const pointsPerActivity = React.useMemo(
-    () => (activityCount > 0 ? 100 / activityCount : 0),
+    () => (activityCount > 0 ? roundPoints(100 / activityCount) : 0),
     [activityCount]
   )
   const totalPoints = activityCount > 0 ? 100 : 0
