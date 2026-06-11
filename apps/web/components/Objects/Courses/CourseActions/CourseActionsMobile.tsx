@@ -252,19 +252,29 @@ const CourseActionsMobile = ({
     setIsActionLoading(true)
     try {
       if (isStarted) {
-        await removeCourse(
+        const result = await removeCourse(
           'course_' + courseuuid,
           orgslug,
           session.data?.tokens?.access_token
         )
+        if (!result.success) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to leave course:', result.error)
+          return
+        }
         await revalidateTags(['courses'], orgslug)
         router.refresh()
       } else {
-        await startCourse(
+        const result = await startCourse(
           'course_' + courseuuid,
           orgslug,
           session.data?.tokens?.access_token
         )
+        if (!result.success) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to start course:', result.error)
+          return
+        }
         await revalidateTags(['courses'], orgslug)
 
         // Get the first activity from the first chapter

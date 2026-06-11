@@ -226,19 +226,31 @@ function CoursesActions({
 
     try {
       if (isStarted) {
-        await removeCourse(
+        const result = await removeCourse(
           'course_' + courseuuid,
           orgslug,
           session.data?.tokens?.access_token
         )
+        if (!result.success) {
+          toast.error(result.error || t('courses.leave_course_error'), {
+            id: loadingToast,
+          })
+          return
+        }
         mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
         toast.success(t('courses.leave_course_success'), { id: loadingToast })
       } else {
-        await startCourse(
+        const result = await startCourse(
           'course_' + courseuuid,
           orgslug,
           session.data?.tokens?.access_token
         )
+        if (!result.success) {
+          toast.error(result.error || t('courses.start_course_error'), {
+            id: loadingToast,
+          })
+          return
+        }
         mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
         toast.success(t('courses.start_course_success'), { id: loadingToast })
 

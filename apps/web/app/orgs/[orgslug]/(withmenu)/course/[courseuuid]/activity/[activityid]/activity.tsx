@@ -516,20 +516,25 @@ function ActivityClient(props: ActivityClientProps) {
     async (aUuid: string, mark: boolean) => {
       try {
         setLoadingMarkComplete(true)
+        let result
         if (mark) {
-          await markActivityAsComplete(
+          result = await markActivityAsComplete(
             orgslug,
             courseuuid,
             aUuid,
             session.data?.tokens?.access_token
           )
         } else {
-          await unmarkActivityAsComplete(
+          result = await unmarkActivityAsComplete(
             orgslug,
             courseuuid,
             aUuid,
             session.data?.tokens?.access_token
           )
+        }
+        if (!result.success) {
+          toast.error(result.error || t('activities.submission_failed'))
+          return
         }
         await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
         toast.success(
@@ -1890,7 +1895,7 @@ function CourseContentSidebar({
                     <div
                       className={`group flex gap-3 border-l-2 px-4 py-3 transition ${
                         isLocked
-                          ? 'border-transparent bg-slate-50/70 opacity-70 dark:bg-white/[0.03]'
+                          ? 'border-transparent bg-slate-50/70 opacity-70 dark:bg-white/5'
                           : isCurrent
                             ? 'border-blue-600 bg-blue-50 dark:bg-indigo-500/15'
                             : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
@@ -2123,12 +2128,17 @@ export function MarkStatus(props: {
       const willCompleteAll = areAllActivitiesCompleted()
       setIsLoading(true)
 
-      await markActivityAsComplete(
+      const result = await markActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
         props.activity.activity_uuid,
         session.data?.tokens?.access_token
       )
+
+      if (!result.success) {
+        toast.error(result.error || t('activities.failed_mark_complete'))
+        return
+      }
 
       await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
 
@@ -2151,12 +2161,17 @@ export function MarkStatus(props: {
     try {
       setIsLoading(true)
 
-      await unmarkActivityAsComplete(
+      const result = await unmarkActivityAsComplete(
         props.orgslug,
         props.course.course_uuid,
         props.activity.activity_uuid,
         session.data?.tokens?.access_token
       )
+
+      if (!result.success) {
+        toast.error(result.error || t('activities.failed_unmark_complete'))
+        return
+      }
 
       await mutate(`${getAPIUrl()}trail/org/${org?.id}/trail`)
     } catch {
