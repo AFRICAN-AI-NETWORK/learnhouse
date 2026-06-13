@@ -51,7 +51,7 @@ interface ModifiedActivityInterface {
 function formatPoints(points: number) {
   return Number.isInteger(points)
     ? points.toString()
-    : points.toFixed(2).replace(/\.?0+$/, '')
+    : points.toFixed(1).replace(/\.?0+$/, '')
 }
 
 function ActivityElement(props: ActivitiyElementProps) {
