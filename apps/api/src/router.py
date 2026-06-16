@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from src.routers import health
 from src.routers import usergroups
 from src.routers import (
+    admin_analytics,
     dev,
     trail,
     users,
@@ -67,6 +68,9 @@ v1_router.include_router(
 )
 v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
+v1_router.include_router(
+    admin_analytics.router, prefix="/admin/analytics", tags=["admin-analytics"]
+)
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
 v1_router.include_router(
