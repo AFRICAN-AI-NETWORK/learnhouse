@@ -81,11 +81,17 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-10">
-          {navLinks.map((link) => (
+          {[
+            { name: 'Programs', href: '/#programs' },
+            { name: 'Benefits', href: '/#impact' },
+            { name: 'Methodology', href: '/#methodology' },
+            { name: 'Specializations', href: '/#specializations' },
+            { name: 'FAQ', href: '/#faq' },
+          ].map((link) => (
             <a
               key={link.name}
               href={link.href}
-              className={`text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ${variant === 'policy' ? 'hover:text-black dark:text-white/40 dark:hover:text-white' : 'hover:text-white'} transition-colors`}
+              className={`text-[13px] font-bold uppercase tracking-wider text-zinc-400 ${variant === 'policy' ? 'hover:text-[#0057ff] dark:text-white/40 dark:hover:text-white' : 'hover:text-[#0057ff] transition-colors'}`}
             >
               {link.name}
             </a>
@@ -97,7 +103,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           {isAuthenticated ? (
             <Link
               href={getUriWithOrg(orgslug, '/')}
-              className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} text-black rounded-xl ${variant === 'policy' ? 'border border-blue-500 dark:text-white dark:border-blue-400/50' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
+              className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} text-black rounded-xl ${variant === 'policy' ? 'border border-blue-500 dark:text-white dark:border-blue-400/50' : ''} font-bold text-[13px] uppercase tracking-wider hover:scale-105 transition-all`}
             >
               Dashboard
             </Link>
@@ -105,13 +111,17 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
             <>
               <Link
                 href="/auth/signin"
-                className={`text-[10px] font-black uppercase tracking-[0.2em] ${variant === 'policy' ? 'text-black dark:text-white' : 'text-white'} hover:opacity-70 transition-opacity`}
+                className={`px-6 py-3 bg-[#0057ff] text-white rounded-xl font-bold text-[13px] uppercase tracking-wider hover:bg-[#0046cc] hover:scale-105 transition-all shadow-md shadow-[#0057ff]/20`}
               >
                 Login
               </Link>
               <Link
                 href="/auth/signup"
-                className={`px-6 py-3 ${variant === 'policy' ? 'bg-none' : 'bg-white'} ${variant === 'policy' ? 'text-black dark:text-white' : 'text-black'} rounded-xl ${variant === 'policy' ? 'border border-blue-500 dark:border-blue-400/50' : ''} font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all`}
+                className={`px-6 py-3 rounded-xl font-bold text-[13px] uppercase tracking-wider transition-all hover:scale-105 ${
+                  variant === 'policy'
+                    ? 'bg-transparent text-[#0a0f1e] border border-[#0a0f1e]/20 hover:bg-[#0a0f1e]/5 dark:text-white dark:border-white/20 dark:hover:bg-white/10'
+                    : 'bg-transparent text-white border border-white/20 hover:bg-white/10 hover:border-white/30'
+                }`}
               >
                 Join Now
               </Link>

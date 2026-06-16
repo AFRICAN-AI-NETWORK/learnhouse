@@ -1,7 +1,9 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
 import { sendContactForm } from '@/services/contact/contact.service'
 import type { ContactForm } from '@/types/contact'
-import contactbg from '@/public/landing/contact_bg.png'
+import { Send, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react'
 
 export default function ContactSection() {
   const [form, setForm] = useState<ContactForm>({
@@ -38,111 +40,77 @@ export default function ContactSection() {
 
   return (
     <section
-      className={`w-full px-0 py-20 transition-all duration-700 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+      className={`relative w-full px-6 lg:px-12 py-24 transition-all duration-700 ease-out bg-white border-y border-gray-100 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
     >
-      <div className="absolute inset-0 pointer-events-none">
-        <img
-          src={contactbg.src}
-          alt="contact background"
-          className="w-full h-full object-cover opacity-[0.05]"
-        />
-      </div>
-      <div className="container mx-auto flex flex-col md:flex-row items-stretch gap-8">
-        {/* Left: Info */}
-        <div className="flex-1 flex flex-col justify-center px-6 md:px-12 py-10 md:py-0">
-          {/* Badge */}
-          <div className="flex bg-blue-500/10 border border-blue-500/20 rounded-full py-1.5 px-4 mb-6 w-50">
-            <span className="inline-flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-blue-500 text-xs font-black uppercase tracking-[0.2em]">
-                Get in touch
+      <div className="max-w-7xl mx-auto rounded-[40px] overflow-hidden shadow-2xl flex flex-col lg:flex-row bg-[#0a0f1e]">
+        {/* Left: Rich Dark Image/Info Pane */}
+        <div className="relative flex-1 p-12 lg:p-16 flex flex-col justify-center min-h-[400px]">
+          {/* Background Graphic */}
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
+            style={{ backgroundImage: "url('/landing/contact_bg.png')" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0f1e] to-transparent" />
+
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/20 text-[#4da6ff] text-xs font-bold uppercase tracking-widest border border-[#0057ff]/30 backdrop-blur-md mb-6">
+              <Sparkles size={14} /> Get in touch
+            </div>
+
+            <h2 className="text-4xl md:text-5xl font-bold text-white leading-tight tracking-tight mb-4">
+              Let's{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-[#4da6ff]">
+                Connect
               </span>
-            </span>
+            </h2>
+
+            <p className="text-gray-400 text-lg leading-relaxed mb-8 max-w-md">
+              Reach out to us directly at{' '}
+              <a
+                href="mailto:education@africanainetwork.com"
+                className="text-[#4da6ff] font-semibold hover:text-white transition-all duration-200"
+              >
+                education@africanainetwork.com
+              </a>{' '}
+              or drop a message here. We value your feedback and are ready to
+              help you take the next step.
+            </p>
           </div>
-          {/* Heading */}
-          <h2 className="text-4xl md:text-5xl font-black text-white leading-tight tracking-tight mb-3">
-            Let's{' '}
-            <span className="bg-gradient-to-r from-blue-500 to-blue-800 bg-clip-text text-transparent">
-              Connect
-            </span>
-          </h2>
-          <p className="text-zinc-400 text-base md:text-lg leading-relaxed mb-8">
-            Reach out at{' '}
-            <a
-              href="mailto:education@africanainetwork.com"
-              className="text-blue-500 font-medium border-b border-blue-500/40 hover:text-blue-600 hover:border-blue-600/60 transition-colors duration-200"
-            >
-              education@africanainetwork.com
-            </a>{' '}
-            or use the form below.
-          </p>
-          <div className="w-10 h-0.5 bg-gradient-to-r from-blue-500 to-blue-800 rounded-full mb-8" />
-          <p className="text-zinc-400 text-sm md:text-base">
-            We value your feedback, questions, and ideas. Fill out the form and
-            our team will respond promptly.
-          </p>
         </div>
-        {/* Right: Form */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="relative bg-[#18181b] border border-blue-500/20 rounded-3xl p-8 md:p-10 shadow-2xl  w-full max-w-lg overflow-hidden">
-            {/* Form Heading */}
-            <h3 className="text-2xl font-bold text-white mb-6">Contact Form</h3>
-            {/* Success State */}
+
+        {/* Right: Glassmorphic Form Pane */}
+        <div className="flex-1 bg-white/5 backdrop-blur-xl border-l border-white/10 p-8 md:p-16 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-50 pointer-events-none" />
+
+          <div className="relative z-10 w-full max-w-md mx-auto">
+            <h3 className="text-2xl font-bold text-white mb-8">
+              Send a Message
+            </h3>
+
             {submitted ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-5">
-                  <svg
-                    className="w-7 h-7 text-green-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M5 13l4 4L19 7"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6 shadow-sm border border-green-500/30">
+                  <CheckCircle2 className="w-8 h-8 text-green-400" />
                 </div>
-                <p className="text-white text-xl font-bold mb-2">
+                <p className="text-white text-2xl font-bold mb-3">
                   Message Sent!
                 </p>
-                <p className="text-blue-300/60 text-sm">
+                <p className="text-gray-400 text-base">
                   We'll get back to you as soon as possible.
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Error banner */}
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {error && (
-                  <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-300 text-sm">
-                    <svg
-                      className="w-4 h-4 shrink-0 text-red-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M12 8v4m0 4h.01"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                  <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm font-medium">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
                     {error}
                   </div>
                 )}
-                {/* Name + Email row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-blue-300/60 text-xs font-medium tracking-widest uppercase">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-gray-300 text-[11px] font-bold tracking-widest uppercase">
                       Name
                     </label>
                     <input
@@ -152,11 +120,11 @@ export default function ContactSection() {
                       value={form.name}
                       onChange={handleChange}
                       required
-                      className="bg-white/[0.04] border border-blue-500/20 rounded-xl px-4 py-3 text-white text-sm placeholder:text-blue-300/25 outline-none focus:border-blue-400/60 focus:bg-blue-500/[0.07] focus:ring-2 focus:ring-blue-500/10 transition-all duration-200"
+                      className="bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[14px] placeholder:text-gray-500 outline-none focus:border-[#0057ff] focus:ring-1 focus:ring-[#0057ff] transition-all duration-200"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-blue-300/60 text-xs font-medium tracking-widest uppercase">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-gray-300 text-[11px] font-bold tracking-widest uppercase">
                       Email
                     </label>
                     <input
@@ -166,13 +134,13 @@ export default function ContactSection() {
                       value={form.email}
                       onChange={handleChange}
                       required
-                      className="bg-white/[0.04] border border-blue-500/20 rounded-xl px-4 py-3 text-white text-sm placeholder:text-blue-300/25 outline-none focus:border-blue-400/60 focus:bg-blue-500/[0.07] focus:ring-2 focus:ring-blue-500/10 transition-all duration-200"
+                      className="bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[14px] placeholder:text-gray-500 outline-none focus:border-[#0057ff] focus:ring-1 focus:ring-[#0057ff] transition-all duration-200"
                     />
                   </div>
                 </div>
-                {/* Message */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-blue-300/60 text-xs font-medium tracking-widest uppercase">
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-gray-300 text-[11px] font-bold tracking-widest uppercase">
                     Message
                   </label>
                   <textarea
@@ -181,29 +149,17 @@ export default function ContactSection() {
                     value={form.message}
                     onChange={handleChange}
                     required
-                    rows={5}
-                    className="bg-white/[0.04] border border-blue-500/20 rounded-xl px-4 py-3 text-white text-sm placeholder:text-blue-300/25 outline-none focus:border-blue-400/60 focus:bg-blue-500/[0.07] focus:ring-2 focus:ring-blue-500/10 transition-all duration-200 resize-none"
+                    rows={4}
+                    className="bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white text-[14px] placeholder:text-gray-500 outline-none focus:border-[#0057ff] focus:ring-1 focus:ring-[#0057ff] transition-all duration-200 resize-none"
                   />
                 </div>
-                {/* Submit */}
+
                 <button
                   type="submit"
-                  className="group w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-sm tracking-wide rounded-xl py-3.5 mt-2 shadow-lg shadow-blue-700/40 hover:shadow-blue-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                  className="group w-full flex items-center justify-center gap-2.5 bg-[#0057ff] hover:bg-[#0046cc] text-white font-bold text-[14px] rounded-xl py-4 mt-2 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0057ff]"
                 >
                   Send Message
-                  <svg
-                    className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M5 12h14M13 6l6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-200" />
                 </button>
               </form>
             )}

@@ -26,15 +26,21 @@ export default function RootLayout(props: {
     pathname === '/' ||
     pathname === `/${params?.orgslug}` ||
     pathname === `/orgs/${params?.orgslug}`
+  const isProgramDetailPage =
+    pathname?.endsWith('/aan-open') ||
+    pathname?.endsWith('/ai-automation') ||
+    pathname?.endsWith('/ai-fundamentals') ||
+    pathname?.endsWith('/contact') ||
+    pathname?.endsWith('/about')
   const isGuest = !session?.data?.user
   const isPremiumLandingView = searchParams?.get('landing') === 'premium'
   const shouldShowLandingNavbar =
-    isLandingPage && (isGuest || isPremiumLandingView)
+    (isLandingPage || isProgramDetailPage) && (isGuest || isPremiumLandingView)
 
   return (
     <div
       className={`${shouldShowLandingNavbar ? 'theme-landing' : ''} bg-background text-foreground flex flex-col ${
-        isLandingPage
+        isLandingPage || isProgramDetailPage
           ? 'min-h-screen overflow-visible'
           : 'h-screen overflow-hidden'
       }`}
@@ -47,13 +53,20 @@ export default function RootLayout(props: {
                 org={org}
                 orgslug={params?.orgslug}
                 isAuthenticated={!isGuest}
+                variant={
+                  pathname?.endsWith('/about') ||
+                  pathname?.endsWith('/policy') ||
+                  pathname?.endsWith('/contact')
+                    ? 'policy'
+                    : undefined
+                }
               />
             ) : (
               <OrgMenu orgslug={params?.orgslug}></OrgMenu>
             )}
             <main
               className={`flex-1 w-full overflow-x-hidden ${
-                isLandingPage
+                isLandingPage || isProgramDetailPage
                   ? 'overflow-y-visible'
                   : 'min-h-0 overflow-y-auto scrollbar-hide'
               }`}
