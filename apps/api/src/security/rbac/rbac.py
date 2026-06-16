@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Sequence
 from fastapi import HTTPException, status, Request
 from sqlalchemy import null
 from sqlmodel import Session, select
@@ -15,6 +15,44 @@ from src.security.rbac.utils import (
     check_element_type,
     check_course_permissions_with_own,
 )
+
+# Role ids that are treated as organization administrators. Admins bypass the
+# fine-grained rights checks (they implicitly hold every permission).
+ADMIN_ROLE_IDS = {1, 2}
+
+
+def _select_user_roles(user_id: int):
+    """Roles bound to the user's organization(s) plus standard (global) roles."""
+    return (
+        select(Role)
+        .join(UserOrganization)
+        .where((UserOrganization.org_id == Role.org_id) | (Role.org_id == null()))
+        .where(UserOrganization.user_id == user_id)
+    )
+
+
+def _rights_grant(rights, resource: str, action: str) -> bool:
+    """
+    Return True if a role's ``rights`` payload grants ``action`` on ``resource``.
+
+    Handles ``rights`` stored either as a plain dict (JSON column) or as a
+    pydantic object, mirroring the lookup style used elsewhere in this module.
+    """
+    if not rights:
+        return False
+
+    resource_rights = (
+        rights.get(resource)
+        if isinstance(rights, dict)
+        else getattr(rights, resource, None)
+    )
+    if not resource_rights:
+        return False
+
+    action_key = f"action_{action}"
+    if isinstance(resource_rights, dict):
+        return bool(resource_rights.get(action_key, False))
+    return bool(getattr(resource_rights, action_key, False))
 
 
 # Tested and working
@@ -180,20 +218,43 @@ async def authorization_verify_based_on_org_admin_status(
 ):
     await check_element_type(element_uuid)
 
-    # Get user roles bound to an organization and standard roles
-    statement = (
-        select(Role)
-        .join(UserOrganization)
-        .where((UserOrganization.org_id == Role.org_id) | (Role.org_id == null()))
-        .where(UserOrganization.user_id == user_id)
-    )
+    user_roles_in_organization_and_standard_roles = db_session.exec(
+        _select_user_roles(user_id)
+    ).all()
 
-    user_roles_in_organization_and_standard_roles = db_session.exec(statement).all()
-
-    # Check if user has admin role (role_id 1 or 2) in any organization
+    # Check if user has an admin role in any organization
     for role in user_roles_in_organization_and_standard_roles:
         role = Role.model_validate(role)
-        if role.id in [1, 2]:  # Assuming 1 and 2 are admin role IDs
+        if role.id in ADMIN_ROLE_IDS:
+            return True
+
+    return False
+
+
+async def authorization_verify_has_rights(
+    user_id: int,
+    requirements: Sequence[tuple[str, str]],
+    db_session: Session,
+) -> bool:
+    """
+    Permission-based authorization that is not tied to a specific resource uuid.
+
+    Returns True when the user either holds an admin role, or has a single role
+    whose ``rights`` grant *every* ``(resource, action)`` pair in ``requirements``.
+    This lets any role an organization configures (admin, maintainer, community
+    manager, student coordinator, project manager, ...) be granted access purely
+    through its rights, with no code change per role.
+    """
+    roles = db_session.exec(_select_user_roles(user_id)).all()
+
+    for role in roles:
+        role = Role.model_validate(role)
+        if role.id in ADMIN_ROLE_IDS:
+            return True
+        if all(
+            _rights_grant(role.rights, resource, action)
+            for resource, action in requirements
+        ):
             return True
 
     return False

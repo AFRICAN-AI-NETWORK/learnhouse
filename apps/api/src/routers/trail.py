@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from src.core.events.database import get_db_session
 from src.db.trails import TrailCreate, TrailRead
 from src.security.auth import get_current_user
+from src.services.trail.tracking import ActivityHeartbeat, record_activity_heartbeat
 from src.services.trail.trail import (
     Trail,
     add_activity_to_trail,
@@ -15,6 +16,19 @@ from src.services.trail.trail import (
 
 
 router = APIRouter()
+
+
+@router.post("/heartbeat")
+async def api_record_activity_heartbeat(
+    request: Request,
+    payload: ActivityHeartbeat,
+    user=Depends(get_current_user),
+    db_session=Depends(get_db_session),
+):
+    """
+    Record elapsed learning time for the current user on an activity.
+    """
+    return await record_activity_heartbeat(request, user, payload, db_session)
 
 
 @router.post("/start")

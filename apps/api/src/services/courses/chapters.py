@@ -187,7 +187,7 @@ async def update_chapter(
         if abs(total_points - 100) > 0.000001:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Total points for activities in a module must equal 100. Current total: {total_points}"
+                detail=f"Total points for activities in a module must equal 100. Current total: {total_points}",
             )
 
     chapter.update_date = str(datetime.now())
@@ -308,6 +308,7 @@ async def get_course_chapters(
     if current_user and current_user.id != 0:
         try:
             from src.security.courses_security import courses_rbac_check
+
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, current_user, "update", db_session
             )
@@ -320,19 +321,18 @@ async def get_course_chapters(
     if not is_editor and current_user and current_user.id != 0:
         from src.db.trail_runs import TrailRun
         from src.db.trail_steps import TrailStep
+
         # Get trail run
         trail_run = db_session.exec(
             select(TrailRun).where(
-                TrailRun.course_id == course.id,
-                TrailRun.user_id == current_user.id
+                TrailRun.course_id == course.id, TrailRun.user_id == current_user.id
             )
         ).first()
         if trail_run:
             has_trail_run = True
             completed_steps = db_session.exec(
                 select(TrailStep.activity_id).where(
-                    TrailStep.trailrun_id == trail_run.id,
-                    TrailStep.complete == True
+                    TrailStep.trailrun_id == trail_run.id, TrailStep.complete == True
                 )
             ).all()
             completed_activity_ids = set(completed_steps)
@@ -347,20 +347,19 @@ async def get_course_chapters(
         else:
             # Chapter N is locked if not all previous chapters' activities are completed
             chapter.is_locked = not all_previous_completed
-            
+
             for activity in chapter.activities:
                 # Activity is locked if we haven't completed all previous activities
                 activity.is_locked = not all_previous_completed
-                
+
                 # If they don't have a trail run, only the very first activity of the course is unlocked
                 if not has_trail_run:
                     if i == 0 and activity.id == chapter.activities[0].id:
                         activity.is_locked = False
-                
+
                 # Update all_previous_completed for the NEXT activity
                 is_completed = activity.id in completed_activity_ids
                 all_previous_completed = all_previous_completed and is_completed
-
 
     return chapters
 
