@@ -39,7 +39,7 @@ export default async function proxy(req: NextRequest) {
   const cookie_orgslug = req.cookies.get('learnhouse_current_orgslug')?.value
 
   // Helper to safely rewrite URLs, especially for Server Actions
-  // Server Actions (POST requests) need special handling to avoid UND_ERR_HEADERS_TIMEOUT 
+  // Server Actions (POST requests) need special handling to avoid UND_ERR_HEADERS_TIMEOUT
   // caused by loopback network issues in Docker/Nixpacks containers
   const createRewriteUrl = (path: string) => {
     const rewriteUrl = new URL(path, req.url)
