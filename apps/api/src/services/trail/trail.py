@@ -304,6 +304,9 @@ async def add_activity_to_trail(
     statement = select(ChapterActivity).where(
         ChapterActivity.activity_id == activity.id
     )
+    statement = select(ChapterActivity).where(
+        ChapterActivity.activity_id == activity.id
+    )
     chapter_activity = db_session.exec(statement).first()
 
     if chapter_activity:

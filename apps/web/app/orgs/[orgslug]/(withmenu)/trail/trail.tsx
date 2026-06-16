@@ -45,7 +45,15 @@ function Trail(params: any) {
     try {
       for (let i = 0; i < trail.runs.length; i++) {
         const run = trail.runs[i]
-        await removeCourse(run.course.course_uuid, orgslug, access_token)
+        const result = await removeCourse(
+          run.course.course_uuid,
+          orgslug,
+          access_token
+        )
+        if (!result.success) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to quit course:', result.error)
+        }
         setQuittingProgress(Math.round(((i + 1) / totalCourses) * 100))
       }
 

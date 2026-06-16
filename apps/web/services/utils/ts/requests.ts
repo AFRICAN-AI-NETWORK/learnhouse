@@ -22,11 +22,17 @@ export const RequestBodyWithAuthHeader = (
   next: any,
   token?: string
 ) => {
-  let HeadersConfig = new Headers(
-    token
-      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-      : { 'Content-Type': 'application/json' }
-  )
+  const headersObj: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (token) {
+    headersObj['Authorization'] = `Bearer ${token}`
+  }
+  if (typeof window === 'undefined') {
+    headersObj['User-Agent'] = 'LearnHouse-Server/1.0'
+  }
+
+  let HeadersConfig = new Headers(headersObj)
   let options: any = {
     method: method,
     headers: HeadersConfig,
@@ -105,8 +111,17 @@ export const swrFetcher = async (url: string, token?: string) => {
 
 export const errorHandling = async (res: any) => {
   if (!res.ok) {
+    let errorText = ''
+    try {
+      errorText = await res.text()
+    } catch (e) {
+      // Ignore text parsing errors
+    }
+    // eslint-disable-next-line no-console
+    console.error(`API Error ${res.status} ${res.statusText}:`, errorText)
     const error: any = new Error(`${res.statusText}`)
     error.status = res.status
+    error.body = errorText
     throw error
   }
   const text = await res.text()
