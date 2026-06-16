@@ -301,15 +301,19 @@ async def add_activity_to_trail(
     is_late = False
 
     # Check Sequential Access and Due Dates
-    statement = select(ChapterActivity).where(ChapterActivity.activity_id == activity.id)
+    statement = select(ChapterActivity).where(
+        ChapterActivity.activity_id == activity.id
+    )
     chapter_activity = db_session.exec(statement).first()
 
     if chapter_activity:
-        chapter = db_session.exec(select(Chapter).where(Chapter.id == chapter_activity.chapter_id)).first()
+        chapter = db_session.exec(
+            select(Chapter).where(Chapter.id == chapter_activity.chapter_id)
+        ).first()
         if chapter and chapter.due_date:
             try:
                 due_date = parser.isoparse(chapter.due_date)
-                # handle timezone naive or aware comparison by replacing tzinfo if needed, 
+                # handle timezone naive or aware comparison by replacing tzinfo if needed,
                 # but simplest is just checking if current time is greater:
                 now_tz = datetime.now(due_date.tzinfo)
                 if now_tz > due_date:
@@ -319,10 +323,12 @@ async def add_activity_to_trail(
 
         # Activity Sequencing
         prev_activity = db_session.exec(
-            select(ChapterActivity).where(
+            select(ChapterActivity)
+            .where(
                 ChapterActivity.chapter_id == chapter_activity.chapter_id,
-                ChapterActivity.order < chapter_activity.order
-            ).order_by(ChapterActivity.order.desc())
+                ChapterActivity.order < chapter_activity.order,
+            )
+            .order_by(ChapterActivity.order.desc())
         ).first()
 
         if prev_activity:
@@ -330,44 +336,51 @@ async def add_activity_to_trail(
                 select(TrailStep).where(
                     TrailStep.trailrun_id == trailrun.id,
                     TrailStep.activity_id == prev_activity.activity_id,
-                    TrailStep.complete == True
+                    TrailStep.complete == True,
                 )
             ).first()
             if not prev_step:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You must complete the previous activity before accessing this one."
+                    detail="You must complete the previous activity before accessing this one.",
                 )
         else:
             # Chapter Sequencing
             course_chapter = db_session.exec(
-                select(CourseChapter).where(CourseChapter.chapter_id == chapter_activity.chapter_id)
+                select(CourseChapter).where(
+                    CourseChapter.chapter_id == chapter_activity.chapter_id
+                )
             ).first()
             if course_chapter:
                 prev_course_chapter = db_session.exec(
-                    select(CourseChapter).where(
+                    select(CourseChapter)
+                    .where(
                         CourseChapter.course_id == course_chapter.course_id,
-                        CourseChapter.order < course_chapter.order
-                    ).order_by(CourseChapter.order.desc())
+                        CourseChapter.order < course_chapter.order,
+                    )
+                    .order_by(CourseChapter.order.desc())
                 ).first()
                 if prev_course_chapter:
                     last_activity_prev_chapter = db_session.exec(
-                        select(ChapterActivity).where(
+                        select(ChapterActivity)
+                        .where(
                             ChapterActivity.chapter_id == prev_course_chapter.chapter_id
-                        ).order_by(ChapterActivity.order.desc())
+                        )
+                        .order_by(ChapterActivity.order.desc())
                     ).first()
                     if last_activity_prev_chapter:
                         prev_chap_step = db_session.exec(
                             select(TrailStep).where(
                                 TrailStep.trailrun_id == trailrun.id,
-                                TrailStep.activity_id == last_activity_prev_chapter.activity_id,
-                                TrailStep.complete == True
+                                TrailStep.activity_id
+                                == last_activity_prev_chapter.activity_id,
+                                TrailStep.complete == True,
                             )
                         ).first()
                         if not prev_chap_step:
                             raise HTTPException(
                                 status_code=status.HTTP_403_FORBIDDEN,
-                                detail="You must complete the previous module before accessing this one."
+                                detail="You must complete the previous module before accessing this one.",
                             )
 
     points_earned = get_activity_points_earned(activity, is_late)
@@ -560,6 +573,7 @@ async def add_course_to_trail(
     if user and user.id != 0:
         try:
             from src.security.courses_security import courses_rbac_check
+
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, user, "update", db_session
             )
@@ -587,17 +601,19 @@ async def add_course_to_trail(
                     select(TrailRun).where(
                         TrailRun.course_id == prereq.prerequisite_course_id,
                         TrailRun.user_id == user.id,
-                        TrailRun.status == StatusEnum.STATUS_COMPLETED
+                        TrailRun.status == StatusEnum.STATUS_COMPLETED,
                     )
                 ).first()
                 if not prereq_run:
                     prereq_course = db_session.exec(
                         select(Course).where(Course.id == prereq.prerequisite_course_id)
                     ).first()
-                    course_name = prereq_course.name if prereq_course else "a prerequisite course"
+                    course_name = (
+                        prereq_course.name if prereq_course else "a prerequisite course"
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"You must complete {course_name} before starting this course."
+                        detail=f"You must complete {course_name} before starting this course.",
                     )
 
     statement = select(Trail).where(
