@@ -91,4 +91,3 @@ class ActivityRead(ActivityBase):
     update_date: str
     details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     is_locked: Optional[bool] = False
-
