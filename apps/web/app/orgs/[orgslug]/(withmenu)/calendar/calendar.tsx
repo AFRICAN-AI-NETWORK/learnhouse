@@ -12,12 +12,15 @@ import {
   ArrowLeft,
   CalendarDays,
   Clock3,
+  Copy,
   CopyCheck,
+  ExternalLink,
   MapPin,
   Video,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import useSWR from 'swr'
 
 const weekDays = [
@@ -199,7 +202,7 @@ function CalendarDayRow({
 
 function CalendarEventCard({ event }: { event: StudentTimetableEvent }) {
   return (
-    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+    <article className="min-w-0 rounded-lg border border-gray-200 bg-gray-50 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h4 className="truncate text-sm font-bold text-gray-950">
@@ -218,23 +221,76 @@ function CalendarEventCard({ event }: { event: StudentTimetableEvent }) {
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
-        {event.location && (
-          <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-white px-2 py-1">
-            {event.location.toLowerCase().includes('zoom') ||
-            event.location.toLowerCase().includes('online') ? (
-              <Video size={12} className="shrink-0" />
-            ) : (
-              <MapPin size={12} className="shrink-0" />
-            )}
-            <span className="truncate">{event.location}</span>
-          </span>
-        )}
-        <span className="rounded-md bg-white px-2 py-1 capitalize">
+      <div className="mt-3 flex min-w-0 flex-wrap gap-2 text-xs text-gray-500">
+        <CalendarEventLocation location={event.location} />
+        <span className="h-fit rounded-md bg-white px-2 py-1 capitalize">
           {event.recurrence}
         </span>
       </div>
     </article>
+  )
+}
+
+function CalendarEventLocation({ location }: { location?: string | null }) {
+  if (!location) return null
+
+  const link = getLocationLink(location)
+  const isOnline =
+    location.toLowerCase().includes('zoom') ||
+    location.toLowerCase().includes('meet') ||
+    location.toLowerCase().includes('jitsi') ||
+    location.toLowerCase().includes('online') ||
+    Boolean(link)
+
+  const copyLocation = async () => {
+    try {
+      await navigator.clipboard.writeText(link || location)
+      toast.success('Location copied')
+    } catch {
+      toast.error('Could not copy location')
+    }
+  }
+
+  return (
+    <span className="inline-flex min-w-0 max-w-full flex-1 items-start gap-1 rounded-md bg-white px-2 py-1 sm:flex-none">
+      {isOnline ? (
+        <Video size={12} className="mt-0.5 shrink-0" />
+      ) : (
+        <MapPin size={12} className="mt-0.5 shrink-0" />
+      )}
+      {link ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="min-w-0 break-all font-semibold text-blue-700 hover:text-blue-800"
+          title={location}
+        >
+          {location}
+        </a>
+      ) : (
+        <span className="min-w-0 break-words">{location}</span>
+      )}
+      <button
+        type="button"
+        onClick={copyLocation}
+        className="-my-1 ml-auto inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+        aria-label="Copy location"
+      >
+        <Copy size={12} />
+      </button>
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="-my-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          aria-label="Open location link"
+        >
+          <ExternalLink size={12} />
+        </a>
+      )}
+    </span>
   )
 }
 
@@ -271,6 +327,14 @@ function formatTimeRange(startsAt: string, endsAt: string) {
   return `${formatter.format(new Date(startsAt))} - ${formatter.format(
     new Date(endsAt)
   )}`
+}
+
+function getLocationLink(location: string) {
+  const match = location.match(/https?:\/\/[^\s]+|www\.[^\s]+/i)
+  if (!match) return null
+
+  const url = match[0]
+  return url.startsWith('http') ? url : `https://${url}`
 }
 
 export default CalendarClient

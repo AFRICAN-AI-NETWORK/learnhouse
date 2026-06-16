@@ -2373,14 +2373,14 @@ function MobileAssignmentActionDock({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 py-3 pl-3 pr-20 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur md:hidden dark:border-white/8 dark:bg-[#13131a]/95">
-      <div className="mx-auto grid max-w-xl grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-2 pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur md:hidden dark:border-white/8 dark:bg-[#13131a]/95">
+      <div className="mx-auto grid max-w-xl grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-end gap-2 pb-[env(safe-area-inset-bottom)]">
         <button
           type="button"
           onClick={() => navigateToActivity(previousActivity)}
           disabled={!previousActivity}
           aria-label={t('common.previous')}
-          className="flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/8 dark:bg-white/5 dark:text-white/70"
+          className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/8 dark:bg-white/5 dark:text-white/70"
         >
           <ChevronLeft size={19} />
         </button>
@@ -2410,7 +2410,7 @@ function MobileAssignmentActionDock({
                 ? t('common.next')
                 : t('courses.finish_course')
           }
-          className={`flex h-11 w-11 items-center justify-center rounded-md text-white shadow-sm transition ${
+          className={`flex h-10 w-10 items-center justify-center rounded-md text-white shadow-sm transition ${
             nextActivityLocked
               ? 'cursor-not-allowed bg-slate-300 text-slate-500'
               : nextActivity
@@ -2765,7 +2765,7 @@ function AssignmentTools(props: {
     return (
       <div className="contents">
         {needsRevision && (
-          <div className="col-span-2 flex min-w-0 flex-col gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-sky-700 sm:col-auto sm:w-64 sm:px-3">
+          <div className="col-span-full flex min-w-0 flex-col gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-2 text-sky-700 sm:col-auto sm:w-64 sm:px-3">
             <div className="flex items-center gap-2">
               <Info size={14} className="shrink-0" />
               <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
@@ -2780,7 +2780,7 @@ function AssignmentTools(props: {
           </div>
         )}
         {!isComplete && totalTasks > 0 && (
-          <div className="col-span-2 flex h-8 min-w-0 items-center justify-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:col-auto sm:h-10 sm:px-3">
+          <div className="col-span-full flex min-h-8 min-w-0 items-center justify-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-600 sm:col-auto sm:min-h-10 sm:px-3">
             <Info size={14} className="shrink-0" />
             <p className="min-w-0 truncate text-[10px] font-bold uppercase tracking-tight">
               {t('assignments.unsaved_tasks_warning')}
@@ -2790,11 +2790,11 @@ function AssignmentTools(props: {
         {!isComplete ? (
           <div
             onClick={submitForGradingUI}
-            className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-600 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-amber-700 sm:w-auto sm:min-w-44 sm:px-4"
+            className="nice-shadow flex min-h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-600 px-2.5 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-amber-700 sm:w-auto sm:min-w-44 sm:px-4"
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex min-w-0 items-center gap-2">
               <BookOpenCheck size={17} className="shrink-0" />
-              <span className="whitespace-nowrap text-xs font-bold">
+              <span className="min-w-0 truncate text-center text-[11px] font-bold leading-tight sm:text-xs">
                 {t('assignments.submit_for_grading')}
               </span>
             </div>
@@ -2805,10 +2805,10 @@ function AssignmentTools(props: {
             confirmationMessage={t('assignments.submit_assignment_confirm')}
             dialogTitle={t('assignments.submit_assignment_title')}
             dialogTrigger={
-              <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-cyan-800 px-3 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-cyan-900 sm:w-auto sm:min-w-44 sm:px-4">
-                <div className="flex items-center space-x-2">
+              <div className="nice-shadow flex min-h-10 w-full min-w-0 items-center justify-center rounded-md bg-cyan-800 px-2.5 text-white transition-all duration-300 ease-in-out hover:cursor-pointer hover:bg-cyan-900 sm:w-auto sm:min-w-44 sm:px-4">
+                <div className="flex min-w-0 items-center gap-2">
                   <BookOpenCheck size={17} className="shrink-0" />
-                  <span className="whitespace-nowrap text-xs font-bold">
+                  <span className="min-w-0 truncate text-center text-[11px] font-bold leading-tight sm:text-xs">
                     {t('assignments.submit_for_grading')}
                   </span>
                 </div>
@@ -2824,10 +2824,10 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'SUBMITTED') {
     return (
-      <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-3 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-44 sm:px-4">
-        <div className="flex items-center space-x-2">
+      <div className="nice-shadow flex min-h-10 w-full min-w-0 items-center justify-center rounded-md bg-amber-800 px-2.5 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-44 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
           <UserRoundPen size={17} className="shrink-0" />
-          <span className="whitespace-nowrap text-xs font-bold">
+          <span className="min-w-0 truncate text-center text-[11px] font-bold leading-tight sm:text-xs">
             {t('assignments.grading_in_progress')}
           </span>
         </div>
@@ -2837,11 +2837,11 @@ function AssignmentTools(props: {
 
   if (submission[0].submission_status === 'GRADED') {
     return (
-      <div className="nice-shadow flex h-10 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-3 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-32 sm:px-4">
-        <div className="flex items-center space-x-2">
+      <div className="nice-shadow flex min-h-10 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-2.5 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-32 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
           <CheckCircle size={17} className="shrink-0" />
-          <span className="flex items-center space-x-2 whitespace-nowrap text-xs font-bold">
-            <span>{t('assignments.graded')} </span>
+          <span className="flex min-w-0 items-center gap-2 text-[11px] font-bold leading-tight sm:text-xs">
+            <span className="min-w-0 truncate">{t('assignments.graded')} </span>
             <span className="shrink-0 rounded-md bg-white px-1 py-0.5 text-teal-800">
               {finalGrade}
             </span>
