@@ -41,7 +41,15 @@ function LHSessionProvider({ children }: { children: React.ReactNode }) {
         if (lastActiveStr) {
           const lastActive = parseInt(lastActiveStr, 10)
           const now = Date.now()
-          if (now - lastActive >= INACTIVITY_TIMEOUT) {
+
+          const isMediaPlaying = Array.from(
+            document.querySelectorAll('video, audio')
+          ).some((media: any) => !media.paused && !media.ended)
+          const isIframeFocused = document.activeElement?.tagName === 'IFRAME'
+
+          if (isMediaPlaying || isIframeFocused) {
+            updateActivity()
+          } else if (now - lastActive >= INACTIVITY_TIMEOUT) {
             signOut({ callbackUrl: '/' })
           }
         }
