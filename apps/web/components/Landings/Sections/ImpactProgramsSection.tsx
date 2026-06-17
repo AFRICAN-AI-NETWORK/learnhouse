@@ -8,7 +8,7 @@ export default function ImpactProgramsSection() {
         <div className="flex items-center gap-3 text-[#0057ff] uppercase tracking-widest text-[11px] font-bold mb-6">
           <span className="w-8 h-[2px] bg-[#0057ff]" /> IMPACT PROGRAMS
         </div>
-        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] tracking-tight">
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] tracking-tight uppercase">
           From Certificate <br />
           <span className="text-[#0057ff]">to Career.</span>
         </h2>

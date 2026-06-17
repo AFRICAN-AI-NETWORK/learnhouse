@@ -31,6 +31,9 @@ import {
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
+import Countdown from '@components/Landings/Countdown'
+
+const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
 export default function AIAutomationPage() {
   const org = useOrg() as any
@@ -165,7 +168,7 @@ export default function AIAutomationPage() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-widest border border-purple-500/30">
                 <Bot size={14} /> Program 2
               </div>
-              <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight">
+              <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight uppercase">
                 AI Automation
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-1">
                   Where Skills Become Income
@@ -207,23 +210,24 @@ export default function AIAutomationPage() {
               <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-[24px] p-8 space-y-6">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    Course Fee
+                    COURSE FEE
                   </p>
                   <p className="text-5xl font-black text-white">
                     $37
                     <span className="text-xl font-bold text-gray-400">/mo</span>
                   </p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold">
+                  <div className="mt-3 flex flex-col gap-2">
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
-                      Coming Soon
+                      COMING LIVE IN 1 WEEK
                     </span>
+                    <Countdown targetDate={LAUNCH_DATE} />
                   </div>
                 </div>
                 <div className="h-px bg-white/10" />
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Duration
+                    DURATION
                   </p>
                   <p className="text-lg font-bold text-white">12 Weeks</p>
                   <p className="text-sm text-gray-400">
@@ -233,7 +237,7 @@ export default function AIAutomationPage() {
                 <div className="h-px bg-white/10" />
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Level
+                    LEVEL
                   </p>
                   <p className="text-lg font-bold text-white">Intermediate</p>
                   <p className="text-sm text-gray-400">No coding required</p>
@@ -242,7 +246,7 @@ export default function AIAutomationPage() {
                   href="/auth/signup"
                   className="block w-full text-center bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all"
                 >
-                  Join Waitlist →
+                  CLICK TO PAY →
                 </Link>
               </div>
             </div>
@@ -283,7 +287,7 @@ export default function AIAutomationPage() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
                 What You&apos;ll Learn
               </div>
-              <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight">
+              <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight uppercase">
                 Practical skills you can{' '}
                 <span className="text-[#0057ff]">monetise immediately.</span>
               </h2>
@@ -326,7 +330,7 @@ export default function AIAutomationPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
             Tools You&apos;ll Master
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12 uppercase">
             The exact tools{' '}
             <span className="text-[#0057ff]">professionals use.</span>
           </h2>
@@ -391,7 +395,7 @@ export default function AIAutomationPage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
               Course Content
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e]">
+            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] uppercase">
               12 weeks. Every week has a{' '}
               <span className="text-[#0057ff]">purpose.</span>
             </h2>
@@ -461,7 +465,7 @@ export default function AIAutomationPage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
               Who Should Enrol
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight mb-4 uppercase">
               No coding <span className="text-[#0057ff]">required.</span>
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed max-w-md">
@@ -492,7 +496,7 @@ export default function AIAutomationPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
             Value Breakdown
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
             Why $37/month is{' '}
             <span className="text-[#0057ff]">extraordinary.</span>
           </h2>
@@ -585,7 +589,7 @@ export default function AIAutomationPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
             The Full Pathway
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12 uppercase">
             Your position in the{' '}
             <span className="text-[#0057ff]">AAN journey</span>
           </h2>
@@ -663,7 +667,7 @@ export default function AIAutomationPage() {
               <Sparkles size={14} className="text-purple-400" /> Turn Skills
               Into Income
             </div>
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1]">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
               Build. Automate. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
                 Get Paid.

@@ -42,7 +42,7 @@ export default function FAQSection() {
     >
       <div className="max-w-4xl mx-auto">
         <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0f1e]">
+          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0f1e] uppercase">
             Frequently Asked Questions
           </h2>
           <p className="text-[#555555] max-w-2xl mx-auto text-[16px]">

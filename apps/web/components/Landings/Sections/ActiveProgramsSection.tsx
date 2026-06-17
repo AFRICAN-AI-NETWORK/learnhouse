@@ -38,7 +38,7 @@ export default function ActiveProgramsSection({
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest">
             Live & Upcoming
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e]">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] uppercase">
             Active <span className="text-[#0057ff]">Programs</span>
           </h2>
           <p className="text-[#555555] max-w-2xl mx-auto text-[16px]">

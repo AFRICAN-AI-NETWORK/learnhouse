@@ -144,7 +144,7 @@ export default function AANOpenPage() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/20 text-[#0057ff] text-xs font-bold uppercase tracking-widest border border-[#0057ff]/30">
                 <BookOpen size={14} /> Program 1
               </div>
-              <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight">
+              <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight uppercase">
                 AAN Open
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-[#4da6ff] mt-1">
                   Generative AI
@@ -184,7 +184,7 @@ export default function AANOpenPage() {
               <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-[24px] p-8 space-y-6">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    Course Fee
+                    COURSE FEE
                   </p>
                   <p className="text-5xl font-black text-white">FREE</p>
                   <div className="mt-3 flex items-center gap-2">
@@ -197,7 +197,7 @@ export default function AANOpenPage() {
                 <div className="h-px bg-white/10" />
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Future Price
+                    FUTURE PRICE
                   </p>
                   <p className="text-2xl font-bold text-white/60 line-through">
                     $20/month
@@ -209,7 +209,7 @@ export default function AANOpenPage() {
                 <div className="h-px bg-white/10" />
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Level
+                    LEVEL
                   </p>
                   <p className="text-lg font-bold text-white">Beginner</p>
                   <p className="text-sm text-gray-400">No experience needed</p>
@@ -258,7 +258,7 @@ export default function AANOpenPage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
               Course Content
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e]">
+            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] uppercase">
               5 tracks. Every track has a{' '}
               <span className="text-[#0057ff]">purpose.</span>
             </h2>
@@ -332,7 +332,7 @@ export default function AANOpenPage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
               Who Should Enrol
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight mb-4 uppercase">
               Created for <span className="text-[#0057ff]">Everyone</span>
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed max-w-md">
@@ -416,7 +416,7 @@ export default function AANOpenPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
             Why AAN Open
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
             Extraordinary value.{' '}
             <span className="text-[#0057ff]">Seriously.</span>
           </h2>
@@ -474,7 +474,7 @@ export default function AANOpenPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
             The Full Pathway
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12 uppercase">
             Where AAN Open <span className="text-[#0057ff]">leads you</span>
           </h2>
 
@@ -584,7 +584,7 @@ export default function AANOpenPage() {
               <Sparkles size={14} className="text-[#0057ff]" /> Zero Cost, Full
               Value
             </div>
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1]">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
               Start Your AI <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-[#4da6ff]">
                 Journey Today
