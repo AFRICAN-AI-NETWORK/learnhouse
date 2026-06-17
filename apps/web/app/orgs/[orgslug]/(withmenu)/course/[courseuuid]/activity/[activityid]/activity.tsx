@@ -471,6 +471,7 @@ function ActivityClient(props: ActivityClientProps) {
   const [assignment, setAssignment] = useState(null) as any
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
+  const [videoWatchSatisfied, setVideoWatchSatisfied] = useState(false)
   const { contributorStatus } = useContributorStatus(courseuuid)
   const router = useRouter()
 
@@ -600,6 +601,7 @@ function ActivityClient(props: ActivityClientProps) {
                 activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED'
               }
               onComplete={() => {
+                setVideoWatchSatisfied(true)
                 if (
                   !isActivityComplete(
                     activity.activity_uuid,
@@ -709,6 +711,10 @@ function ActivityClient(props: ActivityClientProps) {
       setHasMounted(true)
     }
   }, [])
+
+  useEffect(() => {
+    setVideoWatchSatisfied(false)
+  }, [activity?.activity_uuid])
 
   // Save focus mode to localStorage
   useEffect(() => {
@@ -1372,6 +1378,7 @@ function ActivityClient(props: ActivityClientProps) {
                           orgslug={orgslug}
                           progressPercentage={progressPercentage}
                           trailData={trailData}
+                          videoWatchSatisfied={videoWatchSatisfied}
                         />
 
                         <div className="flex min-h-[calc(100vh-73px)] flex-col lg:flex-row">
@@ -1570,6 +1577,7 @@ function ActivityPageNavbar({
   orgslug,
   progressPercentage,
   trailData,
+  videoWatchSatisfied,
 }: {
   activity: any
   activityid: string
@@ -1588,6 +1596,7 @@ function ActivityPageNavbar({
   orgslug: string
   progressPercentage: number
   trailData: any
+  videoWatchSatisfied: boolean
 }) {
   const { t } = useTranslation()
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
@@ -1599,6 +1608,7 @@ function ActivityPageNavbar({
   const requiresVideoWatch =
     activity.activity_type === 'TYPE_VIDEO' &&
     activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
+    !videoWatchSatisfied &&
     !activityComplete
 
   return (
