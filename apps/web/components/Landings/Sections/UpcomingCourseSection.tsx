@@ -33,7 +33,7 @@ export default function UpcomingCourseSection({
     >
       <div className="max-w-7xl mx-auto">
         <div className="space-y-4 mb-16 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0f1e]">
+          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0f1e] uppercase">
             {title}
           </h2>
           {description && (

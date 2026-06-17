@@ -105,7 +105,7 @@ export default function PersonalizedPathSection({
             AI-Embedded Learning Platform
           </div>
 
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0a0f1e] tracking-tight leading-[1.1]">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-[#0a0f1e] tracking-tight leading-[1.1] uppercase">
             Your learning path, <br />
             <span className="text-[#0057ff]">personalised by AI.</span>
           </h2>

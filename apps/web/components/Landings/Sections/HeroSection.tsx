@@ -95,12 +95,12 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
               <Sparkles size={14} /> The Future of Learning
             </span>
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 text-gray-300 text-xs font-bold border border-white/10 backdrop-blur-md">
-              <Users size={14} className="text-amber-400" /> Joined by 500+
+              <Users size={14} className="text-amber-400" /> Joined by 5000+
               Learners
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] uppercase">
             Accelerate Your Career In The{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-[#4da6ff]">
               New Economy

@@ -55,7 +55,7 @@ export default function ReferAndEarnSection() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
                 <Gift size={14} /> Refer & Earn
               </div>
-              <h2 className="text-3xl md:text-5xl font-black text-[#0a0f1e] leading-tight mb-4">
+              <h2 className="text-3xl md:text-5xl font-black text-[#0a0f1e] leading-tight mb-4 uppercase">
                 Turn Your Network <br className="hidden md:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-[#4da6ff]">
                   Into Income.

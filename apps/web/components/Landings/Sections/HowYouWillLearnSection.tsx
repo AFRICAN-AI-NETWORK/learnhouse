@@ -60,7 +60,7 @@ export default function HowYouWillLearnSection() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest">
             How You Will Learn
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e]">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] uppercase">
             Built for people with jobs,{' '}
             <span className="text-[#0057ff]">lives, and real goals.</span>
           </h2>
