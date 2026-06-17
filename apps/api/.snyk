@@ -17,3 +17,11 @@ ignore:
     - "*":
         reason: "No upgrade or patch available for ecdsa missing encryption vulnerability."
         expires: 2027-05-19T00:00:00.000Z
+  SNYK-PYTHON-STARLETTE-17342498:
+    - "*":
+        reason: "Transitive dependency of fastapi. The fix is in starlette 1.x, which requires fastapi>=0.128.3 and pydantic>=2.7, but this project is pinned to pydantic<2.0.0. The vulnerable StaticFiles path is not used (no StaticFiles mounts in the app)."
+        expires: 2027-05-19T00:00:00.000Z
+  SNYK-PYTHON-STARLETTE-17342519:
+    - "*":
+        reason: "Transitive dependency of fastapi. The fix is in starlette 1.x, which requires fastapi>=0.128.3 and pydantic>=2.7, but this project is pinned to pydantic<2.0.0. The vulnerable StaticFiles path is not used (no StaticFiles mounts in the app)."
+        expires: 2027-05-19T00:00:00.000Z

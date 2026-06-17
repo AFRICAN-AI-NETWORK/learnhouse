@@ -67,6 +67,13 @@ def update_roles():
                 "action_update": True,
                 "action_delete": True,
             },
+            # Required to view the student dashboard (reads student/user data).
+            "users": {
+                "action_create": False,
+                "action_read": True,
+                "action_update": False,
+                "action_delete": False,
+            },
             "usergroups": {
                 "action_create": False,
                 "action_read": True,
