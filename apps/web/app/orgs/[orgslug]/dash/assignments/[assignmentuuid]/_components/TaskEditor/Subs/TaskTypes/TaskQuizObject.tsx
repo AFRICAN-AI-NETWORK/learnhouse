@@ -71,6 +71,9 @@ function TaskQuizObject({
   const assignmentSubmission = useAssignmentSubmission() as any
   const assignmentNeedsRevision =
     assignmentSubmission?.[0]?.submission_status === 'NEEDS_REVISION'
+  const isAssignmentLocked =
+    assignmentSubmission?.[0]?.submission_status === 'SUBMITTED' ||
+    assignmentSubmission?.[0]?.submission_status === 'GRADED'
 
   /* TEACHER VIEW CODE */
   const [questions, setQuestions] = useState<QuizSchema[]>([
@@ -328,7 +331,6 @@ function TaskQuizObject({
         })
         toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
         setShowSavingDisclaimer(false)
-        setHasSubmitted(true)
         setUserSubmissionObject(res.data)
         // Update userSubmissions with the returned UUID for future updates
         const updatedUserSubmissionsWithUUID = {
@@ -522,7 +524,7 @@ function TaskQuizObject({
                       <div
                         onClick={() =>
                           view === 'student' &&
-                          (!hasSubmitted || assignmentNeedsRevision) &&
+                          (!isAssignmentLocked || assignmentNeedsRevision) &&
                           chooseOption(qIndex, oIndex)
                         }
                         className={
@@ -614,7 +616,7 @@ function TaskQuizObject({
                           </>
                         )}
                         {view === 'student' &&
-                          (!hasSubmitted || assignmentNeedsRevision) && (
+                          (!isAssignmentLocked || assignmentNeedsRevision) && (
                             <div
                               className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
                                 userSubmissions.submissions.find(
@@ -644,7 +646,7 @@ function TaskQuizObject({
                             </div>
                           )}
                         {view === 'student' &&
-                          hasSubmitted &&
+                          isAssignmentLocked &&
                           !assignmentNeedsRevision &&
                           (() => {
                             const studentAnswer =
