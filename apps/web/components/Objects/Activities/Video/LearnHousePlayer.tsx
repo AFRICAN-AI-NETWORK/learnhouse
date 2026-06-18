@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+// @ts-ignore
 import Plyr from 'plyr'
 import 'plyr/dist/plyr.css'
 
@@ -15,6 +16,8 @@ interface LearnHousePlayerProps {
   onReady?: () => void
   onComplete?: () => void
   enforceLinearPlayback?: boolean
+  isCompleted?: boolean
+  activityId?: string
 }
 
 const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
@@ -23,11 +26,13 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
   onReady,
   onComplete,
   enforceLinearPlayback = false,
+  isCompleted = false,
+  activityId,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<Plyr | null>(null)
   const maxWatchedTimeRef = useRef(details?.startTime || 0)
-  const hasCompletedRef = useRef(false)
+  const hasCompletedRef = useRef(isCompleted)
 
   useEffect(() => {
     if (videoRef.current) {
@@ -37,6 +42,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
           ? [
               'play-large',
               'play',
+              'progress',
               'current-time',
               'duration',
               'mute',
@@ -77,21 +83,38 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
       })
 
       // Set initial time if specified
-      const startTime = details?.startTime || 0
+      let startTime = details?.startTime || 0
+      let maxWatched = startTime
 
-      if (startTime) {
-        playerRef.current.currentTime = startTime
-        maxWatchedTimeRef.current = startTime
+      if (activityId && typeof window !== 'undefined') {
+        const savedTime = localStorage.getItem(
+          `learnhouse_video_${activityId}_currentTime`
+        )
+        const savedMaxWatched = localStorage.getItem(
+          `learnhouse_video_${activityId}_maxWatched`
+        )
+
+        if (savedTime && !startTime) {
+          startTime = parseFloat(savedTime)
+        }
+        if (savedMaxWatched) {
+          maxWatched = Math.max(startTime, parseFloat(savedMaxWatched))
+        }
       }
+
+      if (startTime > 0) {
+        playerRef.current.currentTime = startTime
+      }
+      maxWatchedTimeRef.current = maxWatched
 
       // Handle end time
       playerRef.current.on('timeupdate', () => {
         if (!playerRef.current) return
 
-        if (
-          details?.endTime &&
-          playerRef.current.currentTime >= details.endTime
-        ) {
+        const currentTime = playerRef.current.currentTime
+        const duration = playerRef.current.duration
+
+        if (details?.endTime && currentTime >= details.endTime) {
           playerRef.current.pause()
           if (!hasCompletedRef.current) {
             hasCompletedRef.current = true
@@ -100,14 +123,41 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
           return
         }
 
+        // Trigger onComplete slightly before the exact end to handle browser inconsistencies
+        if (
+          duration > 0 &&
+          currentTime >= duration - 0.5 &&
+          !hasCompletedRef.current
+        ) {
+          hasCompletedRef.current = true
+          onComplete?.()
+        }
+
         maxWatchedTimeRef.current = Math.max(
           maxWatchedTimeRef.current,
-          playerRef.current.currentTime
+          currentTime
         )
+
+        // Save progress
+        if (activityId && typeof window !== 'undefined') {
+          localStorage.setItem(
+            `learnhouse_video_${activityId}_currentTime`,
+            currentTime.toString()
+          )
+          localStorage.setItem(
+            `learnhouse_video_${activityId}_maxWatched`,
+            maxWatchedTimeRef.current.toString()
+          )
+        }
       })
 
       playerRef.current.on('seeking', () => {
-        if (!enforceLinearPlayback || !playerRef.current) return
+        if (
+          !enforceLinearPlayback ||
+          !playerRef.current ||
+          hasCompletedRef.current
+        )
+          return
 
         const allowedTime = maxWatchedTimeRef.current + 1
         if (playerRef.current.currentTime > allowedTime) {
@@ -134,7 +184,14 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
         }
       }
     }
-  }, [details, enforceLinearPlayback, onComplete, onReady])
+  }, [
+    details,
+    enforceLinearPlayback,
+    onComplete,
+    onReady,
+    activityId,
+    isCompleted,
+  ])
 
   return (
     <div className="w-full aspect-video rounded-lg overflow-hidden">
