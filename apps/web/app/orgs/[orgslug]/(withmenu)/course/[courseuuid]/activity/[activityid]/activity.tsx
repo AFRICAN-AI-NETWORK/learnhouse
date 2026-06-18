@@ -600,6 +600,13 @@ function ActivityClient(props: ActivityClientProps) {
               enforceLinearPlayback={
                 activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED'
               }
+              isCompleted={
+                !!isActivityComplete(
+                  activity.activity_uuid,
+                  course.course_uuid,
+                  trailData
+                )
+              }
               onComplete={() => {
                 setVideoWatchSatisfied(true)
                 if (
@@ -2204,7 +2211,11 @@ export function MarkStatus(props: {
       // Find the step that matches the current activity
       return run.steps.find(
         (step: any) =>
-          step.activity_id === props.activity.id && step.complete === true
+          (step.activity_id === props.activity.id ||
+            step.activity_uuid === props.activity.activity_uuid ||
+            step.activity_uuid ===
+              props.activity.activity_uuid?.replace('activity_', '')) &&
+          step.complete === true
       )
     }
     return false

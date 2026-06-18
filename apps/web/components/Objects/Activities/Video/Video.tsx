@@ -25,6 +25,7 @@ interface VideoActivityProps {
     course_uuid: string
   }
   enforceLinearPlayback?: boolean
+  isCompleted?: boolean
   onComplete?: () => void
 }
 
@@ -32,6 +33,7 @@ function VideoActivity({
   activity,
   course,
   enforceLinearPlayback = false,
+  isCompleted = false,
   onComplete,
 }: VideoActivityProps) {
   const org = useOrg() as any
@@ -69,6 +71,8 @@ function VideoActivity({
                       src={src}
                       details={activity.details}
                       enforceLinearPlayback={enforceLinearPlayback}
+                      isCompleted={isCompleted}
+                      activityId={activity.activity_uuid}
                       onComplete={onComplete}
                     />
                   ) : null
@@ -99,6 +103,9 @@ function VideoActivity({
                     if (activity.details?.startTime) {
                       event.target.seekTo(activity.details.startTime, true)
                     }
+                  }}
+                  onEnd={() => {
+                    onComplete?.()
                   }}
                 />
               </div>
