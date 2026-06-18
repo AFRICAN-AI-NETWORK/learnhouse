@@ -109,7 +109,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
 
       // Handle end time
       playerRef.current.on('timeupdate', () => {
-        if (!playerRef.current) return
+        if (!playerRef.current || hasCompletedRef.current) return
 
         const currentTime = playerRef.current.currentTime
         const duration = playerRef.current.duration
@@ -133,10 +133,13 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
           onComplete?.()
         }
 
-        maxWatchedTimeRef.current = Math.max(
-          maxWatchedTimeRef.current,
-          currentTime
-        )
+        // Only update max watched time if progressing naturally (not seeking forward)
+        if (currentTime - maxWatchedTimeRef.current <= 1.5) {
+          maxWatchedTimeRef.current = Math.max(
+            maxWatchedTimeRef.current,
+            currentTime
+          )
+        }
 
         // Save progress
         if (activityId && typeof window !== 'undefined') {
