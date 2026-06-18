@@ -1,6 +1,6 @@
 'use client'
 import { useFormik } from 'formik'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import FormLayout, {
   FormField,
@@ -8,6 +8,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
+import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -29,32 +30,51 @@ import Link from 'next/link'
 import { signup } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useTranslation } from 'react-i18next'
+import {
+  DEFAULT_COUNTRY_CODE,
+  formatE164,
+  validatePhoneFields,
+} from '@/lib/phone-number'
+import { SiWhatsapp } from '@icons-pack/react-simple-icons'
+
+const whatsappGroupUrl =
+  'https://chat.whatsapp.com/BohSUrcVlPREw5KUS2vEPr?mode=gi_t'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
-
+  const phoneErrors = validatePhoneFields(values)
+  if (phoneErrors.country_code) {
+    errors.country_code = phoneErrors.country_code
+  }
+  if (phoneErrors.phone_number) {
+    errors.phone_number =
+      t('validation.invalid_phone_with_country_code') ||
+      phoneErrors.phone_number
+  }
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
     errors.email = t('validation.invalid_email')
   }
-
   if (!values.password) {
     errors.password = t('validation.required')
   } else if (values.password.length < 8) {
     errors.password = t('validation.password_min_length')
   }
-
   if (!values.username) {
     errors.username = t('validation.required')
   } else if (values.username.length < 4) {
     errors.username = t('validation.username_min_length')
   }
-
   if (!values.bio) {
     errors.bio = t('validation.required')
   }
-
+  if (!values.first_name) {
+    errors.first_name = t('validation.required')
+  }
+  if (!values.last_name) {
+    errors.last_name = t('validation.required')
+  }
   return errors
 }
 
@@ -80,7 +100,6 @@ function OpenSignUpComponent() {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const org = useOrg() as any
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
@@ -112,13 +131,15 @@ function OpenSignUpComponent() {
     initialValues: {
       org_slug: org?.slug,
       org_id: org?.id,
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
       confirmPassword: '',
       username: '',
       bio: '',
-      first_name: '',
-      last_name: '',
+      country_code: DEFAULT_COUNTRY_CODE,
+      phone_number: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
     },
     validate: (values) => validate(values, t),
     enableReinitialize: true,
@@ -141,17 +162,21 @@ function OpenSignUpComponent() {
         /* fingerprint unavailable — proceed without it */
       }
 
-      const payload: typeof values & {
-        referral_code?: string
-        device_id?: string
-        browser_fingerprint?: { visitor_id: string }
-      } = {
-        ...values,
+      // Only send required fields, and format phone_number
+      const payload: any = {
+        org_slug: values.org_slug,
+        org_id: values.org_id,
+        email: values.email,
+        password: values.password,
+        username: values.username,
+        bio: values.bio,
+        phone_number: formatE164(values.country_code, values.phone_number),
+        first_name: values.first_name,
+        last_name: values.last_name,
         ...(device_id ? { device_id } : {}),
         ...(browser_fingerprint ? { browser_fingerprint } : {}),
         ...(referralCode.trim() ? { referral_code: referralCode.trim() } : {}),
       }
-
       const res = await signup(payload)
       const response = await res.json()
 
@@ -165,10 +190,6 @@ function OpenSignUpComponent() {
         setMessage(
           'Account created successfully! Please check your email to verify your account before logging in.'
         )
-        setTimeout(() => {
-          const orgSlug = org?.slug || 'default'
-          router.push(`/login?orgslug=${orgSlug}`)
-        }, 3000)
       } else if (
         res.status === 401 ||
         res.status === 400 ||
@@ -176,18 +197,37 @@ function OpenSignUpComponent() {
         res.status === 409
       ) {
         // If error is referral-related, surface inline without blocking signup
-        const detail: string = response.detail ?? ''
+        const detail = response.detail
+        const errorMessage = Array.isArray(detail)
+          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+          : typeof detail === 'string'
+            ? detail
+            : detail?.msg ||
+              JSON.stringify(detail) ||
+              t('common.something_went_wrong')
+
         if (
           referralCode.trim() &&
-          (detail.toLowerCase().includes('referral') ||
-            detail.toLowerCase().includes('code'))
+          (errorMessage.toLowerCase().includes('referral') ||
+            errorMessage.toLowerCase().includes('code'))
         ) {
           setReferralCodeError(
             'Invalid referral code — your account was created without it.'
           )
           // Retry without referral code
           const payloadWithoutRef = {
-            ...values,
+            org_slug: values.org_slug,
+            org_id: values.org_id,
+            email: values.email,
+            password: values.password,
+            username: values.username,
+            bio: values.bio,
+            phone_number: formatE164(
+              values.country_code,
+              values.phone_number
+            ),
+            first_name: values.first_name,
+            last_name: values.last_name,
             device_id,
             browser_fingerprint,
           }
@@ -201,19 +241,43 @@ function OpenSignUpComponent() {
             setMessage(
               'Account created successfully! Please check your email to verify your account before logging in.'
             )
-            setTimeout(() => {
-              const orgSlug = org?.slug || 'default'
-              router.push(`/login?orgslug=${orgSlug}`)
-            }, 3000)
           } else {
             const retryRes_json = await retryRes.json()
-            setError(retryRes_json.detail ?? t('common.something_went_wrong'))
+            const retryDetail = retryRes_json.detail
+            const retryErrorMessage = Array.isArray(retryDetail)
+              ? retryDetail
+                  .map((e: any) => e.msg || JSON.stringify(e))
+                  .join(', ')
+              : typeof retryDetail === 'string'
+                ? retryDetail
+                : retryDetail?.msg ||
+                  JSON.stringify(retryDetail) ||
+                  t('common.something_went_wrong')
+            setError(retryErrorMessage)
+            // Clear stored referral code after failed signup attempt
+            try {
+              localStorage.removeItem('referral_code')
+            } catch {
+              /* ignore */
+            }
           }
         } else {
-          setError(detail || t('common.something_went_wrong'))
+          setError(errorMessage)
+          // Clear stored referral code after failed signup attempt
+          try {
+            localStorage.removeItem('referral_code')
+          } catch {
+            /* ignore */
+          }
         }
       } else {
         setError(t('common.something_went_wrong'))
+        // Clear stored referral code after failed signup attempt
+        try {
+          localStorage.removeItem('referral_code')
+        } catch {
+          /* ignore */
+        }
       }
 
       setIsSubmitting(false)
@@ -249,6 +313,34 @@ function OpenSignUpComponent() {
             {formik.values.email}
           </span>
         </p>
+
+        <div className="mb-6 w-full rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-left">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+                <SiWhatsapp size={22} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900">
+                  Stay updated on WhatsApp
+                </p>
+                <p className="text-xs leading-5 text-slate-600">
+                  Join the official group for updates and helpful information.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={whatsappGroupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
+            >
+              <SiWhatsapp size={16} />
+              Join Group
+            </a>
+          </div>
+        </div>
 
         <div className="w-full space-y-3 mb-8">
           <button
@@ -484,15 +576,17 @@ function OpenSignUpComponent() {
               <FormLabelAndMessage label={t('user.bio')} />
               <Form.Control asChild>
                 <Textarea
-                  className="resize-none focus:ring-2 focus:ring-black/5 transition-all p-3"
-                  rows={3}
                   onChange={formik.handleChange}
                   value={formik.values.bio}
-                  placeholder="Tell us a bit about yourself..."
                   required
                 />
               </Form.Control>
             </FormField>
+
+            <PhoneNumberFields
+              formik={formik}
+              phoneNumberLabel={t('user.phone_number') || 'Phone number'}
+            />
 
             {/* Referral Code — optional */}
             <div>

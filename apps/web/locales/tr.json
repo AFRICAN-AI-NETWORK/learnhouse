@@ -109,6 +109,7 @@
     "invalid_email": "Geçersiz e-posta adresi",
     "password_min_length": "Şifre en az 8 karakter olmalıdır",
     "username_min_length": "Kullanıcı adı en az 4 karakter olmalıdır",
+    "invalid_phone_with_country_code": "Geçersiz telefon numarası. Lütfen ülke kodunu ekleyin (örn. +254)",
     "title_required": "Başlık gerekli",
     "content_required": "İçerik gerekli"
   },
@@ -662,15 +663,6 @@
         }
       },
       "learnhouse_university": "LearnHouse University"
-    },
-    "courses": {
-      "title": "Kurslar",
-      "rights_guide": "Haklar Rehberi",
-      "create_course": "Kurs Oluştur",
-      "create_new_course": "Yeni Kurs Oluştur",
-      "no_courses": "Henüz kurs yok",
-      "create_course_placeholder": "İçerik eklemek için bir kurs oluşturun",
-      "no_courses_available": "Şu anda mevcut kurs bulunmamaktadır"
     },
     "organization": {
       "settings": {

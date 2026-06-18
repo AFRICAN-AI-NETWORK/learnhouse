@@ -226,6 +226,20 @@ export async function deleteUserSubmission(
   return res
 }
 
+export async function requestAssignmentRevision(
+  body: { submission_feedback?: string },
+  user_id: string,
+  assignmentUUID: string,
+  access_token: string
+) {
+  const result: any = await fetch(
+    `${getAPIUrl()}assignments/${assignmentUUID}/submissions/${user_id}/revision`,
+    RequestBodyWithAuthHeader('POST', body, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}
+
 export async function putUserSubmission(
   body: any,
   user_id: string,
@@ -286,6 +300,24 @@ export async function getAssignmentsFromACourse(
   const result: any = await fetch(
     `${getAPIUrl()}assignments/course/${courseUUID}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}
+
+export async function executeCode(
+  body: {
+    language: string
+    code: string
+    stdin?: string
+    test_cases?: any[]
+    dataset_files?: any[]
+  },
+  access_token: string
+) {
+  const result: any = await fetch(
+    `${getAPIUrl()}code/execute`,
+    RequestBodyWithAuthHeader('POST', body, null, access_token)
   )
   const res = await getResponseMetadata(result)
   return res

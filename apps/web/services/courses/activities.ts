@@ -41,18 +41,25 @@ export async function createFileActivity(
     formData.append('video_file', file)
     // Add video details
     if (data.details) {
-      formData.append('details', JSON.stringify({
-        startTime: data.details.startTime || 0,
-        endTime: data.details.endTime || null,
-        autoplay: data.details.autoplay || false,
-        muted: data.details.muted || false
-      }))
+      formData.append(
+        'details',
+        JSON.stringify({
+          startTime: data.details.startTime || 0,
+          endTime: data.details.endTime || null,
+          autoplay: data.details.autoplay || false,
+          muted: data.details.muted || false,
+        })
+      )
     }
     endpoint = `${getAPIUrl()}activities/video`
   } else if (type === 'documentpdf') {
     formData.append('pdf_file', file)
     formData.append('name', data.name)
     endpoint = `${getAPIUrl()}activities/documentpdf`
+  } else if (type === 'smartarticle') {
+    formData.append('pdf_file', file)
+    formData.append('name', data.name)
+    endpoint = `${getAPIUrl()}activities/smart_article`
   } else {
     // Handle other file types here
   }
@@ -74,21 +81,23 @@ export async function createExternalVideoActivity(
   // add coursechapter_id to data
   data.chapter_id = chapter_id
   data.activity_id = activity.id
-  
+
   // Add video details with null checking
   const defaultDetails = {
     startTime: 0,
     endTime: null,
     autoplay: false,
-    muted: false
+    muted: false,
   }
 
-  const videoDetails = data.details ? {
-    startTime: data.details.startTime ?? defaultDetails.startTime,
-    endTime: data.details.endTime ?? defaultDetails.endTime,
-    autoplay: data.details.autoplay ?? defaultDetails.autoplay,
-    muted: data.details.muted ?? defaultDetails.muted
-  } : defaultDetails
+  const videoDetails = data.details
+    ? {
+        startTime: data.details.startTime ?? defaultDetails.startTime,
+        endTime: data.details.endTime ?? defaultDetails.endTime,
+        autoplay: data.details.autoplay ?? defaultDetails.autoplay,
+        muted: data.details.muted ?? defaultDetails.muted,
+      }
+    : defaultDetails
 
   data.details = JSON.stringify(videoDetails)
 

@@ -1,5 +1,5 @@
 import json
-import random
+import secrets
 import string
 import uuid
 from pydantic import EmailStr
@@ -68,7 +68,7 @@ async def create_invite_code(
     # Generate invite code
     def generate_code(length=5):
         letters_and_digits = string.ascii_letters + string.digits
-        return "".join(random.choice(letters_and_digits) for _ in range(length))
+        return "".join(secrets.choice(letters_and_digits) for _ in range(length))
 
     generated_invite_code = generate_code()
     invite_code_uuid = f"org_invite_code_{uuid.uuid4()}"
@@ -146,7 +146,7 @@ async def create_invite_code_with_usergroup(
     # Generate invite code
     def generate_code(length=5):
         letters_and_digits = string.ascii_letters + string.digits
-        return "".join(random.choice(letters_and_digits) for _ in range(length))
+        return "".join(secrets.choice(letters_and_digits) for _ in range(length))
 
     generated_invite_code = generate_code()
     invite_code_uuid = f"org_invite_code_{uuid.uuid4()}"
@@ -214,8 +214,6 @@ async def get_invite_codes(
 
     # Get invite codes
     invite_codes = r.keys(f"org_invite_code_*:org:{org.org_uuid}:code:*")
-
-
 
     invite_codes_list = []
 
@@ -376,8 +374,8 @@ def send_invite_email(
 <html>
     <body>
         <p>Hello {email}</p>
-        <p>You have been invited to {org.name} by @{user.username}. Your invite code is {invite['invite_code']}.</p>
-        <p>Click <a href="{org.slug}.learnhouse.io/signup?orgslug={org.slug}&inviteCode={invite['invite_code']}">here</a> to sign up.</p>
+        <p>You have been invited to {org.name} by @{user.username}. Your invite code is {invite["invite_code"]}.</p>
+        <p>Click <a href="{org.slug}.learnhouse.io/signup?orgslug={org.slug}&inviteCode={invite["invite_code"]}">here</a> to sign up.</p>
         <p>Thank you</p>
     </body>
 </html>

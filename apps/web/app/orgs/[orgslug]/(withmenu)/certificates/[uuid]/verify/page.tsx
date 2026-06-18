@@ -12,4 +12,4 @@ const CertificateVerifyPage: React.FC<CertificateVerifyPageProps> = async ({ par
   return <CertificateVerificationPage certificateUuid={uuid} />;
 };
 
-export default CertificateVerifyPage; 
+export default CertificateVerifyPage;

@@ -8,6 +8,7 @@ import {
   Share2Icon,
   LayoutDashboardIcon,
   CodeIcon,
+  GlobeIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { use } from 'react'
@@ -17,6 +18,7 @@ import OrgEditImages from '@components/Dashboard/Pages/Org/OrgEditImages/OrgEdit
 import OrgEditSocials from '@components/Dashboard/Pages/Org/OrgEditSocials/OrgEditSocials'
 import OrgEditLanding from '@components/Dashboard/Pages/Org/OrgEditLanding/OrgEditLanding'
 import OrgEditOther from '@components/Dashboard/Pages/Org/OrgEditOther/OrgEditOther'
+import OrgEditIntegrations from '@components/Dashboard/Pages/Org/OrgEditIntegrations/OrgEditIntegrations'
 import { useTranslation } from 'react-i18next'
 
 export type OrgParams = {
@@ -52,6 +54,11 @@ const getSettingTabs = (t: any): TabItem[] => [
     icon: Share2Icon,
   },
   {
+    id: 'integrations',
+    label: t('dashboard.organization.settings.tabs.integrations'),
+    icon: GlobeIcon,
+  },
+  {
     id: 'other',
     label: t('dashboard.organization.settings.tabs.other'),
     icon: CodeIcon,
@@ -70,7 +77,7 @@ function TabLink({
   return (
     <Link href={getUriWithOrg(orgslug, '') + `/dash/org/settings/${tab.id}`}>
       <div
-        className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+        className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
           isActive ? 'border-b-4' : 'opacity-50'
         } cursor-pointer`}
       >
@@ -112,6 +119,11 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         h1: t('dashboard.organization.settings.pages.other.title'),
         h2: t('dashboard.organization.settings.pages.other.subtitle'),
       }
+    } else if (params.subpage == 'integrations') {
+      return {
+        h1: t('dashboard.organization.settings.pages.integrations.title'),
+        h2: t('dashboard.organization.settings.pages.integrations.subtitle'),
+      }
     }
     return { h1: '', h2: '' }
   }
@@ -119,20 +131,20 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
   const { h1: H1Label, h2: H2Label } = getLabels()
 
   return (
-    <div className="min-h-full w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden">
-      <div className="px-4 sm:px-6 lg:px-10 tracking-tight bg-[#fcfbfc] nice-shadow shrink-0">
+    <div className="min-h-full w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden dark:bg-[#0f0f13]">
+      <div className="px-4 sm:px-6 lg:px-10 tracking-tight bg-[#fcfbfc] nice-shadow shrink-0 dark:border-b dark:border-white/8 dark:bg-[#13131a]">
         <BreadCrumbs type="org"></BreadCrumbs>
         <div className="my-2  py-2">
           <div className="w-100 flex flex-col space-y-1">
-            <div className="pt-3 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tighter break-words">
+            <div className="pt-3 font-bold text-2xl sm:text-3xl lg:text-4xl tracking-tighter wrap-break-word dark:text-white">
               {H1Label}
             </div>
-            <div className="flex font-medium text-gray-400 text-md">
+            <div className="flex font-medium text-gray-400 text-md dark:text-white/45">
               {H2Label}{' '}
             </div>
           </div>
         </div>
-        <div className="flex space-x-0.5 font-black text-sm overflow-x-auto">
+        <div className="flex space-x-0.5 font-black text-sm overflow-x-auto dark:text-white/80">
           {getSettingTabs(t).map((tab) => (
             <TabLink
               key={tab.id}
@@ -155,6 +167,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         {params.subpage == 'previews' ? <OrgEditImages /> : ''}
         {params.subpage == 'socials' ? <OrgEditSocials /> : ''}
         {params.subpage == 'landing' ? <OrgEditLanding /> : ''}
+        {params.subpage == 'integrations' ? <OrgEditIntegrations /> : ''}
         {params.subpage == 'other' ? <OrgEditOther /> : ''}
       </motion.div>
     </div>

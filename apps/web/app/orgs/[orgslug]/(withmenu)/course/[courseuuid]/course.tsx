@@ -1,23 +1,29 @@
 'use client'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { getUriWithOrg, getAPIUrl } from '@services/config/config'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { swrFetcher } from '@services/utils/ts/requests'
 import ActivityIndicators from '@components/Pages/Courses/ActivityIndicators'
-
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import {
   ArrowRight,
+  Award,
   Backpack,
+  BookOpen,
   Check,
+  ChevronDown,
+  ClipboardCheck,
+  Clock3,
   File,
-  StickyNote,
-  Video,
-  Square,
   Image as ImageIcon,
   Layers,
+  Sparkles,
+  Square,
+  StickyNote,
+  Target,
+  Video,
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { CourseProvider } from '@components/Contexts/CourseContext'
@@ -25,6 +31,7 @@ import { useMediaQuery } from 'usehooks-ts'
 import CoursesActions from '@components/Objects/Courses/CourseActions/CoursesActions'
 import CourseActionsMobile from '@components/Objects/Courses/CourseActions/CourseActionsMobile'
 import CourseAuthors from '@components/Objects/Courses/CourseAuthors/CourseAuthors'
+import CourseSchedulePanel from '@components/Objects/Courses/CourseSchedule/CourseSchedulePanel'
 import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs'
 import BundleUpsellBanner from '@components/Objects/BundleUpsellBanner'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -43,54 +50,71 @@ const CourseClient = (props: any) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
+  const courseLearnings = course?.learnings
 
-  // Add SWR for trail data
   const { data: trailData } = useSWR(
     `${getAPIUrl()}trail/org/${org?.id}/trail`,
     (url) => swrFetcher(url, access_token)
   )
 
-  // Derive learnings from course data using useMemo
-  const learnings = React.useMemo(() => {
-    if (!course?.learnings) {
+  const cleanCourseUuid = course?.course_uuid?.replace('course_', '')
+
+  const currentRun = useMemo(
+    () =>
+      trailData?.runs?.find((run: any) => {
+        const cleanRunCourseUuid = run.course?.course_uuid?.replace(
+          'course_',
+          ''
+        )
+        return cleanRunCourseUuid === cleanCourseUuid
+      }),
+    [cleanCourseUuid, trailData?.runs]
+  )
+
+  const totalActivities = useMemo(
+    () =>
+      course?.chapters?.reduce(
+        (sum: number, chapter: any) => sum + (chapter.activities?.length || 0),
+        0
+      ) || 0,
+    [course?.chapters]
+  )
+
+  const completedActivities = currentRun?.steps?.length || 0
+  const progressPercentage =
+    totalActivities > 0
+      ? Math.min(100, Math.round((completedActivities / totalActivities) * 100))
+      : 0
+  const estimatedMinutes = Math.max(totalActivities * 15, 15)
+
+  const learnings = useMemo(() => {
+    if (!courseLearnings) {
       return []
     }
 
     try {
-      // Try to parse as JSON (new format)
-      const parsedLearnings = JSON.parse(course.learnings)
+      const parsedLearnings = JSON.parse(courseLearnings)
       if (Array.isArray(parsedLearnings)) {
-        // New format: array of learning items with text and emoji
         return parsedLearnings
       }
     } catch {
-      // Not valid JSON, continue to legacy format handling
+      // Legacy comma-separated values are handled below.
     }
 
-    // Legacy format: comma-separated string (changed from pipe-separated)
-    const learningItems = course.learnings
-      .split(',')
-      .map((text: string, index: number) => ({
-        id: crypto.randomUUID ? crypto.randomUUID() : `learning-${index}`,
-        text: text.trim(), // Trim whitespace that might be present after commas
-        emoji: '📝', // Default emoji for legacy items
-      }))
+    return courseLearnings.split(',').map((text: string, index: number) => ({
+      id: crypto.randomUUID ? crypto.randomUUID() : `learning-${index}`,
+      text: text.trim(),
+      emoji: null,
+    }))
+  }, [courseLearnings])
 
-    return learningItems
-  }, [course.learnings])
-
-  // Expanded chapters state with smart defaults via lazy initializer
   const [expandedChapters, setExpandedChapters] = useState<{
     [key: string]: boolean
   }>(() => {
     if (!course?.chapters) return {}
-    const totalActivities = course.chapters.reduce(
-      (sum: number, chapter: any) => sum + (chapter.activities?.length || 0),
-      0
-    )
     const defaults: { [key: string]: boolean } = {}
     course.chapters.forEach((chapter: any, idx: number) => {
-      defaults[chapter.chapter_uuid] = idx === 0 ? true : totalActivities <= 5
+      defaults[chapter.chapter_uuid] = idx === 0 || totalActivities <= 5
     })
     return defaults
   })
@@ -105,204 +129,219 @@ const CourseClient = (props: any) => {
         return t('activities.page')
       case 'TYPE_ASSIGNMENT':
         return t('activities.assignment')
+      case 'TYPE_SMART_ARTICLE':
+        return 'Interactive Article'
+      case 'TYPE_ATTENDANCE':
+        return 'Attendance'
       default:
         return t('activities.learning_material')
     }
   }
 
   const isActivityDone = (activity: any) => {
-    const cleanCourseUuid = course.course_uuid?.replace('course_', '')
-    const run = trailData?.runs?.find((run: any) => {
-      const cleanRunCourseUuid = run.course?.course_uuid?.replace('course_', '')
-      return cleanRunCourseUuid === cleanCourseUuid
-    })
-    if (run) {
-      return run.steps.find((step: any) => step.activity_id == activity.id)
+    if (currentRun) {
+      return currentRun.steps.find(
+        (step: any) => step.activity_id == activity.id
+      )
     }
     return false
   }
 
   const isActivityCurrent = (activity: any) => {
     const activity_uuid = activity.activity_uuid.replace('activity_', '')
-    if (props.current_activity && props.current_activity == activity_uuid) {
-      return true
-    }
-    return false
+    return props.current_activity && props.current_activity == activity_uuid
+  }
+
+  if (!course || !org) {
+    return <PageLoading />
   }
 
   return (
     <>
-      {!course && !org ? (
-        <PageLoading></PageLoading>
-      ) : (
-        <>
-          <GeneralWrapperStyled>
+      <main className="min-h-screen bg-[#f8fafc]">
+        <GeneralWrapperStyled>
+          <div className="space-y-6 py-6">
             <CourseBreadcrumbs course={course} orgslug={orgslug} />
 
-            {/* Upsell Banner for Bundles */}
             <BundleUpsellBanner
               course={course}
               orgslug={orgslug}
               orgId={org?.id}
             />
 
-            <div className="pb-2 pt-3 flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div>
-                <h1 className="text-3xl md:text-3xl  font-bold">
-                  {course.name}
-                </h1>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-8 pt-2">
-              <div className="w-full md:w-3/4 space-y-4">
-                {(() => {
-                  const showVideo =
-                    course.thumbnail_type === 'video' ||
-                    (course.thumbnail_type === 'both' &&
-                      activeThumbnailType === 'video')
-                  const showImage =
-                    course.thumbnail_type === 'image' ||
-                    (course.thumbnail_type === 'both' &&
-                      activeThumbnailType === 'image') ||
-                    !course.thumbnail_type
-
-                  if (showVideo && course.thumbnail_video) {
-                    return (
-                      <div className="relative inset-0 ring-1 ring-inset ring-black/10 rounded-lg shadow-xl w-full h-[200px] md:h-[400px]">
-                        {course.thumbnail_type === 'both' && (
-                          <div className="absolute top-3 right-3 z-10">
-                            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
-                              <button
-                                onClick={() => setActiveThumbnailType('image')}
-                                className={`flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  activeThumbnailType === 'image'
-                                    ? 'bg-white/90 text-gray-900 shadow-sm'
-                                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                                }`}
-                              >
-                                <ImageIcon size={12} className="mr-1" />
-                                {t('courses.image')}
-                              </button>
-                              <button
-                                onClick={() => setActiveThumbnailType('video')}
-                                className={`flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  activeThumbnailType === 'video'
-                                    ? 'bg-white/90 text-gray-900 shadow-sm'
-                                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                                }`}
-                              >
-                                <Video size={12} className="mr-1" />
-                                {t('activities.video')}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        <div className="w-full h-full">
-                          <video
-                            src={getCourseThumbnailMediaDirectory(
-                              org?.org_uuid,
-                              course?.course_uuid,
-                              course?.thumbnail_video
-                            )}
-                            className="w-full h-full bg-black rounded-lg"
-                            controls
-                            autoPlay
-                            muted
-                            preload="metadata"
-                            playsInline
-                          />
-                        </div>
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="order-2 space-y-6 xl:order-1">
+                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm lg:p-6">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+                    <div className="min-w-0">
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        <CourseChip icon={<BookOpen size={14} />}>
+                          {totalActivities}{' '}
+                          {totalActivities === 1
+                            ? 'activity'
+                            : t('activities.activities')}
+                        </CourseChip>
+                        <CourseChip icon={<Clock3 size={14} />}>
+                          {formatDuration(estimatedMinutes)}
+                        </CourseChip>
+                        <CourseChip icon={<Award size={14} />}>
+                          Certificate
+                        </CourseChip>
                       </div>
-                    )
-                  } else if (showImage && course.thumbnail_image) {
-                    return (
-                      <div
-                        className="relative inset-0 ring-1 ring-inset ring-black/10 rounded-lg shadow-xl w-full h-[200px] md:h-[400px] bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url(${getCourseThumbnailMediaDirectory(
-                            org?.org_uuid,
-                            course?.course_uuid,
-                            course?.thumbnail_image
-                          )})`,
-                        }}
-                      >
-                        {course.thumbnail_type === 'both' && (
-                          <div className="absolute top-3 right-3 z-10">
-                            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-1 flex space-x-1">
-                              <button
-                                onClick={() => setActiveThumbnailType('image')}
-                                className={`flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  activeThumbnailType === 'image'
-                                    ? 'bg-white/90 text-gray-900 shadow-sm'
-                                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                                }`}
-                              >
-                                <ImageIcon size={12} className="mr-1" />
-                                {t('courses.image')}
-                              </button>
-                              <button
-                                onClick={() => setActiveThumbnailType('video')}
-                                className={`flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  activeThumbnailType === 'video'
-                                    ? 'bg-white/90 text-gray-900 shadow-sm'
-                                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                                }`}
-                              >
-                                <Video size={12} className="mr-1" />
-                                {t('activities.video')}
-                              </button>
-                            </div>
-                          </div>
-                        )}
+
+                      <h1 className="text-3xl font-bold leading-tight text-gray-950 md:text-4xl">
+                        {course.name}
+                      </h1>
+                      {course.description && (
+                        <p className="mt-3 max-w-3xl text-base leading-7 text-gray-600 line-clamp-3">
+                          {course.description}
+                        </p>
+                      )}
+                      {course.about && (
+                        <p className="mt-5 max-w-3xl whitespace-pre-line text-sm leading-7 text-gray-600 line-clamp-4">
+                          {course.about}
+                        </p>
+                      )}
+
+                      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <HeroStat
+                          label={t('courses.course_progress')}
+                          value={`${progressPercentage}%`}
+                        />
+                        <HeroStat
+                          label={t('common.completed')}
+                          value={`${completedActivities}/${totalActivities}`}
+                        />
+                        <HeroStat
+                          label="Chapters"
+                          value={course.chapters?.length || 0}
+                        />
                       </div>
-                    )
-                  } else {
-                    return (
-                      <div
-                        className="inset-0 ring-1 ring-inset ring-black/10 rounded-lg shadow-xl relative w-full h-[400px] bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url('../empty_thumbnail.png')`,
-                          backgroundSize: 'auto',
-                        }}
-                      ></div>
-                    )
-                  }
-                })()}
+                    </div>
 
-                {(() => {
-                  const cleanCourseUuid = course.course_uuid?.replace(
-                    'course_',
-                    ''
-                  )
-                  const run = trailData?.runs?.find((run: any) => {
-                    const cleanRunCourseUuid = run.course?.course_uuid?.replace(
-                      'course_',
-                      ''
-                    )
-                    return cleanRunCourseUuid === cleanCourseUuid
-                  })
-                  return run
-                })() && (
-                  <ActivityIndicators
-                    course_uuid={props.course.course_uuid}
-                    orgslug={orgslug}
-                    course={course}
-                    trailData={trailData}
-                  />
-                )}
-
-                <div className="course_metadata_left space-y-2">
-                  <div className="">
-                    <p className="py-5 whitespace-pre-line w-full leading-relaxed tracking-normal text-pretty hyphens-auto">
-                      {course.about}
-                    </p>
+                    <CourseMedia
+                      course={course}
+                      org={org}
+                      activeThumbnailType={activeThumbnailType}
+                      setActiveThumbnailType={setActiveThumbnailType}
+                      t={t}
+                    />
                   </div>
                 </div>
+
+                {currentRun && (
+                  <div className="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm sm:p-4">
+                    <ActivityIndicators
+                      course_uuid={props.course.course_uuid}
+                      orgslug={orgslug}
+                      course={course}
+                      trailData={trailData}
+                    />
+                  </div>
+                )}
+
+                <CourseSchedulePanel courseUuid={props.course.course_uuid} />
+
+                {course.about && (
+                  <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                    <h2 className="text-xl font-bold text-gray-950">
+                      Course overview
+                    </h2>
+                    <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">
+                      {course.about}
+                    </p>
+                  </section>
+                )}
+
+                {learnings.length > 0 && learnings[0]?.text !== 'null' && (
+                  <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-center gap-2">
+                      <Target size={20} className="text-blue-600" />
+                      <h2 className="text-xl font-bold text-gray-950">
+                        {t('courses.what_you_will_learn')}
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {learnings.map((learning: any) => {
+                        const learningText =
+                          typeof learning === 'string'
+                            ? learning
+                            : learning.text
+                        const learningEmoji =
+                          typeof learning === 'string' ? null : learning.emoji
+                        const learningId =
+                          typeof learning === 'string'
+                            ? learning
+                            : learning.id || learning.text
+
+                        if (!learningText) return null
+
+                        return (
+                          <LearningItem
+                            key={learningId}
+                            learning={learning}
+                            learningText={learningText}
+                            learningEmoji={learningEmoji}
+                          />
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                <section className="mb-10">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-950 md:text-2xl">
+                        {t('courses.course_lessons')}
+                      </h2>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {totalActivities}{' '}
+                        {totalActivities === 1
+                          ? 'activity'
+                          : t('activities.activities')}{' '}
+                        across {course.chapters?.length || 0} chapters
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {course.chapters.map((chapter: any, idx: number) => {
+                      const isExpanded =
+                        expandedChapters[chapter.chapter_uuid] ?? idx === 0
+                      const completedInChapter = chapter.activities.filter(
+                        (activity: any) => isActivityDone(activity)
+                      ).length
+
+                      return (
+                        <ChapterCard
+                          key={
+                            chapter.chapter_uuid || `chapter-${chapter.name}`
+                          }
+                          chapter={chapter}
+                          chapterIndex={idx}
+                          completedInChapter={completedInChapter}
+                          isExpanded={isExpanded}
+                          onToggle={() =>
+                            setExpandedChapters((prev) => ({
+                              ...prev,
+                              [chapter.chapter_uuid]: !isExpanded,
+                            }))
+                          }
+                          courseuuid={courseuuid}
+                          orgslug={orgslug}
+                          getActivityTypeLabel={getActivityTypeLabel}
+                          isActivityDone={isActivityDone}
+                          isActivityCurrent={isActivityCurrent}
+                          t={t}
+                        />
+                      )
+                    })}
+                  </div>
+                </section>
               </div>
 
-              <div className="course_metadata_right w-full md:w-1/4 space-y-4">
-                {/* Actions Box */}
+              <aside className="order-1 space-y-4 xl:sticky xl:top-24 xl:order-2 xl:self-start">
                 <CoursesActions
                   courseuuid={courseuuid}
                   orgslug={orgslug}
@@ -310,226 +349,456 @@ const CourseClient = (props: any) => {
                   trailData={trailData}
                 />
 
-                {/* Authors & Updates Box */}
-                <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                   <CourseProvider courseuuid={course.course_uuid}>
                     <CourseAuthors authors={course.authors} />
                   </CourseProvider>
                 </div>
-              </div>
-            </div>
+              </aside>
+            </section>
+          </div>
+        </GeneralWrapperStyled>
+      </main>
 
-            {learnings.length > 0 && learnings[0]?.text !== 'null' && (
-              <div className="w-full">
-                <h2 className="py-5 text-xl md:text-2xl font-bold">
-                  {t('courses.what_you_will_learn')}
-                </h2>
-                <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden px-5 py-5 space-y-2">
-                  {learnings.map((learning: any) => {
-                    // Handle both new format (object with text and emoji) and legacy format (string)
-                    const learningText =
-                      typeof learning === 'string' ? learning : learning.text
-                    const learningEmoji =
-                      typeof learning === 'string' ? null : learning.emoji
-                    const learningId =
-                      typeof learning === 'string'
-                        ? learning
-                        : learning.id || learning.text
-
-                    if (!learningText) return null
-
-                    return (
-                      <div
-                        key={learningId}
-                        className="flex space-x-2 items-center font-semibold text-gray-500"
-                      >
-                        <div className="px-2 py-2 rounded-full">
-                          {learningEmoji ? (
-                            <span>{learningEmoji}</span>
-                          ) : (
-                            <Check className="text-gray-400" size={15} />
-                          )}
-                        </div>
-                        <p>{learningText}</p>
-                        {learning.link && (
-                          <a
-                            href={learning.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline text-sm"
-                          >
-                            <span className="sr-only">
-                              Link to {learningText}
-                            </span>
-                            <ArrowRight size={14} />
-                          </a>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="w-full my-5 mb-10">
-              <h2 className="py-5 text-xl md:text-2xl font-bold">
-                {t('courses.course_lessons')}
-              </h2>
-              <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden">
-                {course.chapters.map((chapter: any, idx: number) => {
-                  const isExpanded =
-                    expandedChapters[chapter.chapter_uuid] ?? idx === 0 // Default to expanded for first chapter
-                  return (
-                    <div
-                      key={chapter.chapter_uuid || `chapter-${chapter.name}`}
-                      className=""
-                    >
-                      <div
-                        className="flex items-start py-4 px-4 outline-1 outline-neutral-200/40 font-bold bg-neutral-50 text-neutral-600 cursor-pointer hover:bg-neutral-100 transition-colors"
-                        onClick={() =>
-                          setExpandedChapters((prev) => ({
-                            ...prev,
-                            [chapter.chapter_uuid]: !isExpanded,
-                          }))
-                        }
-                      >
-                        {/* Chevron on the far left, vertically centered with the title */}
-                        <div className="flex flex-col justify-center mr-3 pt-1">
-                          <svg
-                            className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 9l-7 7-7-7"
-                            />
-                          </svg>
-                        </div>
-                        {/* Title and badge column */}
-                        <div className="flex flex-col items-start w-full">
-                          <div className="flex items-center flex-wrap mb-1 w-full min-w-0">
-                            {/* Numbered badge */}
-                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 text-xs font-semibold mr-2 border border-neutral-300 shrink-0">
-                              {idx + 1}
-                            </span>
-                            <h3
-                              className="text-lg font-bold leading-tight truncate min-w-0 sm:text-base md:text-lg"
-                              style={{ lineHeight: '1.2' }}
-                            >
-                              {chapter.name}
-                            </h3>
-                          </div>
-                          <div className="flex items-center space-x-1 text-sm text-neutral-400 font-normal">
-                            <Layers size={16} className="mr-1" />
-                            <span>
-                              {chapter.activities.length}{' '}
-                              {t('activities.activities')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        className={`transition-all duration-200 ${isExpanded ? 'block' : 'hidden'}`}
-                      >
-                        <div className="">
-                          {chapter.activities.map((activity: any) => {
-                            return (
-                              <Link
-                                key={activity.activity_uuid}
-                                href={
-                                  getUriWithOrg(orgslug, '') +
-                                  `/course/${courseuuid}/activity/${activity.activity_uuid.replace('activity_', '')}`
-                                }
-                                rel="noopener noreferrer"
-                                prefetch={false}
-                                className="block group activity-container transition-all duration-200 px-4 py-4"
-                              >
-                                <div className="flex space-x-3 items-center">
-                                  <div className="flex items-center">
-                                    {isActivityDone(activity) ? (
-                                      <div className="relative cursor-pointer">
-                                        <Square
-                                          size={16}
-                                          className="stroke-2 text-teal-600"
-                                        />
-                                        <Check
-                                          size={16}
-                                          className="stroke-[2.5] text-teal-600 absolute top-0 left-0"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="text-neutral-300 cursor-pointer">
-                                        <Square
-                                          size={16}
-                                          className="stroke-2"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col grow">
-                                    <div className="flex items-center space-x-2 w-full">
-                                      <p className="font-semibold text-neutral-600 group-hover:text-neutral-800 transition-colors">
-                                        {activity.name}
-                                      </p>
-                                      {isActivityCurrent(activity) && (
-                                        <div className="flex items-center space-x-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full text-xs font-semibold animate-pulse">
-                                          <span>{t('activities.current')}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center space-x-1.5 mt-0.5 text-neutral-400">
-                                      {activity.activity_type ===
-                                        'TYPE_DYNAMIC' && (
-                                        <StickyNote size={10} />
-                                      )}
-                                      {activity.activity_type ===
-                                        'TYPE_VIDEO' && <Video size={10} />}
-                                      {activity.activity_type ===
-                                        'TYPE_DOCUMENT' && <File size={10} />}
-                                      {activity.activity_type ===
-                                        'TYPE_ASSIGNMENT' && (
-                                        <Backpack size={10} />
-                                      )}
-                                      <span className="text-xs font-medium">
-                                        {getActivityTypeLabel(
-                                          activity.activity_type
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="text-neutral-300 group-hover:text-neutral-400 transition-colors cursor-pointer">
-                                    <ArrowRight size={14} />
-                                  </div>
-                                </div>
-                              </Link>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </GeneralWrapperStyled>
-
-          {/* Mobile Actions Box */}
-          {isMobile && (
-            <CourseActionsMobile
-              courseuuid={courseuuid}
-              orgslug={orgslug}
-              course={course}
-              trailData={trailData}
-            />
-          )}
-        </>
+      {isMobile && (
+        <CourseActionsMobile
+          courseuuid={courseuuid}
+          orgslug={orgslug}
+          course={course}
+          trailData={trailData}
+        />
       )}
     </>
   )
+}
+
+const CourseMedia = ({
+  course,
+  org,
+  activeThumbnailType,
+  setActiveThumbnailType,
+  t,
+}: {
+  course: any
+  org: any
+  activeThumbnailType: 'image' | 'video'
+  setActiveThumbnailType: (type: 'image' | 'video') => void
+  t: any
+}) => {
+  const showVideo =
+    course.thumbnail_type === 'video' ||
+    (course.thumbnail_type === 'both' && activeThumbnailType === 'video')
+  const showImage =
+    course.thumbnail_type === 'image' ||
+    (course.thumbnail_type === 'both' && activeThumbnailType === 'image') ||
+    !course.thumbnail_type
+
+  return (
+    <div className="relative h-[240px] overflow-hidden rounded-lg border border-gray-200 bg-gray-900 shadow-sm lg:h-[310px]">
+      {course.thumbnail_type === 'both' && (
+        <div className="absolute right-3 top-3 z-10 rounded-lg bg-black/30 p-1 backdrop-blur-sm">
+          <div className="flex gap-1">
+            <MediaToggleButton
+              isActive={activeThumbnailType === 'image'}
+              onClick={() => setActiveThumbnailType('image')}
+              icon={<ImageIcon size={12} />}
+              label={t('courses.image')}
+            />
+            <MediaToggleButton
+              isActive={activeThumbnailType === 'video'}
+              onClick={() => setActiveThumbnailType('video')}
+              icon={<Video size={12} />}
+              label={t('activities.video')}
+            />
+          </div>
+        </div>
+      )}
+
+      {showVideo && course.thumbnail_video ? (
+        <video
+          src={getCourseThumbnailMediaDirectory(
+            org?.org_uuid,
+            course?.course_uuid,
+            course?.thumbnail_video
+          )}
+          className="h-full w-full bg-black object-cover"
+          controls
+          autoPlay
+          muted
+          preload="metadata"
+          playsInline
+        />
+      ) : showImage && course.thumbnail_image ? (
+        <div
+          className="h-full w-full bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${getCourseThumbnailMediaDirectory(
+              org?.org_uuid,
+              course?.course_uuid,
+              course?.thumbnail_image
+            )})`,
+          }}
+        />
+      ) : (
+        <div
+          className="h-full w-full bg-cover bg-center"
+          style={{
+            backgroundImage: `url('../empty_thumbnail.png')`,
+            backgroundSize: 'auto',
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+const MediaToggleButton = ({
+  isActive,
+  onClick,
+  icon,
+  label,
+}: {
+  isActive: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+      isActive
+        ? 'bg-white text-gray-900 shadow-sm'
+        : 'text-white/80 hover:bg-white/10 hover:text-white'
+    }`}
+  >
+    {icon}
+    {label}
+  </button>
+)
+
+const CourseChip = ({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode
+  children: React.ReactNode
+}) => (
+  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">
+    {icon}
+    {children}
+  </span>
+)
+
+const HeroStat = ({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) => (
+  <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+    <p className="text-lg font-bold text-gray-950">{value}</p>
+    <p className="mt-0.5 text-xs text-gray-500">{label}</p>
+  </div>
+)
+
+const LearningItem = ({
+  learning,
+  learningText,
+  learningEmoji,
+}: {
+  learning: any
+  learningText: string
+  learningEmoji: string | null
+}) => (
+  <div className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+      {learningEmoji ? <span>{learningEmoji}</span> : <Check size={14} />}
+    </div>
+    <div className="min-w-0">
+      <p className="text-sm font-semibold text-gray-700">{learningText}</p>
+      {learning.link && (
+        <a
+          href={learning.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+        >
+          View resource
+          <ArrowRight size={12} />
+        </a>
+      )}
+    </div>
+  </div>
+)
+
+const ChapterCard = ({
+  chapter,
+  chapterIndex,
+  completedInChapter,
+  isExpanded,
+  onToggle,
+  courseuuid,
+  orgslug,
+  getActivityTypeLabel,
+  isActivityDone,
+  isActivityCurrent,
+  t,
+}: {
+  chapter: any
+  chapterIndex: number
+  completedInChapter: number
+  isExpanded: boolean
+  onToggle: () => void
+  courseuuid: string
+  orgslug: string
+  getActivityTypeLabel: (activityType: string) => string
+  isActivityDone: (activity: any) => any
+  isActivityCurrent: (activity: any) => boolean
+  t: any
+}) => {
+  const isExpired = React.useMemo(() => {
+    if (!chapter.due_date) return false
+    try {
+      return new Date(chapter.due_date) < new Date()
+    } catch {
+      return false
+    }
+  }, [chapter.due_date])
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-4 px-4 py-4 text-left hover:bg-gray-50"
+      >
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+            chapter.is_locked
+              ? 'bg-gray-100 text-gray-400'
+              : 'bg-blue-50 text-blue-700'
+          }`}
+        >
+          {chapter.is_locked ? (
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          ) : (
+            chapterIndex + 1
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3
+              className={`truncate text-base font-bold ${chapter.is_locked ? 'text-gray-500' : 'text-gray-950'}`}
+            >
+              {chapter.name}
+            </h3>
+            {chapter.due_date && (
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  isExpired
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}
+              >
+                <Clock3 size={10} />
+                {isExpired
+                  ? 'Expired'
+                  : `Due: ${new Date(chapter.due_date).toLocaleDateString()}`}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
+            <Layers size={15} />
+            {completedInChapter}/{chapter.activities.length}{' '}
+            {t('common.completed')}
+          </p>
+        </div>
+        <ChevronDown
+          size={20}
+          className={`text-gray-500 transition-transform ${
+            isExpanded ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {isExpanded && (
+        <div className="divide-y divide-gray-100 border-t border-gray-100">
+          {chapter.activities.map((activity: any) => (
+            <ActivityRow
+              key={activity.activity_uuid}
+              activity={activity}
+              courseuuid={courseuuid}
+              orgslug={orgslug}
+              getActivityTypeLabel={getActivityTypeLabel}
+              isActivityDone={isActivityDone}
+              isActivityCurrent={isActivityCurrent}
+              t={t}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const ActivityRow = ({
+  activity,
+  courseuuid,
+  orgslug,
+  getActivityTypeLabel,
+  isActivityDone,
+  isActivityCurrent,
+  t,
+}: {
+  activity: any
+  courseuuid: string
+  orgslug: string
+  getActivityTypeLabel: (activityType: string) => string
+  isActivityDone: (activity: any) => any
+  isActivityCurrent: (activity: any) => boolean
+  t: any
+}) => {
+  const isDone = isActivityDone(activity)
+  const isCurrent = isActivityCurrent(activity)
+  const isLocked = activity.is_locked
+
+  const content = (
+    <div className="flex items-center gap-3">
+      <div className="relative shrink-0">
+        {isLocked ? (
+          <svg
+            className="w-[17px] h-[17px] text-gray-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+        ) : (
+          <>
+            <Square
+              size={17}
+              className={isDone ? 'text-emerald-600' : 'text-gray-300'}
+            />
+            {isDone && (
+              <Check
+                size={17}
+                className="absolute left-0 top-0 text-emerald-600"
+              />
+            )}
+          </>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p
+            className={`font-semibold ${
+              isLocked
+                ? 'text-gray-400'
+                : 'text-gray-950 group-hover:text-blue-600'
+            }`}
+          >
+            {activity.name}
+          </p>
+          {activity.points !== undefined && activity.points > 0 && (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+              {activity.points} pts
+            </span>
+          )}
+          {isCurrent && (
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+              {t('activities.current')}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
+          <ActivityTypeIcon activityType={activity.activity_type} />
+          {getActivityTypeLabel(activity.activity_type)}
+        </div>
+      </div>
+      {isLocked ? (
+        <svg
+          className="w-4 h-4 text-gray-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      ) : (
+        <ArrowRight
+          size={16}
+          className="text-gray-300 group-hover:text-gray-500"
+        />
+      )}
+    </div>
+  )
+
+  if (isLocked) {
+    return (
+      <div className="px-4 py-4 bg-gray-50/50 cursor-not-allowed select-none">
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={
+        getUriWithOrg(orgslug, '') +
+        `/course/${courseuuid}/activity/${activity.activity_uuid.replace(
+          'activity_',
+          ''
+        )}`
+      }
+      rel="noopener noreferrer"
+      prefetch={false}
+      className="group block px-4 py-4 transition-colors hover:bg-gray-50"
+    >
+      {content}
+    </Link>
+  )
+}
+
+const ActivityTypeIcon = ({ activityType }: { activityType: string }) => {
+  if (activityType === 'TYPE_DYNAMIC') return <StickyNote size={12} />
+  if (activityType === 'TYPE_VIDEO') return <Video size={12} />
+  if (activityType === 'TYPE_DOCUMENT') return <File size={12} />
+  if (activityType === 'TYPE_ASSIGNMENT') return <Backpack size={12} />
+  if (activityType === 'TYPE_SMART_ARTICLE') return <Sparkles size={12} />
+  if (activityType === 'TYPE_ATTENDANCE') return <ClipboardCheck size={12} />
+  return <BookOpen size={12} />
+}
+
+const formatDuration = (minutes: number) => {
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+
+  if (hours === 0) return `${remainingMinutes}m`
+  if (remainingMinutes === 0) return `${hours}h`
+  return `${hours}h ${remainingMinutes}m`
 }
 
 export default CourseClient

@@ -139,19 +139,38 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
       return ''
     }
 
+    // Prefer unsaved local edits, then API data, then course defaults.
+    const localDraftConfig = courseStructure?._certificationData?.config || {}
+
     // Use existing certification data if available, otherwise fall back to course data
     const config = existingCertification?.config || {}
 
     return {
       enable_certification: hasExistingCertification,
       certification_name:
-        config.certification_name || courseStructure?.name || '',
+        localDraftConfig.certification_name ||
+        config.certification_name ||
+        courseStructure?.name ||
+        '',
       certification_description:
-        config.certification_description || courseStructure?.description || '',
-      certification_type: config.certification_type || 'completion',
-      certificate_pattern: config.certificate_pattern || 'professional',
+        localDraftConfig.certification_description ||
+        config.certification_description ||
+        courseStructure?.description ||
+        '',
+      certification_type:
+        localDraftConfig.certification_type ||
+        config.certification_type ||
+        'completion',
+      certificate_pattern:
+        localDraftConfig.certificate_pattern ||
+        config.certificate_pattern ||
+        'professional',
       certificate_instructor:
-        config.certificate_instructor || getInstructorName(),
+        localDraftConfig.certificate_instructor ||
+        config.certificate_instructor ||
+        getInstructorName(),
+      certificate_ceo:
+        localDraftConfig.certificate_ceo || config.certificate_ceo || '',
     }
   }, [courseStructure, existingCertification, hasExistingCertification])
 
@@ -181,6 +200,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
           certificate_pattern:
             formik.values.certificate_pattern || 'professional',
           certificate_instructor: formik.values.certificate_instructor || '',
+          certificate_ceo: formik.values.certificate_ceo || '',
         }
 
         const result = await createCertification(
@@ -234,14 +254,6 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
     }
   }
 
-  // Reset form when certifications data changes
-  useEffect(() => {
-    if (certifications && !isLoading) {
-      const newValues = getInitialValues()
-      formik.resetForm({ values: newValues })
-    }
-  }, [certifications, isLoading, formik, getInitialValues])
-
   // Handle form changes - update course context with certification data
   useEffect(() => {
     if (!isLoading && hasExistingCertification) {
@@ -252,22 +264,34 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
       )
 
       if (valuesChanged) {
+        const nextCertificationData = {
+          certification_uuid: existingCertification.certification_uuid,
+          config: {
+            certification_name: formikValues.certification_name,
+            certification_description: formikValues.certification_description,
+            certification_type: formikValues.certification_type,
+            certificate_pattern: formikValues.certificate_pattern,
+            certificate_instructor: formikValues.certificate_instructor,
+            certificate_ceo: formikValues.certificate_ceo,
+          },
+        }
+
+        const currentCertificationData = courseStructure?._certificationData
+        const certificationDataChanged =
+          JSON.stringify(currentCertificationData) !==
+          JSON.stringify(nextCertificationData)
+
+        if (!certificationDataChanged) {
+          return
+        }
+
         dispatchCourse({ type: 'setIsNotSaved' })
 
         // Store certification data in course context so it gets saved with the main save button
         const updatedCourse = {
           ...courseStructure,
           // Store certification data for the main save functionality
-          _certificationData: {
-            certification_uuid: existingCertification.certification_uuid,
-            config: {
-              certification_name: formikValues.certification_name,
-              certification_description: formikValues.certification_description,
-              certification_type: formikValues.certification_type,
-              certificate_pattern: formikValues.certificate_pattern,
-              certificate_instructor: formikValues.certificate_instructor,
-            },
-          },
+          _certificationData: nextCertificationData,
         }
         dispatchCourse({ type: 'setCourseStructure', payload: updatedCourse })
       }
@@ -372,6 +396,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         />
                         <Form.Control asChild>
                           <Input
+                            name="certification_name"
                             style={{ backgroundColor: 'white' }}
                             onChange={formik.handleChange}
                             value={formik.values.certification_name}
@@ -468,6 +493,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                       />
                       <Form.Control asChild>
                         <Textarea
+                          name="certification_description"
                           style={{
                             backgroundColor: 'white',
                             height: '120px',
@@ -505,69 +531,77 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                           'dashboard.courses.certification.form.certificate_pattern_label'
                         )}
                       />
-                      <Form.Control asChild>
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                          {[
-                            'royal',
-                            'tech',
-                            'nature',
-                            'geometric',
-                            'vintage',
-                            'waves',
-                            'minimal',
-                            'professional',
-                            'academic',
-                            'modern',
-                          ].map((patternValue) => (
-                            <div
-                              key={patternValue}
-                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                formik.values.certificate_pattern ===
+                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                        {[
+                          'royal',
+                          'tech',
+                          'nature',
+                          'geometric',
+                          'vintage',
+                          'waves',
+                          'minimal',
+                          'professional',
+                          'academic',
+                          'modern',
+                        ].map((patternValue) => (
+                          <div
+                            key={patternValue}
+                            className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                              formik.values.certificate_pattern ===
+                              patternValue
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            onClick={() =>
+                              formik.setFieldValue(
+                                'certificate_pattern',
                                 patternValue
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() =>
-                                formik.setFieldValue(
-                                  'certificate_pattern',
-                                  patternValue
-                                )
-                              }
-                            >
-                              <div className="text-center">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {t(
-                                    `dashboard.courses.certification.patterns.${patternValue}.name`
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {t(
-                                    `dashboard.courses.certification.patterns.${patternValue}.description`
-                                  )}
-                                </div>
+                              )
+                            }
+                          >
+                            <div className="text-center">
+                              <div className="text-sm font-medium text-gray-900">
+                                {t(
+                                  `dashboard.courses.certification.patterns.${patternValue}.name`
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {t(
+                                  `dashboard.courses.certification.patterns.${patternValue}.description`
+                                )}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </Form.Control>
+                          </div>
+                        ))}
+                      </div>
                     </FormField>
 
                     {/* Custom Instructor */}
                     <FormField name="certificate_instructor">
-                      <FormLabelAndMessage
-                        label={t(
-                          'dashboard.courses.certification.form.certificate_instructor_label'
-                        )}
-                      />
+                      <FormLabelAndMessage label="Chief Instructor" />
                       <Form.Control asChild>
                         <Input
+                          name="certificate_instructor"
                           style={{ backgroundColor: 'white' }}
                           onChange={formik.handleChange}
                           value={formik.values.certificate_instructor}
                           type="text"
-                          placeholder={t(
-                            'dashboard.courses.certification.form.certificate_instructor_placeholder'
-                          )}
+                          placeholder="Enter Chief Instructor name"
+                        />
+                      </Form.Control>
+                    </FormField>
+
+                    {/* CEO Name */}
+                    <FormField name="certificate_ceo">
+                      <FormLabelAndMessage label="CEO Name" />
+                      <Form.Control asChild>
+                        <Input
+                          name="certificate_ceo"
+                          style={{ backgroundColor: 'white' }}
+                          onChange={formik.handleChange}
+                          value={formik.values.certificate_ceo}
+                          type="text"
+                          placeholder="Enter CEO name"
                         />
                       </Form.Control>
                     </FormField>
@@ -602,6 +636,8 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         certificateInstructor={
                           formik.values.certificate_instructor
                         }
+                        certificateCeo={formik.values.certificate_ceo}
+                        studentName="Student Name"
                       />
                     </div>
                   </div>

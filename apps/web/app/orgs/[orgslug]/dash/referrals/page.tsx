@@ -18,7 +18,9 @@ import {
   getAdminPendingPayouts,
   approvePayoutRequest,
   rejectPayoutRequest,
+  getAdminPartners,
 } from '@services/referral/referral.service'
+import { getPublicProducts } from '@services/payments/public-products'
 
 import type {
   ReferralCode,
@@ -37,10 +39,12 @@ import {
   LucideLoader2,
   ShieldAlert,
   Trophy,
+  Users as UsersIcon,
   XCircle,
 } from 'lucide-react'
+import PartnerStudentModal from '@components/Referrals/PartnerStudentModal'
 
-type AdminTab = 'leaderboard' | 'payouts' | 'fraud'
+type AdminTab = 'leaderboard' | 'partners' | 'payouts' | 'fraud'
 
 function ReferralsPage() {
   const session = useLHSession() as any
@@ -60,6 +64,8 @@ function ReferralsPage() {
   const [payoutOpen, setPayoutOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeAdminTab, setActiveAdminTab] = useState<AdminTab>('leaderboard')
+  const [selectedPartner, setSelectedPartner] = useState<any>(null)
+  const [partnerModalOpen, setPartnerModalOpen] = useState(false)
 
   // ─── User data ───────────────────────────────────────────────
   const codeKey = access_token ? ['referral-code', access_token, org_id] : null
@@ -91,9 +97,31 @@ function ReferralsPage() {
     getCommissionHistory(token as string, org as string)
   )
 
+  const productsKey = org_id ? ['public-products', org_id] : null
+  const { data: productsData } = useSWR(productsKey, ([, org]) =>
+    getPublicProducts(org as string)
+  )
+
   const referralCode: ReferralCode | null = codeData?.data ?? null
   const balance: CommissionBalance | null = balanceData?.data ?? null
   const records: CommissionRecord[] = historyData?.data ?? []
+
+  const packageCurrency = useMemo(() => {
+    const products = Array.isArray(productsData) ? productsData : []
+
+    const paidProduct = products.find(
+      (product: any) =>
+        Number(product?.amount ?? 0) > 0 &&
+        typeof product?.currency === 'string'
+    )
+
+    return (
+      paidProduct?.currency ??
+      products.find((product: any) => typeof product?.currency === 'string')
+        ?.currency ??
+      ''
+    )
+  }, [productsData])
 
   const historyErr = (() => {
     const backendError = historyData?.error
@@ -126,6 +154,9 @@ function ReferralsPage() {
   const pendingPayoutsKey = access_token
     ? ['admin-payouts', access_token, org_id]
     : null
+  const partnersKey = access_token
+    ? ['admin-partners', access_token, org_id]
+    : null
 
   const { data: statsData, isLoading: statsLoading } = useSWR(
     statsKey,
@@ -145,9 +176,15 @@ function ReferralsPage() {
     getAdminPendingPayouts(token as string, org as string)
   )
 
+  const { data: partnersData, isLoading: partnersLoading } = useSWR(
+    partnersKey,
+    ([, token, org]) => getAdminPartners(token as string, org as string)
+  )
+
   const stats = statsData?.data
   const flagged = flaggedData?.data
   const pendingPayouts = pendingPayoutsData?.data
+  const partners = partnersData?.data?.partners ?? []
 
   const handleApprovePayout = useCallback(
     async (payoutId: number) => {
@@ -189,6 +226,11 @@ function ReferralsPage() {
       icon: <Trophy size={16} />,
     },
     {
+      key: 'partners',
+      label: 'All Partners',
+      icon: <UsersIcon size={16} />,
+    },
+    {
       key: 'payouts',
       label: 'Payout Approvals',
       icon: <CreditCard size={16} />,
@@ -228,6 +270,7 @@ function ReferralsPage() {
 
         <CommissionBalanceCard
           balance={balance}
+          displayCurrency={packageCurrency || balance?.currency || 'USD'}
           isLoading={balanceLoading}
           onRequestPayout={() => setPayoutOpen(true)}
         />
@@ -237,6 +280,7 @@ function ReferralsPage() {
       <div className="w-full overflow-hidden">
         <CommissionHistoryList
           records={records}
+          displayCurrency={packageCurrency || balance?.currency || 'USD'}
           isLoading={historyLoading}
           error={historyErr}
         />
@@ -392,6 +436,84 @@ function ReferralsPage() {
                   ) : (
                     <p className="text-center text-gray-400 py-8 text-sm">
                       Unable to load stats
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── All Partners ── */}
+              {activeAdminTab === 'partners' && (
+                <div className="space-y-4">
+                  {partnersLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <LucideLoader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : partners.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Partner
+                            </th>
+                            <th className="text-left py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Code
+                            </th>
+                            <th className="text-center py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Referrals
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-400 font-medium text-xs uppercase tracking-wider">
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {partners.map((p: any) => (
+                            <tr
+                              key={p.user_id}
+                              className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <p className="font-semibold text-gray-800">
+                                  {p.username}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {p.email}
+                                </p>
+                              </td>
+                              <td className="py-3 px-4">
+                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-600">
+                                  {p.referral_code}
+                                </code>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="font-bold text-gray-700">
+                                  {p.referral_count}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  onClick={() => {
+                                    setSelectedPartner({
+                                      id: p.user_id,
+                                      username: p.username,
+                                      email: p.email,
+                                    })
+                                    setPartnerModalOpen(true)
+                                  }}
+                                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                                >
+                                  View Students
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-400 py-8 text-sm">
+                      No partners registered
                     </p>
                   )}
                 </div>
@@ -570,6 +692,14 @@ function ReferralsPage() {
           </div>
         </div>
       )}
+
+      <PartnerStudentModal
+        open={partnerModalOpen}
+        onOpenChange={setPartnerModalOpen}
+        partner={selectedPartner}
+        access_token={access_token}
+        org_id={org_id}
+      />
     </div>
   )
 }

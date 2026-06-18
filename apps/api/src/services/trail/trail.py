@@ -3,13 +3,22 @@ from uuid import uuid4
 from src.db.courses.chapter_activities import ChapterActivity
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
+from sqlalchemy import func
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
 from src.db.trail_runs import TrailRun, TrailRunRead
 from src.db.trail_steps import TrailStep
 from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
-from src.services.courses.certifications import check_course_completion_and_create_certificate
+from src.services.courses.certifications import (
+    check_course_completion_and_create_certificate,
+    sync_course_trail_run_completion_status,
+)
+from src.db.courses.course_prerequisites import CoursePrerequisite
+from src.db.trail_runs import StatusEnum
+from src.db.courses.chapters import Chapter
+from src.db.courses.course_chapters import CourseChapter
+from dateutil import parser
 
 
 async def create_user_trail(
@@ -60,6 +69,13 @@ async def get_user_trails(
     statement = select(TrailRun).where(TrailRun.trail_id == trail.id)
     trail_runs = db_session.exec(statement).all()
 
+    for trail_run in trail_runs:
+        sync_course_trail_run_completion_status(
+            trail_run.user_id, trail_run.course_id, db_session
+        )
+
+    trail_runs = db_session.exec(statement).all()
+
     trail_runs = [
         TrailRunRead(**trail_run.__dict__, course={}, steps=[], course_total_steps=0)
         for trail_run in trail_runs
@@ -72,16 +88,17 @@ async def get_user_trails(
         trail_run.course = course.model_dump() if course else {}
 
         # Add number of activities (steps) in a course
-        statement = select(ChapterActivity).where(
-            ChapterActivity.course_id == trail_run.course_id
+        count_statement = (
+            select(func.count())
+            .select_from(ChapterActivity)
+            .where(ChapterActivity.course_id == trail_run.course_id)
         )
-        course_total_steps = db_session.exec(statement)
-        # count number of activities in a this list
-        trail_run.course_total_steps = len(course_total_steps.all())
+        trail_run.course_total_steps = db_session.exec(count_statement).one()
 
     for trail_run in trail_runs:
         statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id)
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -124,10 +141,41 @@ async def check_trail_presence(
     return trail
 
 
+def get_activity_points_earned(activity: Activity, is_late: bool) -> float:
+    points = activity.points or 0
+    return points * 0.8 if is_late else points
+
+
+def backfill_completed_trail_step_points(
+    trail_steps: list[TrailStep],
+    db_session: Session,
+) -> None:
+    updated = False
+
+    for trail_step in trail_steps:
+        if not trail_step.complete or trail_step.points_earned:
+            continue
+
+        activity = db_session.exec(
+            select(Activity).where(Activity.id == trail_step.activity_id)
+        ).first()
+        if not activity or not activity.points:
+            continue
+
+        trail_step.points_earned = get_activity_points_earned(
+            activity, trail_step.is_late
+        )
+        trail_step.update_date = str(datetime.now())
+        db_session.add(trail_step)
+        updated = True
+
+    if updated:
+        db_session.commit()
+
+
 async def get_user_trail_with_orgid(
     request: Request, user: PublicUser | AnonymousUser, org_id: int, db_session: Session
 ) -> TrailRead:
-
     if isinstance(user, AnonymousUser):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -145,6 +193,13 @@ async def get_user_trail_with_orgid(
     statement = select(TrailRun).where(TrailRun.trail_id == trail.id)
     trail_runs = db_session.exec(statement).all()
 
+    for trail_run in trail_runs:
+        sync_course_trail_run_completion_status(
+            trail_run.user_id, trail_run.course_id, db_session
+        )
+
+    trail_runs = db_session.exec(statement).all()
+
     trail_runs = [
         TrailRunRead(**trail_run.__dict__, course={}, steps=[], course_total_steps=0)
         for trail_run in trail_runs
@@ -157,16 +212,17 @@ async def get_user_trail_with_orgid(
         trail_run.course = course.model_dump() if course else {}
 
         # Add number of activities (steps) in a course
-        statement = select(ChapterActivity).where(
-            ChapterActivity.course_id == trail_run.course_id
+        count_statement = (
+            select(func.count())
+            .select_from(ChapterActivity)
+            .where(ChapterActivity.course_id == trail_run.course_id)
         )
-        course_total_steps = db_session.exec(statement)
-        # count number of activities in a this list
-        trail_run.course_total_steps = len(course_total_steps.all())
+        trail_run.course_total_steps = db_session.exec(count_statement).one()
 
     for trail_run in trail_runs:
         statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id)
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -216,7 +272,9 @@ async def add_activity_to_trail(
     )
 
     statement = select(TrailRun).where(
-        TrailRun.trail_id == trail.id, TrailRun.course_id == course.id, TrailRun.user_id == user.id
+        TrailRun.trail_id == trail.id,
+        TrailRun.course_id == course.id,
+        TrailRun.user_id == user.id,
     )
     trailrun = db_session.exec(statement).first()
 
@@ -234,9 +292,101 @@ async def add_activity_to_trail(
         db_session.refresh(trailrun)
 
     statement = select(TrailStep).where(
-        TrailStep.trailrun_id == trailrun.id, TrailStep.activity_id == activity.id, TrailStep.user_id == user.id
+        TrailStep.trailrun_id == trailrun.id,
+        TrailStep.activity_id == activity.id,
+        TrailStep.user_id == user.id,
     )
     trailstep = db_session.exec(statement).first()
+
+    is_late = False
+
+    # Check Sequential Access and Due Dates
+    statement = select(ChapterActivity).where(
+        ChapterActivity.activity_id == activity.id
+    )
+    statement = select(ChapterActivity).where(
+        ChapterActivity.activity_id == activity.id
+    )
+    chapter_activity = db_session.exec(statement).first()
+
+    if chapter_activity:
+        chapter = db_session.exec(
+            select(Chapter).where(Chapter.id == chapter_activity.chapter_id)
+        ).first()
+        if chapter and chapter.due_date:
+            try:
+                due_date = parser.isoparse(chapter.due_date)
+                # handle timezone naive or aware comparison by replacing tzinfo if needed,
+                # but simplest is just checking if current time is greater:
+                now_tz = datetime.now(due_date.tzinfo)
+                if now_tz > due_date:
+                    is_late = True
+            except ValueError:
+                pass
+
+        # Activity Sequencing
+        prev_activity = db_session.exec(
+            select(ChapterActivity)
+            .where(
+                ChapterActivity.chapter_id == chapter_activity.chapter_id,
+                ChapterActivity.order < chapter_activity.order,
+            )
+            .order_by(ChapterActivity.order.desc())
+        ).first()
+
+        if prev_activity:
+            prev_step = db_session.exec(
+                select(TrailStep).where(
+                    TrailStep.trailrun_id == trailrun.id,
+                    TrailStep.activity_id == prev_activity.activity_id,
+                    TrailStep.complete == True,
+                )
+            ).first()
+            if not prev_step:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You must complete the previous activity before accessing this one.",
+                )
+        else:
+            # Chapter Sequencing
+            course_chapter = db_session.exec(
+                select(CourseChapter).where(
+                    CourseChapter.chapter_id == chapter_activity.chapter_id
+                )
+            ).first()
+            if course_chapter:
+                prev_course_chapter = db_session.exec(
+                    select(CourseChapter)
+                    .where(
+                        CourseChapter.course_id == course_chapter.course_id,
+                        CourseChapter.order < course_chapter.order,
+                    )
+                    .order_by(CourseChapter.order.desc())
+                ).first()
+                if prev_course_chapter:
+                    last_activity_prev_chapter = db_session.exec(
+                        select(ChapterActivity)
+                        .where(
+                            ChapterActivity.chapter_id == prev_course_chapter.chapter_id
+                        )
+                        .order_by(ChapterActivity.order.desc())
+                    ).first()
+                    if last_activity_prev_chapter:
+                        prev_chap_step = db_session.exec(
+                            select(TrailStep).where(
+                                TrailStep.trailrun_id == trailrun.id,
+                                TrailStep.activity_id
+                                == last_activity_prev_chapter.activity_id,
+                                TrailStep.complete == True,
+                            )
+                        ).first()
+                        if not prev_chap_step:
+                            raise HTTPException(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                detail="You must complete the previous module before accessing this one.",
+                            )
+
+    points_earned = get_activity_points_earned(activity, is_late)
 
     if not trailstep:
         trailstep = TrailStep(
@@ -249,9 +399,19 @@ async def add_activity_to_trail(
             teacher_verified=False,
             grade="",
             user_id=user.id,
+            points_earned=points_earned,
+            is_late=is_late,
             creation_date=str(datetime.now()),
             update_date=str(datetime.now()),
         )
+        db_session.add(trailstep)
+        db_session.commit()
+        db_session.refresh(trailstep)
+    else:
+        trailstep.complete = True
+        trailstep.points_earned = points_earned
+        trailstep.is_late = is_late
+        trailstep.update_date = str(datetime.now())
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -262,7 +422,9 @@ async def add_activity_to_trail(
             request, user.id, course.id, db_session
         )
 
-    statement = select(TrailRun).where(TrailRun.trail_id == trail.id , TrailRun.user_id == user.id)
+    statement = select(TrailRun).where(
+        TrailRun.trail_id == trail.id, TrailRun.user_id == user.id
+    )
     trail_runs = db_session.exec(statement).all()
 
     trail_runs = [
@@ -271,8 +433,11 @@ async def add_activity_to_trail(
     ]
 
     for trail_run in trail_runs:
-        statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id)
+        statement = select(TrailStep).where(
+            TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
+        )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -288,6 +453,7 @@ async def add_activity_to_trail(
     )
 
     return trail_read
+
 
 async def remove_activity_from_trail(
     request: Request,
@@ -324,9 +490,9 @@ async def remove_activity_from_trail(
 
     # Delete the trail step for this activity
     statement = select(TrailStep).where(
-        TrailStep.activity_id == activity.id, 
+        TrailStep.activity_id == activity.id,
         TrailStep.user_id == user.id,
-        TrailStep.trail_id == trail.id
+        TrailStep.trail_id == trail.id,
     )
     trail_step = db_session.exec(statement).first()
 
@@ -334,8 +500,22 @@ async def remove_activity_from_trail(
         db_session.delete(trail_step)
         db_session.commit()
 
+    statement = select(TrailRun).where(
+        TrailRun.trail_id == trail.id,
+        TrailRun.course_id == course.id,
+        TrailRun.user_id == user.id,
+    )
+    trailrun = db_session.exec(statement).first()
+    if trailrun and trailrun.status == StatusEnum.STATUS_COMPLETED:
+        trailrun.status = StatusEnum.STATUS_IN_PROGRESS
+        trailrun.update_date = str(datetime.now())
+        db_session.add(trailrun)
+        db_session.commit()
+
     # Get updated trail data
-    statement = select(TrailRun).where(TrailRun.trail_id == trail.id, TrailRun.user_id == user.id)
+    statement = select(TrailRun).where(
+        TrailRun.trail_id == trail.id, TrailRun.user_id == user.id
+    )
     trail_runs = db_session.exec(statement).all()
 
     trail_runs = [
@@ -344,8 +524,11 @@ async def remove_activity_from_trail(
     ]
 
     for trail_run in trail_runs:
-        statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id)
+        statement = select(TrailStep).where(
+            TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
+        )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -388,6 +571,54 @@ async def add_course_to_trail(
             status_code=status.HTTP_400_BAD_REQUEST, detail="TrailRun already exists"
         )
 
+    # Check prerequisites
+    is_editor = False
+    if user and user.id != 0:
+        try:
+            from src.security.courses_security import courses_rbac_check
+
+            is_editor = await courses_rbac_check(
+                request, course.course_uuid, user, "update", db_session
+            )
+        except Exception:
+            is_editor = False
+
+    if not is_editor:
+        prereqs = db_session.exec(
+            select(CoursePrerequisite).where(CoursePrerequisite.course_id == course.id)
+        ).all()
+        if prereqs:
+            for prereq in prereqs:
+                existing_prereq_run = db_session.exec(
+                    select(TrailRun).where(
+                        TrailRun.course_id == prereq.prerequisite_course_id,
+                        TrailRun.user_id == user.id,
+                    )
+                ).first()
+                if existing_prereq_run:
+                    sync_course_trail_run_completion_status(
+                        user.id, prereq.prerequisite_course_id, db_session
+                    )
+
+                prereq_run = db_session.exec(
+                    select(TrailRun).where(
+                        TrailRun.course_id == prereq.prerequisite_course_id,
+                        TrailRun.user_id == user.id,
+                        TrailRun.status == StatusEnum.STATUS_COMPLETED,
+                    )
+                ).first()
+                if not prereq_run:
+                    prereq_course = db_session.exec(
+                        select(Course).where(Course.id == prereq.prerequisite_course_id)
+                    ).first()
+                    course_name = (
+                        prereq_course.name if prereq_course else "a prerequisite course"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"You must complete {course_name} before starting this course.",
+                    )
+
     statement = select(Trail).where(
         Trail.org_id == course.org_id, Trail.user_id == user.id
     )
@@ -399,7 +630,9 @@ async def add_course_to_trail(
         )
 
     statement = select(TrailRun).where(
-        TrailRun.trail_id == trail.id, TrailRun.course_id == course.id, TrailRun.user_id == user.id
+        TrailRun.trail_id == trail.id,
+        TrailRun.course_id == course.id,
+        TrailRun.user_id == user.id,
     )
     trail_run = db_session.exec(statement).first()
 
@@ -416,7 +649,9 @@ async def add_course_to_trail(
         db_session.commit()
         db_session.refresh(trail_run)
 
-    statement = select(TrailRun).where(TrailRun.trail_id == trail.id, TrailRun.user_id == user.id)
+    statement = select(TrailRun).where(
+        TrailRun.trail_id == trail.id, TrailRun.user_id == user.id
+    )
     trail_runs = db_session.exec(statement).all()
 
     trail_runs = [
@@ -425,8 +660,11 @@ async def add_course_to_trail(
     ]
 
     for trail_run in trail_runs:
-        statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id , TrailStep.user_id == user.id)
+        statement = select(TrailStep).where(
+            TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
+        )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps
@@ -469,7 +707,9 @@ async def remove_course_from_trail(
         )
 
     statement = select(TrailRun).where(
-        TrailRun.trail_id == trail.id, TrailRun.course_id == course.id, TrailRun.user_id == user.id
+        TrailRun.trail_id == trail.id,
+        TrailRun.course_id == course.id,
+        TrailRun.user_id == user.id,
     )
     trail_run = db_session.exec(statement).first()
 
@@ -478,14 +718,18 @@ async def remove_course_from_trail(
         db_session.commit()
 
     # Delete all trail steps for this course
-    statement = select(TrailStep).where(TrailStep.course_id == course.id, TrailStep.user_id == user.id)
+    statement = select(TrailStep).where(
+        TrailStep.course_id == course.id, TrailStep.user_id == user.id
+    )
     trail_steps = db_session.exec(statement).all()
 
     for trail_step in trail_steps:
         db_session.delete(trail_step)
         db_session.commit()
 
-    statement = select(TrailRun).where(TrailRun.trail_id == trail.id, TrailRun.user_id == user.id)
+    statement = select(TrailRun).where(
+        TrailRun.trail_id == trail.id, TrailRun.user_id == user.id
+    )
     trail_runs = db_session.exec(statement).all()
 
     trail_runs = [
@@ -494,8 +738,11 @@ async def remove_course_from_trail(
     ]
 
     for trail_run in trail_runs:
-        statement = select(TrailStep).where(TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id)
+        statement = select(TrailStep).where(
+            TrailStep.trailrun_id == trail_run.id, TrailStep.user_id == user.id
+        )
         trail_steps = db_session.exec(statement).all()
+        backfill_completed_trail_step_points(trail_steps, db_session)
 
         trail_steps = [TrailStep(**trail_step.__dict__) for trail_step in trail_steps]
         trail_run.steps = trail_steps

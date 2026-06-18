@@ -83,41 +83,45 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
   if (isMobile) {
     // TODO: Work on a better mobile experience
     return (
-      <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center p-4">
-        <div className="bg-white p-6 rounded-lg shadow-md text-center">
-          <h2 className="text-xl font-bold mb-4">
+      <div className="h-screen w-full bg-[#f8f8f8] flex items-center justify-center p-4 dark:bg-[#0f0f13]">
+        <div className="bg-white p-6 rounded-lg shadow-md text-center dark:border dark:border-white/8 dark:bg-[#13131a] dark:text-white">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">
             {t('dashboard.users.settings.mobile.title')}
           </h2>
           <Monitor className="mx-auto my-5" size={60} />
-          <p>{t('dashboard.users.settings.mobile.message1')}</p>
-          <p>{t('dashboard.users.settings.mobile.message2')}</p>
+          <p className="dark:text-white/70">
+            {t('dashboard.users.settings.mobile.message1')}
+          </p>
+          <p className="dark:text-white/70">
+            {t('dashboard.users.settings.mobile.message2')}
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen w-full bg-[#f8f8f8] grid grid-rows-[auto_1fr]">
-      <div className="pl-10 pr-10  tracking-tight bg-[#fcfbfc] z-10 shadow-[0px_4px_16px_rgba(0,0,0,0.06)]">
+    <div className="h-screen w-full bg-[#f8f8f8] grid grid-rows-[auto_1fr] dark:bg-[#0f0f13]">
+      <div className="pl-10 pr-10  tracking-tight bg-[#fcfbfc] z-10 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] dark:border-b dark:border-white/8 dark:bg-[#13131a] dark:shadow-[0px_8px_24px_rgba(0,0,0,0.35)]">
         <BreadCrumbs type="orgusers"></BreadCrumbs>
         <div className="my-2  py-3">
           <div className="w-100 flex flex-col space-y-1">
-            <div className="pt-3 flex font-bold text-4xl tracking-tighter">
+            <div className="pt-3 flex font-bold text-4xl tracking-tighter dark:text-white">
               {H1Label}
             </div>
-            <div className="flex font-medium text-gray-400 text-md">
+            <div className="flex font-medium text-gray-400 text-md dark:text-white/45">
               {H2Label}{' '}
             </div>
           </div>
         </div>
-        <div className="flex space-x-5 font-black text-sm">
+        <div className="flex space-x-5 font-black text-sm dark:text-white/80">
           <Link
             href={
               getUriWithOrg(params.orgslug, '') + `/dash/users/settings/users`
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+              className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
                 params.subpage.toString() === 'users'
                   ? 'border-b-4'
                   : 'opacity-50'
@@ -136,7 +140,7 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+              className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
                 params.subpage.toString() === 'usergroups'
                   ? 'border-b-4'
                   : 'opacity-50'
@@ -154,7 +158,7 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+              className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
                 params.subpage.toString() === 'roles'
                   ? 'border-b-4'
                   : 'opacity-50'
@@ -172,7 +176,7 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+              className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
                 params.subpage.toString() === 'signups'
                   ? 'border-b-4'
                   : 'opacity-50'
@@ -190,7 +194,7 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
             }
           >
             <div
-              className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+              className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
                 params.subpage.toString() === 'add'
                   ? 'border-b-4'
                   : 'opacity-50'
@@ -211,7 +215,7 @@ function UsersSettingsPage(props: { params: Promise<SettingsParams> }) {
               }
             >
               <div
-                className={`py-2 w-fit text-center border-black transition-all ease-linear ${
+                className={`py-2 w-fit text-center border-black transition-all ease-linear dark:border-indigo-400 ${
                   params.subpage.toString() === 'audit-logs'
                     ? 'border-b-4'
                     : 'opacity-50'

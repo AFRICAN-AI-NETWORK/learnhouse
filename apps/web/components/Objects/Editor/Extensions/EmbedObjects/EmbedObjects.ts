@@ -45,5 +45,5 @@ export default Node.create({
   addNodeView() {
     return ReactNodeViewRenderer(EmbedObjectsComponent)
   },
-  
+
 })

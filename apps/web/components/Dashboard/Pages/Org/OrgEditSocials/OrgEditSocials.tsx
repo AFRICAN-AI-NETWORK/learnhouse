@@ -9,11 +9,11 @@ import { toast } from 'react-hot-toast'
 import { Input } from "@components/ui/input"
 import { Button } from "@components/ui/button"
 import { Label } from "@components/ui/label"
-import { 
-  SiX, 
-  SiFacebook, 
-  SiInstagram, 
-  SiYoutube 
+import {
+  SiX,
+  SiFacebook,
+  SiInstagram,
+  SiYoutube
 } from '@icons-pack/react-simple-icons'
 import { Plus, X as XIcon } from "lucide-react"
 import { useRouter } from 'next/navigation'
@@ -194,7 +194,7 @@ export default function OrgEditSocials() {
                           </div>
                         </div>
                       ))}
-                      
+
                       {Object.keys(values.links).length < 3 && (
                         <Button
                           type="button"
@@ -211,7 +211,7 @@ export default function OrgEditSocials() {
                           {t('dashboard.organization.socials.add_link')}
                         </Button>
                       )}
-                      
+
                       <p className="text-xs text-gray-500 mt-2">
                         {t('dashboard.organization.socials.custom_links_desc')}
                       </p>
@@ -221,8 +221,8 @@ export default function OrgEditSocials() {
               </div>
 
               <div className="flex flex-row-reverse mt-3 mx-5 mb-5">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting}
                   className="bg-black text-white hover:bg-black/90"
                 >

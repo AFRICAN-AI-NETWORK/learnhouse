@@ -3,12 +3,17 @@ import DynamicPageActivityImage from 'public/activities_types/dynamic-page-activ
 import VideoPageActivityImage from 'public//activities_types/video-page-activity.png'
 import DocumentPdfPageActivityImage from 'public//activities_types/documentpdf-page-activity.png'
 import AssignmentActivityImage from 'public//activities_types/assignment-page-activity.png'
+import LiveSessionActivityImage from 'public/activities_types/live-session-activity.png'
 
 import DynamicCanvaModal from './NewActivityModal/DynamicActivityModal'
 import VideoModal from './NewActivityModal/VideoActivityModal'
 import Image from 'next/image'
 import DocumentPdfModal from './NewActivityModal/DocumentActivityModal'
 import Assignment from './NewActivityModal/AssignmentActivityModal'
+import SmartActivityModal from './NewActivityModal/SmartActivityModal'
+import LiveSessionModal from './NewActivityModal/LiveSessionModal'
+import AttendanceActivityModal from './NewActivityModal/AttendanceActivityModal'
+import { ClipboardCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 function NewActivityModal({
@@ -25,14 +30,19 @@ function NewActivityModal({
   return (
     <>
       {selectedView === 'home' && (
-        <div className="grid grid-cols-4 gap-2 mt-2.5 w-full">
+        <div className="grid grid-cols-5 gap-2 mt-2.5 w-full">
           <ActivityOption
             onClick={() => {
               setSelectedView('dynamic')
             }}
           >
             <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer">
-              <Image unoptimized quality={100} alt="Dynamic Page" src={DynamicPageActivityImage}></Image>
+              <Image
+                unoptimized
+                quality={100}
+                alt="Dynamic Page"
+                src={DynamicPageActivityImage}
+              ></Image>
             </div>
             <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center">
               {t('dashboard.courses.structure.activity.types.dynamic_page')}
@@ -44,10 +54,35 @@ function NewActivityModal({
             }}
           >
             <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer">
-              <Image unoptimized quality={100} alt="Video Page" src={VideoPageActivityImage}></Image>
+              <Image
+                unoptimized
+                quality={100}
+                alt="Video Page"
+                src={VideoPageActivityImage}
+              ></Image>
             </div>
             <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center">
               {t('dashboard.courses.structure.activity.types.video')}
+            </div>
+          </ActivityOption>
+          <ActivityOption
+            onClick={() => {
+              setSelectedView('smartarticle')
+            }}
+          >
+            <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer relative overflow-hidden">
+              <div className="absolute inset-0 bg-blue-600/10 backdrop-blur-sm shadow-inner opacity-40 z-0"></div>
+              <Image
+                className="z-10"
+                unoptimized
+                quality={100}
+                alt="Smart Article"
+                src={DynamicPageActivityImage}
+              ></Image>
+            </div>
+            <div className="flex text-sm flex-col font-medium text-blue-600 items-center justify-center text-center leading-tight">
+              <span>Smart Article</span>
+              <span className="text-[10px] text-blue-400">AI Powered</span>
             </div>
           </ActivityOption>
           <ActivityOption
@@ -56,7 +91,12 @@ function NewActivityModal({
             }}
           >
             <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer">
-              <Image unoptimized quality={100} alt="Document PDF Page" src={DocumentPdfPageActivityImage}></Image>
+              <Image
+                unoptimized
+                quality={100}
+                alt="Document PDF Page"
+                src={DocumentPdfPageActivityImage}
+              ></Image>
             </div>
             <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center">
               {t('dashboard.courses.structure.activity.types.document')}
@@ -68,10 +108,44 @@ function NewActivityModal({
             }}
           >
             <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer">
-              <Image unoptimized quality={100} alt="Assignment Page" src={AssignmentActivityImage}></Image>
+              <Image
+                unoptimized
+                quality={100}
+                alt="Assignment Page"
+                src={AssignmentActivityImage}
+              ></Image>
             </div>
             <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center">
               {t('dashboard.courses.structure.activity.types.assignments')}
+            </div>
+          </ActivityOption>
+          <ActivityOption
+            onClick={() => {
+              setSelectedView('live')
+            }}
+          >
+            <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-end text-center bg-white hover:cursor-pointer">
+              <Image
+                unoptimized
+                quality={100}
+                alt="Live Session"
+                src={LiveSessionActivityImage}
+              ></Image>
+            </div>
+            <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center leading-tight">
+              <span>Live Session</span>
+            </div>
+          </ActivityOption>
+          <ActivityOption
+            onClick={() => {
+              setSelectedView('attendance')
+            }}
+          >
+            <div className="h-20 rounded-lg m-0.5 flex flex-col items-center justify-center text-center bg-white hover:cursor-pointer">
+              <ClipboardCheck size={32} className="text-emerald-500" />
+            </div>
+            <div className="flex text-sm h-5 font-medium text-gray-500 items-center justify-center text-center">
+              Attendance
             </div>
           </ActivityOption>
         </div>
@@ -102,14 +176,39 @@ function NewActivityModal({
         />
       )}
 
+      {selectedView === 'smartarticle' && (
+        <SmartActivityModal
+          submitFileActivity={submitFileActivity}
+          chapterId={chapterId}
+          course={course}
+        />
+      )}
+
       {selectedView === 'assignments' && (
         <Assignment
           submitActivity={submitActivity}
           chapterId={chapterId}
           course={course}
           closeModal={closeModal}
-        />)
-      }
+        />
+      )}
+
+      {selectedView === 'live' && (
+        <LiveSessionModal
+          submitActivity={submitActivity}
+          chapterId={chapterId}
+          course={course}
+          closeModal={closeModal}
+        />
+      )}
+
+      {selectedView === 'attendance' && (
+        <AttendanceActivityModal
+          submitActivity={submitActivity}
+          chapterId={chapterId}
+          course={course}
+        />
+      )}
     </>
   )
 }

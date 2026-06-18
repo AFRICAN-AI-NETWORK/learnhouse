@@ -32,7 +32,7 @@ function ImageBlockComponent(props: any) {
   })
   const [alignment, setAlignment] = React.useState(props.node.attrs.alignment || 'center')
   const [isModalOpen, setIsModalOpen] = React.useState(false)
-  
+
   const fileId = blockObject
     ? `${blockObject.content.file_id}.${blockObject.content.file_format}`
     : null
@@ -59,7 +59,7 @@ function ImageBlockComponent(props: any) {
 
   const handleDownload = () => {
     if (!fileId) return;
-    
+
     const imageUrl = getActivityBlockMediaDirectory(
       org?.org_uuid,
       course?.courseStructure.course_uuid,
@@ -68,7 +68,7 @@ function ImageBlockComponent(props: any) {
       fileId,
       'imageBlock'
     );
-    
+
     const link = document.createElement('a');
     link.href = imageUrl || '';
     link.download = `image-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'jpg'}`;
@@ -120,7 +120,7 @@ function ImageBlockComponent(props: any) {
           <FileUploadBlockInput onChange={handleImageChange} accept={SUPPORTED_FILES} />
           <FileUploadBlockButton onClick={handleSubmit} disabled={!image}/>
         </FileUploadBlock>
-        
+
         {blockObject && isEditable && (
           <div className={`w-full flex ${getAlignmentClass()}`}>
             <Resizable
@@ -238,7 +238,7 @@ function ImageBlockComponent(props: any) {
           </div>
         )}
       </NodeViewWrapper>
-      
+
       {blockObject && imageUrl && (
         <Modal
           isDialogOpen={isModalOpen}

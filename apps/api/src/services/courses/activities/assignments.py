@@ -20,7 +20,9 @@ from src.db.courses.assignments import (
     AssignmentUserSubmission,
     AssignmentUserSubmissionCreate,
     AssignmentUserSubmissionRead,
+    AssignmentUserSubmissionRevisionCreate,
     AssignmentUserSubmissionStatus,
+    AssignmentTaskTypeEnum,
 )
 from src.db.courses.courses import Course
 from src.db.organizations import Organization
@@ -40,8 +42,255 @@ from src.services.courses.activities.uploads.tasks_ref_files import (
     upload_reference_file,
 )
 from src.services.trail.trail import check_trail_presence
-from src.services.courses.certifications import check_course_completion_and_create_certificate
+from src.services.courses.certifications import (
+    check_course_completion_and_create_certificate,
+)
 from src.security.courses_security import courses_rbac_check_for_assignments
+from src.services.code_execution import execute_and_grade
+
+
+async def perform_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+):
+    """
+    Helper to run student code against test cases and calculate a grade.
+    """
+    # 1. Get exercises and submissions
+    # assignment_task.contents = {"exercises": [...]}
+    # submission.task_submission = {"submissions": [{"exerciseUUID": "...", "code": "..."}]}
+
+    exercises = assignment_task.contents.get("exercises", [])
+    student_subs = submission.task_submission.get("submissions", [])
+
+    print(f"[AutoGrading] Exercises: {len(exercises)}")
+    print(f"[AutoGrading] Student Subs: {len(student_subs)}")
+
+    total_passed = 0
+    total_tests = 0
+    results_summary = []
+
+    for exercise in exercises:
+        ex_uuid = exercise.get("exerciseUUID")
+        # Find matching student code
+        sub = next((s for s in student_subs if s.get("exerciseUUID") == ex_uuid), None)
+        print(f"[AutoGrading] Exercise {ex_uuid}: Found sub? {sub is not None}")
+        if not sub:
+            continue
+
+        test_cases = exercise.get("testCases", [])
+        if not test_cases:
+            continue
+
+        total_tests += len(test_cases)
+
+        # Execute and grade
+        dataset_files = exercise.get("datasetFiles", [])
+        exec_res = await execute_and_grade(
+            language=exercise.get("language", "python"),
+            code=sub.get("code", ""),
+            test_cases=test_cases,
+            dataset_files=dataset_files,
+        )
+
+        if exec_res:
+            total_passed += exec_res.passed_count
+            results_summary.append(
+                {
+                    "exerciseUUID": ex_uuid,
+                    "passed_count": exec_res.passed_count,
+                    "total_count": exec_res.total_count,
+                    "test_results": [
+                        getattr(tr, "model_dump", tr.dict)()
+                        for tr in exec_res.test_results
+                    ]
+                    if exec_res.test_results
+                    else [],
+                }
+            )
+
+    # Calculate Grade
+    if total_tests > 0:
+        # Scale passed tests to max_grade_value
+        raw_grade = (total_passed / total_tests) * assignment_task.max_grade_value
+        submission.grade = int(raw_grade)
+    else:
+        submission.grade = 0
+
+    # Update task_submission with results (for student feedback)
+    # Reassign the dictionary completely to ensure SQLAlchemy tracks the change
+    updated_submission = dict(submission.task_submission)
+    updated_submission["grading_results"] = results_summary
+    submission.task_submission = updated_submission
+
+    submission.task_submission_grade_feedback = (
+        f"Auto-graded: {total_passed}/{total_tests} tests passed."
+    )
+
+
+async def perform_quiz_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+) -> None:
+    """
+    Auto-grade a QUIZ task.
+    Awards credit only when the selected option set exactly matches the correct
+    option set for a question.
+    grade = round((correct_questions / total_gradable_questions) * max_grade_value)
+
+    Stores per-question results in task_submission["grading_results"].
+    """
+    questions = assignment_task.contents.get("questions", [])
+    student_subs = submission.task_submission.get("submissions", [])
+
+    total_gradable_questions = 0
+    correct_questions = 0
+    question_results = []
+
+    for question in questions:
+        q_uuid = question.get("questionUUID")
+        options = question.get("options", [])
+        correct_option_uuids = {
+            option.get("optionUUID")
+            for option in options
+            if option.get("assigned_right_answer", False) and option.get("optionUUID")
+        }
+
+        if not correct_option_uuids:
+            question_results.append({"questionUUID": q_uuid, "correct": 0, "total": 0})
+            continue
+
+        total_gradable_questions += 1
+        selected_option_uuids = {
+            s.get("optionUUID")
+            for s in student_subs
+            if s.get("questionUUID") == q_uuid
+            and s.get("answer", False)
+            and s.get("optionUUID")
+        }
+        is_correct = selected_option_uuids == correct_option_uuids
+
+        if is_correct:
+            correct_questions += 1
+
+        question_results.append(
+            {
+                "questionUUID": q_uuid,
+                "correct": 1 if is_correct else 0,
+                "total": 1,
+            }
+        )
+
+    submission.grade = (
+        round(
+            (correct_questions / total_gradable_questions)
+            * assignment_task.max_grade_value
+        )
+        if total_gradable_questions > 0
+        else 0
+    )
+
+    updated = dict(submission.task_submission)
+    updated["grading_results"] = question_results
+    submission.task_submission = updated
+
+    submission.task_submission_grade_feedback = f"Auto-graded: {correct_questions}/{total_gradable_questions} questions correct."
+
+
+def _is_form_answer_correct(student_answer: str, correct_answer: str) -> bool:
+    """
+    Check if a student answer matches the correct answer.
+    Supports comma-separated accepted answers (e.g. "Paris,paris,PARIS").
+    Matching is case-insensitive with leading/trailing whitespace stripped.
+    """
+    student = student_answer.strip().lower()
+    accepted = [a.strip().lower() for a in correct_answer.split(",") if a.strip()]
+    return student in accepted if accepted else False
+
+
+async def perform_form_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+) -> None:
+    """
+    Auto-grade a FORM (fill-in-the-blank) task.
+    Supports comma-separated accepted answers in blank.correctAnswer field.
+    grade = round((correct_blanks / total_blanks) * max_grade_value)
+    Stores per-question results in task_submission["grading_results"].
+    """
+    questions = assignment_task.contents.get("questions", [])
+    student_subs = submission.task_submission.get("submissions", [])
+
+    total_blanks = 0
+    correct_blanks = 0
+    question_results = []
+
+    for question in questions:
+        q_uuid = question.get("questionUUID")
+        blanks = question.get("blanks", [])
+        q_correct = 0
+
+        for blank in blanks:
+            total_blanks += 1
+            blank_uuid = blank.get("blankUUID")
+            correct_answer = blank.get("correctAnswer", "")
+
+            student_entry = next(
+                (
+                    s
+                    for s in student_subs
+                    if s.get("questionUUID") == q_uuid
+                    and s.get("blankUUID") == blank_uuid
+                ),
+                None,
+            )
+            student_answer = student_entry.get("answer", "") if student_entry else ""
+
+            if _is_form_answer_correct(student_answer, correct_answer):
+                correct_blanks += 1
+                q_correct += 1
+
+        question_results.append(
+            {"questionUUID": q_uuid, "correct": q_correct, "total": len(blanks)}
+        )
+
+    submission.grade = (
+        round((correct_blanks / total_blanks) * assignment_task.max_grade_value)
+        if total_blanks > 0
+        else 0
+    )
+
+    updated = dict(submission.task_submission)
+    updated["grading_results"] = question_results
+    submission.task_submission = updated
+
+    submission.task_submission_grade_feedback = (
+        f"Auto-graded: {correct_blanks}/{total_blanks} blanks correct."
+    )
+
+
+# Dispatch table: maps AssignmentTaskTypeEnum → grading handler (single source of truth)
+_AUTO_GRADE_DISPATCH = {
+    AssignmentTaskTypeEnum.CODE_EDITOR: perform_auto_grading,
+    AssignmentTaskTypeEnum.QUIZ: perform_quiz_auto_grading,
+    AssignmentTaskTypeEnum.FORM: perform_form_auto_grading,
+}
+
+# Set of task types that support auto-grading (used for final submission status)
+_AUTO_GRADABLE_TYPES = frozenset(
+    {
+        AssignmentTaskTypeEnum.CODE_EDITOR,
+        AssignmentTaskTypeEnum.QUIZ,
+        AssignmentTaskTypeEnum.FORM,
+    }
+)
+
+
+async def dispatch_auto_grading(
+    assignment_task: AssignmentTask, submission: AssignmentTaskSubmission
+) -> None:
+    """Route auto-grading to the correct handler based on task type. No-op for non-auto-gradable types."""
+    handler = _AUTO_GRADE_DISPATCH.get(assignment_task.assignment_type)
+    if handler:
+        await handler(assignment_task, submission)
+
 
 ## > Assignments CRUD
 
@@ -63,7 +312,9 @@ async def create_assignment(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # Usage check
     check_limits_with_usage("assignments", course.org_id, db_session)
@@ -115,7 +366,9 @@ async def read_assignment(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment read
     return AssignmentRead.model_validate(assignment)
@@ -158,7 +411,9 @@ async def read_assignment_from_activity_uuid(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment read
     return AssignmentRead.model_validate(assignment)
@@ -192,7 +447,9 @@ async def update_assignment(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Update only the fields that were passed in
     for var, value in vars(assignment_object).items():
@@ -236,7 +493,9 @@ async def delete_assignment(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
     # Feature usage
     decrease_feature_usage("assignments", course.org_id, db_session)
@@ -286,9 +545,11 @@ async def delete_assignment_from_activity_uuid(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
-     # Feature usage
+    # Feature usage
     decrease_feature_usage("assignments", course.org_id, db_session)
 
     # Delete Assignment
@@ -330,7 +591,9 @@ async def create_assignment_task(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # Create Assignment Task
     assignment_task = AssignmentTask(**assignment_task_object.model_dump())
@@ -385,7 +648,9 @@ async def read_assignment_tasks(
     )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment tasks read
     return [
@@ -433,7 +698,9 @@ async def read_assignment_task(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment task read
     return AssignmentTaskRead.model_validate(assignmenttask)
@@ -487,7 +754,9 @@ async def put_assignment_task_reference_file(
     org = db_session.exec(org_statement).first()
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Upload reference file
     if reference_file and reference_file.filename and activity and org:
@@ -565,13 +834,17 @@ async def put_assignment_task_submission_file(
     org = db_session.exec(org_statement).first()
 
     # RBAC check - only need read permission to submit files
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # Check if user is enrolled in the course
-    if not await authorization_verify_based_on_roles(request, current_user.id, "read", course.course_uuid, db_session):
+    if not await authorization_verify_based_on_roles(
+        request, current_user.id, "read", course.course_uuid, db_session
+    ):
         raise HTTPException(
             status_code=403,
-            detail="You must be enrolled in this course to submit files"
+            detail="You must be enrolled in this course to submit files",
         )
 
     # Upload submission file
@@ -587,7 +860,47 @@ async def put_assignment_task_submission_file(
             assignment_task_uuid,
         )
 
-        return {"file_uuid": name_in_disk}
+        # Persist the submission record at the same time so the "me" lookup
+        # has a row to return even before the explicit submit action runs.
+        statement = select(AssignmentTaskSubmission).where(
+            AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
+            AssignmentTaskSubmission.user_id == current_user.id,
+        )
+        assignment_task_submission = db_session.exec(statement).first()
+
+        current_time = str(datetime.now())
+        if assignment_task_submission:
+            updated_task_submission = dict(
+                assignment_task_submission.task_submission or {}
+            )
+            updated_task_submission["fileUUID"] = name_in_disk
+
+            assignment_task_submission.task_submission = updated_task_submission
+            assignment_task_submission.grade = 0
+            assignment_task_submission.task_submission_grade_feedback = ""
+            assignment_task_submission.assignment_type = assignment_task.assignment_type
+            assignment_task_submission.update_date = current_time
+        else:
+            assignment_task_submission = AssignmentTaskSubmission(
+                assignment_task_submission_uuid=f"assignmenttasksubmission_{uuid4()}",
+                task_submission={"fileUUID": name_in_disk},
+                grade=0,
+                task_submission_grade_feedback="",
+                assignment_type=assignment_task.assignment_type,
+                user_id=current_user.id,
+                activity_id=assignment.activity_id,
+                course_id=assignment.course_id,
+                chapter_id=assignment.chapter_id,
+                assignment_task_id=int(assignment_task.id),  # type: ignore
+                creation_date=current_time,
+                update_date=current_time,
+            )
+
+        db_session.add(assignment_task_submission)
+        db_session.commit()
+        db_session.refresh(assignment_task_submission)
+
+        return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
 
 
 async def update_assignment_task(
@@ -630,7 +943,9 @@ async def update_assignment_task(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Update only the fields that were passed in
     for var, value in vars(assignment_task_object).items():
@@ -686,7 +1001,9 @@ async def delete_assignment_task(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
     # Delete Assignment Task
     db_session.delete(assignment_task)
@@ -705,7 +1022,9 @@ async def handle_assignment_task_submission(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-    assignment_task_submission_uuid = assignment_task_submission_object.assignment_task_submission_uuid
+    assignment_task_submission_uuid = (
+        assignment_task_submission_object.assignment_task_submission_uuid
+    )
     # Check if assignment task exists
     statement = select(AssignmentTask).where(
         AssignmentTask.assignment_task_uuid == assignment_task_uuid
@@ -739,30 +1058,42 @@ async def handle_assignment_task_submission(
         )
 
     # SECURITY: Check if user has instructor/admin permissions for grading
-    is_instructor = await authorization_verify_based_on_roles(request, current_user.id, "update", course.course_uuid, db_session)
+    is_instructor = await authorization_verify_based_on_roles(
+        request, current_user.id, "update", course.course_uuid, db_session
+    )
 
     # For regular users, ensure they can only submit their own work
     if not is_instructor:
         # Check if user is enrolled in the course
-        if not await authorization_verify_based_on_roles(request, current_user.id, "read", course.course_uuid, db_session):
+        if not await authorization_verify_based_on_roles(
+            request, current_user.id, "read", course.course_uuid, db_session
+        ):
             raise HTTPException(
                 status_code=403,
-                detail="You must be enrolled in this course to submit assignments"
+                detail="You must be enrolled in this course to submit assignments",
             )
-        
+
         # SECURITY: Regular users cannot update grades - only check if actual values are being set
-        if (assignment_task_submission_object.grade is not None and assignment_task_submission_object.grade != 0) or \
-           (assignment_task_submission_object.task_submission_grade_feedback is not None and assignment_task_submission_object.task_submission_grade_feedback != ""):
+        if (
+            assignment_task_submission_object.grade is not None
+            and assignment_task_submission_object.grade != 0
+        ) or (
+            assignment_task_submission_object.task_submission_grade_feedback is not None
+            and assignment_task_submission_object.task_submission_grade_feedback != ""
+        ):
             raise HTTPException(
-                status_code=403,
-                detail="You do not have permission to update grades"
+                status_code=403, detail="You do not have permission to update grades"
             )
 
         # Only need read permission for submissions
-        await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+        await courses_rbac_check_for_assignments(
+            request, course.course_uuid, current_user, "read", db_session
+        )
     else:
         # SECURITY: Instructors/admins need update permission to grade
-        await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "update", db_session)
+        await courses_rbac_check_for_assignments(
+            request, course.course_uuid, current_user, "update", db_session
+        )
 
     # Try to find existing submission by user_id and assignment_task_id first (for save progress functionality)
     statement = select(AssignmentTaskSubmission).where(
@@ -770,34 +1101,73 @@ async def handle_assignment_task_submission(
         AssignmentTaskSubmission.user_id == current_user.id,
     )
     assignment_task_submission = db_session.exec(statement).first()
-    
+
     # If no submission found by user+task, try to find by UUID if provided (for specific submission updates)
     if not assignment_task_submission and assignment_task_submission_uuid:
         statement = select(AssignmentTaskSubmission).where(
-            AssignmentTaskSubmission.assignment_task_submission_uuid == assignment_task_submission_uuid
+            AssignmentTaskSubmission.assignment_task_submission_uuid
+            == assignment_task_submission_uuid
         )
         assignment_task_submission = db_session.exec(statement).first()
 
-    # If submission exists, update it
+        # If submission exists, update it
     if assignment_task_submission:
         # SECURITY: For regular users, ensure they can only update their own submissions
         if not is_instructor and assignment_task_submission.user_id != current_user.id:
             raise HTTPException(
-                status_code=403,
-                detail="You can only update your own submissions"
+                status_code=403, detail="You can only update your own submissions"
             )
 
         # Update only the fields that were passed in
         for var, value in vars(assignment_task_submission_object).items():
             if value is not None:
+                # Capture history for CODE_EDITOR tasks
+                if (
+                    var == "task_submission"
+                    and assignment_task.assignment_type == "CODE_EDITOR"
+                ):
+                    # Get existing history
+                    existing_history = (
+                        assignment_task_submission.task_submission.get("history", [])
+                        if assignment_task_submission.task_submission
+                        else []
+                    )
+
+                    # Ensure value is a dict and has submissions
+                    if isinstance(value, dict) and "submissions" in value:
+                        # Append the new attempt with timestamp
+                        attempt = {
+                            "timestamp": str(datetime.now()),
+                            "submissions": value.get("submissions", []),
+                        }
+                        existing_history.append(attempt)
+
+                        # Keep only the last 30 attempts to avoid bloating the JSON
+                        if len(existing_history) > 30:
+                            existing_history = existing_history[-30:]
+
+                        # Put history back into the new value Dictionary
+                        value["history"] = existing_history
+
                 setattr(assignment_task_submission, var, value)
         assignment_task_submission.update_date = str(datetime.now())
+
+        # AUTO-GRADING: dispatch to the correct handler based on task type
+        try:
+            await dispatch_auto_grading(assignment_task, assignment_task_submission)
+            if assignment_task_submission.grade:
+                print(
+                    f"[HandleSubmission] Auto-grading done. Task: {assignment_task.assignment_task_uuid}, Grade: {assignment_task_submission.grade}"
+                )
+        except Exception as e:
+            print(
+                f"[AutoGrading] Failed (update path), saving submission without grade: {e}"
+            )
 
         # Insert Assignment Task Submission in DB
         db_session.add(assignment_task_submission)
         db_session.commit()
         db_session.refresh(assignment_task_submission)
-
     else:
         # Create new Task submission
         current_time = str(datetime.now())
@@ -805,9 +1175,25 @@ async def handle_assignment_task_submission(
         # Assuming model_dump() returns a dictionary
         model_data = assignment_task_submission_object.model_dump()
 
+        task_submission_json = model_data.get("task_submission", {})
+
+        # Initialize history for CODE_EDITOR tasks
+        if assignment_task.assignment_type == "CODE_EDITOR":
+            if (
+                isinstance(task_submission_json, dict)
+                and "submissions" in task_submission_json
+            ):
+                task_submission_json["history"] = [
+                    {
+                        "timestamp": current_time,
+                        "submissions": task_submission_json.get("submissions", []),
+                    }
+                ]
+
         assignment_task_submission = AssignmentTaskSubmission(
-            assignment_task_submission_uuid=assignment_task_submission_uuid or f"assignmenttasksubmission_{uuid4()}",
-            task_submission=model_data["task_submission"],
+            assignment_task_submission_uuid=assignment_task_submission_uuid
+            or f"assignmenttasksubmission_{uuid4()}",
+            task_submission=task_submission_json,
             grade=0,  # Always start with 0 for new submissions
             task_submission_grade_feedback="",  # Start with empty feedback
             assignment_task_id=int(assignment_task.id),  # type: ignore
@@ -819,6 +1205,14 @@ async def handle_assignment_task_submission(
             creation_date=current_time,
             update_date=current_time,
         )
+
+        # AUTO-GRADING: dispatch to the correct handler based on task type
+        try:
+            await dispatch_auto_grading(assignment_task, assignment_task_submission)
+        except Exception as e:
+            print(
+                f"[AutoGrading] Failed (create path), saving submission without grade: {e}"
+            )
 
         # Insert Assignment Task Submission in DB
         db_session.add(assignment_task_submission)
@@ -836,7 +1230,6 @@ async def read_user_assignment_task_submissions(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-
     # Check if assignment task exists
     statement = select(AssignmentTask).where(
         AssignmentTask.assignment_task_uuid == assignment_task_uuid
@@ -883,7 +1276,9 @@ async def read_user_assignment_task_submissions(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment task submission read
     return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
@@ -907,17 +1302,6 @@ async def read_user_assignment_task_submissions_me(
             detail="Assignment Task not found",
         )
 
-    # Check if assignment task submission exists
-    statement = select(AssignmentTaskSubmission).where(
-        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
-        AssignmentTaskSubmission.user_id == current_user.id,
-    )
-    assignment_task_submission = db_session.exec(statement).first()
-
-    if not assignment_task_submission:
-        # Return None instead of raising an error for cases where no submission exists yet
-        return None
-
     # Check if assignment exists
     statement = select(Assignment).where(Assignment.id == assignment_task.assignment_id)
     assignment = db_session.exec(statement).first()
@@ -939,7 +1323,44 @@ async def read_user_assignment_task_submissions_me(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
+
+    # Check if assignment task submission exists
+    statement = select(AssignmentTaskSubmission).where(
+        AssignmentTaskSubmission.assignment_task_id == assignment_task.id,
+        AssignmentTaskSubmission.user_id == current_user.id,
+    )
+    assignment_task_submission = db_session.exec(statement).first()
+
+    if not assignment_task_submission:
+        default_task_submission: dict = {"fileUUID": ""}
+        if assignment_task.assignment_type == AssignmentTaskTypeEnum.CODE_EDITOR:
+            default_task_submission = {"submissions": [], "history": []}
+        elif assignment_task.assignment_type in (
+            AssignmentTaskTypeEnum.QUIZ,
+            AssignmentTaskTypeEnum.FORM,
+        ):
+            default_task_submission = {"submissions": []}
+
+        return AssignmentTaskSubmissionRead.model_validate(
+            {
+                "id": 0,
+                "assignment_task_submission_uuid": "",
+                "task_submission": default_task_submission,
+                "grade": 0,
+                "task_submission_grade_feedback": "",
+                "assignment_type": assignment_task.assignment_type,
+                "user_id": current_user.id,
+                "activity_id": assignment.activity_id,
+                "course_id": assignment.course_id,
+                "chapter_id": assignment.chapter_id,
+                "assignment_task_id": assignment_task.id,
+                "creation_date": "",
+                "update_date": "",
+            }
+        )
 
     # return assignment task submission read
     return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
@@ -997,7 +1418,9 @@ async def read_assignment_task_submissions(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment task submission read
     return AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
@@ -1056,7 +1479,9 @@ async def update_assignment_task_submission(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # Update only the fields that were passed in
     for var, value in vars(assignment_task_submission_object).items():
@@ -1125,7 +1550,9 @@ async def delete_assignment_task_submission(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
     # Delete Assignment Task Submission
     db_session.delete(assignment_task_submission)
@@ -1161,7 +1588,11 @@ async def create_assignment_submission(
 
     assignment_user_submission = db_session.exec(statement).first()
 
-    if assignment_user_submission:
+    if (
+        assignment_user_submission
+        and assignment_user_submission.submission_status
+        != AssignmentUserSubmissionStatus.NEEDS_REVISION
+    ):
         raise HTTPException(
             status_code=400,
             detail="Assignment User Submission already exists",
@@ -1177,32 +1608,79 @@ async def create_assignment_submission(
             detail="Course not found",
         )
 
-    # Check if User already submitted the assignment
-    statement = select(AssignmentUserSubmission).where(
-        AssignmentUserSubmission.assignment_id == assignment.id,
-        AssignmentUserSubmission.user_id == current_user.id,
+    # RBAC check
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
     )
-    assignment_user_submission = db_session.exec(statement).first()
 
-    if assignment_user_submission:
+    # Calculate grade and status based on task submissions
+    statement = select(AssignmentTask).where(
+        AssignmentTask.assignment_id == assignment.id
+    )
+    tasks = db_session.exec(statement).all()
+
+    statement = select(AssignmentTaskSubmission).where(
+        AssignmentTaskSubmission.user_id == current_user.id,
+        AssignmentTaskSubmission.activity_id == assignment.activity_id,
+    )
+    task_submissions = db_session.exec(statement).all()
+
+    task_ids = {task.id for task in tasks if task.id is not None}
+    submitted_task_ids = {
+        task_submission.assignment_task_id
+        for task_submission in task_submissions
+        if task_submission.assignment_task_id in task_ids
+    }
+
+    if not tasks:
         raise HTTPException(
             status_code=400,
-            detail="Assignment User Submission already exists",
+            detail="This assignment has no tasks to submit.",
         )
 
-    # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    if submitted_task_ids != task_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Please save every assignment task before submitting for grading.",
+        )
 
-    # Create Assignment User Submission
-    assignment_user_submission = AssignmentUserSubmission(
-        user_id=current_user.id,
-        assignment_id=assignment.id,  # type: ignore
-        grade=0,
-        assignmentusersubmission_uuid=str(f"assignmentusersubmission_{uuid4()}"),
-        submission_status=AssignmentUserSubmissionStatus.SUBMITTED,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+    current_task_submissions = [
+        task_submission
+        for task_submission in task_submissions
+        if task_submission.assignment_task_id in task_ids
+    ]
+
+    total_grade = sum(sub.grade for sub in current_task_submissions)
+
+    # Check if all tasks are auto-gradable (CODE_EDITOR, QUIZ, or FORM)
+    all_auto_gradable = (
+        all(task.assignment_type in _AUTO_GRADABLE_TYPES for task in tasks)
+        if tasks
+        else False
     )
+
+    status = AssignmentUserSubmissionStatus.SUBMITTED
+    if all_auto_gradable and submitted_task_ids == task_ids:
+        status = AssignmentUserSubmissionStatus.GRADED
+
+    current_time = str(datetime.now())
+
+    if assignment_user_submission:
+        assignment_user_submission.grade = total_grade
+        assignment_user_submission.submission_status = status
+        assignment_user_submission.submission_feedback = ""
+        assignment_user_submission.update_date = current_time
+    else:
+        assignment_user_submission = AssignmentUserSubmission(
+            user_id=current_user.id,
+            assignment_id=assignment.id,  # type: ignore
+            grade=total_grade,
+            submission_feedback="",
+            assignmentusersubmission_uuid=str(f"assignmentusersubmission_{uuid4()}"),
+            submission_status=status,
+            creation_date=current_time,
+            update_date=current_time,
+        )
 
     # Insert Assignment User Submission in DB
     db_session.add(assignment_user_submission)
@@ -1274,10 +1752,18 @@ async def create_assignment_submission(
             complete=True,
             teacher_verified=False,
             grade="",
-            user_id=user.id, # type: ignore
+            user_id=user.id,  # type: ignore
+            points_earned=activity.points or 0,
             creation_date=str(datetime.now()),
             update_date=str(datetime.now()),
         )
+        db_session.add(trailstep)
+        db_session.commit()
+        db_session.refresh(trailstep)
+    else:
+        trailstep.complete = True
+        trailstep.points_earned = activity.points or 0
+        trailstep.update_date = str(datetime.now())
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -1324,7 +1810,9 @@ async def read_assignment_submissions(
     )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment tasks read
     return [
@@ -1367,12 +1855,57 @@ async def read_user_assignment_submissions(
     )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignment tasks read
     return [
         AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
         for assignment_user_submission in db_session.exec(statement).all()
+    ]
+
+
+async def read_user_assignment_all_tasks_submissions_me(
+    request: Request,
+    assignment_uuid: str,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+):
+    # Find assignment
+    statement = select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
+    assignment = db_session.exec(statement).first()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found",
+        )
+
+    # Check if course exists
+    statement = select(Course).where(Course.id == assignment.course_id)
+    course = db_session.exec(statement).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found",
+        )
+
+    # RBAC check
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
+
+    # Find assignments tasks submissions for an assignment
+    statement = select(AssignmentTaskSubmission).where(
+        AssignmentTaskSubmission.activity_id == assignment.activity_id,
+        AssignmentTaskSubmission.user_id == current_user.id,
+    )
+
+    return [
+        AssignmentTaskSubmissionRead.model_validate(assignment_task_submission)
+        for assignment_task_submission in db_session.exec(statement).all()
     ]
 
 
@@ -1433,7 +1966,9 @@ async def update_assignment_submission(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # Update only the fields that were passed in
     for var, value in vars(assignment_user_submission_object).items():
@@ -1447,6 +1982,67 @@ async def update_assignment_submission(
     db_session.refresh(assignment_user_submission)
 
     # return assignment user submission read
+    return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
+
+
+async def reject_assignment_submission(
+    request: Request,
+    user_id: str,
+    assignment_uuid: str,
+    revision_object: AssignmentUserSubmissionRevisionCreate,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+):
+    # Check if assignment exists
+    statement = select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
+    assignment = db_session.exec(statement).first()
+
+    if not assignment:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found",
+        )
+
+    # Check if course exists
+    statement = select(Course).where(Course.id == assignment.course_id)
+    course = db_session.exec(statement).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=404,
+            detail="Course not found",
+        )
+
+    # SECURITY: Require course ownership or instructor role for review actions
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
+
+    # Check if assignment user submission exists
+    statement = select(AssignmentUserSubmission).where(
+        AssignmentUserSubmission.user_id == user_id,
+        AssignmentUserSubmission.assignment_id == assignment.id,
+    )
+    assignment_user_submission = db_session.exec(statement).first()
+
+    if not assignment_user_submission:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment User Submission not found",
+        )
+
+    assignment_user_submission.submission_status = (
+        AssignmentUserSubmissionStatus.NEEDS_REVISION
+    )
+    assignment_user_submission.submission_feedback = (
+        revision_object.submission_feedback or ""
+    )
+    assignment_user_submission.update_date = str(datetime.now())
+
+    db_session.add(assignment_user_submission)
+    db_session.commit()
+    db_session.refresh(assignment_user_submission)
+
     return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
 
 
@@ -1491,7 +2087,9 @@ async def delete_assignment_submission(
         )
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "delete", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "delete", db_session
+    )
 
     # Delete Assignment User Submission
     db_session.delete(assignment_user_submission)
@@ -1529,7 +2127,9 @@ async def grade_assignment_submission(
         )
 
     # SECURITY: Require course ownership or instructor role for grading
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Check if assignment user submission exists
     statement = select(AssignmentUserSubmission).where(
@@ -1585,7 +2185,6 @@ async def get_grade_assignment_submission(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
-
     # Check if assignment exists
     statement = select(Assignment).where(Assignment.assignment_uuid == assignment_uuid)
     assignment = db_session.exec(statement).first()
@@ -1672,7 +2271,9 @@ async def mark_activity_as_done_for_user(
         )
 
     # SECURITY: Require course ownership or instructor role for marking activities as done
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     if not activity:
         raise HTTPException(
@@ -1705,6 +2306,7 @@ async def mark_activity_as_done_for_user(
 
     # Mark activity as done
     trailstep.complete = True
+    trailstep.points_earned = activity.points or 0
     trailstep.update_date = str(datetime.now())
 
     # Insert TrailStep in DB
@@ -1751,7 +2353,9 @@ async def get_assignments_from_course(
             assignments.append(assignment)
 
     # RBAC check
-    await courses_rbac_check_for_assignments(request, course.course_uuid, current_user, "read", db_session)
+    await courses_rbac_check_for_assignments(
+        request, course.course_uuid, current_user, "read", db_session
+    )
 
     # return assignments read
     return [AssignmentRead.model_validate(assignment) for assignment in assignments]

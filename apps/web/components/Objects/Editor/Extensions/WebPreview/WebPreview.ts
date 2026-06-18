@@ -38,4 +38,4 @@ const WebPreview = Node.create({
   },
 })
 
-export default WebPreview; 
+export default WebPreview;

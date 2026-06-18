@@ -109,6 +109,7 @@
     "invalid_email": "Indirizzo email non valido",
     "password_min_length": "La password deve contenere almeno 8 caratteri",
     "username_min_length": "Il nome utente deve contenere almeno 4 caratteri",
+    "invalid_phone_with_country_code": "Numero di telefono non valido. Includi il prefisso internazionale (es. +254)",
     "title_required": "Il titolo è obbligatorio",
     "content_required": "Il contenuto è obbligatorio"
   },
@@ -662,15 +663,6 @@
         }
       },
       "learnhouse_university": "Università LearnHouse"
-    },
-    "courses": {
-      "title": "Corsi",
-      "rights_guide": "Guida ai diritti",
-      "create_course": "Crea corso",
-      "create_new_course": "Crea un nuovo corso",
-      "no_courses": "Ancora nessun corso",
-      "create_course_placeholder": "Crea un corso per aggiungere contenuti",
-      "no_courses_available": "Ancora nessun corso disponibile"
     },
     "organization": {
       "settings": {

@@ -2,13 +2,25 @@
 import React from 'react'
 import '@/styles/globals.css'
 import StyledComponentsRegistry from '@components/Utils/libs/styled-registry'
-import { motion } from 'framer-motion'
 import { SessionProvider } from 'next-auth/react'
 import LHSessionProvider from '@components/Contexts/LHSessionContext'
 import { isDevEnv } from '@/app/auth/options'
 import Script from 'next/script'
 import '@/lib/i18n'
 import I18nProvider from '@components/Contexts/I18nContext'
+import Footer from '@components/Footer/Footer'
+
+const themeInitScript = `
+  (function() {
+    try {
+      var mode = localStorage.getItem('learnhouse_theme') || 'light';
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var shouldUseDark = mode === 'dark' || (mode === 'system' && prefersDark);
+      document.documentElement.classList.toggle('dark', shouldUseDark);
+      document.documentElement.dataset.theme = mode;
+    } catch (error) {}
+  })();
+`
 
 export default function RootLayout({
   children,
@@ -28,6 +40,7 @@ export default function RootLayout({
       <head>
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src="/runtime-config.js" />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
@@ -70,15 +83,8 @@ export default function RootLayout({
           <LHSessionProvider>
             <I18nProvider>
               <StyledComponentsRegistry>
-                <motion.main
-                  variants={variants}
-                  initial="hidden"
-                  animate="enter"
-                  exit="exit"
-                  transition={{ type: 'tween' }}
-                >
-                  {children}
-                </motion.main>
+                <main className="flex-grow">{children}</main>
+                <Footer />
               </StyledComponentsRegistry>
             </I18nProvider>
           </LHSessionProvider>

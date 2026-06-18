@@ -63,16 +63,16 @@ const WebPreviewComponent: React.FC<WebPreviewProps> = ({ node, updateAttributes
       const res = await getUrlPreview(url);
       if (!res) throw new Error('Failed to fetch preview');
       const data = res;
-      
+
       // Check if metadata is insufficient (only has basic fields like favicon/url but no title/description)
       const hasMinimalMetadata = !data.title && !data.description && !data.og_image;
-      
+
       if (hasMinimalMetadata) {
         toast.error("Unable to get metadata from this website. The preview card may appear incomplete.", {
           duration: 4000,
         });
       }
-      
+
       updateAttributes({ ...data, url });
       setEditing(false);
     } catch (err: any) {
@@ -248,7 +248,7 @@ const WebPreviewComponent: React.FC<WebPreviewProps> = ({ node, updateAttributes
                             className="w-36"
                           />
                         </div>
-                        
+
                       </>
                     )}
                   </div>
@@ -389,4 +389,4 @@ const WebPreviewComponent: React.FC<WebPreviewProps> = ({ node, updateAttributes
   );
 };
 
-export default WebPreviewComponent; 
+export default WebPreviewComponent;

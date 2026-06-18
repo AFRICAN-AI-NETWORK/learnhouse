@@ -9,11 +9,17 @@ class ChapterBase(SQLModel):
     name: str
     description: Optional[str] = ""
     thumbnail_image: Optional[str] = ""
+    due_date: Optional[str] = None
+    published: bool = False
     org_id: int = Field(
-        sa_column=Column("org_id", Integer, ForeignKey("organization.id", ondelete="CASCADE"))
+        sa_column=Column(
+            "org_id", Integer, ForeignKey("organization.id", ondelete="CASCADE")
+        )
     )
     course_id: int = Field(
-        sa_column=Column("course_id", Integer, ForeignKey("course.id", ondelete="CASCADE"))
+        sa_column=Column(
+            "course_id", Integer, ForeignKey("course.id", ondelete="CASCADE")
+        )
     )
 
 
@@ -34,8 +40,10 @@ class ChapterUpdate(ChapterBase):
     name: Optional[str]
     description: Optional[str] = ""
     thumbnail_image: Optional[str] = ""
+    due_date: Optional[str] = None
+    published: Optional[bool] = None
     course_id: Optional[int]
-    org_id: Optional[int] # type: ignore
+    org_id: Optional[int]  # type: ignore
 
 
 class ChapterRead(ChapterBase):
@@ -44,7 +52,7 @@ class ChapterRead(ChapterBase):
     chapter_uuid: str
     creation_date: str
     update_date: str
-    pass
+    is_locked: Optional[bool] = False
 
 
 class ActivityOrder(BaseModel):

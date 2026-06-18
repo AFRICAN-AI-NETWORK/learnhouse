@@ -28,11 +28,14 @@ function TrailCourseElement(props: TrailCourseElementProps) {
   const course = props.course
   const router = useRouter()
   const course_total_steps = props.run.course_total_steps
-  const course_completed_steps = props.run.steps.length
+  const course_completed_steps = props.run.steps.filter(
+    (step: any) => step.complete === true
+  ).length
   const orgID = org?.id
-  const course_progress = Math.round(
-    (course_completed_steps / course_total_steps) * 100
-  )
+  const course_progress =
+    course_total_steps > 0
+      ? Math.round((course_completed_steps / course_total_steps) * 100)
+      : 0
 
   const [courseCertificate, setCourseCertificate] = useState<any>(null)
   const [isLoadingCertificate, setIsLoadingCertificate] = useState(false)
@@ -78,12 +81,15 @@ function TrailCourseElement(props: TrailCourseElementProps) {
 
   return (
     <div
-      className="trailcoursebox flex p-3 bg-white rounded-xl"
+      className="trailcoursebox flex flex-col gap-3 rounded-xl bg-white p-3 sm:flex-row sm:items-start sm:gap-0"
       style={{ boxShadow: '0px 4px 7px 0px rgba(0, 0, 0, 0.03)' }}
     >
-      <Link href={getUriWithOrg(props.orgslug, '/course/' + courseid)}>
+      <Link
+        href={getUriWithOrg(props.orgslug, '/course/' + courseid)}
+        className="shrink-0"
+      >
         <div
-          className="course_tumbnail inset-0 ring-1 ring-inset ring-black/10 rounded-lg relative h-[50px] w-[72px] bg-cover bg-center"
+          className="course_tumbnail inset-0 relative h-36 w-full rounded-lg bg-cover bg-center ring-1 ring-inset ring-black/10 sm:h-[50px] sm:w-[72px]"
           style={{
             backgroundImage: `url(${getCourseThumbnailMediaDirectory(
               org.org_uuid,
@@ -94,23 +100,27 @@ function TrailCourseElement(props: TrailCourseElementProps) {
           }}
         ></div>
       </Link>
-      <div className="course_meta pl-5 grow space-y-1">
+      <div className="course_meta min-w-0 grow space-y-2 sm:pl-5">
         <div className="course_top">
-          <div className="course_info flex">
-            <div className="course_basic flex flex-col flex-end -space-y-2">
+          <div className="course_info flex min-w-0 flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="course_basic flex min-w-0 flex-col sm:-space-y-2">
               <p className="p-0 font-bold text-sm text-gray-700">
                 {t('search.course')}
               </p>
-              <div className="course_progress flex items-center space-x-2">
-                <h2 className="font-bold text-xl">{course.name}</h2>
-                <div className="bg-slate-300 rounded-full w-[10px] h-[5px]"></div>
-                <h2>{course_progress}%</h2>
+              <div className="course_progress flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <h2 className="min-w-0 break-words text-lg font-bold leading-snug sm:text-xl">
+                  {course.name}
+                </h2>
+                <div className="hidden h-[5px] w-[10px] rounded-full bg-slate-300 sm:block"></div>
+                <h2 className="text-sm font-semibold text-gray-500 sm:text-base sm:text-gray-900">
+                  {course_progress}%
+                </h2>
               </div>
             </div>
-            <div className="course_actions grow flex flex-row-reverse">
+            <div className="course_actions flex shrink-0 sm:grow sm:flex-row-reverse">
               <button
                 onClick={() => quitCourse(course.course_uuid)}
-                className="bg-red-200 text-red-700 hover:bg-red-300  rounded-full text-xs h-5 px-2 font-bold"
+                className="h-8 rounded-full bg-red-100 px-3 text-xs font-bold text-red-700 hover:bg-red-200 sm:h-5 sm:px-2"
               >
                 {t('courses.quit_course')}
               </button>
@@ -135,8 +145,8 @@ function TrailCourseElement(props: TrailCourseElementProps) {
                 <span>{t('common.loading')}</span>
               </div>
             ) : courseCertificate ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center space-x-1">
                   <Award className="w-3 h-3 text-yellow-500" />
                   <span className="text-xs font-medium text-gray-700">
                     {t('certificate.certificate')}
@@ -149,7 +159,7 @@ function TrailCourseElement(props: TrailCourseElementProps) {
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-xs font-medium"
+                  className="inline-flex w-fit items-center space-x-1 text-xs font-medium text-blue-600 hover:text-blue-700"
                 >
                   <span>{t('certificate.verify')}</span>
                   <ExternalLink className="w-3 h-3" />

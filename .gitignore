@@ -61,3 +61,25 @@ REFERRAL_SYSTEM_IMPLEMENTATION_PLAN.md
 .agent/implementation_plans/coolifyfrontenddeploymentlogs.txt
 .agent/implementation_plans/coolifybackenddeploymentlogs.txt
 .agent/referral.txt
+.agent/implementation_plans/CHAT_SYSTEM_IMPLEMENTATION_PLAN.md
+.agent/implementation_plans/browserconsolelogs.txt
+.agent/implementation_plans/term.txt
+apps/api/client_secrets.json
+# agent implementation plans
+.agent/implementation_plans/
+
+# Google OAuth secrets
+client_secrets.json
+token.json
+
+# Sentry/security artifacts
+.sentryclirc
+sentry-release
+.semgrep-results*
+semgrep-results*.json
+semgrep-touched.json
+trivy-report.sarif
+gitleaks-report.sarif
+bandit-report.sarif
+snyk-report.sarif
+apps/web/contabo_logs/log.md

@@ -439,8 +439,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onChange={handleSearchChange}
           onFocus={() => setShowResults(true)}
           placeholder={t('search.search_placeholder')}
-          className="w-full h-9 pl-11 pr-4 rounded-xl nice-shadow bg-white 
-                     focus:outline-none focus:ring-1 focus:ring-black/5 focus:border-black/20 
+          className="w-full h-9 pl-11 pr-4 rounded-xl nice-shadow bg-white
+                     focus:outline-none focus:ring-1 focus:ring-black/5 focus:border-black/20
                      text-sm placeholder:text-black/40 transition-all"
         />
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -452,7 +452,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       </div>
 
       <div
-        className={`absolute z-50 w-full mt-2 bg-white rounded-xl nice-shadow 
+        className={`absolute z-50 w-full mt-2 bg-white rounded-xl nice-shadow
                    overflow-hidden divide-y divide-black/5
                    transition-all duration-200 ease-in-out transform
                    ${showResults ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}

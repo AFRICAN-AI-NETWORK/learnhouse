@@ -1,14 +1,40 @@
 from fastapi import APIRouter, Depends
 from src.routers import health
 from src.routers import usergroups
-from src.routers import dev, trail, users, auth, orgs, roles, search, waitlist
+from src.routers import (
+    admin_analytics,
+    dev,
+    trail,
+    users,
+    auth,
+    orgs,
+    roles,
+    search,
+    waitlist,
+    communications,
+)
 from src.routers.ai import ai
-from src.routers.courses import chapters, collections, courses, assignments, certifications
+from src.routers.courses import (
+    chapters,
+    collections,
+    courses,
+    assignments,
+    certifications,
+    live_sessions,
+    prerequisites,
+    schedules,
+)
 from src.routers.courses.activities import activities, blocks
+from src.routers.chat import conversations as chat_conversations
+from src.routers.chat import messages as chat_messages
+from src.routers.chat import websocket as chat_websocket
+from src.routers.chat import admin as chat_admin
 from src.core.ee_hooks import register_ee_routers
 from src.services.dev.dev import isDevModeEnabledOrRaise
 from src.routers.utils import router as utils_router
+from src.routers.code import router as code_router
 from ee.routers import referrals
+from src.routers.contact import router as contact_router
 
 
 v1_router = APIRouter(prefix="/api/v1")
@@ -34,10 +60,32 @@ v1_router.include_router(
 v1_router.include_router(
     certifications.router, prefix="/certifications", tags=["certifications"]
 )
+v1_router.include_router(
+    live_sessions.router, prefix="/live_sessions", tags=["live_sessions"]
+)
+v1_router.include_router(
+    prerequisites.router, prefix="/prerequisites", tags=["prerequisites"]
+)
+v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
+v1_router.include_router(
+    admin_analytics.router, prefix="/admin/analytics", tags=["admin-analytics"]
+)
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 v1_router.include_router(waitlist.router, prefix="/waitlist", tags=["waitlist"])
+v1_router.include_router(
+    communications.router, prefix="/communications", tags=["communications"]
+)
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
+
+# Chat Routes
+v1_router.include_router(
+    chat_conversations.router, prefix="/chat/conversations", tags=["chat"]
+)
+v1_router.include_router(chat_messages.router, prefix="/chat/messages", tags=["chat"])
+v1_router.include_router(chat_websocket.router, prefix="/chat", tags=["chat"])
+v1_router.include_router(chat_admin.router, prefix="/chat/admin", tags=["chat-admin"])
 
 # Register EE Routers if available
 register_ee_routers(v1_router)
@@ -52,4 +100,5 @@ v1_router.include_router(
     dependencies=[Depends(isDevModeEnabledOrRaise)],
 )
 
+v1_router.include_router(code_router, prefix="/code", tags=["code"])
 v1_router.include_router(utils_router, prefix="/utils", tags=["utils"])

@@ -1,9 +1,11 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    // Node.js specific instrumentation
+    // Load server-side Sentry configuration
+    await import('./sentry.server.config')
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
-    // Edge runtime specific instrumentation
+    // Load edge runtime Sentry configuration
+    await import('./sentry.edge.config')
   }
 }

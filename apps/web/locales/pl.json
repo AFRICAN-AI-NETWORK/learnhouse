@@ -109,6 +109,7 @@
     "invalid_email": "Niepoprawny adres email",
     "password_min_length": "Hasło musi mieć co najmniej 8 znaków",
     "username_min_length": "Nazwa użytkownika musi mieć co najmniej 4 znaki",
+    "invalid_phone_with_country_code": "Nieprawidłowy numer telefonu. Podaj numer kierunkowy kraju (np. +254)",
     "title_required": "Tytuł jest wymagany",
     "content_required": "Treść jest wymagana"
   },
@@ -662,15 +663,6 @@
         }
       },
       "learnhouse_university": "LearnHouse University"
-    },
-    "courses": {
-      "title": "Kursy",
-      "rights_guide": "Przewodnik po uprawnieniach",
-      "create_course": "Utwórz kurs",
-      "create_new_course": "Utwórz nowy kurs",
-      "no_courses": "Brak kursów",
-      "create_course_placeholder": "Utwórz kurs, aby dodać zawartość",
-      "no_courses_available": "Brak dostępnych kursów"
     },
     "organization": {
       "settings": {

@@ -123,6 +123,7 @@
     "invalid_email": "البريد الإلكتروني غير صالح",
     "password_min_length": "كلمة المرور يجب أن تكون 8 رموز على الأقل",
     "username_min_length": "اسم المستخدم يجب أن يكون 4 رموز على الأقل",
+    "invalid_phone_with_country_code": "رقم الهاتف غير صالح. يرجى تضمين رمز البلد (مثال: +254)",
     "title_required": "العنوان مطلوب",
     "content_required": "المحتوى مطلوب"
   },

@@ -52,7 +52,7 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState<string | null>(null)
 
-  const handleApplyDiscount = async (amount: number) => {
+  const handleApplyDiscount = async (amount: number, productId: number) => {
     if (!discountCode.trim()) return
 
     setIsValidating(true)
@@ -64,14 +64,19 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
         discountCode,
         amount,
         session.data?.tokens?.access_token,
-        parseInt(course.id)
+        parseInt(course.id),
+        productId
       )) as any
 
-      if (response.valid) {
-        setAppliedDiscount(response)
+      const validationResult = response?.data ?? response
+
+      if (response?.success && validationResult?.valid) {
+        setAppliedDiscount(validationResult)
         toast.success(t('payments.discount_applied'))
       } else {
-        setDiscountError(response.error || t('payments.invalid_discount_code'))
+        setDiscountError(
+          validationResult?.error || t('payments.invalid_discount_code')
+        )
         setAppliedDiscount(null)
       }
     } catch {
@@ -227,7 +232,9 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleApplyDiscount(product.amount)}
+                      onClick={() =>
+                        handleApplyDiscount(product.amount, product.id)
+                      }
                       disabled={!discountCode || isValidating}
                       className="h-9"
                     >

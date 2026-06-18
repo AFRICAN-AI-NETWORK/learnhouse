@@ -3,6 +3,7 @@ import {
   useAssignmentsTask,
   useAssignmentsTaskDispatch,
 } from '@components/Contexts/Assignments/AssignmentsTaskContext'
+import { useAssignmentSubmission } from '@components/Contexts/Assignments/AssignmentSubmissionContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import AssignmentBoxUI from '@components/Objects/Activities/Assignment/AssignmentBoxUI'
 import {
@@ -12,6 +13,8 @@ import {
   handleAssignmentTaskSubmission,
   updateAssignmentTask,
 } from '@services/courses/assignments'
+import { mutate } from 'swr'
+import { getAPIUrl } from '@services/config/config'
 import { Check, Info, Minus, Plus, PlusCircle, X, Type } from 'lucide-react'
 import React, { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -43,12 +46,14 @@ type TaskFormObjectProps = {
   view: 'teacher' | 'student' | 'grading'
   assignmentTaskUUID: string
   user_id?: string
+  isFocusMode?: boolean
 }
 
 function TaskFormObject({
   view,
   assignmentTaskUUID,
   user_id,
+  isFocusMode = false,
 }: TaskFormObjectProps) {
   const { t } = useTranslation()
   const session = useLHSession() as any
@@ -56,6 +61,9 @@ function TaskFormObject({
   const assignmentTaskState = useAssignmentsTask() as any
   const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
   const assignment = useAssignments() as any
+  const assignmentSubmission = useAssignmentSubmission() as any
+  const assignmentNeedsRevision =
+    assignmentSubmission?.[0]?.submission_status === 'NEEDS_REVISION'
 
   /* TEACHER VIEW CODE */
   const [questions, setQuestions] = useState<FormSchema[]>(
@@ -181,6 +189,22 @@ function TaskFormObject({
   const [assignmentTaskOutsideProvider, setAssignmentTaskOutsideProvider] =
     useState<any>(null)
   const [userSubmissionObject, setUserSubmissionObject] = useState<any>(null)
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false)
+
+  /**
+   * Check if a student answer matches the correct answer.
+   * Supports comma-separated accepted answers (e.g. "Paris,paris,PARIS").
+   * Matching is case-insensitive with leading/trailing whitespace stripped.
+   * Mirrors the backend _is_form_answer_correct() logic.
+   */
+  const isFormAnswerCorrect = (student: string, correct: string): boolean => {
+    const normalized = student.trim().toLowerCase()
+    const accepted = correct
+      .split(',')
+      .map((a) => a.trim().toLowerCase())
+      .filter(Boolean)
+    return accepted.length > 0 ? accepted.includes(normalized) : false
+  }
 
   const handleUserAnswerChange = (
     questionUUID: string,
@@ -264,6 +288,8 @@ function TaskFormObject({
 
     if (res) {
       toast.success('Form submitted successfully!')
+      setHasSubmitted(true)
+      setUserSubmissionObject(res.data)
       // Update userSubmissions with the returned UUID for future updates
       const updatedUserSubmissions = {
         ...userSubmissions,
@@ -274,6 +300,11 @@ function TaskFormObject({
       setUserSubmissions(updatedUserSubmissions)
       setInitialUserSubmissions(updatedUserSubmissions)
       setShowSavingDisclaimer(false)
+
+      // Mutate task submissions list to update activity-level UI
+      mutate(
+        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+      )
     } else {
       // eslint-disable-next-line no-console
       console.error('Submission error:', res)
@@ -413,6 +444,8 @@ function TaskFormObject({
             assignment_task_submission_uuid:
               res.data.assignment_task_submission_uuid,
           })
+          setUserSubmissionObject(res.data)
+          setHasSubmitted(!!res.data.task_submission?.grading_results)
         }
       }
     }
@@ -490,6 +523,7 @@ function TaskFormObject({
         maxPoints={assignmentTaskOutsideProvider?.max_grade_value}
         showSavingDisclaimer={showSavingDisclaimer}
         type="form"
+        isFocusMode={isFocusMode}
       >
         {view === 'grading' && (
           <div className="mb-6 p-4 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
@@ -555,10 +589,12 @@ function TaskFormObject({
                         handleQuestionChange(qIndex, e.target.value)
                       }
                       placeholder="Enter your question with blanks (use ___ for blanks)"
-                      className="w-full px-3 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold"
+                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
                     />
                   ) : (
-                    <p className="w-full px-3 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md border-dotted text-sm font-bold">
+                    <p
+                      className={`w-full px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
+                    >
                       {question.questionText}
                     </p>
                   )}
@@ -578,11 +614,13 @@ function TaskFormObject({
                     <div key={bIndex} className="flex">
                       <div
                         className={
-                          'blank-item outline-3 outline-white pr-2 shadow-sm w-full flex items-center space-x-2 min-h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg bg-white text-sm duration-150 ease-linear nice-shadow ' +
+                          `blank-item outline-3 pr-2 shadow-sm w-full flex items-center space-x-2 min-h-[40px] hover:bg-opacity-100 hover:shadow-md rounded-lg text-sm duration-150 ease-linear nice-shadow ${isFocusMode ? 'bg-white/5 border border-white/10 outline-white/10' : 'bg-white outline-white'} ` +
                           (view == 'student' ? 'active:scale-105' : '')
                         }
                       >
-                        <div className="font-bold text-base flex items-center justify-center h-full w-[40px] rounded-l-md text-slate-800 bg-slate-100/80">
+                        <div
+                          className={`font-bold text-base flex items-center justify-center h-full w-[40px] rounded-l-md ${isFocusMode ? 'text-zinc-100 bg-white/10' : 'text-slate-800 bg-slate-100/80'}`}
+                        >
                           <Type size={14} />
                         </div>
                         {view === 'teacher' ? (
@@ -682,7 +720,7 @@ function TaskFormObject({
                               }
                               placeholder={blank.placeholder}
                               data-blank-id={blank.blankUUID}
-                              className="w-full mx-2 px-3 pr-6 text-neutral-600 bg-[#00008b00] border-2 border-gray-200 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm font-bold transition-all"
+                              className={`w-full mx-2 px-3 pr-6 bg-[#00008b00] border-2 rounded-md focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm font-bold transition-all ${isFocusMode ? 'text-zinc-100 border-white/10' : 'text-neutral-600 border-gray-200'}`}
                             />
                             {blank.hint && (
                               <div className="mx-2 text-xs text-blue-600 italic">
@@ -702,30 +740,28 @@ function TaskFormObject({
                         {view === 'grading' && (
                           <div
                             className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
-                              userSubmissions.submissions
-                                .find(
+                              isFormAnswerCorrect(
+                                userSubmissions.submissions.find(
                                   (submission) =>
                                     submission.questionUUID ===
                                       question.questionUUID &&
                                     submission.blankUUID === blank.blankUUID
-                                )
-                                ?.answer?.toLowerCase()
-                                .trim() ===
-                              blank.correctAnswer.toLowerCase().trim()
+                                )?.answer ?? '',
+                                blank.correctAnswer
+                              )
                                 ? 'bg-lime-200 text-lime-600'
                                 : 'bg-rose-200/60 text-rose-500'
                             } text-sm`}
                           >
-                            {userSubmissions.submissions
-                              .find(
+                            {isFormAnswerCorrect(
+                              userSubmissions.submissions.find(
                                 (submission) =>
                                   submission.questionUUID ===
                                     question.questionUUID &&
                                   submission.blankUUID === blank.blankUUID
-                              )
-                              ?.answer?.toLowerCase()
-                              .trim() ===
-                            blank.correctAnswer.toLowerCase().trim() ? (
+                              )?.answer ?? '',
+                              blank.correctAnswer
+                            ) ? (
                               <>
                                 <Check size={12} className="mx-auto" />
                                 <p className="mx-auto font-bold text-xs">
@@ -742,35 +778,78 @@ function TaskFormObject({
                             )}
                           </div>
                         )}
-                        {view === 'student' && (
-                          <div
-                            className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
-                              userSubmissions.submissions
+                        {view === 'student' &&
+                          (!hasSubmitted || assignmentNeedsRevision) && (
+                            <div
+                              className={`w-[20px] flex-none flex items-center h-[20px] rounded-lg ${
+                                userSubmissions.submissions
+                                  .find(
+                                    (submission) =>
+                                      submission.questionUUID ===
+                                        question.questionUUID &&
+                                      submission.blankUUID === blank.blankUUID
+                                  )
+                                  ?.answer?.trim()
+                                  ? 'bg-green-200/60 text-green-500'
+                                  : 'bg-slate-200/60 text-slate-500'
+                              } text-sm transition-all ease-linear`}
+                            >
+                              {userSubmissions.submissions
                                 .find(
                                   (submission) =>
                                     submission.questionUUID ===
                                       question.questionUUID &&
                                     submission.blankUUID === blank.blankUUID
                                 )
-                                ?.answer?.trim()
-                                ? 'bg-green-200/60 text-green-500'
-                                : 'bg-slate-200/60 text-slate-500'
-                            } text-sm transition-all ease-linear`}
-                          >
-                            {userSubmissions.submissions
-                              .find(
-                                (submission) =>
-                                  submission.questionUUID ===
-                                    question.questionUUID &&
-                                  submission.blankUUID === blank.blankUUID
-                              )
-                              ?.answer?.trim() ? (
-                              <Check size={12} className="mx-auto" />
-                            ) : (
-                              <X size={12} className="mx-auto" />
-                            )}
-                          </div>
-                        )}
+                                ?.answer?.trim() ? (
+                                <Check size={12} className="mx-auto" />
+                              ) : (
+                                <X size={12} className="mx-auto" />
+                              )}
+                            </div>
+                          )}
+                        {view === 'student' &&
+                          hasSubmitted &&
+                          !assignmentNeedsRevision && (
+                            <div
+                              className={`w-fit flex-none flex text-xs px-2 py-0.5 space-x-1 items-center h-fit rounded-lg ${
+                                isFormAnswerCorrect(
+                                  userSubmissions.submissions.find(
+                                    (s) =>
+                                      s.questionUUID ===
+                                        question.questionUUID &&
+                                      s.blankUUID === blank.blankUUID
+                                  )?.answer ?? '',
+                                  blank.correctAnswer
+                                )
+                                  ? 'bg-lime-200 text-lime-600'
+                                  : 'bg-rose-200/60 text-rose-500'
+                              } text-sm`}
+                            >
+                              {isFormAnswerCorrect(
+                                userSubmissions.submissions.find(
+                                  (s) =>
+                                    s.questionUUID === question.questionUUID &&
+                                    s.blankUUID === blank.blankUUID
+                                )?.answer ?? '',
+                                blank.correctAnswer
+                              ) ? (
+                                <>
+                                  <Check size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Correct
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <X size={12} className="mx-auto" />
+                                  <p className="mx-auto font-bold text-xs">
+                                    Wrong
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          )}
                       </div>
                       {view === 'teacher' &&
                         bIndex === question.blanks.length - 1 &&

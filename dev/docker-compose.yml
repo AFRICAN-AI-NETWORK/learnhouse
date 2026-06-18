@@ -7,12 +7,15 @@ services:
     image: postgres:16-alpine
     container_name: learnhouse-db-dev
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     environment:
       - POSTGRES_USER=learnhouse
       - POSTGRES_PASSWORD=learnhouse
       - POSTGRES_DB=learnhouse
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - learnhouse_db_dev_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,6 +28,9 @@ services:
     image: redis:7.2.3-alpine
     container_name: learnhouse-redis-dev
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     command: redis-server --appendonly yes
     ports:
       - "6379:6379"
@@ -36,7 +42,39 @@ services:
       timeout: 4s
       retries: 5
 
+  piston:
+    image: ghcr.io/engineer-man/piston
+    container_name: learnhouse-piston-dev
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PISTON_RUN_TIMEOUT=15000
+      - PISTON_COMPILE_TIMEOUT=15000
+      - PISTON_RUN_CPU_TIME=10000
+      - PISTON_COMPILE_CPU_TIME=10000
+    ports:
+      - "2000:2000"
+    volumes:
+      - learnhouse_piston_data:/piston/packages
+
+  signoz:
+    image: signoz/signoz:latest
+    container_name: learnhouse-signoz-dev
+    restart: unless-stopped
+    profiles:
+      - observability
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "3301:3301"
+      - "4317:4317"
+      - "4318:4318"
+
 volumes:
   learnhouse_db_dev_data:
   learnhouse_redis_dev_data:
-
+  learnhouse_piston_data:
+  learnhouse_signoz_dev_data:

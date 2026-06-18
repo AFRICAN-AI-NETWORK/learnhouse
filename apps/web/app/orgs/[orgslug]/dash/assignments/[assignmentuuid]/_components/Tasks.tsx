@@ -1,6 +1,6 @@
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
-import { FileUp, ListTodo, PanelLeftOpen, Plus, Type } from 'lucide-react'
+import { Code, FileUp, ListTodo, PanelLeftOpen, Plus, Type } from 'lucide-react'
 import React, { useEffect } from 'react'
 import NewTaskModal from './Modals/NewTaskModal'
 import {
@@ -26,8 +26,8 @@ function AssignmentTasks({ assignment_uuid }: any) {
   useEffect(() => {}, [assignments])
 
   return (
-    <div className="flex w-full">
-      <div className="flex flex-col space-y-3 mx-auto">
+    <div className="flex w-full min-w-0 px-4 pb-4 lg:px-0">
+      <div className="mx-auto flex w-full min-w-0 flex-row gap-3 overflow-x-auto pb-2 lg:w-auto lg:flex-col lg:space-y-3 lg:overflow-visible lg:pb-0">
         {assignments && assignments?.assignment_tasks?.length < 100 && (
           <Modal
             isDialogOpen={isNewTaskModalOpen}
@@ -45,7 +45,7 @@ function AssignmentTasks({ assignment_uuid }: any) {
               'dashboard.assignments.editor.add_task_modal.description'
             )}
             dialogTrigger={
-              <div className="flex space-x-1.5 px-2 py-2 justify-center bg-black text-white text-xs rounded-md antialiased items-center font-semibold cursor-pointer">
+              <div className="flex min-h-[44px] min-w-[180px] shrink-0 items-center justify-center space-x-1.5 rounded-md bg-black px-3 py-2 text-xs font-semibold text-white antialiased cursor-pointer lg:min-w-0">
                 <Plus size={17} />
                 <p>{t('dashboard.assignments.editor.add_task')}</p>
               </div>
@@ -57,11 +57,11 @@ function AssignmentTasks({ assignment_uuid }: any) {
             return (
               <div
                 key={task.id}
-                className="flex flex-col w-[250px] nice-shadow bg-white shadow-[0px_4px_16px_rgba(0,0,0,0.06)] p-3 rounded-md"
+                className="flex min-h-[44px] w-[240px] shrink-0 flex-col rounded-md bg-white p-3 shadow-[0px_4px_16px_rgba(0,0,0,0.06)] nice-shadow lg:w-[250px]"
                 onClick={() => setSelectTask(task.assignment_task_uuid)}
               >
-                <div className="flex items-center px-2 justify-between">
-                  <div className="flex space-x-3 items-center">
+                <div className="flex items-center justify-between gap-2 px-2">
+                  <div className="flex min-w-0 items-center space-x-3">
                     <div className="text-gray-500">
                       {task.assignment_type === 'QUIZ' && (
                         <ListTodo size={15} />
@@ -70,11 +70,16 @@ function AssignmentTasks({ assignment_uuid }: any) {
                         <FileUp size={15} />
                       )}
                       {task.assignment_type === 'FORM' && <Type size={15} />}
+                      {task.assignment_type === 'CODE_EDITOR' && (
+                        <Code size={15} />
+                      )}
                     </div>
-                    <div className="font-semibold text-sm">{task.title}</div>
+                    <div className="min-w-0 truncate text-sm font-semibold">
+                      {task.title}
+                    </div>
                   </div>
                   <button
-                    className={`outline-1 outline-gray-200 ${task.assignment_task_uuid == assignmentTask.selectedAssignmentTaskUUID ? 'bg-slate-100' : ''} hover:bg-slate-100/50 rounded-md text-gray-500 font-bold py-2 px-3  ease-linear transition-all`}
+                    className={`outline-1 outline-gray-200 ${task.assignment_task_uuid == assignmentTask.selectedAssignmentTaskUUID ? 'bg-slate-100' : ''} hover:bg-slate-100/50 rounded-md text-gray-500 font-bold py-2 px-3 ease-linear transition-all shrink-0`}
                   >
                     <PanelLeftOpen size={16} />
                   </button>

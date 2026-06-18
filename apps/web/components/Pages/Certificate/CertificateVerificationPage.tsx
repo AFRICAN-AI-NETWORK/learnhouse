@@ -167,7 +167,7 @@ const CertificateVerificationPage: React.FC<
 
   const qrCodeLink = getUriWithOrg(
     org?.org_slug || '',
-    `/certificates/${certificateData.certificate_user.user_certification_uuid}/verify`
+    `/certificates/${certificateData?.certificate_user?.user_certification_uuid || 'unknown'}/verify`
   )
 
   return (
@@ -228,6 +228,9 @@ const CertificateVerificationPage: React.FC<
                   certificateInstructor={
                     certificateData.certification.config.certificate_instructor
                   }
+                  certificateCeo={
+                    certificateData.certification.config.certificate_ceo
+                  }
                   certificateId={
                     certificateData.certificate_user.user_certification_uuid
                   }
@@ -239,6 +242,10 @@ const CertificateVerificationPage: React.FC<
                     day: 'numeric',
                   })}
                   qrCodeLink={qrCodeLink}
+                  studentName={
+                    `${certificateData.user?.first_name || ''} ${certificateData.user?.last_name || ''}`.trim() ||
+                    'Student Name'
+                  }
                 />
               </div>
             </div>
@@ -390,6 +397,18 @@ const CertificateVerificationPage: React.FC<
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Recipient Name
+                  </label>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <span className="text-gray-900 font-bold">
+                      {`${certificateData.user?.first_name || ''} ${certificateData.user?.last_name || ''}`.trim() ||
+                        'Not Specified'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Course Name
                   </label>
                   <div className="bg-gray-50 p-3 rounded-lg">
@@ -436,7 +455,7 @@ const CertificateVerificationPage: React.FC<
                   .certificate_instructor && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Instructor
+                      Chief Instructor
                     </label>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <span className="text-gray-900">
@@ -444,6 +463,19 @@ const CertificateVerificationPage: React.FC<
                           certificateData.certification.config
                             .certificate_instructor
                         }
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {certificateData.certification.config.certificate_ceo && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CEO
+                    </label>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <span className="text-gray-900">
+                        {certificateData.certification.config.certificate_ceo}
                       </span>
                     </div>
                   </div>

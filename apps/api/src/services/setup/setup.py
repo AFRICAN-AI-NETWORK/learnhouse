@@ -22,7 +22,14 @@ from src.db.organization_config import (
     UserGroupOrgConfig,
 )
 from src.db.organizations import Organization, OrganizationCreate
-from src.db.roles import DashboardPermission, Permission, PermissionsWithOwn, Rights, Role, RoleTypeEnum
+from src.db.roles import (
+    DashboardPermission,
+    Permission,
+    PermissionsWithOwn,
+    Rights,
+    Role,
+    RoleTypeEnum,
+)
 from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate, UserRead
 from src.security.security import security_hash_password
@@ -44,7 +51,7 @@ def install_default_elements(db_session: Session):
     statement = select(Role).where(Role.role_type == RoleTypeEnum.TYPE_GLOBAL)
     roles = db_session.exec(statement).all()
 
-    if roles and len(roles) == 4:
+    if roles and len(roles) == 9:
         raise HTTPException(
             status_code=409,
             detail="Default roles already exist",
@@ -104,6 +111,12 @@ def install_default_elements(db_session: Session):
                 action_delete=True,
             ),
             roles=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=True,
+            ),
+            communications=Permission(
                 action_create=True,
                 action_read=True,
                 action_update=True,
@@ -175,6 +188,12 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            communications=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -241,6 +260,12 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            communications=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -298,12 +323,18 @@ def install_default_elements(db_session: Session):
             activities=Permission(
                 action_create=False,
                 action_read=True,
-                action_update=False,    
+                action_update=False,
                 action_delete=False,
             ),
             roles=Permission(
                 action_create=False,
                 action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            communications=Permission(
+                action_create=False,
+                action_read=True,
                 action_update=False,
                 action_delete=False,
             ),
@@ -315,17 +346,231 @@ def install_default_elements(db_session: Session):
         update_date=str(datetime.now()),
     )
 
+    # ── Shared rights blocks reused by support roles ───────────────────────────
+
+    _read_only_rights = Rights(
+        courses=PermissionsWithOwn(
+            action_create=False,
+            action_read=True,
+            action_read_own=True,
+            action_update=False,
+            action_update_own=False,
+            action_delete=False,
+            action_delete_own=False,
+        ),
+        users=Permission(
+            action_create=False,
+            action_read=False,
+            action_update=False,
+            action_delete=False,
+        ),
+        usergroups=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        collections=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        organizations=Permission(
+            action_create=False,
+            action_read=False,
+            action_update=False,
+            action_delete=False,
+        ),
+        coursechapters=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        activities=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        roles=Permission(
+            action_create=False,
+            action_read=False,
+            action_update=False,
+            action_delete=False,
+        ),
+        communications=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        dashboard=DashboardPermission(action_access=False),
+    )
+
+    _teaching_rights = Rights(
+        courses=PermissionsWithOwn(
+            action_create=True,
+            action_read=True,
+            action_read_own=True,
+            action_update=False,
+            action_update_own=True,
+            action_delete=False,
+            action_delete_own=True,
+        ),
+        users=Permission(
+            action_create=False,
+            action_read=False,
+            action_update=False,
+            action_delete=False,
+        ),
+        usergroups=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        collections=Permission(
+            action_create=True,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        organizations=Permission(
+            action_create=False,
+            action_read=False,
+            action_update=False,
+            action_delete=False,
+        ),
+        coursechapters=Permission(
+            action_create=True,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        activities=Permission(
+            action_create=True,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        roles=Permission(
+            action_create=False,
+            action_read=False,
+            action_update=False,
+            action_delete=False,
+        ),
+        communications=Permission(
+            action_create=True,
+            action_read=True,
+            action_update=True,
+            action_delete=False,
+        ),
+        dashboard=DashboardPermission(action_access=True),
+    )
+
+    # ── Support / staff roles ─────────────────────────────────────────────────
+
+    role_teaching_assistant = Role(
+        name="Teaching Assistant",
+        description="Assists instructors with course content and student queries",
+        id=5,
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="role_global_teaching_assistant",
+        rights=_teaching_rights,
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+
+    role_student_success_coordinator = Role(
+        name="Students Success Coordinator",
+        description="Monitors and supports student progress and success",
+        id=6,
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="role_global_student_success_coordinator",
+        rights=Rights(
+            courses=_read_only_rights.courses,
+            users=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            usergroups=_read_only_rights.usergroups,
+            collections=_read_only_rights.collections,
+            organizations=_read_only_rights.organizations,
+            coursechapters=_read_only_rights.coursechapters,
+            activities=_read_only_rights.activities,
+            roles=_read_only_rights.roles,
+            communications=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=False,
+            ),
+            dashboard=DashboardPermission(action_access=True),
+        ),
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+
+    role_student_mentor = Role(
+        name="Students Mentor",
+        description="Provides guidance and mentorship to individual students",
+        id=7,
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="role_global_student_mentor",
+        rights=_read_only_rights,
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+
+    role_community_manager = Role(
+        name="Community Manager",
+        description="Manages community engagement and communication",
+        id=8,
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="role_global_community_manager",
+        rights=_teaching_rights,
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+
+    role_lead_instructor = Role(
+        name="Lead Instructor",
+        description="Senior instructor who leads courses and mentors other instructors",
+        id=9,
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="role_global_lead_instructor",
+        rights=_teaching_rights,
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+
     # Serialize rights to JSON
     role_global_admin.rights = role_global_admin.rights.dict()  # type: ignore
     role_global_maintainer.rights = role_global_maintainer.rights.dict()  # type: ignore
     role_global_instructor.rights = role_global_instructor.rights.dict()  # type: ignore
     role_global_user.rights = role_global_user.rights.dict()  # type: ignore
+    role_teaching_assistant.rights = role_teaching_assistant.rights.dict()  # type: ignore
+    role_student_success_coordinator.rights = (
+        role_student_success_coordinator.rights.dict()
+    )  # type: ignore
+    role_student_mentor.rights = role_student_mentor.rights.dict()  # type: ignore
+    role_community_manager.rights = role_community_manager.rights.dict()  # type: ignore
+    role_lead_instructor.rights = role_lead_instructor.rights.dict()  # type: ignore
 
     # Insert roles in DB
     db_session.add(role_global_admin)
     db_session.add(role_global_maintainer)
     db_session.add(role_global_instructor)
     db_session.add(role_global_user)
+    db_session.add(role_teaching_assistant)
+    db_session.add(role_student_success_coordinator)
+    db_session.add(role_student_mentor)
+    db_session.add(role_community_manager)
+    db_session.add(role_lead_instructor)
 
     # commit changes
     db_session.commit()
@@ -372,11 +617,8 @@ def install_create_organization(org_object: OrganizationCreate, db_session: Sess
             collaboration=CollaborationOrgConfig(enabled=True, limit=0),
             api=APIOrgConfig(enabled=True, limit=0),
         ),
-        cloud=OrgCloudConfig(
-            plan='free',
-            custom_domain=False
-        ),
-        landing={}
+        cloud=OrgCloudConfig(plan="free", custom_domain=False),
+        landing={},
     )
 
     org_config = json.loads(org_config.json())
@@ -472,4 +714,3 @@ def install_create_organization_user(
     user = UserRead.model_validate(user)
 
     return user
-

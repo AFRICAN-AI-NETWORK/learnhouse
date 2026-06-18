@@ -61,4 +61,4 @@ export function useCourseRights(courseuuid: string) {
     isMaintainer: rights?.ownership?.is_maintainer ?? false,
     isContributor: rights?.ownership?.is_contributor ?? false
   }
-} 
+}

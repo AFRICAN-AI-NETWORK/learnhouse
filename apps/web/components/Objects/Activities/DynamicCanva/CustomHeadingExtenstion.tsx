@@ -14,7 +14,7 @@ export const CustomHeading = Heading.extend({
       .replace(/[^\w\s-]/g, '') // Remove special characters
       .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
       .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-    
+
     const id = slug ? `heading-${slug}` : `heading-${Math.random().toString(36).substr(2, 9)}`
 
     return [

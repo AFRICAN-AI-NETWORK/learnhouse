@@ -25,7 +25,6 @@ def check_limits_with_usage(
     org_id: int,
     db_session: Session,
 ):
-
     # Get the Organization Config
     statement = select(OrganizationConfig).where(OrganizationConfig.org_id == org_id)
     result = db_session.exec(statement)
@@ -59,7 +58,9 @@ def check_limits_with_usage(
 
     # Check limits
     feature_config = org_config.config["features"][feature]
-    feature_limit = feature_config.get("limit", 0)  # Default to 0 (unlimited) if limit not present
+    feature_limit = feature_config.get(
+        "limit", 0
+    )  # Default to 0 (unlimited) if limit not present
 
     if feature_limit > 0:
         # Get the number of feature usage

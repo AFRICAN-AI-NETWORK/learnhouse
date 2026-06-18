@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlmodel import Session, select  # Added 'select' here
 from src.core.events.database import get_db_session
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
@@ -11,7 +12,28 @@ from datetime import datetime, timedelta, timezone
 from src.services.dev.dev import isDevModeEnabled
 from src.services.users.users import security_verify_password
 from src.security.security import ALGORITHM, SECRET_KEY
+from src.db.waitlist import UserStatusEnum
+
+import jwt as pyjwt_lib
+
+if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
+    _original_encode = pyjwt_lib.encode
+
+    class DecodableStr(str):
+        def decode(self, *args, **kwargs):
+            return self
+
+    def patched_encode(*args, **kwargs):
+        result = _original_encode(*args, **kwargs)
+        if isinstance(result, str):
+            return DecodableStr(result)
+        return result
+
+    patched_encode.__wrapped_for_fastapi_jwt_auth__ = True
+    pyjwt_lib.encode = patched_encode
+
 from fastapi_jwt_auth import AuthJWT
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
@@ -55,62 +77,63 @@ async def authenticate_user(
     # Get user (existing code)
     statement = select(User).where(User.email == username)
     user = db_session.exec(statement).first()
-    
+
     if not user:
         return False
-    
+
     # Check if password is empty (should not happen, but handle gracefully)
     if not user.password:
         return False
-    
+
     # Verify password (existing code)
     if not security_verify_password(password, user.password):
         return False
-    
+
     # NEW: Check if email is verified
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email address before logging in. Check your inbox for the verification link."
+            detail="Please verify your email address before logging in. Check your inbox for the verification link.",
         )
-    
+
     # NEW: Check user status for waitlist handling
-    user_status = getattr(user, 'user_status', 'ACTIVE')
-    
-    if user_status == "WAITLIST":
+    user_status = getattr(user, "user_status", "ACTIVE")
+
+    if user_status == UserStatusEnum.WAITLIST.value:
         # User is on waitlist, cannot login yet
         # Get waitlist details to show launch date
         from src.db.waitlist import WaitlistConfig
-        waitlist_interest = getattr(user, 'waitlist_interest', None)
+
+        waitlist_interest = getattr(user, "waitlist_interest", None)
         if waitlist_interest:
             waitlist_query = select(WaitlistConfig).where(
                 WaitlistConfig.interest_category == waitlist_interest,
-                WaitlistConfig.status == "ACTIVE"
+                WaitlistConfig.status == "ACTIVE",
             )
             waitlist = db_session.exec(waitlist_query).first()
             if waitlist:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Your account is on the waitlist for {waitlist.name}. You can login after {waitlist.launch_datetime}."
+                    detail=f"Your account is on the waitlist for {waitlist.name}. You can login after {waitlist.launch_datetime}.",
                 )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is on a waitlist. Please wait for the launch date."
+            detail="Your account is on a waitlist. Please wait for the launch date.",
         )
-    
-    elif user_status == "WAITLIST_ACTIVATED":
+
+    elif user_status == UserStatusEnum.WAITLIST_ACTIVATED.value:
         # User received activation email, allow login and transition to ACTIVE
-        user.user_status = "ACTIVE"
+        user.user_status = UserStatusEnum.ACTIVE.value
         db_session.add(user)
         db_session.commit()
         db_session.refresh(user)
-    
-    elif user_status == "SUSPENDED":
+
+    elif user_status == UserStatusEnum.SUSPENDED.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been suspended. Please contact support."
+            detail="Your account has been suspended. Please contact support.",
         )
-    
+
     # ACTIVE status or newly transitioned from WAITLIST_ACTIVATED - allow login
     return user
 
@@ -157,3 +180,45 @@ async def get_current_user(
 async def non_public_endpoint(current_user: UserRead | AnonymousUser):
     if isinstance(current_user, AnonymousUser):
         raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
+    """
+    Verify JWT token for WebSocket connection.
+    Returns user_id if valid, None otherwise.
+
+    SECURITY NOTE: Tokens passed in query parameters are visible in logs.
+    Ensure Logfire is configured to scrub 'token' from URL logs:
+
+    logfire.configure(
+        scrubbing_patterns=['token', 'password', 'authorization'],
+        scrubbing_callback=lambda key, value: '***REDACTED***'
+    )
+    """
+    try:
+        from fastapi_jwt_auth import AuthJWT
+        from src.db.users import User
+        from sqlmodel import select
+        import logging
+
+        # Create AuthJWT instance with the token
+        auth = AuthJWT()
+        auth._token = token
+
+        # Verify token
+        auth.jwt_required()
+        user_uuid = auth.get_jwt_subject()
+
+        # Get user from database
+        user = db.exec(select(User).where(User.user_uuid == user_uuid)).first()
+
+        if user:
+            return user.id
+
+        return None
+
+    except Exception as e:
+        import logging
+
+        logging.error(f"WebSocket token verification failed: {e}")
+        return None

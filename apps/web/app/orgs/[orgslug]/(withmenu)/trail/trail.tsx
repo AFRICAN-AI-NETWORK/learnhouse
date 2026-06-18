@@ -45,7 +45,15 @@ function Trail(params: any) {
     try {
       for (let i = 0; i < trail.runs.length; i++) {
         const run = trail.runs[i]
-        await removeCourse(run.course.course_uuid, orgslug, access_token)
+        const result = await removeCourse(
+          run.course.course_uuid,
+          orgslug,
+          access_token
+        )
+        if (!result.success) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to quit course:', result.error)
+        }
         setQuittingProgress(Math.round(((i + 1) / totalCourses) * 100))
       }
 
@@ -65,7 +73,7 @@ function Trail(params: any) {
 
   return (
     <GeneralWrapperStyled>
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <TypeOfContentTitle title={t('courses.progress')} type="tra" />
         {trail?.runs?.length > 0 && (
           <ConfirmationModal
@@ -79,7 +87,7 @@ function Trail(params: any) {
             dialogTrigger={
               <button
                 disabled={isQuittingAll}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all
+                className={`w-full rounded-lg px-4 py-2 text-sm font-medium transition-all sm:w-auto
                   ${
                     isQuittingAll
                       ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
@@ -101,14 +109,14 @@ function Trail(params: any) {
 
       <div className="space-y-8">
         {/* Progress Section */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <BookOpen className="w-6 h-6 text-blue-500" />
-            <h2 className="text-xl font-semibold text-gray-900">
+        <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-6 flex min-w-0 items-center gap-3">
+            <BookOpen className="h-6 w-6 shrink-0 text-blue-500" />
+            <h2 className="min-w-0 text-lg font-semibold text-gray-900 sm:text-xl">
               {t('user.my_progress')}
             </h2>
             {trail?.runs && (
-              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+              <span className="shrink-0 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                 {trail.runs.length}
               </span>
             )}

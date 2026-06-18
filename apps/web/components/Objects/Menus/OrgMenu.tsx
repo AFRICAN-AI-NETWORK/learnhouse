@@ -9,6 +9,22 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { SearchBar } from '@components/Objects/Search/SearchBar'
 import { usePathname } from 'next/navigation'
+import { Monitor, Moon, Sun } from 'lucide-react'
+
+type ThemeMode = 'light' | 'dark' | 'system'
+
+const THEME_STORAGE_KEY = 'learnhouse_theme'
+const themeModes: ThemeMode[] = ['light', 'dark', 'system']
+
+const applyThemeMode = (mode: ThemeMode) => {
+  if (typeof window === 'undefined') return
+
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const shouldUseDark = mode === 'dark' || (mode === 'system' && prefersDark)
+
+  document.documentElement.classList.toggle('dark', shouldUseDark)
+  document.documentElement.dataset.theme = mode
+}
 
 export const OrgMenu = (props: any) => {
   const orgslug = props.orgslug
@@ -18,7 +34,38 @@ export const OrgMenu = (props: any) => {
   const org = useOrg() as any
   const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const [isFocusMode, setIsFocusMode] = useState(false)
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    if (typeof window === 'undefined') return 'light'
+
+    const savedMode = localStorage.getItem(
+      THEME_STORAGE_KEY
+    ) as ThemeMode | null
+
+    return themeModes.includes(savedMode as ThemeMode)
+      ? (savedMode as ThemeMode)
+      : 'light'
+  })
   const pathname = usePathname()
+  const isActivityPage = pathname?.includes('/activity/')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    applyThemeMode(themeMode)
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleSystemThemeChange = () => {
+      if (themeMode === 'system') {
+        applyThemeMode('system')
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange)
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemThemeChange)
+    }
+  }, [themeMode])
 
   useEffect(() => {
     // Only check focus mode if we're in an activity page
@@ -68,19 +115,31 @@ export const OrgMenu = (props: any) => {
     setIsMenuOpen(!isMenuOpen)
   }
 
+  function toggleThemeMode() {
+    const nextMode =
+      themeModes[(themeModes.indexOf(themeMode) + 1) % themeModes.length]
+
+    setThemeMode(nextMode)
+    localStorage.setItem(THEME_STORAGE_KEY, nextMode)
+    applyThemeMode(nextMode)
+  }
+
+  const ThemeIcon =
+    themeMode === 'light' ? Sun : themeMode === 'dark' ? Moon : Monitor
+
   // Only hide menu if we're in an activity page and focus mode is enabled
-  if (pathname?.includes('/activity/') && isFocusMode) {
+  if (isActivityPage || (pathname?.includes('/activity/') && isFocusMode)) {
     return null
   }
 
   return (
     <>
-      <div className="backdrop-blur-lg h-[60px] blur-3xl -z-10"></div>
-      <div className="backdrop-blur-lg bg-white/90 fixed top-0 left-0 right-0 h-[60px] ring-1 ring-inset ring-gray-500/10 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] z-50">
-        <div className="flex items-center justify-between w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 h-full">
-          <div className="flex items-center space-x-5 md:w-auto w-full">
-            <div className="logo flex md:w-auto w-full justify-center">
-              <Link href={getUriWithOrg(orgslug, '/')}>
+      <div className="backdrop-blur-lg h-[72px] blur-3xl -z-10"></div>
+      <div className="backdrop-blur-lg bg-white/90 dark:bg-[#13131a]/95 fixed top-0 left-0 right-0 h-[72px] ring-1 ring-inset ring-gray-500/10 dark:ring-white/8 shadow-[0px_4px_16px_rgba(0,0,0,0.03)] dark:shadow-[0px_4px_24px_rgba(0,0,0,0.45)] z-50">
+        <div className="flex items-center justify-between w-full px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex items-center space-x-5 md:w-auto">
+            <div className="logo flex w-auto justify-start">
+              <Link href={getUriWithOrg(orgslug, '/?landing=premium')}>
                 <div className="flex w-auto h-9 rounded-md items-center m-auto py-1 justify-center">
                   {org?.logo_image ? (
                     <img
@@ -101,16 +160,24 @@ export const OrgMenu = (props: any) => {
           </div>
 
           {/* Search Section */}
-          <div className="hidden md:flex flex-1 justify-center max-w-lg px-4">
+          <div className="hidden md:flex flex-1 justify-start max-w-lg px-1">
             <SearchBar orgslug={orgslug} className="w-full" />
           </div>
 
           <div className="flex items-center space-x-4">
+            <button
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white/70 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 focus:outline-hidden dark:border-white/8 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+              onClick={toggleThemeMode}
+              title={`Theme: ${themeMode}`}
+              aria-label={`Switch theme. Current theme is ${themeMode}.`}
+            >
+              <ThemeIcon size={18} />
+            </button>
             <div className="hidden md:flex">
               <HeaderProfileBox />
             </div>
             <button
-              className="md:hidden text-gray-600 focus:outline-hidden"
+              className="md:hidden text-gray-600 dark:text-white/70 focus:outline-hidden"
               onClick={toggleMenu}
             >
               {isMenuOpen ? (
@@ -149,8 +216,8 @@ export const OrgMenu = (props: any) => {
         </div>
       </div>
       <div
-        className={`fixed inset-x-0 z-40 bg-white/80 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${
-          isMenuOpen ? 'top-[60px] opacity-100' : '-top-full opacity-0'
+        className={`fixed inset-x-0 z-40 bg-white/80 dark:bg-[#13131a]/95 backdrop-blur-lg md:hidden shadow-lg transition-all duration-300 ease-in-out ${
+          isMenuOpen ? 'top-[72px] opacity-100' : '-top-full opacity-0'
         }`}
       >
         <div className="flex flex-col px-4 py-3 space-y-4 justify-center items-center">
@@ -159,9 +226,9 @@ export const OrgMenu = (props: any) => {
             <SearchBar orgslug={orgslug} isMobile={true} />
           </div>
           <div className="py-4">
-            <MenuLinks orgslug={orgslug} />
+            <MenuLinks orgslug={orgslug} variant="sidebar" />
           </div>
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-200 dark:border-white/8">
             <HeaderProfileBox />
           </div>
         </div>

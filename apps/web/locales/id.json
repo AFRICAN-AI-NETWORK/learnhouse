@@ -109,6 +109,7 @@
     "invalid_email": "Alamat email tidak valid",
     "password_min_length": "Kata sandi harus minimal 8 karakter",
     "username_min_length": "Nama pengguna harus minimal 4 karakter",
+    "invalid_phone_with_country_code": "Nomor telepon tidak valid. Sertakan kode negara (mis. +254)",
     "title_required": "Judul wajib diisi",
     "content_required": "Konten wajib diisi"
   },
@@ -662,15 +663,6 @@
         }
       },
       "learnhouse_university": "Universitas LearnHouse"
-    },
-    "courses": {
-      "title": "Kursus",
-      "rights_guide": "Panduan Hak",
-      "create_course": "Buat Kursus",
-      "create_new_course": "Buat kursus baru",
-      "no_courses": "Belum ada kursus",
-      "create_course_placeholder": "Buat kursus untuk menambahkan konten",
-      "no_courses_available": "Belum ada kursus yang tersedia"
     },
     "organization": {
       "settings": {

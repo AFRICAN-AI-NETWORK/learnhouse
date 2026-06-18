@@ -11,12 +11,14 @@ import {
   UserPen,
   Award,
   Lock,
+  CalendarDays,
 } from 'lucide-react'
 import EditCourseStructure from '@components/Dashboard/Pages/Course/EditCourseStructure/EditCourseStructure'
 import EditCourseGeneral from '@components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral'
 import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAccess/EditCourseAccess'
 import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
 import EditCourseCertification from '@components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification'
+import EditCourseSchedule from '@components/Dashboard/Pages/Course/EditCourseSchedule/EditCourseSchedule'
 import { useCourseRights } from '@hooks/useCourseRights'
 import { useRouter } from 'next/navigation'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
@@ -65,6 +67,13 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
       icon: Globe,
       href: `/dash/courses/course/${params.courseuuid}/access`,
       requiredPermission: 'manage_access' as const,
+    },
+    {
+      key: 'schedule',
+      label: 'Schedule',
+      icon: CalendarDays,
+      href: `/dash/courses/course/${params.courseuuid}/schedule`,
+      requiredPermission: 'update_content' as const,
     },
     {
       key: 'contributors',
@@ -134,7 +143,7 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#f8f8f8] grid grid-rows-[auto_1fr] overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[#f8f8f8] flex flex-col overflow-x-hidden">
       <CourseProvider courseuuid={courseuuid} withUnpublishedActivities={true}>
         <div className="px-4 sm:px-6 lg:px-10 text-sm tracking-tight bg-[#fcfbfc] z-10 nice-shadow">
           <CourseOverviewTop params={params} />
@@ -200,9 +209,9 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.1, type: 'spring', stiffness: 80 }}
-          className="h-full overflow-y-auto relative"
+          className="relative"
         >
-          <div className="absolute inset-0">
+          <div className="">
             {params.subpage == 'content' && hasPermission('update_content') ? (
               <EditCourseStructure orgslug={params.orgslug} />
             ) : null}
@@ -211,6 +220,10 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
             ) : null}
             {params.subpage == 'access' && hasPermission('manage_access') ? (
               <EditCourseAccess />
+            ) : null}
+            {params.subpage == 'schedule' &&
+            hasPermission('update_content') ? (
+              <EditCourseSchedule />
             ) : null}
             {params.subpage == 'contributors' &&
             hasPermission('manage_contributors') ? (

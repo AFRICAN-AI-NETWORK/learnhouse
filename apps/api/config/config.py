@@ -12,6 +12,7 @@ class CookieConfig(BaseModel):
 class GeneralConfig(BaseModel):
     development_mode: bool
     logfire_enabled: bool
+    sentry_enabled: bool
 
 
 class SecurityConfig(BaseModel):
@@ -84,7 +85,6 @@ class LearnHouseConfig(BaseModel):
 
 
 def get_learnhouse_config() -> LearnHouseConfig:
-
     load_dotenv()
 
     # Get the YAML file
@@ -93,7 +93,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
     # Load the YAML file
     with open(yaml_path, "r") as f:
         yaml_config = yaml.safe_load(f)
-    
+
     # Ensure yaml_config is not None (defensive programming)
     if yaml_config is None:
         yaml_config = {}
@@ -115,8 +115,16 @@ def get_learnhouse_config() -> LearnHouseConfig:
     # Logfire config
     env_logfire_enabled = os.environ.get("LEARNHOUSE_LOGFIRE_ENABLED", "None")
     logfire_enabled = (
-        env_logfire_enabled.lower() == "true" if env_logfire_enabled != "None"
+        env_logfire_enabled.lower() == "true"
+        if env_logfire_enabled != "None"
         else yaml_config.get("general", {}).get("logfire_enabled", False)
+    )
+
+    env_sentry_enabled = os.environ.get("LEARNHOUSE_SENTRY_ENABLED", "None")
+    sentry_enabled = (
+        env_sentry_enabled.lower() == "true"
+        if env_sentry_enabled != "None"
+        else yaml_config.get("general", {}).get("sentry_enabled", False)
     )
 
     # Security Config
@@ -145,8 +153,6 @@ def get_learnhouse_config() -> LearnHouseConfig:
     env_self_hosted = os.environ.get("LEARNHOUSE_SELF_HOSTED")
     env_sql_connection_string = os.environ.get("LEARNHOUSE_SQL_CONNECTION_STRING")
 
-    
-
     # Fill in values with YAML file if they are not provided
     site_name = env_site_name or yaml_config.get("site_name")
     site_description = env_site_description or yaml_config.get("site_description")
@@ -167,7 +173,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
     self_hosted = env_self_hosted or yaml_config.get("hosting_config", {}).get(
         "self_hosted"
     )
-    app_base_url = env_app_base_url or "http://localhost:3000"  # Read from env or use default
+    app_base_url = (
+        env_app_base_url or "http://localhost:3000"
+    )  # Read from env or use default
 
     cookies_domain = env_cookie_domain or yaml_config.get("hosting_config", {}).get(
         "cookies_config", {}
@@ -208,11 +216,11 @@ def get_learnhouse_config() -> LearnHouseConfig:
     # AI Config
     env_openai_api_key = os.environ.get("LEARNHOUSE_OPENAI_API_KEY")
     env_is_ai_enabled_str = os.environ.get("LEARNHOUSE_IS_AI_ENABLED")
-    
+
     openai_api_key = env_openai_api_key or yaml_config.get("ai_config", {}).get(
         "openai_api_key"
     )
-    
+
     # Parse is_ai_enabled from env or yaml
     if env_is_ai_enabled_str:
         is_ai_enabled = env_is_ai_enabled_str.lower() in ("true", "1", "yes")
@@ -236,17 +244,31 @@ def get_learnhouse_config() -> LearnHouseConfig:
     ).get("system_email_address")
 
     # Payments config - Paystack
-    env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY") or os.environ.get("PAYSTACK_SECRET_KEY")
-    env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY") or os.environ.get("PAYSTACK_PUBLIC_KEY")
-    env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET") or os.environ.get("PAYSTACK_WEBHOOK_SECRET")
-    
+    env_paystack_secret_key = os.environ.get(
+        "LEARNHOUSE_PAYSTACK_SECRET_KEY"
+    ) or os.environ.get("PAYSTACK_SECRET_KEY")
+    env_paystack_public_key = os.environ.get(
+        "LEARNHOUSE_PAYSTACK_PUBLIC_KEY"
+    ) or os.environ.get("PAYSTACK_PUBLIC_KEY")
+    env_paystack_webhook_secret = os.environ.get(
+        "LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET"
+    ) or os.environ.get("PAYSTACK_WEBHOOK_SECRET")
+
     # Safely get Paystack config from YAML
     payments_config = yaml_config.get("payments_config", {}) if yaml_config else {}
-    paystack_config = payments_config.get("paystack", {}) if isinstance(payments_config, dict) else {}
-    
-    paystack_secret_key = env_paystack_secret_key or paystack_config.get("paystack_secret_key")
-    paystack_public_key = env_paystack_public_key or paystack_config.get("paystack_public_key")
-    paystack_webhook_secret = env_paystack_webhook_secret or paystack_config.get("paystack_webhook_secret")
+    paystack_config = (
+        payments_config.get("paystack", {}) if isinstance(payments_config, dict) else {}
+    )
+
+    paystack_secret_key = env_paystack_secret_key or paystack_config.get(
+        "paystack_secret_key"
+    )
+    paystack_public_key = env_paystack_public_key or paystack_config.get(
+        "paystack_public_key"
+    )
+    paystack_webhook_secret = env_paystack_webhook_secret or paystack_config.get(
+        "paystack_webhook_secret"
+    )
 
     # Create HostingConfig and DatabaseConfig objects
     hosting_config = HostingConfig(
@@ -277,8 +299,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
         site_description=site_description,
         contact_email=contact_email,
         general_config=GeneralConfig(
-            development_mode=bool(development_mode), 
-            logfire_enabled=bool(logfire_enabled)
+            development_mode=bool(development_mode),
+            logfire_enabled=bool(logfire_enabled),
+            sentry_enabled=bool(sentry_enabled),
         ),
         hosting_config=hosting_config,
         database_config=database_config,
@@ -292,9 +315,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
             paystack=InternalPaystackConfig(
                 paystack_secret_key=paystack_secret_key,
                 paystack_public_key=paystack_public_key,
-                paystack_webhook_secret=paystack_webhook_secret
+                paystack_webhook_secret=paystack_webhook_secret,
             )
-        )
+        ),
     )
 
     return config

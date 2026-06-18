@@ -109,6 +109,7 @@
     "invalid_email": "अमान्य ईमेल पता",
     "password_min_length": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए",
     "username_min_length": "उपयोगकर्ता नाम कम से कम 4 अक्षरों का होना चाहिए",
+    "invalid_phone_with_country_code": "अमान्य फ़ोन नंबर। कृपया देश कोड शामिल करें (जैसे +254)",
     "title_required": "शीर्षक आवश्यक है",
     "content_required": "सामग्री आवश्यक है"
   },
@@ -662,15 +663,6 @@
         }
       },
       "learnhouse_university": "LearnHouse यूनिवर्सिटी"
-    },
-    "courses": {
-      "title": "कोर्स",
-      "rights_guide": "अधिकार मार्गदर्शिका",
-      "create_course": "कोर्स बनाएं",
-      "create_new_course": "एक नया कोर्स बनाएं",
-      "no_courses": "अभी तक कोई कोर्स नहीं",
-      "create_course_placeholder": "सामग्री जोड़ने के लिए कोर्स बनाएं",
-      "no_courses_available": "अभी तक कोई कोर्स उपलब्ध नहीं है"
     },
     "organization": {
       "settings": {

@@ -34,10 +34,10 @@ interface OrganizationScripts {
 const getValidationSchema = (t: any) =>
   Yup.object().shape({
     name: Yup.string().required(
-      t('dashboard.organization.scripts.script_name') + ' is required'
+      t('dashboard.organization.scripts.validation.name_required')
     ),
     content: Yup.string().required(
-      t('dashboard.organization.scripts.script_content') + ' is required'
+      t('dashboard.organization.scripts.validation.content_required')
     ),
   })
 
@@ -99,7 +99,7 @@ const OrgEditOther: React.FC = () => {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Error updating organization:', err)
-      toast.error(t('dashboard.organization.scripts.toasts.save_success'), {
+      toast.error(t('dashboard.organization.scripts.toasts.save_error'), {
         id: loadingToast,
       })
     }
@@ -132,7 +132,7 @@ const OrgEditOther: React.FC = () => {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Error deleting script:', err)
-      toast.error(t('dashboard.organization.scripts.toasts.delete_success'), {
+      toast.error(t('dashboard.organization.scripts.toasts.delete_error'), {
         id: loadingToast,
       })
     }

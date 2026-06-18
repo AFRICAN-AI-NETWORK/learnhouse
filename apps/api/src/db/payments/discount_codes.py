@@ -24,11 +24,17 @@ class DiscountCodeBase(SQLModel):
     description: Optional[str] = None
     course_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True)
+        sa_column=Column(
+            BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True
+        ),
     )
     product_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE"), nullable=True)
+        sa_column=Column(
+            BigInteger,
+            ForeignKey("paymentsproduct.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
     )
 
 
@@ -75,11 +81,17 @@ class DiscountCodeUsageBase(SQLModel):
     )
     course_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True)
+        sa_column=Column(
+            BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True
+        ),
     )
     product_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE"), nullable=True)
+        sa_column=Column(
+            BigInteger,
+            ForeignKey("paymentsproduct.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
     )
     payment_user_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("paymentsuser.id", ondelete="CASCADE"))

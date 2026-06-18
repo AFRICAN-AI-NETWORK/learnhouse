@@ -18,9 +18,9 @@ export function OrgProvider({ children, orgslug }: { children: React.ReactNode, 
   const isAllowedPathname = ['/login', '/signup'].includes(pathname);
 
   const handleSignOut = async () => {
-    await signOut({ 
-      redirect: true, 
-      callbackUrl: getUriWithoutOrg('/login?orgslug=' + orgslug) 
+    await signOut({
+      redirect: true,
+      callbackUrl: getUriWithoutOrg('/login?orgslug=' + orgslug)
     })
   }
 

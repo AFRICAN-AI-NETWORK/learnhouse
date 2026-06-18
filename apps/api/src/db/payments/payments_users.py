@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
+
 class PaymentStatusEnum(str, Enum):
     PENDING = "pending"
     COMPLETED = "completed"
@@ -20,20 +21,26 @@ class ProviderSpecificData(BaseModel):
     paystack_access_code: str | None = None
     custom_customer: dict | None = None
 
+
 class PaymentsUserBase(SQLModel):
     status: PaymentStatusEnum = PaymentStatusEnum.PENDING
     provider_specific_data: dict = Field(default={}, sa_column=Column(JSON))
     discount_code_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(BigInteger, ForeignKey("discountcode.id", ondelete="SET NULL"))
+        sa_column=Column(
+            BigInteger, ForeignKey("discountcode.id", ondelete="SET NULL")
+        ),
     )
     referral_code_id: Optional[int] = Field(
         default=None,
-        sa_column=Column(BigInteger, ForeignKey("referralcode.id", ondelete="SET NULL"))
+        sa_column=Column(
+            BigInteger, ForeignKey("referralcode.id", ondelete="SET NULL")
+        ),
     )
     original_amount: Optional[float] = None
     discount_amount: Optional[float] = None
     final_amount: Optional[float] = None
+
 
 class PaymentsUser(PaymentsUserBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -44,8 +51,9 @@ class PaymentsUser(PaymentsUserBase, table=True):
         sa_column=Column(BigInteger, ForeignKey("organization.id", ondelete="CASCADE"))
     )
     payment_product_id: int = Field(
-        sa_column=Column(BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE"))
+        sa_column=Column(
+            BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE")
+        )
     )
     creation_date: datetime = Field(default=datetime.now())
     update_date: datetime = Field(default=datetime.now())
-

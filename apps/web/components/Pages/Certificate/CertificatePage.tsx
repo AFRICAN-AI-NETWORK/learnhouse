@@ -7,9 +7,15 @@ import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCer
 import { ArrowLeft, Download } from 'lucide-react'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
+import { useOrg } from '@components/Contexts/OrgContext'
+import { getOrgLogoMediaDirectory } from '@services/media/media'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
+import { createRoot } from 'react-dom/client'
 import QRCode from 'qrcode'
+import toast from 'react-hot-toast'
+import CertificateExport from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificateExport'
+import copyExportSafeStyles from '@/utils/certificateExport'
 
 interface CertificatePageProps {
   orgslug: string
@@ -23,11 +29,11 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
   qrCodeLink,
 }) => {
   const session = useLHSession() as any
+  const org = useOrg() as any
   const [userCertificate, setUserCertificate] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch user certificate
   useEffect(() => {
     const fetchCertificate = async () => {
       if (!session?.data?.tokens?.access_token) {
@@ -60,68 +66,53 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
     fetchCertificate()
   }, [courseid, session?.data?.tokens?.access_token])
 
-  // Generate PDF using canvas
   const downloadCertificate = async () => {
     if (!userCertificate) return
 
+    let captureContainer: HTMLDivElement | null = null
+    let exportRoot: ReturnType<typeof createRoot> | null = null
+
     try {
-      // Create a temporary div for the certificate
-      const certificateDiv = document.createElement('div')
-      certificateDiv.style.position = 'absolute'
-      certificateDiv.style.left = '-9999px'
-      certificateDiv.style.top = '0'
-      certificateDiv.style.width = '800px'
-      certificateDiv.style.height = '600px'
-      certificateDiv.style.background = 'white'
-      certificateDiv.style.padding = '40px'
-      certificateDiv.style.fontFamily = 'Arial, sans-serif'
-      certificateDiv.style.textAlign = 'center'
-      certificateDiv.style.display = 'flex'
-      certificateDiv.style.flexDirection = 'column'
-      certificateDiv.style.justifyContent = 'center'
-      certificateDiv.style.alignItems = 'center'
-      certificateDiv.style.position = 'relative'
-      certificateDiv.style.overflow = 'hidden'
+      captureContainer = document.createElement('div')
+      captureContainer.style.position = 'fixed'
+      captureContainer.style.left = '-10000px'
+      captureContainer.style.top = '0'
+      captureContainer.style.background = '#ffffff'
+      captureContainer.style.padding = '0'
+      captureContainer.style.margin = '0'
+      captureContainer.style.overflow = 'visible'
+      captureContainer.style.width = 'fit-content'
+      captureContainer.style.height = 'fit-content'
+      document.body.appendChild(captureContainer)
 
-      // Get theme colors based on pattern
-      const getPatternTheme = (pattern: string) => {
-        switch (pattern) {
-          case 'royal':
-            return { primary: '#b45309', secondary: '#d97706', icon: '#d97706' }
-          case 'tech':
-            return { primary: '#0e7490', secondary: '#0891b2', icon: '#0891b2' }
-          case 'nature':
-            return { primary: '#15803d', secondary: '#16a34a', icon: '#16a34a' }
-          case 'geometric':
-            return { primary: '#7c3aed', secondary: '#9333ea', icon: '#9333ea' }
-          case 'vintage':
-            return { primary: '#c2410c', secondary: '#ea580c', icon: '#ea580c' }
-          case 'waves':
-            return { primary: '#1d4ed8', secondary: '#2563eb', icon: '#2563eb' }
-          case 'minimal':
-            return { primary: '#374151', secondary: '#4b5563', icon: '#4b5563' }
-          case 'professional':
-            return { primary: '#334155', secondary: '#475569', icon: '#475569' }
-          case 'academic':
-            return { primary: '#3730a3', secondary: '#4338ca', icon: '#4338ca' }
-          case 'modern':
-            return { primary: '#1d4ed8', secondary: '#2563eb', icon: '#2563eb' }
-          default:
-            return { primary: '#374151', secondary: '#4b5563', icon: '#4b5563' }
-        }
-      }
-
-      const theme = getPatternTheme(
-        userCertificate.certification.config.certificate_pattern
-      )
+      const certificationName =
+        userCertificate?.certification?.config?.certification_name ||
+        'Certificate'
+      const certificationDescription =
+        userCertificate?.certification?.config?.certification_description ||
+        'Certification description will appear here...'
+      const certificationType =
+        userCertificate?.certification?.config?.certification_type ||
+        'Course Completion'
       const certificateId =
-        userCertificate.certificate_user.user_certification_uuid
-      const qrCodeData = qrCodeLink
-
-      // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL(qrCodeData, {
-        width: 120,
-        margin: 2,
+        userCertificate?.certificate_user?.user_certification_uuid
+      const studentName =
+        `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
+        'Student Name'
+      const instructorName =
+        userCertificate?.certification?.config?.certificate_instructor ||
+        'LearnHouse Instructor'
+      const ceoName =
+        userCertificate?.certification?.config?.certificate_ceo ||
+        'LearnHouse CEO'
+      const organizationName = org?.name || 'DEFAULT ORGANIZATION'
+      const organizationLogoUrl = org?.logo_image
+        ? getOrgLogoMediaDirectory(org.org_uuid, org.logo_image)
+        : undefined
+      const qrCodeValue = qrCodeLink || certificateId || 'LH-CERT'
+      const qrCodeUrl = await QRCode.toDataURL(qrCodeValue, {
+        width: 185,
+        margin: 1,
         color: {
           dark: '#000000',
           light: '#FFFFFF',
@@ -130,216 +121,140 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         type: 'image/png',
       })
 
-      // Create certificate content
-      certificateDiv.innerHTML = `
-        <div style="
-          position: absolute;
-          top: 20px;
-          left: 20px;
-          font-size: 12px;
-          color: ${theme.secondary};
-          font-weight: 500;
-        ">ID: ${certificateId}</div>
-        
-        <div style="
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          width: 80px;
-          height: 80px;
-          border: 2px solid ${theme.secondary};
-          border-radius: 8px;
-          background: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;" />
-        </div>
-        
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-bottom: 30px;
-          font-size: 14px;
-          color: ${theme.secondary};
-          font-weight: 500;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        ">
-          <div style="width: 24px; height: 1px; background: linear-gradient(90deg, transparent, ${theme.secondary}, transparent);"></div>
-          Certificate
-          <div style="width: 24px; height: 1px; background: linear-gradient(90deg, transparent, ${theme.secondary}, transparent);"></div>
-        </div>
-        
-        <div style="
-          width: 80px;
-          height: 80px;
-          background: linear-gradient(135deg, ${theme.icon}20 0%, ${theme.icon}40 100%);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 30px;
-          font-size: 40px;
-          line-height: 1;
-        ">🏆</div>
-        
-        <div style="
-          font-size: 32px;
-          font-weight: bold;
-          color: ${theme.primary};
-          margin-bottom: 20px;
-          line-height: 1.2;
-          max-width: 600px;
-        ">${userCertificate.certification.config.certification_name}</div>
-        
-        <div style="
-          font-size: 18px;
-          color: #6b7280;
-          margin-bottom: 30px;
-          line-height: 1.5;
-          max-width: 500px;
-        ">${userCertificate.certification.config.certification_description || 'This is to certify that the course has been successfully completed.'}</div>
-        
-        <div style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          margin: 20px 0;
-        ">
-          <div style="width: 8px; height: 1px; background: ${theme.secondary}; opacity: 0.5;"></div>
-          <div style="width: 4px; height: 4px; background: ${theme.primary}; border-radius: 50%; opacity: 0.6;"></div>
-          <div style="width: 8px; height: 1px; background: ${theme.secondary}; opacity: 0.5;"></div>
-        </div>
-        
-        <div style="
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 16px;
-          color: ${theme.primary};
-          background: ${theme.icon}10;
-          padding: 12px 24px;
-          border-radius: 20px;
-          border: 1px solid ${theme.icon}20;
-          font-weight: 500;
-          margin-bottom: 30px;
-          white-space: nowrap;
-        ">
-          <span style="font-weight: bold; font-size: 18px;">✓</span>
-          <span>${
-            userCertificate.certification.config.certification_type ===
-            'completion'
-              ? 'Course Completion'
-              : userCertificate.certification.config.certification_type ===
-                  'achievement'
-                ? 'Achievement Based'
-                : userCertificate.certification.config.certification_type ===
-                    'assessment'
-                  ? 'Assessment Based'
-                  : userCertificate.certification.config.certification_type ===
-                      'participation'
-                    ? 'Participation'
-                    : userCertificate.certification.config
-                          .certification_type === 'mastery'
-                      ? 'Skill Mastery'
-                      : userCertificate.certification.config
-                            .certification_type === 'professional'
-                        ? 'Professional Development'
-                        : userCertificate.certification.config
-                              .certification_type === 'continuing'
-                          ? 'Continuing Education'
-                          : userCertificate.certification.config
-                                .certification_type === 'workshop'
-                            ? 'Workshop Attendance'
-                            : userCertificate.certification.config
-                                  .certification_type === 'specialization'
-                              ? 'Specialization'
-                              : 'Course Completion'
-          }</span>
-        </div>
-        
-        <div style="
-          margin-top: 30px;
-          padding: 24px;
-          background: #f8fafc;
-          border-radius: 8px;
-          border: 1px solid #e2e8f0;
-          max-width: 400px;
-        ">
-          <div style="margin: 8px 0; font-size: 14px; color: #374151;">
-            <strong style="color: ${theme.primary};">Certificate ID:</strong> ${certificateId}
-          </div>
-          <div style="margin: 8px 0; font-size: 14px; color: #374151;">
-            <strong style="color: ${theme.primary};">Awarded:</strong> ${new Date(
-              userCertificate.certificate_user.created_at
-            ).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </div>
-          ${
-            userCertificate.certification.config.certificate_instructor
-              ? `<div style="margin: 8px 0; font-size: 14px; color: #374151;">
-              <strong style="color: ${theme.primary};">Instructor:</strong> ${userCertificate.certification.config.certificate_instructor}
-            </div>`
-              : ''
+      exportRoot = createRoot(captureContainer)
+      exportRoot.render(
+        <CertificateExport
+          id={certificateId}
+          studentName={studentName}
+          certificationName={certificationName}
+          certificationDescription={certificationDescription}
+          certificationType={certificationType}
+          certificatePattern={
+            userCertificate?.certification?.config?.certificate_pattern
           }
-        </div>
-        
-        <div style="
-          margin-top: 20px;
-          font-size: 12px;
-          color: #6b7280;
-        ">
-          This certificate can be verified at ${qrCodeData.replace('https://', '').replace('http://', '')}
-        </div>
-      `
+          instructor={instructorName}
+          orgName={organizationName}
+          orgLogoUrl={organizationLogoUrl}
+          ceo={ceoName}
+          awardedDate={new Date(
+            userCertificate.certificate_user.created_at
+          ).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+          qrCodeUrl={qrCodeUrl}
+        />
+      )
 
-      // Add to document temporarily
-      document.body.appendChild(certificateDiv)
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
 
-      // Convert to canvas
-      const canvas = await html2canvas(certificateDiv, {
-        width: 800,
-        height: 600,
-        scale: 2, // Higher resolution
+      const captureElement = captureContainer.querySelector(
+        '#certificate-export-root'
+      ) as HTMLElement | null
+
+      if (!captureElement) {
+        throw new Error('Certificate export element not found')
+      }
+
+      await Promise.all(
+        Array.from(captureElement.querySelectorAll('img')).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                img.onload = () => resolve()
+                img.onerror = () => resolve()
+              })
+        )
+      )
+
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
+
+      const exportSafeElement = captureElement.cloneNode(true) as HTMLElement
+      exportSafeElement.id = 'certificate-export-root-export-safe'
+      copyExportSafeStyles(captureElement, exportSafeElement)
+      captureContainer.appendChild(exportSafeElement)
+      captureElement.style.display = 'none'
+
+      await Promise.all(
+        Array.from(exportSafeElement.querySelectorAll('img')).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                img.onload = () => resolve()
+                img.onerror = () => resolve()
+              })
+        )
+      )
+
+      const captureWidth = Math.max(
+        exportSafeElement.scrollWidth,
+        exportSafeElement.offsetWidth,
+        exportSafeElement.clientWidth
+      )
+      const captureHeight = Math.max(
+        exportSafeElement.scrollHeight,
+        exportSafeElement.offsetHeight,
+        exportSafeElement.clientHeight
+      )
+
+      const canvas = await html2canvas(exportSafeElement, {
+        scale: 2,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#ffffff',
+        foreignObjectRendering: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
+        width: captureWidth,
+        height: captureHeight,
       })
 
-      // Remove temporary div
-      document.body.removeChild(certificateDiv)
+      const imgData = canvas.toDataURL('image/png', 1.0)
+      const pdf = new jsPDF(
+        canvas.width >= canvas.height ? 'landscape' : 'portrait',
+        'mm',
+        'a4'
+      )
 
-      // Create PDF
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('landscape', 'mm', 'a4')
-
-      // Calculate dimensions to center the certificate
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = 280 // mm
-      const imgHeight = 210 // mm
 
-      // Center the image
-      const x = (pdfWidth - imgWidth) / 2
-      const y = (pdfHeight - imgHeight) / 2
+      const canvasWidth = canvas.width
+      const canvasHeight = canvas.height
 
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight)
+      const pxPerMm = 96 / 25.4
+      const imgWidthMm = canvasWidth / pxPerMm
+      const imgHeightMm = canvasHeight / pxPerMm
 
-      // Save the PDF
-      const fileName = `${userCertificate.certification.config.certification_name.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
+      const maxWidth = pdfWidth - 20
+      const maxHeight = pdfHeight - 20
+
+      const widthScale = maxWidth / imgWidthMm
+      const heightScale = maxHeight / imgHeightMm
+      const scale = Math.min(1, widthScale, heightScale)
+
+      const finalImgWidth = imgWidthMm * scale
+      const finalImgHeight = imgHeightMm * scale
+
+      const x = (pdfWidth - finalImgWidth) / 2
+      const y = (pdfHeight - finalImgHeight) / 2
+
+      pdf.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight)
+
+      const fileName = `${certificationName.replace(/[^a-zA-Z0-9]/g, '_')}_Certificate.pdf`
       pdf.save(fileName)
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      toast.error('Failed to generate PDF. Please try again.')
+    } finally {
+      exportRoot?.unmount()
+      captureContainer?.remove()
     }
   }
 
@@ -427,7 +342,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
 
         {/* Certificate Display */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto" id="certificate-content">
             <CertificatePreview
               certificationName={
                 userCertificate.certification.config.certification_name
@@ -444,6 +359,9 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
               certificateInstructor={
                 userCertificate.certification.config.certificate_instructor
               }
+              certificateCeo={
+                userCertificate.certification.config.certificate_ceo
+              }
               certificateId={
                 userCertificate.certificate_user.user_certification_uuid
               }
@@ -455,6 +373,10 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
                 day: 'numeric',
               })}
               qrCodeLink={qrCodeLink}
+              studentName={
+                `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
+                'Student Name'
+              }
             />
           </div>
         </div>

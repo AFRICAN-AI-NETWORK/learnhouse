@@ -5,6 +5,7 @@ import type { CommissionBalance } from 'types/referral'
 
 interface CommissionBalanceCardProps {
   balance: CommissionBalance | null
+  displayCurrency?: string
   isLoading: boolean
   onRequestPayout: () => void
 }
@@ -22,6 +23,7 @@ function StatBox({
   icon: React.ReactNode
   highlight?: boolean
 }) {
+  const safeValue = Number(value) >= 1 ? Number(value) : 0
   return (
     <div
       className={`flex flex-col gap-1 p-4 rounded-lg border ${highlight ? 'bg-black text-white border-black' : 'bg-gray-50 border-gray-200'}`}
@@ -34,7 +36,7 @@ function StatBox({
         {new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: currency || 'USD',
-        }).format(value)}
+        }).format(safeValue)}
       </div>
     </div>
   )
@@ -42,10 +44,12 @@ function StatBox({
 
 function CommissionBalanceCard({
   balance,
+  displayCurrency,
   isLoading,
   onRequestPayout,
 }: CommissionBalanceCardProps) {
   const canRequestPayout = (balance?.eligible_balance ?? 0) >= 1
+  const widgetCurrency = displayCurrency || balance?.currency || 'USD'
 
   return (
     <div className="bg-white rounded-xl nice-shadow px-6 py-5">
@@ -70,20 +74,20 @@ function CommissionBalanceCard({
             <StatBox
               label="Total Earned"
               value={balance.total_earned}
-              currency={balance.currency}
+              currency={widgetCurrency}
               icon={<DollarSign size={12} />}
             />
             <StatBox
               label="Eligible Balance"
               value={balance.eligible_balance}
-              currency={balance.currency}
+              currency={widgetCurrency}
               icon={<CheckCircle size={12} />}
               highlight
             />
             <StatBox
               label="Pending"
               value={balance.pending_balance}
-              currency={balance.currency}
+              currency={widgetCurrency}
               icon={<Clock size={12} />}
             />
           </div>
@@ -101,7 +105,12 @@ function CommissionBalanceCard({
             Request Payout
             {!canRequestPayout && (
               <span className="text-xs font-normal opacity-70">
-                (minimum $1 required)
+                (minimum{' '}
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: widgetCurrency,
+                }).format(1)}{' '}
+                required)
               </span>
             )}
           </button>

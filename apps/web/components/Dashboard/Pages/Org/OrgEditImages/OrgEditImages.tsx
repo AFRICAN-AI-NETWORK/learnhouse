@@ -483,34 +483,34 @@ export default function OrgEditImages() {
   }
 
   return (
-    <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow px-3 py-3 sm:mb-0 mb-16">
-      <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mb-2 rounded-md">
-        <h1 className="font-bold text-xl text-gray-800">
+    <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow px-3 py-3 sm:mb-0 mb-16 dark:border dark:border-white/8 dark:bg-[#13131a]">
+      <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mb-2 rounded-md dark:bg-white/5">
+        <h1 className="font-bold text-xl text-gray-800 dark:text-white/90">
           {t('dashboard.organization.images.title')}
         </h1>
-        <h2 className="text-gray-500 text-md">
+        <h2 className="text-gray-500 text-md dark:text-white/50">
           {t('dashboard.organization.images.subtitle')}
         </h2>
       </div>
       <Tabs defaultValue="logo" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 p-1 bg-gray-100 rounded-lg">
+        <TabsList className="grid w-full grid-cols-3 p-1 bg-gray-100 rounded-lg dark:bg-white/5">
           <TabsTrigger
             value="logo"
-            className="data-[state=active]:bg-white data-[state=active]:shadow-xs transition-all flex items-center space-x-2"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-xs transition-all flex items-center space-x-2 dark:text-white/60 dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white"
           >
             <StarIcon size={16} />
             <span>{t('dashboard.organization.images.tabs.logo')}</span>
           </TabsTrigger>
           <TabsTrigger
             value="thumbnail"
-            className="data-[state=active]:bg-white data-[state=active]:shadow-xs transition-all flex items-center space-x-2"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-xs transition-all flex items-center space-x-2 dark:text-white/60 dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white"
           >
             <ImageIcon size={16} />
             <span>{t('dashboard.organization.images.tabs.thumbnail')}</span>
           </TabsTrigger>
           <TabsTrigger
             value="previews"
-            className="data-[state=active]:bg-white data-[state=active]:shadow-xs transition-all flex items-center space-x-2"
+            className="data-[state=active]:bg-white data-[state=active]:shadow-xs transition-all flex items-center space-x-2 dark:text-white/60 dark:data-[state=active]:bg-white/10 dark:data-[state=active]:text-white"
           >
             <Images size={16} />
             <span>{t('dashboard.organization.images.tabs.previews')}</span>
@@ -519,13 +519,13 @@ export default function OrgEditImages() {
 
         <TabsContent value="logo" className="mt-2">
           <div className="flex flex-col space-y-5 w-full">
-            <div className="w-full bg-linear-to-b from-gray-50 to-white rounded-xl  transition-all duration-300 py-8">
+            <div className="w-full bg-linear-to-b from-gray-50 to-white rounded-xl transition-all duration-300 py-8 dark:from-white/5 dark:to-transparent">
               <div className="flex flex-col justify-center items-center space-y-8">
                 <div className="relative group">
                   <div
                     className={cn(
                       'w-[200px] sm:w-[250px] h-[100px] sm:h-[125px] bg-contain bg-no-repeat bg-center rounded-lg shadow-md bg-white',
-                      'border-2 border-gray-100 hover:border-blue-200 transition-all duration-300',
+                      'border-2 border-gray-100 hover:border-blue-200 transition-all duration-300 dark:border-white/8 dark:bg-white/5 dark:hover:border-blue-400/30',
                       isLogoUploading && 'opacity-50'
                     )}
                     style={{
@@ -566,14 +566,14 @@ export default function OrgEditImages() {
                     </span>
                   </button>
 
-                  <div className="flex flex-col text-xs space-y-2 items-center text-gray-500">
-                    <div className="flex items-center space-x-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full">
+                  <div className="flex flex-col text-xs space-y-2 items-center text-gray-500 dark:text-white/45">
+                    <div className="flex items-center space-x-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full dark:bg-blue-500/10 dark:text-blue-300">
                       <Info size={14} />
                       <p className="font-medium">
                         {t('dashboard.organization.images.accepted_files')}
                       </p>
                     </div>
-                    <p className="text-gray-400">
+                    <p className="text-gray-400 dark:text-white/35">
                       {t('dashboard.organization.images.recommended_size')}
                     </p>
                   </div>
@@ -585,13 +585,13 @@ export default function OrgEditImages() {
 
         <TabsContent value="thumbnail" className="mt-2">
           <div className="flex flex-col space-y-5 w-full">
-            <div className="w-full bg-linear-to-b from-gray-50 to-white rounded-xl  transition-all duration-300 py-8">
+            <div className="w-full bg-linear-to-b from-gray-50 to-white rounded-xl transition-all duration-300 py-8 dark:from-white/5 dark:to-transparent">
               <div className="flex flex-col justify-center items-center space-y-8">
                 <div className="relative group">
                   <div
                     className={cn(
                       'w-[200px] sm:w-[250px] h-[100px] sm:h-[125px] bg-contain bg-no-repeat bg-center rounded-lg shadow-md bg-white',
-                      'border-2 border-gray-100 hover:border-purple-200 transition-all duration-300',
+                      'border-2 border-gray-100 hover:border-purple-200 transition-all duration-300 dark:border-white/8 dark:bg-white/5 dark:hover:border-purple-400/30',
                       isThumbnailUploading && 'opacity-50'
                     )}
                     style={{
@@ -635,14 +635,14 @@ export default function OrgEditImages() {
                     </span>
                   </button>
 
-                  <div className="flex flex-col text-xs space-y-2 items-center text-gray-500">
-                    <div className="flex items-center space-x-2 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full">
+                  <div className="flex flex-col text-xs space-y-2 items-center text-gray-500 dark:text-white/45">
+                    <div className="flex items-center space-x-2 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full dark:bg-purple-500/10 dark:text-purple-300">
                       <Info size={14} />
                       <p className="font-medium">
                         {t('dashboard.organization.images.accepted_files')}
                       </p>
                     </div>
-                    <p className="text-gray-400">
+                    <p className="text-gray-400 dark:text-white/35">
                       {t('dashboard.organization.images.recommended_size')}
                     </p>
                   </div>
@@ -654,7 +654,7 @@ export default function OrgEditImages() {
 
         <TabsContent value="previews" className="mt-4">
           <div className="flex flex-col space-y-5 w-full">
-            <div className="w-full bg-linear-to-b from-gray-50 to-white rounded-xl transition-all duration-300 py-6">
+            <div className="w-full bg-linear-to-b from-gray-50 to-white rounded-xl transition-all duration-300 py-6 dark:from-white/5 dark:to-transparent">
               <div className="flex flex-col justify-center items-center space-y-6">
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable droppableId="previews" direction="horizontal">
@@ -709,7 +709,7 @@ export default function OrgEditImages() {
                                   <div
                                     className={cn(
                                       `w-full ${PREVIEW_HEIGHT} bg-contain bg-no-repeat bg-center rounded-xl bg-white`,
-                                      'border border-gray-200 hover:border-gray-300',
+                                      'border border-gray-200 hover:border-gray-300 dark:border-white/8 dark:bg-white/5 dark:hover:border-white/15',
                                       'transition-colors duration-200',
                                       snapshot.isDragging
                                         ? 'shadow-lg'
@@ -723,7 +723,7 @@ export default function OrgEditImages() {
                                   <div
                                     className={cn(
                                       `w-full ${PREVIEW_HEIGHT} relative rounded-xl overflow-hidden`,
-                                      'border border-gray-200 hover:border-gray-300 transition-colors duration-200',
+                                      'border border-gray-200 hover:border-gray-300 transition-colors duration-200 dark:border-white/8 dark:hover:border-white/15',
                                       snapshot.isDragging
                                         ? 'shadow-lg'
                                         : 'shadow-xs hover:shadow-md'
@@ -767,15 +767,15 @@ export default function OrgEditImages() {
                                 <button
                                   className={cn(
                                     `w-full ${PREVIEW_HEIGHT}`,
-                                    'border-2 border-dashed border-gray-200 rounded-xl',
-                                    'hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-200',
+                                    'border-2 border-dashed border-gray-200 rounded-xl dark:border-white/10',
+                                    'hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-200 dark:hover:border-blue-400/30 dark:hover:bg-blue-500/10',
                                     'flex flex-col items-center justify-center space-y-2 group'
                                   )}
                                 >
-                                  <div className="bg-blue-50 rounded-full p-2 group-hover:bg-blue-100 transition-colors duration-200">
+                                  <div className="bg-blue-50 rounded-full p-2 group-hover:bg-blue-100 transition-colors duration-200 dark:bg-blue-500/10 dark:group-hover:bg-blue-500/20">
                                     <Plus size={20} className="text-blue-500" />
                                   </div>
-                                  <span className="text-sm font-medium text-gray-600">
+                                  <span className="text-sm font-medium text-gray-600 dark:text-white/60">
                                     {t(
                                       'dashboard.organization.images.add_preview'
                                     )}
@@ -832,10 +832,10 @@ export default function OrgEditImages() {
                                             />
                                           </div>
                                           <div className="text-center">
-                                            <p className="font-medium text-gray-700">
+                                            <p className="font-medium text-gray-700 dark:text-white/80">
                                               {option.title}
                                             </p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-sm text-gray-500 mt-1 dark:text-white/45">
                                               {option.description}
                                             </p>
                                           </div>
@@ -869,7 +869,7 @@ export default function OrgEditImages() {
                                             )}
                                           </div>
                                           <div>
-                                            <h3 className="font-medium text-gray-900">
+                                            <h3 className="font-medium text-gray-900 dark:text-white/90">
                                               {selectedService === 'youtube'
                                                 ? t(
                                                     'dashboard.organization.images.video_modal.youtube_desc'
@@ -878,7 +878,7 @@ export default function OrgEditImages() {
                                                     'dashboard.organization.images.video_modal.loom_desc'
                                                   )}
                                             </h3>
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-sm text-gray-500 dark:text-white/45">
                                               {t(
                                                 'dashboard.organization.images.video_modal.url_placeholder',
                                                 {
@@ -896,7 +896,7 @@ export default function OrgEditImages() {
                                           onClick={() =>
                                             setSelectedService(null)
                                           }
-                                          className="text-gray-400 hover:text-gray-500 transition-colors"
+                                          className="text-gray-400 hover:text-gray-500 transition-colors dark:text-white/40 dark:hover:text-white/70"
                                         >
                                           <X size={20} />
                                         </button>
@@ -946,7 +946,7 @@ export default function OrgEditImages() {
                   </Droppable>
                 </DragDropContext>
 
-                <div className="flex items-center space-x-2 bg-gray-50 text-gray-600 px-4 py-2 rounded-full">
+                <div className="flex items-center space-x-2 bg-gray-50 text-gray-600 px-4 py-2 rounded-full dark:bg-white/5 dark:text-white/55">
                   <Info size={14} />
                   <p className="text-sm">
                     {t('dashboard.organization.images.drag_to_reorder')}

@@ -47,14 +47,14 @@ function OrgRoles() {
 
     const getRightsSummary = (rights: any) => {
         if (!rights) return t('dashboard.users.roles.no_permissions')
-        
+
         const totalPermissions = Object.keys(rights).reduce((acc, key) => {
             if (typeof rights[key] === 'object') {
                 return acc + Object.keys(rights[key]).filter(k => rights[key][k] === true).length
             }
             return acc
         }, 0)
-        
+
         return t('dashboard.users.roles.permissions_count', { count: totalPermissions })
     }
 
@@ -64,22 +64,22 @@ function OrgRoles() {
         if (role.role_type === 'TYPE_GLOBAL') {
             return true
         }
-        
+
         // Check for role_uuid starting with role_global_
         if (role.role_uuid && role.role_uuid.startsWith('role_global_')) {
             return true
         }
-        
+
         // Check for common system role IDs (1-4 are typically system roles)
         if (role.id && [1, 2, 3, 4].includes(role.id)) {
             return true
         }
-        
+
         // Check if the role name indicates it's a system role
         if (role.name && ['Admin', 'Maintainer', 'Instructor', 'User'].includes(role.name)) {
             return true
         }
-        
+
         return false
     }
 
@@ -94,7 +94,7 @@ function OrgRoles() {
                         {t('dashboard.users.roles.subtitle')}{' '}
                     </h2>
                 </div>
-                
+
                 {/* Mobile view - Cards */}
                 <div className="block sm:hidden space-y-3">
                     {roles?.map((role: any) => {
@@ -260,7 +260,7 @@ function OrgRoles() {
                         </>
                     </table>
                 </div>
-                
+
                 <div className='flex justify-end mt-3 mr-2'>
                     <Modal
                         isDialogOpen={createRoleModal}
@@ -288,4 +288,4 @@ function OrgRoles() {
     )
 }
 
-export default OrgRoles 
+export default OrgRoles

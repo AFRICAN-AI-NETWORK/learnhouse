@@ -55,17 +55,6 @@ function NewTaskModal({ closeModal, assignment_uuid }: any) {
     closeModal(false)
   }
 
-  function handleComingSoon() {
-    toast(
-      t('dashboard.assignments.editor.task_types.code_editor.coming_soon'),
-      {
-        icon: '🚧',
-        duration: 3000,
-        style: { minWidth: 300 },
-      }
-    )
-  }
-
   return (
     <div className="flex space-x-6 mx-auto justify-center items-center flex-wrap">
       <div
@@ -113,10 +102,10 @@ function NewTaskModal({ closeModal, assignment_uuid }: any) {
         </p>
       </div>
       <div
-        onClick={handleComingSoon}
-        className="flex flex-col space-y-2 justify-center text-center pt-10 relative"
+        onClick={() => createTask('CODE_EDITOR')}
+        className="flex flex-col space-y-2 justify-center text-center pt-10"
       >
-        <div className="px-5 py-5 rounded-full nice-shadow w-fit mx-auto bg-gray-100/50 text-gray-400 cursor-pointer hover:bg-gray-100 transition-all ease-linear opacity-70">
+        <div className="px-5 py-5 rounded-full nice-shadow w-fit mx-auto bg-gray-100/50 text-gray-500 cursor-pointer hover:bg-gray-100 transition-all ease-linear">
           <Code size={30} />
         </div>
         <p className="text-xl text-gray-700 font-semibold">
@@ -125,9 +114,6 @@ function NewTaskModal({ closeModal, assignment_uuid }: any) {
         <p className="text-sm text-gray-500 w-40">
           {t('dashboard.assignments.editor.task_types.code_editor.description')}
         </p>
-        <span className="absolute top-6 right-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300">
-          {t('dashboard.assignments.editor.task_types.code_editor.badge')}
-        </span>
       </div>
     </div>
   )

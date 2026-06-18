@@ -8,6 +8,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
+import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -32,40 +33,47 @@ import {
 import { WaitlistConfig } from '@/types/waitlist'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import {
+  DEFAULT_COUNTRY_CODE,
+  formatE164,
+  validatePhoneFields,
+} from '@/lib/phone-number'
 
 const validate = (values: any, t: any) => {
   const errors: any = {}
-
+  const phoneErrors = validatePhoneFields(values)
+  if (phoneErrors.country_code) {
+    errors.country_code = phoneErrors.country_code
+  }
+  if (phoneErrors.phone_number) {
+    errors.phone_number =
+      t('validation.invalid_phone_with_country_code') ||
+      phoneErrors.phone_number
+  }
   if (!values.email) {
     errors.email = t('validation.required')
   } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
     errors.email = t('validation.invalid_email')
   }
-
   if (!values.password) {
     errors.password = t('validation.required')
   } else if (values.password.length < 8) {
     errors.password = t('validation.password_min_length')
   }
-
   if (!values.username) {
     errors.username = t('validation.required')
   } else if (values.username.length < 4) {
     errors.username = t('validation.username_min_length')
   }
-
   if (!values.bio) {
     errors.bio = t('validation.required')
   }
-
   if (!values.first_name) {
     errors.first_name = t('validation.required')
   }
-
   if (!values.last_name) {
     errors.last_name = t('validation.required')
   }
-
   return errors
 }
 
@@ -96,6 +104,14 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orgSlug = searchParams.get('orgslug') || ''
+  const redirectUrlParam = searchParams.get('redirectUrl') || ''
+
+  const getSafePostSignupRedirect = () => {
+    if (!redirectUrlParam || !redirectUrlParam.startsWith('/')) {
+      return `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
+    }
+    return redirectUrlParam
+  }
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
@@ -153,11 +169,13 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
   const formik = useFormik({
     initialValues: {
       username: '',
-      email: '',
+      email: searchParams.get('email') || '',
       password: '',
-      first_name: '',
-      last_name: '',
+      first_name: searchParams.get('first_name') || '',
+      last_name: searchParams.get('last_name') || '',
       bio: '',
+      country_code: DEFAULT_COUNTRY_CODE,
+      phone_number: '',
       org_slug: orgSlug,
       org_id: waitlistDetails?.org_id || 0,
       is_waitlist: true,
@@ -185,8 +203,19 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       }
 
       try {
-        const payload = {
-          ...values,
+        // Only send required fields, and format phone_number
+        const payload: any = {
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          bio: values.bio,
+          phone_number: formatE164(values.country_code, values.phone_number),
+          org_slug: values.org_slug,
+          org_id: values.org_id,
+          is_waitlist: values.is_waitlist,
+          waitlist_interest: values.waitlist_interest,
           selected_product_ids: selectedProducts,
           ...(device_id ? { device_id } : {}),
           ...(browser_fingerprint ? { browser_fingerprint } : {}),
@@ -194,7 +223,6 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
             ? { referral_code: referralCode.trim() }
             : {}),
         }
-
         const res = await registerWaitlistUser(waitlistUuid, payload)
 
         if (res.ok) {
@@ -206,27 +234,44 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           }
           setMessage('success')
           setTimeout(() => {
-            router.push(
-              `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-            )
+            router.push(getSafePostSignupRedirect())
           }, 2000)
         } else {
           const data = await res.json()
 
           // If error is referral-related, surface inline without blocking waitlist signup
-          const detail: string = data.detail ?? ''
+          const detail = data.detail
+          const errorMessage = Array.isArray(detail)
+            ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+            : typeof detail === 'string'
+              ? detail
+              : detail?.msg || JSON.stringify(detail) || 'Registration failed'
+
           if (
             referralCode.trim() &&
-            (detail.toLowerCase().includes('referral') ||
-              detail.toLowerCase().includes('code'))
+            (errorMessage.toLowerCase().includes('referral') ||
+              errorMessage.toLowerCase().includes('code'))
           ) {
             setReferralCodeError(
               'Invalid referral code — your account was created without it.'
             )
             // Retry without referral code
             const payloadWithoutRef = {
-              ...values,
+              username: values.username,
+              email: values.email,
+              password: values.password,
+              first_name: values.first_name,
+              last_name: values.last_name,
+              bio: values.bio,
               selected_product_ids: selectedProducts,
+              phone_number: formatE164(
+                values.country_code,
+                values.phone_number
+              ),
+              org_slug: values.org_slug,
+              org_id: values.org_id,
+              is_waitlist: values.is_waitlist,
+              waitlist_interest: values.waitlist_interest,
               device_id,
               browser_fingerprint,
             }
@@ -243,20 +288,46 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
               }
               setMessage('success')
               setTimeout(() => {
-                router.push(
-                  `/auth/waitlist/countdown?waitlist_uuid=${waitlistUuid}&orgslug=${orgSlug}`
-                )
+                router.push(getSafePostSignupRedirect())
               }, 2000)
             } else {
               const retryData = await retryRes.json()
-              setError(retryData.detail || 'Registration failed')
+              const retryDetail = retryData.detail
+              const retryErrorMessage = Array.isArray(retryDetail)
+                ? retryDetail
+                    .map((e: any) => e.msg || JSON.stringify(e))
+                    .join(', ')
+                : typeof retryDetail === 'string'
+                  ? retryDetail
+                  : retryDetail?.msg ||
+                    JSON.stringify(retryDetail) ||
+                    'Registration failed'
+              setError(retryErrorMessage)
+              // Clear stored referral code after failed signup attempt
+              try {
+                localStorage.removeItem('referral_code')
+              } catch {
+                /* ignore */
+              }
             }
           } else {
-            setError(detail || 'Registration failed')
+            setError(errorMessage)
+            // Clear stored referral code after failed signup attempt
+            try {
+              localStorage.removeItem('referral_code')
+            } catch {
+              /* ignore */
+            }
           }
         }
       } catch (err: any) {
         setError(err.message || 'Something went wrong')
+        // Clear stored referral code after exception during signup
+        try {
+          localStorage.removeItem('referral_code')
+        } catch {
+          /* ignore */
+        }
       } finally {
         setIsSubmitting(false)
       }
@@ -273,7 +344,14 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
         formik.setFieldTouched('password', true)
       }
     } else if (step === 2) {
-      const profileErrors = ['username', 'first_name', 'last_name', 'bio']
+      const profileErrors = [
+        'username',
+        'first_name',
+        'last_name',
+        'bio',
+        'country_code',
+        'phone_number',
+      ]
       const hasProfileError = profileErrors.some((f) => (errors as any)[f])
       if (!hasProfileError) {
         setStep(3)
@@ -315,9 +393,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
           <CountdownTimer launchDate={launchDate} />
         </div>
 
-        <p className="text-xs text-slate-500">
-          Redirecting to countdown page...
-        </p>
+        <p className="text-xs text-slate-500">Redirecting you now...</p>
       </div>
     )
   }
@@ -537,6 +613,11 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 </p>
               )}
             </FormField>
+
+            <PhoneNumberFields
+              formik={formik}
+              phoneNumberLabel={t('user.phone_number') || 'Phone number'}
+            />
 
             <FormField name="bio">
               <FormLabelAndMessage label={t('user.bio')} />

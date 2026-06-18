@@ -8,6 +8,7 @@ from src.services.payments.payments_products import get_payments_product
 from src.services.users.users import read_user_by_id
 from src.security.features_utils.usage import check_limits_with_usage
 
+
 async def get_customers(
     request: Request,
     org_id: int,
@@ -16,7 +17,7 @@ async def get_customers(
 ):
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
     org = db_session.exec(statement).first()
@@ -31,23 +32,27 @@ async def get_customers(
     payment_users = db_session.exec(statement).all()
 
     customers_data = []
-    
+
     for payment_user in payment_users:
         # Get user data
-        user = await read_user_by_id(request, db_session, current_user, payment_user.user_id)
-        
+        user = await read_user_by_id(
+            request, db_session, current_user, payment_user.user_id
+        )
+
         # Get product data
         if org.id is None:
             raise HTTPException(status_code=400, detail="Invalid organization ID")
-        product = await get_payments_product(request, org.id, payment_user.payment_product_id, current_user, db_session)
+        product = await get_payments_product(
+            request, org.id, payment_user.payment_product_id, current_user, db_session
+        )
 
         customer_data = {
-            'payment_user_id': payment_user.id,
-            'user': user if user else None,
-            'product': product if product else None,
-            'status': payment_user.status,
-            'creation_date': payment_user.creation_date,
-            'update_date': payment_user.update_date
+            "payment_user_id": payment_user.id,
+            "user": user if user else None,
+            "product": product if product else None,
+            "status": payment_user.status,
+            "creation_date": payment_user.creation_date,
+            "update_date": payment_user.update_date,
         }
         customers_data.append(customer_data)
 

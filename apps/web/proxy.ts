@@ -24,7 +24,7 @@ export const config = {
      * 10. Static files (sw.js, manifest.json, workbox, favicon, images)
      * 11. all root files inside /public (e.g. /favicon.ico)
      */
-    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
+    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|data|landing|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
     '/payments/stripe/connect/oauth',
   ],
@@ -38,6 +38,28 @@ export default async function proxy(req: NextRequest) {
   const fullhost = req.headers ? req.headers.get('host') : ''
   const cookie_orgslug = req.cookies.get('learnhouse_current_orgslug')?.value
 
+  // Server Action POSTs are rewritten to 127.0.0.1 below, which is a real
+  // network hop back into this same server. That proxied request re-enters
+  // this middleware with the already-rewritten path; it must pass through
+  // untouched, otherwise it gets rewritten again on every hop (growing the
+  // path and x-forwarded-* headers each time) until the request dies with
+  // 431 Request Header Fields Too Large.
+  if (fullhost && fullhost.startsWith('127.0.0.1')) {
+    return NextResponse.next()
+  }
+
+  // Helper to safely rewrite URLs, especially for Server Actions
+  // Server Actions (POST requests) need special handling to avoid UND_ERR_HEADERS_TIMEOUT
+  // caused by loopback network issues in Docker/Nixpacks containers
+  const createRewriteUrl = (path: string) => {
+    const rewriteUrl = new URL(path, req.url)
+    if (req.method === 'POST') {
+      rewriteUrl.hostname = '127.0.0.1'
+      rewriteUrl.port = process.env.PORT || '3000'
+      rewriteUrl.protocol = 'http:'
+    }
+    return rewriteUrl
+  }
   // Out of orgslug paths & rewrite
   const standard_paths = ['/home']
   const auth_paths = [
@@ -78,7 +100,7 @@ export default async function proxy(req: NextRequest) {
 
   if (standard_paths.includes(pathname)) {
     // Redirect to the same pathname with the original search params
-    return NextResponse.rewrite(new URL(`${pathname}${search}`, req.url))
+    return NextResponse.rewrite(createRewriteUrl(`${pathname}${search}`))
   }
 
   if (auth_paths.includes(pathname)) {
@@ -87,7 +109,7 @@ export default async function proxy(req: NextRequest) {
       : `/auth${pathname}`
 
     const response = NextResponse.rewrite(
-      new URL(`${targetPath}${search}`, req.url)
+      createRewriteUrl(`${targetPath}${search}`)
     )
 
     // Parse the search params
@@ -109,7 +131,7 @@ export default async function proxy(req: NextRequest) {
 
   // Dynamic Pages Editor
   if (pathname.match(/^\/course\/[^/]+\/activity\/[^/]+\/edit$/)) {
-    return NextResponse.rewrite(new URL(`/editor${pathname}`, req.url))
+    return NextResponse.rewrite(createRewriteUrl(`/editor${pathname}`))
   }
 
   // Check if the request is for the Stripe callback URL
@@ -135,7 +157,12 @@ export default async function proxy(req: NextRequest) {
 
   // Health Check
   if (pathname.startsWith('/health')) {
-    return NextResponse.rewrite(new URL(`/api/health`, req.url))
+    return NextResponse.rewrite(createRewriteUrl(`/api/health`))
+  }
+
+  // Join Landing Page (Public)
+  if (pathname.startsWith('/join')) {
+    return NextResponse.rewrite(createRewriteUrl(`${pathname}${search}`))
   }
 
   // Auth Redirects
@@ -191,7 +218,7 @@ export default async function proxy(req: NextRequest) {
       ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
       : (default_org as string)
     const response = NextResponse.rewrite(
-      new URL(`/orgs/${orgslug}${pathname}`, req.url)
+      createRewriteUrl(`/orgs/${orgslug}${pathname}${search}`)
     )
 
     // Set the cookie with the orgslug value
@@ -211,7 +238,7 @@ export default async function proxy(req: NextRequest) {
     const LEARNHOUSE_TOP_DOMAIN = getLEARNHOUSE_TOP_DOMAIN_VAL()
     const orgslug = default_org as string
     const response = NextResponse.rewrite(
-      new URL(`/orgs/${orgslug}${pathname}`, req.url)
+      createRewriteUrl(`/orgs/${orgslug}${pathname}${search}`)
     )
 
     if (pathname.startsWith('/ref/')) {

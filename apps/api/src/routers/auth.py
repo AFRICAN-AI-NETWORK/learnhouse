@@ -58,9 +58,7 @@ async def login(
     Authorize: AuthJWT = Depends(),
     db_session: Session = Depends(get_db_session),
 ):
-    user = await authenticate_user(
-        request, username, password, db_session
-    )
+    user = await authenticate_user(request, username, password, db_session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -108,7 +106,6 @@ async def third_party_login(
 ):
     # Google
     if body.provider == "google":
-
         user = await signWithGoogle(
             request, body.access_token, body.email, org_id, current_user, db_session
         )
@@ -164,31 +161,22 @@ async def verify_email_endpoint(
 ):
     """
     Verify user's email address using the verification token from the email.
-    
+
     This endpoint is called when a user clicks the verification link in their email.
-    
-    Example request:
-```json
-    {
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-    }
-```
-    
+
     Returns:
     - success: bool
     - message: str
     - already_verified: bool
     """
     result = await verify_user_email(
-        request=request,
-        db_session=db_session,
-        token=verification_data.token
+        request=request, db_session=db_session, token=verification_data.token
     )
-    
+
     return {
         "success": True,
         "message": result["message"],
-        "already_verified": result.get("already_verified", False)
+        "already_verified": result.get("already_verified", False),
     }
 
 
@@ -201,15 +189,7 @@ async def resend_verification_email(
 ):
     """
     Resend verification email to user if they didn't receive it or it expired.
-    
-    Example request:
-```json
-    {
-        "email": "user@example.com",
-        "org_slug": "default"
-    }
-```
-    
+
     Returns:
     - success: bool
     - message: str
@@ -217,38 +197,32 @@ async def resend_verification_email(
     # Get user
     statement = select(User).where(User.email == resend_data.email)
     user = db_session.exec(statement).first()
-    
+
     if not user:
         # Don't reveal if user exists or not for security reasons
         return {
             "success": True,
-            "message": "If the email exists in our system, a verification email has been sent."
+            "message": "If the email exists in our system, a verification email has been sent.",
         }
-    
+
     # Check if already verified
     if user.email_verified:
         raise HTTPException(
-            status_code=400,
-            detail="Email is already verified. You can log in now."
+            status_code=400, detail="Email is already verified. You can log in now."
         )
-    
+
     # Get organization
     statement = select(Organization).where(Organization.slug == resend_data.org_slug)
     org = db_session.exec(statement).first()
-    
+
     if not org:
-        raise HTTPException(
-            status_code=400,
-            detail="Organization not found"
-        )
-    
+        raise HTTPException(status_code=400, detail="Organization not found")
+
     # Generate new verification token
     verification_token = generate_verification_token(
-        user_email=user.email,
-        user_id=user.id,
-        org_slug=org.slug
+        user_email=user.email, user_id=user.id, org_slug=org.slug
     )
-    
+
     # Resend email
     send_account_creation_email(
         user=UserRead.model_validate(user),
@@ -256,8 +230,8 @@ async def resend_verification_email(
         organization=OrganizationRead.model_validate(org),
         verification_token=verification_token,
     )
-    
+
     return {
         "success": True,
-        "message": "Verification email sent successfully. Please check your inbox."
+        "message": "Verification email sent successfully. Please check your inbox.",
     }

@@ -142,7 +142,11 @@ async def api_get_course_meta(
     Get single Course Metadata (chapters, activities) by course_uuid
     """
     return await get_course_meta(
-        request, course_uuid, with_unpublished_activities, current_user=current_user, db_session=db_session
+        request,
+        course_uuid,
+        with_unpublished_activities,
+        current_user=current_user,
+        db_session=db_session,
     )
 
 
@@ -221,7 +225,9 @@ async def api_apply_course_contributor(
     """
     Apply to be a contributor for a course
     """
-    return await apply_course_contributor(request, course_uuid, current_user, db_session)
+    return await apply_course_contributor(
+        request, course_uuid, current_user, db_session
+    )
 
 
 @router.get("/{course_uuid}/updates")
@@ -324,7 +330,7 @@ async def api_update_course_contributor(
         authorship,
         authorship_status,
         current_user,
-        db_session
+        db_session,
     )
 
 
@@ -341,11 +347,7 @@ async def api_add_bulk_course_contributors(
     Only administrators can perform this action
     """
     return await add_bulk_course_contributors(
-        request,
-        course_uuid,
-        usernames,
-        current_user,
-        db_session
+        request, course_uuid, usernames, current_user, db_session
     )
 
 
@@ -374,12 +376,12 @@ async def api_get_course_user_rights(
 ) -> dict:
     """
     Get detailed user rights for a specific course.
-    
+
     This endpoint returns comprehensive rights information that can be used
     by the UI to enable/disable features based on user permissions.
-    
-    
-    
+
+
+
     **Response Structure:**
     ```json
     {
@@ -415,7 +417,7 @@ async def api_get_course_user_rights(
         }
     }
     ```
-    
+
     **Permissions Explained:**
     - `read`: Can read the course content
     - `create`: Can create new courses (instructor role or higher)
@@ -429,20 +431,20 @@ async def api_get_course_user_rights(
     - `grade_assignments`: Can grade student assignments
     - `mark_activities_done`: Can mark activities as done for other users
     - `create_certifications`: Can create course certifications
-    
+
     **Ownership Information:**
     - `is_owner`: Is course owner (CREATOR, MAINTAINER, or CONTRIBUTOR)
     - `is_creator`: Is course creator
     - `is_maintainer`: Is course maintainer
     - `is_contributor`: Is course contributor
     - `authorship_status`: Current authorship status (ACTIVE, PENDING, INACTIVE)
-    
+
     **Role Information:**
     - `is_admin`: Has admin role (role 1)
     - `is_maintainer_role`: Has maintainer role (role 2)
     - `is_instructor`: Has instructor role (role 3)
     - `is_user`: Has basic user role (role 4)
-    
+
     **Security Notes:**
     - Returns rights based on course ownership and user roles
     - Safe to expose to UI as it only returns permission information

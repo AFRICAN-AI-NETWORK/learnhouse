@@ -7,6 +7,7 @@ from src.db.users import PublicUser, AnonymousUser
 from src.security.courses_security import courses_rbac_check
 from src.security.features_utils.usage import check_limits_with_usage
 
+
 async def link_course_to_product(
     request: Request,
     org_id: int,
@@ -17,7 +18,7 @@ async def link_course_to_product(
 ):
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if course exists and user has permission
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
@@ -26,12 +27,13 @@ async def link_course_to_product(
         raise HTTPException(status_code=404, detail="Course not found")
 
     # RBAC check
-    await courses_rbac_check(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Check if product exists
     statement = select(PaymentsProduct).where(
-        PaymentsProduct.id == product_id,
-        PaymentsProduct.org_id == org_id
+        PaymentsProduct.id == product_id, PaymentsProduct.org_id == org_id
     )
     product = db_session.exec(statement).first()
 
@@ -44,8 +46,7 @@ async def link_course_to_product(
 
     if existing_link:
         raise HTTPException(
-            status_code=400,
-            detail="Course is already linked to a product"
+            status_code=400, detail="Course is already linked to a product"
         )
 
     # Create new payment course link
@@ -60,6 +61,7 @@ async def link_course_to_product(
 
     return {"message": "Course linked to product successfully"}
 
+
 async def unlink_course_from_product(
     request: Request,
     org_id: int,
@@ -69,7 +71,7 @@ async def unlink_course_from_product(
 ):
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if course exists and user has permission
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
@@ -78,25 +80,26 @@ async def unlink_course_from_product(
         raise HTTPException(status_code=404, detail="Course not found")
 
     # RBAC check
-    await courses_rbac_check(request, course.course_uuid, current_user, "update", db_session)
+    await courses_rbac_check(
+        request, course.course_uuid, current_user, "update", db_session
+    )
 
     # Find and delete the payment course link
     statement = select(PaymentsCourse).where(
-        PaymentsCourse.course_id == course.id,
-        PaymentsCourse.org_id == org_id
+        PaymentsCourse.course_id == course.id, PaymentsCourse.org_id == org_id
     )
     payment_course = db_session.exec(statement).first()
 
     if not payment_course:
         raise HTTPException(
-            status_code=404,
-            detail="Course is not linked to any product"
+            status_code=404, detail="Course is not linked to any product"
         )
 
     db_session.delete(payment_course)
     db_session.commit()
 
     return {"message": "Course unlinked from product successfully"}
+
 
 async def get_courses_by_product(
     request: Request,
@@ -107,11 +110,10 @@ async def get_courses_by_product(
 ):
     # Check if payments feature is enabled
     check_limits_with_usage("payments", org_id, db_session)
-    
+
     # Check if product exists
     statement = select(PaymentsProduct).where(
-        PaymentsProduct.id == product_id,
-        PaymentsProduct.org_id == org_id
+        PaymentsProduct.id == product_id, PaymentsProduct.org_id == org_id
     )
     product = db_session.exec(statement).first()
 
@@ -125,7 +127,7 @@ async def get_courses_by_product(
         .join(PaymentsCourse, Course.id == PaymentsCourse.course_id)  # type: ignore
         .where(
             PaymentsCourse.payment_product_id == product_id,
-            PaymentsCourse.org_id == org_id
+            PaymentsCourse.org_id == org_id,
         )
     )
     courses = db_session.exec(statement).all()

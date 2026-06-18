@@ -2,13 +2,29 @@
 import Image from 'next/image'
 import React from 'react'
 import africanAiLogo from '../../../../public/african_ai_horizontal.png'
-import { BookCopy, School, Settings, Users, GitMerge } from 'lucide-react'
+import {
+  BookCopy,
+  School,
+  Settings,
+  Users,
+  GitMerge,
+  Megaphone,
+} from 'lucide-react'
 import Link from 'next/link'
-import AdminAuthorization from '@components/Security/AdminAuthorization'
 import { useTranslation } from 'react-i18next'
+import useAdminStatus from '@components/Hooks/useAdminStatus'
 
 function DashboardHome() {
   const { t } = useTranslation()
+  const { isAdmin, rights } = useAdminStatus() as any
+
+  const canSeeCourses = isAdmin || rights?.courses?.action_read
+  const canSeeOrg = isAdmin || rights?.organizations?.action_read
+  const canSeeUsers = isAdmin || rights?.users?.action_read
+  const canSeeCommunications = isAdmin || rights?.communications?.action_read
+  const canSeeHandbook = isAdmin || rights?.handbook?.action_read
+  const isPartner = isAdmin || rights?.affiliation?.action_read
+
   return (
     <div className="flex items-center justify-center mx-auto min-h-screen flex-col p-4 sm:mb-0 mb-16">
       <div className="mx-auto pb-6 sm:pb-10">
@@ -19,35 +35,65 @@ function DashboardHome() {
           className="w-48 sm:w-auto"
         />
       </div>
-      <AdminAuthorization authorizationMode="component">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 max-w-2xl w-full">
-          {/* Card components */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 max-w-2xl w-full">
+        {/* Card components */}
+        {canSeeCourses && (
           <DashboardCard
             href="/dash/courses"
             icon={<BookCopy className="mx-auto text-gray-500" size={50} />}
             title={t('dashboard.home.cards.courses.title')}
             description={t('dashboard.home.cards.courses.description')}
           />
+        )}
+        {canSeeOrg && (
           <DashboardCard
             href="/dash/org/settings/general"
             icon={<School className="mx-auto text-gray-500" size={50} />}
             title={t('dashboard.home.cards.organization.title')}
             description={t('dashboard.home.cards.organization.description')}
           />
+        )}
+        {canSeeUsers && (
           <DashboardCard
             href="/dash/users/settings/users"
             icon={<Users className="mx-auto text-gray-500" size={50} />}
             title={t('dashboard.home.cards.users.title')}
             description={t('dashboard.home.cards.users.description')}
           />
+        )}
+        {isAdmin && (
           <DashboardCard
             href="/dash/referrals"
             icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
             title="Referrals"
             description="Earn commissions by referring new users"
           />
-        </div>
-      </AdminAuthorization>
+        )}
+        {isPartner && !isAdmin && (
+          <DashboardCard
+            href="/dash/affiliation"
+            icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
+            title="Affiliation"
+            description="Track your impact and manage your earnings"
+          />
+        )}
+        {canSeeCommunications && (
+          <DashboardCard
+            href="/dash/communications"
+            icon={<Megaphone className="mx-auto text-gray-500" size={50} />}
+            title="Communications"
+            description="Send batch emails and announcements to students"
+          />
+        )}
+        {canSeeHandbook && (
+          <DashboardCard
+            href="/dash/handbook"
+            icon={<BookCopy className="mx-auto text-gray-500" size={50} />}
+            title="Handbook"
+            description="Access the organization's handbook and guidelines"
+          />
+        )}
+      </div>
       <div className="flex flex-col gap-6 sm:gap-10 mt-6 sm:mt-10">
         <Link
           href={'/dash/user-account/settings/general'}

@@ -18,4 +18,3 @@ export const useEEStatus = () => {
     isError: error,
   };
 };
-

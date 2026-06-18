@@ -3,7 +3,13 @@ from sqlmodel import Session
 from src.core.events.database import get_db_session
 from src.db.roles import RoleCreate, RoleRead, RoleUpdate
 from src.security.auth import get_current_user
-from src.services.roles.roles import create_role, delete_role, read_role, update_role, get_roles_by_organization
+from src.services.roles.roles import (
+    create_role,
+    delete_role,
+    read_role,
+    update_role,
+    get_roles_by_organization,
+)
 from src.db.users import PublicUser
 from typing import List
 
@@ -18,7 +24,7 @@ async def api_create_role(
     role_object: RoleCreate,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
-)-> RoleRead:
+) -> RoleRead:
     """
     Create new role for a specific organization
     """
@@ -33,7 +39,7 @@ async def api_get_roles_by_organization(
     org_id: int,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
-)-> List[RoleRead]:
+) -> List[RoleRead]:
     """
     Get all roles for a specific organization, including global roles
     """
@@ -46,7 +52,7 @@ async def api_get_role(
     role_id: str,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
-)-> RoleRead:
+) -> RoleRead:
     """
     Get single role by role_id
     """
@@ -60,7 +66,7 @@ async def api_update_role(
     role_object: RoleUpdate,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
-)-> RoleRead:
+) -> RoleRead:
     """
     Update role by role_id
     """
@@ -72,7 +78,7 @@ async def api_update_role(
             status_code=400,
             detail="Invalid role ID format. Role ID must be a number.",
         )
-    
+
     role_object.role_id = role_id_int
     return await update_role(request, db_session, role_object, current_user)
 

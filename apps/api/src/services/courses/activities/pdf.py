@@ -56,7 +56,9 @@ async def create_documentpdf_activity(
         )
 
     # RBAC check
-    await courses_rbac_check_for_activities(request, course.course_uuid, current_user, "create", db_session)
+    await courses_rbac_check_for_activities(
+        request, course.course_uuid, current_user, "create", db_session
+    )
 
     # get org_id
     org_id = coursechapter.org_id
@@ -96,7 +98,7 @@ async def create_documentpdf_activity(
         content={
             "filename": "documentpdf." + pdf_format,
             "activity_uuid": activity_uuid,
-            },  
+        },
         org_id=org_id if org_id else 0,
         course_id=coursechapter.course_id,
         activity_uuid=activity_uuid,

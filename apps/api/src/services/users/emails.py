@@ -13,7 +13,7 @@ def send_account_creation_email(
     """
     Send welcome email to new users with optional email verification
     """
-    
+
     # Build verification link if token is provided
     verification_section = ""
     if verification_token and organization:
@@ -21,7 +21,7 @@ def send_account_creation_email(
         verification_section = f"""
         <div style="margin: 30px 0;">
             <p style="margin-bottom: 15px;">Please verify your email address to activate your account:</p>
-            <a href="{verification_link}" 
+            <a href="{verification_link}"
                style="display: inline-block; padding: 14px 32px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
                 Verify Email Address
             </a>
@@ -35,9 +35,9 @@ def send_account_creation_email(
         verification_section = """
         <p style="margin: 20px 0;">You can now log in and start exploring courses!</p>
         """
-    
+
     org_name = organization.name if organization else "African AI Network LMS"
-    
+
     # Send email
     return send_email(
         to=email,
@@ -65,17 +65,17 @@ def send_account_creation_email(
             <div class="content">
                 <h2>Hello {user.username},</h2>
                 <p>Your account has been successfully created. We're excited to have you join our learning community!</p>
-                
+
                 {verification_section}
-                
+
                 <p style="margin-top: 30px;">Get started by exploring our courses and connecting with fellow learners.</p>
-                
-                <p style="margin-top: 30px;">Need help getting started? Visit our <a href="https://lms.africanainetwork.com/org/{organization.slug if organization else 'default'}/courses" style="color: #4F46E5; text-decoration: none; font-weight: 600;">Course Catalog</a></p>
-                
+
+                <p style="margin-top: 30px;">Need help getting started? Visit our <a href="https://lms.africanainetwork.com/org/{organization.slug if organization else "default"}/courses" style="color: #4F46E5; text-decoration: none; font-weight: 600;">Course Catalog</a></p>
+
                 <p style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #E5E7EB;">
                     If you did not create this account, please ignore this email.
                 </p>
-                
+
                 <p style="margin-top: 20px;">
                     Best regards,<br>
                     <strong>The {org_name} Team</strong>
@@ -84,7 +84,7 @@ def send_account_creation_email(
             <div class="footer">
                 <p>&copy; 2026 {org_name}. All rights reserved.</p>
                 <p style="margin-top: 10px;">
-                    <a href="https://africanainetwork.com">Visit our website</a> | 
+                    <a href="https://africanainetwork.com">Visit our website</a> |
                     <a href="https://lms.africanainetwork.com">LMS Platform</a>
                 </p>
             </div>
@@ -101,10 +101,9 @@ def send_password_reset_email(
     organization: OrganizationRead,
     email: EmailStr,
 ):
-    
     # Use your actual domain
-    reset_link = f"https://lms.africanainetwork.com/org/{organization.slug}/reset-password?email={email}&resetCode={generated_reset_code}"
-    
+    reset_link = f"https://lms.africanainetwork.com/reset?orgslug={organization.slug}&auth.email={email}&resetCode={generated_reset_code}"
+
     # Send email
     return send_email(
         to=email,
@@ -132,26 +131,26 @@ def send_password_reset_email(
             <div class="content">
                 <h2>Hello {user.username},</h2>
                 <p>You have requested to reset your password for your account at <strong>{organization.name}</strong>.</p>
-                
+
                 <p style="margin-top: 25px;">Your password reset code is:</p>
                 <div class="reset-code">{generated_reset_code}</div>
-                
+
                 <div style="margin: 30px 0;">
-                    <a href="{reset_link}" 
+                    <a href="{reset_link}"
                        style="display: inline-block; padding: 14px 32px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
                         Reset Password
                     </a>
                 </div>
-                
+
                 <p style="margin-top: 20px; font-size: 13px; color: #666;">
                     Or copy and paste this link in your browser:<br>
                     <span style="word-break: break-all; color: #4F46E5;">{reset_link}</span>
                 </p>
-                
+
                 <p style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #E5E7EB; color: #DC2626; font-weight: 600;">
                     ⚠️ If you did not request this password reset, please ignore this email or contact support immediately.
                 </p>
-                
+
                 <p style="margin-top: 20px; font-size: 13px; color: #6B7280;">
                     This reset code will expire in 15 minutes for security reasons.
                 </p>

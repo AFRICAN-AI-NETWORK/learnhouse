@@ -131,6 +131,7 @@
     "invalid_email": "Email invalide",
     "password_min_length": "8 caractères minimum",
     "username_min_length": "4 caractères minimum",
+    "invalid_phone_with_country_code": "Numéro de téléphone invalide. Veuillez inclure l'indicatif du pays (ex. +254)",
     "title_required": "Titre requis",
     "content_required": "Contenu requis"
   },
@@ -255,7 +256,8 @@
     "contributor_application_success": "Candidature envoyée avec succès",
     "contributor_application_error": "Erreur lors de l'envoi",
     "contribute": "Contribuer",
-    "enroll_for_free": "S'inscrire gratuitement"
+    "enroll_for_free": "S'inscrire gratuitement",
+    "finish_course": "Terminer le cours"
   },
   "collections": {
     "collections": "Collections",
@@ -286,6 +288,42 @@
     "visibility": "Visibilité",
     "empty_collection": "Collection vide"
   },
+  "chat": {
+    "chat": "Conversation",
+    "chats": "Conversations",
+    "conversations": "Conversations",
+    "create_new_chat": "Nouvelle conversation",
+    "search_conversations": "Rechercher les conversations...",
+    "search_users": "Rechercher les utilisateurs...",
+    "select_user": "Sélectionnez un utilisateur pour commencer à discuter",
+    "no_conversations": "Aucune conversation",
+    "no_messages": "Aucun message",
+    "type_message": "Tapez un message...",
+    "send": "Envoyer",
+    "typing": "tape...",
+    "message_deleted": "Ce message a été supprimé",
+    "edited": "modifié",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "last_seen": "Vu il y a {{time}}",
+    "archive_conversation": "Archiver la conversation",
+    "delete_conversation": "Supprimer",
+    "start_new_chat": "Nouvelle conversation",
+    "attachment": "Pièce jointe",
+    "attachments": "Pièces jointes",
+    "send_file": "Envoyer un fichier",
+    "file_too_large": "Le fichier est trop volumineux. La taille maximale est de 100 Mo",
+    "uploading": "Téléchargement en cours...",
+    "sending_message": "Envoi du message...",
+    "message_sent": "Message envoyé",
+    "message_failed": "Échec de l'envoi du message",
+    "retry": "Réessayer",
+    "read": "Lu",
+    "delivered": "Livré",
+    "not_allowed_to_chat": "Vous n'êtes pas autorisé à discuter avec cet utilisateur"
+  },
   "activities": {
     "video": "Vidéo",
     "document": "Document",
@@ -296,6 +334,7 @@
     "quiz": "Quiz",
     "file_submission": "Rendu de fichier",
     "form": "Formulaire",
+    "code_editor": "Éditeur de Code",
     "interactive": "Interactif",
     "activities": "Activités",
     "current_activity": "Activité en cours",
@@ -331,7 +370,14 @@
     "size_large": "Grand",
     "change_color": "Couleur",
     "preview_flip": "Aperçu",
-    "activities_count": "{{count}} activités"
+    "activities_count": "{{count}} activités",
+    "submission_saved": "Progression enregistrée avec succès",
+    "submission_failed": "Échec de l'enregistrement de la progression",
+    "execution_failed": "L'exécution du code a échoué",
+    "execution_error": "Une erreur est survenue lors de l'exécution du code",
+    "next_step": "Étape Suivante",
+    "back": "Retour",
+    "complete_lesson": "Terminer la leçon"
   },
   "assignments": {
     "submit_assignment": "Rendre le devoir",
@@ -349,7 +395,9 @@
     "points": "points",
     "current_points": "Points : {{points}}",
     "grade": "Noter",
-    "due_date": "Échéance"
+    "due_date": "Échéance",
+    "unsaved_tasks_warning": "Vous avez des tâches non enregistrées",
+    "submit_incomplete_warning": "Vous avez des tâches non enregistrées ! Si vous soumettez maintenant, ces tâches recevront une note de 0%. Êtes-vous sûr de vouloir continuer ?"
   },
   "certificate": {
     "certificate": "Certificat",
@@ -376,7 +424,9 @@
     "continuing_education": "Formation continue",
     "workshop_attendance": "Présence atelier",
     "specialization": "Spécialisation",
-    "dedication_message": "Félicitations pour votre travail acharné. Vous maîtrisez désormais ce sujet."
+    "dedication_message": "Félicitations pour votre travail acharné. Vous maîtrisez désormais ce sujet.",
+    "get_certificate": "Obtenir le certificat",
+    "certificate_of_completion": "Certificat de réussite"
   },
   "search": {
     "search_placeholder": "Rechercher cours, membres...",
@@ -392,7 +442,7 @@
     "user": "Membre"
   },
   "ai": {
-    "ask_ai": "Demander à l'IA",
+    "ask_ai": "Assistant d'apprentissage IA",
     "ask_ai_placeholder": "Posez une question sur ce cours",
     "experimental": "Expérimental",
     "how_can_we_help": "Comment puis-je vous aider ?",
@@ -1540,6 +1590,31 @@
           "task_update_error": "Erreur lors de la mise à jour de la tâche, veuillez réessayer plus tard.",
           "reminder": "Lors de l'édition/ajout de vos tâches, assurez-vous de Dépublier votre devoir pour éviter tout problème avec les étudiants, vous pouvez le Publier à nouveau lorsque vous êtes prêt."
         },
+        "exercise": "Exercice",
+        "title": "Titre",
+        "description": "Description",
+        "hint": "Indice",
+        "language": "Langage de Programmation",
+        "starter_code": "Code de Départ",
+        "solution_code": "Solution de Référence",
+        "hidden_from_students": "caché aux étudiants",
+        "test_cases": "Cas de Test",
+        "add_test_case": "Ajouter un Cas de Test",
+        "test_case": "Cas de Test",
+        "hidden": "Caché",
+        "test_description_placeholder": "Description (ex: Teste un cas limite avec une entrée vide)",
+        "input": "Entrée (stdin)",
+        "expected_output": "Sortie Attendue (stdout)",
+        "add_exercise": "Ajouter un Exercice",
+        "save": "Enregistrer",
+        "exercise_title_placeholder": "ex: Afficher Votre Nom 10 Fois",
+        "exercise_description_placeholder": "Décrivez le problème de programmation...",
+        "max_exercises_reached": "Maximum 10 exercices par tâche",
+        "max_test_cases_reached": "Maximum 20 cas de test par exercice",
+        "visible_test_cases": "Cas de Test Visibles",
+        "student_code": "Code de l'Étudiant",
+        "reference_solution": "Solution de Référence",
+        "task_save_failed": "Échec de l'enregistrement de la tâche",
         "task_editor": {
           "general": {
             "title": "Titre",

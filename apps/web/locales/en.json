@@ -43,7 +43,9 @@
     "save": "Save",
     "cancel": "Cancel",
     "submit": "Submit",
+    "edit": "Edit",
     "delete": "Delete",
+    "copy": "Copy",
     "previous": "Previous",
     "next": "Next",
     "status": "Status",
@@ -78,7 +80,9 @@
     "saving": "Saving...",
     "apply": "Apply",
     "remove": "Remove",
-    "original_price": "Original Price"
+    "original_price": "Original Price",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate"
   },
   "auth": {
     "login": "Login",
@@ -136,6 +140,7 @@
       "last_name": "Last Name",
       "username": "Username",
       "bio": "Bio",
+      "phone_number": "Phone Number",
       "next_step": "Next Step",
       "previous_step": "Previous Step",
       "password_strength_weak": "Weak",
@@ -169,8 +174,10 @@
     "invalid_email": "Invalid email address",
     "password_min_length": "Password must be at least 8 characters",
     "username_min_length": "Username must be at least 4 characters",
+    "invalid_phone_with_country_code": "Invalid phone number. Please include the country code (e.g. +254)",
     "title_required": "Title is required",
-    "content_required": "Content is required"
+    "content_required": "Content is required",
+    "invalid_phone": "Invalid phone number"
   },
   "courses": {
     "my_courses": "My Courses",
@@ -294,7 +301,8 @@
     "contributor_application_success": "Your application to contribute has been submitted successfully",
     "contributor_application_error": "Failed to submit your application. Please try again later.",
     "contribute": "Contribute",
-    "enroll_for_free": "Enroll for Free"
+    "enroll_for_free": "Enroll for Free",
+    "finish_course": "Finish Course"
   },
   "collections": {
     "collections": "Collections",
@@ -325,6 +333,52 @@
     "visibility": "Visibility",
     "empty_collection": "Empty Collection"
   },
+  "chat": {
+    "chat": "Chat",
+    "chats": "Chats",
+    "conversations": "Conversations",
+    "conversation": "Conversation",
+    "messages": "Messages",
+    "create_new_chat": "Create New Chat",
+    "search_conversations": "Search conversations...",
+    "search_users": "Search users...",
+    "select_user": "Select a user to start chatting",
+    "no_conversations": "No conversations yet",
+    "no_messages": "No messages yet",
+    "type_message": "Type a message...",
+    "send": "Send",
+    "typing": "typing...",
+    "message_deleted": "This message was deleted",
+    "edited": "edited",
+    "reply": "Reply",
+    "you": "You",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "online": "Online",
+    "offline": "Offline",
+    "last_seen": "Last seen {{time}}",
+    "archive_conversation": "Archive conversation",
+    "delete_conversation": "Delete conversation",
+    "start_new_chat": "Start new chat",
+    "attachment": "Attachment",
+    "attachments": "Attachments",
+    "send_file": "Send file",
+    "file_too_large": "File is too large. Maximum size is 100MB",
+    "uploading": "Uploading...",
+    "sending_message": "Sending message...",
+    "message_sent": "Message sent",
+    "message_failed": "Failed to send message",
+    "download_failed": "Failed to download file",
+    "retry": "Retry",
+    "read": "Read",
+    "delivered": "Delivered",
+    "copied": "Copied",
+    "not_allowed_to_chat": "You are not allowed to chat with this user",
+    "notification_permission_title": "Enable notifications",
+    "notification_permission_message": "Get notified when you receive new messages",
+    "notification_enabled": "Notifications enabled",
+    "notification_disabled": "Notifications disabled"
+  },
   "activities": {
     "video": "Video",
     "document": "Document",
@@ -335,6 +389,7 @@
     "quiz": "Quiz",
     "file_submission": "File Submission",
     "form": "Form",
+    "code_editor": "Code Editor",
     "interactive": "Interactive",
     "activities": "Activities",
     "current_activity": "Current Activity",
@@ -354,6 +409,7 @@
     "teacher_view": "Teacher view",
     "dont_forget_to_save": "Don't forget to save your progress",
     "save_your_progress": "Save your progress",
+    "resubmit": "Resubmit for grading",
     "unmark_tooltip": "Click the checkbox to unmark as complete if needed",
     "mark_tooltip": "Click the checkbox to mark this activity as complete",
     "failed_mark_complete": "Failed to mark activity as complete",
@@ -370,7 +426,14 @@
     "size_large": "Large Size",
     "change_color": "Change Color",
     "preview_flip": "Preview Flip",
-    "activities_count": "{{count}} activities"
+    "activities_count": "{{count}} activities",
+    "submission_saved": "Progress saved successfully",
+    "submission_failed": "Failed to save progress",
+    "execution_failed": "Code execution failed",
+    "execution_error": "An error occurred during code execution",
+    "next_step": "Next Step",
+    "back": "Back",
+    "complete_lesson": "Complete Lesson"
   },
   "assignments": {
     "submit_assignment": "Submit Assignment",
@@ -379,6 +442,7 @@
     "submit_for_grading": "Submit for grading",
     "grading_in_progress": "Grading in progress",
     "graded": "Graded",
+    "needs_revision": "Needs revision",
     "assignment_submitted_success": "Assignment submitted for grading",
     "failed_submit_assignment": "Failed to submit assignment for grading",
     "assignment_description": "Assignment Description",
@@ -388,7 +452,9 @@
     "points": "points",
     "current_points": "Current points: {{points}}",
     "grade": "Grade",
-    "due_date": "Due Date"
+    "due_date": "Due Date",
+    "unsaved_tasks_warning": "Save every task before final submission",
+    "submit_incomplete_warning": "Save every assignment task before submitting for grading. Unsaved or incomplete work cannot be submitted."
   },
   "certificate": {
     "certificate": "Certificate",
@@ -415,7 +481,9 @@
     "continuing_education": "Continuing Education",
     "workshop_attendance": "Workshop Attendance",
     "specialization": "Specialization",
-    "dedication_message": "Your dedication and hard work have paid off. You've mastered all the content in this course."
+    "dedication_message": "Your dedication and hard work have paid off. You've mastered all the content in this course.",
+    "get_certificate": "Get Certificate",
+    "certificate_of_completion": "Certificate of Completion"
   },
   "search": {
     "search_placeholder": "Search courses, users, collections...",
@@ -431,7 +499,7 @@
     "user": "User"
   },
   "ai": {
-    "ask_ai": "Ask AI",
+    "ask_ai": "AI Learning Companion",
     "ask_ai_placeholder": "Ask AI About this Lecture",
     "experimental": "Experimental",
     "how_can_we_help": "how can we help today ?",
@@ -520,6 +588,8 @@
         "last_name": "Last Name",
         "last_name_placeholder": "Your last name",
         "bio": "Bio",
+        "phone_number": "Phone Number",
+        "phone_number_placeholder": "Your phone number",
         "bio_placeholder": "Tell us about yourself",
         "characters_left": "{{count}} characters left",
         "additional_details": "Additional Details",
@@ -724,6 +794,7 @@
     "first_name": "First Name",
     "last_name": "Last Name",
     "bio": "Bio",
+    "phone_number": "Phone Number",
     "no_biography": "No biography provided",
     "my_progress": "My Progress",
     "no_courses_in_progress": "No courses in progress",
@@ -780,6 +851,7 @@
           "landing": "Landing Page",
           "previews": "Images & Previews",
           "socials": "Socials",
+          "integrations": "Integrations",
           "other": "Other"
         },
         "pages": {
@@ -802,6 +874,26 @@
           "other": {
             "title": "Other",
             "subtitle": "Manage additional organization settings"
+          },
+          "integrations": {
+            "title": "Integrations",
+            "subtitle": "Connect external services and manage API credentials",
+            "youtube": {
+              "title": "External Integrations",
+              "subtitle": "Connect and manage your third-party API credentials.",
+              "feature_name": "YouTube Automation",
+              "status_active": "Active Feature",
+              "instruction_label": "Instruction",
+              "instruction_text": "Paste the content of your **Google Cloud OAuth 2.0 Client ID JSON** file below. This enables the system to automatically schedule live broadcasts and archive recordings for your students.",
+              "input_label": "Service Account / Client ID JSON",
+              "save_button": "Save Integration Settings",
+              "toasts": {
+                "updating": "Updating integrations...",
+                "invalid_json": "Invalid JSON format. Please paste the exact JSON from Google Cloud.",
+                "success": "YouTube Integration updated successfully!",
+                "error": "Failed to update integrations"
+              }
+            }
           }
         },
         "name": "Organization Name",
@@ -818,7 +910,16 @@
         "saving": "Saving...",
         "update_success": "Organization Updated",
         "update_error": "Failed to update organization",
-        "updating": "Updating organization..."
+        "updating": "Updating organization...",
+        "validation": {
+          "name_required": "Name is required",
+          "name_max": "Organization name must be 60 characters or less",
+          "description_required": "Short description is required",
+          "description_max": "Short description must be 100 characters or less",
+          "about_max": "About text must be 400 characters or less",
+          "label_required": "Organization label is required",
+          "invalid_phone": "Invalid phone number"
+        }
       },
       "images": {
         "title": "Images & Previews",
@@ -905,7 +1006,13 @@
         "save_script": "Save Script",
         "toasts": {
           "save_success": "Script saved successfully",
-          "delete_success": "Script deleted successfully"
+          "save_error": "Failed to save script",
+          "delete_success": "Script deleted successfully",
+          "delete_error": "Failed to delete script"
+        },
+        "validation": {
+          "name_required": "Script name is required",
+          "content_required": "Script content is required"
         }
       },
       "audit_logs": {
@@ -1168,7 +1275,7 @@
         },
         "actions": {
           "edit_role": "Edit Role",
-          "remove_from_org": "Delete user account",
+          "remove_from_org": "Delete user",
           "removing": "Deleting...",
           "remove_success": "User account deleted successfully",
           "remove_error": "Error deleting user account"
@@ -1608,11 +1715,37 @@
         "toasts": {
           "task_created": "Task created successfully",
           "task_saved": "Task saved successfully",
+          "file_uploaded_success": "File uploaded successfully",
           "task_save_error": "Error saving task, please retry later.",
           "task_updated": "Task updated successfully",
           "task_update_error": "Error updating task, please retry later.",
           "reminder": "When editing/adding your tasks, make sure to Unpublish your Assignment to avoid any issues with students, you can Publish it again when you are ready."
         },
+        "exercise": "Exercise",
+        "title": "Title",
+        "description": "Description",
+        "hint": "Hint",
+        "language": "Programming Language",
+        "starter_code": "Starter Code",
+        "solution_code": "Reference Solution",
+        "hidden_from_students": "hidden from students",
+        "test_cases": "Test Cases",
+        "add_test_case": "Add Test Case",
+        "test_case": "Test Case",
+        "hidden": "Hidden",
+        "test_description_placeholder": "Description (e.g., Tests edge case with empty input)",
+        "input": "Input (stdin)",
+        "expected_output": "Expected Output (stdout)",
+        "add_exercise": "Add Exercise",
+        "save": "Save",
+        "exercise_title_placeholder": "e.g., Print Your Name 10 Times",
+        "exercise_description_placeholder": "Describe the coding problem...",
+        "max_exercises_reached": "Maximum 10 exercises per task",
+        "max_test_cases_reached": "Maximum 20 test cases per exercise",
+        "visible_test_cases": "Visible Test Cases",
+        "student_code": "Student's Code",
+        "reference_solution": "Reference Solution",
+        "task_save_failed": "Failed to save task",
         "task_editor": {
           "general": {
             "title": "Title",
@@ -1639,10 +1772,12 @@
         "status": {
           "late": "Late",
           "submitted": "Submitted",
+          "needs_revision": "Needs Revision",
           "graded": "Graded"
         },
         "submission_label": "Submission",
         "evaluate": "Evaluate",
+        "review": "Review",
         "evaluate_modal": {
           "title": "Evaluate @{{username}}",
           "description": "Evaluate the submission"
@@ -1650,13 +1785,21 @@
         "task_label": "Task {{number}} :",
         "hint": "Hint",
         "reference_document": "Reference Document",
+        "revision_feedback_placeholder": "Tell the learner what to revise",
         "actions": {
-          "reject": "Reject Assignment",
+          "reject": "Request Revision",
           "set_final_grade": "Set final grade",
+          "grade_and_complete": "Grade & Complete",
           "mark_as_done": "Mark Activity as Done for User"
         },
         "toasts": {
-          "reject_success": "Assignment rejected successfully"
+          "reject_success": "Revision requested successfully",
+          "reject_failed": "Failed to request revision",
+          "grade_complete_success": "Assignment graded and marked as done",
+          "grade_success_done_failed": "Grading succeeded but failed to mark as done",
+          "grade_failed": "Failed to grade assignment",
+          "graded_success": "Task graded successfully with {{grade}} points",
+          "graded_failed": "Error grading task, please retry later."
         }
       },
       "modals": {
@@ -2056,7 +2199,8 @@
             "assignment": "Assignment",
             "assignments": "Assignments",
             "dynamic": "Dynamic",
-            "dynamic_page": "Dynamic Page"
+            "dynamic_page": "Dynamic Page",
+            "live_session": "Live Session"
           },
           "toasts": {
             "deleting": "Deleting activity...",

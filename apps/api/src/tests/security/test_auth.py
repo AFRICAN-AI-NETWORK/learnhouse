@@ -31,10 +31,10 @@ class TestAuth:
         """Create a test database session with real SQLModel tables"""
         # Create in-memory SQLite database for testing
         engine = create_engine("sqlite:///:memory:")
-        
+
         # Create all tables
         SQLModel.metadata.create_all(engine)
-        
+
         with Session(engine) as session:
             yield session
 
@@ -56,7 +56,7 @@ class TestAuth:
             "username": "testuser",
             "first_name": "Test",
             "last_name": "User",
-            "user_uuid": "user_123"
+            "user_uuid": "user_123",
         }
         return user
 
@@ -95,19 +95,19 @@ class TestAuth:
             username="testuser",
             first_name="Test",
             last_name="User",
-            email_verified=True  # Email must be verified
+            email_verified=True,  # Email must be verified
         )
         session.add(user)
         session.commit()
-        
+
         # Test authentication
         result = await authenticate_user(
             request=mock_request,
             username="test@example.com",
             password="testpassword123",
-            db_session=session
+            db_session=session,
         )
-        
+
         assert result is not False
         assert isinstance(result, User)
         assert result.email == "test@example.com"
@@ -119,9 +119,9 @@ class TestAuth:
             request=mock_request,
             username="nonexistent@example.com",
             password="password",
-            db_session=session
+            db_session=session,
         )
-        
+
         assert result is False
 
     @pytest.mark.asyncio
@@ -134,18 +134,18 @@ class TestAuth:
             username="testuser",
             first_name="Test",
             last_name="User",
-            email_verified=True
+            email_verified=True,
         )
         session.add(user)
         session.commit()
-        
+
         result = await authenticate_user(
             request=mock_request,
             username="test@example.com",
             password="wrongpassword",
-            db_session=session
+            db_session=session,
         )
-        
+
         assert result is False
 
     @pytest.mark.asyncio
@@ -158,20 +158,20 @@ class TestAuth:
             username="testuser",
             first_name="Test",
             last_name="User",
-            email_verified=False  # Email not verified
+            email_verified=False,  # Email not verified
         )
         session.add(user)
         session.commit()
-        
+
         # Test authentication should raise HTTPException
         with pytest.raises(HTTPException) as exc_info:
             await authenticate_user(
                 request=mock_request,
                 username="unverified@example.com",
                 password="testpassword123",
-                db_session=session
+                db_session=session,
             )
-        
+
         assert exc_info.value.status_code == 403
         assert "verify your email" in exc_info.value.detail.lower()
 
@@ -179,11 +179,11 @@ class TestAuth:
         """Test access token creation with default expiry"""
         data = {"sub": "test@example.com"}
         token = create_access_token(data)
-        
+
         # Verify token is created
         assert isinstance(token, str)
         assert len(token) > 0
-        
+
         # Decode and verify token
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         assert decoded["sub"] == "test@example.com"
@@ -194,38 +194,44 @@ class TestAuth:
         data = {"sub": "test@example.com"}
         expires_delta = timedelta(hours=2)
         token = create_access_token(data, expires_delta)
-        
+
         # Decode and verify token
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         assert decoded["sub"] == "test@example.com"
-        
+
         # Check that expiry time exists and is in the future
         assert "exp" in decoded
         exp_time = datetime.fromtimestamp(decoded["exp"], tz=timezone.utc)
         now = datetime.now(timezone.utc)
-        
+
         # Verify the token expires in the future
         assert exp_time > now
 
     @pytest.mark.asyncio
-    async def test_get_current_user_authenticated(self, mock_request, mock_db_session, mock_user):
+    async def test_get_current_user_authenticated(
+        self, mock_request, mock_db_session, mock_user
+    ):
         """Test getting current user when authenticated"""
-        with patch('src.security.auth.security_get_user', new_callable=AsyncMock) as mock_get_user:
+        with patch(
+            "src.security.auth.security_get_user", new_callable=AsyncMock
+        ) as mock_get_user:
             mock_get_user.return_value = mock_user
-            
+
             # Mock AuthJWT
             mock_authorize = Mock(spec=AuthJWT)
             mock_authorize.jwt_optional.return_value = None
             mock_authorize.get_jwt_subject.return_value = "test@example.com"
-            
+
             result = await get_current_user(
                 request=mock_request,
                 Authorize=mock_authorize,
-                db_session=mock_db_session
+                db_session=mock_db_session,
             )
-            
+
             assert isinstance(result, PublicUser)
-            mock_get_user.assert_called_once_with(mock_request, mock_db_session, email="test@example.com")
+            mock_get_user.assert_called_once_with(
+                mock_request, mock_db_session, email="test@example.com"
+            )
 
     @pytest.mark.asyncio
     async def test_get_current_user_anonymous(self, mock_request, mock_db_session):
@@ -234,52 +240,52 @@ class TestAuth:
         mock_authorize = Mock(spec=AuthJWT)
         mock_authorize.jwt_optional.return_value = None
         mock_authorize.get_jwt_subject.return_value = None
-        
+
         result = await get_current_user(
-            request=mock_request,
-            Authorize=mock_authorize,
-            db_session=mock_db_session
+            request=mock_request, Authorize=mock_authorize, db_session=mock_db_session
         )
-        
+
         assert isinstance(result, AnonymousUser)
 
     @pytest.mark.asyncio
     async def test_get_current_user_jwt_error(self, mock_request, mock_db_session):
         """Test getting current user when JWT is invalid"""
         from jose import JWTError
-        
+
         # Mock AuthJWT to raise JWTError
         mock_authorize = Mock(spec=AuthJWT)
         mock_authorize.jwt_optional.side_effect = JWTError("Invalid token")
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user(
                 request=mock_request,
                 Authorize=mock_authorize,
-                db_session=mock_db_session
+                db_session=mock_db_session,
             )
-        
+
         assert exc_info.value.status_code == 401
         assert "Could not validate credentials" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_get_current_user_user_not_found(self, mock_request, mock_db_session):
         """Test getting current user when user doesn't exist in database"""
-        with patch('src.security.auth.security_get_user', new_callable=AsyncMock) as mock_get_user:
+        with patch(
+            "src.security.auth.security_get_user", new_callable=AsyncMock
+        ) as mock_get_user:
             mock_get_user.return_value = None
-            
+
             # Mock AuthJWT
             mock_authorize = Mock(spec=AuthJWT)
             mock_authorize.jwt_optional.return_value = None
             mock_authorize.get_jwt_subject.return_value = "nonexistent@example.com"
-            
+
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user(
                     request=mock_request,
                     Authorize=mock_authorize,
-                    db_session=mock_db_session
+                    db_session=mock_db_session,
                 )
-            
+
             assert exc_info.value.status_code == 401
             assert "Could not validate credentials" in exc_info.value.detail
 
@@ -293,9 +299,9 @@ class TestAuth:
     async def test_non_public_endpoint_anonymous(self):
         """Test non_public_endpoint with anonymous user"""
         anonymous_user = AnonymousUser()
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await non_public_endpoint(anonymous_user)
-        
+
         assert exc_info.value.status_code == 401
         assert "Not authenticated" in exc_info.value.detail
