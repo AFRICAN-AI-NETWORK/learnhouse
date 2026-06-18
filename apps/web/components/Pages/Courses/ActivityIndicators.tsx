@@ -346,7 +346,7 @@ function ActivityIndicators(props: Props) {
   }, [allActivities, isActivityDone])
 
   return (
-    <div className="flex items-center gap-3 py-6">
+    <div className="flex min-w-0 items-center gap-2 overflow-x-auto py-4 sm:gap-3 sm:py-6">
       {enableNavigation && (
         <button
           onClick={navigateToPrevious}
@@ -358,7 +358,7 @@ function ActivityIndicators(props: Props) {
         </button>
       )}
 
-      <div className="flex items-center w-full bg-zinc-50 p-1.5 rounded-2xl border border-zinc-200/60 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+      <div className="flex min-w-[520px] items-center rounded-2xl border border-zinc-200/60 bg-zinc-50 p-1.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] sm:min-w-0 sm:w-full">
         {course.chapters.map((chapter: any, chapterIndex: number) => {
           const completedActivities = getChapterProgress(chapter.activities)
           const isChapterComplete =

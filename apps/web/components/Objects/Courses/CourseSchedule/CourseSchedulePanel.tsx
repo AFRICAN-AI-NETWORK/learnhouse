@@ -6,7 +6,9 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  Copy,
   CopyCheck,
+  ExternalLink,
   MapPin,
   Video,
 } from 'lucide-react'
@@ -107,14 +109,14 @@ function CourseSchedulePanel({ courseUuid }: { courseUuid: string }) {
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <div>
+      <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="min-w-0">
           <h2 className="text-xl font-bold text-gray-950">This week</h2>
           <p className="mt-1 text-sm text-gray-500">
             Timetable sessions and your register status.
           </p>
         </div>
-        <CalendarDays size={22} className="text-gray-400" />
+        <CalendarDays size={22} className="hidden shrink-0 text-gray-400 sm:block" />
       </div>
 
       {(timetableError || registerError) && (
@@ -123,8 +125,8 @@ function CourseSchedulePanel({ courseUuid }: { courseUuid: string }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-3">
           {upcoming.map((event) => (
             <TimetableCard key={event.event_uuid} event={event} />
           ))}
@@ -150,8 +152,8 @@ function CourseSchedulePanel({ courseUuid }: { courseUuid: string }) {
 
 function TimetableCard({ event }: { event: CourseTimetableEvent }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-bold text-gray-950">{event.title}</h3>
@@ -172,21 +174,11 @@ function TimetableCard({ event }: { event: CourseTimetableEvent }) {
             </p>
           )}
         </div>
-        <span className="rounded-md bg-white px-2 py-1 text-xs font-semibold capitalize text-gray-500">
+        <span className="w-fit shrink-0 rounded-md bg-white px-2 py-1 text-xs font-semibold capitalize text-gray-500">
           {event.recurrence}
         </span>
       </div>
-      {event.location && (
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-600">
-          {event.location.toLowerCase().includes('zoom') ||
-          event.location.toLowerCase().includes('online') ? (
-            <Video size={13} />
-          ) : (
-            <MapPin size={13} />
-          )}
-          {event.location}
-        </div>
-      )}
+      <EventLocation location={event.location} />
     </div>
   )
 }
@@ -211,7 +203,7 @@ function RegisterCard({
   const closesAt = registerSummary?.current_period?.checkin_closes_at
 
   return (
-    <aside className="rounded-lg border border-gray-200 bg-white p-4">
+    <aside className="min-w-0 rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-bold text-gray-950">Student register</h3>
@@ -263,6 +255,82 @@ function RegisterCard({
       </div>
     </aside>
   )
+}
+
+function EventLocation({ location }: { location?: string | null }) {
+  if (!location) return null
+
+  const link = getLocationLink(location)
+  const isOnline =
+    location.toLowerCase().includes('zoom') ||
+    location.toLowerCase().includes('meet') ||
+    location.toLowerCase().includes('jitsi') ||
+    location.toLowerCase().includes('online') ||
+    Boolean(link)
+
+  const copyLocation = async () => {
+    try {
+      await navigator.clipboard.writeText(link || location)
+      toast.success('Location copied')
+    } catch {
+      toast.error('Could not copy location')
+    }
+  }
+
+  return (
+    <div className="mt-3 flex min-w-0 flex-col gap-2 rounded-md bg-white px-2.5 py-2 text-xs font-semibold text-gray-600 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-start gap-1.5">
+        {isOnline ? (
+          <Video size={13} className="mt-0.5 shrink-0" />
+        ) : (
+          <MapPin size={13} className="mt-0.5 shrink-0" />
+        )}
+        {link ? (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="min-w-0 break-all text-blue-700 hover:text-blue-800"
+            title={location}
+          >
+            {location}
+          </a>
+        ) : (
+          <span className="min-w-0 break-words">{location}</span>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
+        <button
+          type="button"
+          onClick={copyLocation}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          aria-label="Copy location"
+        >
+          <Copy size={14} />
+        </button>
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Open location link"
+          >
+            <ExternalLink size={14} />
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function getLocationLink(location: string) {
+  const match = location.match(/https?:\/\/[^\s]+|www\.[^\s]+/i)
+  if (!match) return null
+
+  const url = match[0]
+  return url.startsWith('http') ? url : `https://${url}`
 }
 
 function RegisterHistoryRow({ entry }: { entry: CourseRegisterEntry }) {

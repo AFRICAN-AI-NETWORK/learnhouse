@@ -101,7 +101,13 @@ jobs:
         if: env.SNYK_TOKEN != ''
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test --file=apps/api/requirements.txt --package-manager=pip --severity-threshold=high
+        run: |
+          # Capture results; the gate (not snyk's own exit code) decides pass/fail
+          # so that risk-accepted, non-upgradable packages (e.g. starlette) don't
+          # repeatedly break CI as new CVE ids are published for them.
+          snyk test --file=apps/api/requirements.txt --package-manager=pip \
+            --severity-threshold=high --json-file-output=snyk-python.json || true
+          python3 .github/scripts/snyk_gate.py snyk-python.json
 
   snyk-node:
     name: "Snyk - Node.js Dependencies"
