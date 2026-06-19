@@ -40,7 +40,7 @@ class PaymentsProduct(PaymentsProductBase, table=True):
 
 
 class PaymentsProductCreate(PaymentsProductBase):
-    pass
+    provider_product_id: Optional[str] = None
 
 
 class PaymentsProductUpdate(PaymentsProductBase):

@@ -77,13 +77,16 @@ async def create_payments_product(
     new_product.creation_date = datetime.now()
     new_product.update_date = datetime.now()
 
-    # Create product in Paystack
-    paystack_product = await create_paystack_product(
-        request, org_id, new_product, current_user, db_session
-    )
-    new_product.provider_product_id = paystack_product.get(
-        "id"
-    ) or paystack_product.get("plan_code", "")
+    # Create product in Paystack if provider_product_id is not manually provided
+    if payments_product.provider_product_id:
+        new_product.provider_product_id = payments_product.provider_product_id
+    else:
+        paystack_product = await create_paystack_product(
+            request, org_id, new_product, current_user, db_session
+        )
+        new_product.provider_product_id = paystack_product.get(
+            "id"
+        ) or paystack_product.get("plan_code", "")
 
     # Save to DB - with retry logic for FK constraint issues
     db_session.add(new_product)

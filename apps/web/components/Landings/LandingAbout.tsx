@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
 import {
-  ArrowRight,
   Target,
   Sparkles,
   Globe,

@@ -96,7 +96,11 @@ const getPasswordStrength = (password: string) => {
   return { rules, score, strength }
 }
 
-function OpenSignUpComponent() {
+interface OpenSignUpComponentProps {
+  onSuccess?: (userData: any, resData?: any) => void
+}
+
+function OpenSignUpComponent(props?: OpenSignUpComponentProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const org = useOrg() as any
@@ -187,6 +191,11 @@ function OpenSignUpComponent() {
         } catch {
           /* ignore */
         }
+        if (props?.onSuccess) {
+          props.onSuccess(payload, response)
+          setIsSubmitting(false)
+          return
+        }
         setMessage(
           'Account created successfully! Please check your email to verify your account before logging in.'
         )
@@ -222,10 +231,7 @@ function OpenSignUpComponent() {
             password: values.password,
             username: values.username,
             bio: values.bio,
-            phone_number: formatE164(
-              values.country_code,
-              values.phone_number
-            ),
+            phone_number: formatE164(values.country_code, values.phone_number),
             first_name: values.first_name,
             last_name: values.last_name,
             device_id,
@@ -237,6 +243,11 @@ function OpenSignUpComponent() {
               localStorage.removeItem('referral_code')
             } catch {
               /* ignore */
+            }
+            if (props?.onSuccess) {
+              props.onSuccess(payloadWithoutRef, await retryRes.json())
+              setIsSubmitting(false)
+              return
             }
             setMessage(
               'Account created successfully! Please check your email to verify your account before logging in.'

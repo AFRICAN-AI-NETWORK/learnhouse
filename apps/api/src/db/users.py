@@ -64,6 +64,7 @@ class UserRead(UserBase):
     id: int
     user_uuid: str
     user_status: Optional[str] = "ACTIVE"
+    email_verified: bool = False
     waitlist_interest: Optional[str] = None
 
 

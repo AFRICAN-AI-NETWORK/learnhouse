@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { BrainCircuit, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 interface PersonalizedPathSectionProps {
   orgslug: string
