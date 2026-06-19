@@ -5,8 +5,6 @@ from src.db.users import User
 from src.db.courses.courses import Course
 from src.services.trail.trail import add_course_to_trail
 import os
-import hmac
-import hashlib
 
 router = APIRouter()
 
