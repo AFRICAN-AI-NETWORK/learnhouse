@@ -11,7 +11,7 @@ import { createUserGroup } from '@services/usergroups/usergroups'
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
@@ -35,40 +35,56 @@ function AddUserGroup(props: AddUserGroupProps) {
     const access_token = session?.data?.tokens?.access_token;
     const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-    const formik = useFormik({
-        initialValues: {
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
+    } = useForm({
+        defaultValues: {
             name: '',
             description: '',
             org_id: org.id
         },
-        validate: getValidate(t),
-        onSubmit: async (values) => {
-            const toastID = toast.loading(t('dashboard.users.usergroups.modals.create.toasts.creating'))
-            setIsSubmitting(true)
-            const res = await createUserGroup(values, access_token)
-            if (res.status == 200) {
-                setIsSubmitting(false)
-                mutate(`${getAPIUrl()}usergroups/org/${org.id}`)
-                props.setCreateUserGroupModal(false)
-                toast.success(t('dashboard.users.usergroups.modals.create.toasts.success'), {id:toastID})
-            } else {
-                setIsSubmitting(false)
-                toast.error(t('dashboard.users.usergroups.modals.create.toasts.error'), {id:toastID})
+        resolver: (async (values: any) => {
+            const formErrors = getValidate(t)(values)
+            if (Object.keys(formErrors).length > 0) {
+                return {
+                    values: {},
+                    errors: Object.keys(formErrors).reduce((acc, key) => {
+                        acc[key as any] = { type: 'manual', message: formErrors[key] }
+                        return acc
+                    }, {} as Record<string, any>),
+                }
             }
-        },
+            return { values, errors: {} }
+        }) as any
     })
 
+    const onSubmit = async (values: any) => {
+        const toastID = toast.loading(t('dashboard.users.usergroups.modals.create.toasts.creating'))
+        setIsSubmitting(true)
+        const res = await createUserGroup(values, access_token)
+        if (res.status == 200) {
+            setIsSubmitting(false)
+            mutate(`${getAPIUrl()}usergroups/org/${org.id}`)
+            props.setCreateUserGroupModal(false)
+            toast.success(t('dashboard.users.usergroups.modals.create.toasts.success'), {id:toastID})
+        } else {
+            setIsSubmitting(false)
+            toast.error(t('dashboard.users.usergroups.modals.create.toasts.error'), {id:toastID})
+        }
+    }
+
     return (
-        <FormLayout onSubmit={formik.handleSubmit}>
+        <FormLayout onSubmit={handleSubmit(onSubmit)}>
             <FormField name="name">
                 <FormLabelAndMessage
                     label={t('dashboard.users.usergroups.modals.create.form.name')}
-                    message={formik.errors.name}
+                    message={errors.name?.message as string}
                 />
                 <Form.Control asChild>
                     <Input
-                        onChange={formik.handleChange}
-                        value={formik.values.name}
+                        {...register('name')}
                         type="name"
                         required
                     />
@@ -77,12 +93,11 @@ function AddUserGroup(props: AddUserGroupProps) {
             <FormField name="description">
                 <FormLabelAndMessage
                     label={t('dashboard.users.usergroups.modals.create.form.description')}
-                    message={formik.errors.description}
+                    message={errors.description?.message as string}
                 />
                 <Form.Control asChild>
                     <Input
-                        onChange={formik.handleChange}
-                        value={formik.values.description}
+                        {...register('description')}
                         type="description"
                     />
                 </Form.Control>

@@ -18,7 +18,9 @@ import {
   updateReferenceFile,
 } from '@services/courses/assignments'
 import { getTaskRefFileDir } from '@services/media/media'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import {
   AlignLeft,
   Award,
@@ -57,43 +59,47 @@ export function AssignmentTaskGeneralEdit() {
   const assignmentTaskStateHook = useAssignmentsTaskDispatch() as any
   const assignment = useAssignments() as any
 
-  const validate = (values: any) => {
-    const errors: any = {}
-    if (values.max_grade_value < 20 || values.max_grade_value > 100) {
-      errors.max_grade_value = t(
-        'dashboard.assignments.editor.task_editor.general.max_grade_error'
-      )
-    }
-    return errors
-  }
+  const validationSchema = Yup.object().shape({
+    title: Yup.string().nullable(),
+    description: Yup.string().nullable(),
+    hint: Yup.string().nullable(),
+    max_grade_value: Yup.number()
+      .min(20, t('dashboard.assignments.editor.task_editor.general.max_grade_error'))
+      .max(100, t('dashboard.assignments.editor.task_editor.general.max_grade_error'))
+      .nullable(),
+  })
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(validationSchema) as any,
+    values: {
       title: assignmentTaskState.assignmentTask.title,
       description: assignmentTaskState.assignmentTask.description,
       hint: assignmentTaskState.assignmentTask.hint,
       max_grade_value: assignmentTaskState.assignmentTask.max_grade_value,
     },
-    validate,
-    onSubmit: async (values: any) => {
-      const res = await updateAssignmentTask(
-        values,
-        assignmentTaskState.assignmentTask.assignment_task_uuid,
-        assignment.assignment_object.assignment_uuid,
-        access_token
-      )
-      if (res) {
-        assignmentTaskStateHook({ type: 'reload' })
-        toast.success(t('dashboard.assignments.editor.toasts.task_updated'))
-      } else {
-        toast.error(t('dashboard.assignments.editor.toasts.task_update_error'))
-      }
-    },
-    enableReinitialize: true,
-  }) as any
+  })
+
+  const onSubmit = async (values: any) => {
+    const res = await updateAssignmentTask(
+      values,
+      assignmentTaskState.assignmentTask.assignment_task_uuid,
+      assignment.assignment_object.assignment_uuid,
+      access_token
+    )
+    if (res) {
+      assignmentTaskStateHook({ type: 'reload' })
+      toast.success(t('dashboard.assignments.editor.toasts.task_updated'))
+    } else {
+      toast.error(t('dashboard.assignments.editor.toasts.task_update_error'))
+    }
+  }
 
   return (
-    <FormLayout onSubmit={formik.handleSubmit}>
+    <FormLayout onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-8">
         {/* Section 1: Basic Information */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
@@ -118,13 +124,12 @@ export function AssignmentTaskGeneralEdit() {
                       label={t(
                         'dashboard.assignments.editor.task_editor.general.title'
                       )}
-                      message={formik.errors.title}
+                      message={errors.title?.message as string}
                     />
                   </div>
                   <Form.Control asChild>
                     <Input
-                      onChange={formik.handleChange}
-                      value={formik.values.title}
+                      {...register('title')}
                       type="text"
                       className="font-medium"
                       placeholder={t(
@@ -143,13 +148,12 @@ export function AssignmentTaskGeneralEdit() {
                       label={t(
                         'dashboard.assignments.editor.task_editor.general.max_grade_value'
                       )}
-                      message={formik.errors.max_grade_value}
+                      message={errors.max_grade_value?.message as string}
                     />
                   </div>
                   <Form.Control asChild>
                     <Input
-                      onChange={formik.handleChange}
-                      value={formik.values.max_grade_value}
+                      {...register('max_grade_value')}
                       type="number"
                       className="text-center font-bold text-blue-600 bg-blue-50/30"
                     />
@@ -165,13 +169,12 @@ export function AssignmentTaskGeneralEdit() {
                   label={t(
                     'dashboard.assignments.editor.task_editor.general.description'
                   )}
-                  message={formik.errors.description}
+                  message={errors.description?.message as string}
                 />
               </div>
               <Form.Control asChild>
                 <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.description}
+                  {...register('description')}
                   type="text"
                   placeholder={t(
                     'dashboard.assignments.editor.task_editor.general.description_placeholder',
@@ -188,13 +191,12 @@ export function AssignmentTaskGeneralEdit() {
                   label={t(
                     'dashboard.assignments.editor.task_editor.general.hint'
                   )}
-                  message={formik.errors.hint}
+                  message={errors.hint?.message as string}
                 />
               </div>
               <Form.Control asChild>
                 <Textarea
-                  onChange={formik.handleChange}
-                  value={formik.values.hint}
+                  {...register('hint')}
                   placeholder={t(
                     'dashboard.assignments.editor.task_editor.general.hint_placeholder',
                     'Provide a hint for students...'

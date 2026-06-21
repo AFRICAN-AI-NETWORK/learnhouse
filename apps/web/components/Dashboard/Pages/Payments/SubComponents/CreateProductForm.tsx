@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { createProduct } from '@services/payments/products'
-import { Formik, Form, Field, ErrorMessage } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 import toast from 'react-hot-toast'
 import { mutate } from 'swr'
@@ -75,10 +76,21 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
     provider_product_id: '',
   }
 
-  const handleSubmit = async (
-    values: ProductFormValues,
-    { setSubmitting, resetForm }: any
-  ) => {
+  const {
+    register,
+    handleSubmit: hookFormSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProductFormValues>({
+    resolver: yupResolver(validationSchema) as any,
+    defaultValues: initialValues,
+  })
+
+  const formValues = watch()
+
+  const onSubmit = async (values: ProductFormValues) => {
     try {
       const res = await createProduct(
         org.id,
@@ -91,7 +103,7 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
           `/payments/${org.id}/products`,
           session.data?.tokens?.access_token,
         ])
-        resetForm()
+        reset()
         onSuccess()
       } else {
         toast.error('Failed to create product')
@@ -100,49 +112,33 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
       // eslint-disable-next-line no-console
       console.error('Error creating product:', error)
       toast.error('An error occurred while creating the product')
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-    >
-      {({ isSubmitting, values, setFieldValue }) => (
-        <Form className="space-y-4">
+        <form onSubmit={hookFormSubmit(onSubmit)} className="space-y-4">
           <div className="px-1.5 py-2 flex-col space-y-3">
             <div>
               <Label htmlFor="name">Product Name</Label>
-              <Field name="name" as={Input} placeholder="Product Name" />
-              <ErrorMessage
-                name="name"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
+              <Input {...register('name')} placeholder="Product Name" />
+              {errors.name && (
+                <div className="text-red-500 text-sm mt-1">{errors.name.message}</div>
+              )}
             </div>
 
             <div>
               <Label htmlFor="description">Description</Label>
-              <Field
-                name="description"
-                as={Textarea}
-                placeholder="Product Description"
-              />
-              <ErrorMessage
-                name="description"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
+              <Textarea {...register('description')} placeholder="Product Description" />
+              {errors.description && (
+                <div className="text-red-500 text-sm mt-1">{errors.description.message}</div>
+              )}
             </div>
 
             <div>
               <Label htmlFor="product_type">Product Type</Label>
               <Select
-                value={values.product_type}
-                onValueChange={(value) => setFieldValue('product_type', value)}
+                value={formValues.product_type}
+                onValueChange={(value) => setValue('product_type', value as any)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Product Type" />
@@ -152,66 +148,60 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
                   <SelectItem value="subscription">Subscription</SelectItem>
                 </SelectContent>
               </Select>
-              <ErrorMessage
-                name="product_type"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
+              {errors.product_type && (
+                <div className="text-red-500 text-sm mt-1">{errors.product_type.message}</div>
+              )}
             </div>
 
             <div>
               <Label htmlFor="price_type">Price Type</Label>
               <Select
-                value={values.price_type}
-                onValueChange={(value) => setFieldValue('price_type', value)}
+                value={formValues.price_type}
+                onValueChange={(value) => setValue('price_type', value as any)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Price Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="fixed_price">Fixed Price</SelectItem>
-                  {values.product_type !== 'subscription' && (
+                  {formValues.product_type !== 'subscription' && (
                     <SelectItem value="customer_choice">
                       Customer Choice
                     </SelectItem>
                   )}
                 </SelectContent>
               </Select>
-              <ErrorMessage
-                name="price_type"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
+              {errors.price_type && (
+                <div className="text-red-500 text-sm mt-1">{errors.price_type.message}</div>
+              )}
             </div>
 
             <div className="flex space-x-2">
               <div className="grow">
                 <Label htmlFor="amount">
-                  {values.price_type === 'fixed_price'
+                  {formValues.price_type === 'fixed_price'
                     ? 'Price'
                     : 'Minimum Amount'}
                 </Label>
-                <Field
-                  name="amount"
-                  as={Input}
+                <Input
+                  {...register('amount')}
                   type="number"
+                  step="any"
                   placeholder={
-                    values.price_type === 'fixed_price'
+                    formValues.price_type === 'fixed_price'
                       ? 'Price'
                       : 'Minimum Amount'
                   }
                 />
-                <ErrorMessage
-                  name="amount"
-                  component="div"
-                  className="text-red-500 text-sm mt-1"
-                />
+                {errors.amount && (
+                  <div className="text-red-500 text-sm mt-1">{errors.amount.message}</div>
+                )}
               </div>
               <div className="w-1/3">
                 <Label htmlFor="currency">Currency</Label>
                 <Select
-                  value={values.currency}
-                  onValueChange={(value) => setFieldValue('currency', value)}
+                  value={formValues.currency}
+                  onValueChange={(value) => setValue('currency', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Currency" />
@@ -224,11 +214,9 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <ErrorMessage
-                  name="currency"
-                  component="div"
-                  className="text-red-500 text-sm mt-1"
-                />
+                {errors.currency && (
+                  <div className="text-red-500 text-sm mt-1">{errors.currency.message}</div>
+                )}
               </div>
             </div>
 
@@ -236,30 +224,24 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
               <Label htmlFor="provider_product_id">
                 Provider Plan ID (Optional)
               </Label>
-              <Field
-                name="provider_product_id"
-                as={Input}
+              <Input
+                {...register('provider_product_id')}
                 placeholder="E.g. Flutterwave Plan ID"
               />
-              <ErrorMessage
-                name="provider_product_id"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
+              {errors.provider_product_id && (
+                <div className="text-red-500 text-sm mt-1">{errors.provider_product_id.message}</div>
+              )}
             </div>
 
             <div>
               <Label htmlFor="benefits">Benefits</Label>
-              <Field
-                name="benefits"
-                as={Textarea}
+              <Textarea
+                {...register('benefits')}
                 placeholder="Product Benefits"
               />
-              <ErrorMessage
-                name="benefits"
-                component="div"
-                className="text-red-500 text-sm mt-1"
-              />
+              {errors.benefits && (
+                <div className="text-red-500 text-sm mt-1">{errors.benefits.message}</div>
+              )}
             </div>
           </div>
 
@@ -268,9 +250,7 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
               {isSubmitting ? 'Creating...' : 'Create Product'}
             </Button>
           </div>
-        </Form>
-      )}
-    </Formik>
+        </form>
   )
 }
 

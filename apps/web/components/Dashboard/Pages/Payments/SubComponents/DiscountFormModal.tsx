@@ -1,5 +1,5 @@
 'use client'
-import { useMemo } from 'react'
+import React, { useMemo, useEffect } from 'react'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import * as Yup from 'yup'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -104,7 +104,7 @@ const DiscountFormModal = ({
     ([, token]) => getOwnedCourses(org.id, token)
   )
 
-  const initialValues = {
+  const initialValues = React.useMemo(() => ({
     code: discount?.code || '',
     description: discount?.description || '',
     discount_type: discount?.discount_type || 'percentage',
@@ -120,7 +120,15 @@ const DiscountFormModal = ({
     course_id: discount?.course_id || null,
     // If not an admin, force is_global to false so the course dropdown always shows
     is_global: isOrgAdmin ? !discount?.course_id : false,
-  }
+  }), [discount, isOrgAdmin])
+
+  const formRef = React.useRef<any>(null)
+
+  useEffect(() => {
+    if (isOpen && formRef.current) {
+      formRef.current.resetForm({ values: initialValues })
+    }
+  }, [isOpen, initialValues])
 
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
     try {

@@ -22,7 +22,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 
@@ -213,47 +213,60 @@ const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (view: string) =>
   const course = useCourse() as any
   const session = useLHSession() as any
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
       title: '',
       content: ''
     },
-    validate: (values) => {
-      const errors: any = {}
-      if (!values.title) errors.title = t('validation.title_required')
-      if (!values.content) errors.content = t('validation.content_required')
-      return errors
-    },
-    onSubmit: async (values) => {
-      const body = {
-        title: values.title,
-        content: values.content,
-        course_uuid: course.courseStructure.course_uuid,
-        org_id: org.id
+    resolver: (async (values: any) => {
+      const formErrors: any = {}
+      if (!values.title) formErrors.title = t('validation.title_required')
+      if (!values.content) formErrors.content = t('validation.content_required')
+      if (Object.keys(formErrors).length > 0) {
+        return {
+          values: {},
+          errors: Object.keys(formErrors).reduce((acc, key) => {
+            acc[key] = { type: 'manual', message: formErrors[key] }
+            return acc
+          }, {} as Record<string, any>),
+        }
       }
-      const res = await createCourseUpdate(body, session.data?.tokens?.access_token)
-      if (res.status === 200) {
-        toast.success(t('courses.update_added_success'))
-        setSelectedView('list')
-        mutate(`${getAPIUrl()}courses/${course?.courseStructure.course_uuid}/updates`)
-      } else {
-        toast.error(t('courses.failed_add_update'))
-      }
-    }
+      return { values, errors: {} }
+    }) as any
   })
+
+  const onSubmit = async (values: any) => {
+    const body = {
+      title: values.title,
+      content: values.content,
+      course_uuid: course.courseStructure.course_uuid,
+      org_id: org.id
+    }
+    const res = await createCourseUpdate(body, session.data?.tokens?.access_token)
+    if (res.status === 200) {
+      toast.success(t('courses.update_added_success'))
+      setSelectedView('list')
+      mutate(`${getAPIUrl()}courses/${course?.courseStructure.course_uuid}/updates`)
+    } else {
+      toast.error(t('courses.failed_add_update'))
+    }
+  }
 
   return (
     <div className="space-y-4">
-      <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
+      <FormLayout onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <FormField name="title">
           <FormLabelAndMessage
             label={t('courses.update_title')}
-            message={formik.errors.title}
+            message={errors.title?.message as string}
           />
           <Form.Control asChild>
             <Input
-              onChange={formik.handleChange}
-              value={formik.values.title}
+              {...register('title')}
               type="text"
               required
               placeholder={t('courses.update_title_placeholder')}
@@ -264,12 +277,11 @@ const NewUpdateForm = ({ setSelectedView }: { setSelectedView: (view: string) =>
         <FormField name="content">
           <FormLabelAndMessage
             label={t('courses.update_content')}
-            message={formik.errors.content}
+            message={errors.content?.message as string}
           />
           <Form.Control asChild>
             <Textarea
-              onChange={formik.handleChange}
-              value={formik.values.content}
+              {...register('content')}
               required
               placeholder={t('courses.update_content_placeholder')}
               className="bg-white h-[120px] border-neutral-200 focus:border-neutral-300 focus:ring-neutral-200 resize-none"

@@ -12,7 +12,7 @@ import FormLayout, {
     FormMessage
 } from '@components/Objects/StyledElements/Form/Form';
 import * as Form from '@radix-ui/react-form';
-import { useFormik } from 'formik';
+import { useForm } from 'react-hook-form';
 import Modal from '@components/Objects/StyledElements/Modal/Modal';
 import { useTranslation } from 'react-i18next';
 
@@ -43,36 +43,39 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
     accessToken
 }) => {
     const { t } = useTranslation()
-    const formik = useFormik({
-        initialValues: {
+    const {
+        register,
+        handleSubmit,
+        formState: { isSubmitting }
+    } = useForm({
+        defaultValues: {
             title: assignment.title || '',
             description: assignment.description || '',
             due_date: assignment.due_date || '',
             grading_type: assignment.grading_type || 'ALPHABET'
-        },
-        enableReinitialize: true,
-        onSubmit: async (values, { setSubmitting }) => {
-            const toast_loading = toast.loading(t('dashboard.assignments.modals.edit.toasts.updating'));
-            try {
-                const res = await updateAssignment(values, assignment.assignment_uuid, accessToken);
-                if (res.success) {
-                    mutate(`${getAPIUrl()}assignments/${assignment.assignment_uuid}`);
-                    toast.success(t('dashboard.assignments.modals.edit.toasts.success'));
-                    onClose();
-                } else {
-                    toast.error(t('dashboard.assignments.modals.edit.toasts.error'));
-                }
-            } catch (error) {
-                toast.error(t('dashboard.assignments.modals.edit.toasts.error_detail'));
-            } finally {
-                toast.dismiss(toast_loading);
-                setSubmitting(false);
-            }
         }
     });
 
+    const onSubmit = async (values: any) => {
+        const toast_loading = toast.loading(t('dashboard.assignments.modals.edit.toasts.updating'));
+        try {
+            const res = await updateAssignment(values, assignment.assignment_uuid, accessToken);
+            if (res.success) {
+                mutate(`${getAPIUrl()}assignments/${assignment.assignment_uuid}`);
+                toast.success(t('dashboard.assignments.modals.edit.toasts.success'));
+                onClose();
+            } else {
+                toast.error(t('dashboard.assignments.modals.edit.toasts.error'));
+            }
+        } catch (error) {
+            toast.error(t('dashboard.assignments.modals.edit.toasts.error_detail'));
+        } finally {
+            toast.dismiss(toast_loading);
+        }
+    };
+
     return (
-        <FormLayout onSubmit={formik.handleSubmit}>
+        <FormLayout onSubmit={handleSubmit(onSubmit)}>
             <FormField name="title">
                 <Flex css={{ alignItems: 'baseline', justifyContent: 'space-between' }}>
                     <FormLabel>{t('dashboard.assignments.modals.edit.form.title_label')}</FormLabel>
@@ -82,8 +85,7 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
                 </Flex>
                 <Form.Control asChild>
                     <Input
-                        onChange={formik.handleChange}
-                        value={formik.values.title}
+                        {...register('title')}
                         type="text"
                         required
                     />
@@ -99,8 +101,7 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
                 </Flex>
                 <Form.Control asChild>
                     <Textarea
-                        onChange={formik.handleChange}
-                        value={formik.values.description}
+                        {...register('description')}
                         required
                     />
                 </Form.Control>
@@ -116,8 +117,7 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
                 <Form.Control asChild>
                     <Input
                         type="date"
-                        onChange={formik.handleChange}
-                        value={formik.values.due_date}
+                        {...register('due_date')}
                         required
                     />
                 </Form.Control>
@@ -132,10 +132,8 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
                 </Flex>
                 <select
                     id="grading_type"
-                    name="grading_type"
                     className='w-full bg-gray-100/40 rounded-lg px-3 py-2 outline outline-1 outline-gray-100'
-                    onChange={(e) => formik.setFieldValue('grading_type', e.target.value, true)}
-                    value={formik.values.grading_type}
+                    {...register('grading_type')}
                     required
                 >
                     <option value="ALPHABET">{t('dashboard.assignments.modals.edit.form.grading_types.alphabet')}</option>
@@ -155,10 +153,10 @@ const EditAssignmentForm: React.FC<EditAssignmentFormProps> = ({
                 <Form.Submit asChild>
                     <button
                         type="submit"
-                        disabled={formik.isSubmitting}
+                        disabled={isSubmitting}
                         className="px-4 py-2 bg-black text-white font-bold rounded-md hover:bg-black/90"
                     >
-                        {formik.isSubmitting ? t('dashboard.assignments.modals.edit.form.saving') : t('dashboard.assignments.modals.edit.form.save')}
+                        {isSubmitting ? t('dashboard.assignments.modals.edit.form.saving') : t('dashboard.assignments.modals.edit.form.save')}
                     </button>
                 </Form.Submit>
             </div>

@@ -21,7 +21,8 @@ import { revalidateTags } from '@services/utils/ts/requests'
 import { useRouter } from 'next/navigation'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 import { UploadCloud, Image as ImageIcon } from 'lucide-react'
 import UnsplashImagePicker from '@components/Dashboard/Pages/Course/EditCourseGeneral/UnsplashImagePicker'
@@ -58,53 +59,62 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
     thumbnail: Yup.mixed().nullable(),
   })
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    defaultValues: {
       name: '',
       description: '',
       learnings: '',
       visibility: true,
       tags: '',
-      thumbnail: null,
+      thumbnail: null as File | null,
     },
-    validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
-      const toast_loading = toast.loading(t('courses.creating_course'))
-
-      try {
-        const res = await createNewCourse(
-          orgId,
-          {
-            name: values.name,
-            description: values.description,
-            learnings: values.learnings,
-            tags: values.tags,
-            visibility: values.visibility,
-          },
-          values.thumbnail,
-          session.data?.tokens?.access_token
-        )
-
-        if (res.success) {
-          await revalidateTags(['courses'], orgslug)
-          toast.dismiss(toast_loading)
-          toast.success(t('courses.course_created_success'))
-
-          if (res.data.org_id === orgId) {
-            closeModal()
-            router.refresh()
-            await revalidateTags(['courses'], orgslug)
-          }
-        } else {
-          toast.error(res.data.detail)
-        }
-      } catch (error) {
-        toast.error(t('courses.failed_to_create_course'))
-      } finally {
-        setSubmitting(false)
-      }
-    },
+    resolver: yupResolver(validationSchema) as any,
   })
+
+  const thumbnail = watch('thumbnail')
+
+  const onSubmit = async (values: any) => {
+    const toast_loading = toast.loading(t('courses.creating_course'))
+
+    try {
+      const res = await createNewCourse(
+        orgId,
+        {
+          name: values.name,
+          description: values.description,
+          learnings: values.learnings,
+          tags: values.tags,
+          visibility: values.visibility,
+        },
+        values.thumbnail,
+        session.data?.tokens?.access_token
+      )
+
+      if (res.success) {
+        await revalidateTags(['courses'], orgslug)
+        toast.dismiss(toast_loading)
+        toast.success(t('courses.course_created_success'))
+
+        if (res.data.org_id === orgId) {
+          closeModal()
+          router.refresh()
+          await revalidateTags(['courses'], orgslug)
+        }
+      } else {
+        toast.error(res.data.detail)
+      }
+    } catch (error) {
+      toast.error(t('courses.failed_to_create_course'))
+    } finally {
+      toast.dismiss(toast_loading)
+    }
+  }
 
   useEffect(() => {
     const getOrgMetadata = async () => {
@@ -125,7 +135,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
   ) => {
     const file = event.target.files?.[0]
     if (file) {
-      formik.setFieldValue('thumbnail', file)
+      setValue('thumbnail', file, { shouldValidate: true })
     }
   }
 
@@ -137,7 +147,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       const file = new File([blob], 'unsplash_image.jpg', {
         type: 'image/jpeg',
       })
-      formik.setFieldValue('thumbnail', file)
+      setValue('thumbnail', file, { shouldValidate: true })
     } catch (error) {
       toast.error('Failed to load image from Unsplash')
     }
@@ -145,16 +155,15 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
   }
 
   return (
-    <FormLayout onSubmit={formik.handleSubmit}>
+    <FormLayout onSubmit={handleSubmit(onSubmit)}>
       <FormField name="name">
         <FormLabelAndMessage
           label={t('courses.course_name')}
-          message={formik.errors.name}
+          message={errors.name?.message}
         />
         <Form.Control asChild>
           <Input
-            onChange={formik.handleChange}
-            value={formik.values.name}
+            {...register('name')}
             type="text"
             required
           />
@@ -164,12 +173,11 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       <FormField name="description">
         <FormLabelAndMessage
           label={t('collections.description')}
-          message={formik.errors.description}
+          message={errors.description?.message}
         />
         <Form.Control asChild>
           <Textarea
-            onChange={formik.handleChange}
-            value={formik.values.description}
+            {...register('description')}
           />
         </Form.Control>
       </FormField>
@@ -177,14 +185,14 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       <FormField name="thumbnail">
         <FormLabelAndMessage
           label={t('courses.course_thumbnail')}
-          message={formik.errors.thumbnail}
+          message={errors.thumbnail?.message}
         />
         <div className="w-auto bg-gray-50 rounded-xl outline-1 outline-gray-200 h-[200px] shadow-sm">
           <div className="flex flex-col justify-center items-center h-full">
             <div className="flex flex-col justify-center items-center">
-              {formik.values.thumbnail ? (
+              {thumbnail ? (
                 <img
-                  src={URL.createObjectURL(formik.values.thumbnail)}
+                  src={URL.createObjectURL(thumbnail)}
                   alt="Course thumbnail preview"
                   className={`${isUploading ? 'animate-pulse' : ''} shadow-sm w-[200px] h-[100px] rounded-md`}
                 />
@@ -228,38 +236,38 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       <FormField name="learnings">
         <FormLabelAndMessage
           label={t('courses.course_learnings')}
-          message={formik.errors.learnings}
+          message={errors.learnings?.message}
         />
         <FormTagInput
           placeholder={t('courses.enter_to_add')}
-          value={formik.values.learnings}
-          onChange={(value) => formik.setFieldValue('learnings', value)}
-          error={formik.errors.learnings}
+          value={watch('learnings')}
+          onChange={(value) => setValue('learnings', value, { shouldValidate: true })}
+          error={errors.learnings?.message}
         />
       </FormField>
 
       <FormField name="tags">
         <FormLabelAndMessage
           label={t('courses.course_tags')}
-          message={formik.errors.tags}
+          message={errors.tags?.message}
         />
         <FormTagInput
           placeholder={t('courses.enter_to_add')}
-          value={formik.values.tags}
-          onChange={(value) => formik.setFieldValue('tags', value)}
-          error={formik.errors.tags}
+          value={watch('tags')}
+          onChange={(value) => setValue('tags', value, { shouldValidate: true })}
+          error={errors.tags?.message}
         />
       </FormField>
 
       <FormField name="visibility">
         <FormLabelAndMessage
           label={t('courses.course_visibility')}
-          message={formik.errors.visibility}
+          message={errors.visibility?.message as string}
         />
         <Select
-          value={formik.values.visibility.toString()}
+          value={watch('visibility').toString()}
           onValueChange={(value) =>
-            formik.setFieldValue('visibility', value === 'true')
+            setValue('visibility', value === 'true', { shouldValidate: true })
           }
         >
           <SelectTrigger>
@@ -279,10 +287,10 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
       <div className="flex justify-end mt-6">
         <button
           type="submit"
-          disabled={formik.isSubmitting}
+          disabled={isSubmitting}
           className="px-4 py-2 bg-black text-white text-sm font-bold rounded-md"
         >
-          {formik.isSubmitting ? (
+          {isSubmitting ? (
             <BarLoader
               cssOverride={{ borderRadius: 60 }}
               width={60}
