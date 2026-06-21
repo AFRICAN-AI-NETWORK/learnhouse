@@ -116,7 +116,7 @@ export default function ClickToPayButton({
         onClose: onClose,
       })
     } else if (psPublicKey) {
-      ;(initializePaystackPayment as any)(onSuccess as any, onClose as any)
+      (initializePaystackPayment as any)(onSuccess, onClose)
     } else {
       toast.error('No payment provider configured.')
       setIsProcessing(false)
