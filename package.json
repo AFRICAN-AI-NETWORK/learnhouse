@@ -32,7 +32,9 @@
   "packageManager": "pnpm@9.0.6",
   "pnpm": {
     "overrides": {
-      "dompurify": "^3.4.9"
+      "dompurify": "^3.4.9",
+      "jspdf": "^2.5.1",
+      "preact": "^10.22.0"
     }
   }
 }
