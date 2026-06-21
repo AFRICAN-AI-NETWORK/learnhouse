@@ -5,7 +5,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import { AlertTriangle } from 'lucide-react'
 import * as Form from '@radix-ui/react-form'
 import React, { useEffect, useState, useRef } from 'react'
@@ -147,19 +147,46 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     }
   }
 
-  const formik = useFormik({
-    initialValues: getInitialValues(),
-    validate: (values) => validate(values, t),
-    onSubmit: async (values) => {
+  const initialValues = React.useMemo(() => getInitialValues(), [courseStructure])
+  
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors }
+  } = useForm({
+    defaultValues: initialValues,
+    resolver: (async (values: any) => {
+      const formErrors = validate(values, t)
+      if (Object.keys(formErrors).length > 0) {
+        return {
+          values: {},
+          errors: Object.keys(formErrors).reduce((acc: any, key: any) => {
+            acc[key] = { type: 'manual', message: formErrors[key] }
+            return acc
+          }, {} as Record<string, any>),
+        }
+      }
+      return { values, errors: {} }
+    }) as any
+  })
+
+  React.useEffect(() => {
+    reset(initialValues)
+  }, [initialValues, reset])
+
+  const formValues = watch() as any
+  
+  const onSubmit = async (values: any) => {
       try {
         // Add your submission logic here
         dispatchCourse({ type: 'setIsSaved' })
       } catch (e) {
         setError(t('dashboard.courses.general.errors.save_failed'))
       }
-    },
-    enableReinitialize: true,
-  }) as any
+  }
 
   // Debounce timer ref
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -167,11 +194,11 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
   // Sync to context with debounce to avoid re-rendering the whole tree on every keystroke
   useEffect(() => {
     if (!isLoading && courseStructure) {
-      const formikValues = formik.values as any
-      const initialValues = formik.initialValues as any
+      const formikValues = formValues as any
+      const currentInitialValues = initialValues as any
 
       const valuesChanged = Object.keys(formikValues).some(
-        (key) => formikValues[key] !== initialValues[key]
+        (key) => formikValues[key] !== currentInitialValues[key]
       )
 
       if (valuesChanged) {
@@ -199,8 +226,8 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
       }
     }
   }, [
-    formik.values,
-    formik.initialValues,
+    formValues,
+    initialValues,
     isLoading,
     courseStructure,
     dispatchCourse,
@@ -217,7 +244,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
       <div className="h-6" />
       <div className="px-10 pb-10">
         <div className="bg-white rounded-xl shadow-xs">
-          <FormLayout onSubmit={formik.handleSubmit} className="p-6">
+          <FormLayout onSubmit={handleSubmit(onSubmit)} className="p-6">
             {error && (
               <div className="flex justify-center bg-red-200 rounded-md text-red-950 space-x-2 items-center p-4 mb-6 transition-all shadow-xs">
                 <AlertTriangle size={18} />
@@ -229,13 +256,12 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
               <FormField name="name">
                 <FormLabelAndMessage
                   label={t('dashboard.courses.general.form.name_label')}
-                  message={formik.errors.name}
+                  message={errors.name?.message as string}
                 />
                 <Form.Control asChild>
                   <Input
                     style={{ backgroundColor: 'white' }}
-                    onChange={formik.handleChange}
-                    value={formik.values.name}
+                    {...register('name')}
                     type="text"
                     required
                   />
@@ -245,13 +271,12 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
               <FormField name="description">
                 <FormLabelAndMessage
                   label={t('dashboard.courses.general.form.description_label')}
-                  message={formik.errors.description}
+                  message={errors.description?.message as string}
                 />
                 <Form.Control asChild>
                   <Input
                     style={{ backgroundColor: 'white' }}
-                    onChange={formik.handleChange}
-                    value={formik.values.description}
+                    {...register('description')}
                     type="text"
                     required
                   />
@@ -261,7 +286,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
               <FormField name="about">
                 <FormLabelAndMessage
                   label={t('dashboard.courses.general.form.about_label')}
-                  message={formik.errors.about}
+                  message={errors.about?.message as string}
                 />
                 <Form.Control asChild>
                   <Textarea
@@ -270,8 +295,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                       height: '200px',
                       minHeight: '200px',
                     }}
-                    onChange={formik.handleChange}
-                    value={formik.values.about}
+                    {...register('about')}
                     required
                   />
                 </Form.Control>
@@ -280,15 +304,15 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
               <FormField name="learnings">
                 <FormLabelAndMessage
                   label={t('dashboard.courses.general.form.learnings_label')}
-                  message={formik.errors.learnings}
+                  message={errors.learnings?.message as string}
                 />
                 <Form.Control asChild>
                   <LearningItemsList
-                    value={formik.values.learnings}
+                    value={formValues.learnings}
                     onChange={(value) =>
-                      formik.setFieldValue('learnings', value)
+                      setValue('learnings', value)
                     }
-                    error={formik.errors.learnings}
+                    error={errors.learnings?.message as string}
                   />
                 </Form.Control>
               </FormField>
@@ -296,15 +320,15 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
               <FormField name="tags">
                 <FormLabelAndMessage
                   label={t('dashboard.courses.general.form.tags_label')}
-                  message={formik.errors.tags}
+                  message={errors.tags?.message as string}
                 />
                 <Form.Control asChild>
                   <FormTagInput
                     placeholder={t(
                       'dashboard.courses.general.form.tags_placeholder'
                     )}
-                    onChange={(value) => formik.setFieldValue('tags', value)}
-                    value={formik.values.tags}
+                    onChange={(value) => setValue('tags', value)}
+                    value={formValues.tags}
                   />
                 </Form.Control>
               </FormField>
@@ -317,23 +341,23 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                 />
                 <Form.Control asChild>
                   <CustomSelect
-                    value={formik.values.thumbnail_type}
+                    value={formValues.thumbnail_type}
                     onValueChange={(value) => {
                       if (!value) return
-                      formik.setFieldValue('thumbnail_type', value)
+                      setValue('thumbnail_type', value)
                     }}
                   >
                     <CustomSelectTrigger className="w-full bg-white">
                       <CustomSelectValue>
-                        {formik.values.thumbnail_type === 'image'
+                        {formValues.thumbnail_type === 'image'
                           ? t(
                               'dashboard.courses.general.form.thumbnail_type_image'
                             )
-                          : formik.values.thumbnail_type === 'video'
+                          : formValues.thumbnail_type === 'video'
                             ? t(
                                 'dashboard.courses.general.form.thumbnail_type_video'
                               )
-                            : formik.values.thumbnail_type === 'both'
+                            : formValues.thumbnail_type === 'both'
                               ? t(
                                   'dashboard.courses.general.form.thumbnail_type_both'
                                 )
@@ -369,7 +393,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                 />
                 <Form.Control asChild>
                   <ThumbnailUpdate
-                    thumbnailType={formik.values.thumbnail_type}
+                    thumbnailType={formValues.thumbnail_type}
                   />
                 </Form.Control>
               </FormField>

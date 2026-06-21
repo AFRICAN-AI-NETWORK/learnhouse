@@ -1,5 +1,7 @@
 'use client'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect } from 'react'
 import FormLayout, {
@@ -8,7 +10,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
-import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
+import PhoneNumberFieldsRHF from '@components/Objects/StyledElements/Form/PhoneNumberFieldsRHF'
 import * as Form from '@radix-ui/react-form'
 import { AlertTriangle, Check, User } from 'lucide-react'
 import Link from 'next/link'
@@ -21,41 +23,35 @@ import {
   validatePhoneFields,
 } from '@/lib/phone-number'
 
-const validate = (values: any, t: any) => {
-  const errors: any = {}
-  const phoneErrors = validatePhoneFields(values)
-  if (phoneErrors.country_code) {
-    errors.country_code = phoneErrors.country_code
-  }
-  if (phoneErrors.phone_number) {
-    errors.phone_number = t('validation.invalid_phone') || phoneErrors.phone_number
-  }
-  if (!values.email) {
-    errors.email = t('validation.required')
-  } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-    errors.email = t('validation.invalid_email')
-  }
-  if (!values.password) {
-    errors.password = t('validation.required')
-  } else if (values.password.length < 8) {
-    errors.password = t('validation.password_min_length')
-  }
-  if (!values.username) {
-    errors.username = t('validation.required')
-  } else if (values.username.length < 4) {
-    errors.username = t('validation.username_min_length')
-  }
-  if (!values.bio) {
-    errors.bio = t('validation.required')
-  }
-  if (!values.first_name) {
-    errors.first_name = t('validation.required')
-  }
-  if (!values.last_name) {
-    errors.last_name = t('validation.required')
-  }
-  return errors
-}
+const getValidationSchema = (t: any) => Yup.object().shape({
+  email: Yup.string()
+    .required(t('validation.required'))
+    .email(t('validation.invalid_email')),
+  password: Yup.string()
+    .required(t('validation.required'))
+    .min(8, t('validation.password_min_length')),
+  username: Yup.string()
+    .required(t('validation.required'))
+    .min(4, t('validation.username_min_length')),
+  bio: Yup.string().required(t('validation.required')),
+  first_name: Yup.string().required(t('validation.required')),
+  last_name: Yup.string().required(t('validation.required')),
+  country_code: Yup.string().required(t('validation.required')),
+  phone_number: Yup.string()
+    .test(
+      'is-valid-phone',
+      t('validation.invalid_phone') || 'Invalid phone number',
+      function (value) {
+        if (!value) return true
+        const { parent } = this
+        const phoneErrors = validatePhoneFields({
+          country_code: parent.country_code,
+          phone_number: value,
+        })
+        return !(phoneErrors.phone_number || phoneErrors.country_code)
+      }
+    ),
+})
 
 interface InviteOnlySignUpProps {
   inviteCode: string
@@ -69,8 +65,15 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
   const searchParams = useSearchParams()
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors: formErrors },
+  } = useForm({
+    resolver: yupResolver(getValidationSchema(t)) as any,
+    defaultValues: {
       org_slug: org?.slug,
       org_id: org?.id,
       email: searchParams.get('email') || '',
@@ -82,12 +85,12 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
       first_name: searchParams.get('first_name') || '',
       last_name: searchParams.get('last_name') || '',
     },
-    validate: (values) => validate(values, t),
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      setError('')
-      setMessage('')
-      setIsSubmitting(true)
+  })
+
+  const onSubmit = async (values: any) => {
+    setError('')
+    setMessage('')
+    setIsSubmitting(true)
       // Only send required fields, and format phone_number
       const payload = {
         org_slug: values.org_slug,
@@ -129,8 +132,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         setError(t('common.something_went_wrong'))
         setIsSubmitting(false)
       }
-    },
-  })
+  }
 
   useEffect(() => {}, [org])
 
@@ -157,35 +159,36 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
           </Link>
         </div>
       )}
-      <FormLayout onSubmit={formik.handleSubmit}>
+      <FormLayout onSubmit={handleSubmit(onSubmit)}>
         <FormField name="email">
           <FormLabelAndMessage
             label={t('auth.email')}
-            message={formik.errors.email}
+            message={formErrors.email?.message as string}
           />
           <Form.Control asChild>
             <Input
-              onChange={formik.handleChange}
-              value={formik.values.email}
+              {...register('email')}
               type="email"
               required
             />
           </Form.Control>
         </FormField>
-        <PhoneNumberFields
-          formik={formik}
+        <PhoneNumberFieldsRHF
+          register={register}
+          setValue={setValue}
+          watch={watch}
+          errors={formErrors}
           phoneNumberLabel={t('user.phone_number') || 'Phone number'}
         />
         <div className="flex flex-row space-x-2">
           <FormField name="first_name">
             <FormLabelAndMessage
               label={t('user.first_name')}
-              message={formik.errors.first_name}
+              message={formErrors.first_name?.message as string}
             />
             <Form.Control asChild>
               <Input
-                onChange={formik.handleChange}
-                value={formik.values.first_name}
+                {...register('first_name')}
                 type="text"
                 required
               />
@@ -194,12 +197,11 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
           <FormField name="last_name">
             <FormLabelAndMessage
               label={t('user.last_name')}
-              message={formik.errors.last_name}
+              message={formErrors.last_name?.message as string}
             />
             <Form.Control asChild>
               <Input
-                onChange={formik.handleChange}
-                value={formik.values.last_name}
+                {...register('last_name')}
                 type="text"
                 required
               />
@@ -210,13 +212,12 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         <FormField name="password">
           <FormLabelAndMessage
             label={t('auth.password')}
-            message={formik.errors.password}
+            message={formErrors.password?.message as string}
           />
 
           <Form.Control asChild>
             <Input
-              onChange={formik.handleChange}
-              value={formik.values.password}
+              {...register('password')}
               type="password"
               autoComplete="new-password"
               required
@@ -227,13 +228,12 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         <FormField name="username">
           <FormLabelAndMessage
             label={t('user.username')}
-            message={formik.errors.username}
+            message={formErrors.username?.message as string}
           />
 
           <Form.Control asChild>
             <Input
-              onChange={formik.handleChange}
-              value={formik.values.username}
+              {...register('username')}
               type="text"
               required
             />
@@ -244,13 +244,12 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
         <FormField name="bio">
           <FormLabelAndMessage
             label={t('user.bio')}
-            message={formik.errors.bio}
+            message={formErrors.bio?.message as string}
           />
 
           <Form.Control asChild>
             <Textarea
-              onChange={formik.handleChange}
-              value={formik.values.bio}
+              {...register('bio')}
               required
             />
           </Form.Control>
