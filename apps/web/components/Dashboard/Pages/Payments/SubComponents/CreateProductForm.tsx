@@ -33,6 +33,7 @@ const validationSchema = Yup.object().shape({
   price_type: Yup.string()
     .oneOf(['fixed_price', 'customer_choice'])
     .required('Price type is required'),
+  provider_product_id: Yup.string(),
 })
 
 interface ProductFormValues {
@@ -43,6 +44,7 @@ interface ProductFormValues {
   benefits: string
   amount: number
   currency: string
+  provider_product_id: string
 }
 
 const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
@@ -70,6 +72,7 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
     benefits: '',
     amount: 1,
     currency: 'USD',
+    provider_product_id: '',
   }
 
   const handleSubmit = async (
@@ -227,6 +230,22 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
                   className="text-red-500 text-sm mt-1"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="provider_product_id">
+                Provider Plan ID (Optional)
+              </Label>
+              <Field
+                name="provider_product_id"
+                as={Input}
+                placeholder="E.g. Flutterwave Plan ID"
+              />
+              <ErrorMessage
+                name="provider_product_id"
+                component="div"
+                className="text-red-500 text-sm mt-1"
+              />
             </div>
 
             <div>

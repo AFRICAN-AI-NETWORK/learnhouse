@@ -35,7 +35,7 @@ from src.routers.utils import router as utils_router
 from src.routers.code import router as code_router
 from ee.routers import referrals
 from src.routers.contact import router as contact_router
-
+from src.routers.webhooks.flutterwave import router as flutterwave_webhook_router
 
 v1_router = APIRouter(prefix="/api/v1")
 
@@ -78,6 +78,7 @@ v1_router.include_router(
 )
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
 v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
+v1_router.include_router(flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"])
 
 # Chat Routes
 v1_router.include_router(

@@ -7,7 +7,6 @@ import {
   Share2,
   DollarSign,
   Users,
-  Sparkles,
   TrendingUp,
   Gift,
 } from 'lucide-react'

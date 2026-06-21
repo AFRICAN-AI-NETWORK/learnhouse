@@ -12,7 +12,6 @@ import {
   Layers,
   Zap,
 } from 'lucide-react'
-import { getUriWithOrg } from '@services/config/config'
 
 interface HeroSectionProps {
   org: any

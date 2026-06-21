@@ -10,6 +10,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import LandingNavbar from '@components/Landings/LandingNavbar'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
+import UnverifiedBanner from '@components/Objects/UnverifiedBanner'
 
 export default function RootLayout(props: {
   children: React.ReactNode
@@ -71,6 +72,7 @@ export default function RootLayout(props: {
                   : 'min-h-0 overflow-y-auto scrollbar-hide'
               }`}
             >
+              {!shouldShowLandingNavbar && <UnverifiedBanner />}
               {children}
             </main>
             <FloatingChatWidget />

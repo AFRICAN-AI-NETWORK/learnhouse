@@ -11,7 +11,6 @@ import {
   Brain,
   Database,
   BarChart3,
-  Code2,
   FlaskConical,
   Briefcase,
   Users,
@@ -31,6 +30,7 @@ import {
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import Countdown from '@components/Landings/Countdown'
+import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
@@ -221,12 +221,14 @@ export default function AIFundamentalsPage() {
                     Technical, Python-based
                   </p>
                 </div>
-                <Link
-                  href="/auth/signup"
-                  className="block w-full text-center bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-[15px] transition-all"
-                >
-                  CLICK TO PAY →
-                </Link>
+                <div className="pt-2">
+                  <ClickToPayButton
+                    courseId="ai-fundamentals-course-id"
+                    courseName="AI Fundamentals"
+                    priceAmount={40}
+                    currency="USD"
+                  />
+                </div>
               </div>
             </div>
           </div>
