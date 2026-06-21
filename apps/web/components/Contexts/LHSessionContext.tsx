@@ -5,7 +5,7 @@ import React, { useContext, createContext, useEffect } from 'react'
 
 export const SessionContext = createContext({}) as any
 
-const INACTIVITY_TIMEOUT = 10 * 60 * 1000 // 10 minutes in milliseconds
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000 // 1 hour in milliseconds
 const LAST_ACTIVE_KEY = 'learnhouse_last_active'
 
 function LHSessionProvider({ children }: { children: React.ReactNode }) {
