@@ -32,7 +32,7 @@ import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-export default function AIAutomationPage() {
+export default function AIAutomationBusinessesPage() {
   const org = useOrg() as any
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
 
@@ -166,7 +166,7 @@ export default function AIAutomationPage() {
                 <Bot size={14} /> Program 2
               </div>
               <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight uppercase">
-                AI Automation
+                AI Automation for Businesses
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-1">
                   Where Skills Become Income
                 </span>
@@ -242,7 +242,7 @@ export default function AIAutomationPage() {
                 <div className="pt-2">
                   <ClickToPayButton
                     courseId="ai-automation-course-id"
-                    courseName="AI Automation"
+                    courseName="AI Automation for Businesses"
                     priceAmount={37}
                     currency="USD"
                   />

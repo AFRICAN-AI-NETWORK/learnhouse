@@ -112,8 +112,8 @@ export default function LandingPremium({
       imageUrl: '/landing/program_genai_v2.png',
     },
     {
-      id: 'ai-automation',
-      name: 'AI Automation',
+      id: 'ai-automation-businesses',
+      name: 'AI Automation for Businesses',
       description:
         'Learn to leverage modern AI tools to automate complex workflows. Includes internship opportunities and laptop giveaways for eligible students.',
       badgeText: '',
@@ -124,8 +124,20 @@ export default function LandingPremium({
       imageUrl: '/landing/program_automation_v3.png',
     },
     {
+      id: 'ai-automation-content-creators',
+      name: 'AI Automation for Content Creators',
+      description:
+        'Master AI tools to supercharge your content creation workflow. Automate research, drafting, and distribution to scale your personal brand.',
+      badgeText: '',
+      badgeColor: 'bg-pink-600', // pink tab
+      buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/ai-automation-content-creators'),
+      imageUrl: '/landing/program_automation_v3.png',
+    },
+    {
       id: 'aan-fundamentals',
-      name: 'AAN Fundamentals (Machine Learning)',
+      name: 'AAN Fundamentals (Applied Data Science)',
       description:
         realFundamentals?.description ||
         'Prepare for advanced AI roles by mastering ML algorithms, data structures, and the logic of predictive modeling.',
