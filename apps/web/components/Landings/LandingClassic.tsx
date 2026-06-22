@@ -35,7 +35,10 @@ import {
   DropdownMenuTrigger,
 } from '@components/ui/dropdown-menu'
 import ConfirmationModal from '@components/Objects/StyledElements/ConfirmationModal/ConfirmationModal'
-import { deleteCourseFromBackend } from '@services/courses/courses'
+import {
+  deleteCourseFromBackend,
+  getCourseMetadata,
+} from '@services/courses/courses'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -50,6 +53,7 @@ const cleanCourseUuid = (courseUuid?: string) =>
   courseUuid?.replace('course_', '') || ''
 
 type CourseTab = 'all' | 'in-progress' | 'completed'
+type CourseMetadataMap = Record<string, any>
 
 const courseTabs: Array<{ label: string; value: CourseTab }> = [
   { label: 'All Courses', value: 'all' },
@@ -66,7 +70,7 @@ function LandingClassic({
   const { t } = useTranslation()
   const session = useLHSession() as any
   const org = useOrg() as any
-  const accessToken = session?.data?.tokens?.access_token
+  const accessToken = session?.data?.tokens?.access_token as string | undefined
   const [activeCourseTab, setActiveCourseTab] = useState<CourseTab>('all')
   const username =
     session?.data?.user?.username ||
@@ -78,6 +82,49 @@ function LandingClassic({
     org?.id ? `${getAPIUrl()}trail/org/${org.id}/trail` : null,
     (url) => swrFetcher(url, accessToken)
   )
+
+  const courseUuids = useMemo(
+    () =>
+      courses
+        .map((course: any) => cleanCourseUuid(course?.course_uuid))
+        .filter(Boolean),
+    [courses]
+  )
+  const courseMetadataKey =
+    accessToken && courseUuids.length > 0
+      ? ([
+          'landing-course-metadata',
+          accessToken,
+          courseUuids.join(','),
+        ] as const)
+      : null
+
+  const { data: courseMetadataByUuid = {} } = useSWR<
+    CourseMetadataMap,
+    Error,
+    readonly [string, string, string] | null
+  >(courseMetadataKey, async (key: readonly [string, string, string]) => {
+    const [, token, joinedCourseUuids] = key
+    const metadataEntries: Array<[string, any | null]> = await Promise.all(
+      joinedCourseUuids.split(',').map(async (courseUuid: string) => {
+        try {
+          const metadata = await getCourseMetadata(courseUuid, null, token)
+          return [courseUuid, metadata] as [string, any]
+        } catch {
+          return [courseUuid, null] as [string, null]
+        }
+      })
+    )
+
+    return Object.fromEntries(
+      metadataEntries.filter(
+        (entry): entry is [string, any] => entry[1] !== null
+      )
+    )
+  })
+
+  const getHydratedCourse = (course: any) =>
+    courseMetadataByUuid[cleanCourseUuid(course?.course_uuid)] || course
 
   const trailRuns = useMemo(() => trail?.runs || [], [trail])
   const continueRun = trailRuns[0]
@@ -92,7 +139,8 @@ function LandingClassic({
 
   const getCourseProgress = (course: any) => {
     const run = getRunForCourse(course)
-    const totalSteps = run?.course_total_steps || getCourseLessonCount(course)
+    const totalSteps =
+      run?.course_total_steps || getCourseLessonCount(getHydratedCourse(course))
     const completedSteps = run?.steps?.length || 0
 
     if (!totalSteps) return 0
@@ -102,7 +150,9 @@ function LandingClassic({
   const getCourseTotalLessons = (course: any) => {
     const run = getRunForCourse(course)
 
-    return run?.course_total_steps || getCourseLessonCount(course)
+    return (
+      run?.course_total_steps || getCourseLessonCount(getHydratedCourse(course))
+    )
   }
 
   const totalCompletedSteps = trailRuns.reduce(
@@ -158,6 +208,7 @@ function LandingClassic({
               org={org}
               orgslug={orgslug}
               progress={getCourseProgress(continueCourse)}
+              lessonCount={getCourseTotalLessons(continueCourse)}
             />
           ) : (
             <EmptyPanel
@@ -339,14 +390,16 @@ const ContinueLearningCard = ({
   org,
   orgslug,
   progress,
+  lessonCount,
 }: {
   course: any
   run?: any
   org: any
   orgslug: string
   progress: number
+  lessonCount: number
 }) => {
-  const totalLessons = run?.course_total_steps || getCourseLessonCount(course)
+  const totalLessons = lessonCount
   const completedLessons = run?.steps?.length || 0
   const remainingLessons = Math.max(totalLessons - completedLessons, 0)
 
