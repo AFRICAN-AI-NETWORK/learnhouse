@@ -1,6 +1,7 @@
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { updatePassword } from '@services/settings/password'
-import { Formik, Form } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import React, { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Input } from '@components/ui/input'
@@ -23,6 +24,18 @@ function UserEditPassword() {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
   const { t } = useTranslation()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: yupResolver(validationSchema),
+    defaultValues: {
+      old_password: '',
+      new_password: '',
+    },
+  })
 
   const updatePasswordUI = async (values: any) => {
     const loadingToast = toast.loading(t('user.settings.password.updating'))
@@ -81,32 +94,20 @@ function UserEditPassword() {
         </div>
 
         <div className="px-8 py-6">
-          <Formik
-            initialValues={{ old_password: '', new_password: '' }}
-            validationSchema={validationSchema}
-            onSubmit={(values, { setSubmitting }) => {
-              setTimeout(() => {
-                setSubmitting(false)
-                updatePasswordUI(values)
-              }, 400)
-            }}
-          >
-            {({ isSubmitting, handleChange, errors, touched }) => (
-              <Form className="w-full max-w-2xl mx-auto space-y-6">
-                <div>
+          <form onSubmit={handleSubmit(updatePasswordUI)} className="w-full max-w-2xl mx-auto space-y-6">
+            <div>
                   <Label htmlFor="old_password">
                     {t('user.settings.password.current_password')}
                   </Label>
                   <Input
                     type="password"
                     id="old_password"
-                    name="old_password"
-                    onChange={handleChange}
+                    {...register('old_password')}
                     className="mt-1"
                   />
-                  {touched.old_password && errors.old_password && (
+                  {errors.old_password && (
                     <p className="text-red-500 text-sm mt-1">
-                      {t(errors.old_password as string)}
+                      {t(errors.old_password.message as string)}
                     </p>
                   )}
                 </div>
@@ -118,13 +119,12 @@ function UserEditPassword() {
                   <Input
                     type="password"
                     id="new_password"
-                    name="new_password"
-                    onChange={handleChange}
+                    {...register('new_password')}
                     className="mt-1"
                   />
-                  {touched.new_password && errors.new_password && (
+                  {errors.new_password && (
                     <p className="text-red-500 text-sm mt-1">
-                      {t(errors.new_password as string)}
+                      {t(errors.new_password.message as string)}
                     </p>
                   )}
                 </div>
@@ -147,9 +147,7 @@ function UserEditPassword() {
                       : t('user.settings.password.update_password')}
                   </Button>
                 </div>
-              </Form>
-            )}
-          </Formik>
+              </form>
         </div>
       </div>
     </div>

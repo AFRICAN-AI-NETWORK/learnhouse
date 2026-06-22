@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Quote, ArrowRight, Sparkles } from 'lucide-react'
+import { Quote, ArrowRight } from 'lucide-react'
 import { getUriWithOrg } from '@services/config/config'
 
 import HeroSection from './Sections/HeroSection'
@@ -112,6 +112,18 @@ export default function LandingPremium({
       imageUrl: '/landing/program_genai_v2.png',
     },
     {
+      id: 'ai-automation',
+      name: 'AI Automation',
+      description:
+        'Learn to leverage modern AI tools to automate complex workflows. Includes internship opportunities and laptop giveaways for eligible students.',
+      badgeText: '',
+      badgeColor: 'bg-purple-600', // purple tab
+      buttonColor: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/ai-automation'),
+      imageUrl: '/landing/program_automation_v3.png',
+    },
+    {
       id: 'aan-fundamentals',
       name: 'AAN Fundamentals (Machine Learning)',
       description:
@@ -123,18 +135,6 @@ export default function LandingPremium({
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-fundamentals'),
       imageUrl: '/landing/program_ml_v2.png',
-    },
-    {
-      id: 'ai-automation',
-      name: 'AI Automation',
-      description:
-        'Learn to leverage modern AI tools to automate complex workflows. Includes internship opportunities and laptop giveaways for eligible students.',
-      badgeText: '',
-      badgeColor: 'bg-purple-600', // purple tab
-      buttonColor: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
-      buttonText: 'Learn more ->',
-      href: getUriWithOrg(orgslug, '/ai-automation'),
-      imageUrl: '/landing/program_automation_v3.png',
     },
   ]
 

@@ -4,7 +4,7 @@ import {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import { AlertTriangle, Award, FileText, Settings } from 'lucide-react'
 import CertificatePreview from './CertificatePreview'
 import * as Form from '@radix-ui/react-form'
@@ -174,14 +174,36 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
     }
   }, [courseStructure, existingCertification, hasExistingCertification])
 
-  const formik = useFormik({
-    initialValues: getInitialValues(),
-    validate: (values) => validate(values, t),
-    onSubmit: async (values) => {
-      // This is no longer used - saving is handled by the main Save button
-    },
-    enableReinitialize: true,
-  }) as any
+  const initialValues = React.useMemo(() => getInitialValues(), [getInitialValues])
+
+  const {
+    register,
+    watch,
+    setValue,
+    reset,
+    formState: { errors }
+  } = useForm({
+    defaultValues: initialValues,
+    resolver: (async (values: any) => {
+      const formErrors = validate(values, t)
+      if (Object.keys(formErrors).length > 0) {
+        return {
+          values: {},
+          errors: Object.keys(formErrors).reduce((acc, key) => {
+            acc[key] = { type: 'manual', message: formErrors[key] }
+            return acc
+          }, {} as Record<string, any>),
+        }
+      }
+      return { values, errors: {} }
+    }) as any
+  })
+
+  React.useEffect(() => {
+    reset(initialValues)
+  }, [initialValues, reset])
+
+  const formValues = watch() as any
 
   // Handle enabling/disabling certification
   const handleCertificationToggle = async (enabled: boolean) => {
@@ -191,16 +213,16 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
       try {
         const config = {
           certification_name:
-            formik.values.certification_name || courseStructure?.name || '',
+            formValues.certification_name || courseStructure?.name || '',
           certification_description:
-            formik.values.certification_description ||
+            formValues.certification_description ||
             courseStructure?.description ||
             '',
-          certification_type: formik.values.certification_type || 'completion',
+          certification_type: formValues.certification_type || 'completion',
           certificate_pattern:
-            formik.values.certificate_pattern || 'professional',
-          certificate_instructor: formik.values.certificate_instructor || '',
-          certificate_ceo: formik.values.certificate_ceo || '',
+            formValues.certificate_pattern || 'professional',
+          certificate_instructor: formValues.certificate_instructor || '',
+          certificate_ceo: formValues.certificate_ceo || '',
         }
 
         const result = await createCertification(
@@ -215,14 +237,14 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             t('dashboard.courses.certification.toasts.create_success')
           )
           mutateCertifications()
-          formik.setFieldValue('enable_certification', true)
+          setValue('enable_certification', true)
         } else {
           throw new Error('Failed to create certification')
         }
       } catch (e) {
         setError(t('dashboard.courses.certification.errors.create_failed'))
         toast.error(t('dashboard.courses.certification.toasts.create_error'))
-        formik.setFieldValue('enable_certification', false)
+        setValue('enable_certification', false)
       } finally {
         setIsCreating(false)
       }
@@ -240,39 +262,37 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             t('dashboard.courses.certification.toasts.remove_success')
           )
           mutateCertifications()
-          formik.setFieldValue('enable_certification', false)
+          setValue('enable_certification', false)
         } else {
           throw new Error('Failed to delete certification')
         }
       } catch (e) {
         setError(t('dashboard.courses.certification.errors.remove_failed'))
         toast.error(t('dashboard.courses.certification.toasts.remove_error'))
-        formik.setFieldValue('enable_certification', true)
+        setValue('enable_certification', true)
       }
     } else {
-      formik.setFieldValue('enable_certification', enabled)
+      setValue('enable_certification', enabled)
     }
   }
 
   // Handle form changes - update course context with certification data
   useEffect(() => {
     if (!isLoading && hasExistingCertification) {
-      const formikValues = formik.values as any
-      const initialValues = formik.initialValues as any
-      const valuesChanged = Object.keys(formikValues).some(
-        (key) => formikValues[key] !== initialValues[key]
+      const valuesChanged = Object.keys(formValues).some(
+        (key) => formValues[key] !== (initialValues as any)[key]
       )
 
       if (valuesChanged) {
         const nextCertificationData = {
           certification_uuid: existingCertification.certification_uuid,
           config: {
-            certification_name: formikValues.certification_name,
-            certification_description: formikValues.certification_description,
-            certification_type: formikValues.certification_type,
-            certificate_pattern: formikValues.certificate_pattern,
-            certificate_instructor: formikValues.certificate_instructor,
-            certificate_ceo: formikValues.certificate_ceo,
+            certification_name: formValues.certification_name,
+            certification_description: formValues.certification_description,
+            certification_type: formValues.certification_type,
+            certificate_pattern: formValues.certificate_pattern,
+            certificate_instructor: formValues.certificate_instructor,
+            certificate_ceo: formValues.certificate_ceo,
           },
         }
 
@@ -297,8 +317,8 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
       }
     }
   }, [
-    formik.values,
-    formik.initialValues,
+    formValues,
+    initialValues,
     isLoading,
     hasExistingCertification,
     existingCertification,
@@ -341,7 +361,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={formik.values.enable_certification}
+                    checked={formValues.enable_certification}
                     onChange={(e) =>
                       handleCertificationToggle(e.target.checked)
                     }
@@ -365,7 +385,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             )}
 
             {/* Certification Configuration - Only show if enabled and has existing certification */}
-            {formik.values.enable_certification && hasExistingCertification && (
+            {formValues.enable_certification && hasExistingCertification && (
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 {/* Form Section */}
                 <div className="lg:col-span-3">
@@ -392,14 +412,12 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                           label={t(
                             'dashboard.courses.certification.form.certification_name_label'
                           )}
-                          message={formik.errors.certification_name}
+                          message={errors.certification_name?.message as string}
                         />
                         <Form.Control asChild>
                           <Input
-                            name="certification_name"
+                            {...register('certification_name')}
                             style={{ backgroundColor: 'white' }}
-                            onChange={formik.handleChange}
-                            value={formik.values.certification_name}
                             type="text"
                             placeholder={t(
                               'dashboard.courses.certification.form.certification_name_placeholder'
@@ -418,16 +436,16 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         />
                         <Form.Control asChild>
                           <CustomSelect
-                            value={formik.values.certification_type}
+                            value={formValues.certification_type}
                             onValueChange={(value) => {
                               if (!value) return
-                              formik.setFieldValue('certification_type', value)
+                              setValue('certification_type', value)
                             }}
                           >
                             <CustomSelectTrigger className="w-full bg-white">
                               <CustomSelectValue>
                                 {t(
-                                  `dashboard.courses.certification.types.${formik.values.certification_type || 'completion'}`
+                                  `dashboard.courses.certification.types.${formValues.certification_type || 'completion'}`
                                 )}
                               </CustomSelectValue>
                             </CustomSelectTrigger>
@@ -489,18 +507,16 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         label={t(
                           'dashboard.courses.certification.form.certification_description_label'
                         )}
-                        message={formik.errors.certification_description}
+                        message={errors.certification_description?.message as string}
                       />
                       <Form.Control asChild>
                         <Textarea
-                          name="certification_description"
+                          {...register('certification_description')}
                           style={{
                             backgroundColor: 'white',
                             height: '120px',
                             minHeight: '120px',
                           }}
-                          onChange={formik.handleChange}
-                          value={formik.values.certification_description}
                           placeholder={t(
                             'dashboard.courses.certification.form.certification_description_placeholder'
                           )}
@@ -547,13 +563,13 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                           <div
                             key={patternValue}
                             className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                              formik.values.certificate_pattern ===
+                              formValues.certificate_pattern ===
                               patternValue
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                             onClick={() =>
-                              formik.setFieldValue(
+                              setValue(
                                 'certificate_pattern',
                                 patternValue
                               )
@@ -581,10 +597,8 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                       <FormLabelAndMessage label="Chief Instructor" />
                       <Form.Control asChild>
                         <Input
-                          name="certificate_instructor"
+                          {...register('certificate_instructor')}
                           style={{ backgroundColor: 'white' }}
-                          onChange={formik.handleChange}
-                          value={formik.values.certificate_instructor}
                           type="text"
                           placeholder="Enter Chief Instructor name"
                         />
@@ -596,10 +610,8 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                       <FormLabelAndMessage label="CEO Name" />
                       <Form.Control asChild>
                         <Input
-                          name="certificate_ceo"
+                          {...register('certificate_ceo')}
                           style={{ backgroundColor: 'white' }}
-                          onChange={formik.handleChange}
-                          value={formik.values.certificate_ceo}
                           type="text"
                           placeholder="Enter CEO name"
                         />
@@ -627,16 +639,16 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
 
                     <div className="p-4">
                       <CertificatePreview
-                        certificationName={formik.values.certification_name}
+                        certificationName={formValues.certification_name}
                         certificationDescription={
-                          formik.values.certification_description
+                          formValues.certification_description
                         }
-                        certificationType={formik.values.certification_type}
-                        certificatePattern={formik.values.certificate_pattern}
+                        certificationType={formValues.certification_type}
+                        certificatePattern={formValues.certificate_pattern}
                         certificateInstructor={
-                          formik.values.certificate_instructor
+                          formValues.certificate_instructor
                         }
-                        certificateCeo={formik.values.certificate_ceo}
+                        certificateCeo={formValues.certificate_ceo}
                         studentName="Student Name"
                       />
                     </div>
@@ -646,7 +658,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             )}
 
             {/* Disabled State */}
-            {!formik.values.enable_certification && (
+            {!formValues.enable_certification && (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <Award className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="font-medium text-gray-700 mb-2">
@@ -674,7 +686,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             )}
 
             {/* Creating State - when toggle is on but no certification exists yet */}
-            {formik.values.enable_certification &&
+            {formValues.enable_certification &&
               !hasExistingCertification &&
               isCreating && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">

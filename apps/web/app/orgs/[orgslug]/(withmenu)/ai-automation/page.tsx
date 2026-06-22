@@ -9,11 +9,7 @@ import {
   ChevronDown,
   Sparkles,
   Bot,
-  Cpu,
   Code2,
-  MessageSquare,
-  Cog,
-  Shield,
   Rocket,
   Laptop,
   DollarSign,
@@ -32,6 +28,7 @@ import {
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import Countdown from '@components/Landings/Countdown'
+import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
@@ -242,12 +239,14 @@ export default function AIAutomationPage() {
                   <p className="text-lg font-bold text-white">Intermediate</p>
                   <p className="text-sm text-gray-400">No coding required</p>
                 </div>
-                <Link
-                  href="/auth/signup"
-                  className="block w-full text-center bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all"
-                >
-                  CLICK TO PAY →
-                </Link>
+                <div className="pt-2">
+                  <ClickToPayButton
+                    courseId="ai-automation-course-id"
+                    courseName="AI Automation"
+                    priceAmount={37}
+                    currency="USD"
+                  />
+                </div>
               </div>
             </div>
           </div>

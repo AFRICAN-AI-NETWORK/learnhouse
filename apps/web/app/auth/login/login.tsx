@@ -6,7 +6,9 @@ import FormLayout, {
 } from '@components/Objects/StyledElements/Form/Form'
 import Image from 'next/image'
 import * as Form from '@radix-ui/react-form'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import React from 'react'
 import {
   AlertTriangle,
@@ -36,23 +38,18 @@ const LoginClient = (props: LoginClientProps) => {
   const [error, setError] = React.useState('')
   const router = require('next/navigation').useRouter()
 
-  const validate = (values: any) => {
-    const errors: any = {}
-
-    if (!values.email) {
-      errors.email = t('validation.required')
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-      errors.email = t('validation.invalid_email')
-    }
-
-    if (!values.password) {
-      errors.password = t('validation.required')
-    } else if (values.password.length < 8) {
-      errors.password = t('validation.password_min_length')
-    }
-
-    return errors
-  }
+  const validationSchema = React.useMemo(
+    () =>
+      Yup.object().shape({
+        email: Yup.string()
+          .required(t('validation.required'))
+          .email(t('validation.invalid_email')),
+        password: Yup.string()
+          .required(t('validation.required'))
+          .min(8, t('validation.password_min_length')),
+      }),
+    [t]
+  )
 
   const handleResendVerification = async () => {
     setResendingEmail(true)
@@ -63,7 +60,7 @@ const LoginClient = (props: LoginClientProps) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: formik.values.email,
+            email: getValues('email'),
             org_slug: props.org.slug || 'default',
           }),
         }
@@ -82,87 +79,85 @@ const LoginClient = (props: LoginClientProps) => {
     }
   }
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors, touchedFields },
+  } = useForm({
+    resolver: yupResolver(validationSchema),
+    defaultValues: {
       email: '',
       password: '',
     },
-    validate,
-    validateOnBlur: true,
-    validateOnChange: true,
-    onSubmit: async (values, { validateForm, setErrors, setSubmitting }) => {
-      setIsSubmitting(true)
-      setShowResendButton(false)
+    mode: 'onTouched',
+  })
 
-      const errors = await validateForm(values)
-      if (Object.keys(errors).length > 0) {
-        setErrors(errors)
-        setSubmitting(false)
+  const onSubmit = async (values: any) => {
+    setIsSubmitting(true)
+    setShowResendButton(false)
+
+    const res = await signIn('credentials', {
+      redirect: false,
+      email: values.email,
+      password: values.password,
+      callbackUrl: '/redirect_from_auth',
+    })
+
+    if (res && res.error) {
+      // Show waitlist error directly, no redirect
+      if (
+        res.error.includes('waitlist') ||
+        res.error.includes('launch date')
+      ) {
+        // Format date in error message for user-friendly display
+        let formattedError = res.error
+        const dateMatch = res.error.match(
+          /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
+        )
+        if (dateMatch && dateMatch[1]) {
+          const dateObj = new Date(dateMatch[1])
+          const formattedDate = dateObj.toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })
+          formattedError = res.error.replace(dateMatch[1], formattedDate)
+        }
+        setError(formattedError)
+        setShowResendButton(false)
         setIsSubmitting(false)
         return
       }
-
-      const res = await signIn('credentials', {
-        redirect: false,
+      if (
+        res.error.includes('verify your email') ||
+        res.error.includes('email address before') ||
+        res.error.includes('Email Not Verified')
+      ) {
+        setError(t('auth.verify_prompt'))
+        setShowResendButton(true)
+      } else {
+        setError(t('auth.wrong_email_password'))
+        setShowResendButton(false)
+      }
+      setIsSubmitting(false)
+    } else {
+      await signIn('credentials', {
         email: values.email,
         password: values.password,
         callbackUrl: '/redirect_from_auth',
       })
+    }
+  }
 
-      if (res && res.error) {
-        // Show waitlist error directly, no redirect
-        if (
-          res.error.includes('waitlist') ||
-          res.error.includes('launch date')
-        ) {
-          // Format date in error message for user-friendly display
-          let formattedError = res.error
-          const dateMatch = res.error.match(
-            /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
-          )
-          if (dateMatch && dateMatch[1]) {
-            const dateObj = new Date(dateMatch[1])
-            const formattedDate = dateObj.toLocaleString(undefined, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })
-            formattedError = res.error.replace(dateMatch[1], formattedDate)
-          }
-          setError(formattedError)
-          setShowResendButton(false)
-          setIsSubmitting(false)
-          return
-        }
-        if (
-          res.error.includes('verify your email') ||
-          res.error.includes('email address before') ||
-          res.error.includes('Email Not Verified')
-        ) {
-          setError(t('auth.verify_prompt'))
-          setShowResendButton(true)
-        } else {
-          setError(t('auth.wrong_email_password'))
-          setShowResendButton(false)
-        }
-        setIsSubmitting(false)
-      } else {
-        await signIn('credentials', {
-          email: values.email,
-          password: values.password,
-          callbackUrl: '/redirect_from_auth',
-        })
-      }
-    },
-  })
-
-  const getBorderColor = (fieldName: string) => {
-    const fName = fieldName as keyof typeof formik.values
-    if (!formik.touched[fName]) return 'border-slate-200 focus:border-black'
-    return formik.errors[fName]
+  const getBorderColor = (fieldName: 'email' | 'password') => {
+    const isTouched = touchedFields[fieldName]
+    const error = errors[fieldName]
+    if (!isTouched && !error) return 'border-slate-200 focus:border-black'
+    return error
       ? 'border-rose-400 focus:border-rose-500 bg-rose-50/10'
       : 'border-emerald-400 focus:border-emerald-500 bg-emerald-50/10'
   }
@@ -236,11 +231,11 @@ const LoginClient = (props: LoginClientProps) => {
             </div>
           )}
 
-          <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
+          <FormLayout onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FormField name="email">
               <FormLabelAndMessage
                 label={t('auth.email')}
-                message={formik.errors.email}
+                message={errors.email?.message as string}
               />
               <div className="relative group">
                 <Mail
@@ -249,11 +244,8 @@ const LoginClient = (props: LoginClientProps) => {
                 />
                 <Form.Control asChild>
                   <input
-                    name="email"
                     className={`w-full h-12 pl-12 pr-4 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('email')}`}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.email}
+                    {...register('email')}
                     type="email"
                     placeholder={t('auth.email_placeholder')}
                   />
@@ -265,7 +257,7 @@ const LoginClient = (props: LoginClientProps) => {
               <div className="flex justify-between items-center mb-2">
                 <FormLabelAndMessage
                   label={t('auth.password')}
-                  message={formik.errors.password}
+                  message={errors.password?.message as string}
                 />
                 <Link
                   href={{
@@ -285,11 +277,8 @@ const LoginClient = (props: LoginClientProps) => {
                 />
                 <Form.Control asChild>
                   <input
-                    name="password"
                     className={`w-full h-12 pl-12 pr-12 bg-white border rounded-xl transition-all outline-none font-medium text-slate-900 ${getBorderColor('password')}`}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.password}
+                    {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     placeholder={t('auth.password_placeholder')}

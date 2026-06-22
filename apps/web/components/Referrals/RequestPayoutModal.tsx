@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -80,8 +80,13 @@ function RequestPayoutModal({
 
   const maxAmount = balance?.eligible_balance ?? 0
 
-  const formik = useFormik<PayoutFormValues>({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<PayoutFormValues>({
+    defaultValues: {
       amount: '',
       bank_name: '',
       account_number: '',
@@ -90,32 +95,48 @@ function RequestPayoutModal({
       country_code: '',
       confirmed: false,
     },
-    validate: (values) => validate(values, maxAmount),
-    onSubmit: async (values, helpers) => {
-      setServerError('')
-      const payload: PayoutRequestPayload = {
-        amount: parseFloat(values.amount),
-        bank_name: values.bank_name,
-        account_number: values.account_number,
-        account_holder: values.account_holder,
-        account_type: values.account_type,
-        country_code: values.country_code.toUpperCase(),
+    resolver: (async (values: any) => {
+      const formErrors = validate(values, maxAmount)
+      if (Object.keys(formErrors).length > 0) {
+        return {
+          values: {},
+          errors: Object.keys(formErrors).reduce((acc, key) => {
+            acc[key as keyof PayoutFormValues] = {
+              type: 'manual',
+              message: formErrors[key as keyof PayoutFormValues] as string,
+            }
+            return acc
+          }, {} as Record<keyof PayoutFormValues, { type: string; message: string }>),
+        }
       }
-      const result = await requestPayout(payload, access_token, org_id)
-      if (result.success) {
-        setSuccess(true)
-        helpers.resetForm()
-      } else {
-        setServerError(
-          result.error ?? 'Payout request failed. Please try again.'
-        )
-      }
-    },
+      return { values, errors: {} }
+    }) as any,
   })
+
+  const onSubmit = async (values: any) => {
+    setServerError('')
+    const payload: PayoutRequestPayload = {
+      amount: parseFloat(values.amount),
+      bank_name: values.bank_name,
+      account_number: values.account_number,
+      account_holder: values.account_holder,
+      account_type: values.account_type,
+      country_code: values.country_code.toUpperCase(),
+    }
+    const result = await requestPayout(payload, access_token, org_id)
+    if (result.success) {
+      setSuccess(true)
+      reset()
+    } else {
+      setServerError(
+        result.error ?? 'Payout request failed. Please try again.'
+      )
+    }
+  }
 
   const handleClose = (open: boolean) => {
     if (!open) {
-      formik.resetForm()
+      reset()
       setServerError('')
       setSuccess(false)
     }
@@ -151,7 +172,7 @@ function RequestPayoutModal({
             </button>
           </div>
         ) : (
-          <form onSubmit={formik.handleSubmit} className="space-y-4 pt-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
             {serverError && (
               <div className="flex items-start gap-3 rounded-xl bg-rose-50 p-3 text-rose-900 border border-rose-200 text-sm">
                 <AlertTriangle size={16} className="mt-0.5 shrink-0" />
@@ -170,20 +191,15 @@ function RequestPayoutModal({
                 </span>
                 <Input
                   id="payout-amount"
-                  name="amount"
                   type="number"
                   min="1"
                   step="0.01"
                   placeholder={`Max: $${maxAmount.toFixed(2)}`}
                   className="pl-7"
-                  value={formik.values.amount}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  {...register('amount')}
                 />
               </div>
-              <FieldError
-                msg={formik.touched.amount ? formik.errors.amount : undefined}
-              />
+              <FieldError msg={errors.amount?.message} />
             </div>
 
             {/* Bank Name */}
@@ -193,18 +209,11 @@ function RequestPayoutModal({
               </Label>
               <Input
                 id="payout-bank"
-                name="bank_name"
                 placeholder="e.g. Standard Bank"
                 className="mt-1"
-                value={formik.values.bank_name}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
+                {...register('bank_name')}
               />
-              <FieldError
-                msg={
-                  formik.touched.bank_name ? formik.errors.bank_name : undefined
-                }
-              />
+              <FieldError msg={errors.bank_name?.message} />
             </div>
 
             {/* Account Number */}
@@ -214,20 +223,11 @@ function RequestPayoutModal({
               </Label>
               <Input
                 id="payout-acct"
-                name="account_number"
                 placeholder="e.g. 0001234567"
                 className="mt-1"
-                value={formik.values.account_number}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
+                {...register('account_number')}
               />
-              <FieldError
-                msg={
-                  formik.touched.account_number
-                    ? formik.errors.account_number
-                    : undefined
-                }
-              />
+              <FieldError msg={errors.account_number?.message} />
             </div>
 
             {/* Account Holder */}
@@ -237,20 +237,11 @@ function RequestPayoutModal({
               </Label>
               <Input
                 id="payout-holder"
-                name="account_holder"
                 placeholder="Full legal name"
                 className="mt-1"
-                value={formik.values.account_holder}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
+                {...register('account_holder')}
               />
-              <FieldError
-                msg={
-                  formik.touched.account_holder
-                    ? formik.errors.account_holder
-                    : undefined
-                }
-              />
+              <FieldError msg={errors.account_holder?.message} />
             </div>
 
             {/* Account Type + Country — 2 cols */}
@@ -261,20 +252,11 @@ function RequestPayoutModal({
                 </Label>
                 <Input
                   id="payout-type"
-                  name="account_type"
                   placeholder="e.g. Savings"
                   className="mt-1"
-                  value={formik.values.account_type}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  {...register('account_type')}
                 />
-                <FieldError
-                  msg={
-                    formik.touched.account_type
-                      ? formik.errors.account_type
-                      : undefined
-                  }
-                />
+                <FieldError msg={errors.account_type?.message} />
               </div>
               <div>
                 <Label htmlFor="payout-country" className="text-sm font-medium">
@@ -282,21 +264,12 @@ function RequestPayoutModal({
                 </Label>
                 <Input
                   id="payout-country"
-                  name="country_code"
                   placeholder="e.g. NG"
                   maxLength={2}
                   className="mt-1 uppercase"
-                  value={formik.values.country_code}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
+                  {...register('country_code')}
                 />
-                <FieldError
-                  msg={
-                    formik.touched.country_code
-                      ? formik.errors.country_code
-                      : undefined
-                  }
-                />
+                <FieldError msg={errors.country_code?.message} />
               </div>
             </div>
 
@@ -304,10 +277,8 @@ function RequestPayoutModal({
             <div className="flex items-start gap-3 pt-1">
               <input
                 id="payout-confirm"
-                name="confirmed"
                 type="checkbox"
-                checked={formik.values.confirmed}
-                onChange={formik.handleChange}
+                {...register('confirmed')}
                 className="mt-1 h-4 w-4 rounded border-gray-300 accent-black"
               />
               <label
@@ -318,22 +289,22 @@ function RequestPayoutModal({
                 authorise this payout request.
               </label>
             </div>
-            {formik.touched.confirmed && formik.errors.confirmed && (
-              <FieldError msg={formik.errors.confirmed} />
+            {errors.confirmed && (
+              <FieldError msg={errors.confirmed.message} />
             )}
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={formik.isSubmitting}
+              disabled={isSubmitting}
               className="w-full flex items-center justify-center gap-2 h-11 bg-black text-white rounded-lg font-semibold text-sm hover:bg-gray-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {formik.isSubmitting ? (
+              {isSubmitting ? (
                 <LucideLoader2 size={18} className="animate-spin" />
               ) : (
                 <SendHorizontal size={18} />
               )}
-              {formik.isSubmitting ? 'Submitting…' : 'Submit Payout Request'}
+              {isSubmitting ? 'Submitting…' : 'Submit Payout Request'}
             </button>
           </form>
         )}

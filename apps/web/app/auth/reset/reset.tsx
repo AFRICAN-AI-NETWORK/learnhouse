@@ -14,37 +14,25 @@ import Link from 'next/link'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useSearchParams } from 'next/navigation'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import { resetPassword } from '@services/auth/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
-const validate = (values: any, t: any) => {
-  const errors: any = {}
-
-  if (!values.email) {
-    errors.email = t('validation.required')
-  } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-    errors.email = t('validation.invalid_email')
-  }
-
-  if (!values.new_password) {
-    errors.new_password = t('validation.required')
-  }
-
-  if (!values.confirm_password) {
-    errors.confirm_password = t('validation.required')
-  }
-
-  if (values.new_password !== values.confirm_password) {
-    errors.confirm_password = t('auth.passwords_do_not_match')
-  }
-
-  if (!values.reset_code) {
-    errors.reset_code = t('validation.required')
-  }
-  return errors
-}
+const getValidationSchema = (t: any) => Yup.object().shape({
+  email: Yup.string()
+    .required(t('validation.required'))
+    .email(t('validation.invalid_email')),
+  new_password: Yup.string()
+    .required(t('validation.required')),
+  confirm_password: Yup.string()
+    .required(t('validation.required'))
+    .oneOf([Yup.ref('new_password')], t('auth.passwords_do_not_match')),
+  reset_code: Yup.string()
+    .required(t('validation.required')),
+})
 
 function ResetPasswordClient() {
   const { t } = useTranslation()
@@ -56,40 +44,44 @@ function ResetPasswordClient() {
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(getValidationSchema(t)),
+    defaultValues: {
       email: email,
       new_password: '',
       confirm_password: '',
       reset_code: reset_code,
     },
-    validate: (values) => validate(values, t),
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      setIsSubmitting(true)
-      let res = await resetPassword(
-        values.email,
-        values.new_password,
-        org?.id,
-        values.reset_code
-      )
-      if (res.status == 200) {
-        setMessage(res.data + ', ' + t('auth.login_again_message'))
-        setIsSubmitting(false)
-      } else {
-        const detail = res.data.detail
-        const errorMessage = Array.isArray(detail)
-          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
-          : typeof detail === 'string'
-            ? detail
-            : detail?.msg ||
-              JSON.stringify(detail) ||
-              t('common.something_went_wrong')
-        setError(errorMessage)
-        setIsSubmitting(false)
-      }
-    },
   })
+
+  const onSubmit = async (values: any) => {
+    setIsSubmitting(true)
+    let res = await resetPassword(
+      values.email,
+      values.new_password,
+      org?.id,
+      values.reset_code
+    )
+    if (res.status == 200) {
+      setMessage(res.data + ', ' + t('auth.login_again_message'))
+      setIsSubmitting(false)
+    } else {
+      const detail = res.data.detail
+      const errorMessage = Array.isArray(detail)
+        ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+        : typeof detail === 'string'
+          ? detail
+          : detail?.msg ||
+            JSON.stringify(detail) ||
+            t('common.something_went_wrong')
+      setError(errorMessage)
+      setIsSubmitting(false)
+    }
+  }
   return (
     <div className="grid grid-flow-col justify-stretch h-screen">
       <div className="absolute top-4 right-4 z-50">
@@ -167,16 +159,15 @@ function ResetPasswordClient() {
               </Link>
             </div>
           )}
-          <FormLayout onSubmit={formik.handleSubmit}>
+          <FormLayout onSubmit={handleSubmit(onSubmit)}>
             <FormField name="email">
               <FormLabelAndMessage
                 label={t('auth.email')}
-                message={formik.errors.email}
+                message={errors.email?.message as string}
               />
               <Form.Control asChild>
                 <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.email}
+                  {...register('email')}
                   type="email"
                 />
               </Form.Control>
@@ -185,12 +176,11 @@ function ResetPasswordClient() {
             <FormField name="reset_code">
               <FormLabelAndMessage
                 label={t('auth.reset_code')}
-                message={formik.errors.reset_code}
+                message={errors.reset_code?.message as string}
               />
               <Form.Control asChild>
                 <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.reset_code}
+                  {...register('reset_code')}
                   type="text"
                 />
               </Form.Control>
@@ -199,12 +189,11 @@ function ResetPasswordClient() {
             <FormField name="new_password">
               <FormLabelAndMessage
                 label={t('auth.new_password')}
-                message={formik.errors.new_password}
+                message={errors.new_password?.message as string}
               />
               <Form.Control asChild>
                 <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.new_password}
+                  {...register('new_password')}
                   type="password"
                   autoComplete="new-password"
                 />
@@ -214,12 +203,11 @@ function ResetPasswordClient() {
             <FormField name="confirm_password">
               <FormLabelAndMessage
                 label={t('auth.confirm_password')}
-                message={formik.errors.confirm_password}
+                message={errors.confirm_password?.message as string}
               />
               <Form.Control asChild>
                 <Input
-                  onChange={formik.handleChange}
-                  value={formik.values.confirm_password}
+                  {...register('confirm_password')}
                   type="password"
                   autoComplete="new-password"
                 />
