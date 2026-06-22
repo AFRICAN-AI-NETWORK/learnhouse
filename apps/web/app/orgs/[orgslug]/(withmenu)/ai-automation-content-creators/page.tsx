@@ -130,7 +130,7 @@ export default function AIAutomationContentCreatorsPage() {
   const audienceGroups = [
     {
       label: 'Non-technical professionals',
-      color: 'bg-purple-50 text-purple-700',
+      color: 'bg-[oklch(59.2%_.249_.584)]/10 text-[oklch(59.2%_.249_.584)]',
     },
     { label: 'Entrepreneurs & founders', color: 'bg-amber-50 text-amber-700' },
     { label: 'Small business owners', color: 'bg-emerald-50 text-emerald-700' },
@@ -157,17 +157,17 @@ export default function AIAutomationContentCreatorsPage() {
             backgroundSize: '40px 40px',
           }}
         />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-purple-600/15 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[oklch(59.2%_.249_.584)]/15 blur-[150px] rounded-full pointer-events-none" />
 
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-16 items-start">
             <div className="flex-1 space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-widest border border-purple-500/30">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[oklch(59.2%_.249_.584)]/20 text-[oklch(59.2%_.249_.584)] text-xs font-bold uppercase tracking-widest border border-[oklch(59.2%_.249_.584)]/30">
                 <Bot size={14} /> Program 2
               </div>
               <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight uppercase">
                 AI Automation for Content Creators
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-1">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[oklch(59.2%_.249_.584)] to-pink-400 mt-1">
                   Where Skills Become Income
                 </span>
               </h1>
@@ -195,7 +195,7 @@ export default function AIAutomationContentCreatorsPage() {
               <div className="pt-4">
                 <Link
                   href="#curriculum"
-                  className="inline-flex items-center gap-3 bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(147,51,234,0.5)]"
+                  className="inline-flex items-center gap-3 bg-[oklch(59.2%_.249_.584)] hover:bg-[oklch(59.2%_.249_.584)] text-white px-8 py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-105 shadow-[0_0_40px_-10px_oklch(59.2%_.249_.584_/_0.5)]"
                 >
                   View Curriculum <ArrowRight size={18} />
                 </Link>
@@ -214,8 +214,8 @@ export default function AIAutomationContentCreatorsPage() {
                     <span className="text-xl font-bold text-gray-400">/mo</span>
                   </p>
                   <div className="mt-3 flex flex-col gap-2">
-                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider w-max">
-                      <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[oklch(59.2%_.249_.584)]/20 text-[oklch(59.2%_.249_.584)] text-xs font-bold uppercase tracking-wider w-max">
+                      <span className="w-1.5 h-1.5 bg-[oklch(59.2%_.249_.584)] rounded-full animate-pulse" />
                       COMING LIVE IN 1 WEEK
                     </span>
                     <Countdown targetDate={LAUNCH_DATE} />
@@ -311,7 +311,7 @@ export default function AIAutomationContentCreatorsPage() {
                 className="flex items-start gap-4 p-5 rounded-xl bg-[#f9fafb] border border-gray-100"
               >
                 <CheckCircle2
-                  className="text-purple-600 flex-shrink-0 mt-0.5"
+                  className="text-[oklch(59.2%_.249_.584)] flex-shrink-0 mt-0.5"
                   size={20}
                 />
                 <span className="text-[15px] text-gray-700 leading-relaxed">
@@ -338,35 +338,35 @@ export default function AIAutomationContentCreatorsPage() {
             {[
               {
                 name: 'OpenAI API',
-                icon: <Bot size={24} className="text-purple-600" />,
+                icon: <Bot size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'Zapier',
-                icon: <Zap size={24} className="text-purple-600" />,
+                icon: <Zap size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'Make.com',
-                icon: <Wrench size={24} className="text-purple-600" />,
+                icon: <Wrench size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'n8n',
-                icon: <Link2 size={24} className="text-purple-600" />,
+                icon: <Link2 size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'WhatsApp API',
-                icon: <MessageCircle size={24} className="text-purple-600" />,
+                icon: <MessageCircle size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'Hugging Face',
-                icon: <Smile size={24} className="text-purple-600" />,
+                icon: <Smile size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'Google Workspace',
-                icon: <BarChart size={24} className="text-purple-600" />,
+                icon: <BarChart size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
               {
                 name: 'TagUI (RPA)',
-                icon: <Monitor size={24} className="text-purple-600" />,
+                icon: <Monitor size={24} className="text-[oklch(59.2%_.249_.584)]" />,
               },
             ].map((tool, i) => (
               <motion.div
@@ -375,7 +375,7 @@ export default function AIAutomationContentCreatorsPage() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.05 }}
                 viewport={{ once: true }}
-                className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md hover:border-purple-200 transition-all"
+                className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md hover:border-[oklch(59.2%_.249_.584)]/20 transition-all"
               >
                 {tool.icon}
                 <span className="font-bold text-[14px] text-[#0a0f1e]">
@@ -417,11 +417,11 @@ export default function AIAutomationContentCreatorsPage() {
                   }
                   className="w-full flex items-center gap-5 p-6 md:p-8 text-left"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 font-black text-lg">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[oklch(59.2%_.249_.584)]/10 flex items-center justify-center text-[oklch(59.2%_.249_.584)] font-black text-lg">
                     {mod.num}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-bold text-purple-600 uppercase tracking-wider mb-1">
+                    <p className="text-[11px] font-bold text-[oklch(59.2%_.249_.584)] uppercase tracking-wider mb-1">
                       {mod.week}
                     </p>
                     <h3 className="text-lg font-bold text-[#0a0f1e]">
@@ -440,7 +440,7 @@ export default function AIAutomationContentCreatorsPage() {
                     <ul className="space-y-3 mt-6">
                       {mod.details.map((detail, i) => (
                         <li key={i} className="flex items-start gap-3">
-                          <span className="text-purple-600 mt-0.5 flex-shrink-0">
+                          <span className="text-[oklch(59.2%_.249_.584)] mt-0.5 flex-shrink-0">
                             →
                           </span>
                           <span className="text-[15px] text-gray-700">
@@ -532,7 +532,7 @@ export default function AIAutomationContentCreatorsPage() {
                 className="bg-[#f9fafb] p-8 rounded-2xl border border-gray-100"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[oklch(59.2%_.249_.584)]/10 flex items-center justify-center text-[oklch(59.2%_.249_.584)] flex-shrink-0">
                     {item.icon}
                   </div>
                   <div>
@@ -554,7 +554,7 @@ export default function AIAutomationContentCreatorsPage() {
       <section className="py-24 px-6 lg:px-12 bg-[#f9fafb] border-y border-gray-100">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-white p-10 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+            <div className="w-12 h-12 rounded-xl bg-[oklch(59.2%_.249_.584)]/10 flex items-center justify-center text-[oklch(59.2%_.249_.584)]">
               <Rocket size={24} />
             </div>
             <h3 className="text-xl font-black text-[#0a0f1e]">
@@ -567,7 +567,7 @@ export default function AIAutomationContentCreatorsPage() {
             </p>
           </div>
           <div className="bg-white p-10 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+            <div className="w-12 h-12 rounded-xl bg-[oklch(59.2%_.249_.584)]/10 flex items-center justify-center text-[oklch(59.2%_.249_.584)]">
               <Laptop size={24} />
             </div>
             <h3 className="text-xl font-black text-[#0a0f1e]">
@@ -656,19 +656,19 @@ export default function AIAutomationContentCreatorsPage() {
       {/* ── Final CTA ── */}
       <section className="relative py-32 px-6 overflow-hidden bg-white">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-r from-purple-600/20 to-purple-400/10 blur-[120px] rounded-full" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-r from-[oklch(59.2%_.249_.584)]/20 to-[oklch(59.2%_.249_.584)]/10 blur-[120px] rounded-full" />
         </div>
-        <div className="relative max-w-4xl mx-auto bg-[#0a0f1e] rounded-[40px] p-12 md:p-20 text-center shadow-[0_20px_40px_-15px_rgba(147,51,234,0.4)] overflow-hidden">
-          <div className="absolute inset-0 bg-purple-600/5 mix-blend-overlay" />
+        <div className="relative max-w-4xl mx-auto bg-[#0a0f1e] rounded-[40px] p-12 md:p-20 text-center shadow-[0_20px_40px_-15px_oklch(59.2%_.249_.584_/_0.4)] overflow-hidden">
+          <div className="absolute inset-0 bg-[oklch(59.2%_.249_.584)]/5 mix-blend-overlay" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-[#0a0f1e]/80 to-transparent" />
           <div className="relative z-10 space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-widest border border-white/20 backdrop-blur-md">
-              <Sparkles size={14} className="text-purple-400" /> Turn Skills
+              <Sparkles size={14} className="text-[oklch(59.2%_.249_.584)]" /> Turn Skills
               Into Income
             </div>
             <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
               Build. Automate. <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[oklch(59.2%_.249_.584)] to-pink-400">
                 Get Paid.
               </span>
             </h2>
@@ -679,7 +679,7 @@ export default function AIAutomationContentCreatorsPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
                 href="/auth/signup"
-                className="w-full sm:w-auto px-10 py-5 bg-purple-600 text-white rounded-xl font-bold text-[15px] hover:bg-purple-700 transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(147,51,234,0.5)] flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-10 py-5 bg-[oklch(59.2%_.249_.584)] text-white rounded-xl font-bold text-[15px] hover:bg-[oklch(59.2%_.249_.584)] transition-all hover:scale-105 shadow-[0_0_40px_-10px_oklch(59.2%_.249_.584_/_0.5)] flex items-center justify-center gap-3"
               >
                 Join the Waitlist <ArrowRight size={18} />
               </Link>

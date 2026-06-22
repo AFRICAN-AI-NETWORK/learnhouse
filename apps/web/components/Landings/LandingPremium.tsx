@@ -133,7 +133,7 @@ export default function LandingPremium({
       buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-automation-content-creators'),
-      imageUrl: '/landing/program_automation_v3.png',
+      imageUrl: '/landing/program_automation_v2.png',
     },
     {
       id: 'aan-fundamentals',
