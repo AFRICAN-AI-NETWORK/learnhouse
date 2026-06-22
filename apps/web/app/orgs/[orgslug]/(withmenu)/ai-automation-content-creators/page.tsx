@@ -8,24 +8,22 @@ import {
   CheckCircle2,
   ChevronDown,
   Sparkles,
-  Brain,
-  Database,
-  BarChart3,
-  FlaskConical,
-  Briefcase,
-  Users,
+  Bot,
+  Code2,
+  Rocket,
   Laptop,
-  Monitor,
+  DollarSign,
+  MonitorPlay,
   Package,
   Clock,
-  Code,
-  TerminalSquare,
-  TableProperties,
-  Hash,
-  Settings,
-  Flame,
-  LineChart,
-  BookOpen,
+  Calendar,
+  Zap,
+  Wrench,
+  Link2,
+  MessageCircle,
+  Smile,
+  BarChart,
+  Monitor,
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
@@ -34,112 +32,114 @@ import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-export default function AIFundamentalsPage() {
+export default function AIAutomationContentCreatorsPage() {
   const org = useOrg() as any
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
 
   const modules = [
     {
       num: 1,
-      title: 'Python for Data Science',
+      title: 'Introduction to AI Automation',
+      week: 'Week 1',
       details: [
-        'Syntax, data structures, functions, OOP basics, file I/O',
-        'Working with Python',
-        'Data manipulation with NumPy',
-        'Data manipulation with Pandas',
+        'The business case for automation and identifying automation opportunities',
+        'AI governance fundamentals and responsible automation',
+        'Understanding the automation landscape: no-code, low-code, and code-based approaches',
+        'Mapping business processes to automation candidates',
       ],
     },
     {
       num: 2,
-      title: 'Mathematics & Statistics Essentials',
+      title: 'AI Tools and APIs',
+      week: 'Week 2-3',
       details: [
-        'Linear algebra, calculus basics',
-        'Probability, distributions, hypothesis testing',
-        'Working with SciPy',
-        'Mathematics with NumPy',
+        'Working directly with large language models (GPT-4, Claude) and the OpenAI API',
+        'Open-source and African-language-friendly alternatives via Hugging Face',
+        'API authentication, rate limiting, and cost management',
+        'Building your first AI-powered API integration',
       ],
     },
     {
       num: 3,
-      title: 'Data Wrangling & EDA',
+      title: 'No-Code Workflow Platforms',
+      week: 'Week 4-5',
       details: [
-        'Cleaning, merging, reshaping, missing values',
-        'Exploratory data analysis',
-        'Data visualisation with Matplotlib',
-        'Data visualisation with Seaborn',
+        'Building real, live automations in Zapier and Make.com',
+        'Connecting Gmail, Slack, OpenAI, and more into seamless workflows',
+        'Multi-step automation design and error handling',
+        'Cost optimisation for platform-based automations',
       ],
     },
     {
       num: 4,
-      title: 'Supervised Learning',
+      title: 'n8n Mastery & Chatbots',
+      week: 'Week 5-7',
       details: [
-        'Regression, classification',
-        'Bias-variance tradeoff, cross-validation, metrics',
-        'Building models with scikit-learn',
-        'Statistical modeling with statsmodels',
+        'n8n: the free, open-source automation powerhouse with 9,500+ integrations',
+        'Ideal for cost-conscious and privacy-conscious African deployments',
+        'Building real, deployed chatbots on Telegram and WhatsApp',
+        'Autonomous AI agents and human-in-the-loop safety design',
       ],
     },
     {
       num: 5,
-      title: 'Unsupervised Learning',
+      title: 'Advanced Workflow Automation',
+      week: 'Week 7-8',
       details: [
-        'Clustering, dimensionality reduction',
-        'PCA, t-SNE, anomaly detection',
-        'Clustering with scikit-learn',
-        'Dimensionality reduction with UMAP',
+        'Google Workspace automation at scale',
+        'Retrieval-Augmented Generation (RAG) for AI that actually knows your business and local context',
+        'Cost optimisation across platforms',
+        'Building production-ready automation systems',
       ],
     },
     {
       num: 6,
-      title: 'Feature Engineering & Selection',
+      title: 'Robotic Process Automation (RPA)',
+      week: 'Week 9',
       details: [
-        'Encoding, scaling, pipelines',
-        'Feature importance, regularization',
-        'Feature selection with scikit-learn',
-        'Data manipulation with Pandas',
+        'Automating legacy systems and government portals that have no API at all',
+        'Using free open-source tools like TagUI',
+        "Directly solving one of Africa's most persistent digital infrastructure gaps",
+        'Building resilient RPA workflows for unreliable systems',
       ],
     },
     {
       num: 7,
-      title: 'Model Evaluation & Tuning',
+      title: 'Ethics, Privacy & African Context',
+      week: 'Week 10',
       details: [
-        'Confusion matrix, ROC-AUC',
-        'Hyperparameter search, ensemble methods',
-        'Evaluation with scikit-learn',
-        'Hyperparameter tuning with Optuna',
+        'NDPR/POPIA compliance for automated systems',
+        'Algorithmic bias detection and mitigation',
+        'Designing AI for 2G/low-bandwidth, multilingual African realities',
+        'Data sovereignty and privacy-first automation design',
       ],
     },
     {
       num: 8,
-      title: 'Become a 10X Data Scientist Using Generative AI',
+      title: 'Capstone Project',
+      week: 'Week 11-12',
       details: [
-        'Leverage Generative AI tools to improve productivity and efficiency in data science workflows',
-        'Write effective prompts for data analysis, coding, and problem-solving',
-        'Use AI responsibly while avoiding common mistakes and limitations',
-        'Integrate AI into data collection, analysis, visualization, and communication processes',
+        'Design, build, document, and present a complete, deployed, end-to-end AI automation solution',
+        '10-15 page professional report with architecture diagrams',
+        'Recorded demo video showcasing your solution',
+        'A real portfolio piece, not a toy exercise',
       ],
     },
   ]
 
   const audienceGroups = [
     {
-      label: 'AAN Open graduates ready to go technical',
-      color: 'bg-emerald-50 text-emerald-700',
-    },
-    { label: 'Aspiring ML engineers', color: 'bg-blue-50 text-blue-700' },
-    {
-      label: 'Data science career changers',
-      color: 'bg-amber-50 text-amber-700',
-    },
-    {
-      label: 'Developers adding AI skills',
+      label: 'Non-technical professionals',
       color: 'bg-purple-50 text-purple-700',
     },
-    { label: 'University students', color: 'bg-rose-50 text-rose-700' },
+    { label: 'Entrepreneurs & founders', color: 'bg-amber-50 text-amber-700' },
+    { label: 'Small business owners', color: 'bg-emerald-50 text-emerald-700' },
+    { label: 'Freelancers & consultants', color: 'bg-blue-50 text-blue-700' },
     {
-      label: 'Technical professionals seeking AI depth',
-      color: 'bg-cyan-50 text-cyan-700',
+      label: 'Marketing & operations teams',
+      color: 'bg-rose-50 text-rose-700',
     },
+    { label: 'AAN Open graduates', color: 'bg-cyan-50 text-cyan-700' },
   ]
 
   return (
@@ -157,43 +157,45 @@ export default function AIFundamentalsPage() {
             backgroundSize: '40px 40px',
           }}
         />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-emerald-500/15 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-purple-600/15 blur-[150px] rounded-full pointer-events-none" />
 
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-16 items-start">
             <div className="flex-1 space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest border border-emerald-500/30">
-                <Brain size={14} /> Program 3
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-widest border border-purple-500/30">
+                <Bot size={14} /> Program 2
               </div>
               <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight uppercase">
-                AI Fundamentals
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mt-1">
-                  Applied Data Science
+                AI Automation for Content Creators
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mt-1">
+                  Where Skills Become Income
                 </span>
               </h1>
               <p className="text-xl text-gray-300 leading-relaxed max-w-xl">
-                Go beneath the no-code layer to understand how AI models
-                actually work, and how to build, train, and deploy your own. The
-                technical foundation for a career in AI.
+                A practical, hands-on, fully self-paced 12-week programme that
+                takes you from &ldquo;I understand AI&rdquo; to &ldquo;I have
+                built and deployed real, working AI-powered automations that
+                solve actual business problems.&rdquo;
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                  <Monitor size={16} className="text-gray-400" /> Virtual
+                  <MonitorPlay size={16} className="text-gray-400" /> Self-Paced
                 </span>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
                   <Package size={16} className="text-gray-400" /> 8 Modules
                 </span>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                  <Clock size={16} className="text-gray-400" /> Structured Pace
+                  <Clock size={16} className="text-gray-400" /> 12 Weeks
                 </span>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                  <Code size={16} className="text-gray-400" /> Python-Based
+                  <Calendar size={16} className="text-gray-400" /> Live +
+                  Recorded
                 </span>
               </div>
               <div className="pt-4">
                 <Link
                   href="#curriculum"
-                  className="inline-flex items-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(16,185,129,0.5)]"
+                  className="inline-flex items-center gap-3 bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(147,51,234,0.5)]"
                 >
                   View Curriculum <ArrowRight size={18} />
                 </Link>
@@ -208,12 +210,12 @@ export default function AIFundamentalsPage() {
                     COURSE FEE
                   </p>
                   <p className="text-5xl font-black text-white">
-                    $40
+                    $37
                     <span className="text-xl font-bold text-gray-400">/mo</span>
                   </p>
                   <div className="mt-3 flex flex-col gap-2">
-                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider w-max">
-                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider w-max">
+                      <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
                       COMING LIVE IN 1 WEEK
                     </span>
                     <Countdown targetDate={LAUNCH_DATE} />
@@ -222,11 +224,11 @@ export default function AIFundamentalsPage() {
                 <div className="h-px bg-white/10" />
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    PREREQUISITES
+                    DURATION
                   </p>
-                  <p className="text-lg font-bold text-white">AAN Open</p>
+                  <p className="text-lg font-bold text-white">12 Weeks</p>
                   <p className="text-sm text-gray-400">
-                    Recommended: AI Automation
+                    3 months, fully self-paced
                   </p>
                 </div>
                 <div className="h-px bg-white/10" />
@@ -234,18 +236,14 @@ export default function AIFundamentalsPage() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                     LEVEL
                   </p>
-                  <p className="text-lg font-bold text-white">
-                    Intermediate → Advanced
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Technical, Python-based
-                  </p>
+                  <p className="text-lg font-bold text-white">Intermediate</p>
+                  <p className="text-sm text-gray-400">No coding required</p>
                 </div>
                 <div className="pt-2">
                   <ClickToPayButton
-                    courseId="ai-fundamentals-course-id"
-                    courseName="AI Fundamentals"
-                    priceAmount={40}
+                    courseId="ai-automation-course-id"
+                    courseName="AI Automation for Content Creators"
+                    priceAmount={37}
                     currency="USD"
                   />
                 </div>
@@ -259,9 +257,9 @@ export default function AIFundamentalsPage() {
       <section className="py-20 px-6 lg:px-12 bg-[#f9fafb] border-b border-gray-100">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8">
           {[
-            { word: 'Understand', sub: 'How AI really works.' },
-            { word: 'Build', sub: 'Models from scratch.' },
-            { word: 'Deploy', sub: 'Production-ready AI.' },
+            { word: 'Automate', sub: 'Real business workflows.' },
+            { word: 'Deploy', sub: 'Live, working systems.' },
+            { word: 'Earn', sub: 'From day one.' },
           ].map((p, i) => (
             <motion.div
               key={i}
@@ -289,22 +287,20 @@ export default function AIFundamentalsPage() {
                 What You&apos;ll Learn
               </div>
               <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight uppercase">
-                From confident AI user to{' '}
-                <span className="text-[#0057ff]">
-                  credible ML practitioner.
-                </span>
+                Practical skills you can{' '}
+                <span className="text-[#0057ff]">monetise immediately.</span>
               </h2>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              'Master supervised and unsupervised learning, regression, classification, and neural network fundamentals',
-              'Build the complete AI/ML pipeline: data collection, preprocessing, feature engineering, training, and deployment',
-              'Work with real African datasets from agriculture, health, and finance sectors',
-              'Use Python, pandas, scikit-learn, and deep learning frameworks (TensorFlow/PyTorch)',
-              'Apply fairness testing, bias detection, and responsible deployment practices',
-              'Build a portfolio that gets African ML practitioners hired or funded',
+              'Build AI-powered automations using Zapier, Make.com, and n8n without writing code',
+              'Deploy real chatbots on WhatsApp and Telegram, the platforms African businesses actually use',
+              'Work directly with OpenAI API, GPT-4, Claude, and open-source models via Hugging Face',
+              'Automate Google Workspace at scale and implement RAG for business-aware AI',
+              'Build RPA solutions for legacy systems and government portals with no APIs',
+              'Graduate with a deployed capstone project and professional portfolio',
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -315,7 +311,7 @@ export default function AIFundamentalsPage() {
                 className="flex items-start gap-4 p-5 rounded-xl bg-[#f9fafb] border border-gray-100"
               >
                 <CheckCircle2
-                  className="text-emerald-500 flex-shrink-0 mt-0.5"
+                  className="text-purple-600 flex-shrink-0 mt-0.5"
                   size={20}
                 />
                 <span className="text-[15px] text-gray-700 leading-relaxed">
@@ -334,64 +330,43 @@ export default function AIFundamentalsPage() {
             Tools You&apos;ll Master
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-12 uppercase">
-            Industry-standard <span className="text-[#0057ff]">ML stack.</span>
+            The exact tools{' '}
+            <span className="text-[#0057ff]">professionals use.</span>
           </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               {
-                name: 'Python',
-                icon: <TerminalSquare size={24} className="text-emerald-500" />,
+                name: 'OpenAI API',
+                icon: <Bot size={24} className="text-purple-600" />,
               },
               {
-                name: 'pandas',
-                icon: (
-                  <TableProperties size={24} className="text-emerald-500" />
-                ),
+                name: 'Zapier',
+                icon: <Zap size={24} className="text-purple-600" />,
               },
               {
-                name: 'NumPy',
-                icon: <Hash size={24} className="text-emerald-500" />,
+                name: 'Make.com',
+                icon: <Wrench size={24} className="text-purple-600" />,
               },
               {
-                name: 'SciPy',
-                icon: <FlaskConical size={24} className="text-emerald-500" />,
+                name: 'n8n',
+                icon: <Link2 size={24} className="text-purple-600" />,
               },
               {
-                name: 'scikit-learn',
-                icon: <Settings size={24} className="text-emerald-500" />,
+                name: 'WhatsApp API',
+                icon: <MessageCircle size={24} className="text-purple-600" />,
               },
               {
-                name: 'matplotlib',
-                icon: <LineChart size={24} className="text-emerald-500" />,
+                name: 'Hugging Face',
+                icon: <Smile size={24} className="text-purple-600" />,
               },
               {
-                name: 'Seaborn',
-                icon: <BarChart3 size={24} className="text-emerald-500" />,
+                name: 'Google Workspace',
+                icon: <BarChart size={24} className="text-purple-600" />,
               },
               {
-                name: 'statsmodels',
-                icon: <BarChart3 size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'UMAP',
-                icon: <Database size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'Optuna',
-                icon: <Settings size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'ChatGPT',
-                icon: <Brain size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'Google Gemini',
-                icon: <Sparkles size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'Claude AI',
-                icon: <Brain size={24} className="text-emerald-500" />,
+                name: 'TagUI (RPA)',
+                icon: <Monitor size={24} className="text-purple-600" />,
               },
             ].map((tool, i) => (
               <motion.div
@@ -400,7 +375,7 @@ export default function AIFundamentalsPage() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.05 }}
                 viewport={{ once: true }}
-                className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md hover:border-emerald-200 transition-all"
+                className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-md hover:border-purple-200 transition-all"
               >
                 {tool.icon}
                 <span className="font-bold text-[14px] text-[#0a0f1e]">
@@ -420,8 +395,8 @@ export default function AIFundamentalsPage() {
               Course Content
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] uppercase">
-              8 modules.{' '}
-              <span className="text-[#0057ff]">Deep technical rigour.</span>
+              12 weeks. Every week has a{' '}
+              <span className="text-[#0057ff]">purpose.</span>
             </h2>
           </div>
 
@@ -442,12 +417,12 @@ export default function AIFundamentalsPage() {
                   }
                   className="w-full flex items-center gap-5 p-6 md:p-8 text-left"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 font-black text-lg">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 font-black text-lg">
                     {mod.num}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1">
-                      Module {mod.num}
+                    <p className="text-[11px] font-bold text-purple-600 uppercase tracking-wider mb-1">
+                      {mod.week}
                     </p>
                     <h3 className="text-lg font-bold text-[#0a0f1e]">
                       {mod.title}
@@ -465,7 +440,7 @@ export default function AIFundamentalsPage() {
                     <ul className="space-y-3 mt-6">
                       {mod.details.map((detail, i) => (
                         <li key={i} className="flex items-start gap-3">
-                          <span className="text-emerald-600 mt-0.5 flex-shrink-0">
+                          <span className="text-purple-600 mt-0.5 flex-shrink-0">
                             →
                           </span>
                           <span className="text-[15px] text-gray-700">
@@ -490,11 +465,11 @@ export default function AIFundamentalsPage() {
               Who Should Enrol
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] leading-tight mb-4 uppercase">
-              Ready to go <span className="text-[#0057ff]">technical.</span>
+              No coding <span className="text-[#0057ff]">required.</span>
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed max-w-md">
-              For learners who have built confidence through AAN Open and are
-              ready to understand how AI models actually work.
+              This course is built for professionals who want to build real,
+              income-generating automations without writing complex code.
             </p>
           </div>
           <div className="flex-1 flex flex-wrap gap-3">
@@ -514,38 +489,38 @@ export default function AIFundamentalsPage() {
         </div>
       </section>
 
-      {/* ── Why $40/month ── */}
+      {/* ── Why $37/month ── */}
       <section className="py-24 px-6 lg:px-12 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/10 text-[#0057ff] text-xs font-bold uppercase tracking-widest mb-4">
             Value Breakdown
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
-            Why $40/month is a{' '}
-            <span className="text-[#0057ff]">genuine investment.</span>
+            Why $37/month is{' '}
+            <span className="text-[#0057ff]">extraordinary.</span>
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
               {
-                icon: <Database size={22} />,
-                title: 'Global-standard technical rigour',
-                desc: 'Quality ML education that takes you from confident AI user to credible technical practitioner, equivalent to courses costing hundreds to thousands elsewhere.',
+                icon: <DollarSign size={22} />,
+                title: 'Bootcamp-level depth at a fraction of the cost',
+                desc: '12 weeks of fully detailed, professionally structured curriculum equivalent to bootcamps charging $1,500 to $3,000 for similar outcomes.',
               },
               {
-                icon: <FlaskConical size={22} />,
-                title: 'African context, African data',
-                desc: 'Contextualised for African learners with African data, African infrastructure constraints, and African career pathways in mind.',
+                icon: <Code2 size={22} />,
+                title: 'Live, working integrations',
+                desc: 'Access to OpenAI, Google Workspace, WhatsApp Business API, Zapier, Make.com, and n8n, all configured and ready to use.',
               },
               {
-                icon: <BarChart3 size={22} />,
-                title: 'Complete stack for less than a textbook',
-                desc: 'The entire AAN pathway, from total beginner to employable AI/ML practitioner, costs less per month than a single textbook in most global programmes.',
+                icon: <Rocket size={22} />,
+                title: 'Portfolio-ready capstone',
+                desc: 'A built capstone project you can show to employers or clients immediately, not a theoretical exercise.',
               },
               {
-                icon: <Briefcase size={22} />,
-                title: 'Career-ready outcomes',
-                desc: 'Portfolio-building guidance, the kinds of projects that get you hired, and clear pathways into data science, ML engineering, and AI research roles.',
+                icon: <Laptop size={22} />,
+                title: 'Skills that pay back immediately',
+                desc: 'Freelance income, consulting opportunities, or measurable productivity gains inside your own business, often paying back the entire course cost in a single client project.',
               },
             ].map((item, i) => (
               <motion.div
@@ -557,7 +532,7 @@ export default function AIFundamentalsPage() {
                 className="bg-[#f9fafb] p-8 rounded-2xl border border-gray-100"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
                     {item.icon}
                   </div>
                   <div>
@@ -575,33 +550,33 @@ export default function AIFundamentalsPage() {
         </div>
       </section>
 
-      {/* ── Bonus: Internship & Community ── */}
+      {/* ── Bonus: Internship & Laptop ── */}
       <section className="py-24 px-6 lg:px-12 bg-[#f9fafb] border-y border-gray-100">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-white p-10 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-              <Users size={24} />
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+              <Rocket size={24} />
             </div>
             <h3 className="text-xl font-black text-[#0a0f1e]">
               Internship Programme
             </h3>
             <p className="text-gray-500 text-[15px] leading-relaxed">
-              Structured placement pathways connecting top graduates with
-              partner organisations for genuine, hands-on ML engineering
-              experience on real projects.
+              Top-performing graduates get direct placement pathways with
+              partner organisations for genuine, hands-on internship experience
+              with real-world AI automation projects.
             </p>
           </div>
           <div className="bg-white p-10 rounded-2xl border border-gray-100 shadow-sm space-y-5">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
               <Laptop size={24} />
             </div>
             <h3 className="text-xl font-black text-[#0a0f1e]">
               Laptop Giveaway Initiative
             </h3>
             <p className="text-gray-500 text-[15px] leading-relaxed">
-              Students exceeding 80% engagement and performance become eligible
-              for a free laptop. Excellence is rewarded with the hardware needed
-              to go fully professional in AI.
+              Students who exceed 80% engagement and performance become eligible
+              for a free laptop, funded through AAN&apos;s sponsorship network.
+              Excellence is rewarded with real opportunity.
             </p>
           </div>
         </div>
@@ -634,15 +609,15 @@ export default function AIFundamentalsPage() {
                 sub: '12-week hands-on programme',
                 price: '$37/month',
                 priceColor: 'text-[#0057ff]',
-                active: false,
+                active: true,
               },
               {
                 stage: 'Stage 3',
                 name: 'AI Fundamentals',
-                sub: 'Applied Data Science',
+                sub: 'Machine Learning Engineering',
                 price: '$40/month',
                 priceColor: 'text-emerald-500',
-                active: true,
+                active: false,
               },
             ].map((item, i) => (
               <motion.div
@@ -681,29 +656,30 @@ export default function AIFundamentalsPage() {
       {/* ── Final CTA ── */}
       <section className="relative py-32 px-6 overflow-hidden bg-white">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-r from-emerald-500/20 to-cyan-400/10 blur-[120px] rounded-full" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-r from-purple-600/20 to-purple-400/10 blur-[120px] rounded-full" />
         </div>
-        <div className="relative max-w-4xl mx-auto bg-[#0a0f1e] rounded-[40px] p-12 md:p-20 text-center shadow-[0_20px_40px_-15px_rgba(16,185,129,0.4)] overflow-hidden">
-          <div className="absolute inset-0 bg-emerald-500/5 mix-blend-overlay" />
+        <div className="relative max-w-4xl mx-auto bg-[#0a0f1e] rounded-[40px] p-12 md:p-20 text-center shadow-[0_20px_40px_-15px_rgba(147,51,234,0.4)] overflow-hidden">
+          <div className="absolute inset-0 bg-purple-600/5 mix-blend-overlay" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-[#0a0f1e]/80 to-transparent" />
           <div className="relative z-10 space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-widest border border-white/20 backdrop-blur-md">
-              <Sparkles size={14} className="text-emerald-400" /> Go Technical
+              <Sparkles size={14} className="text-purple-400" /> Turn Skills
+              Into Income
             </div>
             <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
-              Build the <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
-                Future of AI
+              Build. Automate. <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                Get Paid.
               </span>
             </h2>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              8 modules. Python-powered. From confident AI user to credible,
-              employable Applied Data Scientist at $40/month.
+              12 weeks. 8 modules. One deployed capstone. Real automations for
+              real businesses at $37/month.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
                 href="/auth/signup"
-                className="w-full sm:w-auto px-10 py-5 bg-emerald-500 text-white rounded-xl font-bold text-[15px] hover:bg-emerald-600 transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-10 py-5 bg-purple-600 text-white rounded-xl font-bold text-[15px] hover:bg-purple-700 transition-all hover:scale-105 shadow-[0_0_40px_-10px_rgba(147,51,234,0.5)] flex items-center justify-center gap-3"
               >
                 Join the Waitlist <ArrowRight size={18} />
               </Link>
