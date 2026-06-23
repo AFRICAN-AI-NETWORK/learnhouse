@@ -39,79 +39,79 @@ export default function AIAutomationContentCreatorsPage() {
   const modules = [
     {
       num: 1,
-      title: 'Introduction to AI Automation',
+      title: 'AI Content Strategy & Ideation',
       week: 'Week 1',
       details: [
-        'The business case for automation and identifying automation opportunities',
-        'AI governance fundamentals and responsible automation',
-        'Understanding the automation landscape: no-code, low-code, and code-based approaches',
-        'Mapping business processes to automation candidates',
+        'Automating trend research and content ideation with AI',
+        'Developing a distinct AI persona that matches your brand voice',
+        'Planning content calendars with AI assistants',
+        'Identifying automation opportunities in your creative workflow',
       ],
     },
     {
       num: 2,
-      title: 'AI Tools and APIs',
+      title: 'AI for Writing & Copywriting',
       week: 'Week 2-3',
       details: [
-        'Working directly with large language models (GPT-4, Claude) and the OpenAI API',
-        'Open-source and African-language-friendly alternatives via Hugging Face',
-        'API authentication, rate limiting, and cost management',
-        'Building your first AI-powered API integration',
+        'Using ChatGPT and Claude for scripting and storytelling',
+        'Automating blog posts, newsletters, and social media copy',
+        'Creating custom GPTs tailored for your brand voice',
+        'SEO optimization with AI tools',
       ],
     },
     {
       num: 3,
-      title: 'No-Code Workflow Platforms',
+      title: 'AI for Visual Content',
       week: 'Week 4-5',
       details: [
-        'Building real, live automations in Zapier and Make.com',
-        'Connecting Gmail, Slack, OpenAI, and more into seamless workflows',
-        'Multi-step automation design and error handling',
-        'Cost optimisation for platform-based automations',
+        'Image generation mastery with Midjourney and DALL-E 3',
+        'Automating thumbnail creation and basic graphics',
+        'AI-assisted photo editing and batch processing',
+        'Maintaining visual consistency across platforms',
       ],
     },
     {
       num: 4,
-      title: 'n8n Mastery & Chatbots',
+      title: 'AI for Video & Audio Production',
       week: 'Week 5-7',
       details: [
-        'n8n: the free, open-source automation powerhouse with 9,500+ integrations',
-        'Ideal for cost-conscious and privacy-conscious African deployments',
-        'Building real, deployed chatbots on Telegram and WhatsApp',
-        'Autonomous AI agents and human-in-the-loop safety design',
+        'Automating video editing with Opus Clip and Premiere AI features',
+        'AI voice cloning and text-to-speech with ElevenLabs',
+        'Automated captioning, B-roll generation, and localization',
+        'Podcast automation and audio cleanup',
       ],
     },
     {
       num: 5,
-      title: 'Advanced Workflow Automation',
+      title: 'Workflow Automation Platforms',
       week: 'Week 7-8',
       details: [
-        'Google Workspace automation at scale',
-        'Retrieval-Augmented Generation (RAG) for AI that actually knows your business and local context',
-        'Cost optimisation across platforms',
-        'Building production-ready automation systems',
+        'Connecting your tools with Zapier and Make.com',
+        'Automating content distribution across platforms',
+        'Building content repurposing pipelines (e.g., YouTube -> Blog -> Twitter)',
+        'Notification and approval workflows',
       ],
     },
     {
       num: 6,
-      title: 'Robotic Process Automation (RPA)',
+      title: 'Advanced Content Operations',
       week: 'Week 9',
       details: [
-        'Automating legacy systems and government portals that have no API at all',
-        'Using free open-source tools like TagUI',
-        "Directly solving one of Africa's most persistent digital infrastructure gaps",
-        'Building resilient RPA workflows for unreliable systems',
+        'Using n8n for custom content pipelines',
+        'RSS feed automation and curation bots',
+        'Automated social media listening and engagement',
+        'Building a "second brain" for your content assets',
       ],
     },
     {
       num: 7,
-      title: 'Ethics, Privacy & African Context',
+      title: 'Ethics, Copyright & Authenticity',
       week: 'Week 10',
       details: [
-        'NDPR/POPIA compliance for automated systems',
-        'Algorithmic bias detection and mitigation',
-        'Designing AI for 2G/low-bandwidth, multilingual African realities',
-        'Data sovereignty and privacy-first automation design',
+        'Navigating copyright in the AI era',
+        'Maintaining authenticity and human connection',
+        'Disclosing AI use and adhering to platform guidelines',
+        'Responsible AI content generation',
       ],
     },
     {
@@ -119,10 +119,10 @@ export default function AIAutomationContentCreatorsPage() {
       title: 'Capstone Project',
       week: 'Week 11-12',
       details: [
-        'Design, build, document, and present a complete, deployed, end-to-end AI automation solution',
-        '10-15 page professional report with architecture diagrams',
-        'Recorded demo video showcasing your solution',
-        'A real portfolio piece, not a toy exercise',
+        'Build and deploy a fully automated end-to-end content engine',
+        'From automated ideation to scheduled distribution',
+        'Present a portfolio of AI-generated/assisted multimedia content',
+        'A real portfolio piece to showcase your workflow',
       ],
     },
   ]
@@ -295,12 +295,12 @@ export default function AIAutomationContentCreatorsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              'Build AI-powered automations using Zapier, Make.com, and n8n without writing code',
-              'Deploy real chatbots on WhatsApp and Telegram, the platforms African businesses actually use',
-              'Work directly with OpenAI API, GPT-4, Claude, and open-source models via Hugging Face',
-              'Automate Google Workspace at scale and implement RAG for business-aware AI',
-              'Build RPA solutions for legacy systems and government portals with no APIs',
-              'Graduate with a deployed capstone project and professional portfolio',
+              'Build a fully automated content engine from ideation to distribution',
+              'Master AI writing tools to generate scripts, newsletters, and social media copy',
+              'Create stunning AI-generated imagery and automate your visual branding',
+              'Streamline video and audio production using AI editing and voice cloning',
+              'Connect your creative tools using Zapier, Make.com, and n8n to save hours of manual work',
+              'Navigate copyright, ethics, and platform guidelines while maintaining your authentic voice',
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -337,36 +337,61 @@ export default function AIAutomationContentCreatorsPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               {
-                name: 'OpenAI API',
-                icon: <Bot size={24} className="text-[oklch(59.2%_.249_.584)]" />,
+                name: 'ChatGPT & Claude',
+                icon: (
+                  <Bot size={24} className="text-[oklch(59.2%_.249_.584)]" />
+                ),
+              },
+              {
+                name: 'Midjourney',
+                icon: (
+                  <Smile size={24} className="text-[oklch(59.2%_.249_.584)]" />
+                ),
+              },
+              {
+                name: 'ElevenLabs',
+                icon: (
+                  <MessageCircle
+                    size={24}
+                    className="text-[oklch(59.2%_.249_.584)]"
+                  />
+                ),
+              },
+              {
+                name: 'Opus Clip',
+                icon: (
+                  <MonitorPlay
+                    size={24}
+                    className="text-[oklch(59.2%_.249_.584)]"
+                  />
+                ),
               },
               {
                 name: 'Zapier',
-                icon: <Zap size={24} className="text-[oklch(59.2%_.249_.584)]" />,
+                icon: (
+                  <Zap size={24} className="text-[oklch(59.2%_.249_.584)]" />
+                ),
               },
               {
                 name: 'Make.com',
-                icon: <Wrench size={24} className="text-[oklch(59.2%_.249_.584)]" />,
+                icon: (
+                  <Wrench size={24} className="text-[oklch(59.2%_.249_.584)]" />
+                ),
               },
               {
                 name: 'n8n',
-                icon: <Link2 size={24} className="text-[oklch(59.2%_.249_.584)]" />,
+                icon: (
+                  <Link2 size={24} className="text-[oklch(59.2%_.249_.584)]" />
+                ),
               },
               {
-                name: 'WhatsApp API',
-                icon: <MessageCircle size={24} className="text-[oklch(59.2%_.249_.584)]" />,
-              },
-              {
-                name: 'Hugging Face',
-                icon: <Smile size={24} className="text-[oklch(59.2%_.249_.584)]" />,
-              },
-              {
-                name: 'Google Workspace',
-                icon: <BarChart size={24} className="text-[oklch(59.2%_.249_.584)]" />,
-              },
-              {
-                name: 'TagUI (RPA)',
-                icon: <Monitor size={24} className="text-[oklch(59.2%_.249_.584)]" />,
+                name: 'Notion AI',
+                icon: (
+                  <BarChart
+                    size={24}
+                    className="text-[oklch(59.2%_.249_.584)]"
+                  />
+                ),
               },
             ].map((tool, i) => (
               <motion.div
@@ -593,7 +618,7 @@ export default function AIAutomationContentCreatorsPage() {
             <span className="text-[#0057ff]">AAN journey</span>
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 stage: 'Stage 1',
@@ -605,16 +630,24 @@ export default function AIAutomationContentCreatorsPage() {
               },
               {
                 stage: 'Stage 2',
-                name: 'AI Automation',
+                name: 'AI Automation for Businesses',
                 sub: '12-week hands-on programme',
                 price: '$37/month',
                 priceColor: 'text-[#0057ff]',
-                active: true,
+                active: false,
               },
               {
                 stage: 'Stage 3',
+                name: 'AI Automation for Content Creators',
+                sub: '12-week hands-on programme',
+                price: '$37/month',
+                priceColor: 'text-[oklch(59.2%_.249_.584)]',
+                active: true,
+              },
+              {
+                stage: 'Stage 4',
                 name: 'AI Fundamentals',
-                sub: 'Machine Learning Engineering',
+                sub: 'Data Scientist',
                 price: '$40/month',
                 priceColor: 'text-emerald-500',
                 active: false,
@@ -663,8 +696,8 @@ export default function AIAutomationContentCreatorsPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-[#0a0f1e]/80 to-transparent" />
           <div className="relative z-10 space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-widest border border-white/20 backdrop-blur-md">
-              <Sparkles size={14} className="text-[oklch(59.2%_.249_.584)]" /> Turn Skills
-              Into Income
+              <Sparkles size={14} className="text-[oklch(59.2%_.249_.584)]" />{' '}
+              Turn Skills Into Income
             </div>
             <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
               Build. Automate. <br />

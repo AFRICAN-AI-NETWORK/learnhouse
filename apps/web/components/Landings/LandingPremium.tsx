@@ -113,7 +113,7 @@ export default function LandingPremium({
     },
     {
       id: 'ai-automation-businesses',
-      name: 'AI Automation for Businesses',
+      name: 'AI AUTOMATION FOR BUSINESSES',
       description:
         'Learn to leverage modern AI tools to automate complex workflows. Includes internship opportunities and laptop giveaways for eligible students.',
       badgeText: '',
@@ -125,7 +125,7 @@ export default function LandingPremium({
     },
     {
       id: 'ai-automation-content-creators',
-      name: 'AI Automation for Content Creators',
+      name: 'AI AUTOMATION FOR CONTENT CREATORS',
       description:
         'Master AI tools to supercharge your content creation workflow. Automate research, drafting, and distribution to scale your personal brand.',
       badgeText: '',
@@ -133,7 +133,7 @@ export default function LandingPremium({
       buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-automation-content-creators'),
-      imageUrl: '/landing/program_automation_v2.png',
+      imageUrl: '/landing/program_content_creators.png',
     },
     {
       id: 'aan-fundamentals',

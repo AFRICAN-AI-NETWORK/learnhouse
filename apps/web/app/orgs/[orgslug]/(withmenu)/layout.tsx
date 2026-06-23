@@ -31,6 +31,7 @@ export default function RootLayout(props: {
     pathname?.endsWith('/aan-open') ||
     pathname?.endsWith('/ai-automation') ||
     pathname?.endsWith('/ai-fundamentals') ||
+    pathname?.endsWith('/ai-automation-content-creators') ||
     pathname?.endsWith('/contact') ||
     pathname?.endsWith('/about')
   const isGuest = !session?.data?.user
