@@ -593,7 +593,7 @@ export default function AIAutomationBusinessesPage() {
             <span className="text-[#0057ff]">AAN journey</span>
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 stage: 'Stage 1',
@@ -605,7 +605,7 @@ export default function AIAutomationBusinessesPage() {
               },
               {
                 stage: 'Stage 2',
-                name: 'AI Automation',
+                name: 'AI Automation for Businesses',
                 sub: '12-week hands-on programme',
                 price: '$37/month',
                 priceColor: 'text-[#0057ff]',
@@ -613,8 +613,16 @@ export default function AIAutomationBusinessesPage() {
               },
               {
                 stage: 'Stage 3',
+                name: 'AI Automation for Content Creators',
+                sub: '12-week hands-on programme',
+                price: '$37/month',
+                priceColor: 'text-[oklch(59.2%_.249_.584)]',
+                active: false,
+              },
+              {
+                stage: 'Stage 4',
                 name: 'AI Fundamentals',
-                sub: 'Machine Learning Engineering',
+                sub: 'Data Scientist',
                 price: '$40/month',
                 priceColor: 'text-emerald-500',
                 active: false,
