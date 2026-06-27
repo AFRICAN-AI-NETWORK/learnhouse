@@ -18,6 +18,12 @@ from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.trail_runs import StatusEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
+from src.services.courses.grade import (
+    LATE_PENALTY_MULTIPLIER,
+    get_activity_weighted_points_earned,
+    load_activity_grade_inputs,
+    normalized_assignment_score,
+)
 from dateutil import parser
 
 
@@ -141,19 +147,34 @@ async def check_trail_presence(
     return trail
 
 
-def get_activity_points_earned(activity: Activity, is_late: bool) -> float:
+def get_completion_based_points_earned(activity: Activity, is_late: bool) -> float:
+    """
+    Flat, completion-based points for an activity that has no assignment.
+
+    Awards the activity's full point value (reduced by the late penalty when
+    applicable). Assignment-backed activities are weighted by submission score
+    instead — see src.services.courses.grade.
+    """
     points = activity.points or 0
-    return points * 0.8 if is_late else points
+    return points * LATE_PENALTY_MULTIPLIER if is_late else points
 
 
 def backfill_completed_trail_step_points(
     trail_steps: list[TrailStep],
     db_session: Session,
 ) -> None:
+    """
+    Recompute and persist ``points_earned`` for completed trail steps.
+
+    Handles both completion-based and assignment-backed (gradeable) activities
+    using the shared grade formula. To stay cheap on hot read paths, a step is
+    only written when its stored value actually drifts from the recomputed value,
+    so once values settle no further writes happen.
+    """
     updated = False
 
     for trail_step in trail_steps:
-        if not trail_step.complete or trail_step.points_earned:
+        if not trail_step.complete:
             continue
 
         activity = db_session.exec(
@@ -162,12 +183,27 @@ def backfill_completed_trail_step_points(
         if not activity or not activity.points:
             continue
 
-        trail_step.points_earned = get_activity_points_earned(
-            activity, trail_step.is_late
+        assignment, submission, task_max_sum = load_activity_grade_inputs(
+            activity, trail_step.user_id, db_session
         )
-        trail_step.update_date = str(datetime.now())
-        db_session.add(trail_step)
-        updated = True
+
+        expected_points = get_activity_weighted_points_earned(
+            activity, trail_step, assignment, submission, task_max_sum
+        )
+        normalized = normalized_assignment_score(submission, task_max_sum)
+        expected_grade = (
+            f"{normalized:.2f}" if normalized is not None else trail_step.grade
+        )
+
+        if (
+            abs((trail_step.points_earned or 0) - expected_points) > 1e-9
+            or trail_step.grade != expected_grade
+        ):
+            trail_step.points_earned = expected_points
+            trail_step.grade = expected_grade
+            trail_step.update_date = str(datetime.now())
+            db_session.add(trail_step)
+            updated = True
 
     if updated:
         db_session.commit()
@@ -386,7 +422,10 @@ async def add_activity_to_trail(
                                 detail="You must complete the previous module before accessing this one.",
                             )
 
-    points_earned = get_activity_points_earned(activity, is_late)
+    # Seed completion-based points up front. For assignment-backed activities
+    # this is corrected to the submission-weighted value by the
+    # backfill_completed_trail_step_points pass below.
+    points_earned = get_completion_based_points_earned(activity, is_late)
 
     if not trailstep:
         trailstep = TrailStep(
