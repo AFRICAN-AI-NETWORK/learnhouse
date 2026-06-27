@@ -19,7 +19,9 @@ type PhoneNumberFieldsProps = {
   phoneNumberLabel?: string
 }
 
-function getCountryCodeOption(country: (typeof AFRICAN_COUNTRY_DIAL_CODES)[number]) {
+function getCountryCodeOption(
+  country: (typeof AFRICAN_COUNTRY_DIAL_CODES)[number]
+) {
   return `${country.flag} ${country.name} ${country.dialCode}`
 }
 
@@ -32,7 +34,7 @@ export default function PhoneNumberFieldsRHF({
   phoneNumberLabel = 'Phone number',
 }: PhoneNumberFieldsProps) {
   const countryCodesListId = useId()
-  
+
   const countryCode = watch('country_code')
   const phoneNumber = watch('phone_number')
 
@@ -69,8 +71,11 @@ export default function PhoneNumberFieldsRHF({
               className={`h-12 focus:ring-2 focus:ring-black/5 transition-shadow ${errors.phone_number ? 'border-red-400' : phoneNumber && !errors.phone_number ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
               {...register('phone_number', {
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                  setValue('phone_number', normalizeLocalPhoneNumber(e.target.value))
-                }
+                  setValue(
+                    'phone_number',
+                    normalizeLocalPhoneNumber(e.target.value)
+                  )
+                },
               })}
               type="tel"
               inputMode="numeric"
@@ -81,10 +86,13 @@ export default function PhoneNumberFieldsRHF({
         </FormField>
       </div>
       {(errors.country_code || errors.phone_number) && (
-          <p className="mt-1 text-xs text-red-600 font-medium">
-            {(errors.country_code?.message || errors.phone_number?.message) as string}
-          </p>
-        )}
+        <p className="mt-1 text-xs text-red-600 font-medium">
+          {
+            (errors.country_code?.message ||
+              errors.phone_number?.message) as string
+          }
+        </p>
+      )}
     </div>
   )
 }
