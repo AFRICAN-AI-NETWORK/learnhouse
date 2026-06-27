@@ -20,6 +20,7 @@ from src.routers.courses import (
     courses,
     assignments,
     certifications,
+    grade,
     live_sessions,
     prerequisites,
     schedules,
@@ -66,6 +67,7 @@ v1_router.include_router(
 v1_router.include_router(
     prerequisites.router, prefix="/prerequisites", tags=["prerequisites"]
 )
+v1_router.include_router(grade.router, prefix="/courses", tags=["course-grade"])
 v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(
@@ -78,7 +80,9 @@ v1_router.include_router(
 )
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
 v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
-v1_router.include_router(flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"])
+v1_router.include_router(
+    flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"]
+)
 
 # Chat Routes
 v1_router.include_router(
