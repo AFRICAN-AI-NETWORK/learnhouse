@@ -144,6 +144,7 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
             day: 'numeric',
           })}
           qrCodeUrl={qrCodeUrl}
+          gradePercentage={userCertificate?.certificate_user?.grade_percentage}
         />
       )
 
@@ -376,6 +377,9 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
               studentName={
                 `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
                 'Student Name'
+              }
+              gradePercentage={
+                userCertificate?.certificate_user?.grade_percentage
               }
             />
           </div>
