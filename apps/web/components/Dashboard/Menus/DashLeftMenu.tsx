@@ -16,6 +16,7 @@ import {
   Settings,
   Users,
   Megaphone,
+  GraduationCap,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
@@ -92,6 +93,8 @@ function DashLeftMenu() {
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
   const canSeeHandbook = isAdmin || rights?.handbook?.action_read
   const isPartner = isAdmin || rights?.affiliation?.action_read
+  const canSeeStudents =
+    isAdmin || (rights?.dashboard?.action_access && rights?.users?.action_read)
 
   if (!org || !session || loading) return null
 
@@ -165,6 +168,14 @@ function DashLeftMenu() {
               href="/dash/users/settings/users"
               icon={<Users size={18} />}
               label={t('common.users')}
+              isCollapsed={isCollapsed}
+            />
+          )}
+          {canSeeStudents && (
+            <MenuLink
+              href="/dash/students"
+              icon={<GraduationCap size={18} />}
+              label="Students"
               isCollapsed={isCollapsed}
             />
           )}
