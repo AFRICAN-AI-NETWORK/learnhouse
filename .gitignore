@@ -83,3 +83,10 @@ gitleaks-report.sarif
 bandit-report.sarif
 snyk-report.sarif
 apps/web/contabo_logs/log.md
+
+# Implementation plans
+grading-certificate-implementation-plan.md
+offline-implementation-plan.md
+*-implementation-plan.md
+pr.md
+marketer.md
