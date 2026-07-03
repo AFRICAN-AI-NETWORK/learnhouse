@@ -178,7 +178,7 @@ async def list_org_students(
         .join(Role, UserOrganization.role_id == Role.id)
         .where(
             UserOrganization.org_id == org_id,
-            Role.name.ilike("user")
+            or_(Role.name.ilike("user"), Role.name.ilike("student"))
         )
     )
     if search:
@@ -260,7 +260,7 @@ def _fetch_org_member(org_id: int, user_id: int, db_session: Session) -> User:
         .where(
             UserOrganization.org_id == org_id,
             User.id == user_id,
-            Role.name.ilike("user")
+            or_(Role.name.ilike("user"), Role.name.ilike("student"))
         )
     ).first()
     if not user:
@@ -541,7 +541,7 @@ async def get_org_analytics_summary(
             .join(Role, UserOrganization.role_id == Role.id)
             .where(
                 UserOrganization.org_id == org_id,
-                Role.name.ilike("user")
+                or_(Role.name.ilike("user"), Role.name.ilike("student"))
             )
             .subquery()
         )
@@ -556,7 +556,7 @@ async def get_org_analytics_summary(
         .where(
             TrailRun.org_id == org_id,
             UserOrganization.org_id == org_id,
-            Role.name.ilike("user")
+            or_(Role.name.ilike("user"), Role.name.ilike("student"))
         )
     ).all()
     completed = _completed_steps_by_user_course(
@@ -581,7 +581,7 @@ async def get_org_analytics_summary(
         .where(
             TrailActivitySession.org_id == org_id,
             UserOrganization.org_id == org_id,
-            Role.name.ilike("user")
+            or_(Role.name.ilike("user"), Role.name.ilike("student"))
         )
     ).first()
 
