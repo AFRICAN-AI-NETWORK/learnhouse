@@ -2,7 +2,7 @@ import React from 'react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
-import { getStudents } from '@services/dashboard/students'
+import { getTopStudents } from '@services/dashboard/students'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { Trophy, Star, Medal } from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
@@ -13,23 +13,14 @@ function TopStudentsList() {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
 
-  // Fetch a larger first page to determine top students
   const { data, isLoading } = useSWR(
-    org ? [`top_students_${org.id}`] : null,
-    () => getStudents(org.id, access_token, '', 1, 100)
+    org ? [`top_students_all_${org.id}`] : null,
+    () => getTopStudents(org.id, access_token, 5)
   )
 
   if (isLoading || !data?.students) return null
 
-  // Sort by average progress and total points
-  const sortedStudents = [...data.students]
-    .sort((a: any, b: any) => {
-      if (b.average_progress !== a.average_progress) {
-        return b.average_progress - a.average_progress
-      }
-      return b.total_points - a.total_points
-    })
-    .slice(0, 5)
+  const sortedStudents = data.students
 
   if (sortedStudents.length === 0) return null
 

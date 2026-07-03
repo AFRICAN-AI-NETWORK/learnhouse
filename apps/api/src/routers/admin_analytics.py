@@ -9,12 +9,14 @@ from src.services.admin_analytics.schemas import (
     StudentCourseDetail,
     StudentDetail,
     StudentListResponse,
+    TopStudentsResponse,
 )
 from src.services.admin_analytics.students import (
     get_org_analytics_summary,
     get_student_course_detail,
     get_student_detail,
     list_org_students,
+    get_top_org_students,
 )
 
 router = APIRouter()
@@ -34,6 +36,18 @@ async def api_list_org_students(
     return await list_org_students(
         org_id, user, db_session, search=search, page=page, page_size=page_size
     )
+
+
+@router.get("/orgs/{org_id}/students/top", response_model=TopStudentsResponse)
+async def api_get_top_org_students(
+    request: Request,
+    org_id: int,
+    limit: int = Query(default=5, ge=1, le=50),
+    user=Depends(get_current_user),
+    db_session=Depends(get_db_session),
+) -> TopStudentsResponse:
+    """List the absolute top students in an organization based on progress and points."""
+    return await get_top_org_students(org_id, limit, user, db_session)
 
 
 @router.get("/orgs/{org_id}/students/{user_id}", response_model=StudentDetail)

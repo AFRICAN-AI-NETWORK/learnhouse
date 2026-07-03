@@ -37,6 +37,7 @@ from src.services.admin_analytics.schemas import (
     StudentCourseProgress,
     StudentDetail,
     StudentListResponse,
+    TopStudentsResponse,
     StudentRoleInfo,
     StudentSummary,
 )
@@ -595,3 +596,77 @@ async def get_org_analytics_summary(
         else 0.0,
         total_learning_seconds=int(total_learning_seconds or 0),
     )
+
+
+async def get_top_org_students(
+    org_id: int,
+    limit: int,
+    current_user: PublicUser | AnonymousUser,
+    db_session: Session,
+) -> TopStudentsResponse:
+    """Fetch all students, calculate their progress, and return the absolute top N."""
+    await verify_student_dashboard_access(current_user, db_session)
+
+    members = (
+        select(User)
+        .join(UserOrganization, UserOrganization.user_id == User.id)
+        .join(Role, UserOrganization.role_id == Role.id)
+        .where(
+            UserOrganization.org_id == org_id,
+            or_(Role.name.ilike("user"), Role.name.ilike("student"))
+        )
+    )
+
+    users = db_session.exec(members).all()
+
+    if not users:
+        return TopStudentsResponse(students=[])
+
+    user_ids = [u.id for u in users]
+    course_totals = _course_activity_totals(org_id, db_session)
+    runs = _runs_by_user(org_id, user_ids, db_session)
+    completed = _completed_steps_by_user_course(org_id, user_ids, db_session)
+    points = _points_by_user(org_id, user_ids, db_session)
+    time_spent = _time_by_user(org_id, user_ids, db_session)
+    last_active = _last_active_by_user(org_id, user_ids, db_session)
+    certificates = _certificates_by_user(org_id, user_ids, db_session)
+
+    students: list[StudentSummary] = []
+    for user in users:
+        course_ids = runs.get(user.id, [])
+        progresses: list[float] = []
+        completed_count = 0
+        for course_id in course_ids:
+            total_acts = course_totals.get(course_id, 0)
+            done = completed.get((user.id, course_id), 0)
+            progresses.append(_progress_pct(done, total_acts))
+            if total_acts > 0 and done >= total_acts:
+                completed_count += 1
+
+        avg_progress = (
+            round(sum(progresses) / len(progresses), 1) if progresses else 0.0
+        )
+        students.append(
+            StudentSummary(
+                user_id=user.id,
+                user_uuid=user.user_uuid,
+                username=user.username,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                avatar_image=user.avatar_image,
+                courses_enrolled=len(course_ids),
+                courses_in_progress=len(course_ids) - completed_count,
+                courses_completed=completed_count,
+                average_progress=avg_progress,
+                total_time_spent_seconds=time_spent.get(user.id, 0),
+                total_points=points.get(user.id, 0.0),
+                certificates_count=certificates.get(user.id, 0),
+                last_active=last_active.get(user.id),
+            )
+        )
+
+    # Sort natively in Python: by average_progress DESC, then total_points DESC
+    students.sort(key=lambda s: (s.average_progress, s.total_points), reverse=True)
+
+    return TopStudentsResponse(students=students[:limit])
