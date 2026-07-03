@@ -43,11 +43,12 @@ async def api_get_top_org_students(
     request: Request,
     org_id: int,
     limit: int = Query(default=5, ge=1, le=50),
+    days: Optional[int] = Query(default=None, ge=1),
     user=Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> TopStudentsResponse:
     """List the absolute top students in an organization based on progress and points."""
-    return await get_top_org_students(org_id, limit, user, db_session)
+    return await get_top_org_students(org_id, limit, days, user, db_session)
 
 
 @router.get("/orgs/{org_id}/students/{user_id}", response_model=StudentDetail)

@@ -12,6 +12,7 @@ Design notes:
 """
 
 from typing import Optional, Sequence
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
@@ -601,6 +602,7 @@ async def get_org_analytics_summary(
 async def get_top_org_students(
     org_id: int,
     limit: int,
+    days: Optional[int],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> TopStudentsResponse:
@@ -616,6 +618,10 @@ async def get_top_org_students(
             or_(Role.name.ilike("user"), Role.name.ilike("student"))
         )
     )
+
+    if days is not None and days > 0:
+        cutoff_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        members = members.where(UserOrganization.creation_date >= cutoff_date)
 
     users = db_session.exec(members).all()
 
