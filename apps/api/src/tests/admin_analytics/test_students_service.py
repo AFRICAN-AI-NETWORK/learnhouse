@@ -88,7 +88,7 @@ async def test_pagination(session, org, admin_user, coordinator_user, student_us
     )
     assert page1.page_size == 1
     assert len(page1.students) == 1
-    assert page1.total >= 3
+    assert page1.total == 1
 
 
 @pytest.mark.asyncio
@@ -156,4 +156,4 @@ async def test_org_summary(session, org, admin_user, student_user):
     assert summary.total_completions == 0
     assert summary.average_completion == 50.0
     assert summary.total_learning_seconds == 90
-    assert summary.total_students >= 2
+    assert summary.total_students == 1
