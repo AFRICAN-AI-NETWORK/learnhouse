@@ -4,7 +4,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 import { getTopStudents } from '@services/dashboard/students'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { Trophy, Star, Medal, Calendar, Download, ChevronDown, ChevronUp } from 'lucide-react'
+import { Trophy, Star, Medal, Calendar, Download } from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import Link from 'next/link'
 import jsPDF from 'jspdf'
@@ -16,12 +16,11 @@ function TopStudentsList() {
   const access_token = session?.data?.tokens?.access_token
 
   const [daysFilter, setDaysFilter] = useState<number | undefined>(undefined)
-  const [limit, setLimit] = useState<number>(5)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const { data, isLoading } = useSWR(
-    org ? [`top_students_all_${org.id}`, daysFilter, limit] : null,
-    () => getTopStudents(org.id, access_token, limit, daysFilter)
+    org ? [`top_students_${org.id}`, 5, daysFilter] : null,
+    () => getTopStudents(org.id, access_token, 5, daysFilter)
   )
 
   const formatTime = (seconds: number) => {
@@ -173,28 +172,6 @@ function TopStudentsList() {
           </Link>
         ))}
       </div>
-      
-      {sortedStudents.length >= 5 && (
-        <div className="mt-6 flex justify-center">
-          {limit === 5 ? (
-            <button
-              onClick={() => setLimit(1000)}
-              className="flex items-center space-x-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 px-4 py-2 rounded-full"
-            >
-              <span>View Full Leaderboard</span>
-              <ChevronDown size={16} />
-            </button>
-          ) : (
-            <button
-              onClick={() => setLimit(5)}
-              className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 px-4 py-2 rounded-full"
-            >
-              <span>Collapse Leaderboard</span>
-              <ChevronUp size={16} />
-            </button>
-          )}
-        </div>
-      )}
     </div>
   )
 }
