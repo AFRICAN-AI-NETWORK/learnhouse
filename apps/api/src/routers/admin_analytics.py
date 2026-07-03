@@ -42,7 +42,7 @@ async def api_list_org_students(
 async def api_get_top_org_students(
     request: Request,
     org_id: int,
-    limit: int = Query(default=5, ge=1, le=50),
+    limit: int = Query(default=5, ge=1, le=10000),
     days: Optional[int] = Query(default=None, ge=1),
     user=Depends(get_current_user),
     db_session=Depends(get_db_session),
