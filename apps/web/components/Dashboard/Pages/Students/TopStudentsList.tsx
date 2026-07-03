@@ -1,10 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
-import { getStudents } from '@services/dashboard/students'
+import { getTopStudents } from '@services/dashboard/students'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { Trophy, Star, Medal } from 'lucide-react'
+import { Trophy, Star, Medal, Calendar } from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import Link from 'next/link'
 
@@ -13,31 +13,41 @@ function TopStudentsList() {
   const session = useLHSession() as any
   const access_token = session?.data?.tokens?.access_token
 
-  // Fetch a larger first page to determine top students
+  const [daysFilter, setDaysFilter] = useState<number | undefined>(undefined)
+
   const { data, isLoading } = useSWR(
-    org ? [`top_students_${org.id}`] : null,
-    () => getStudents(org.id, access_token, '', 1, 100)
+    org ? [`top_students_all_${org.id}`, daysFilter] : null,
+    () => getTopStudents(org.id, access_token, 5, daysFilter)
   )
 
   if (isLoading || !data?.students) return null
 
-  // Sort by average progress and total points
-  const sortedStudents = [...data.students]
-    .sort((a: any, b: any) => {
-      if (b.average_progress !== a.average_progress) {
-        return b.average_progress - a.average_progress
-      }
-      return b.total_points - a.total_points
-    })
-    .slice(0, 5)
+  const sortedStudents = data.students
 
   if (sortedStudents.length === 0) return null
 
   return (
     <div className="bg-white rounded-xl shadow-xs dark:bg-[#13131a] dark:border dark:border-white/8 p-5">
-      <div className="flex items-center space-x-2 mb-4 text-gray-800 dark:text-white/90">
-        <Trophy className="text-yellow-500" size={24} />
-        <h2 className="text-lg font-bold">Top Students</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2 text-gray-800 dark:text-white/90">
+          <Trophy className="text-yellow-500" size={24} />
+          <h2 className="text-lg font-bold">Top Students</h2>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Calendar className="text-gray-400 dark:text-white/50" size={16} />
+          <select
+            value={daysFilter || ''}
+            onChange={(e) => setDaysFilter(e.target.value ? Number(e.target.value) : undefined)}
+            className="text-sm border border-gray-200 rounded-md py-1 px-2 bg-white text-gray-700 dark:bg-white/5 dark:border-white/10 dark:text-white/80 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+          >
+            <option value="">All Time</option>
+            <option value="30">Last 30 Days</option>
+            <option value="60">Last 60 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="180">Last 180 Days</option>
+          </select>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {sortedStudents.map((student: any, index: number) => (

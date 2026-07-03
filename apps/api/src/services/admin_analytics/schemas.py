@@ -56,6 +56,12 @@ class StudentListResponse(BaseModel):
     students: List[StudentSummary]
 
 
+class TopStudentsResponse(BaseModel):
+    """Top students list."""
+
+    students: List[StudentSummary]
+
+
 class StudentRoleInfo(BaseModel):
     role_id: int
     name: str

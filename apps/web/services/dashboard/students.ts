@@ -23,6 +23,24 @@ export async function getStudents(
   return res
 }
 
+export async function getTopStudents(
+  orgId: number,
+  access_token: string,
+  limit: number = 5,
+  days?: number
+) {
+  let url = `${getAPIUrl()}admin/analytics/orgs/${orgId}/students/top?limit=${limit}`
+  if (days) {
+    url += `&days=${days}`
+  }
+  const result = await fetch(
+    url,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  const res = await errorHandling(result)
+  return res
+}
+
 export async function getStudentDetail(
   orgId: number,
   userId: number,
