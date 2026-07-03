@@ -91,7 +91,7 @@ def _points_by_user(
         )
         .group_by(TrailStep.user_id)
     ).all()
-    return {user_id: float(total or 0) for user_id, total in rows}
+    return {user_id: round(float(total or 0), 1) for user_id, total in rows}
 
 
 def _time_by_user(
@@ -375,7 +375,7 @@ async def get_student_detail(
                 total_activities=total_acts,
                 completed_activities=done,
                 progress_percentage=pct,
-                points_earned=float(points_by_course.get(course.id, 0) or 0),
+                points_earned=round(float(points_by_course.get(course.id, 0) or 0), 1),
                 time_spent_seconds=int(time_by_course.get(course.id, 0) or 0),
                 is_certified=course.id in certified_course_ids,
                 started_at=started_by_course.get(course.id),
@@ -385,7 +385,7 @@ async def get_student_detail(
 
     avg_progress = round(sum(progresses) / len(progresses), 1) if progresses else 0.0
     total_time = int(sum(time_by_course.values()))
-    total_points = float(sum(points_by_course.values()))
+    total_points = round(float(sum(points_by_course.values())), 1)
     last_active = db_session.exec(
         select(func.max(TrailActivitySession.last_heartbeat_at)).where(
             TrailActivitySession.org_id == org_id,
@@ -523,7 +523,7 @@ async def get_student_course_detail(
         total_activities=total_activities,
         completed_activities=total_completed,
         progress_percentage=_progress_pct(total_completed, total_activities),
-        points_earned=total_points,
+        points_earned=round(total_points, 1),
         time_spent_seconds=total_time,
         chapters=list(chapters.values()),
     )
