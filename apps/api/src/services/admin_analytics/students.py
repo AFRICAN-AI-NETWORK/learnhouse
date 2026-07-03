@@ -175,7 +175,11 @@ async def list_org_students(
     members = (
         select(User)
         .join(UserOrganization, UserOrganization.user_id == User.id)
-        .where(UserOrganization.org_id == org_id)
+        .join(Role, UserOrganization.role_id == Role.id)
+        .where(
+            UserOrganization.org_id == org_id,
+            Role.name.ilike("user")
+        )
     )
     if search:
         like = f"%{search.strip()}%"
@@ -252,7 +256,12 @@ def _fetch_org_member(org_id: int, user_id: int, db_session: Session) -> User:
     user = db_session.exec(
         select(User)
         .join(UserOrganization, UserOrganization.user_id == User.id)
-        .where(UserOrganization.org_id == org_id, User.id == user_id)
+        .join(Role, UserOrganization.role_id == Role.id)
+        .where(
+            UserOrganization.org_id == org_id,
+            User.id == user_id,
+            Role.name.ilike("user")
+        )
     ).first()
     if not user:
         raise HTTPException(
@@ -529,7 +538,11 @@ async def get_org_analytics_summary(
     total_students = db_session.exec(
         select(func.count()).select_from(
             select(UserOrganization.user_id)
-            .where(UserOrganization.org_id == org_id)
+            .join(Role, UserOrganization.role_id == Role.id)
+            .where(
+                UserOrganization.org_id == org_id,
+                Role.name.ilike("user")
+            )
             .subquery()
         )
     ).one()
@@ -537,7 +550,14 @@ async def get_org_analytics_summary(
     course_totals = _course_activity_totals(org_id, db_session)
 
     runs = db_session.exec(
-        select(TrailRun.user_id, TrailRun.course_id).where(TrailRun.org_id == org_id)
+        select(TrailRun.user_id, TrailRun.course_id)
+        .join(UserOrganization, UserOrganization.user_id == TrailRun.user_id)
+        .join(Role, UserOrganization.role_id == Role.id)
+        .where(
+            TrailRun.org_id == org_id,
+            UserOrganization.org_id == org_id,
+            Role.name.ilike("user")
+        )
     ).all()
     completed = _completed_steps_by_user_course(
         org_id, list({user_id for user_id, _ in runs}) or [0], db_session
@@ -555,8 +575,13 @@ async def get_org_analytics_summary(
             total_completions += 1
 
     total_learning_seconds = db_session.exec(
-        select(func.sum(TrailActivitySession.seconds_spent)).where(
-            TrailActivitySession.org_id == org_id
+        select(func.sum(TrailActivitySession.seconds_spent))
+        .join(UserOrganization, UserOrganization.user_id == TrailActivitySession.user_id)
+        .join(Role, UserOrganization.role_id == Role.id)
+        .where(
+            TrailActivitySession.org_id == org_id,
+            UserOrganization.org_id == org_id,
+            Role.name.ilike("user")
         )
     ).first()
 
