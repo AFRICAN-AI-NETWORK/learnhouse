@@ -623,6 +623,7 @@ function ActivityClient(props: ActivityClientProps) {
                   handleMarkAsComplete(activity.activity_uuid, true)
                 }
               }}
+              onWatchSatisfied={() => setVideoWatchSatisfied(true)}
             />
           </Suspense>
         )
@@ -691,6 +692,7 @@ function ActivityClient(props: ActivityClientProps) {
     handleMarkAsComplete,
     isActivityComplete,
     trailData,
+    setVideoWatchSatisfied,
   ])
 
   // Navigate to an activity
@@ -1616,7 +1618,11 @@ function ActivityPageNavbar({
     course.course_uuid,
     trailData
   )
-  const requiresVideoWatch = false
+  const requiresVideoWatch =
+    activity.activity_type === 'TYPE_VIDEO' &&
+    activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
+    !videoWatchSatisfied &&
+    !activityComplete
 
   return (
     <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
