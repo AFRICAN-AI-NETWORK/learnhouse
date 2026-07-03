@@ -11,7 +11,7 @@ export async function getStudents(
   page: number = 1,
   pageSize: number = 25
 ) {
-  let url = `${getAPIUrl()}orgs/${orgId}/students?page=${page}&page_size=${pageSize}`
+  let url = `${getAPIUrl()}admin/analytics/orgs/${orgId}/students?page=${page}&page_size=${pageSize}`
   if (search) {
     url += `&search=${encodeURIComponent(search)}`
   }
@@ -29,7 +29,7 @@ export async function getStudentDetail(
   access_token: string
 ) {
   const result = await fetch(
-    `${getAPIUrl()}orgs/${orgId}/students/${userId}`,
+    `${getAPIUrl()}admin/analytics/orgs/${orgId}/students/${userId}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   const res = await errorHandling(result)
@@ -43,7 +43,7 @@ export async function getStudentCourseDetail(
   access_token: string
 ) {
   const result = await fetch(
-    `${getAPIUrl()}orgs/${orgId}/students/${userId}/courses/${courseId}`,
+    `${getAPIUrl()}admin/analytics/orgs/${orgId}/students/${userId}/courses/${courseId}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   const res = await errorHandling(result)
@@ -55,7 +55,7 @@ export async function getOrgAnalyticsSummary(
   access_token: string
 ) {
   const result = await fetch(
-    `${getAPIUrl()}orgs/${orgId}/analytics/summary`,
+    `${getAPIUrl()}admin/analytics/orgs/${orgId}/analytics/summary`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   const res = await errorHandling(result)
