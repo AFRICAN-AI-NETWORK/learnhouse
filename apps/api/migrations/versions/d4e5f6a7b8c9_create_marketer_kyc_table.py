@@ -50,7 +50,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "id_number_hash", sqlmodel.sql.sqltypes.AutoString(length=64), nullable=False
+            "id_number_hash",
+            sqlmodel.sql.sqltypes.AutoString(length=64),
+            nullable=False,
         ),
         sa.Column(
             "document_front_url",
@@ -81,9 +83,7 @@ def upgrade() -> None:
         sa.Column("rejection_reason", sa.Text(), nullable=True),
         sa.Column("reviewed_by_user_id", sa.BigInteger(), nullable=True),
         sa.Column("reviewed_at", sa.DateTime(), nullable=True),
-        sa.Column(
-            "submission_count", sa.Integer(), nullable=False, server_default="0"
-        ),
+        sa.Column("submission_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("creation_date", sa.DateTime(), nullable=False),
         sa.Column("update_date", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["marketer_id"], ["marketer.id"], ondelete="CASCADE"),

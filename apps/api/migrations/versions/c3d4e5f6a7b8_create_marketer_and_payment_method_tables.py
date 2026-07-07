@@ -62,9 +62,7 @@ def upgrade() -> None:
         sa.Column("approved_by_user_id", sa.BigInteger(), nullable=True),
         sa.Column("approved_at", sa.DateTime(), nullable=True),
         sa.Column("rejection_reason", sa.Text(), nullable=True),
-        sa.Column(
-            "needs_review", sa.Boolean(), nullable=False, server_default="false"
-        ),
+        sa.Column("needs_review", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("notes", sa.Text(), nullable=True),
         sa.Column(
             "total_students_referred",
@@ -75,9 +73,7 @@ def upgrade() -> None:
         sa.Column(
             "total_courses_sold", sa.Integer(), nullable=False, server_default="0"
         ),
-        sa.Column(
-            "total_earned_usd", sa.Float(), nullable=False, server_default="0.0"
-        ),
+        sa.Column("total_earned_usd", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("total_paid_usd", sa.Float(), nullable=False, server_default="0.0"),
         sa.Column("creation_date", sa.DateTime(), nullable=False),
         sa.Column("update_date", sa.DateTime(), nullable=False),
@@ -112,7 +108,9 @@ def upgrade() -> None:
             ),
             nullable=False,
         ),
-        sa.Column("currency", sqlmodel.sql.sqltypes.AutoString(length=3), nullable=False),
+        sa.Column(
+            "currency", sqlmodel.sql.sqltypes.AutoString(length=3), nullable=False
+        ),
         sa.Column(
             "country_code", sqlmodel.sql.sqltypes.AutoString(length=2), nullable=False
         ),
