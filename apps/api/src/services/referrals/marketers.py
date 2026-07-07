@@ -326,9 +326,7 @@ async def approve_marketer(
     db_session.commit()
     db_session.refresh(marketer)
 
-    referral_code = await generate_referral_code_for_marketer(
-        marketer.id, db_session
-    )
+    referral_code = await generate_referral_code_for_marketer(marketer.id, db_session)
 
     invalidate_marketer_cache(marketer.user_id, org_id)
 
@@ -651,9 +649,7 @@ async def get_marketer_dashboard(
     counts = {row[0]: row[2] for row in commission_rows}
 
     total_earned = sum(
-        amount
-        for st, amount in sums.items()
-        if st != CommissionStatus.FORFEITED
+        amount for st, amount in sums.items() if st != CommissionStatus.FORFEITED
     )
     total_courses_sold = sum(
         count for st, count in counts.items() if st != CommissionStatus.FORFEITED
@@ -749,9 +745,7 @@ async def get_marketer_dashboard(
         "monthly_revenue": monthly,
         "recent_students": recent["students"],
         "payout_info": {
-            "eligible_balance_usd": round(
-                sums.get(CommissionStatus.ELIGIBLE, 0.0), 2
-            ),
+            "eligible_balance_usd": round(sums.get(CommissionStatus.ELIGIBLE, 0.0), 2),
             "last_payout_date": last_payout.completion_date if last_payout else None,
             "minimum_payout_usd": MARKETER_MINIMUM_PAYOUT_USD,
             "payment_method": payment_method_summary,
@@ -825,17 +819,13 @@ async def get_marketer_students(
     if course_ids:
         from src.db.courses.courses import Course
 
-        courses = db_session.exec(
-            select(Course).where(Course.id.in_(course_ids))
-        ).all()
+        courses = db_session.exec(select(Course).where(Course.id.in_(course_ids))).all()
         course_map = {c.id: c for c in courses}
 
     students = []
     for tracking in tracking_records:
         student = user_map.get(tracking.referred_user_id)
-        student_commissions = commissions_by_student.get(
-            tracking.referred_user_id, []
-        )
+        student_commissions = commissions_by_student.get(tracking.referred_user_id, [])
         courses_purchased = [
             {
                 "course_id": c.course_id,
@@ -854,7 +844,9 @@ async def get_marketer_students(
             {
                 "student_id": tracking.referred_user_id,
                 "name": (
-                    f"{student.first_name} {student.last_name}" if student else "Unknown"
+                    f"{student.first_name} {student.last_name}"
+                    if student
+                    else "Unknown"
                 ),
                 "email": student.email if student else "unknown",
                 "signup_date": tracking.signup_date,
