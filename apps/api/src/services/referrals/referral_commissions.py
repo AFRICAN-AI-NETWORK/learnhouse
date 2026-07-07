@@ -12,6 +12,7 @@ from sqlmodel import Session, select, and_, func
 from src.db.referrals.referral_commissions import (
     ReferralCommission,
     CommissionStatus,
+    CommissionType,
 )
 from src.db.referrals.referral_tracking import ReferralTracking
 from src.db.referrals.referral_codes import ReferralCode
@@ -21,7 +22,9 @@ logger = logging.getLogger(__name__)
 
 # Configuration constants
 REFUND_PERIOD_DAYS = 14
-COMMISSION_AMOUNT_USD = 4.00  # TODO: Move to org-level config for multi-tenant support
+COMMISSION_AMOUNT_USD = 4.00  # Standard referrer rate; marketers get their
+# per-row commission_rate_usd via get_commission_amount_for_code()
+ELIGIBILITY_CHUNK_SIZE = 500  # Rows per batch in the nightly eligibility job
 
 
 async def get_commission_by_payment(
@@ -88,6 +91,24 @@ async def create_commission_for_payment(
     # Calculate refund period expiration
     refund_expiration = payment_completion_date + timedelta(days=REFUND_PERIOD_DAYS)
 
+    # Resolve the commission amount for this referral code: active marketers
+    # earn their per-row rate (default $7.70), standard referrers earn $4.00.
+    # Falls back to the standard rate on any failure (MKTR_103 — logged only).
+    try:
+        # Lazy import to avoid circular dependency
+        from src.services.referrals.marketers import get_commission_amount_for_code
+
+        commission_amount, commission_type = await get_commission_amount_for_code(
+            referral_code_id, db_session
+        )
+    except Exception as e:
+        logger.error(
+            f"MKTR_103: Commission amount calculation failed for referral code "
+            f"{referral_code_id}: {e}. Falling back to standard ${COMMISSION_AMOUNT_USD}"
+        )
+        commission_amount = COMMISSION_AMOUNT_USD
+        commission_type = CommissionType.STANDARD
+
     # Create commission
     commission = ReferralCommission(
         org_id=org_id,
@@ -96,7 +117,8 @@ async def create_commission_for_payment(
         payment_user_id=payment_user_id,
         course_id=course_id,
         referral_code_id=referral_code_id,
-        commission_amount=COMMISSION_AMOUNT_USD,
+        commission_amount=commission_amount,
+        commission_type=commission_type,
         status=CommissionStatus.PENDING,
         payment_completion_date=payment_completion_date,
         refund_period_expiration_date=refund_expiration,
@@ -109,7 +131,8 @@ async def create_commission_for_payment(
     db_session.refresh(commission)
 
     logger.info(
-        f"Created commission ${COMMISSION_AMOUNT_USD} for referrer {referrer_user_id} from payment {payment_user_id}"
+        f"Created {commission_type.value} commission ${commission_amount} "
+        f"for referrer {referrer_user_id} from payment {payment_user_id}"
     )
 
     return commission
@@ -191,53 +214,114 @@ async def update_pending_commissions_to_eligible(db_session: Session) -> int:
         Number of commissions updated
     """
     now = datetime.now()
+    total_updated = 0
+    # Per-user totals across all chunks — used for the marketer digest email
+    digest_totals: dict = defaultdict(float)
 
-    # Query pending commissions with expired refund period
-    statement = select(ReferralCommission).where(
-        and_(
-            ReferralCommission.status == CommissionStatus.PENDING,
-            ReferralCommission.refund_period_expiration_date <= now,
+    # Process in fixed-size chunks so memory stays O(1) regardless of how many
+    # commissions mature on the same day. Each chunk commits atomically; if the
+    # job is interrupted, the next run picks up remaining rows because
+    # processed commissions are no longer PENDING.
+    while True:
+        statement = (
+            select(ReferralCommission)
+            .where(
+                and_(
+                    ReferralCommission.status == CommissionStatus.PENDING,
+                    ReferralCommission.refund_period_expiration_date <= now,
+                )
+            )
+            .limit(ELIGIBILITY_CHUNK_SIZE)
         )
-    )
-    commissions = db_session.exec(statement).all()
+        commissions = db_session.exec(statement).all()
 
-    if not commissions:
-        logger.info("No pending commissions to update")
-        return 0
+        if not commissions:
+            break
 
-    # Group commissions by referrer_user_id and sum amounts (bulk optimization)
-    user_balance_updates = defaultdict(float)
-    for commission in commissions:
-        user_balance_updates[commission.referrer_user_id] += (
-            commission.commission_amount
-        )
-
-    # Update all commission statuses in memory (batch commit)
-    for commission in commissions:
-        commission.status = CommissionStatus.ELIGIBLE
-        commission.update_date = now
-        db_session.add(commission)
-
-    # Bulk update user balances with row locking to prevent race conditions
-    for user_id, total_amount in user_balance_updates.items():
-        # Use SELECT FOR UPDATE to lock the row during update
-        user_statement = select(User).where(User.id == user_id).with_for_update()
-        user = db_session.exec(user_statement).first()
-        if user:
-            user.referral_commission_balance += total_amount
-            db_session.add(user)
-            logger.info(
-                f"Added ${total_amount:.2f} to user {user.id} balance (bulk update)"
+        # Group commissions by referrer_user_id and sum amounts (bulk optimization)
+        user_balance_updates = defaultdict(float)
+        for commission in commissions:
+            user_balance_updates[commission.referrer_user_id] += (
+                commission.commission_amount
             )
 
-    db_session.commit()
+        # Update all commission statuses in memory (batch commit)
+        for commission in commissions:
+            commission.status = CommissionStatus.ELIGIBLE
+            commission.update_date = now
+            db_session.add(commission)
 
-    updated_count = len(commissions)
-    logger.info(
-        f"Updated {updated_count} pending commissions to eligible (optimized bulk update)"
-    )
+        # Bulk update user balances with row locking to prevent race conditions
+        for user_id, total_amount in user_balance_updates.items():
+            # Use SELECT FOR UPDATE to lock the row during update
+            user_statement = select(User).where(User.id == user_id).with_for_update()
+            user = db_session.exec(user_statement).first()
+            if user:
+                user.referral_commission_balance += total_amount
+                db_session.add(user)
+                logger.info(
+                    f"Added ${total_amount:.2f} to user {user.id} balance (bulk update)"
+                )
 
-    return updated_count
+        db_session.commit()
+        total_updated += len(commissions)
+        for user_id, total_amount in user_balance_updates.items():
+            digest_totals[user_id] += total_amount
+
+        # Last chunk was partial — nothing left to fetch
+        if len(commissions) < ELIGIBILITY_CHUNK_SIZE:
+            break
+
+    if total_updated == 0:
+        logger.info("No pending commissions to update")
+    else:
+        logger.info(
+            f"Updated {total_updated} pending commissions to eligible "
+            f"(chunked bulk update, {ELIGIBILITY_CHUNK_SIZE}/batch)"
+        )
+        _send_marketer_eligible_digests(digest_totals, db_session)
+
+    return total_updated
+
+
+def _send_marketer_eligible_digests(digest_totals: dict, db_session: Session) -> None:
+    """
+    Daily digest email to active marketers whose commissions became ELIGIBLE.
+    Batch-fetched; never raises — email failure must not affect the job.
+    """
+    if not digest_totals:
+        return
+    try:
+        from src.db.referrals.marketers import Marketer, MarketerStatus
+        from src.services.referrals.marketer_emails import (
+            send_marketer_commission_eligible_email,
+        )
+
+        marketers = db_session.exec(
+            select(Marketer).where(
+                and_(
+                    Marketer.user_id.in_(list(digest_totals.keys())),
+                    Marketer.status == MarketerStatus.ACTIVE,
+                )
+            )
+        ).all()
+        if not marketers:
+            return
+
+        marketer_user_ids = [m.user_id for m in marketers]
+        users = db_session.exec(
+            select(User).where(User.id.in_(marketer_user_ids))
+        ).all()
+
+        for user in users:
+            try:
+                send_marketer_commission_eligible_email(
+                    user.email, user.username, round(digest_totals[user.id], 2)
+                )
+            except Exception as e:
+                logger.error(f"Failed to send eligible digest to user {user.id}: {e}")
+    except Exception as e:
+        logger.error(f"Marketer eligible digest step failed: {e}")
 
 
 async def get_commission_balance(
@@ -257,38 +341,41 @@ async def get_commission_balance(
     """
     # Note: No RBAC check - all authenticated users can view their commission balance
 
-    # Get user
-    user_statement = select(User).where(User.id == current_user.id)
-    user = db_session.exec(user_statement).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Calculate eligible for payout (status = ELIGIBLE)
-    eligible_statement = select(func.sum(ReferralCommission.commission_amount)).where(
-        and_(
-            ReferralCommission.referrer_user_id == current_user.id,
-            ReferralCommission.status == CommissionStatus.ELIGIBLE,
+    # Single grouped query for ELIGIBLE + PENDING sums, joined with the user's
+    # maintained balance — 1 DB round-trip instead of 3 per balance check
+    grouped_statement = (
+        select(
+            ReferralCommission.status,
+            func.coalesce(func.sum(ReferralCommission.commission_amount), 0.0),
+            User.referral_commission_balance,
         )
-    )
-    eligible_amount = db_session.exec(eligible_statement).first() or 0.0
-
-    # Calculate pending (status = PENDING)
-    pending_statement = select(func.sum(ReferralCommission.commission_amount)).where(
-        and_(
-            ReferralCommission.referrer_user_id == current_user.id,
-            ReferralCommission.status == CommissionStatus.PENDING,
+        .join(User, User.id == ReferralCommission.referrer_user_id)
+        .where(
+            and_(
+                ReferralCommission.referrer_user_id == current_user.id,
+                ReferralCommission.status.in_(
+                    [CommissionStatus.ELIGIBLE, CommissionStatus.PENDING]
+                ),
+            )
         )
+        .group_by(ReferralCommission.status, User.referral_commission_balance)
     )
-    pending_amount = db_session.exec(pending_statement).first() or 0.0
+    rows = db_session.exec(grouped_statement).all()
 
-    # Total balance from user record
-    total_balance = user.referral_commission_balance
+    amounts = {status: amount for status, amount, _ in rows}
+    total_balance = rows[0][2] if rows else None
+
+    if total_balance is None:
+        # No ELIGIBLE/PENDING commissions — fall back to the user row
+        user = db_session.exec(select(User).where(User.id == current_user.id)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        total_balance = user.referral_commission_balance
 
     return {
         "total_balance": round(total_balance, 2),
-        "eligible_for_payout": round(eligible_amount, 2),
-        "pending": round(pending_amount, 2),
+        "eligible_for_payout": round(amounts.get(CommissionStatus.ELIGIBLE, 0.0), 2),
+        "pending": round(amounts.get(CommissionStatus.PENDING, 0.0), 2),
         "currency": "USD",
     }
 
