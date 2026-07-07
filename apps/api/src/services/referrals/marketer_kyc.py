@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select, and_
 
@@ -78,9 +78,7 @@ async def upload_kyc_document(
         )
 
     extension = KYC_ALLOWED_CONTENT_TYPES[content_type]
-    storage_key = (
-        f"marketer-kyc/{org_id}/{marketer_id}/{uuid4()}_{kind}.{extension}"
-    )
+    storage_key = f"marketer-kyc/{org_id}/{marketer_id}/{uuid4()}_{kind}.{extension}"
 
     config = get_learnhouse_config()
     content_delivery = config.hosting_config.content_delivery.type
@@ -149,10 +147,14 @@ async def submit_kyc(
         MKTR_203 back image missing for two-sided documents
     """
     # Back image is required for NATIONAL_ID and DRIVERS_LICENSE
-    if document_type in (
-        KYCDocumentType.NATIONAL_ID,
-        KYCDocumentType.DRIVERS_LICENSE,
-    ) and not back_key:
+    if (
+        document_type
+        in (
+            KYCDocumentType.NATIONAL_ID,
+            KYCDocumentType.DRIVERS_LICENSE,
+        )
+        and not back_key
+    ):
         raise marketer_error(
             status.HTTP_400_BAD_REQUEST,
             "MKTR_203",
@@ -300,9 +302,7 @@ async def reject_kyc(
                 send_marketer_kyc_rejected_email,
             )
 
-            attempts_remaining = max(
-                0, MAX_KYC_SUBMISSIONS - kyc.submission_count
-            )
+            attempts_remaining = max(0, MAX_KYC_SUBMISSIONS - kyc.submission_count)
             send_marketer_kyc_rejected_email(
                 user.email, user.username, reason, attempts_remaining
             )
