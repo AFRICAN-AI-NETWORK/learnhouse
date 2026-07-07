@@ -422,29 +422,55 @@ class TestUpdatePendingCommissionsToEligible:
 
 
 class TestGetCommissionBalance:
-    """Test commission balance retrieval"""
+    """Test commission balance retrieval (single grouped query)"""
+
+    @staticmethod
+    def _make_user(db_session, balance=0.0):
+        user = User(
+            username="balanceuser",
+            first_name="Bal",
+            last_name="User",
+            email="balance@example.com",
+            user_uuid="user_balance",
+            referral_commission_balance=balance,
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+
+    @staticmethod
+    def _add_commission(db_session, user_id, amount, status, payment_user_id):
+        now = datetime.now()
+        commission = ReferralCommission(
+            org_id=100,
+            referrer_user_id=user_id,
+            referred_user_id=user_id,
+            payment_user_id=payment_user_id,
+            referral_code_id=1,
+            commission_amount=amount,
+            status=status,
+            payment_completion_date=now,
+            refund_period_expiration_date=now,
+        )
+        db_session.add(commission)
+        db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_get_balance_breakdown(self):
+    async def test_get_balance_breakdown(self, test_db_session):
         """Test getting balance breakdown for user"""
-        mock_request = Mock()
-        mock_session = Mock()
-        mock_user = Mock(spec=PublicUser)
-        mock_user.id = 500
-
-        mock_db_user = Mock(spec=User)
-        mock_db_user.referral_commission_balance = 50.0
-
-        # Mock: user, eligible sum, pending sum
-        mock_session.exec.return_value.first.side_effect = [
-            mock_db_user,
-            40.0,  # Eligible
-            10.0,  # Pending
-        ]
-
-        result = await get_commission_balance(
-            mock_request, 100, mock_user, mock_session
+        user = self._make_user(test_db_session, balance=50.0)
+        self._add_commission(
+            test_db_session, user.id, 40.0, CommissionStatus.ELIGIBLE, 1
         )
+        self._add_commission(
+            test_db_session, user.id, 10.0, CommissionStatus.PENDING, 2
+        )
+
+        mock_user = Mock(spec=PublicUser)
+        mock_user.id = user.id
+
+        result = await get_commission_balance(Mock(), 100, mock_user, test_db_session)
 
         assert result["total_balance"] == 50.0
         assert result["eligible_for_payout"] == 40.0
@@ -452,42 +478,27 @@ class TestGetCommissionBalance:
         assert result["currency"] == "USD"
 
     @pytest.mark.asyncio
-    async def test_balance_zero_for_new_user(self):
+    async def test_balance_zero_for_new_user(self, test_db_session):
         """Test that new users have zero balance"""
-        mock_request = Mock()
-        mock_session = Mock()
+        user = self._make_user(test_db_session, balance=0.0)
+
         mock_user = Mock(spec=PublicUser)
-        mock_user.id = 500
+        mock_user.id = user.id
 
-        mock_db_user = Mock(spec=User)
-        mock_db_user.referral_commission_balance = 0.0
-
-        mock_session.exec.return_value.first.side_effect = [
-            mock_db_user,
-            0.0,
-            0.0,
-        ]
-
-        result = await get_commission_balance(
-            mock_request, 100, mock_user, mock_session
-        )
+        result = await get_commission_balance(Mock(), 100, mock_user, test_db_session)
 
         assert result["total_balance"] == 0.0
         assert result["eligible_for_payout"] == 0.0
         assert result["pending"] == 0.0
 
     @pytest.mark.asyncio
-    async def test_user_not_found_raises_404(self):
+    async def test_user_not_found_raises_404(self, test_db_session):
         """Test that non-existent user raises 404"""
-        mock_request = Mock()
-        mock_session = Mock()
         mock_user = Mock(spec=PublicUser)
         mock_user.id = 999
 
-        mock_session.exec.return_value.first.return_value = None
-
         with pytest.raises(HTTPException) as exc_info:
-            await get_commission_balance(mock_request, 100, mock_user, mock_session)
+            await get_commission_balance(Mock(), 100, mock_user, test_db_session)
 
         assert exc_info.value.status_code == 404
 
