@@ -94,9 +94,7 @@ def _require_admin(current_user, org_id: int, db_session: Session) -> None:
         UserOrganization.role_id.in_([1, 2]),  # Admin, Maintainer
     )
     if not db_session.exec(statement).first():
-        raise HTTPException(
-            status_code=403, detail="Admin or Maintainer role required"
-        )
+        raise HTTPException(status_code=403, detail="Admin or Maintainer role required")
 
 
 async def _require_marketer(
@@ -123,9 +121,7 @@ async def require_active_marketer(
     """RBAC guard: caller must have an ACTIVE marketer row (HTTP 403 otherwise)"""
     marketer = await _require_marketer(current_user, org_id, db_session)
     if marketer.status != MarketerStatus.ACTIVE:
-        raise marketer_error(
-            403, "MKTR_402", "Your marketer account is not active yet"
-        )
+        raise marketer_error(403, "MKTR_402", "Your marketer account is not active yet")
     return marketer
 
 
@@ -177,9 +173,7 @@ async def api_get_my_marketer_profile(
         else None
     )
     profile["referral_code"] = referral_code.code if referral_code else None
-    profile["referral_link"] = (
-        referral_code.referral_link if referral_code else None
-    )
+    profile["referral_link"] = referral_code.referral_link if referral_code else None
     return profile
 
 
@@ -204,9 +198,7 @@ async def api_get_marketer_students(
 ):
     """Paginated list of referred students with per-course commissions"""
     await require_active_marketer(current_user, org_id, db_session)
-    return await get_marketer_students(
-        current_user.id, org_id, page, limit, db_session
-    )
+    return await get_marketer_students(current_user.id, org_id, page, limit, db_session)
 
 
 @router.get("/{org_id}/monthly-revenue")
@@ -381,9 +373,7 @@ async def api_request_marketer_payout(
     )
 
 
-@router.get(
-    "/{org_id}/payout-history", response_model=list[ReferrerPayoutRequestRead]
-)
+@router.get("/{org_id}/payout-history", response_model=list[ReferrerPayoutRequestRead])
 async def api_get_marketer_payout_history(
     request: Request,
     org_id: int,
@@ -600,9 +590,7 @@ async def api_admin_kyc_queue(
                 "document_type": kyc.document_type,
                 "submitted_at": kyc.update_date,
                 "submission_count": kyc.submission_count,
-                "document_front_url": generate_kyc_document_url(
-                    kyc.document_front_url
-                ),
+                "document_front_url": generate_kyc_document_url(kyc.document_front_url),
                 "document_back_url": (
                     generate_kyc_document_url(kyc.document_back_url)
                     if kyc.document_back_url
