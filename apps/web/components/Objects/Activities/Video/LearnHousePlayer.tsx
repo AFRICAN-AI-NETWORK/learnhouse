@@ -18,6 +18,7 @@ interface LearnHousePlayerProps {
   enforceLinearPlayback?: boolean
   isCompleted?: boolean
   activityId?: string
+  onWatchSatisfied?: () => void
 }
 
 const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
@@ -28,6 +29,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
   enforceLinearPlayback = false,
   isCompleted = false,
   activityId,
+  onWatchSatisfied,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<Plyr | null>(null)
@@ -131,6 +133,15 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
         ) {
           hasCompletedRef.current = true
           onComplete?.()
+        }
+
+        // Trigger onWatchSatisfied for the fallback when 2 minutes are remaining
+        // (or 80% completion for short videos)
+        if (duration > 0) {
+          const fallbackThreshold = Math.min(120, duration * 0.2)
+          if (currentTime >= duration - fallbackThreshold) {
+            onWatchSatisfied?.()
+          }
         }
 
         // Only update max watched time if progressing naturally (not seeking forward)

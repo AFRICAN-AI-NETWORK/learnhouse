@@ -167,6 +167,7 @@ async def list_org_students(
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 25,
+    sort_by: Optional[str] = None,
 ) -> StudentListResponse:
     """Paginated, searchable list of org members with their progress metrics."""
     await verify_student_dashboard_access(current_user, db_session)
@@ -196,9 +197,16 @@ async def list_org_students(
 
     total = db_session.exec(select(func.count()).select_from(members.subquery())).one()
 
-    users = db_session.exec(
-        members.order_by(User.id).offset((page - 1) * page_size).limit(page_size)
-    ).all()
+    is_progress_sort = sort_by and sort_by.startswith("progress_")
+
+    if is_progress_sort:
+        # Fetch all matching users to sort them in memory
+        users = db_session.exec(members).all()
+    else:
+        # Paginate at DB level
+        users = db_session.exec(
+            members.order_by(User.id).offset((page - 1) * page_size).limit(page_size)
+        ).all()
 
     if not users:
         return StudentListResponse(
@@ -248,6 +256,14 @@ async def list_org_students(
                 last_active=last_active.get(user.id),
             )
         )
+
+    if is_progress_sort:
+        students.sort(
+            key=lambda s: s.average_progress, reverse=(sort_by == "progress_desc")
+        )
+        start = (page - 1) * page_size
+        end = start + page_size
+        students = students[start:end]
 
     return StudentListResponse(
         total=total, page=page, page_size=page_size, students=students

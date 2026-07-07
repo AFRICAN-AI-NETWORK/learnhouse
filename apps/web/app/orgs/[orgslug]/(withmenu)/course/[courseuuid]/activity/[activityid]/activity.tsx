@@ -623,6 +623,7 @@ function ActivityClient(props: ActivityClientProps) {
                   handleMarkAsComplete(activity.activity_uuid, true)
                 }
               }}
+              onWatchSatisfied={() => setVideoWatchSatisfied(true)}
             />
           </Suspense>
         )
@@ -691,6 +692,7 @@ function ActivityClient(props: ActivityClientProps) {
     handleMarkAsComplete,
     isActivityComplete,
     trailData,
+    setVideoWatchSatisfied,
   ])
 
   // Navigate to an activity

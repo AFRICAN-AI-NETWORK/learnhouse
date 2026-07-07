@@ -29,12 +29,19 @@ async def api_list_org_students(
     search: Optional[str] = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
+    sort_by: Optional[str] = Query(default=None),
     user=Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> StudentListResponse:
     """List all students in an organization with their progress metrics."""
     return await list_org_students(
-        org_id, user, db_session, search=search, page=page, page_size=page_size
+        org_id,
+        user,
+        db_session,
+        search=search,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
     )
 
 
