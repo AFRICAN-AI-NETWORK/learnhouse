@@ -16,10 +16,12 @@ from config.config import get_learnhouse_config
 
 logger = logging.getLogger(__name__)
 
-REDIS_ENABLED = os.getenv("REDIS_ENABLED", "true").lower() in ("true", "1", "yes")
-
 _redis_client: Optional[redis.Redis] = None
 _initialized = False
+
+
+def _redis_enabled() -> bool:
+    return os.getenv("REDIS_ENABLED", "true").lower() in ("true", "1", "yes")
 
 
 def get_redis_client() -> Optional[redis.Redis]:
@@ -29,14 +31,14 @@ def get_redis_client() -> Optional[redis.Redis]:
     """
     global _redis_client, _initialized
 
+    if not _redis_enabled():
+        logger.info("Redis disabled via REDIS_ENABLED env var")
+        return None
+
     if _initialized:
         return _redis_client
 
     _initialized = True
-
-    if not REDIS_ENABLED:
-        logger.info("Redis disabled via REDIS_ENABLED env var")
-        return None
 
     _config = get_learnhouse_config()
     redis_url = (
