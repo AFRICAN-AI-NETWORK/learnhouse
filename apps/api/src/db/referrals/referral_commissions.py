@@ -19,10 +19,19 @@ class CommissionStatus(str, Enum):
     PENDING_REVIEW = "pending_review"  # Flagged for fraud review
 
 
+class CommissionType(str, Enum):
+    """Origin of the commission rate — lets analytics separate marketer
+    earnings from standard referrer earnings without joining Marketer"""
+
+    STANDARD = "standard"  # Standard referrer ($4.00)
+    MARKETER = "marketer"  # Active marketer (commission_rate_usd, default $7.70)
+
+
 class ReferralCommissionBase(SQLModel):
     """Base model for referral commissions"""
 
     commission_amount: float = Field(default=4.00)  # Fixed $4 USD commission
+    commission_type: CommissionType = Field(default=CommissionType.STANDARD)
     status: CommissionStatus = Field(default=CommissionStatus.PENDING)
     payment_completion_date: Optional[datetime] = None
     refund_period_expiration_date: Optional[datetime] = None
@@ -39,6 +48,17 @@ class ReferralCommission(ReferralCommissionBase, table=True):
         Index("idx_referralcommission_referred", "referred_user_id"),
         Index("idx_referralcommission_org", "org_id"),
         Index("idx_referralcommission_payment_user", "payment_user_id"),
+        # Nightly eligibility job scans (status, refund_period_expiration_date)
+        Index(
+            "idx_commission_refund_expiry", "status", "refund_period_expiration_date"
+        ),
+        # Admin analytics: marketer vs standard earnings per referrer
+        Index(
+            "idx_commission_type_referrer",
+            "referrer_user_id",
+            "commission_type",
+            "status",
+        ),
         # Unique constraint to prevent duplicate commissions
         Index(
             "idx_referralcommission_unique",
@@ -111,6 +131,7 @@ class ReferralCommissionCreate(SQLModel):
     course_id: Optional[int] = None
     referral_code_id: int
     commission_amount: float = 4.00
+    commission_type: CommissionType = CommissionType.STANDARD
     payment_completion_date: datetime
     refund_period_expiration_date: datetime
 

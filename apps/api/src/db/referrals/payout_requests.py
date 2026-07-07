@@ -36,6 +36,8 @@ class ReferrerPayoutRequestBase(SQLModel):
     request_date: datetime = Field(default_factory=datetime.now)
     completion_date: Optional[datetime] = None
     failure_reason: Optional[str] = Field(default=None, sa_column=Column(Text))
+    retry_count: int = Field(default=0)
+    last_retry_at: Optional[datetime] = None
 
 
 class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
@@ -45,6 +47,7 @@ class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
     __table_args__ = (
         Index("idx_payoutrequest_referrer_status", "referrer_user_id", "status"),
         Index("idx_payoutrequest_org", "org_id"),
+        Index("idx_payout_status", "status"),
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -94,6 +97,8 @@ class ReferrerPayoutRequestUpdate(SQLModel):
     converted_amount: Optional[float] = None
     completion_date: Optional[datetime] = None
     failure_reason: Optional[str] = None
+    retry_count: Optional[int] = None
+    last_retry_at: Optional[datetime] = None
 
 
 class BankDetails(SQLModel):
