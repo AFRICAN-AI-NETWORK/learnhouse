@@ -180,7 +180,7 @@ async def list_org_students(
         .join(Role, UserOrganization.role_id == Role.id)
         .where(
             UserOrganization.org_id == org_id,
-            or_(Role.name.ilike("user"), Role.name.ilike("student"))
+            or_(Role.name.ilike("user"), Role.name.ilike("student")),
         )
     )
     if search:
@@ -262,7 +262,7 @@ def _fetch_org_member(org_id: int, user_id: int, db_session: Session) -> User:
         .where(
             UserOrganization.org_id == org_id,
             User.id == user_id,
-            or_(Role.name.ilike("user"), Role.name.ilike("student"))
+            or_(Role.name.ilike("user"), Role.name.ilike("student")),
         )
     ).first()
     if not user:
@@ -543,7 +543,7 @@ async def get_org_analytics_summary(
             .join(Role, UserOrganization.role_id == Role.id)
             .where(
                 UserOrganization.org_id == org_id,
-                or_(Role.name.ilike("user"), Role.name.ilike("student"))
+                or_(Role.name.ilike("user"), Role.name.ilike("student")),
             )
             .subquery()
         )
@@ -558,7 +558,7 @@ async def get_org_analytics_summary(
         .where(
             TrailRun.org_id == org_id,
             UserOrganization.org_id == org_id,
-            or_(Role.name.ilike("user"), Role.name.ilike("student"))
+            or_(Role.name.ilike("user"), Role.name.ilike("student")),
         )
     ).all()
     completed = _completed_steps_by_user_course(
@@ -578,12 +578,14 @@ async def get_org_analytics_summary(
 
     total_learning_seconds = db_session.exec(
         select(func.sum(TrailActivitySession.seconds_spent))
-        .join(UserOrganization, UserOrganization.user_id == TrailActivitySession.user_id)
+        .join(
+            UserOrganization, UserOrganization.user_id == TrailActivitySession.user_id
+        )
         .join(Role, UserOrganization.role_id == Role.id)
         .where(
             TrailActivitySession.org_id == org_id,
             UserOrganization.org_id == org_id,
-            or_(Role.name.ilike("user"), Role.name.ilike("student"))
+            or_(Role.name.ilike("user"), Role.name.ilike("student")),
         )
     ).first()
 
@@ -615,7 +617,7 @@ async def get_top_org_students(
         .join(Role, UserOrganization.role_id == Role.id)
         .where(
             UserOrganization.org_id == org_id,
-            or_(Role.name.ilike("user"), Role.name.ilike("student"))
+            or_(Role.name.ilike("user"), Role.name.ilike("student")),
         )
     )
 

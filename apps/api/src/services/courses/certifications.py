@@ -483,9 +483,10 @@ async def check_course_completion_and_create_certificate(
     if sync_course_trail_run_completion_status(user_id, course_id, db_session):
         # Check if user is verified before issuing a certificate
         from src.db.users import User
+
         statement = select(User).where(User.id == user_id)
         user = db_session.exec(statement).first()
-        
+
         # If user doesn't exist or isn't email_verified, do not generate certificate
         if not user or not user.email_verified:
             return False
