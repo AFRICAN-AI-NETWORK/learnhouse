@@ -248,7 +248,7 @@ def mock_payments_config(db_session: Session, mock_org: Organization):
         org_id=mock_org.id,
         enabled=True,  # Required NOT NULL
         active=True,  # Required NOT NULL
-        provider=PaymentProviderEnum.PAYSTACK,  # Required NOT NULL
+        provider=PaymentProviderEnum.FLUTTERWAVE,  # Required NOT NULL
         provider_specific_id="test_provider_id",
         provider_config={"test_key": "test_value"},
         creation_date=datetime.now(),  # Required NOT NULL
