@@ -15,10 +15,9 @@ class PaymentStatusEnum(str, Enum):
 
 
 class ProviderSpecificData(BaseModel):
-    paystack_customer: dict | None = None
-    paystack_customer_code: str | None = None
-    paystack_transaction_reference: str | None = None
-    paystack_access_code: str | None = None
+    flutterwave_customer: dict | None = None
+    customer_code: str | None = None
+    flutterwave_tx_ref: str | None = None
     custom_customer: dict | None = None
 
 

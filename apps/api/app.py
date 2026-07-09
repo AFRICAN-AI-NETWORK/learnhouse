@@ -108,6 +108,7 @@ try:
         run_waitlist_activation_job,
         run_retry_failed_emails_job,
     )
+    from src.jobs.cohort_jobs import sync_process_cohort_unlocks
     from src.jobs.referral_jobs import (
         process_commission_eligibility_job,
         process_payout_requests_job,
@@ -157,6 +158,17 @@ async def start_scheduler():
 
     # ── Waitlist jobs ──────────────────────────────────────────────
     if WAITLIST_PROCESSOR_ENABLED:
+        scheduler.add_job(
+            sync_process_cohort_unlocks,
+            trigger=CronTrigger.from_crontab("*/5 * * * *"),
+            id="cohort_unlocks",
+            name="Process Cohort Unlocks",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            jitter=5,
+            misfire_grace_time=30,
+        )
         scheduler.add_job(
             run_waitlist_activation_job,
             trigger=CronTrigger.from_crontab("*/1 * * * *"),

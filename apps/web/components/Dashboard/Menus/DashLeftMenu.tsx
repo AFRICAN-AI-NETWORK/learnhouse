@@ -16,6 +16,7 @@ import {
   Settings,
   Users,
   Megaphone,
+  Bell,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
@@ -205,6 +206,14 @@ function DashLeftMenu() {
               href="/dash/communications"
               icon={<Megaphone size={18} />}
               label="Communication Hub"
+              isCollapsed={isCollapsed}
+            />
+          )}
+          {canSeeCommunications && (
+            <MenuLink
+              href="/dash/announcements"
+              icon={<Bell size={18} />}
+              label="Announcements"
               isCollapsed={isCollapsed}
             />
           )}
