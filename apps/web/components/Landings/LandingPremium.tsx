@@ -15,7 +15,6 @@ import FAQSection from './Sections/FAQSection'
 import ReferAndEarnSection from './Sections/ReferAndEarnSection'
 import ImpactProgramsSection from './Sections/ImpactProgramsSection'
 import MobileAppLaunchSection from './Sections/MobileAppLaunchSection'
-import TopMarqueeBanner from './Sections/TopMarqueeBanner'
 import GlobalFooter from './GlobalFooter'
 
 interface LandingPremiumProps {
@@ -145,7 +144,6 @@ export default function LandingPremium({
       className="min-h-screen bg-white text-[#0a0f1e] selection:bg-[#0057ff]/20"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      <TopMarqueeBanner />
       <HeroSection org={org} orgslug={orgslug} />
 
       {/* 1. Trust & Social Proof */}

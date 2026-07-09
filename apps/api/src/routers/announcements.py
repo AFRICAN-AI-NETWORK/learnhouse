@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, select, desc
 from src.core.events.database import get_db_session
 from src.db.announcements import Announcement, AnnouncementCreate, AnnouncementReadResponse, AnnouncementUpdate, AnnouncementRead
-from src.security.authentification import is_user_logged
-from src.db.users import InternalUser, UserRoleEnum
-from src.services.orgs.orgs import get_org_by_slug
-from src.services.users.roles import is_at_least_maintainer, is_instructor
+from src.security.auth import get_current_user
+from src.db.users import PublicUser
+from src.services.orgs.orgs import get_organization_by_slug
+from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
 
 router = APIRouter()
 
@@ -13,11 +13,11 @@ router = APIRouter()
 async def list_announcements(
     orgslug: str,
     request: Request,
-    current_user: InternalUser = Depends(is_user_logged),
+    current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
     active_only: bool = Query(True)
 ):
-    org = await get_org_by_slug(orgslug, db_session)
+    org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -51,17 +51,18 @@ async def create_announcement(
     orgslug: str,
     announcement: AnnouncementCreate,
     request: Request,
-    current_user: InternalUser = Depends(is_user_logged),
+    current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    org = await get_org_by_slug(orgslug, db_session)
+    org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
         
-    is_maint = await is_at_least_maintainer(current_user, org.id, db_session)
-    is_inst = await is_instructor(current_user, org.id, db_session)
+    is_admin = await authorization_verify_based_on_org_admin_status(
+        request, current_user.id, "create", org.slug, db_session
+    )
     
-    if not (is_maint or is_inst or current_user.role == UserRoleEnum.SUPERADMIN):
+    if not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to create announcements")
 
     new_announcement = Announcement(
@@ -80,17 +81,18 @@ async def update_announcement(
     announcement_id: int,
     update_data: AnnouncementUpdate,
     request: Request,
-    current_user: InternalUser = Depends(is_user_logged),
+    current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    org = await get_org_by_slug(orgslug, db_session)
+    org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
         
-    is_maint = await is_at_least_maintainer(current_user, org.id, db_session)
-    is_inst = await is_instructor(current_user, org.id, db_session)
+    is_admin = await authorization_verify_based_on_org_admin_status(
+        request, current_user.id, "update", org.slug, db_session
+    )
     
-    if not (is_maint or is_inst or current_user.role == UserRoleEnum.SUPERADMIN):
+    if not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to update announcements")
 
     announcement = db_session.get(Announcement, announcement_id)
@@ -111,10 +113,10 @@ async def mark_announcement_read(
     orgslug: str,
     announcement_id: int,
     request: Request,
-    current_user: InternalUser = Depends(is_user_logged),
+    current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    org = await get_org_by_slug(orgslug, db_session)
+    org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 

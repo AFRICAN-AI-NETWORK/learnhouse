@@ -1,118 +1,53 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React from 'react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
-import {
-  Sparkles,
-  ArrowRight,
-  Cpu,
-  CheckCircle2,
-  Users,
-  Layers,
-  Zap,
-} from 'lucide-react'
+import { Sparkles, ArrowRight, Cpu, CheckCircle2, Users } from 'lucide-react'
 
 interface HeroSectionProps {
   org: any
   orgslug: string
 }
 
-const animatedCards = [
-  {
-    id: 1,
-    title: 'AI Fundamentals',
-    subtitle: 'Master the core concepts',
-    icon: <Cpu size={24} />,
-    color: 'text-[#4da6ff]',
-    bg: 'bg-[#0057ff]/20',
-    topics: [
-      'Programming Essentials for AI',
-      'Mathematics for Machine Learning',
-      'Data Structures & Algorithms',
-    ],
-  },
-  {
-    id: 2,
-    title: 'AI Automation',
-    subtitle: 'Build automated workflows',
-    icon: <Zap size={24} />,
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/20',
-    topics: [
-      'Make, Zapier & n8n',
-      'Python Scripts & APIs',
-      'Live Client Projects',
-    ],
-  },
-  {
-    id: 3,
-    title: 'AAN OPEN',
-    subtitle: 'Your gateway to AI',
-    icon: <Layers size={24} />,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/20',
-    topics: [
-      'AI Ecosystem Access',
-      'Curated Tool Directory',
-      'Community Foundations',
-    ],
-  },
-]
-
 export default function HeroSection({ org, orgslug }: HeroSectionProps) {
-  const [currentCardIndex, setCurrentCardIndex] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentCardIndex((prev) => (prev + 1) % animatedCards.length)
-    }, 4000) // Switch every 4 seconds
-    return () => clearInterval(interval)
-  }, [])
-
   return (
-    <section className="relative pt-32 pb-20 px-6 lg:px-12 overflow-hidden bg-[#0a0f1e] text-white min-h-[90vh] flex items-center">
-      {/* Background Image Overlay */}
-      <div className="absolute inset-0 z-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-screen"
-          style={{ backgroundImage: "url('/landing/hero_bg.png')" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0f1e] via-[#0a0f1e]/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0f1e]/50 to-[#0a0f1e]" />
+    <section className="relative pt-40 pb-24 lg:pb-0 px-6 lg:px-12 overflow-hidden bg-white min-h-[90vh] flex items-center">
+      {/* Background Fluid Shapes (Jobspot/Modern SaaS Style) */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-pink-400/20 rounded-full blur-[100px]" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center z-10 w-full">
+      <div className="relative max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-stretch z-10 w-full min-h-[600px]">
+        {/* Left Content Area */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="space-y-8 z-10"
+          className="flex flex-col justify-center space-y-8 z-10 py-12 lg:py-24"
         >
           <div className="flex flex-wrap items-center gap-4">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0057ff]/20 text-[#4da6ff] text-xs font-bold uppercase tracking-widest border border-[#0057ff]/30 backdrop-blur-md">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-widest border border-blue-100">
               <Sparkles size={14} /> The Future of Learning
-            </span>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 text-gray-300 text-xs font-bold border border-white/10 backdrop-blur-md">
-              <Users size={14} className="text-amber-400" /> Joined by 5000+
-              Learners
             </span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] uppercase">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] uppercase text-[#0a0f1e]">
             Accelerate Your Career In The{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-[#4da6ff]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-purple-600">
               New Economy
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-400 max-w-xl font-normal leading-relaxed">
+
+          <p className="text-lg md:text-xl text-gray-500 max-w-xl font-medium leading-relaxed">
             Master artificial intelligence, software engineering, and the most
-            in-demand tech skills with {org?.name || 'Labano Academy'}.
+            in-demand tech skills with {org?.name || 'African AI Network'}.
           </p>
+
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
             <Link
               href="/#programs"
-              className="w-full sm:w-auto px-8 py-4 bg-[#0057ff] text-white rounded-[12px] font-semibold text-[14px] flex items-center justify-center gap-3 hover:bg-[#0046cc] hover:shadow-[0_0_20px_-5px_rgba(0,87,255,0.5)] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="w-full sm:w-auto px-8 py-4 bg-[#0057ff] text-white rounded-[12px] font-bold text-[14px] flex items-center justify-center gap-3 hover:bg-[#0046cc] hover:shadow-lg transition-all duration-200"
             >
               Browse Programs
               <ArrowRight
@@ -122,87 +57,132 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
             </Link>
             <Link
               href="/auth/signup"
-              className="w-full sm:w-auto px-8 py-4 bg-white/10 text-white border border-white/20 backdrop-blur-sm rounded-[12px] font-semibold text-[14px] flex items-center justify-center hover:bg-white/20 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="w-full sm:w-auto px-8 py-4 bg-white text-[#0a0f1e] border border-gray-200 rounded-[12px] font-bold text-[14px] flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
             >
               Join the Community
             </Link>
           </div>
         </motion.div>
 
-        {/* Animated Carousel Bento Box */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative hidden lg:block h-[400px] perspective-[1000px]"
-        >
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#0057ff]/20 to-transparent rounded-[28px] -rotate-3 scale-105" />
+        {/* Right Content Area: Hero Image & Floating Elements */}
+        <div className="relative hidden lg:flex items-end justify-center pt-20">
+          {/* Wrapper to keep image, blobs and floating cards together */}
+          <div className="relative w-full max-w-[650px] h-[650px] lg:h-[750px] flex items-end justify-center">
+            {/* Abstract SVG Blobs (Jobspot Style) */}
+            <div className="absolute inset-0 flex items-center justify-center z-0">
+              <svg
+                viewBox="0 0 500 500"
+                className="w-[180%] h-[180%] -translate-y-12"
+              >
+                {/* Yellow Blob */}
+                <path
+                  fill="#facc15"
+                  d="M394.5,310.5Q343,371,273.5,389.5Q204,408,131.5,372Q59,336,65,257.5Q71,179,139,134.5Q207,90,283.5,91.5Q360,93,403,171.5Q446,250,394.5,310.5Z"
+                  className="origin-center scale-90 translate-x-20 translate-y-24"
+                />
+                {/* Purple Blob */}
+                <path
+                  fill="#7e22ce"
+                  d="M428.5,301.5Q404,353,354,383Q304,413,248.5,417.5Q193,422,143,391.5Q93,361,84.5,305.5Q76,250,103,199Q130,148,181,114.5Q232,81,288.5,91Q345,101,399,140Q453,179,428.5,301.5Z"
+                  className="origin-center scale-75 translate-x-12 -translate-y-20"
+                />
+                {/* Cyan Blob */}
+                <path
+                  fill="#06b6d4"
+                  d="M380.5,315.5Q347,381,274,394.5Q201,408,131.5,364.5Q62,321,81.5,244.5Q101,168,172,130.5Q243,93,313,116.5Q383,140,403.5,195Q424,250,380.5,315.5Z"
+                  className="origin-center scale-[0.8] -translate-x-16"
+                />
 
-          <div className="relative h-full w-full">
-            <AnimatePresence mode="wait">
-              {animatedCards.map((card, index) => {
-                if (index !== currentCardIndex) return null
-                return (
-                  <motion.div
-                    key={card.id}
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="absolute inset-0 bg-[#111827]/80 backdrop-blur-xl border border-white/10 rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.5)] flex flex-col"
-                  >
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 rounded-[12px] ${card.bg} flex items-center justify-center ${card.color}`}
-                        >
-                          {card.icon}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-white text-[16px]">
-                            {card.title}
-                          </h3>
-                          <p className="text-gray-400 text-[13px]">
-                            {card.subtitle}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        {animatedCards.map((_, dotIndex) => (
-                          <div
-                            key={dotIndex}
-                            className={`h-1.5 rounded-full transition-all duration-500 ${dotIndex === currentCardIndex ? 'w-6 bg-[#0057ff]' : 'w-2 bg-white/20'}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                {/* Thin white ring rotated */}
+                <circle
+                  cx="230"
+                  cy="250"
+                  r="160"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="3"
+                  className="opacity-80"
+                />
+              </svg>
+            </div>
 
-                    <div className="space-y-4 flex-grow flex flex-col justify-center">
-                      {card.topics.map((topic, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.15 + 0.2 }}
-                          className="min-h-16 rounded-[12px] bg-white/5 border border-white/10 flex items-center px-4 py-3 gap-4"
-                        >
-                          <div
-                            className={`flex-shrink-0 w-8 h-8 rounded-full ${card.bg} flex items-center justify-center ${card.color}`}
-                          >
-                            <CheckCircle2 size={16} />
-                          </div>
-                          <div className="text-[13px] font-bold text-gray-200 leading-snug">
-                            {topic}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </AnimatePresence>
+            {/* Main Hero Cutout Image */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8 }}
+              className="relative z-10 w-full flex items-end justify-center origin-bottom"
+            >
+              <img
+                src="/landing/hero_person.png"
+                alt="Tech Professional"
+                className="relative z-10 w-auto h-auto min-h-[600px] lg:min-h-[700px] max-h-[85vh] object-cover object-bottom scale-[1.05]"
+              />
+            </motion.div>
+
+            {/* Floating UI Card 1: 5000+ Learners */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, x: 20 }}
+              animate={{ opacity: 1, y: [0, -10, 0], x: 0 }}
+              transition={{
+                opacity: { duration: 0.6, delay: 0.3 },
+                y: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
+              }}
+              className="absolute top-24 right-[-2rem] lg:right-[-4rem] z-20 bg-white/80 backdrop-blur-xl border border-gray-100 p-4 rounded-2xl shadow-xl flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-500">
+                <Users size={24} />
+              </div>
+              <div>
+                <p className="text-[#0a0f1e] font-black text-lg">5,000+</p>
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">
+                  Learners Enrolled
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Floating UI Card 2: AI Automation */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, x: -20 }}
+              animate={{ opacity: 1, y: [0, 10, 0], x: 0 }}
+              transition={{
+                opacity: { duration: 0.6, delay: 0.5 },
+                y: {
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 1,
+                },
+              }}
+              className="absolute bottom-32 left-[-2rem] lg:left-[-4rem] z-20 bg-white/80 backdrop-blur-xl border border-gray-100 p-4 rounded-2xl shadow-xl flex items-center gap-4"
+            >
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                <Cpu size={24} />
+              </div>
+              <div>
+                <p className="text-[#0a0f1e] font-black text-lg">
+                  AI Automation
+                </p>
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">
+                  Top Specialization
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Floating UI Card 3: Success Checkmark */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: [1, 1.1, 1] }}
+              transition={{
+                opacity: { duration: 0.4, delay: 0.8 },
+                scale: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+              }}
+              className="absolute top-1/2 left-20 z-0 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/30"
+            >
+              <CheckCircle2 size={20} />
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   )
