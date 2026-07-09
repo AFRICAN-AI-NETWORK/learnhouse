@@ -20,18 +20,30 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    from sqlalchemy.engine.reflection import Inspector
+    bind = op.get_bind()
+    inspector = Inspector.from_engine(bind)
+
     # 1. Update PaymentProviderEnum from 'paystack' to 'flutterwave'
     # PostgreSQL requires a workaround to rename enum values or we can just ALTER TYPE.
     # Note: If changing enum values in PostgreSQL is tricky, we can just alter the type.
-    op.execute("ALTER TYPE paymentproviderenum RENAME VALUE 'paystack' TO 'flutterwave'")
+    
+    # Only rename if 'paystack' exists to make it idempotent
+    result = bind.execute(sa.text("SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'paymentproviderenum'")).fetchall()
+    labels = [row[0] for row in result]
+    if 'paystack' in labels and 'flutterwave' not in labels:
+        op.execute("ALTER TYPE paymentproviderenum RENAME VALUE 'paystack' TO 'flutterwave'")
 
     # 2. Add interval and trial_days to paymentsproduct
     # Create the interval enum first
     payment_interval_enum = sa.Enum('MONTHLY', 'YEARLY', 'WEEKLY', 'DAILY', name='paymentintervalenum')
-    payment_interval_enum.create(op.get_bind())
+    payment_interval_enum.create(op.get_bind(), checkfirst=True)
     
-    op.add_column('paymentsproduct', sa.Column('interval', payment_interval_enum, nullable=True))
-    op.add_column('paymentsproduct', sa.Column('trial_days', sa.Integer(), server_default='0', nullable=False))
+    columns = [col['name'] for col in inspector.get_columns('paymentsproduct')]
+    if 'interval' not in columns:
+        op.add_column('paymentsproduct', sa.Column('interval', payment_interval_enum, nullable=True))
+    if 'trial_days' not in columns:
+        op.add_column('paymentsproduct', sa.Column('trial_days', sa.Integer(), server_default='0', nullable=False))
 
 
 def downgrade() -> None:
