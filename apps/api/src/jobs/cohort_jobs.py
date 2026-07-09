@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timezone
 from sqlmodel import Session, select
 
-from src.core.events.database import get_db_session, engine
+from src.core.events.database import engine
 from src.db.cohorts import Cohort, CohortStatusEnum, CohortEnrollment
 
 logger = logging.getLogger(__name__)

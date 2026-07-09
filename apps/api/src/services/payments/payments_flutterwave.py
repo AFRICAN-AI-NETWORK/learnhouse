@@ -7,13 +7,10 @@ from config.config import get_learnhouse_config
 from src.db.payments.payments_products import (
     PaymentProductTypeEnum,
     PaymentsProduct,
-    PaymentIntervalEnum,
 )
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
-from src.db.courses.courses import Course
-from src.db.organizations import Organization
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.payments.payments_users import (
     create_payment_user,
@@ -21,7 +18,6 @@ from src.services.payments.payments_users import (
 )
 from src.services.payments.discount_codes import (
     validate_discount_code,
-    DiscountValidationError,
 )
 import uuid
 
@@ -104,7 +100,7 @@ async def make_flutterwave_request(
                 error_data = {}
                 try:
                     error_data = response.json()
-                except:
+                except Exception:
                     pass
                 msg = error_data.get("message", response.text)
                 raise HTTPException(status_code=response.status_code, detail=f"Flutterwave API error: {msg}")
@@ -196,7 +192,7 @@ async def archive_flutterwave_product(
         # It's a payment plan
         try:
              await make_flutterwave_request("PUT", f"/payment-plans/{product_id}/cancel")
-        except:
+        except Exception:
              pass
     return {"id": product_id, "active": False}
 
@@ -289,7 +285,7 @@ async def initialize_transaction(
         tracking = db_session.exec(tracking_statement).first()
         if tracking:
             referral_code_id = tracking.referral_code_id
-    except:
+    except Exception:
         pass
 
     metadata_dict = {
