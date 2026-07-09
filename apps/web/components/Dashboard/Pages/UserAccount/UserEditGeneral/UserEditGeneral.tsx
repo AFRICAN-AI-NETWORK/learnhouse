@@ -3,7 +3,8 @@ import { updateProfile } from '@services/settings/profile'
 import { getUser } from '@services/users/users'
 import React, { useState, useCallback, useMemo } from 'react'
 import useSWR from 'swr'
-import { Formik, Form } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import {
   ArrowBigUpDash,
@@ -307,21 +308,20 @@ const DetailCard = React.memo(
 
 DetailCard.displayName = 'DetailCard'
 
-// Form component to handle the details section
 const UserEditForm = ({
   values,
-  setFieldValue,
-  handleChange,
+  setValue,
+  register,
   errors,
-  touched,
   isSubmitting,
   profilePicture,
+  handleSubmit,
+  onSubmit,
 }: {
   values: FormValues
-  setFieldValue: (field: string, value: any) => void
-  handleChange: (e: React.ChangeEvent<any>) => void
+  setValue: (field: keyof FormValues, value: any) => void
+  register: any
   errors: any
-  touched: any
   isSubmitting: boolean
   profilePicture: {
     error: string | undefined
@@ -330,6 +330,8 @@ const UserEditForm = ({
     localAvatar: File | null
     handleFileChange: (event: any) => Promise<void>
   }
+  handleSubmit: any
+  onSubmit: any
 }) => {
   const { t } = useTranslation()
 
@@ -355,12 +357,12 @@ const UserEditForm = ({
               }
             })
 
-            setFieldValue('details', newDetails)
+            setValue('details', newDetails)
           },
         }),
         {} as Record<string, () => void>
       ),
-    [values.details, setFieldValue, t]
+    [values.details, setValue, t]
   )
 
   // Memoize detail handlers
@@ -373,19 +375,19 @@ const UserEditForm = ({
       ) => {
         const newDetails = { ...values.details }
         newDetails[id] = { ...newDetails[id], [field]: value }
-        setFieldValue('details', newDetails)
+        setValue('details', newDetails)
       },
       handleDetailRemove: (id: string) => {
         const newDetails = { ...values.details }
         delete newDetails[id]
-        setFieldValue('details', newDetails)
+        setValue('details', newDetails)
       },
     }),
-    [values.details, setFieldValue]
+    [values.details, setValue]
   )
 
   return (
-    <Form>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col gap-0">
         <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mx-3 my-3 rounded-md dark:bg-white/5">
           <h1 className="font-bold text-xl text-gray-800 dark:text-white/90">
@@ -403,14 +405,12 @@ const UserEditForm = ({
               <Label htmlFor="email">{t('user.settings.general.email')}</Label>
               <Input
                 id="email"
-                name="email"
                 type="email"
-                value={values.email}
-                onChange={handleChange}
+                {...register('email')}
                 placeholder={t('user.settings.general.email_placeholder')}
               />
-              {touched.email && errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email.message as string}</p>
               )}
               {values.email !== values.email && (
                 <div className="flex items-center space-x-2 mt-2 text-amber-600 bg-amber-50 p-2 rounded-md">
@@ -428,13 +428,11 @@ const UserEditForm = ({
               </Label>
               <Input
                 id="username"
-                name="username"
-                value={values.username}
-                onChange={handleChange}
+                {...register('username')}
                 placeholder={t('user.settings.general.username_placeholder')}
               />
-              {touched.username && errors.username && (
-                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username.message as string}</p>
               )}
             </div>
 
@@ -444,13 +442,11 @@ const UserEditForm = ({
               </Label>
               <Input
                 id="first_name"
-                name="first_name"
-                value={values.first_name}
-                onChange={handleChange}
+                {...register('first_name')}
                 placeholder={t('user.settings.general.first_name_placeholder')}
               />
-              {touched.first_name && errors.first_name && (
-                <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>
+              {errors.first_name && (
+                <p className="text-red-500 text-sm mt-1">{errors.first_name.message as string}</p>
               )}
             </div>
 
@@ -460,13 +456,11 @@ const UserEditForm = ({
               </Label>
               <Input
                 id="last_name"
-                name="last_name"
-                value={values.last_name}
-                onChange={handleChange}
+                {...register('last_name')}
                 placeholder={t('user.settings.general.last_name_placeholder')}
               />
-              {touched.last_name && errors.last_name && (
-                <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>
+              {errors.last_name && (
+                <p className="text-red-500 text-sm mt-1">{errors.last_name.message as string}</p>
               )}
             </div>
 
@@ -476,15 +470,13 @@ const UserEditForm = ({
               </Label>
               <Input
                 id="phone_number"
-                name="phone_number"
                 type="tel"
-                value={values.phone_number}
-                onChange={handleChange}
+                {...register('phone_number')}
                 placeholder="e.g. +14155552671"
               />
-              {touched.phone_number && errors.phone_number && (
+              {errors.phone_number && (
                 <p className="text-red-500 text-sm mt-1">
-                  {errors.phone_number}
+                  {errors.phone_number.message as string}
                 </p>
               )}
             </div>
@@ -502,15 +494,13 @@ const UserEditForm = ({
               </Label>
               <Textarea
                 id="bio"
-                name="bio"
-                value={values.bio}
-                onChange={handleChange}
+                {...register('bio')}
                 placeholder={t('user.settings.general.bio_placeholder')}
                 className="min-h-[150px]"
                 maxLength={400}
               />
-              {touched.bio && errors.bio && (
-                <p className="text-red-500 text-sm mt-1">{errors.bio}</p>
+              {errors.bio && (
+                <p className="text-red-500 text-sm mt-1">{errors.bio.message as string}</p>
               )}
             </div>
 
@@ -525,7 +515,7 @@ const UserEditForm = ({
                       size="sm"
                       className="text-red-500 hover:text-red-700 hover:bg-red-50"
                       onClick={() => {
-                        setFieldValue('details', {})
+                        setValue('details', {})
                       }}
                     >
                       {t('user.settings.general.clear_all')}
@@ -543,7 +533,7 @@ const UserEditForm = ({
                           icon: '',
                           text: '',
                         }
-                        setFieldValue('details', newDetails)
+                        setValue('details', newDetails)
                       }}
                     >
                       {t('user.settings.general.add_detail')}
@@ -575,7 +565,7 @@ const UserEditForm = ({
                           }
                         })
 
-                        setFieldValue('details', newDetails)
+                        setValue('details', newDetails)
                       }}
                     >
                       {key === 'general' && <Briefcase className="w-4 h-4" />}
@@ -600,17 +590,17 @@ const UserEditForm = ({
                     onUpdate={(id, field, value) => {
                       const newDetails = { ...values.details }
                       newDetails[id] = { ...newDetails[id], [field]: value }
-                      setFieldValue('details', newDetails)
+                      setValue('details', newDetails)
                     }}
                     onRemove={(id) => {
                       const newDetails = { ...values.details }
                       delete newDetails[id]
-                      setFieldValue('details', newDetails)
+                      setValue('details', newDetails)
                     }}
                     onLabelChange={(id, newLabel) => {
                       const newDetails = { ...values.details }
                       newDetails[id] = { ...newDetails[id], label: newLabel }
-                      setFieldValue('details', newDetails)
+                      setValue('details', newDetails)
                     }}
                   />
                 ))}
@@ -700,7 +690,7 @@ const UserEditForm = ({
           </Button>
         </div>
       </div>
-    </Form>
+    </form>
   )
 }
 
@@ -771,6 +761,49 @@ function UserEditGeneral() {
     signOut({ redirect: true, callbackUrl: getUriWithoutOrg('/') })
   }
 
+  const initialValues: FormValues = React.useMemo(() => {
+    if (!userData) {
+      return {
+        username: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone_number: '',
+        bio: '',
+        details: {},
+      }
+    }
+    return {
+      username: userData.username,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone_number: userData.phone_number || '',
+      bio: userData.bio || '',
+      details: userData.details || {},
+    }
+  }, [userData])
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: yupResolver(validationSchema) as any,
+    defaultValues: initialValues,
+  })
+
+  React.useEffect(() => {
+    if (userData) {
+      reset(initialValues)
+    }
+  }, [userData, initialValues, reset])
+
+  const formValues = watch()
+
   if (!userData) {
     return (
       <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow p-8 dark:border dark:border-white/8 dark:bg-[#13131a]">
@@ -781,46 +814,37 @@ function UserEditGeneral() {
     )
   }
 
+
+
+  const onSubmit = async (values: FormValues) => {
+    const isEmailChanged = values.email !== userData.email
+    const loadingToast = toast.loading(t('user.settings.general.saving'))
+
+    try {
+      await new Promise(r => setTimeout(r, 400))
+      await updateProfile(values, userData.id, access_token)
+      toast.dismiss(loadingToast)
+      if (isEmailChanged) {
+        handleEmailChange(values.email)
+      } else {
+        toast.success(t('user.settings.general.profile_updated'))
+      }
+      mutate()
+    } catch (error) {
+      toast.error('Failed to update profile', { id: loadingToast })
+    }
+  }
+
   return (
     <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow dark:border dark:border-white/8 dark:bg-[#13131a]">
-      <Formik<FormValues>
-        enableReinitialize
-        initialValues={{
-          username: userData.username,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          email: userData.email,
-          phone_number: userData.phone_number || '',
-          bio: userData.bio || '',
-          details: userData.details || {},
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
-          const isEmailChanged = values.email !== userData.email
-          const loadingToast = toast.loading(t('user.settings.general.saving'))
-
-          setTimeout(() => {
-            setSubmitting(false)
-            updateProfile(values, userData.id, access_token)
-              .then(() => {
-                toast.dismiss(loadingToast)
-                if (isEmailChanged) {
-                  handleEmailChange(values.email)
-                } else {
-                  toast.success(t('user.settings.general.profile_updated'))
-                }
-                // Refresh user data after successful update
-                mutate()
-              })
-              .catch(() => {
-                toast.error('Failed to update profile', { id: loadingToast })
-              })
-          }, 400)
-        }}
-      >
-        {(formikProps) => (
           <UserEditForm
-            {...formikProps}
+            values={formValues}
+            setValue={setValue}
+            register={register}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            handleSubmit={handleSubmit}
+            onSubmit={onSubmit}
             profilePicture={{
               error,
               success,
@@ -829,8 +853,6 @@ function UserEditGeneral() {
               handleFileChange,
             }}
           />
-        )}
-      </Formik>
     </div>
   )
 }

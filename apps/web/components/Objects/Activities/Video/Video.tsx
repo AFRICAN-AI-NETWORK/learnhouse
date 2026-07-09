@@ -27,6 +27,7 @@ interface VideoActivityProps {
   enforceLinearPlayback?: boolean
   isCompleted?: boolean
   onComplete?: () => void
+  onWatchSatisfied?: () => void
 }
 
 function VideoActivity({
@@ -35,6 +36,7 @@ function VideoActivity({
   enforceLinearPlayback = false,
   isCompleted = false,
   onComplete,
+  onWatchSatisfied,
 }: VideoActivityProps) {
   const org = useOrg() as any
   const [videoId, setVideoId] = React.useState('')
@@ -74,6 +76,7 @@ function VideoActivity({
                       isCompleted={isCompleted}
                       activityId={activity.activity_uuid}
                       onComplete={onComplete}
+                      onWatchSatisfied={onWatchSatisfied}
                     />
                   ) : null
                 })()}

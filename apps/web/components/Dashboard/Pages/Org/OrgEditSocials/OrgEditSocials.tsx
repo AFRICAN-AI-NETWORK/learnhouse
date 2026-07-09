@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { Form, Formik } from 'formik'
+import { useForm } from 'react-hook-form'
 import { updateOrganization } from '@services/settings/org'
 import { revalidateTags } from '@services/utils/ts/requests'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -40,10 +40,10 @@ export default function OrgEditSocials() {
   const access_token = session?.data?.tokens?.access_token
   const org = useOrg() as any
   const router = useRouter()
-  const initialValues: OrganizationValues = {
+  const initialValues: OrganizationValues = React.useMemo(() => ({
     socials: org?.socials || {},
     links: org?.links || {}
-  }
+  }), [org?.socials, org?.links])
 
   const updateOrg = async (values: OrganizationValues) => {
     const loadingToast = toast.loading(t('dashboard.organization.settings.updating'))
@@ -58,20 +58,26 @@ export default function OrgEditSocials() {
     }
   }
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { isSubmitting }
+  } = useForm<OrganizationValues>({
+    defaultValues: initialValues
+  })
+
+  React.useEffect(() => {
+    reset(initialValues)
+  }, [initialValues, reset])
+
+  const formValues = watch()
+
   return (
     <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow">
-      <Formik
-        enableReinitialize
-        initialValues={initialValues}
-        onSubmit={(values, { setSubmitting }) => {
-          setTimeout(() => {
-            setSubmitting(false)
-            updateOrg(values)
-          }, 400)
-        }}
-      >
-        {({ isSubmitting, values, handleChange, setFieldValue }) => (
-          <Form>
+      <form onSubmit={handleSubmit(updateOrg)}>
             <div className="flex flex-col gap-0">
               <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mx-3 my-3 rounded-md">
                 <h1 className="font-bold text-xl text-gray-800">
@@ -94,9 +100,7 @@ export default function OrgEditSocials() {
                           </div>
                           <Input
                             id="socials.twitter"
-                            name="socials.twitter"
-                            value={values.socials.twitter || ''}
-                            onChange={handleChange}
+                            {...register('socials.twitter')}
                             placeholder={t('dashboard.organization.socials.placeholders.twitter')}
                             className="h-9 bg-white"
                           />
@@ -108,9 +112,7 @@ export default function OrgEditSocials() {
                           </div>
                           <Input
                             id="socials.facebook"
-                            name="socials.facebook"
-                            value={values.socials.facebook || ''}
-                            onChange={handleChange}
+                            {...register('socials.facebook')}
                             placeholder={t('dashboard.organization.socials.placeholders.facebook')}
                             className="h-9 bg-white"
                           />
@@ -122,9 +124,7 @@ export default function OrgEditSocials() {
                           </div>
                           <Input
                             id="socials.instagram"
-                            name="socials.instagram"
-                            value={values.socials.instagram || ''}
-                            onChange={handleChange}
+                            {...register('socials.instagram')}
                             placeholder={t('dashboard.organization.socials.placeholders.instagram')}
                             className="h-9 bg-white"
                           />
@@ -136,9 +136,7 @@ export default function OrgEditSocials() {
                           </div>
                           <Input
                             id="socials.youtube"
-                            name="socials.youtube"
-                            value={values.socials.youtube || ''}
-                            onChange={handleChange}
+                            {...register('socials.youtube')}
                             placeholder={t('dashboard.organization.socials.placeholders.youtube')}
                             className="h-9 bg-white"
                           />
@@ -152,7 +150,7 @@ export default function OrgEditSocials() {
                   <div>
                     <Label className="text-lg font-semibold">{t('dashboard.organization.socials.labels.custom_links')}</Label>
                     <div className="space-y-3 bg-gray-50/50 p-4 rounded-lg nice-shadow mt-2">
-                      {Object.entries(values.links).map(([linkKey, linkValue], index) => (
+                      {Object.entries(formValues.links || {}).map(([linkKey, linkValue], index) => (
                         <div key={index} className="flex gap-3 items-center">
                           <div className="w-8 h-8 flex items-center justify-center bg-gray-200/50 rounded-md text-xs font-medium text-gray-600">
                             {index + 1}
@@ -163,20 +161,20 @@ export default function OrgEditSocials() {
                               value={linkKey}
                               className="h-9 w-1/3 bg-white"
                               onChange={(e) => {
-                                const newLinks = { ...values.links };
+                                const newLinks = { ...formValues.links };
                                 delete newLinks[linkKey];
-                                newLinks[e.target.value] = linkValue;
-                                setFieldValue('links', newLinks);
+                                newLinks[e.target.value] = linkValue as string;
+                                setValue('links', newLinks);
                               }}
                             />
                             <Input
                               placeholder={t('dashboard.organization.socials.placeholders.url')}
-                              value={linkValue}
+                              value={linkValue as string}
                               className="h-9 flex-1 bg-white"
                               onChange={(e) => {
-                                const newLinks = { ...values.links };
+                                const newLinks = { ...formValues.links };
                                 newLinks[linkKey] = e.target.value;
-                                setFieldValue('links', newLinks);
+                                setValue('links', newLinks);
                               }}
                             />
                             <Button
@@ -184,9 +182,9 @@ export default function OrgEditSocials() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                const newLinks = { ...values.links };
+                                const newLinks = { ...formValues.links };
                                 delete newLinks[linkKey];
-                                setFieldValue('links', newLinks);
+                                setValue('links', newLinks);
                               }}
                             >
                               <XIcon className="h-4 w-4" />
@@ -195,16 +193,16 @@ export default function OrgEditSocials() {
                         </div>
                       ))}
 
-                      {Object.keys(values.links).length < 3 && (
+                      {Object.keys(formValues.links || {}).length < 3 && (
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="mt-2"
                           onClick={() => {
-                            const newLinks = { ...values.links };
+                            const newLinks = { ...formValues.links };
                             newLinks[`Link ${Object.keys(newLinks).length + 1}`] = '';
-                            setFieldValue('links', newLinks);
+                            setValue('links', newLinks);
                           }}
                         >
                           <Plus className="h-4 w-4 mr-2" />
@@ -230,9 +228,7 @@ export default function OrgEditSocials() {
                 </Button>
               </div>
             </div>
-          </Form>
-        )}
-      </Formik>
+          </form>
     </div>
   )
 }

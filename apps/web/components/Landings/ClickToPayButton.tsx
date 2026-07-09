@@ -8,6 +8,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { X, Loader2, CreditCard } from 'lucide-react'
 import OpenSignUpComponent from '@/app/auth/signup/OpenSignup'
 import { useFlutterwave } from 'flutterwave-react-v3'
+import { usePaystackPayment } from 'react-paystack'
 import toast from 'react-hot-toast'
 import { signIn } from 'next-auth/react'
 
@@ -33,6 +34,7 @@ export default function ClickToPayButton({
   const [isProcessing, setIsProcessing] = useState(false)
 
   const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || ''
+  const psPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || ''
 
   // Track email/name dynamically for guest checkout flow
   const [dynamicEmail, setDynamicEmail] = useState('')
@@ -70,7 +72,21 @@ export default function ClickToPayButton({
     },
   }
 
+  // Paystack Config
+  const psConfig = {
+    reference: txRef,
+    email: dynamicEmail,
+    amount: priceAmount * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
+    publicKey: psPublicKey,
+    currency: currency,
+    metadata: {
+      course_uuid: courseId,
+      custom_fields: [],
+    },
+  }
+
   const handleFlutterwavePayment = useFlutterwave(fwConfig)
+  const initializePaystackPayment = usePaystackPayment(psConfig as any)
 
   const triggerPayment = (emailToUse: string, nameToUse: string) => {
     // If the state hasn't caught up, Flutterwave/Paystack config might use old state.
@@ -99,6 +115,8 @@ export default function ClickToPayButton({
         },
         onClose: onClose,
       })
+    } else if (psPublicKey) {
+      (initializePaystackPayment as any)(onSuccess, onClose)
     } else {
       toast.error('No payment provider configured.')
       setIsProcessing(false)

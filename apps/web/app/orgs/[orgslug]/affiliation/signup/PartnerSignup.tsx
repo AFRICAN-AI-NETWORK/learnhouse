@@ -1,5 +1,7 @@
 'use client'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useState } from 'react'
 import FormLayout, {
@@ -7,7 +9,7 @@ import FormLayout, {
   FormLabelAndMessage,
   Input,
 } from '@components/Objects/StyledElements/Form/Form'
-import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
+import PhoneNumberFieldsRHF from '@components/Objects/StyledElements/Form/PhoneNumberFieldsRHF'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -32,40 +34,39 @@ import {
   validatePhoneFields,
 } from '@/lib/phone-number'
 
-const validate = (values: any, t: any) => {
-  const errors: any = {}
-  const phoneErrors = validatePhoneFields(values)
-  if (phoneErrors.country_code) {
-    errors.country_code = phoneErrors.country_code
-  }
-  if (phoneErrors.phone_number) {
-    errors.phone_number =
-      t('validation.invalid_phone_with_country_code') ||
-      phoneErrors.phone_number
-  }
-  if (!values.email) {
-    errors.email = t('validation.required')
-  } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-    errors.email = t('validation.invalid_email')
-  }
-  if (!values.password) {
-    errors.password = t('validation.required')
-  } else if (values.password.length < 8) {
-    errors.password = t('validation.password_min_length')
-  }
-  if (!values.username) {
-    errors.username = t('validation.required')
-  } else if (values.username.length < 4) {
-    errors.username = t('validation.username_min_length')
-  }
-  if (!values.first_name) {
-    errors.first_name = t('validation.required')
-  }
-  if (!values.last_name) {
-    errors.last_name = t('validation.required')
-  }
-  return errors
-}
+const getValidationSchema = (t: any) => Yup.object().shape({
+  email: Yup.string()
+    .required(t('validation.required'))
+    .email(t('validation.invalid_email')),
+  password: Yup.string()
+    .required(t('validation.required'))
+    .min(8, t('validation.password_min_length')),
+  username: Yup.string()
+    .required(t('validation.required'))
+    .min(4, t('validation.username_min_length')),
+  first_name: Yup.string().required(t('validation.required')),
+  last_name: Yup.string().required(t('validation.required')),
+  country_code: Yup.string().required(t('validation.required')),
+  phone_number: Yup.string()
+    .required(t('validation.required'))
+    .test(
+      'is-valid-phone',
+      t('validation.invalid_phone_with_country_code') || 'Invalid phone number',
+      function (value) {
+        if (!value) return true
+        const { parent } = this
+        const phoneErrors = validatePhoneFields({
+          country_code: parent.country_code,
+          phone_number: value,
+        })
+        return !(phoneErrors.phone_number || phoneErrors.country_code)
+      }
+    ),
+  org_slug: Yup.string().nullable(),
+  org_id: Yup.string().nullable(),
+  bio: Yup.string().nullable(),
+  signup_type: Yup.string().nullable(),
+})
 
 function PartnerSignUpComponent() {
   const { t } = useTranslation()
@@ -78,72 +79,78 @@ function PartnerSignUpComponent() {
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1)
 
-  const formik = useFormik({
-    initialValues: {
-      org_slug: org?.slug,
-      org_id: org?.id,
-      email: searchParams.get('email') || '',
-      password: '',
-      username: '',
-      bio: 'African AI Partner',
-      country_code: DEFAULT_COUNTRY_CODE,
-      phone_number: '',
-      first_name: searchParams.get('first_name') || '',
-      last_name: searchParams.get('last_name') || '',
-      signup_type: 'partner', // Critical for role assignment
-    },
-    validate: (values) => validate(values, t),
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      setError('')
-      setMessage('')
-      setIsSubmitting(true)
+  const initialValues = {
+    org_slug: org?.slug,
+    org_id: org?.id,
+    email: searchParams.get('email') || '',
+    password: '',
+    username: '',
+    bio: 'African AI Partner',
+    country_code: DEFAULT_COUNTRY_CODE,
+    phone_number: '',
+    first_name: searchParams.get('first_name') || '',
+    last_name: searchParams.get('last_name') || '',
+    signup_type: 'partner', // Critical for role assignment
+  }
 
-      const payload: any = {
-        org_slug: values.org_slug,
-        org_id: values.org_id,
-        email: values.email,
-        password: values.password,
-        username: values.username,
-        bio: values.bio,
-        phone_number: formatE164(values.country_code, values.phone_number),
-        first_name: values.first_name,
-        last_name: values.last_name,
-        signup_type: values.signup_type,
-      }
-
-      const res = await signup(payload)
-      const response = await res.json()
-
-      if (res.status === 200) {
-        setMessage(
-          'Partner account created! Please check your email to verify your account.'
-        )
-        setTimeout(() => {
-          router.push(`/login?orgslug=${org?.slug || 'default'}`)
-        }, 3000)
-      } else {
-        const detail = response.detail
-        const errorMessage = Array.isArray(detail)
-          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
-          : typeof detail === 'string'
-            ? detail
-            : detail?.msg || t('common.something_went_wrong')
-        setError(errorMessage)
-      }
-      setIsSubmitting(false)
-    },
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    trigger,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(getValidationSchema(t)) as any,
+    defaultValues: initialValues,
   })
 
+  const formValues = watch()
+
+  const onSubmit = async (values: any) => {
+    setError('')
+    setMessage('')
+    setIsSubmitting(true)
+
+    const payload: any = {
+      org_slug: values.org_slug,
+      org_id: values.org_id,
+      email: values.email,
+      password: values.password,
+      username: values.username,
+      bio: values.bio,
+      phone_number: formatE164(values.country_code, values.phone_number),
+      first_name: values.first_name,
+      last_name: values.last_name,
+      signup_type: values.signup_type,
+    }
+
+    const res = await signup(payload)
+    const response = await res.json()
+
+    if (res.status === 200) {
+      setMessage(
+        'Partner account created! Please check your email to verify your account.'
+      )
+      setTimeout(() => {
+        router.push(`/login?orgslug=${org?.slug || 'default'}`)
+      }, 3000)
+    } else {
+      const detail = response.detail
+      const errorMessage = Array.isArray(detail)
+        ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+        : typeof detail === 'string'
+          ? detail
+          : detail?.msg || t('common.something_went_wrong')
+      setError(errorMessage)
+    }
+    setIsSubmitting(false)
+  }
+
   const handleNextStep = async () => {
-    const errors = await formik.validateForm()
-    if (step === 1) {
-      if (!errors.email && !errors.password) {
-        setStep(2)
-      } else {
-        formik.setFieldTouched('email', true)
-        formik.setFieldTouched('password', true)
-      }
+    const isStep1Valid = await trigger(['email', 'password'])
+    if (step === 1 && isStep1Valid) {
+      setStep(2)
     }
   }
 
@@ -158,7 +165,7 @@ function PartnerSignUpComponent() {
         </h2>
         <p className="text-slate-600 mb-8 max-w-sm mx-auto">
           Your partner account has been created. Please verify your email{' '}
-          <strong>{formik.values.email}</strong> to access your dashboard.
+          <strong>{formValues.email}</strong> to access your dashboard.
         </p>
         <button
           onClick={() => window.open('https://gmail.com', '_blank')}
@@ -216,7 +223,7 @@ function PartnerSignUpComponent() {
         </div>
       )}
 
-      <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
+      <FormLayout onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
             <FormField name="email">
@@ -226,15 +233,16 @@ function PartnerSignUpComponent() {
                 <Form.Control asChild>
                   <Input
                     className="pl-10 h-12"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.email}
+                    {...register('email')}
                     type="email"
                     placeholder="partner@example.com"
                     required
                   />
                 </Form.Control>
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email.message as string}</p>
+              )}
             </FormField>
 
             <FormField name="password">
@@ -244,9 +252,7 @@ function PartnerSignUpComponent() {
                 <Form.Control asChild>
                   <Input
                     className="pl-10 h-12"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.password}
+                    {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="8+ characters"
                     required
@@ -260,6 +266,9 @@ function PartnerSignUpComponent() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password.message as string}</p>
+              )}
             </FormField>
 
             <button
@@ -281,22 +290,26 @@ function PartnerSignUpComponent() {
                 <Form.Control asChild>
                   <Input
                     className="h-12"
-                    onChange={formik.handleChange}
-                    value={formik.values.first_name}
+                    {...register('first_name')}
                     required
                   />
                 </Form.Control>
+                {errors.first_name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.first_name.message as string}</p>
+                )}
               </FormField>
               <FormField name="last_name">
                 <FormLabelAndMessage label="Last Name" />
                 <Form.Control asChild>
                   <Input
                     className="h-12"
-                    onChange={formik.handleChange}
-                    value={formik.values.last_name}
+                    {...register('last_name')}
                     required
                   />
                 </Form.Control>
+                {errors.last_name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.last_name.message as string}</p>
+                )}
               </FormField>
             </div>
 
@@ -307,15 +320,17 @@ function PartnerSignUpComponent() {
                 <Form.Control asChild>
                   <Input
                     className="pl-10 h-12"
-                    onChange={formik.handleChange}
-                    value={formik.values.username}
+                    {...register('username')}
                     required
                   />
                 </Form.Control>
               </div>
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username.message as string}</p>
+              )}
             </FormField>
 
-            <PhoneNumberFields formik={formik} phoneNumberLabel="Phone number" />
+            <PhoneNumberFieldsRHF register={register} setValue={setValue} watch={watch} errors={errors} phoneNumberLabel="Phone number" />
 
             <div className="flex gap-3 pt-4">
               <button

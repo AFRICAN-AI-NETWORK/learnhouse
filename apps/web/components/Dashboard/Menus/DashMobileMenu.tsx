@@ -9,6 +9,7 @@ import {
   Settings,
   Users,
   Megaphone,
+  GraduationCap,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -24,6 +25,8 @@ function DashMobileMenu() {
   const canSeeUsers = isAdmin || rights?.users?.action_read
   const canSeeOrg = isAdmin || rights?.organizations?.action_read
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
+  const canSeeStudents =
+    isAdmin || (rights?.dashboard?.action_access && rights?.users?.action_read)
 
   if (loading) return null
 
@@ -102,6 +105,18 @@ function DashMobileMenu() {
             >
               <Users size={20} />
               <span className="text-xs mt-1">Users</span>
+            </Link>
+          </ToolTip>
+        )}
+        {canSeeStudents && (
+          <ToolTip content={'Students'} slateBlack sideOffset={8} side="top">
+            <Link
+              href={`/dash/students`}
+              className="flex flex-col items-center p-2"
+              aria-label="Manage students"
+            >
+              <GraduationCap size={20} />
+              <span className="text-xs mt-1">Students</span>
             </Link>
           </ToolTip>
         )}
