@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from src.core.events.database import get_db_session
-from src.db.users import InternalUser, PublicUser
+from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.cohorts.cohorts import (
     create_cohort,
@@ -9,7 +9,7 @@ from src.services.cohorts.cohorts import (
     get_current_cohort,
     unlock_cohort
 )
-from src.db.cohorts import CohortCreate, CohortRead, Cohort
+from src.db.cohorts import CohortCreate, CohortRead
 
 router = APIRouter()
 

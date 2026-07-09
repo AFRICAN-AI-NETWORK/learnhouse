@@ -1,12 +1,10 @@
 from typing import List, Optional
 from uuid import uuid4
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlmodel import Session, select, desc
 from datetime import datetime
 
-from src.db.cohorts import Cohort, CohortCreate, CohortUpdate, CohortStatusEnum, CohortEnrollment, CohortEnrollmentCreate
-from src.db.users import User
-from src.db.courses.courses import Course
+from src.db.cohorts import Cohort, CohortCreate, CohortStatusEnum, CohortEnrollment
 
 async def create_cohort(
     cohort_data: CohortCreate,

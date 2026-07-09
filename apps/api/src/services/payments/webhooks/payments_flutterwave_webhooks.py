@@ -9,8 +9,7 @@ from src.services.payments.payments_users import update_payment_user_status
 from src.services.payments.payments_flutterwave import verify_transaction
 from src.services.payments.discount_codes import (
     record_discount_usage,
-    increment_discount_usage_atomic,
-    decrement_discount_usage
+    increment_discount_usage_atomic
 )
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,7 @@ async def handle_flutterwave_webhook(
                 return {"status": "ignored", "message": "Transaction not successful"}
                 
             transaction_reference = data.get("tx_ref")
-            transaction_id = data.get("id") # The FW transaction ID
+            data.get("id") # The FW transaction ID
             metadata = data.get("meta", {})
             payment_user_id = metadata.get("payment_user_id")
 
@@ -130,7 +129,7 @@ async def handle_flutterwave_webhook(
                             )).first()
 
                             if tracking:
-                                commission = await create_commission_for_payment(
+                                await create_commission_for_payment(
                                     org_id=payment_user.org_id,
                                     referrer_user_id=tracking.referrer_user_id,
                                     referred_user_id=payment_user.user_id,

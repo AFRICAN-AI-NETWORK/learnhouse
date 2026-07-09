@@ -2,7 +2,6 @@ from typing import Optional
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 from enum import Enum
-from datetime import datetime
 
 class CohortStatusEnum(str, Enum):
     UPCOMING = "upcoming"

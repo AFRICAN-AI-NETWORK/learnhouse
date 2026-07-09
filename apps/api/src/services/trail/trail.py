@@ -14,7 +14,7 @@ from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
     sync_course_trail_run_completion_status,
 )
-from src.db.cohorts import CohortEnrollment, Cohort, CohortStatusEnum
+from src.db.cohorts import CohortEnrollment, Cohort
 from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.trail_runs import StatusEnum
 from src.db.courses.chapters import Chapter
