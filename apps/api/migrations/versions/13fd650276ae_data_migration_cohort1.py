@@ -76,6 +76,7 @@ def upgrade() -> None:
                 course_id=run.course_id,
                 org_id=run.org_id,
                 is_locked=False,
+                enrolled_date=str(datetime.now(timezone.utc)),
                 creation_date=str(datetime.now(timezone.utc)),
                 update_date=str(datetime.now(timezone.utc)),
             )
