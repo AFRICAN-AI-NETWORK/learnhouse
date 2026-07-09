@@ -14,6 +14,7 @@ import PersonalizedPathSection from './Sections/PersonalizedPathSection'
 import FAQSection from './Sections/FAQSection'
 import ReferAndEarnSection from './Sections/ReferAndEarnSection'
 import ImpactProgramsSection from './Sections/ImpactProgramsSection'
+import MobileAppLaunchSection from './Sections/MobileAppLaunchSection'
 import GlobalFooter from './GlobalFooter'
 
 interface LandingPremiumProps {
@@ -264,6 +265,9 @@ export default function LandingPremium({
           return null
         }
       )}
+
+      {/* 7.5 Mobile App Launch (Phase 5) */}
+      <MobileAppLaunchSection />
 
       {/* 8. Secondary Offerings */}
       <ReferAndEarnSection />

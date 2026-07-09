@@ -16,7 +16,7 @@ from src.security.features_utils.usage import check_limits_with_usage
 async def init_payments_config(
     request: Request,
     org_id: int,
-    provider: Literal["paystack"],
+    provider: Literal["flutterwave"],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> PaymentsConfig:
@@ -40,8 +40,8 @@ async def init_payments_config(
     ).first()
 
     if result:
-        # If there's an existing config (possibly with STRIPE), delete it first
-        # This handles migration from STRIPE to PAYSTACK
+        # If there's an existing config, delete it first
+        # This handles migration from STRIPE or PAYSTACK to FLUTTERWAVE
         db_session.exec(
             text("DELETE FROM payments_config WHERE org_id = :org_id").bindparams(
                 org_id=org_id
@@ -52,7 +52,7 @@ async def init_payments_config(
     # Initialize new config - automatically activate it
     new_config = PaymentsConfig(
         org_id=org_id,
-        provider=PaymentProviderEnum.PAYSTACK,
+        provider=PaymentProviderEnum.FLUTTERWAVE,
         active=True,  # Automatically activate when creating config
         enabled=True,
         provider_config={

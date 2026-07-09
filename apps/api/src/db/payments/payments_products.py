@@ -13,6 +13,12 @@ class PaymentPriceTypeEnum(str, Enum):
     CUSTOMER_CHOICE = "customer_choice"
     FIXED_PRICE = "fixed_price"
 
+class PaymentIntervalEnum(str, Enum):
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+    WEEKLY = "weekly"
+    DAILY = "daily"
+
 
 class PaymentsProductBase(SQLModel):
     name: str = ""
@@ -22,6 +28,8 @@ class PaymentsProductBase(SQLModel):
     benefits: str = ""
     amount: float = 0.0
     currency: str = "USD"
+    interval: Optional[PaymentIntervalEnum] = None
+    trial_days: int = 0
 
 
 class PaymentsProduct(PaymentsProductBase, table=True):
