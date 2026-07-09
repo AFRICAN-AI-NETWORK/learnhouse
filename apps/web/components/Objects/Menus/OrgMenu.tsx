@@ -10,6 +10,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { SearchBar } from '@components/Objects/Search/SearchBar'
 import { usePathname } from 'next/navigation'
 import { Monitor, Moon, Sun } from 'lucide-react'
+import { AnnouncementBell } from '@components/Objects/Announcements/AnnouncementBell'
 
 type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -173,6 +174,7 @@ export const OrgMenu = (props: any) => {
             >
               <ThemeIcon size={18} />
             </button>
+            <AnnouncementBell orgslug={orgslug} />
             <div className="hidden md:flex">
               <HeaderProfileBox />
             </div>

@@ -8,7 +8,7 @@ from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey
 
 # PaymentsConfig
 class PaymentProviderEnum(str, Enum):
-    PAYSTACK = "paystack"
+    FLUTTERWAVE = "flutterwave"
 
 
 class PaymentProviderEnumType(TypeDecorator):
@@ -18,9 +18,9 @@ class PaymentProviderEnumType(TypeDecorator):
     cache_ok = True
 
     def __init__(self):
-        # Only include 'paystack' since that's the only value in the database
+        # Only include 'flutterwave' since that's the only value in the database
         super().__init__(
-            "paystack",  # Only paystack is valid in the database enum
+            "flutterwave",  # Only flutterwave is valid in the database enum
             name="paymentproviderenum",
             create_type=True,
         )
@@ -30,7 +30,7 @@ class PaymentProviderEnumType(TypeDecorator):
         if value is None:
             return None
         if isinstance(value, PaymentProviderEnum):
-            return value.value  # Return 'paystack', not 'PAYSTACK'
+            return value.value  # Return 'flutterwave', not 'FLUTTERWAVE'
         return value
 
     def process_result_value(self, value, dialect):
@@ -48,7 +48,7 @@ class PaymentsConfigBase(SQLModel):
     enabled: bool = True
     active: bool = False
     provider: PaymentProviderEnum = Field(
-        default=PaymentProviderEnum.PAYSTACK,
+        default=PaymentProviderEnum.FLUTTERWAVE,
         sa_column=Column(PaymentProviderEnumType(), nullable=False),
     )
     provider_specific_id: str | None = None

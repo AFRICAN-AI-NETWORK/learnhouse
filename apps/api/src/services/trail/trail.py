@@ -14,6 +14,7 @@ from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
     sync_course_trail_run_completion_status,
 )
+from src.db.cohorts import CohortEnrollment, Cohort, CohortStatusEnum
 from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.trail_runs import StatusEnum
 from src.db.courses.chapters import Chapter
@@ -86,6 +87,19 @@ async def get_user_trails(
         statement = select(Course).where(Course.id == trail_run.course_id)
         course = db_session.exec(statement).first()
         trail_run.course = course.model_dump() if course else {}
+
+        # Cohort locking info
+        cohort_enroll = db_session.exec(
+            select(CohortEnrollment).where(
+                CohortEnrollment.user_id == trail_run.user_id,
+                CohortEnrollment.course_id == trail_run.course_id
+            )
+        ).first()
+        if cohort_enroll:
+            trail_run.is_locked = cohort_enroll.is_locked
+            cohort = db_session.exec(select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)).first()
+            if cohort:
+                trail_run.cohort_start_date = cohort.start_date
 
         # Add number of activities (steps) in a course
         count_statement = (
@@ -210,6 +224,19 @@ async def get_user_trail_with_orgid(
         statement = select(Course).where(Course.id == trail_run.course_id)
         course = db_session.exec(statement).first()
         trail_run.course = course.model_dump() if course else {}
+
+        # Cohort locking info
+        cohort_enroll = db_session.exec(
+            select(CohortEnrollment).where(
+                CohortEnrollment.user_id == trail_run.user_id,
+                CohortEnrollment.course_id == trail_run.course_id
+            )
+        ).first()
+        if cohort_enroll:
+            trail_run.is_locked = cohort_enroll.is_locked
+            cohort = db_session.exec(select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)).first()
+            if cohort:
+                trail_run.cohort_start_date = cohort.start_date
 
         # Add number of activities (steps) in a course
         count_statement = (
@@ -415,6 +442,32 @@ async def add_activity_to_trail(
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
+
+    # Cohort lock check
+    # Only enforce locks on paid courses (assuming paid courses have cohort enrollments)
+    cohort_enrollment = db_session.exec(
+        select(CohortEnrollment).where(
+            CohortEnrollment.user_id == user.id,
+            CohortEnrollment.course_id == course.id
+        )
+    ).first()
+
+    if cohort_enrollment and cohort_enrollment.is_locked:
+        # Check if the user is an admin or editor, they bypass locks
+        is_editor = False
+        try:
+            from src.security.courses_security import courses_rbac_check
+            is_editor = await courses_rbac_check(
+                request, course.course_uuid, user, "update", db_session
+            )
+        except Exception:
+            pass
+            
+        if not is_editor:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This course is locked until your cohort begins.",
+            )
 
     # Check if all activities in the course are completed and create certificate if so
     if course and course.id:

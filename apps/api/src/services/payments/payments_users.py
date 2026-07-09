@@ -52,20 +52,19 @@ async def create_payment_user(
     # Handle provider-specific data
     if isinstance(provider_data, dict):
         provider_specific_data = ProviderSpecificData(
-            paystack_customer=provider_data.get("paystack_customer")
-            if "paystack_customer" in provider_data
-            else provider_data,
-            paystack_customer_code=provider_data.get("paystack_customer_code")
-            if "paystack_customer_code" in provider_data
+            flutterwave_customer=provider_data.get("flutterwave_customer")
+            if "flutterwave_customer" in provider_data
             else None,
-            paystack_transaction_reference=provider_data.get(
-                "paystack_transaction_reference"
+            customer_code=provider_data.get("customer_code")
+            if "customer_code" in provider_data
+            else None,
+            flutterwave_tx_ref=provider_data.get(
+                "flutterwave_tx_ref"
             )
-            if "paystack_transaction_reference" in provider_data
+            if "flutterwave_tx_ref" in provider_data
             else None,
-            paystack_access_code=provider_data.get("paystack_access_code")
-            if "paystack_access_code" in provider_data
-            else None,
+            # Flutterwave doesn't have an equivalent of access_code typically, but if needed we can add it here.
+            # We removed paystack_access_code.
         )
     else:
         provider_specific_data = ProviderSpecificData()
