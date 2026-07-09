@@ -35,7 +35,7 @@ from src.services.payments.payments_courses import (
     get_courses_by_product,
 )
 from src.services.payments.payments_users import get_owned_courses
-from src.services.payments.payments_paystack import (
+from src.services.payments.payments_flutterwave import (
     initialize_transaction,
     get_supported_currencies,
     verify_transaction,
@@ -45,8 +45,8 @@ from src.services.payments.payments_users import update_payment_user_status
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import InternalUser
 from src.services.payments.payments_customers import get_customers
-from src.services.payments.webhooks.payments_paystack_webhooks import (
-    handle_paystack_webhook,
+from src.services.payments.webhooks.payments_flutterwave_webhooks import (
+    handle_flutterwave_webhook,
 )
 from src.db.courses.courses import Course
 from src.services.payments.discount_codes import (
@@ -73,7 +73,7 @@ router = APIRouter()
 async def api_create_payments_config(
     request: Request,
     org_id: int,
-    provider: Literal["paystack"],
+    provider: Literal["flutterwave"],
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> PaymentsConfig:
@@ -256,13 +256,13 @@ async def api_get_products_by_course(
 # Payments webhooks
 
 
-@router.post("/paystack/webhook")
-async def api_handle_paystack_webhook(
+@router.post("/flutterwave/webhook")
+async def api_handle_flutterwave_webhook(
     request: Request,
     db_session: Session = Depends(get_db_session),
 ):
-    """Handle Paystack webhook events"""
-    return await handle_paystack_webhook(request, db_session)
+    """Handle Flutterwave webhook events"""
+    return await handle_flutterwave_webhook(request, db_session)
 
 
 # Payments checkout
@@ -280,7 +280,7 @@ async def api_create_checkout_session(
     db_session: Session = Depends(get_db_session),
 ):
     """
-    Initialize Paystack transaction for checkout
+    Initialize Flutterwave transaction for checkout
 
     Query Parameters:
         redirect_uri: URL to redirect after payment completion
@@ -312,14 +312,14 @@ async def api_verify_transaction(
     db_session: Session = Depends(get_db_session),
 ):
     """
-    Verify a Paystack transaction by reference
+    Verify a Flutterwave transaction by reference
 
     This endpoint allows you to manually verify a transaction status after payment.
-    According to Paystack documentation, you should verify transactions to confirm
+    According to Flutterwave documentation, you should verify transactions to confirm
     payment status, especially if webhooks are delayed or failed.
 
     The endpoint will:
-    1. Verify the transaction with Paystack API
+    1. Verify the transaction with Flutterwave API
     2. If successful and payment_user_id is found in metadata, update the payment status
     3. Return the transaction details and updated payment status
 
@@ -329,45 +329,45 @@ async def api_verify_transaction(
 
     Returns:
         Transaction verification details including:
-        - Transaction status from Paystack
+        - Transaction status from Flutterwave
         - Payment user status (if found)
         - Whether payment status was updated
     """
     from sqlmodel import select
     from src.db.payments.payments_users import PaymentsUser
 
-    # Verify transaction with Paystack
+    # Verify transaction with Flutterwave
     try:
         transaction_data = await verify_transaction(reference)
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Failed to verify transaction with Paystack: {str(e)}",
+            detail=f"Failed to verify transaction with Flutterwave: {str(e)}",
         )
 
     # Extract transaction details
-    paystack_status = transaction_data.get("status")
-    paystack_data = transaction_data.get("data", {})
-    metadata = paystack_data.get("metadata", {})
-    payment_user_id = metadata.get("payment_user_id")
+    flutterwave_status = transaction_data.get("status")
+    flutterwave_data = transaction_data.get("data", {})
+    # For Flutterwave, meta is slightly different. Sometimes it's inside data.meta
+    meta = flutterwave_data.get("meta", {})
+    payment_user_id = meta.get("payment_user_id")
 
     # Prepare response
     response = {
         "reference": reference,
-        "paystack_status": paystack_status,
+        "flutterwave_status": flutterwave_status,
         "transaction_data": {
-            "amount": paystack_data.get("amount"),
-            "currency": paystack_data.get("currency"),
-            "gateway_response": paystack_data.get("gateway_response"),
-            "paid_at": paystack_data.get("paid_at"),
-            "created_at": paystack_data.get("created_at"),
+            "amount": flutterwave_data.get("amount"),
+            "currency": flutterwave_data.get("currency"),
+            "processor_response": flutterwave_data.get("processor_response"),
+            "created_at": flutterwave_data.get("created_at"),
         },
         "payment_user_id": payment_user_id,
         "payment_status_updated": False,
     }
 
     # If transaction is successful and we have a payment_user_id, update the payment status
-    if paystack_status == "success" and payment_user_id:
+    if flutterwave_status == "successful" and payment_user_id:
         try:
             # Find the payment user
             payment_user_statement = select(PaymentsUser).where(

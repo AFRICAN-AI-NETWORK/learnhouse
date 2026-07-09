@@ -338,13 +338,10 @@ const LoginClient = (props: LoginClientProps) => {
           <p className="text-center text-sm text-slate-600">
             {t('auth.no_account')}{' '}
             <Link
-              href={{
-                pathname: getUriWithoutOrg('/signup'),
-                query: props.org.slug ? { orgslug: props.org.slug } : null,
-              }}
+              href="/#programs"
               className="font-bold text-black hover:underline underline-offset-4"
             >
-              {t('auth.sign_up')}
+              Apply Now
             </Link>
           </p>
         </div>

@@ -11,7 +11,7 @@ export default function MobileAppLaunchSection() {
         <div className="flex-1 space-y-8 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 font-bold text-sm uppercase tracking-widest mx-auto lg:mx-0">
             <Smartphone size={16} />
-            Mobile App Launch
+            Upcoming Activity
           </div>
 
           <h2 className="text-4xl md:text-5xl font-black text-[#0a0f1e] tracking-tight leading-[1.1]">
@@ -41,7 +41,7 @@ export default function MobileAppLaunchSection() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-br from-blue-50 to-purple-50 rounded-full blur-3xl -z-10 opacity-70" />
 
           <img
-            src="/landing/lms_mobile_mockup.png"
+            src="/landing/aina_mobile_mockup.png"
             alt="Learnhouse Mobile App Mockup"
             className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform transition-transform hover:scale-[1.02] duration-700"
           />

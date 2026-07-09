@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from src.core.events.database import get_db_session
-from src.db.users import InternalUser, UserSession
-from src.security.auth_security import get_current_user_session
+from src.db.users import InternalUser, PublicUser
+from src.security.auth import get_current_user
 from src.services.cohorts.cohorts import (
     create_cohort,
     get_org_cohorts,
@@ -17,7 +17,7 @@ router = APIRouter()
 async def api_create_cohort(
     cohort_data: CohortCreate,
     db_session: Session = Depends(get_db_session),
-    user_session: UserSession = Depends(get_current_user_session)
+    current_user: PublicUser = Depends(get_current_user)
 ):
     # TODO: Add proper admin RBAC check here
     return await create_cohort(cohort_data, db_session)
@@ -27,7 +27,7 @@ async def api_create_cohort(
 async def api_get_org_cohorts(
     org_id: int,
     db_session: Session = Depends(get_db_session),
-    user_session: UserSession = Depends(get_current_user_session)
+    current_user: PublicUser = Depends(get_current_user)
 ):
     return await get_org_cohorts(org_id, db_session)
 
@@ -36,7 +36,7 @@ async def api_get_org_cohorts(
 async def api_get_current_cohort(
     org_id: int,
     db_session: Session = Depends(get_db_session),
-    user_session: UserSession = Depends(get_current_user_session)
+    current_user: PublicUser = Depends(get_current_user)
 ):
     cohort = await get_current_cohort(org_id, db_session)
     if not cohort:
@@ -48,7 +48,7 @@ async def api_get_current_cohort(
 async def api_unlock_cohort(
     cohort_id: int,
     db_session: Session = Depends(get_db_session),
-    user_session: UserSession = Depends(get_current_user_session)
+    current_user: PublicUser = Depends(get_current_user)
 ):
     # TODO: Add proper admin RBAC check here
     return await unlock_cohort(cohort_id, db_session)
