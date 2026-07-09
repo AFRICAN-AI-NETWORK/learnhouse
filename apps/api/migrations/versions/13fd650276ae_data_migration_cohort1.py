@@ -23,7 +23,7 @@ def upgrade() -> None:
     from sqlmodel import Session, select
     from datetime import datetime, timezone
     from src.db.trail_runs import TrailRun
-    from src.db.payments.payments_courses import PaymentProductCourse
+    from src.db.payments.payments_courses import PaymentsCourse
     from src.db.cohorts import Cohort, CohortEnrollment, CohortStatusEnum
     
     bind = op.get_bind()
@@ -51,7 +51,7 @@ def upgrade() -> None:
         session.add(cohort1)
         session.flush()
         
-    paid_course_links = session.exec(select(PaymentProductCourse)).all()
+    paid_course_links = session.exec(select(PaymentsCourse)).all()
     paid_course_ids = set([p.course_id for p in paid_course_links if p.course_id])
     
     if not paid_course_ids:
