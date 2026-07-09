@@ -1,6 +1,7 @@
 'use client'
 import React from 'react'
-import { Form, Formik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 import { updateOrganization } from '@services/settings/org'
 import { revalidateTags } from '@services/utils/ts/requests'
@@ -96,6 +97,24 @@ const OrgEditGeneral: React.FC = () => {
     label: org?.label || '',
   }
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<OrganizationValues>({
+    resolver: yupResolver(validationSchema) as any,
+    defaultValues: initialValues,
+  })
+
+  React.useEffect(() => {
+    reset(initialValues)
+  }, [org?.name, org?.description, org?.about, org?.label, reset])
+
+  const formValues = watch()
+
   const updateOrg = async (values: OrganizationValues) => {
     const loadingToast = toast.loading(
       t('dashboard.organization.settings.updating')
@@ -114,28 +133,14 @@ const OrgEditGeneral: React.FC = () => {
     }
   }
 
+  const onSubmit = async (values: OrganizationValues) => {
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    await updateOrg(values)
+  }
+
   return (
     <div className="sm:mx-10 mx-0 bg-white rounded-xl nice-shadow dark:border dark:border-white/8 dark:bg-[#13131a]">
-      <Formik
-        enableReinitialize
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={(values, { setSubmitting }) => {
-          setTimeout(() => {
-            setSubmitting(false)
-            updateOrg(values)
-          }, 400)
-        }}
-      >
-        {({
-          isSubmitting,
-          values,
-          handleChange,
-          errors,
-          touched,
-          setFieldValue,
-        }) => (
-          <Form>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-0">
               <div className="flex flex-col bg-gray-50 -space-y-1 px-5 py-3 mx-3 my-3 rounded-md dark:bg-white/5">
                 <h1 className="font-bold text-xl text-gray-800 dark:text-white/90">
@@ -153,22 +158,20 @@ const OrgEditGeneral: React.FC = () => {
                       <Label htmlFor="name">
                         {t('dashboard.organization.settings.name')}
                         <span className="text-gray-500 text-sm ml-2 dark:text-white/40">
-                          ({60 - (values.name?.length || 0)} characters left)
+                          ({60 - (formValues.name?.length || 0)} characters left)
                         </span>
                       </Label>
                       <Input
                         id="name"
-                        name="name"
-                        value={values.name}
-                        onChange={handleChange}
+                        {...register('name')}
                         placeholder={t(
                           'dashboard.organization.settings.name_placeholder'
                         )}
                         maxLength={60}
                       />
-                      {touched.name && errors.name && (
+                      {errors.name && (
                         <p className="text-red-500 text-sm mt-1">
-                          {errors.name}
+                          {errors.name.message as string}
                         </p>
                       )}
                     </div>
@@ -177,23 +180,21 @@ const OrgEditGeneral: React.FC = () => {
                       <Label htmlFor="description">
                         {t('dashboard.organization.settings.short_description')}
                         <span className="text-gray-500 text-sm ml-2 dark:text-white/40">
-                          ({100 - (values.description?.length || 0)} characters
+                          ({100 - (formValues.description?.length || 0)} characters
                           left)
                         </span>
                       </Label>
                       <Input
                         id="description"
-                        name="description"
-                        value={values.description}
-                        onChange={handleChange}
+                        {...register('description')}
                         placeholder={t(
                           'dashboard.organization.settings.short_description_placeholder'
                         )}
                         maxLength={100}
                       />
-                      {touched.description && errors.description && (
+                      {errors.description && (
                         <p className="text-red-500 text-sm mt-1">
-                          {errors.description}
+                          {errors.description.message as string}
                         </p>
                       )}
                     </div>
@@ -203,8 +204,8 @@ const OrgEditGeneral: React.FC = () => {
                         {t('dashboard.organization.settings.label')}
                       </Label>
                       <Select
-                        value={values.label}
-                        onValueChange={(value) => setFieldValue('label', value)}
+                        value={formValues.label}
+                        onValueChange={(value) => setValue('label', value)}
                       >
                         <SelectTrigger>
                           <SelectValue
@@ -221,9 +222,9 @@ const OrgEditGeneral: React.FC = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      {touched.label && errors.label && (
+                      {errors.label && (
                         <p className="text-red-500 text-sm mt-1">
-                          {errors.label}
+                          {errors.label.message as string}
                         </p>
                       )}
                     </div>
@@ -232,23 +233,21 @@ const OrgEditGeneral: React.FC = () => {
                       <Label htmlFor="about">
                         {t('dashboard.organization.settings.about')}
                         <span className="text-gray-500 text-sm ml-2 dark:text-white/40">
-                          ({400 - (values.about?.length || 0)} characters left)
+                          ({400 - (formValues.about?.length || 0)} characters left)
                         </span>
                       </Label>
                       <Textarea
                         id="about"
-                        name="about"
-                        value={values.about}
-                        onChange={handleChange}
+                        {...register('about')}
                         placeholder={t(
                           'dashboard.organization.settings.about_placeholder'
                         )}
                         className="min-h-[250px]"
                         maxLength={400}
                       />
-                      {touched.about && errors.about && (
+                      {errors.about && (
                         <p className="text-red-500 text-sm mt-1">
-                          {errors.about}
+                          {errors.about.message as string}
                         </p>
                       )}
                     </div>
@@ -267,9 +266,7 @@ const OrgEditGeneral: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </Form>
-        )}
-      </Formik>
+          </form>
     </div>
   )
 }

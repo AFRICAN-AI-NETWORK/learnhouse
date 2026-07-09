@@ -18,22 +18,18 @@ import {
 import Link from 'next/link'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import { sendResetLink } from '@services/auth/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
-const validate = (values: any, t: any) => {
-  const errors: any = {}
-
-  if (!values.email) {
-    errors.email = t('validation.required')
-  } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-    errors.email = t('validation.invalid_email')
-  }
-
-  return errors
-}
+const getValidationSchema = (t: any) => Yup.object().shape({
+  email: Yup.string()
+    .required(t('validation.required'))
+    .email(t('validation.invalid_email')),
+})
 
 function ForgotPasswordClient() {
   const { t } = useTranslation()
@@ -42,37 +38,42 @@ function ForgotPasswordClient() {
   const [error, setError] = React.useState('')
   const [message, setMessage] = React.useState('')
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(getValidationSchema(t)),
+    defaultValues: {
       email: '',
-    },
-    validate: (values) => validate(values, t),
-    validateOnBlur: true,
-    onSubmit: async (values) => {
-      setError('')
-      setMessage('')
-      setIsSubmitting(true)
-      let res = await sendResetLink(values.email, org?.id)
-      if (res.status == 200) {
-        setMessage(res.data + ', ' + t('auth.check_email_message'))
-        setIsSubmitting(false)
-      } else {
-        const detail = res.data.detail
-        const errorMessage = Array.isArray(detail)
-          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
-          : typeof detail === 'string'
-            ? detail
-            : detail?.msg ||
-              JSON.stringify(detail) ||
-              t('common.something_went_wrong')
-        setError(errorMessage)
-        setIsSubmitting(false)
-      }
     },
   })
 
-  const emailHasError = Boolean(formik.errors.email && formik.touched.email)
-  const emailIsValid = Boolean(formik.values.email && !formik.errors.email)
+  const onSubmit = async (values: any) => {
+    setError('')
+    setMessage('')
+    setIsSubmitting(true)
+    let res = await sendResetLink(values.email, org?.id)
+    if (res.status == 200) {
+      setMessage(res.data + ', ' + t('auth.check_email_message'))
+      setIsSubmitting(false)
+    } else {
+      const detail = res.data.detail
+      const errorMessage = Array.isArray(detail)
+        ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+        : typeof detail === 'string'
+          ? detail
+          : detail?.msg ||
+            JSON.stringify(detail) ||
+            t('common.something_went_wrong')
+      setError(errorMessage)
+      setIsSubmitting(false)
+    }
+  }
+
+  const emailHasError = Boolean(errors.email)
+  const emailIsValid = Boolean(watch('email') && !errors.email)
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center overflow-y-auto bg-slate-50/50">
@@ -136,7 +137,7 @@ function ForgotPasswordClient() {
                 </div>
               )}
 
-              <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
+              <FormLayout onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <FormField name="email">
                   <FormLabelAndMessage label={t('auth.email')} />
                   <div className="group relative">
@@ -146,7 +147,6 @@ function ForgotPasswordClient() {
                     />
                     <Form.Control asChild>
                       <input
-                        name="email"
                         className={`h-12 w-full rounded-xl border bg-white pl-12 pr-4 font-medium text-slate-900 outline-none transition-all ${
                           emailHasError
                             ? 'border-red-400 focus:ring-2 focus:ring-red-500/10'
@@ -154,9 +154,7 @@ function ForgotPasswordClient() {
                               ? 'border-emerald-500 focus:ring-2 focus:ring-emerald-500/10'
                               : 'border-slate-200 focus:border-black focus:ring-4 focus:ring-black/5'
                         }`}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        value={formik.values.email}
+                        {...register('email')}
                         type="email"
                         placeholder="you@example.com"
                         required
@@ -165,7 +163,7 @@ function ForgotPasswordClient() {
                   </div>
                   {emailHasError && (
                     <p className="mt-1 text-xs font-medium text-red-600">
-                      {formik.errors.email}
+                      {errors.email?.message as string}
                     </p>
                   )}
                 </FormField>

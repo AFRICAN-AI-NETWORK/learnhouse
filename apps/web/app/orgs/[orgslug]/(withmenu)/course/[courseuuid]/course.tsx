@@ -600,7 +600,7 @@ const ChapterCard = ({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3
-              className={`truncate text-base font-bold ${chapter.is_locked ? 'text-gray-500' : 'text-gray-950'}`}
+              className={`truncate text-base font-bold uppercase ${chapter.is_locked ? 'text-gray-500' : 'text-gray-950'}`}
             >
               {chapter.name}
             </h3>
@@ -709,7 +709,7 @@ const ActivityRow = ({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <p
-            className={`font-semibold ${
+            className={`font-semibold capitalize ${
               isLocked
                 ? 'text-gray-400'
                 : 'text-gray-950 group-hover:text-blue-600'

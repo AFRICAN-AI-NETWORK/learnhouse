@@ -1,5 +1,7 @@
 'use client'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as Yup from 'yup'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import FormLayout, {
@@ -8,7 +10,7 @@ import FormLayout, {
   Input,
   Textarea,
 } from '@components/Objects/StyledElements/Form/Form'
-import PhoneNumberFields from '@components/Objects/StyledElements/Form/PhoneNumberFields'
+import PhoneNumberFieldsRHF from '@components/Objects/StyledElements/Form/PhoneNumberFieldsRHF'
 import * as Form from '@radix-ui/react-form'
 import {
   AlertTriangle,
@@ -39,43 +41,35 @@ import {
   validatePhoneFields,
 } from '@/lib/phone-number'
 
-const validate = (values: any, t: any) => {
-  const errors: any = {}
-  const phoneErrors = validatePhoneFields(values)
-  if (phoneErrors.country_code) {
-    errors.country_code = phoneErrors.country_code
-  }
-  if (phoneErrors.phone_number) {
-    errors.phone_number =
-      t('validation.invalid_phone_with_country_code') ||
-      phoneErrors.phone_number
-  }
-  if (!values.email) {
-    errors.email = t('validation.required')
-  } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-    errors.email = t('validation.invalid_email')
-  }
-  if (!values.password) {
-    errors.password = t('validation.required')
-  } else if (values.password.length < 8) {
-    errors.password = t('validation.password_min_length')
-  }
-  if (!values.username) {
-    errors.username = t('validation.required')
-  } else if (values.username.length < 4) {
-    errors.username = t('validation.username_min_length')
-  }
-  if (!values.bio) {
-    errors.bio = t('validation.required')
-  }
-  if (!values.first_name) {
-    errors.first_name = t('validation.required')
-  }
-  if (!values.last_name) {
-    errors.last_name = t('validation.required')
-  }
-  return errors
-}
+const getValidationSchema = (t: any) => Yup.object().shape({
+  email: Yup.string()
+    .required(t('validation.required'))
+    .email(t('validation.invalid_email')),
+  password: Yup.string()
+    .required(t('validation.required'))
+    .min(8, t('validation.password_min_length')),
+  username: Yup.string()
+    .required(t('validation.required'))
+    .min(4, t('validation.username_min_length')),
+  bio: Yup.string().required(t('validation.required')),
+  first_name: Yup.string().required(t('validation.required')),
+  last_name: Yup.string().required(t('validation.required')),
+  country_code: Yup.string().required(t('validation.required')),
+  phone_number: Yup.string()
+    .test(
+      'is-valid-phone',
+      t('validation.invalid_phone_with_country_code') || 'Invalid phone number',
+      function (value) {
+        if (!value) return true
+        const { parent } = this
+        const phoneErrors = validatePhoneFields({
+          country_code: parent.country_code,
+          phone_number: value,
+        })
+        return !(phoneErrors.phone_number || phoneErrors.country_code)
+      }
+    ),
+})
 
 const getPasswordStrength = (password: string) => {
   const rules = {
@@ -166,8 +160,16 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
     }
   }, [waitlistUuid])
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    trigger,
+    formState: { errors: formErrors },
+  } = useForm({
+    resolver: yupResolver(getValidationSchema(t)) as any,
+    defaultValues: {
       username: '',
       email: searchParams.get('email') || '',
       password: '',
@@ -181,13 +183,23 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       is_waitlist: true,
       waitlist_interest: waitlistDetails?.interest_category || '',
     },
-    validate: (values) => validate(values, t),
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      setError('')
-      setReferralCodeError('')
-      setMessage('')
-      setIsSubmitting(true)
+  })
+
+  // To dynamically keep form defaults in sync if waitlistDetails loads later
+  useEffect(() => {
+    if (waitlistDetails) {
+      setValue('org_id', waitlistDetails.org_id)
+      setValue('waitlist_interest', waitlistDetails.interest_category || '')
+    }
+  }, [waitlistDetails, setValue])
+
+  const formValues = watch()
+
+  const onSubmit = async (values: any) => {
+    setError('')
+    setReferralCodeError('')
+    setMessage('')
+    setIsSubmitting(true)
 
       // ── Device fingerprinting (fail-silent)
       let device_id: string | undefined
@@ -331,32 +343,25 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
       } finally {
         setIsSubmitting(false)
       }
-    },
-  })
+  }
 
   const handleNextStep = async () => {
-    const errors = await formik.validateForm()
     if (step === 1) {
-      if (!errors.email && !errors.password) {
+      const isStep1Valid = await trigger(['email', 'password'])
+      if (isStep1Valid) {
         setStep(2)
-      } else {
-        formik.setFieldTouched('email', true)
-        formik.setFieldTouched('password', true)
       }
     } else if (step === 2) {
-      const profileErrors = [
+      const isStep2Valid = await trigger([
         'username',
         'first_name',
         'last_name',
         'bio',
         'country_code',
         'phone_number',
-      ]
-      const hasProfileError = profileErrors.some((f) => (errors as any)[f])
-      if (!hasProfileError) {
+      ])
+      if (isStep2Valid) {
         setStep(3)
-      } else {
-        profileErrors.forEach((f) => formik.setFieldTouched(f, true))
       }
     }
   }
@@ -461,7 +466,7 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
         </div>
       )}
 
-      <FormLayout onSubmit={formik.handleSubmit} className="space-y-4">
+      <FormLayout onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {step === 1 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
             <FormField name="email">
@@ -470,19 +475,17 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Form.Control asChild>
                   <Input
-                    className={`pl-10 h-12 focus:ring-2 focus:ring-black/5 transition-all ${formik.errors.email && formik.touched.email ? 'border-red-400 focus:ring-red-500/10' : formik.values.email && !formik.errors.email ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.email}
+                    className="pl-10 h-12 focus:ring-2 focus:ring-black/5 transition-all"
+                    {...register('email')}
                     type="email"
                     placeholder="you@example.com"
                     required
                   />
                 </Form.Control>
               </div>
-              {formik.errors.email && formik.touched.email && (
+              {formErrors.email && (
                 <p className="mt-1 text-xs text-red-600 font-medium">
-                  {formik.errors.email}
+                  {formErrors.email.message as string}
                 </p>
               )}
             </FormField>
@@ -493,10 +496,8 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 <LucideLock className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Form.Control asChild>
                   <Input
-                    className={`pl-10 h-12 focus:ring-2 focus:ring-black/5 transition-all ${formik.errors.password && formik.touched.password ? 'border-red-400' : formik.values.password && !formik.errors.password ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.password}
+                    className="pl-10 h-12 focus:ring-2 focus:ring-black/5 transition-all"
+                    {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Create a strong password"
                     autoComplete="new-password"
@@ -511,15 +512,15 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {formik.errors.password && formik.touched.password && (
+              {formErrors.password && (
                 <p className="mt-1 text-xs text-red-600 font-medium">
-                  {formik.errors.password}
+                  {formErrors.password.message as string}
                 </p>
               )}
 
-              {formik.values.password &&
+              {formValues.password &&
                 (() => {
-                  const strength = getPasswordStrength(formik.values.password)
+                  const strength = getPasswordStrength(formValues.password)
                   return (
                     <div className="mt-3 space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
                       <div className="flex gap-1.5">
@@ -567,13 +568,15 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 <Form.Control asChild>
                   <Input
                     className="h-12 focus:ring-2 focus:ring-black/5 transition-shadow"
-                    onChange={formik.handleChange}
-                    value={formik.values.first_name}
+                    {...register('first_name')}
                     placeholder="First name"
                     type="text"
                     required
                   />
                 </Form.Control>
+                {formErrors.first_name && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.first_name.message as string}</p>
+                )}
               </FormField>
 
               <FormField name="last_name">
@@ -581,13 +584,15 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 <Form.Control asChild>
                   <Input
                     className="h-12 focus:ring-2 focus:ring-black/5 transition-shadow"
-                    onChange={formik.handleChange}
-                    value={formik.values.last_name}
+                    {...register('last_name')}
                     placeholder="Last name"
                     type="text"
                     required
                   />
                 </Form.Control>
+                {formErrors.last_name && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.last_name.message as string}</p>
+                )}
               </FormField>
             </div>
 
@@ -597,25 +602,26 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 <User className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Form.Control asChild>
                   <Input
-                    className={`pl-10 h-12 focus:ring-2 focus:ring-black/5 transition-shadow ${formik.errors.username && formik.touched.username ? 'border-red-400' : formik.values.username && !formik.errors.username ? 'border-emerald-500 focus:ring-emerald-500/10' : ''}`}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.username}
+                    className="pl-10 h-12 focus:ring-2 focus:ring-black/5 transition-shadow"
+                    {...register('username')}
                     placeholder="Choose a username"
                     type="text"
                     required
                   />
                 </Form.Control>
               </div>
-              {formik.errors.username && formik.touched.username && (
+              {formErrors.username && (
                 <p className="mt-1 text-xs text-red-600 font-medium">
-                  {formik.errors.username}
+                  {formErrors.username.message as string}
                 </p>
               )}
             </FormField>
 
-            <PhoneNumberFields
-              formik={formik}
+            <PhoneNumberFieldsRHF
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              errors={formErrors}
               phoneNumberLabel={t('user.phone_number') || 'Phone number'}
             />
 
@@ -625,12 +631,14 @@ function WaitlistSignUpComponent({ waitlistUuid }: WaitlistSignUpProps) {
                 <Textarea
                   className="resize-none focus:ring-2 focus:ring-black/5 transition-all p-3"
                   rows={3}
-                  onChange={formik.handleChange}
-                  value={formik.values.bio}
+                  {...register('bio')}
                   placeholder="Tell us a bit about yourself..."
                   required
                 />
               </Form.Control>
+              {formErrors.bio && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.bio.message as string}</p>
+              )}
             </FormField>
 
             {/* Referral Code — optional */}

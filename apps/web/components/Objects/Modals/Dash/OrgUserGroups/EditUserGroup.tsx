@@ -11,7 +11,7 @@ import { updateUserGroup } from '@services/usergroups/usergroups'
 import { mutate } from 'swr'
 import { getAPIUrl } from '@services/config/config'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
@@ -40,44 +40,60 @@ function EditUserGroup(props: EditUserGroupProps) {
   const access_token = session?.data?.tokens?.access_token
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
       name: props.usergroup.name,
       description: props.usergroup.description,
     },
-    validate: getValidate(t),
-    onSubmit: async (values) => {
-      setIsSubmitting(true)
-      const res = await updateUserGroup(
-        props.usergroup.id,
-        access_token,
-        values
-      )
-
-      if (res.status == 200) {
-        setIsSubmitting(false)
-        toast.success(
-          t('dashboard.users.usergroups.modals.edit.toasts.success')
-        )
-        mutate(`${getAPIUrl()}usergroups/org/${org.id}`)
-      } else {
-        toast.error(t('dashboard.users.usergroups.modals.edit.toasts.error'))
-        setIsSubmitting(false)
+    resolver: (async (values: any) => {
+      const formErrors = getValidate(t)(values)
+      if (Object.keys(formErrors).length > 0) {
+        return {
+          values: {},
+          errors: Object.keys(formErrors).reduce((acc, key) => {
+            acc[key as any] = { type: 'manual', message: formErrors[key] }
+            return acc
+          }, {} as Record<string, any>),
+        }
       }
-    },
+      return { values, errors: {} }
+    }) as any
   })
 
+  const onSubmit = async (values: any) => {
+    setIsSubmitting(true)
+    const res = await updateUserGroup(
+      props.usergroup.id,
+      access_token,
+      values
+    )
+
+    if (res.status == 200) {
+      setIsSubmitting(false)
+      toast.success(
+        t('dashboard.users.usergroups.modals.edit.toasts.success')
+      )
+      mutate(`${getAPIUrl()}usergroups/org/${org.id}`)
+    } else {
+      toast.error(t('dashboard.users.usergroups.modals.edit.toasts.error'))
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <FormLayout onSubmit={formik.handleSubmit}>
+    <FormLayout onSubmit={handleSubmit(onSubmit)}>
       <FormField name="name">
         <FormLabelAndMessage
           label={t('dashboard.users.usergroups.modals.edit.form.name')}
-          message={formik.errors.name}
+          message={errors.name?.message as string}
         />
         <Form.Control asChild>
           <Input
-            onChange={formik.handleChange}
-            value={formik.values.name}
+            {...register('name')}
             type="name"
             required
           />
@@ -86,12 +102,11 @@ function EditUserGroup(props: EditUserGroupProps) {
       <FormField name="description">
         <FormLabelAndMessage
           label={t('dashboard.users.usergroups.modals.edit.form.description')}
-          message={formik.errors.description}
+          message={errors.description?.message as string}
         />
         <Form.Control asChild>
           <Input
-            onChange={formik.handleChange}
-            value={formik.values.description}
+            {...register('description')}
             type="description"
           />
         </Form.Control>

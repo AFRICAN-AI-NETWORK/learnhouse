@@ -102,20 +102,45 @@ async def authenticate_user(
     if user_status == UserStatusEnum.WAITLIST.value:
         # User is on waitlist, cannot login yet
         # Get waitlist details to show launch date
-        from src.db.waitlist import WaitlistConfig
+        from src.db.waitlist import WaitlistConfig, WaitlistStatusEnum
 
         waitlist_interest = getattr(user, "waitlist_interest", None)
         if waitlist_interest:
             waitlist_query = select(WaitlistConfig).where(
-                WaitlistConfig.interest_category == waitlist_interest,
-                WaitlistConfig.status == "ACTIVE",
+                WaitlistConfig.interest_category == waitlist_interest
             )
             waitlist = db_session.exec(waitlist_query).first()
             if waitlist:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Your account is on the waitlist for {waitlist.name}. You can login after {waitlist.launch_datetime}.",
-                )
+                # Check if waitlist is completed or launch time has passed
+                is_launched = False
+                if waitlist.status == WaitlistStatusEnum.COMPLETED.value:
+                    is_launched = True
+                else:
+                    try:
+                        launch_dt = datetime.fromisoformat(waitlist.launch_datetime.replace("Z", "+00:00"))
+                        if launch_dt.tzinfo is None:
+                            launch_dt = launch_dt.replace(tzinfo=timezone.utc)
+                        else:
+                            launch_dt = launch_dt.astimezone(timezone.utc)
+                        
+                        if datetime.now(timezone.utc) >= launch_dt:
+                            is_launched = True
+                    except ValueError:
+                        pass
+                
+                if is_launched:
+                    # Waitlist is live! The user was likely skipped by the email cron job 
+                    # (e.g. email was unverified at the time). Activate them now!
+                    user.user_status = UserStatusEnum.ACTIVE.value
+                    db_session.add(user)
+                    db_session.commit()
+                    db_session.refresh(user)
+                    return user
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Your account is on the waitlist for {waitlist.name}. You can login after {waitlist.launch_datetime}.",
+                    )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account is on a waitlist. Please wait for the launch date.",

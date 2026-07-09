@@ -63,6 +63,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import MiniInfoTooltip from '@components/Objects/MiniInfoTooltip'
 import { useTranslation } from 'react-i18next'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
+import { useActivityHeartbeat } from '../../../../../../../../hooks/useActivityHeartbeat'
 
 // Lazy load heavy components
 const Canva = lazy(
@@ -475,6 +476,9 @@ function ActivityClient(props: ActivityClientProps) {
   const { contributorStatus } = useContributorStatus(courseuuid)
   const router = useRouter()
 
+  // Heartbeat tracking
+  useActivityHeartbeat(activity?.activity_uuid, access_token)
+
   // Add SWR for trail data
   const { data: trailData } = useSWR(
     `${getAPIUrl()}trail/org/${org?.id}/trail`,
@@ -619,6 +623,7 @@ function ActivityClient(props: ActivityClientProps) {
                   handleMarkAsComplete(activity.activity_uuid, true)
                 }
               }}
+              onWatchSatisfied={() => setVideoWatchSatisfied(true)}
             />
           </Suspense>
         )
@@ -687,6 +692,7 @@ function ActivityClient(props: ActivityClientProps) {
     handleMarkAsComplete,
     isActivityComplete,
     trailData,
+    setVideoWatchSatisfied,
   ])
 
   // Navigate to an activity

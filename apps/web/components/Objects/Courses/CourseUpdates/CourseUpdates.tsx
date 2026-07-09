@@ -1,7 +1,7 @@
 import { PencilLine, Rss, TentTree } from 'lucide-react'
 import React, { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useFormik } from 'formik'
+import { useForm } from 'react-hook-form'
 import * as Form from '@radix-ui/react-form'
 import FormLayout, {
   FormField,
@@ -118,31 +118,47 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
 
     return errors
   }
-  const formik = useFormik({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
       title: '',
       content: ''
     },
-    validate,
-    onSubmit: async (values) => {
-      const body = {
-        title: values.title,
-        content: values.content,
-        course_uuid: course.courseStructure.course_uuid,
-        org_id: org.id
+    resolver: (async (values: any) => {
+      const formErrors = validate(values)
+      if (Object.keys(formErrors).length > 0) {
+        return {
+          values: {},
+          errors: Object.keys(formErrors).reduce((acc, key) => {
+            acc[key] = { type: 'manual', message: formErrors[key] }
+            return acc
+          }, {} as Record<string, any>),
+        }
       }
-      const res = await createCourseUpdate(body, session.data?.tokens?.access_token)
-      if (res.status === 200) {
-        toast.success(t('courses.update_added_success'))
-        setSelectedView('list')
-        mutate(`${getAPIUrl()}courses/${course?.courseStructure.course_uuid}/updates`)
-      }
-      else {
-        toast.error(t('courses.failed_add_update'))
-      }
-    },
-    enableReinitialize: true,
+      return { values, errors: {} }
+    }) as any
   })
+
+  const onSubmit = async (values: any) => {
+    const body = {
+      title: values.title,
+      content: values.content,
+      course_uuid: course.courseStructure.course_uuid,
+      org_id: org.id
+    }
+    const res = await createCourseUpdate(body, session.data?.tokens?.access_token)
+    if (res.status === 200) {
+      toast.success(t('courses.update_added_success'))
+      setSelectedView('list')
+      mutate(`${getAPIUrl()}courses/${course?.courseStructure.course_uuid}/updates`)
+    }
+    else {
+      toast.error(t('courses.failed_add_update'))
+    }
+  }
 
   useEffect(() => {
 
@@ -157,17 +173,16 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
         <div className='text-black px-3 py-0.5 rounded-full text-lg font-bold'>{t('courses.add_new_course_update')}</div>
       </div>
       <div className='px-5 -py-2'>
-        <FormLayout onSubmit={formik.handleSubmit}>
+        <FormLayout onSubmit={handleSubmit(onSubmit)}>
           <FormField name="title">
             <FormLabelAndMessage
               label={t('courses.update_title')}
-              message={formik.errors.title}
+              message={errors.title?.message as string}
             />
             <Form.Control asChild>
               <Input
                 style={{ backgroundColor: 'white' }}
-                onChange={formik.handleChange}
-                value={formik.values.title}
+                {...register('title')}
                 type="text"
                 required
               />
@@ -176,13 +191,12 @@ const NewUpdateForm = ({ setSelectedView }: any) => {
           <FormField name="content">
             <FormLabelAndMessage
               label={t('courses.update_content')}
-              message={formik.errors.content}
+              message={errors.content?.message as string}
             />
             <Form.Control asChild>
               <Textarea
                 style={{ backgroundColor: 'white', height: '100px' }}
-                onChange={formik.handleChange}
-                value={formik.values.content}
+                {...register('content')}
                 required
               />
             </Form.Control>

@@ -41,62 +41,82 @@ export default function AIFundamentalsPage() {
   const modules = [
     {
       num: 1,
-      title: 'Foundations of Machine Learning',
+      title: 'Python for Data Science',
       details: [
-        'Supervised vs unsupervised learning: when to use which and why',
-        'Regression, classification, and the mathematical intuition behind how models learn from data',
-        'The complete AI/ML pipeline: from problem definition to model deployment',
-        'Understanding model types: decision trees, random forests, SVMs, and neural network basics',
+        'Syntax, data structures, functions, OOP basics, file I/O',
+        'Working with Python',
+        'Data manipulation with NumPy',
+        'Data manipulation with Pandas',
       ],
     },
     {
       num: 2,
-      title: 'The Complete AI Pipeline in Depth',
+      title: 'Mathematics & Statistics Essentials',
       details: [
-        'Data collection and preprocessing for real-world datasets',
-        'Feature engineering: the skill that separates good from great ML practitioners',
-        'Model training, hyperparameter tuning, and optimisation techniques',
-        'Evaluation metrics (accuracy, precision, recall, F1) and knowing which one matters when',
+        'Linear algebra, calculus basics',
+        'Probability, distributions, hypothesis testing',
+        'Working with SciPy',
+        'Mathematics with NumPy',
       ],
     },
     {
       num: 3,
-      title: 'Working with Real Data',
+      title: 'Data Wrangling & EDA',
       details: [
-        'Hands-on data cleaning and exploratory data analysis (EDA)',
-        'Working with African datasets and African-context problems (agriculture, health, finance)',
-        'Building models that matter locally, not just academically',
-        'Handling missing data, class imbalance, and noisy real-world inputs',
+        'Cleaning, merging, reshaping, missing values',
+        'Exploratory data analysis',
+        'Data visualisation with Matplotlib',
+        'Data visualisation with Seaborn',
       ],
     },
     {
       num: 4,
-      title: 'Modern AI/ML Tooling',
+      title: 'Supervised Learning',
       details: [
-        'Python for machine learning: NumPy, pandas, and matplotlib',
-        'scikit-learn: the workhorse of practical ML',
-        'Introduction to deep learning frameworks (TensorFlow/PyTorch)',
-        'How to use cloud and free-tier compute resources effectively as an African learner with limited hardware',
+        'Regression, classification',
+        'Bias-variance tradeoff, cross-validation, metrics',
+        'Building models with scikit-learn',
+        'Statistical modeling with statsmodels',
       ],
     },
     {
       num: 5,
-      title: 'Model Evaluation, Bias & Responsible Deployment',
+      title: 'Unsupervised Learning',
       details: [
-        'Building on the ethics foundation from AAN Open with technical rigour',
-        'Fairness testing: identifying and measuring bias in your models',
-        'Model monitoring and responsible deployment practices',
-        'Designing AI systems that are transparent, explainable, and accountable',
+        'Clustering, dimensionality reduction',
+        'PCA, t-SNE, anomaly detection',
+        'Clustering with scikit-learn',
+        'Dimensionality reduction with UMAP',
       ],
     },
     {
       num: 6,
-      title: 'Career-Readiness for Technical AI Roles',
+      title: 'Feature Engineering & Selection',
       details: [
-        'Portfolio-building guidance for data science and ML engineering roles',
-        'The kinds of projects that get African ML practitioners hired or funded',
-        'Pathways into data science, ML engineering, and AI research roles',
-        'CV writing, technical interview preparation, and industry networking',
+        'Encoding, scaling, pipelines',
+        'Feature importance, regularization',
+        'Feature selection with scikit-learn',
+        'Data manipulation with Pandas',
+      ],
+    },
+    {
+      num: 7,
+      title: 'Model Evaluation & Tuning',
+      details: [
+        'Confusion matrix, ROC-AUC',
+        'Hyperparameter search, ensemble methods',
+        'Evaluation with scikit-learn',
+        'Hyperparameter tuning with Optuna',
+      ],
+    },
+    {
+      num: 8,
+      title: 'Become a 10X Data Scientist Using Generative AI',
+      details: [
+        'Leverage Generative AI tools to improve productivity and efficiency in data science workflows',
+        'Write effective prompts for data analysis, coding, and problem-solving',
+        'Use AI responsibly while avoiding common mistakes and limitations',
+        'Integrate AI into data collection, analysis, visualization, and communication processes',
       ],
     },
   ]
@@ -148,7 +168,7 @@ export default function AIFundamentalsPage() {
               <h1 className="text-4xl md:text-[56px] font-black text-white leading-[1.08] tracking-tight uppercase">
                 AI Fundamentals
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mt-1">
-                  Machine Learning Engineering
+                  Applied Data Science
                 </span>
               </h1>
               <p className="text-xl text-gray-300 leading-relaxed max-w-xl">
@@ -161,7 +181,7 @@ export default function AIFundamentalsPage() {
                   <Monitor size={16} className="text-gray-400" /> Virtual
                 </span>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                  <Package size={16} className="text-gray-400" /> 6 Modules
+                  <Package size={16} className="text-gray-400" /> 8 Modules
                 </span>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
                   <Clock size={16} className="text-gray-400" /> Structured Pace
@@ -334,24 +354,44 @@ export default function AIFundamentalsPage() {
                 icon: <Hash size={24} className="text-emerald-500" />,
               },
               {
+                name: 'SciPy',
+                icon: <FlaskConical size={24} className="text-emerald-500" />,
+              },
+              {
                 name: 'scikit-learn',
                 icon: <Settings size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'TensorFlow',
-                icon: <Brain size={24} className="text-emerald-500" />,
-              },
-              {
-                name: 'PyTorch',
-                icon: <Flame size={24} className="text-emerald-500" />,
               },
               {
                 name: 'matplotlib',
                 icon: <LineChart size={24} className="text-emerald-500" />,
               },
               {
-                name: 'Jupyter',
-                icon: <BookOpen size={24} className="text-emerald-500" />,
+                name: 'Seaborn',
+                icon: <BarChart3 size={24} className="text-emerald-500" />,
+              },
+              {
+                name: 'statsmodels',
+                icon: <BarChart3 size={24} className="text-emerald-500" />,
+              },
+              {
+                name: 'UMAP',
+                icon: <Database size={24} className="text-emerald-500" />,
+              },
+              {
+                name: 'Optuna',
+                icon: <Settings size={24} className="text-emerald-500" />,
+              },
+              {
+                name: 'ChatGPT',
+                icon: <Brain size={24} className="text-emerald-500" />,
+              },
+              {
+                name: 'Google Gemini',
+                icon: <Sparkles size={24} className="text-emerald-500" />,
+              },
+              {
+                name: 'Claude AI',
+                icon: <Brain size={24} className="text-emerald-500" />,
               },
             ].map((tool, i) => (
               <motion.div
@@ -380,7 +420,7 @@ export default function AIFundamentalsPage() {
               Course Content
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] uppercase">
-              6 modules.{' '}
+              8 modules.{' '}
               <span className="text-[#0057ff]">Deep technical rigour.</span>
             </h2>
           </div>
@@ -578,7 +618,7 @@ export default function AIFundamentalsPage() {
             <span className="text-[#0057ff]">AAN journey</span>
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 stage: 'Stage 1',
@@ -590,7 +630,7 @@ export default function AIFundamentalsPage() {
               },
               {
                 stage: 'Stage 2',
-                name: 'AI Automation',
+                name: 'AI Automation for Businesses',
                 sub: '12-week hands-on programme',
                 price: '$37/month',
                 priceColor: 'text-[#0057ff]',
@@ -598,8 +638,16 @@ export default function AIFundamentalsPage() {
               },
               {
                 stage: 'Stage 3',
+                name: 'AI Automation for Content Creators',
+                sub: '12-week hands-on programme',
+                price: '$37/month',
+                priceColor: 'text-[oklch(59.2%_.249_.584)]',
+                active: false,
+              },
+              {
+                stage: 'Stage 4',
                 name: 'AI Fundamentals',
-                sub: 'Machine Learning Engineering',
+                sub: 'Data Scientist',
                 price: '$40/month',
                 priceColor: 'text-emerald-500',
                 active: true,
@@ -657,8 +705,8 @@ export default function AIFundamentalsPage() {
               </span>
             </h2>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              6 modules. Python-powered. From confident AI user to credible,
-              employable AI/ML practitioner at $40/month.
+              8 modules. Python-powered. From confident AI user to credible,
+              employable Applied Data Scientist at $40/month.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link

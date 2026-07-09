@@ -1,6 +1,7 @@
 'use client'
 import React from 'react'
-import { Form, Formik } from 'formik'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import * as Yup from 'yup'
 import { updateOrganization } from '@services/settings/org'
 import { revalidateTags } from '@services/utils/ts/requests'
@@ -52,6 +53,20 @@ const OrgEditOther: React.FC = () => {
   )
   const [scripts, setScripts] = React.useState<Script[]>([])
   const [currentScript, setCurrentScript] = React.useState<Script | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<Script>({
+    resolver: yupResolver(getValidationSchema(t)),
+    defaultValues: currentScript || { name: '', content: '' }
+  })
+
+  React.useEffect(() => {
+    reset(currentScript || { name: '', content: '' })
+  }, [currentScript, reset])
 
   // Initialize scripts from org
   React.useEffect(() => {
@@ -242,41 +257,23 @@ const OrgEditOther: React.FC = () => {
             )}
           </div>
         ) : (
-          <Formik
-            initialValues={currentScript || { name: '', content: '' }}
-            validationSchema={getValidationSchema(t)}
-            onSubmit={(values, { setSubmitting }) => {
-              setSubmitting(false)
-              updateOrg(values)
-            }}
-          >
-            {({
-              values,
-              handleChange,
-              handleSubmit,
-              errors,
-              touched,
-              isSubmitting,
-            }) => (
-              <Form onSubmit={handleSubmit}>
-                <div className="space-y-4">
-                  <div>
+          <form onSubmit={handleSubmit(updateOrg)}>
+            <div className="space-y-4">
+              <div>
                     <Label htmlFor="name">
                       {t('dashboard.organization.scripts.script_name')}
                     </Label>
                     <input
                       type="text"
                       id="name"
-                      name="name"
-                      value={values.name}
-                      onChange={handleChange}
+                      {...register('name')}
                       className="mt-1 w-full px-3 py-2 border rounded-md"
                       placeholder={t(
                         'dashboard.organization.scripts.placeholders.name'
                       )}
                     />
-                    {touched.name && errors.name && (
-                      <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                    {errors.name && (
+                      <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
                     )}
                   </div>
                   <div>
@@ -285,18 +282,16 @@ const OrgEditOther: React.FC = () => {
                     </Label>
                     <Textarea
                       id="content"
-                      name="content"
-                      value={values.content}
-                      onChange={handleChange}
+                      {...register('content')}
                       className="mt-1 font-mono"
                       placeholder={t(
                         'dashboard.organization.scripts.placeholders.content'
                       )}
                       rows={10}
                     />
-                    {touched.content && errors.content && (
+                    {errors.content && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.content}
+                        {errors.content.message}
                       </p>
                     )}
                   </div>
@@ -322,9 +317,7 @@ const OrgEditOther: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-              </Form>
-            )}
-          </Formik>
+          </form>
         )}
       </div>
     </div>
