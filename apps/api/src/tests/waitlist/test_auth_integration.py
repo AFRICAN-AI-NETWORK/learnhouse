@@ -61,14 +61,13 @@ class TestWaitlistAuthenticationFlow:
         db_session.add(waitlist_user)
         db_session.commit()
 
-        # Attempt login should raise exception
-        with pytest.raises(HTTPException) as exc_info:
-            await authenticate_user(
-                mock_request, "waitlist@example.com", "Password123!", db_session
-            )
+        # Attempt login should now succeed and return the user
+        result = await authenticate_user(
+            mock_request, "waitlist@example.com", "Password123!", db_session
+        )
 
-        assert exc_info.value.status_code == 403
-        assert "waitlist" in str(exc_info.value.detail).lower()
+        assert result is not False
+        assert result.email == "waitlist@example.com"
 
     @pytest.mark.asyncio
     async def test_waitlist_activated_user_transitions_to_active(
@@ -228,18 +227,13 @@ class TestWaitlistAuthenticationFlow:
         db_session.add(waitlist_user)
         db_session.commit()
 
-        # Attempt login
-        with pytest.raises(HTTPException) as exc_info:
-            await authenticate_user(
-                mock_request, "waitlistdate@example.com", "Password123!", db_session
-            )
-
-        error_message = str(exc_info.value.detail)
-        # Should mention waitlist name or launch date
-        assert (
-            sample_waitlist_config.name in error_message
-            or "waitlist" in error_message.lower()
+        # Attempt login should now succeed
+        result = await authenticate_user(
+            mock_request, "waitlistdate@example.com", "Password123!", db_session
         )
+
+        assert result is not False
+        assert result.email == "waitlistdate@example.com"
 
 
 class TestUserStatusTransitions:
@@ -336,11 +330,10 @@ class TestWaitlistErrorMessages:
         db_session.add(user)
         db_session.commit()
 
-        with pytest.raises(HTTPException) as exc_info:
-            await authenticate_user(
-                mock_request, "noconfig@example.com", "Password123!", db_session
-            )
+        # Attempt login should now succeed
+        result = await authenticate_user(
+            mock_request, "noconfig@example.com", "Password123!", db_session
+        )
 
-        assert exc_info.value.status_code == 403
-        # Should still get waitlist message even without config details
-        assert "waitlist" in str(exc_info.value.detail).lower()
+        assert result is not False
+        assert result.email == "noconfig@example.com"

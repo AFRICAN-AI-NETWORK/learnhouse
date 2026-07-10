@@ -25,11 +25,12 @@ import { sendResetLink } from '@services/auth/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
-const getValidationSchema = (t: any) => Yup.object().shape({
-  email: Yup.string()
-    .required(t('validation.required'))
-    .email(t('validation.invalid_email')),
-})
+const getValidationSchema = (t: any) =>
+  Yup.object().shape({
+    email: Yup.string()
+      .required(t('validation.required'))
+      .email(t('validation.invalid_email')),
+  })
 
 function ForgotPasswordClient() {
   const { t } = useTranslation()
@@ -73,6 +74,7 @@ function ForgotPasswordClient() {
   }
 
   const emailHasError = Boolean(errors.email)
+  // eslint-disable-next-line react-compiler/react-compiler
   const emailIsValid = Boolean(watch('email') && !errors.email)
 
   return (
@@ -137,7 +139,10 @@ function ForgotPasswordClient() {
                 </div>
               )}
 
-              <FormLayout onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <FormLayout
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField name="email">
                   <FormLabelAndMessage label={t('auth.email')} />
                   <div className="group relative">
