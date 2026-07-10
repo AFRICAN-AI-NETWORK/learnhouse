@@ -2,10 +2,6 @@
 
 import React from 'react'
 import OrgScripts from '@/components/OrgScripts/OrgScripts'
-import { usePathname } from 'next/navigation'
-
-import { useLHSession } from '@components/Contexts/LHSessionContext'
-import Link from 'next/link'
 
 const Footer: React.FC = () => {
   return (
