@@ -117,7 +117,7 @@ export default function ClickToPayButton({
         onClose: onClose,
       })
     } else if (psPublicKey) {
-      (initializePaystackPayment as any)(onSuccess, onClose)
+      ;(initializePaystackPayment as any)(onSuccess, onClose)
     } else {
       toast.error('No payment provider configured.')
       setIsProcessing(false)
@@ -205,12 +205,12 @@ export default function ClickToPayButton({
 
             <div className="p-6">
               <OpenSignUpComponent onSuccess={handleSignupSuccess} />
-              
+
               <div className="mt-4 pt-4 border-t border-gray-100 text-center">
                 <p className="text-sm text-gray-600">
                   Do you already have an account?{' '}
                   <Link
-                    href="/auth/login"
+                    href={`/login?orgslug=${org?.slug || 'default'}`}
                     className="font-bold text-blue-600 hover:text-blue-800 transition-colors"
                   >
                     Login

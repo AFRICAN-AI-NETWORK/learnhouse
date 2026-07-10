@@ -276,7 +276,10 @@ export default function LandingPremium({
       <FAQSection />
 
       {/* Awesome Final CTA */}
-      <section className="relative py-24 px-6 overflow-hidden bg-white">
+      <section
+        id="contact"
+        className="relative py-24 px-6 overflow-hidden bg-white"
+      >
         <div className="relative max-w-6xl mx-auto bg-[#0a0f1e] rounded-[32px] p-12 md:p-20 text-center overflow-hidden">
           {/* Subtle glowing corners */}
           <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#0057ff] rounded-full blur-[120px] opacity-20 pointer-events-none" />

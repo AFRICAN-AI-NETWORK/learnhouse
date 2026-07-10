@@ -94,6 +94,7 @@ class FullCourseRead(CourseBase):
     # Chapters, Activities
     chapters: List[ChapterRead]
     authors: List[AuthorWithRole]
+    is_paid: bool = False
     pass
 
 

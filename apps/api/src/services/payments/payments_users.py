@@ -340,8 +340,18 @@ async def get_owned_courses(
             for resource_author, user in author_results
         ]
 
+        # Check if course is paid
+        payment_statement = (
+            select(PaymentsCourse)
+            .join(
+                PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id
+            )
+            .where(PaymentsCourse.course_id == course.id, PaymentsProduct.amount > 0)
+        )
+        is_paid = db_session.exec(payment_statement).first() is not None
+
         # Create CourseRead object
-        course_read = CourseRead(**course.model_dump(), authors=authors)
+        course_read = CourseRead(**course.model_dump(), authors=authors, is_paid=is_paid)
         course_reads.append(course_read)
 
     return course_reads

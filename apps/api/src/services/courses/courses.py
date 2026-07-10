@@ -188,9 +188,19 @@ async def get_course_meta(
         for resource_author, user in author_results
     ]
 
+    # Check if course is paid
+    payment_statement = (
+        select(PaymentsCourse)
+        .join(
+            PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id
+        )
+        .where(PaymentsCourse.course_id == course.id, PaymentsProduct.amount > 0)
+    )
+    is_paid = db_session.exec(payment_statement).first() is not None
+
     # Create course read model with chapters
     course_read = FullCourseRead(
-        **course.model_dump(), authors=authors, chapters=chapters
+        **course.model_dump(), authors=authors, chapters=chapters, is_paid=is_paid
     )
 
     return course_read

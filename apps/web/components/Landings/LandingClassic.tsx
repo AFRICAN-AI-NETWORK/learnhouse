@@ -151,7 +151,7 @@ function LandingClassic({
         session?.data?.user?.user_status === 'WAITLIST' ||
         firstCourse.whatsapp_group_link
       ) {
-        setIsWaitlistModalOpen(true)
+        setTimeout(() => setIsWaitlistModalOpen(true), 10)
         localStorage.setItem(storageKey, 'true')
       }
     }

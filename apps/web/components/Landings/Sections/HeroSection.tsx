@@ -41,7 +41,8 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
 
           <p className="text-lg md:text-xl text-gray-500 max-w-xl font-medium leading-relaxed">
             Master artificial intelligence, software engineering, and the most
-            in-demand tech skills with {org?.name || 'African AI Network Academy'}.
+            in-demand tech skills with{' '}
+            {org?.name || 'African AI Network Academy'}.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
@@ -56,10 +57,10 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
               />
             </Link>
             <Link
-              href="/auth/signup"
+              href="/#contact"
               className="w-full sm:w-auto px-8 py-4 bg-white text-[#0a0f1e] border border-gray-200 rounded-[12px] font-bold text-[14px] flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
             >
-              Join the Community
+              Contact Us
             </Link>
           </div>
         </motion.div>

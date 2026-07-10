@@ -6,7 +6,7 @@ import {
   Twitter,
   Linkedin,
   Instagram,
-  Youtube,
+  Facebook,
   Phone,
   MessageSquare,
   Mail,
@@ -38,28 +38,36 @@ export default function GlobalFooter() {
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
-                href="#"
+                href="https://x.com/_AANetwork_"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Twitter size={18} />
               </a>
               <a
-                href="#"
+                href="https://www.linkedin.com/company/african-ai-network/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Linkedin size={18} />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/africanainetwork?igsh=MWhhY20yNXduNnhxMA=="
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Instagram size={18} />
               </a>
               <a
-                href="#"
+                href="https://www.facebook.com/Africanainetwork.aan"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
-                <Youtube size={18} />
+                <Facebook size={18} />
               </a>
             </div>
           </div>

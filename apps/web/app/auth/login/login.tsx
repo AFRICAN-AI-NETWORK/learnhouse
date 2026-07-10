@@ -1,5 +1,5 @@
 'use client'
-import africanAiLogo from 'public/african_ai_horizontal.png'
+import ainaLogo from 'public/aina_logo.png'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -146,10 +146,12 @@ const LoginClient = (props: LoginClientProps) => {
               width={160}
               height={56}
               src={
-                getOrgLogoMediaDirectory(
-                  props.org?.org_uuid,
-                  props.org?.logo_image
-                ) || africanAiLogo
+                props.org?.logo_image
+                  ? getOrgLogoMediaDirectory(
+                      props.org.org_uuid,
+                      props.org.logo_image
+                    )
+                  : ainaLogo
               }
               alt={props.org?.name || 'African AI Network'}
               className="w-auto h-14 hover:opacity-80 transition-opacity"
