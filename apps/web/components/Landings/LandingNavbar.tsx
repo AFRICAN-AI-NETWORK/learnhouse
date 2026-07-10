@@ -61,7 +61,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link href={getUriWithOrg(orgslug, '/')} className="relative z-10">
-            <div className="flex items-center h-10">
+            <div className="flex items-center h-12">
               {org?.logo_image ? (
                 <img
                   src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}

@@ -166,9 +166,14 @@ export default function GlobalFooter() {
 
         {/* Bottom Row */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-white/10 gap-6">
-          <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} {orgName}. All rights reserved.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-gray-500 text-sm">
+              &copy; {new Date().getFullYear()} {orgName}. All rights reserved.
+            </p>
+            <p className="text-xs font-semibold text-gray-400">
+              Powered by Footprint1 AI
+            </p>
+          </div>
 
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

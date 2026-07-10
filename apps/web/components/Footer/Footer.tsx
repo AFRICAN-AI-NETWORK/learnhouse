@@ -31,9 +31,14 @@ const Footer: React.FC = () => {
 
       <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-black/50 backdrop-blur-sm py-8">
         <div className="max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-6 lg:px-16 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-zinc-500">
-            © {new Date().getFullYear()} African AI Network. All rights
-            reserved.
+          <div className="flex flex-col items-start gap-1">
+            <div className="text-sm text-zinc-500">
+              © {new Date().getFullYear()} African AI Network. All rights
+              reserved.
+            </div>
+            <div className="text-xs font-semibold text-zinc-400">
+              Powered by Footprint1 AI
+            </div>
           </div>
 
           <div className="flex items-center space-x-6">

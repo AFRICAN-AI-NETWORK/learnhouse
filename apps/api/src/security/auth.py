@@ -137,14 +137,10 @@ async def authenticate_user(
                     db_session.refresh(user)
                     return user
                 else:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Your account is on the waitlist for {waitlist.name}. You can login after {waitlist.launch_datetime}.",
-                    )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is on a waitlist. Please wait for the launch date.",
-        )
+                    # Allow WAITLIST users to login (they will see a countdown in the frontend)
+                    return user
+        # Default for waitlist users without a config, allow login
+        return user
 
     elif user_status == UserStatusEnum.WAITLIST_ACTIVATED.value:
         # User received activation email, allow login and transition to ACTIVE

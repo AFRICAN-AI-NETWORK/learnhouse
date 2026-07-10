@@ -31,6 +31,7 @@ class CourseBase(SQLModel):
     thumbnail_type: Optional[ThumbnailType] = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: Optional[str] = Field(default="")
     thumbnail_video: Optional[str] = Field(default="")
+    whatsapp_group_link: Optional[str] = Field(default="")
     public: bool
     open_to_contributors: bool
 
@@ -62,6 +63,7 @@ class CourseUpdate(CourseBase):
     thumbnail_type: Optional[ThumbnailType] = Field(default=ThumbnailType.IMAGE)
     thumbnail_image: Optional[str] = Field(default="")
     thumbnail_video: Optional[str] = Field(default="")
+    whatsapp_group_link: Optional[str] = Field(default="")
     public: Optional[bool]
     open_to_contributors: Optional[bool]
 
