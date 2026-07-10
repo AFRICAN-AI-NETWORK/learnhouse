@@ -61,7 +61,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Logo */}
           <Link href={getUriWithOrg(orgslug, '/')} className="relative z-10">
-            <div className="flex items-center h-20">
+            <div className="flex items-center h-10">
               {org?.logo_image ? (
                 <img
                   src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
@@ -89,12 +89,18 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-10">
+          <div className="hidden md:flex items-center gap-6 lg:gap-8">
             {[
               { name: 'Programs', href: '/#programs' },
               { name: 'Benefits', href: '/#impact' },
               { name: 'Methodology', href: '/#methodology' },
               { name: 'Specializations', href: '/#specializations' },
+              {
+                name: 'Partners',
+                href: isAuthenticated
+                  ? '/dash/affiliation'
+                  : '/affiliation/signup',
+              },
               { name: 'FAQ', href: '/#faq' },
             ].map((link) => (
               <a

@@ -12,7 +12,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ org, orgslug }: HeroSectionProps) {
   return (
-    <section className="relative pt-40 pb-24 lg:pb-0 px-6 lg:px-12 overflow-hidden bg-white min-h-[90vh] flex items-center">
+    <section className="relative pt-24 pb-24 lg:pb-0 px-6 lg:px-12 overflow-hidden bg-white min-h-[90vh] flex items-center">
       {/* Background Fluid Shapes (Jobspot/Modern SaaS Style) */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-pink-400/20 rounded-full blur-[100px]" />
