@@ -71,7 +71,7 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
   }, [])
 
   return (
-    <section className="relative pt-32 pb-20 px-6 lg:px-12 overflow-hidden bg-[#0a0f1e] text-white min-h-[90vh] flex items-center">
+    <section className="relative pt-24 pb-20 px-6 lg:px-12 overflow-hidden bg-[#0a0f1e] text-white min-h-[90vh] flex items-center">
       {/* Background Image Overlay */}
       <div className="absolute inset-0 z-0">
         <div

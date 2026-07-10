@@ -57,7 +57,7 @@ class MarketerPaymentMethod(MarketerPaymentMethodBase, table=True):
     )
 
     account_details: str = Field(sa_column=Column(Text, nullable=False))
-    paystack_recipient_code: Optional[str] = Field(default=None, max_length=255)
+    flutterwave_beneficiary_id: Optional[str] = Field(default=None, max_length=255)
     creation_date: datetime = Field(default_factory=datetime.now)
     update_date: datetime = Field(default_factory=datetime.now)
 

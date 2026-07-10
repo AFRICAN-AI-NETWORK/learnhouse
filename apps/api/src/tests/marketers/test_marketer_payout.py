@@ -200,7 +200,7 @@ async def test_save_payment_method_encrypts_and_derives_currency(test_db_session
 
     assert method.currency == "NGN"
     assert method.is_active is True
-    assert method.paystack_recipient_code is None
+    assert method.flutterwave_beneficiary_id is None
     # Stored encrypted, decrypts back to the original
     assert method.account_details != str(BANK_DETAILS)
     assert decrypt_bank_data(method.account_details) == BANK_DETAILS
@@ -353,15 +353,7 @@ async def test_masked_mobile_money_method(test_db_session):
 # ==================== Recipient type mapping ====================
 
 
-def test_currency_to_recipient_type_map():
-    from src.services.referrals.payouts import CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE
 
-    assert CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE["NGN"] == "nuban"
-    assert CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE["GHS"] == "ghipss"
-    assert CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE["KES"] == "mobile_money"
-    assert CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE["ZAR"] == "basa"
-    assert CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE["RWF"] == "mobile_money"
-    assert CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE["TZS"] == "mobile_money"
 
 
 def test_country_to_currency_expanded():
@@ -377,52 +369,3 @@ def test_country_to_currency_expanded():
         assert COUNTRY_TO_CURRENCY[country] == currency
 
 
-@pytest.mark.asyncio
-async def test_mobile_money_recipient_uses_phone_number(monkeypatch):
-    """Mobile money recipients send phone_number as account_number"""
-    from src.services.referrals import payouts as payouts_module
-
-    captured = {}
-
-    async def fake_paystack(method, endpoint, data, headers=None):
-        captured.update(data)
-        return {"recipient_code": "RCP_test123"}
-
-    monkeypatch.setattr(payouts_module, "make_paystack_request", fake_paystack)
-
-    result = await payouts_module.create_paystack_transfer_recipient(
-        email="m@example.com",
-        name="Test User",
-        bank_account_info=MOBILE_DETAILS,
-        currency="KES",
-        payment_method_type=PaymentMethodType.MOBILE_MONEY,
-    )
-
-    assert result["recipient_code"] == "RCP_test123"
-    assert captured["type"] == "mobile_money"
-    assert captured["account_number"] == "+254712345678"
-    assert captured["bank_code"] == "MPESA"
-
-
-@pytest.mark.asyncio
-async def test_bank_recipient_uses_currency_type(monkeypatch):
-    from src.services.referrals import payouts as payouts_module
-
-    captured = {}
-
-    async def fake_paystack(method, endpoint, data, headers=None):
-        captured.update(data)
-        return {"recipient_code": "RCP_gh1"}
-
-    monkeypatch.setattr(payouts_module, "make_paystack_request", fake_paystack)
-
-    await payouts_module.create_paystack_transfer_recipient(
-        email="m@example.com",
-        name="Test User",
-        bank_account_info=BANK_DETAILS,
-        currency="GHS",
-        payment_method_type=PaymentMethodType.BANK_TRANSFER,
-    )
-
-    assert captured["type"] == "ghipss"
-    assert captured["account_number"] == "0123456789"

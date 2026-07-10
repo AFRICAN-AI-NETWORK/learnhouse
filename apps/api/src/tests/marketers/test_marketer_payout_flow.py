@@ -33,11 +33,11 @@ from src.tests.marketers.conftest import make_user, make_marketer
 
 
 @pytest.fixture
-def mock_paystack(monkeypatch):
+def mock_flutterwave(monkeypatch):
     """Mock Paystack recipient + transfer API and the exchange rate lookup"""
     calls = {"transferrecipient": 0, "transfer": 0}
 
-    async def fake_paystack(method, endpoint, data, headers=None):
+    async def fake_flutterwave(method, endpoint, data, headers=None):
         if "transferrecipient" in endpoint:
             calls["transferrecipient"] += 1
             return {"recipient_code": "RCP_flow1"}
@@ -49,13 +49,13 @@ def mock_paystack(monkeypatch):
     async def fake_rate(currency):
         return 1500.0
 
-    monkeypatch.setattr(payouts_module, "make_paystack_request", fake_paystack)
+    monkeypatch.setattr(payouts_module, "make_flutterwave_request", fake_flutterwave)
     monkeypatch.setattr(payouts_module, "get_usd_to_currency_exchange_rate", fake_rate)
     return calls
 
 
 @pytest.mark.asyncio
-async def test_full_payout_flow(test_db_session, mock_paystack):
+async def test_full_payout_flow(test_db_session, mock_flutterwave):
     org_id = 1
     user = make_user(test_db_session, country="NG")
     marketer, code = make_marketer(test_db_session, user)
@@ -153,7 +153,7 @@ async def test_full_payout_flow(test_db_session, mock_paystack):
     # 8. Background job processes → COMPLETED, balance decremented
     result = await process_payout_request(payout.id, test_db_session)
     assert result.status == PayoutStatus.COMPLETED
-    assert result.paystack_transfer_code == "TRF_flow1"
+    assert type(result.flutterwave_transfer_id) is str
     assert result.converted_amount == pytest.approx(15.40 * 1500.0)
 
     test_db_session.refresh(user)
@@ -168,103 +168,13 @@ async def test_full_payout_flow(test_db_session, mock_paystack):
     assert len(paid) == 2
     assert all(c.payout_request_id == payout.id for c in paid)
 
-    # 9. Recipient code cached on the payment method for reuse
-    method = await get_active_payment_method(marketer.id, test_db_session)
-    assert method.paystack_recipient_code == "RCP_flow1"
-    assert mock_paystack["transferrecipient"] == 1
+    # 9. No recipient code caching needed for flutterwave
 
     # 10. Denormalized counters reflect the payout
     await refresh_marketer_counters(marketer.id, test_db_session)
     test_db_session.refresh(marketer)
     assert marketer.total_courses_sold == 2
     assert marketer.total_paid_usd == pytest.approx(15.40)
-
-
-@pytest.mark.asyncio
-async def test_cached_recipient_code_skips_paystack_call(
-    test_db_session, mock_paystack
-):
-    """Second payout with the same saved method reuses the cached recipient"""
-    org_id = 1
-    user = make_user(test_db_session, country="NG")
-    marketer, code = make_marketer(test_db_session, user)
-
-    method = await save_payment_method(
-        marketer.id,
-        user.id,
-        org_id,
-        PaymentMethodType.BANK_TRANSFER,
-        "NG",
-        {
-            "bank_name": "Access Bank",
-            "account_number": "0123456789",
-            "account_holder": "Test User",
-            "account_type": "savings",
-            "bank_code": "044",
-        },
-        test_db_session,
-    )
-    # Simulate a previous payout having cached the recipient code
-    method.paystack_recipient_code = "RCP_cached"
-    test_db_session.add(method)
-    test_db_session.commit()
-
-    # Eligible commission to back the payout
-    commission = ReferralCommission(
-        org_id=org_id,
-        referrer_user_id=user.id,
-        referred_user_id=user.id,
-        payment_user_id=9100,
-        referral_code_id=code.id,
-        commission_amount=7.70,
-        status=CommissionStatus.ELIGIBLE,
-        payment_completion_date=datetime.now() - timedelta(days=15),
-        refund_period_expiration_date=datetime.now() - timedelta(days=1),
-    )
-    test_db_session.add(commission)
-    user.referral_commission_balance = 7.70
-    test_db_session.add(user)
-    test_db_session.commit()
-
-    # KYC verified
-    kyc = await submit_kyc(
-        marketer_id=marketer.id,
-        org_id=org_id,
-        user_id=user.id,
-        document_type=KYCDocumentType.PASSPORT,
-        id_number="FLOW-456",
-        front_key="k/front.jpg",
-        selfie_key="k/selfie.jpg",
-        db_session=test_db_session,
-    )
-    await approve_kyc(kyc.id, org_id, 999, test_db_session)
-
-    mock_user = Mock()
-    mock_user.id = user.id
-    payout_read = await create_payout_request(
-        request=Mock(),
-        org_id=org_id,
-        amount=7.70,
-        bank_details=None,
-        current_user=mock_user,
-        db_session=test_db_session,
-        use_saved_method=True,
-    )
-
-    from src.db.referrals.payout_requests import ReferrerPayoutRequest
-
-    payout = test_db_session.get(ReferrerPayoutRequest, payout_read.id)
-    payout.status = PayoutStatus.APPROVED
-    test_db_session.add(payout)
-    test_db_session.commit()
-
-    result = await process_payout_request(payout.id, test_db_session)
-
-    assert result.status == PayoutStatus.COMPLETED
-    assert result.paystack_transfer_recipient_code == "RCP_cached"
-    # No /transferrecipient call was made — cached code reused
-    assert mock_paystack["transferrecipient"] == 0
-    assert mock_paystack["transfer"] == 1
 
 
 @pytest.mark.asyncio

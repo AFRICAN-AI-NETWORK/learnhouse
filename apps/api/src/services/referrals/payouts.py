@@ -26,7 +26,6 @@ from src.db.referrals.marketer_payment_methods import (
     PaymentMethodType,
 )
 from src.db.users import User, PublicUser
-from src.services.payments.payments_paystack import make_paystack_request
 from src.services.referrals.redis_cache import get_redis_client
 from config.config import get_learnhouse_config
 
@@ -67,6 +66,11 @@ COUNTRY_TO_CURRENCY = {
     "GH": "GHS",  # Ghana → Cedi
     "KE": "KES",  # Kenya → Shilling
     "ZA": "ZAR",  # South Africa → Rand
+    "RW": "RWF",  # Rwanda → Franc
+    "TZ": "TZS",  # Tanzania → Shilling
+    "UG": "UGX",  # Uganda → Shilling
+    "CI": "XOF",  # Ivory Coast → CFA Franc
+    "EG": "EGP",  # Egypt → Pound
     "RW": "RWF",  # Rwanda → Franc
     "TZ": "TZS",  # Tanzania → Shilling
     "UG": "UGX",  # Uganda → Shilling
@@ -499,118 +503,74 @@ async def check_pending_payout(
     return db_session.exec(statement).first()
 
 
-async def create_paystack_transfer_recipient(
-    email: str,
-    name: str,
+
+async def make_flutterwave_request(method: str, endpoint: str, data: dict = None, headers: dict = None) -> dict:
+    import httpx
+    secret_key = os.getenv("FLUTTERWAVE_SECRET_KEY")
+    if not secret_key:
+        raise HTTPException(status_code=500, detail="FLUTTERWAVE_SECRET_KEY not configured")
+        
+    url = f"https://api.flutterwave.com/v3{endpoint}"
+    req_headers = {
+        "Authorization": f"Bearer {secret_key}",
+        "Content-Type": "application/json"
+    }
+    if headers:
+        req_headers.update(headers)
+        
+    async with httpx.AsyncClient() as client:
+        try:
+            if method.upper() == "POST":
+                response = await client.post(url, headers=req_headers, json=data)
+            elif method.upper() == "GET":
+                response = await client.get(url, headers=req_headers)
+            else:
+                raise ValueError(f"Unsupported method {method}")
+                
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Flutterwave HTTP error {e.response.status_code}: {e.response.text}")
+            raise HTTPException(status_code=e.response.status_code, detail=f"Flutterwave API error: {e.response.text}")
+        except Exception as e:
+            logger.error(f"Flutterwave request failed: {e}")
+            raise HTTPException(status_code=500, detail="Failed to connect to Flutterwave")
+
+async def create_flutterwave_transfer(
+    amount: float,
+    currency: str,
     bank_account_info: dict,
-    currency: str = "NGN",
+    reference: str,
+    reason: str = "Referral commission payout",
     payment_method_type: PaymentMethodType = PaymentMethodType.BANK_TRANSFER,
 ) -> dict:
     """
-    Create Paystack transfer recipient (DRY utility)
-
-    Recipient "type" is currency-specific (nuban is Nigeria-only); for mobile
-    money recipients the phone number is used as the account number.
-
-    Args:
-        email: Recipient email
-        name: Recipient name
-        bank_account_info: Bank account details (or mobile money details:
-            phone_number, provider, account_name)
-        currency: Currency code
-        payment_method_type: BANK_TRANSFER or MOBILE_MONEY
-
-    Returns:
-        Paystack recipient data with recipient_code
+    Directly initiate a transfer using Flutterwave API
     """
-    recipient_type = CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE.get(currency, "nuban")
-
+    account_number = bank_account_info.get("account_number")
+    
+    # For mobile money, account bank is the provider network code (MTN, MPS, etc)
+    # and account number is the phone number
     if payment_method_type == PaymentMethodType.MOBILE_MONEY:
-        recipient_type = "mobile_money"
         account_number = bank_account_info.get("phone_number")
-        # Paystack expects the provider slug as bank_code for mobile money
-        # (e.g. MPESA for Kenya, MTN for Ghana)
-        bank_code = (
-            bank_account_info.get("bank_code")
-            or (bank_account_info.get("provider") or "").upper()
-        )
+        account_bank = bank_account_info.get("provider", "").upper()
+        if not account_bank and bank_account_info.get("bank_code"):
+            account_bank = bank_account_info.get("bank_code")
     else:
-        account_number = bank_account_info.get("account_number")
-        bank_code = bank_account_info.get("bank_code")
-
-    recipient_data = {
-        "type": recipient_type,
-        "name": name,
-        "account_number": account_number,
-        "bank_code": bank_code,
-        "currency": currency,
-        "email": email,
-    }
-
-    try:
-        result = await make_paystack_request(
-            "POST", "/transferrecipient", recipient_data
-        )
-        return result
-    except Exception as e:
-        logger.error(f"Failed to create Paystack transfer recipient: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error_code": "MKTR_306",
-                "message": "Paystack recipient creation failed — check your account details",
-            },
-        )
-
-
-async def initiate_paystack_transfer(
-    amount: float,
-    recipient_code: str,
-    reference: str,
-    reason: str = "Referral commission payout",
-    idempotency_key: Optional[str] = None,
-) -> dict:
-    """
-    Initiate Paystack transfer (DRY utility)
-
-    Args:
-        amount: Amount in NGN (already converted from USD)
-        recipient_code: Paystack recipient code
-        reference: Unique transfer reference
-        reason: Transfer reason
-        idempotency_key: Optional idempotency key to prevent double-charging on retries
-
-    Returns:
-        Paystack transfer data
-    """
-    # Convert amount to kobo (NGN subunit - multiply by 100)
-    amount_in_kobo = int(amount * 100)
-
+        account_bank = bank_account_info.get("bank_code")
+        
     transfer_data = {
-        "source": "balance",
-        "amount": amount_in_kobo,
-        "recipient": recipient_code,
+        "account_bank": account_bank,
+        "account_number": account_number,
+        "amount": amount,
+        "narration": reason,
+        "currency": currency,
         "reference": reference,
-        "reason": reason,
+        "debit_currency": currency
     }
-
-    # Add idempotency key if provided (prevents double-charging on retries)
-    headers = {}
-    if idempotency_key:
-        headers["Idempotency-Key"] = idempotency_key
-        logger.info(f"Using idempotency key: {idempotency_key}")
-
-    try:
-        result = await make_paystack_request(
-            "POST", "/transfer", transfer_data, headers=headers if headers else None
-        )
-        return result
-    except Exception as e:
-        logger.error(f"Failed to initiate Paystack transfer: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to initiate transfer: {str(e)}",
-        )
+    
+    result = await make_flutterwave_request("POST", "/transfers", transfer_data)
+    return result
 
 
 async def create_payout_request(
@@ -815,37 +775,10 @@ async def process_payout_request(
             if payment_method_id
             else None
         )
-        if payment_method and payment_method.paystack_recipient_code:
-            recipient_code = payment_method.paystack_recipient_code
-            logger.info(
-                f"Payout {payout.id}: Reusing cached Paystack recipient "
-                f"{recipient_code} from payment method {payment_method.id}"
-            )
-
-        if not recipient_code:
-            recipient_result = await create_paystack_transfer_recipient(
-                email=user.email,
-                name=f"{user.first_name} {user.last_name}",
-                bank_account_info=decrypted_bank_info,
-                currency=payout_currency,
-                payment_method_type=payment_method_type,
-            )
-            recipient_code = recipient_result.get("recipient_code")
-
-            # Cache recipient code on the saved payment method for reuse
-            if payment_method and recipient_code:
-                await cache_paystack_recipient_code(
-                    payment_method.id, recipient_code, db_session
-                )
-
-        payout.paystack_transfer_recipient_code = recipient_code
-        db_session.add(payout)
-        db_session.commit()
-
         # Fetch real-time exchange rate (prevents losses from volatility)
         current_exchange_rate = await get_usd_to_currency_exchange_rate(payout_currency)
 
-        # Convert USD to local currency (Paystack requires local amounts)
+        # Convert USD to local currency (Flutterwave requires local amounts)
         converted_amount = payout.total_amount * current_exchange_rate
         payout.converted_amount = round(converted_amount, 2)
         logger.info(
@@ -853,21 +786,20 @@ async def process_payout_request(
             f"{converted_amount:.2f} {payout_currency} (rate: {current_exchange_rate})"
         )
 
-        # Initiate transfer with idempotency key to prevent double-charging on retries
         transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now().timestamp())}"
-        idempotency_key = (
-            f"payout_{payout.id}_{payout.request_date.strftime('%Y%m%d%H%M%S')}"
-        )
 
-        transfer_result = await initiate_paystack_transfer(
+        transfer_result = await create_flutterwave_transfer(
             amount=converted_amount,  # Already in local currency
-            recipient_code=recipient_code,
+            currency=payout_currency,
+            bank_account_info=decrypted_bank_info,
             reference=transfer_reference,
             reason="Referral commission payout",
-            idempotency_key=idempotency_key,
+            payment_method_type=payment_method_type,
         )
 
-        transfer_code = transfer_result.get("transfer_code")
+        # Flutterwave returns the transfer ID in the data object
+        transfer_data = transfer_result.get("data", {})
+        transfer_code = str(transfer_data.get("id", ""))
 
         # CRITICAL: Atomic transaction for balance updates
         # Use explicit transaction to ensure all-or-nothing consistency
@@ -876,7 +808,7 @@ async def process_payout_request(
             # Start explicit transaction
             with db_session.begin_nested():
                 # Update payout status
-                payout.paystack_transfer_code = transfer_code
+                payout.flutterwave_transfer_id = transfer_code
                 payout.status = PayoutStatus.COMPLETED
                 payout.completion_date = datetime.now()
                 db_session.add(payout)
@@ -1083,7 +1015,7 @@ def _send_marketer_payout_email_safe(
                 amount_usd=payout.total_amount,
                 converted_amount=payout.converted_amount,
                 currency=currency,
-                reference=payout.paystack_transfer_code,
+                reference=payout.flutterwave_transfer_id,
             )
         else:
             send_marketer_payout_failed_email(
@@ -1341,6 +1273,6 @@ def build_masked_payment_method(
         account_holder=holder,
         bank_name=bank_name,
         provider=provider,
-        has_cached_recipient=payment_method.paystack_recipient_code is not None,
+        has_cached_recipient=payment_method.flutterwave_beneficiary_id is not None,
         creation_date=payment_method.creation_date,
     )

@@ -26,10 +26,10 @@ class ReferrerPayoutRequestBase(SQLModel):
     currency: str = Field(default="USD", max_length=3)
     converted_amount: Optional[float] = None
     status: PayoutStatus = Field(default=PayoutStatus.REQUESTED)
-    paystack_transfer_recipient_code: Optional[str] = Field(
+    flutterwave_beneficiary_id: Optional[str] = Field(
         default=None, max_length=255
     )
-    paystack_transfer_code: Optional[str] = Field(default=None, max_length=255)
+    flutterwave_transfer_id: Optional[str] = Field(default=None, max_length=255)
     bank_account_info: dict = Field(
         default={}, sa_column=Column(JSON)
     )  # Encrypted bank details
@@ -92,8 +92,8 @@ class ReferrerPayoutRequestUpdate(SQLModel):
     """Model for updating payout request"""
 
     status: Optional[PayoutStatus] = None
-    paystack_transfer_recipient_code: Optional[str] = None
-    paystack_transfer_code: Optional[str] = None
+    flutterwave_beneficiary_id: Optional[str] = None
+    flutterwave_transfer_id: Optional[str] = None
     converted_amount: Optional[float] = None
     completion_date: Optional[datetime] = None
     failure_reason: Optional[str] = None
