@@ -50,6 +50,23 @@ COUNTRY_TO_CURRENCY = {
     "US": "USD",  # United States → Dollar
     "GB": "GBP",  # United Kingdom → Pound
     "EU": "EUR",  # European Union → Euro
+    "RW": "RWF",  # Rwanda
+    "TZ": "TZS",  # Tanzania
+    "UG": "UGX",  # Uganda
+    "CI": "XOF",  # Ivory Coast
+    "EG": "EGP",  # Egypt
+}
+
+CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE = {
+    "NGN": "nuban",
+    "GHS": "ghipss",
+    "KES": "mobile_money",
+    "ZAR": "basa",
+    "RWF": "mobile_money",
+    "TZS": "mobile_money",
+    "XOF": "mobile_money",
+    "EGP": "nuban",
+    "USD": "nuban"
 }
 
 # Redis configuration for distributed caching (multi-worker support)
@@ -212,7 +229,7 @@ async def get_payout_currency(
     return DEFAULT_PAYOUT_CURRENCY
 
 
-async def get_usd_to_ngn_exchange_rate() -> float:
+async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> float:
     """
     Fetch real-time USD to NGN exchange rate from API with Redis caching
 
@@ -228,7 +245,7 @@ async def get_usd_to_ngn_exchange_rate() -> float:
     """
     global _exchange_rate_cache
 
-    cache_key = "exchange_rate:USD:NGN"
+    cache_key = f"exchange_rate:USD_{target_currency}"
 
     # Try Redis cache first (distributed, multi-worker safe)
     if _redis_client:
@@ -257,9 +274,7 @@ async def get_usd_to_ngn_exchange_rate() -> float:
 
         # Option 1: exchangerate-api.com (free tier: 1500 requests/month)
         if EXCHANGE_RATE_API_KEY:
-            url = (
-                f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/USD"
-            )
+            url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/pair/USD/{target_currency}"
         else:
             # Free endpoint (no key required, limited rate)
             url = "https://api.exchangerate-api.com/v4/latest/USD"
@@ -269,34 +284,32 @@ async def get_usd_to_ngn_exchange_rate() -> float:
             response.raise_for_status()
             data = response.json()
 
-            # Extract NGN rate
-            if "rates" in data and "NGN" in data["rates"]:
-                rate = float(data["rates"]["NGN"])
+            # Extract rate
+            rate = None
+            if EXCHANGE_RATE_API_KEY and "conversion_rate" in data:
+                rate = float(data["conversion_rate"])
+            elif "rates" in data and target_currency in data["rates"]:
+                rate = float(data["rates"][target_currency])
 
-                # Sanity check: Rate should be between 500-3000 (realistic range)
-                if 500 <= rate <= 3000:
-                    # Store in Redis cache with TTL (multi-worker safe)
-                    if _redis_client:
-                        try:
-                            _redis_client.setex(
-                                cache_key,
-                                EXCHANGE_RATE_CACHE_TTL,  # 1 hour TTL
-                                str(rate),
-                            )
-                            logger.debug(f"Stored exchange rate in Redis: {rate}")
-                        except RedisError as e:
-                            logger.warning(f"Redis cache write failed: {e}")
+            if rate:
+                # Store in Redis cache with TTL (multi-worker safe)
+                if _redis_client:
+                    try:
+                        _redis_client.setex(
+                            cache_key,
+                            EXCHANGE_RATE_CACHE_TTL,  # 1 hour TTL
+                            str(rate),
+                        )
+                        logger.debug(f"Stored exchange rate in Redis: {rate}")
+                    except RedisError as e:
+                        logger.warning(f"Redis cache write failed: {e}")
 
-                    # Also update in-memory cache as fallback
-                    _exchange_rate_cache["rate"] = rate
-                    _exchange_rate_cache["timestamp"] = now
+                # Also update in-memory cache as fallback
+                _exchange_rate_cache["rate"] = rate
+                _exchange_rate_cache["timestamp"] = now
 
-                    logger.info(f"Fetched current USD to NGN exchange rate: {rate}")
-                    return rate
-                else:
-                    logger.warning(
-                        f"Exchange rate {rate} outside realistic range (500-3000). Using fallback."
-                    )
+                logger.debug(f"Redis cache hit for USD → {target_currency} exchange rate: {rate}")
+                return rate
             else:
                 logger.warning(f"Unexpected API response format: {data}")
 
@@ -304,14 +317,24 @@ async def get_usd_to_ngn_exchange_rate() -> float:
         logger.warning("Exchange rate API timeout. Using fallback rate.")
     except httpx.HTTPStatusError as e:
         logger.warning(
-            f"Exchange rate API error: {e.response.status_code}. Using fallback rate."
+            f"Exchange rate API error: {e}. Falling back to default rate."
         )
     except Exception as e:
         logger.warning(f"Failed to fetch exchange rate: {str(e)}. Using fallback rate.")
 
-    # Fallback to environment variable
-    logger.info(f"Using fallback exchange rate: {FALLBACK_USD_TO_NGN_RATE}")
-    return FALLBACK_USD_TO_NGN_RATE
+    # Fallbacks for other currencies if API fails
+    fallback_map = {
+        "NGN": FALLBACK_USD_TO_NGN_RATE,
+        "GHS": float(os.getenv("USD_TO_GHS_RATE", "15")),
+        "KES": float(os.getenv("USD_TO_KES_RATE", "130")),
+        "ZAR": float(os.getenv("USD_TO_ZAR_RATE", "18")),
+        "RWF": float(os.getenv("USD_TO_RWF_RATE", "1300")),
+        "TZS": float(os.getenv("USD_TO_TZS_RATE", "2500")),
+        "UGX": float(os.getenv("USD_TO_UGX_RATE", "3800")),
+        "XOF": float(os.getenv("USD_TO_XOF_RATE", "600")),
+        "EGP": float(os.getenv("USD_TO_EGP_RATE", "47")),
+    }
+    return fallback_map.get(target_currency, 1.0)
 
 
 def decrypt_bank_data(encrypted_data: str) -> dict:
@@ -413,7 +436,7 @@ async def check_pending_payout(
         and_(
             ReferrerPayoutRequest.referrer_user_id == user_id,
             ReferrerPayoutRequest.status.in_(
-                [PayoutStatus.REQUESTED, PayoutStatus.PROCESSING]
+                [PayoutStatus.REQUESTED, PayoutStatus.APPROVED, PayoutStatus.PROCESSING]
             ),
         )
     )
@@ -436,7 +459,7 @@ async def create_paystack_transfer_recipient(
         Paystack recipient data with recipient_code
     """
     recipient_data = {
-        "type": "nuban",  # Nigerian bank account (adjust for other countries)
+        "type": CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE.get(currency, "nuban"),
         "name": name,
         "account_number": bank_account_info.get("account_number"),
         "bank_code": bank_account_info.get("bank_code"),
@@ -600,7 +623,7 @@ async def process_payout_request(
     if not payout:
         raise ValueError(f"Payout request {payout_id} not found")
 
-    if payout.status != PayoutStatus.REQUESTED:
+    if payout.status != PayoutStatus.APPROVED:
         logger.warning(f"Payout {payout_id} is not in REQUESTED status")
         return payout
 
@@ -621,7 +644,7 @@ async def process_payout_request(
         # Decrypt bank account information (Production security)
         decrypted_bank_info = decrypt_bank_data(payout.bank_account_info)
 
-        # Determine payout currency from user's country or org settings (✅ TODO Resolved)
+        # Determine payout currency from user's country or org settings
         payout_currency = await get_payout_currency(
             user=user, org_id=payout.org_id, db_session=db_session
         )
@@ -639,14 +662,17 @@ async def process_payout_request(
         db_session.add(payout)
         db_session.commit()
 
-        # Fetch real-time USD to NGN exchange rate (prevents losses from volatility)
-        current_exchange_rate = await get_usd_to_ngn_exchange_rate()
+        # Fetch real-time USD to currency exchange rate
+        if payout_currency == "USD":
+            conversion_rate = 1.0
+        else:
+            conversion_rate = await get_usd_to_currency_exchange_rate(payout_currency)
 
-        # Convert USD to NGN (Paystack requires NGN amounts)
-        amount_in_ngn = payout.total_amount * current_exchange_rate
+        # Convert USD to local currency
+        amount_in_local = payout.total_amount * conversion_rate
         logger.info(
             f"Payout {payout.id}: Converting ${payout.total_amount:.2f} USD to "
-            f"₦{amount_in_ngn:.2f} NGN (rate: {current_exchange_rate})"
+            f"{amount_in_local:.2f} {payout_currency} (rate: {conversion_rate})"
         )
 
         # Initiate transfer with idempotency key to prevent double-charging on retries
