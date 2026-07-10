@@ -11,6 +11,7 @@ import { useFlutterwave } from 'flutterwave-react-v3'
 import { usePaystackPayment } from 'react-paystack'
 import toast from 'react-hot-toast'
 import { signIn } from 'next-auth/react'
+import Link from 'next/link'
 
 interface ClickToPayButtonProps {
   courseId: string
@@ -204,6 +205,18 @@ export default function ClickToPayButton({
 
             <div className="p-6">
               <OpenSignUpComponent onSuccess={handleSignupSuccess} />
+              
+              <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+                <p className="text-sm text-gray-600">
+                  Do you already have an account?{' '}
+                  <Link
+                    href="/auth/login"
+                    className="font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    Login
+                  </Link>
+                </p>
+              </div>
             </div>
           </Dialog.Content>
         </Dialog.Portal>

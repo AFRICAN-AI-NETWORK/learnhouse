@@ -18,7 +18,7 @@ import { getUriWithOrg } from '@services/config/config'
 export default function GlobalFooter() {
   const org = useOrg() as any
   const orgSlug = org?.slug || 'aan'
-  const orgName = org?.name || 'African AI Network'
+  const orgName = org?.name || 'African AI Network Academy'
 
   return (
     <footer className="bg-[#0a0f1e] text-white pt-20 pb-10 px-6 border-t border-white/5">
@@ -171,7 +171,7 @@ export default function GlobalFooter() {
               &copy; {new Date().getFullYear()} {orgName}. All rights reserved.
             </p>
             <p className="text-xs font-semibold text-gray-400">
-              Powered by Footprint1 AI
+              Powered by FootprintWorld AI
             </p>
           </div>
 
