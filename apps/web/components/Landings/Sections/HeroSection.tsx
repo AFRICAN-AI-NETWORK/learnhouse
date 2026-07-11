@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Sparkles, ArrowRight, Cpu, CheckCircle2, Users } from 'lucide-react'
+import { Sparkles, ArrowRight, Cpu, CheckCircle2, Users, Laptop } from 'lucide-react'
 
 interface HeroSectionProps {
   org: any
@@ -167,7 +167,51 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
                 </p>
               </div>
             </motion.div>
+            {/* Floating UI Card 3: AINA Certified */}
+            <motion.div
+              initial={{ opacity: 0, y: -20, x: -20 }}
+              animate={{ opacity: 1, y: [0, 10, 0], x: 0 }}
+              transition={{
+                opacity: { duration: 0.6, delay: 0.4 },
+                y: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 },
+              }}
+              className="absolute top-16 left-[-1rem] lg:left-[-3rem] z-20 bg-white/90 backdrop-blur-xl border border-gray-100 p-3 lg:p-4 rounded-2xl shadow-xl flex items-center gap-3 lg:gap-4"
+            >
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-600">
+                <Laptop size={20} className="lg:w-6 lg:h-6" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">
+                  AINA CERTIFIED
+                </p>
+                <p className="text-[#0a0f1e] font-black text-sm lg:text-base leading-tight">
+                  APPLIED DATA SCIENTIST
+                </p>
+              </div>
+            </motion.div>
 
+            {/* Floating UI Card 4: Outcomes */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, x: 20 }}
+              animate={{ opacity: 1, y: [0, -10, 0], x: 0 }}
+              transition={{
+                opacity: { duration: 0.6, delay: 0.6 },
+                y: { duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 },
+              }}
+              className="absolute bottom-20 right-[-1rem] lg:right-[-3rem] z-20 bg-white/90 backdrop-blur-xl border border-gray-100 p-3 lg:p-4 rounded-2xl shadow-xl flex items-center gap-3 lg:gap-4"
+            >
+              <div className="flex -space-x-3 lg:-space-x-4">
+                <img className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=11" alt="Avatar" />
+                <img className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=5" alt="Avatar" />
+                <img className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=12" alt="Avatar" />
+              </div>
+              <div>
+                <p className="text-[#0a0f1e] font-black text-sm lg:text-base leading-tight">88% hired remote</p>
+                <p className="text-gray-500 text-[10px] lg:text-xs font-medium">
+                  average $35k base
+                </p>
+              </div>
+            </motion.div>
             {/* Floating UI Card 3: Success Checkmark */}
             <motion.div
               initial={{ opacity: 0, scale: 0 }}
