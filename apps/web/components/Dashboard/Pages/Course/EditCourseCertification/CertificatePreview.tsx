@@ -678,31 +678,29 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         }}
       >
         <div
-          className="border border-blue-200 rounded-xl p-2 sm:p-4 w-full"
+          className="border border-blue-200 rounded-xl p-4 w-full"
           style={{
             background: `linear-gradient(to bottom right, #eff6ff, #eef2ff)`,
           }}
         >
-          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6 relative overflow-hidden w-full flex flex-col">
+          <div className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden w-full flex flex-col">
             {/* Dynamic Certificate Pattern */}
             {renderCertificatePattern(certificatePattern)}
 
             {/* Certificate ID - Top Left */}
-            <div className="absolute top-2 left-2 sm:top-6 sm:left-6 z-20">
+            <div className="absolute top-6 left-6 z-20">
               <div className="flex items-center space-x-1">
-                <Hash className={`w-3 h-3 sm:w-4 sm:h-4 ${theme.icon}`} />
-                <span
-                  className={`text-xs sm:text-sm ${theme.secondary} font-medium`}
-                >
+                <Hash className={`w-4 h-4 ${theme.icon}`} />
+                <span className={`text-sm ${theme.secondary} font-medium`}>
                   ID: {certificateId || 'LH-2024-001'}
                 </span>
               </div>
             </div>
 
             {/* QR Code Box - Top Right */}
-            <div className="absolute top-2 right-2 sm:top-6 sm:right-6 z-20">
+            <div className="absolute top-6 right-6 z-20">
               <div
-                className={`w-12 h-12 sm:w-24 sm:h-24 border-2 ${theme.secondary.replace('text-', 'border-')} rounded-md bg-white/90 backdrop-blur-sm p-1`}
+                className={`w-24 h-24 border-2 ${theme.secondary.replace('text-', 'border-')} rounded-md bg-white/90 backdrop-blur-sm p-1`}
               >
                 {qrCodeUrl ? (
                   <img
@@ -712,32 +710,30 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <QrCode
-                      className={`w-8 h-8 sm:w-12 sm:h-12 ${theme.icon}`}
-                    />
+                    <QrCode className={`w-12 h-12 ${theme.icon}`} />
                   </div>
                 )}
               </div>
             </div>
 
             {/* Main Content */}
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center space-y-2 sm:space-y-3 px-2 sm:px-6 py-3 sm:py-6">
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center space-y-3 px-6 py-6">
               {/* Header with decorative line */}
               <div className="flex items-center justify-center space-x-2 mb-2">
                 <div
-                  className={`w-6 sm:w-8 h-px opacity-60`}
+                  className={`w-8 h-px opacity-60`}
                   style={{
                     background: `linear-gradient(to right, transparent, ${theme.hex?.secondary})`,
                   }}
                 ></div>
                 <div
-                  className={`text-xs sm:text-sm font-medium uppercase tracking-wider`}
+                  className={`text-sm font-medium uppercase tracking-wider`}
                   style={{ color: theme.hex?.secondary }}
                 >
                   Certificate
                 </div>
                 <div
-                  className={`w-6 sm:w-8 h-px opacity-60`}
+                  className={`w-8 h-px opacity-60`}
                   style={{
                     background: `linear-gradient(to left, transparent, ${theme.hex?.secondary})`,
                   }}
@@ -747,31 +743,31 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               {/* Award Icon with decorative elements */}
               <div className="flex justify-center relative">
                 <div
-                  className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center relative`}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center relative`}
                   style={{
                     background: `linear-gradient(to bottom right, ${theme.hex?.bg}, ${theme.hex?.border})`,
                   }}
                 >
                   <Award
-                    className={`w-6 h-6 sm:w-8 sm:h-8`}
+                    className={`w-8 h-8`}
                     style={{ color: theme.hex?.icon }}
                   />
                   {/* Decorative rays */}
                   <div className="absolute inset-0 rounded-full">
                     <div
-                      className={`absolute top-0 left-1/2 w-px h-2 sm:h-3 transform -translate-x-1/2 -translate-y-1 opacity-60`}
+                      className={`absolute top-0 left-1/2 w-px h-3 transform -translate-x-1/2 -translate-y-1 opacity-60`}
                       style={{ backgroundColor: theme.hex?.secondary }}
                     ></div>
                     <div
-                      className={`absolute bottom-0 left-1/2 w-px h-2 sm:h-3 transform -translate-x-1/2 translate-y-1 opacity-60`}
+                      className={`absolute bottom-0 left-1/2 w-px h-3 transform -translate-x-1/2 translate-y-1 opacity-60`}
                       style={{ backgroundColor: theme.hex?.secondary }}
                     ></div>
                     <div
-                      className={`absolute left-0 top-1/2 w-2 sm:w-3 h-px transform -translate-y-1/2 -translate-x-1 opacity-60`}
+                      className={`absolute left-0 top-1/2 w-3 h-px transform -translate-y-1/2 -translate-x-1 opacity-60`}
                       style={{ backgroundColor: theme.hex?.secondary }}
                     ></div>
                     <div
-                      className={`absolute right-0 top-1/2 w-2 sm:w-3 h-px transform -translate-y-1/2 translate-x-1 opacity-60`}
+                      className={`absolute right-0 top-1/2 w-3 h-px transform -translate-y-1/2 translate-x-1 opacity-60`}
                       style={{ backgroundColor: theme.hex?.secondary }}
                     ></div>
                   </div>
@@ -781,28 +777,28 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               {/* Certificate Content */}
               <div className="flex flex-col justify-center items-center flex-1 max-w-full">
                 <div
-                  className={`text-[10px] sm:text-xs ${theme.secondary} uppercase tracking-[0.2em] mb-1 font-semibold opacity-80`}
+                  className={`text-xs ${theme.secondary} uppercase tracking-[0.2em] mb-1 font-semibold opacity-80`}
                 >
                   This is to certify that
                 </div>
                 <h3
-                  className={`font-bold text-lg sm:text-2xl ${theme.primary} mb-2 text-center tracking-tight leading-tight`}
+                  className={`font-bold text-2xl ${theme.primary} mb-2 text-center tracking-tight leading-tight`}
                 >
                   {studentName || 'Student Name'}
                 </h3>
                 <div
-                  className={`text-[10px] sm:text-xs ${theme.secondary} mb-3 italic opacity-80`}
+                  className={`text-xs ${theme.secondary} mb-3 italic opacity-80`}
                 >
                   has successfully completed the requirements for
                 </div>
 
                 <h4
-                  className={`font-bold text-sm sm:text-base ${theme.primary} mb-2 text-center`}
+                  className={`font-bold text-base ${theme.primary} mb-2 text-center`}
                 >
                   {certificationName || 'Certification Name'}
                 </h4>
                 <p
-                  className={`text-xs sm:text-sm ${theme.secondary} text-center leading-relaxed max-w-xs sm:max-w-sm`}
+                  className={`text-sm ${theme.secondary} text-center leading-relaxed max-w-sm`}
                 >
                   {certificationDescription ||
                     'Certification description will appear here...'}
@@ -819,7 +815,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                     >
                       Final Grade
                     </span>
-                    <span className="text-sm sm:text-base font-extrabold leading-tight">
+                    <span className="text-base font-extrabold leading-tight">
                       {formattedGrade}
                     </span>
                   </div>
@@ -841,7 +837,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
               {/* Certification Type Badge */}
               <div
-                className={`text-xs sm:text-sm px-3 py-1 rounded-full border`}
+                className={`text-sm px-3 py-1 rounded-full border`}
                 style={{
                   position: 'relative',
                   display: 'inline-block',
@@ -892,39 +888,37 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             </div>
 
             {/* Bottom Section */}
-            <div className="relative z-10 mt-auto p-2 sm:p-6 pt-4 sm:pt-8">
+            <div className="relative z-10 mt-auto p-6 pt-8">
               <div className="flex items-end justify-between w-full">
                 {/* Left: Chief Instructor */}
                 <div className="flex flex-col items-start space-y-1 flex-1">
                   <div className="flex items-center space-x-1">
                     <User
-                      className={`w-2.5 h-2.5 sm:w-3 sm:h-3`}
+                      className={`w-2.5 h-2.5 `}
                       style={{ color: theme.hex?.icon }}
                     />
                     <span
-                      className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider`}
+                      className={`text-xs font-bold uppercase tracking-wider`}
                       style={{ color: theme.hex?.secondary }}
                     >
                       Chief Instructor
                     </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-sm font-extrabold`}
+                    className={`text-sm font-extrabold`}
                     style={{ color: theme.hex?.primary }}
                   >
                     {certificateInstructor || 'Dr. Jane Smith'}
                   </div>
                   <div
-                    className={`h-px w-12 sm:w-16 opacity-50`}
+                    className={`h-px w-16 opacity-50`}
                     style={{ backgroundColor: theme.hex?.secondary }}
                   ></div>
                 </div>
 
                 {/* Center: Logo */}
                 <div className="flex flex-col items-center space-y-1 flex-1">
-                  <div
-                    className={`w-12 h-12 sm:w-32 sm:h-32 flex items-center justify-center`}
-                  >
+                  <div className={`w-32 h-32 flex items-center justify-center`}>
                     {displayOrgLogoUrl ? (
                       <img
                         src={displayOrgLogoUrl}
@@ -944,14 +938,14 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                         style={{ backgroundColor: theme.hex?.bg }}
                       >
                         <Building
-                          className={`w-8 h-8 sm:w-12 sm:h-12`}
+                          className={`w-12 h-12`}
                           style={{ color: theme.hex?.icon }}
                         />
                       </div>
                     )}
                   </div>
                   <div
-                    className={`text-[10px] sm:text-xs font-bold uppercase`}
+                    className={`text-xs font-bold uppercase`}
                     style={{ color: theme.hex?.secondary }}
                   >
                     {displayOrgName}
@@ -962,24 +956,24 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 <div className="flex flex-col items-end space-y-1 flex-1">
                   <div className="flex items-center space-x-1">
                     <User
-                      className={`w-2.5 h-2.5 sm:w-3 sm:h-3`}
+                      className={`w-2.5 h-2.5 `}
                       style={{ color: theme.hex?.icon }}
                     />
                     <span
-                      className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider`}
+                      className={`text-xs font-bold uppercase tracking-wider`}
                       style={{ color: theme.hex?.secondary }}
                     >
                       CEO
                     </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-sm font-extrabold`}
+                    className={`text-sm font-extrabold`}
                     style={{ color: theme.hex?.primary }}
                   >
                     {certificateCeo || 'CEO Name'}
                   </div>
                   <div
-                    className={`h-px w-12 sm:w-16 opacity-50`}
+                    className={`h-px w-16 opacity-50`}
                     style={{ backgroundColor: theme.hex?.secondary }}
                   ></div>
                 </div>
