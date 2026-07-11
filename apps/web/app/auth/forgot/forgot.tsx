@@ -74,7 +74,6 @@ function ForgotPasswordClient() {
   }
 
   const emailHasError = Boolean(errors.email)
-  // eslint-disable-next-line react-compiler/react-compiler
   const emailIsValid = Boolean(watch('email') && !errors.email)
 
   return (
