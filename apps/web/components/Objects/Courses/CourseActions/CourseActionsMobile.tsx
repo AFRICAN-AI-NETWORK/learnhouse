@@ -427,11 +427,11 @@ const CourseActionsMobile = ({
                       const name = product.name.toLowerCase()
                       let path = ''
                       if (name.includes('content creators')) {
-                        path = `/orgs/${orgslug}/ai-automation-content-creators`
+                        path = `/ai-automation-content-creators`
                       } else if (name.includes('business')) {
-                        path = `/orgs/${orgslug}/ai-automation`
+                        path = `/ai-automation`
                       } else if (name.includes('fundamental') || name.includes('foundations')) {
-                        path = `/orgs/${orgslug}/ai-fundamentals`
+                        path = `/ai-fundamentals`
                       }
 
                       if (path) {
