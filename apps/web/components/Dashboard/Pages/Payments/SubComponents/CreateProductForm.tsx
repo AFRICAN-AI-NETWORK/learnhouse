@@ -106,7 +106,7 @@ const CreateProductForm: React.FC<{ onSuccess: () => void }> = ({
         reset()
         onSuccess()
       } else {
-        toast.error('Failed to create product')
+        toast.error(res.error || 'Failed to create product')
       }
     } catch (error) {
       // eslint-disable-next-line no-console

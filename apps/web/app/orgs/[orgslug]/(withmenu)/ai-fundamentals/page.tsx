@@ -23,9 +23,7 @@ import {
   TableProperties,
   Hash,
   Settings,
-  Flame,
   LineChart,
-  BookOpen,
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'

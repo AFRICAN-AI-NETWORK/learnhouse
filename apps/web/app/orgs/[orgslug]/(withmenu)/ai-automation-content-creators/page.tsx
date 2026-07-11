@@ -23,7 +23,6 @@ import {
   MessageCircle,
   Smile,
   BarChart,
-  Monitor,
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
