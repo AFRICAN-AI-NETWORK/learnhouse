@@ -705,7 +705,26 @@ function CoursesActions({
                     )
                     if (freeProduct) handleFreeEnrollment(freeProduct.id)
                   } else {
-                    setIsModalOpen(true)
+                    const product = linkedProducts[0]
+                    if (product && product.name) {
+                      const name = product.name.toLowerCase()
+                      let path = ''
+                      if (name.includes('content creators')) {
+                        path = `/orgs/${orgslug}/ai-automation-content-creators`
+                      } else if (name.includes('business')) {
+                        path = `/orgs/${orgslug}/ai-automation`
+                      } else if (name.includes('fundamental') || name.includes('foundations')) {
+                        path = `/orgs/${orgslug}/ai-fundamentals`
+                      }
+
+                      if (path) {
+                        router.push(path)
+                      } else {
+                        setIsModalOpen(true)
+                      }
+                    } else {
+                      setIsModalOpen(true)
+                    }
                   }
                 }}
                 disabled={isActionLoading}
