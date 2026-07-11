@@ -29,6 +29,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import Countdown from '@components/Landings/Countdown'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
+import PriceDisplay from '@components/Landings/PriceDisplay'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
@@ -203,13 +204,11 @@ export default function AIFundamentalsPage() {
               <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-[24px] p-8 space-y-6">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    COURSE FEE
+                    Tuition
                   </p>
-                  <p className="text-5xl font-black text-white">
-                    $40
-                    <span className="text-xl font-bold text-gray-400">/mo</span>
-                  </p>
-                  <div className="mt-3 flex flex-col gap-2">
+                  <PriceDisplay basePriceUSD={40} interval="/mo" />
+
+                  <div className="mt-8 space-y-4">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                       COMING LIVE IN 1 WEEK
@@ -519,7 +518,7 @@ export default function AIFundamentalsPage() {
             Value Breakdown
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
-            Why $40/month is a{' '}
+            Why <PriceDisplay basePriceUSD={40} interval="/month" hideSwitcher className="inline-flex items-center text-[#0a0f1e]" priceClassName="text-[inherit] font-bold" /> is a{' '}
             <span className="text-[#0057ff]">genuine investment.</span>
           </h2>
 
@@ -704,7 +703,7 @@ export default function AIFundamentalsPage() {
             </h2>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
               8 modules. Python-powered. From confident AI user to credible,
-              employable Applied Data Scientist at $40/month.
+              employable Applied Data Scientist at <PriceDisplay basePriceUSD={40} interval="/month" hideSwitcher className="inline-flex items-center text-emerald-400 ml-1" priceClassName="text-[inherit]" />.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link

@@ -12,11 +12,12 @@ import { usePaystackPayment } from 'react-paystack'
 import toast from 'react-hot-toast'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 
 interface ClickToPayButtonProps {
   courseId: string
   priceAmount: number
-  currency: string
+  currency?: string // made optional since we use context now
   courseName: string
   planId?: string // Optional Flutterwave Plan ID for subscriptions
 }
@@ -24,13 +25,14 @@ interface ClickToPayButtonProps {
 export default function ClickToPayButton({
   courseId,
   priceAmount,
-  currency,
+  currency, // we can ignore this now
   courseName,
   planId,
 }: ClickToPayButtonProps) {
   const session = useLHSession() as any
   const org = useOrg() as any
   const router = useRouter()
+  const { currency: contextCurrency, convertAmount } = useCurrency()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -51,13 +53,16 @@ export default function ClickToPayButton({
     }
   }, [session])
 
+  const finalAmount = convertAmount(priceAmount)
+  const finalCurrency = contextCurrency
+
   // Flutterwave Config
-  const fwConfig = {
+  const fwConfig: any = {
     public_key: fwPublicKey,
     tx_ref: txRef,
-    amount: priceAmount,
-    currency: currency,
-    payment_options: 'card,mobilemoney,ussd',
+    amount: finalAmount,
+    currency: finalCurrency,
+
     customer: {
       email: dynamicEmail,
       phone_number: '',
@@ -77,9 +82,9 @@ export default function ClickToPayButton({
   const psConfig = {
     reference: txRef,
     email: dynamicEmail,
-    amount: priceAmount * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
+    amount: finalAmount * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
     publicKey: psPublicKey,
-    currency: currency,
+    currency: finalCurrency,
     metadata: {
       course_uuid: courseId,
       custom_fields: [],
