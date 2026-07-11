@@ -80,10 +80,10 @@ function PaymentsProductPage() {
     ([, token]) => getPaymentConfigs(org.id, token)
   )
 
-  const paystackConfig = paymentConfigs?.find(
-    (config: any) => config.provider === 'paystack'
+  const flutterwaveConfig = paymentConfigs?.find(
+    (config: any) => config.provider === 'flutterwave'
   )
-  const isPaystackEnabled = !!paystackConfig
+  const isFlutterwaveEnabled = !!flutterwaveConfig
 
   const handleArchiveProduct = async (productId: string) => {
     const res = await archiveProduct(
@@ -162,8 +162,8 @@ function PaymentsProductPage() {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => setEditingProductId(product.id)}
-                        className={`text-blue-500 hover:text-blue-700 ${isPaystackEnabled ? '' : 'opacity-50 cursor-not-allowed'}`}
-                        disabled={!isPaystackEnabled}
+                        className={`text-blue-500 hover:text-blue-700 ${isFlutterwaveEnabled ? '' : 'opacity-50 cursor-not-allowed'}`}
+                        disabled={!isFlutterwaveEnabled}
                       >
                         <Pencil size={16} />
                       </button>
@@ -242,11 +242,11 @@ function PaymentsProductPage() {
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className={`mb-4 flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-linear-to-bl text-white font-medium from-gray-700 to-gray-900 border border-gray-600 shadow-gray-900/20 nice-shadow transition duration-300 ${
-              isPaystackEnabled
+              isFlutterwaveEnabled
                 ? 'hover:from-gray-600 hover:to-gray-800'
                 : 'opacity-50 cursor-not-allowed'
             }`}
-            disabled={!isPaystackEnabled}
+            disabled={!isFlutterwaveEnabled}
           >
             <Plus size={18} />
             <span className="text-sm font-bold">Create New Product</span>

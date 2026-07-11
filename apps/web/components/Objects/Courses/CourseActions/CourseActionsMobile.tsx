@@ -421,7 +421,28 @@ const CourseActionsMobile = ({
                   minWidth="sm"
                 />
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    const product = linkedProducts[0]
+                    if (product && product.name) {
+                      const name = product.name.toLowerCase()
+                      let path = ''
+                      if (name.includes('content creators')) {
+                        path = `/ai-automation-content-creators`
+                      } else if (name.includes('business')) {
+                        path = `/ai-automation`
+                      } else if (name.includes('fundamental') || name.includes('foundations')) {
+                        path = `/ai-fundamentals`
+                      }
+
+                      if (path) {
+                        router.push(path)
+                      } else {
+                        setIsModalOpen(true)
+                      }
+                    } else {
+                      setIsModalOpen(true)
+                    }
+                  }}
                   disabled={isActionLoading}
                   className="w-full py-2 px-4 rounded-lg bg-neutral-900 text-white font-semibold text-sm hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 disabled:bg-neutral-700"
                 >

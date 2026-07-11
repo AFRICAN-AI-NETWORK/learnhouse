@@ -16,6 +16,7 @@ import { getUriWithOrg } from '@services/config/config'
 import { validateDiscountCode } from '@services/payments/discounts'
 import { X, Tag } from 'lucide-react'
 import { Input } from '@components/ui/input'
+import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 interface CoursePaidOptionsProps {
   course: {
@@ -305,18 +306,16 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
             </div>
           </div>
 
-          <Button
-            className="mt-4 w-full"
-            variant="default"
-            onClick={() => handleCheckout(product.id)}
-            disabled={isProcessing[product.id]}
-          >
-            {isProcessing[product.id]
-              ? t('common.processing')
-              : product.product_type === 'subscription'
-                ? t('payments.subscribe_now')
-                : t('payments.purchase_now')}
-          </Button>
+          <div className="mt-4">
+            <ClickToPayButton
+              courseId={course.id}
+              priceAmount={
+                appliedDiscount ? appliedDiscount.final_amount : product.amount
+              }
+              courseName={product.name}
+              skipDiscountModal={true} // Skip since this modal already handles discounts
+            />
+          </div>
         </div>
       ))}
     </div>

@@ -139,6 +139,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     return {
       name: courseStructure?.name || '',
       description: courseStructure?.description || '',
+      whatsapp_group_link: courseStructure?.whatsapp_group_link || '',
       about: courseStructure?.about || '',
       learnings: initializeLearnings(courseStructure?.learnings || ''),
       tags: courseStructure?.tags || '',
@@ -147,15 +148,18 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     }
   }
 
-  const initialValues = React.useMemo(() => getInitialValues(), [courseStructure])
-  
+  const initialValues = React.useMemo(
+    () => getInitialValues(),
+    [courseStructure]
+  )
+
   const {
     register,
     handleSubmit,
     watch,
     setValue,
     reset,
-    formState: { errors }
+    formState: { errors },
   } = useForm({
     defaultValues: initialValues,
     resolver: (async (values: any) => {
@@ -163,14 +167,17 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
       if (Object.keys(formErrors).length > 0) {
         return {
           values: {},
-          errors: Object.keys(formErrors).reduce((acc: any, key: any) => {
-            acc[key] = { type: 'manual', message: formErrors[key] }
-            return acc
-          }, {} as Record<string, any>),
+          errors: Object.keys(formErrors).reduce(
+            (acc: any, key: any) => {
+              acc[key] = { type: 'manual', message: formErrors[key] }
+              return acc
+            },
+            {} as Record<string, any>
+          ),
         }
       }
       return { values, errors: {} }
-    }) as any
+    }) as any,
   })
 
   React.useEffect(() => {
@@ -178,14 +185,14 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
   }, [initialValues, reset])
 
   const formValues = watch() as any
-  
+
   const onSubmit = async (values: any) => {
-      try {
-        // Add your submission logic here
-        dispatchCourse({ type: 'setIsSaved' })
-      } catch (e) {
-        setError(t('dashboard.courses.general.errors.save_failed'))
-      }
+    try {
+      // Add your submission logic here
+      dispatchCourse({ type: 'setIsSaved' })
+    } catch (e) {
+      setError(t('dashboard.courses.general.errors.save_failed'))
+    }
   }
 
   // Debounce timer ref
@@ -225,13 +232,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
         clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [
-    formValues,
-    initialValues,
-    isLoading,
-    courseStructure,
-    dispatchCourse,
-  ])
+  }, [formValues, initialValues, isLoading, courseStructure, dispatchCourse])
 
   // Reset form when courseStructure changes (initial load)
 
@@ -283,6 +284,21 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                 </Form.Control>
               </FormField>
 
+              <FormField name="whatsapp_group_link">
+                <FormLabelAndMessage
+                  label="WhatsApp Group Link (Optional)"
+                  message={errors.whatsapp_group_link?.message as string}
+                />
+                <Form.Control asChild>
+                  <Input
+                    style={{ backgroundColor: 'white' }}
+                    {...register('whatsapp_group_link')}
+                    type="url"
+                    placeholder="https://chat.whatsapp.com/..."
+                  />
+                </Form.Control>
+              </FormField>
+
               <FormField name="about">
                 <FormLabelAndMessage
                   label={t('dashboard.courses.general.form.about_label')}
@@ -309,9 +325,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                 <Form.Control asChild>
                   <LearningItemsList
                     value={formValues.learnings}
-                    onChange={(value) =>
-                      setValue('learnings', value)
-                    }
+                    onChange={(value) => setValue('learnings', value)}
                     error={errors.learnings?.message as string}
                   />
                 </Form.Control>
@@ -392,9 +406,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                   label={t('dashboard.courses.general.form.thumbnail_label')}
                 />
                 <Form.Control asChild>
-                  <ThumbnailUpdate
-                    thumbnailType={formValues.thumbnail_type}
-                  />
+                  <ThumbnailUpdate thumbnailType={formValues.thumbnail_type} />
                 </Form.Control>
               </FormField>
             </div>

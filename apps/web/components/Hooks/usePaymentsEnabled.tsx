@@ -18,12 +18,12 @@ export function usePaymentsEnabled() {
     ([, token]) => getPaymentConfigs(org.id, token)
   )
 
-  const isPaystackEnabled = paymentConfigs?.some(
-    (config: any) => config.provider === 'paystack' && config.active
+  const isFlutterwaveEnabled = paymentConfigs?.some(
+    (config: any) => config.provider === 'flutterwave' && config.active
   )
 
   return {
-    isEnabled: !!isPaystackEnabled,
+    isEnabled: !!isFlutterwaveEnabled,
     isLoading,
     error,
   }

@@ -23,12 +23,12 @@ import {
   MessageCircle,
   Smile,
   BarChart,
-  Monitor,
 } from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import Countdown from '@components/Landings/Countdown'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
+import PriceDisplay from '@components/Landings/PriceDisplay'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
@@ -207,12 +207,9 @@ export default function AIAutomationContentCreatorsPage() {
               <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-[24px] p-8 space-y-6">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    COURSE FEE
+                    Tuition
                   </p>
-                  <p className="text-5xl font-black text-white">
-                    $37
-                    <span className="text-xl font-bold text-gray-400">/mo</span>
-                  </p>
+                  <PriceDisplay basePriceUSD={37} interval="/mo" />
                   <div className="mt-3 flex flex-col gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[oklch(59.2%_.249_.584)]/20 text-[oklch(59.2%_.249_.584)] text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-[oklch(59.2%_.249_.584)] rounded-full animate-pulse" />
@@ -521,8 +518,8 @@ export default function AIAutomationContentCreatorsPage() {
             Value Breakdown
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
-            Why $37/month is{' '}
-            <span className="text-[#0057ff]">extraordinary.</span>
+            Why <PriceDisplay basePriceUSD={37} interval="/month" hideSwitcher className="inline-flex items-center text-[#0a0f1e]" priceClassName="text-[inherit] font-bold" /> is{' '}
+            <span className="text-[#ff0066]">underpriced.</span>
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -706,8 +703,8 @@ export default function AIAutomationContentCreatorsPage() {
               </span>
             </h2>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              12 weeks. 8 modules. One deployed capstone. Real automations for
-              real businesses at $37/month.
+              No code. Massive impact. From manual editing to automating
+              real businesses at <PriceDisplay basePriceUSD={37} interval="/month" hideSwitcher className="inline-flex items-center text-[#ff0066] ml-1" priceClassName="text-[inherit]" />.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link

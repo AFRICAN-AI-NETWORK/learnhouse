@@ -6,7 +6,7 @@ import {
   Twitter,
   Linkedin,
   Instagram,
-  Youtube,
+  Facebook,
   Phone,
   MessageSquare,
   Mail,
@@ -18,7 +18,7 @@ import { getUriWithOrg } from '@services/config/config'
 export default function GlobalFooter() {
   const org = useOrg() as any
   const orgSlug = org?.slug || 'aan'
-  const orgName = org?.name || 'African AI Network'
+  const orgName = org?.name || 'African AI Network Academy'
 
   return (
     <footer className="bg-[#0a0f1e] text-white pt-20 pb-10 px-6 border-t border-white/5">
@@ -38,28 +38,36 @@ export default function GlobalFooter() {
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
-                href="#"
+                href="https://x.com/_AANetwork_"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Twitter size={18} />
               </a>
               <a
-                href="#"
+                href="https://www.linkedin.com/company/african-ai-network/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Linkedin size={18} />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/africanainetwork?igsh=MWhhY20yNXduNnhxMA=="
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <Instagram size={18} />
               </a>
               <a
-                href="#"
+                href="https://www.facebook.com/Africanainetwork.aan"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
-                <Youtube size={18} />
+                <Facebook size={18} />
               </a>
             </div>
           </div>
@@ -166,9 +174,14 @@ export default function GlobalFooter() {
 
         {/* Bottom Row */}
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-white/10 gap-6">
-          <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} {orgName}. All rights reserved.
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-gray-500 text-sm">
+              &copy; {new Date().getFullYear()} {orgName}. All rights reserved.
+            </p>
+            <p className="text-xs font-semibold text-gray-400">
+              Powered by FootprintWorld AI
+            </p>
+          </div>
 
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

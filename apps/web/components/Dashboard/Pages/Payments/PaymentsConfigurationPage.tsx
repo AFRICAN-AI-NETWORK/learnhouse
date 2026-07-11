@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { useOrg } from '@components/Contexts/OrgContext'
-// Using CreditCard icon as Paystack icon is not available in the icon pack
+// Using CreditCard icon as Flutterwave icon is not available in the icon pack
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import {
   getPaymentConfigs,
@@ -52,29 +52,29 @@ const PaymentsConfigurationPage: React.FC = () => {
     ([url, token]) => getPaymentConfigs(org.id, token)
   )
 
-  const paystackConfig = paymentConfigs?.find(
-    (config: any) => config.provider === 'paystack'
+  const flutterwaveConfig = paymentConfigs?.find(
+    (config: any) => config.provider === 'flutterwave'
   )
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isOnboarding, setIsOnboarding] = useState(false)
   const [isOnboardingLoading, setIsOnboardingLoading] = useState(false)
 
-  const enablePaystack = async () => {
+  const enableFlutterwave = async () => {
     try {
       setIsOnboarding(true)
-      const newConfig = { provider: 'paystack', enabled: true }
+      const newConfig = { provider: 'flutterwave', enabled: true }
       const config = await initializePaymentConfig(
         org.id,
         newConfig,
-        'paystack',
+        'flutterwave',
         access_token
       )
-      toast.success('Paystack enabled successfully')
+      toast.success('Flutterwave enabled successfully')
       mutate([`/payments/${org.id}/config`, access_token])
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error enabling Paystack:', error)
-      toast.error('Failed to enable Paystack')
+      console.error('Error enabling Flutterwave:', error)
+      toast.error('Failed to enable Flutterwave')
     } finally {
       setIsOnboarding(false)
     }
@@ -86,18 +86,18 @@ const PaymentsConfigurationPage: React.FC = () => {
 
   const deleteConfig = async () => {
     try {
-      await deletePaymentConfig(org.id, paystackConfig.id, access_token)
-      toast.success('Paystack configuration deleted successfully')
+      await deletePaymentConfig(org.id, flutterwaveConfig.id, access_token)
+      toast.success('Flutterwave configuration deleted successfully')
       mutate([`/payments/${org.id}/config`, access_token])
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error deleting Paystack configuration:', error)
-      toast.error('Failed to delete Paystack configuration')
+      console.error('Error deleting Flutterwave configuration:', error)
+      toast.error('Failed to delete Flutterwave configuration')
     }
   }
 
-  const handlePaystackOnboarding = async () => {
-    // For Paystack, we'll use a manual configuration modal instead of an onboarding link
+  const handleFlutterwaveOnboarding = async () => {
+    // For Flutterwave, we'll use a manual configuration modal instead of an onboarding link
     setIsModalOpen(true)
   }
 
@@ -125,7 +125,7 @@ const PaymentsConfigurationPage: React.FC = () => {
           <AlertTitle className="text-lg font-semibold mb-2 flex items-center space-x-2">
             {' '}
             <Info className="h-5 w-5 " />{' '}
-            <span>About the Paystack Integration</span>
+            <span>About the Flutterwave Integration</span>
           </AlertTitle>
           <AlertDescription className="space-y-5">
             <div className="pl-2">
@@ -149,29 +149,29 @@ const PaymentsConfigurationPage: React.FC = () => {
               </ul>
             </div>
             <a
-              href="https://paystack.com/docs"
+              href="https://flutterwave.com/docs"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-800 inline-flex items-center font-medium transition-colors duration-200 pl-2"
             >
-              Learn more about Paystack
+              Learn more about Flutterwave
               <ExternalLink className="ml-1.5 h-4 w-4" />
             </a>
           </AlertDescription>
         </Alert>
 
         <div className="flex flex-col rounded-lg light-shadow">
-          {paystackConfig ? (
+          {flutterwaveConfig ? (
             <div className="flex items-center justify-between bg-linear-to-r from-indigo-500 to-purple-600 p-6 rounded-lg shadow-md">
               <div className="flex items-center space-x-3">
                 <Wallet className="text-white" size={32} />
                 <div className="flex flex-col">
                   <div className="flex items-center space-x-2">
                     <span className="text-xl font-semibold text-white">
-                      Paystack
+                      Flutterwave
                     </span>
-                    {paystackConfig.provider_specific_id &&
-                    paystackConfig.active ? (
+                    {flutterwaveConfig.provider_specific_id &&
+                    flutterwaveConfig.active ? (
                       <div className="flex items-center space-x-1 bg-green-500/20 px-2 py-0.5 rounded-full">
                         <div className="h-2 w-2 bg-green-500 rounded-full" />
                         <span className="text-xs text-green-100">
@@ -188,17 +188,17 @@ const PaymentsConfigurationPage: React.FC = () => {
                     )}
                   </div>
                   <span className="text-white/80 text-sm">
-                    {paystackConfig.provider_specific_id
-                      ? `Linked Account: ${paystackConfig.provider_specific_id}`
+                    {flutterwaveConfig.provider_specific_id
+                      ? `Linked Account: ${flutterwaveConfig.provider_specific_id}`
                       : 'Account ID not configured'}
                   </span>
                 </div>
               </div>
               <div className="flex space-x-2">
-                {(!paystackConfig.provider_specific_id ||
-                  !paystackConfig.active) && (
+                {(!flutterwaveConfig.provider_specific_id ||
+                  !flutterwaveConfig.active) && (
                   <Button
-                    onClick={handlePaystackOnboarding}
+                    onClick={handleFlutterwaveOnboarding}
                     className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white text-sm rounded-full hover:bg-green-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-green-400 shadow-md"
                     disabled={isOnboardingLoading}
                   >
@@ -207,12 +207,12 @@ const PaymentsConfigurationPage: React.FC = () => {
                     ) : (
                       <UnplugIcon className="h-3 w-3" />
                     )}
-                    <span className="font-semibold">Connect with Paystack</span>
+                    <span className="font-semibold">Connect with Flutterwave</span>
                   </Button>
                 )}
 
-                {paystackConfig.provider_specific_id &&
-                  paystackConfig.active && (
+                {flutterwaveConfig.provider_specific_id &&
+                  flutterwaveConfig.active && (
                     <Button
                       onClick={editConfig}
                       className="flex items-center space-x-2 bg-blue-500 text-white text-sm rounded-full hover:bg-blue-600 transition duration-300 shadow-md border-2 border-blue-400"
@@ -224,8 +224,8 @@ const PaymentsConfigurationPage: React.FC = () => {
 
                 <ConfirmationModal
                   confirmationButtonText="Remove Connection"
-                  confirmationMessage="Are you sure you want to remove the Paystack connection? This action cannot be undone."
-                  dialogTitle="Remove Paystack Connection"
+                  confirmationMessage="Are you sure you want to remove the Flutterwave connection? This action cannot be undone."
+                  dialogTitle="Remove Flutterwave Connection"
                   dialogTrigger={
                     <Button className="flex items-center space-x-2 bg-red-500 text-white text-sm rounded-full hover:bg-red-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
                       <Trash2 size={16} />
@@ -239,7 +239,7 @@ const PaymentsConfigurationPage: React.FC = () => {
             </div>
           ) : (
             <Button
-              onClick={enablePaystack}
+              onClick={enableFlutterwave}
               className="flex items-center justify-center space-x-2 bg-linear-to-r p-3 from-indigo-500 to-purple-600 text-white px-6 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition duration-300 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isOnboarding}
             >
@@ -247,23 +247,23 @@ const PaymentsConfigurationPage: React.FC = () => {
                 <>
                   <Loader2 className="animate-spin" size={24} />
                   <span className="text-lg font-semibold">
-                    Connecting to Paystack...
+                    Connecting to Flutterwave...
                   </span>
                 </>
               ) : (
                 <>
                   <Wallet size={24} />
-                  <span className="text-lg font-semibold">Enable Paystack</span>
+                  <span className="text-lg font-semibold">Enable Flutterwave</span>
                 </>
               )}
             </Button>
           )}
         </div>
       </div>
-      {paystackConfig && (
-        <EditPaystackConfigModal
+      {flutterwaveConfig && (
+        <EditFlutterwaveConfigModal
           orgId={org.id}
-          configId={paystackConfig.id}
+          configId={flutterwaveConfig.id}
           accessToken={access_token}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -273,7 +273,7 @@ const PaymentsConfigurationPage: React.FC = () => {
   )
 }
 
-interface EditPaystackConfigModalProps {
+interface EditFlutterwaveConfigModalProps {
   orgId: number
   configId: string
   accessToken: string
@@ -281,26 +281,26 @@ interface EditPaystackConfigModalProps {
   onClose: () => void
 }
 
-const EditPaystackConfigModal: React.FC<EditPaystackConfigModalProps> = ({
+const EditFlutterwaveConfigModal: React.FC<EditFlutterwaveConfigModalProps> = ({
   orgId,
   configId,
   accessToken,
   isOpen,
   onClose,
 }) => {
-  const [paystackAccountId, setPaystackAccountId] = useState('')
+  const [flutterwaveAccountId, setFlutterwaveAccountId] = useState('')
 
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         const config = await getPaymentConfigs(orgId, accessToken)
-        const paystackConfig = config.find((c: any) => c.id === configId)
-        if (paystackConfig && paystackConfig.provider_specific_id) {
-          setPaystackAccountId(paystackConfig.provider_specific_id || '')
+        const flutterwaveConfig = config.find((c: any) => c.id === configId)
+        if (flutterwaveConfig && flutterwaveConfig.provider_specific_id) {
+          setFlutterwaveAccountId(flutterwaveConfig.provider_specific_id || '')
         }
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('Error fetching Paystack configuration:', error)
+        console.error('Error fetching Flutterwave configuration:', error)
         toast.error('Failed to load existing configuration')
       }
     }
@@ -312,10 +312,10 @@ const EditPaystackConfigModal: React.FC<EditPaystackConfigModalProps> = ({
 
   const handleSubmit = async () => {
     try {
-      const paystack_config = {
-        account_id: paystackAccountId,
+      const flutterwave_config = {
+        account_id: flutterwaveAccountId,
       }
-      await updatePaymentAccountID(orgId, paystack_config, accessToken)
+      await updatePaymentAccountID(orgId, flutterwave_config, accessToken)
       toast.success('Configuration updated successfully')
       mutate([`/payments/${orgId}/config`, accessToken])
       onClose()
@@ -329,17 +329,17 @@ const EditPaystackConfigModal: React.FC<EditPaystackConfigModalProps> = ({
   return (
     <Modal
       isDialogOpen={isOpen}
-      dialogTitle="Edit Paystack Configuration"
-      dialogDescription="Edit your paystack configuration"
+      dialogTitle="Edit Flutterwave Configuration"
+      dialogDescription="Edit your flutterwave configuration"
       onOpenChange={onClose}
       dialogContent={
         <FormLayout onSubmit={handleSubmit}>
-          <FormField name="paystack-account-id">
-            <FormLabelAndMessage label="Paystack Account ID" />
+          <FormField name="flutterwave-account-id">
+            <FormLabelAndMessage label="Flutterwave Account ID" />
             <Input
               type="text"
-              value={paystackAccountId}
-              onChange={(e) => setPaystackAccountId(e.target.value)}
+              value={flutterwaveAccountId}
+              onChange={(e) => setFlutterwaveAccountId(e.target.value)}
               placeholder="acct_..."
             />
           </FormField>
