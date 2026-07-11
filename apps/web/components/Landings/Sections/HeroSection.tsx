@@ -40,9 +40,7 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
           </h1>
 
           <p className="text-lg md:text-xl text-gray-500 max-w-xl font-medium leading-relaxed">
-            Master artificial intelligence, software engineering, and the most
-            in-demand tech skills with{' '}
-            {org?.name || 'African AI Network Academy'}.
+            AINA (African AI Network Academy) is the premier gateway to practical AI education. Build neural networks, code multi-agent loops, earn cryptographic credentials, and secure high-paying global tech internships.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
