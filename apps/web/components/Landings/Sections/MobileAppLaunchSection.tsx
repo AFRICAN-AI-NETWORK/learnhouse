@@ -14,11 +14,11 @@ export default function MobileAppLaunchSection() {
             Upcoming Activity
           </div>
 
-          <h2 className="text-4xl md:text-5xl font-black text-[#0a0f1e] tracking-tight leading-[1.1]">
-            Learn on the go.
+          <h2 className="text-4xl md:text-5xl font-black text-[#0a0f1e] tracking-tight leading-[1.1] uppercase">
+            LEARN ON THE GO.
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              Anywhere, anytime.
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 uppercase">
+              ANYWHERE, ANYTIME.
             </span>
           </h2>
 

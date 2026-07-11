@@ -290,8 +290,8 @@ export default function LandingPremium({
               Ready to start?
             </span>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
-              Your tech career starts today.
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight uppercase">
+              YOUR TECH CAREER STARTS TODAY.
             </h2>
 
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed pb-4">
