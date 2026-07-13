@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 from datetime import datetime
 from sqlmodel import Session, select
@@ -235,6 +235,7 @@ async def create_certificate_user(
     certification_id: int,
     db_session: Session,
     current_user: PublicUser | AnonymousUser | None = None,
+    grade_percentage: Optional[float] = None,
 ) -> CertificateUserRead:
     """
     Create a certificate user link
@@ -243,6 +244,10 @@ async def create_certificate_user(
     - This function should only be called by authorized users (course owners, instructors, or system)
     - When called from check_course_completion_and_create_certificate, it's a system operation
     - When called directly, requires proper RBAC checks
+
+    ``grade_percentage`` is the computed course grade persisted at issuance time
+    (may be None for courses with no graded activities). This is the only place
+    ``CertificateUser`` rows are created, so grade persistence is contained here.
     """
 
     # Check if certification exists
@@ -331,6 +336,7 @@ async def create_certificate_user(
         user_id=user_id,
         certification_id=certification_id,
         user_certification_uuid=user_certification_uuid,
+        grade_percentage=grade_percentage,
         created_at=str(datetime.now()),
         updated_at=str(datetime.now()),
     )
@@ -483,9 +489,10 @@ async def check_course_completion_and_create_certificate(
     if sync_course_trail_run_completion_status(user_id, course_id, db_session):
         # Check if user is verified before issuing a certificate
         from src.db.users import User
+
         statement = select(User).where(User.id == user_id)
         user = db_session.exec(statement).first()
-        
+
         # If user doesn't exist or isn't email_verified, do not generate certificate
         if not user or not user.email_verified:
             return False
@@ -495,11 +502,21 @@ async def check_course_completion_and_create_certificate(
         certification = db_session.exec(statement).first()
 
         if certification and certification.id:
+            # Compute the performance-weighted course grade at issuance time.
+            # May be None when the course has no graded (points > 0) activities.
+            from src.services.courses.grade import compute_course_grade
+
+            grade_result = compute_course_grade(user_id, course_id, db_session)
+
             # SECURITY: Create certificate user link (system operation, no RBAC needed here)
             # This is called from mark_activity_as_done_for_user which already has proper RBAC checks
             try:
                 await create_certificate_user(
-                    request, user_id, certification.id, db_session
+                    request,
+                    user_id,
+                    certification.id,
+                    db_session,
+                    grade_percentage=grade_result.grade_percentage,
                 )
                 return True
             except HTTPException as e:

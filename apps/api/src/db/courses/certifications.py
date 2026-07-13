@@ -62,6 +62,8 @@ class CertificateUser(CertificateUserBase, table=True):
         )
     )
     user_certification_uuid: str
+    # Computed course grade (0-100) at the moment the certificate was issued.
+    grade_percentage: Optional[float] = Field(default=None)
     created_at: str = ""
     updated_at: str = ""
 
@@ -77,6 +79,7 @@ class CertificateUserRead(SQLModel):
     user_id: int
     certification_id: int
     user_certification_uuid: str
+    grade_percentage: Optional[float] = None
     created_at: str
     updated_at: str
 
@@ -85,3 +88,4 @@ class CertificateUserUpdate(SQLModel):
     user_id: Optional[int] = None
     certification_id: Optional[int] = None
     user_certification_uuid: Optional[str] = None
+    grade_percentage: Optional[float] = None

@@ -246,6 +246,9 @@ const CertificateVerificationPage: React.FC<
                     `${certificateData.user?.first_name || ''} ${certificateData.user?.last_name || ''}`.trim() ||
                     'Student Name'
                   }
+                  gradePercentage={
+                    certificateData?.certificate_user?.grade_percentage
+                  }
                 />
               </div>
             </div>

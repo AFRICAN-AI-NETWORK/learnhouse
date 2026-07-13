@@ -45,6 +45,7 @@ from src.services.trail.trail import check_trail_presence
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
 )
+from src.services.courses.grade import compute_and_store_trail_step_grade
 from src.security.courses_security import courses_rbac_check_for_assignments
 from src.services.code_execution import execute_and_grade
 
@@ -1753,7 +1754,7 @@ async def create_assignment_submission(
             teacher_verified=False,
             grade="",
             user_id=user.id,  # type: ignore
-            points_earned=activity.points or 0,
+            points_earned=0,
             creation_date=str(datetime.now()),
             update_date=str(datetime.now()),
         )
@@ -1762,11 +1763,14 @@ async def create_assignment_submission(
         db_session.refresh(trailstep)
     else:
         trailstep.complete = True
-        trailstep.points_earned = activity.points or 0
         trailstep.update_date = str(datetime.now())
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
+
+    # Weight the points earned by the student's submission grade. The submission
+    # was just persisted above, so this reflects the latest grade.
+    compute_and_store_trail_step_grade(activity, trailstep, db_session)
 
     # Check if all activities in the course are completed and create certificate if so
     if course and course.id and user and user.id:
@@ -2306,13 +2310,16 @@ async def mark_activity_as_done_for_user(
 
     # Mark activity as done
     trailstep.complete = True
-    trailstep.points_earned = activity.points or 0
     trailstep.update_date = str(datetime.now())
 
     # Insert TrailStep in DB
     db_session.add(trailstep)
     db_session.commit()
     db_session.refresh(trailstep)
+
+    # Weight the points earned by the student's submission grade rather than
+    # awarding the activity's full point value unconditionally.
+    compute_and_store_trail_step_grade(activity, trailstep, db_session)
 
     # Check if all activities in the course are completed and create certificate if so
     if course and course.id:
