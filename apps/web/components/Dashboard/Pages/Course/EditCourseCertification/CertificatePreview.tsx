@@ -683,7 +683,10 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             background: `linear-gradient(to bottom right, #eff6ff, #eef2ff)`,
           }}
         >
-          <div className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden w-full flex flex-col">
+          <div 
+            className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden w-full flex flex-col"
+            style={{ minHeight: '480px' }}
+          >
             {/* Dynamic Certificate Pattern */}
             {renderCertificatePattern(certificatePattern)}
 
@@ -775,7 +778,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               </div>
 
               {/* Certificate Content */}
-              <div className="flex flex-col justify-center items-center flex-1 max-w-full">
+              <div className="flex flex-col justify-center items-center max-w-full w-full">
                 <div
                   className={`text-xs ${theme.secondary} uppercase tracking-[0.2em] mb-1 font-semibold opacity-80`}
                 >
@@ -891,7 +894,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             <div className="relative z-10 mt-auto p-6 pt-8">
               <div className="flex items-end justify-between w-full">
                 {/* Left: Chief Instructor */}
-                <div className="flex flex-col items-start space-y-1 flex-1">
+                <div className="flex flex-col items-start space-y-1 w-1/3">
                   <div className="flex items-center space-x-1">
                     <User
                       className={`w-2.5 h-2.5 `}
@@ -917,7 +920,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 </div>
 
                 {/* Center: Logo */}
-                <div className="flex flex-col items-center space-y-1 flex-1">
+                <div className="flex flex-col items-center space-y-1 w-1/3">
                   <div className={`w-32 h-32 flex items-center justify-center`}>
                     {displayOrgLogoUrl ? (
                       <img
@@ -953,7 +956,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 </div>
 
                 {/* Right: CEO */}
-                <div className="flex flex-col items-end space-y-1 flex-1">
+                <div className="flex flex-col items-end space-y-1 w-1/3">
                   <div className="flex items-center space-x-1">
                     <User
                       className={`w-2.5 h-2.5 `}
