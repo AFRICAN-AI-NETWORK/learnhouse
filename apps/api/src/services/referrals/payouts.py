@@ -682,7 +682,7 @@ async def process_payout_request(
         )
 
         transfer_result = await initiate_paystack_transfer(
-            amount=amount_in_ngn,  # Already in NGN
+            amount=amount_in_local,
             recipient_code=recipient_code,
             reference=transfer_reference,
             reason="Referral commission payout",
