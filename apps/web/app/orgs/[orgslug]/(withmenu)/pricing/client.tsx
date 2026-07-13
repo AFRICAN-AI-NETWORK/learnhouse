@@ -27,19 +27,6 @@ type Props = {
   initialProducts: PaymentsProduct[]
 }
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  NGN: '₦',
-  USD: '$',
-  GHS: '₵',
-  ZAR: 'R',
-  KES: 'Ksh',
-  XOF: 'CFA',
-}
-
-const getCurrencySymbol = (currency?: string) => {
-  if (!currency) return '$'
-  return CURRENCY_SYMBOLS[currency.toUpperCase()] || currency
-}
 
 const parseBenefits = (benefitsString?: string) => {
   if (!benefitsString) return []
@@ -177,25 +164,6 @@ export default function PricingPageClient({
                     </p>
                   </div>
 
-                  <div className="mb-8">
-                    <div className="flex items-start text-gray-900">
-                      <span className="text-5xl font-black tracking-tighter mt-1">
-                        {getCurrencySymbol(product.currency)}
-                      </span>
-                      <span className="text-6xl sm:text-7xl font-black tracking-tighter ml-1">
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'decimal',
-                          minimumFractionDigits: 0,
-                        }).format(product.amount)}
-                      </span>
-                      {product.product_type === 'subscription' && (
-                        <span className="ml-1 text-lg font-medium text-gray-500 self-end mb-2">
-                          /mo
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
                   <ul className="flex-1 space-y-4 mb-8">
                     {benefits.map((benefit, i) => (
                       <li key={i} className="flex items-start gap-3">
@@ -210,8 +178,23 @@ export default function PricingPageClient({
                   <button
                     onClick={() => {
                       if (product.amount > 0) {
-                        setSelectedProduct(product)
-                        setIsModalOpen(true)
+                        const name = product.name.toLowerCase()
+                        let path = ''
+                        if (name.includes('content creators')) {
+                          path = `/ai-automation-content-creators`
+                        } else if (name.includes('business')) {
+                          path = `/ai-automation`
+                        } else if (name.includes('fundamental') || name.includes('foundations')) {
+                          path = `/ai-fundamentals`
+                        }
+                        
+                        if (path) {
+                          router.push(path)
+                        } else {
+                          // Fallback if course name doesn't match
+                          setSelectedProduct(product)
+                          setIsModalOpen(true)
+                        }
                       } else {
                         handleCheckout(product.id)
                       }

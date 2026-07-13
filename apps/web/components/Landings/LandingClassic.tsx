@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCourseButton'
 import ContentPlaceHolderIfUserIsNotAdmin from '@components/Objects/ContentPlaceHolder'
@@ -41,6 +41,9 @@ import {
 } from '@services/courses/courses'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import CourseWaitlistModal from '@components/Objects/CourseWaitlistModal'
+import CountdownTimer from '@components/Utils/CountdownTimer'
+import { getOrgWaitlists } from '@services/waitlist/waitlist'
 
 interface LandingClassicProps {
   courses: any[]
@@ -77,6 +80,13 @@ function LandingClassic({
     session?.data?.user?.first_name ||
     session?.data?.user?.email ||
     'there'
+
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false)
+
+  const { data: orgWaitlists } = useSWR(
+    org?.id && accessToken ? `org-waitlists-${org.id}` : null,
+    () => getOrgWaitlists(org.id, accessToken)
+  )
 
   const { data: trail } = useSWR(
     org?.id ? `${getAPIUrl()}trail/org/${org.id}/trail` : null,
@@ -126,9 +136,30 @@ function LandingClassic({
   const getHydratedCourse = (course: any) =>
     courseMetadataByUuid[cleanCourseUuid(course?.course_uuid)] || course
 
+  const firstCourse = courses?.[0] ? getHydratedCourse(courses[0]) : null
+  const firstCourseWaitlist = orgWaitlists?.data?.find(
+    (w: any) =>
+      cleanCourseUuid(w.interest_category) ===
+      cleanCourseUuid(firstCourse?.course_uuid)
+  )
+
+  useEffect(() => {
+    if (!firstCourse) return
+    const storageKey = `seen-modal-${firstCourse.course_uuid}`
+    if (!localStorage.getItem(storageKey)) {
+      if (
+        session?.data?.user?.user_status === 'WAITLIST' ||
+        firstCourse.whatsapp_group_link
+      ) {
+        setTimeout(() => setIsWaitlistModalOpen(true), 10)
+        localStorage.setItem(storageKey, 'true')
+      }
+    }
+  }, [firstCourse, session?.data?.user?.user_status])
+
   const trailRuns = useMemo(() => trail?.runs || [], [trail])
   const continueRun = trailRuns[0]
-  const continueCourse = continueRun?.course || courses[0]
+  const continueCourse = continueRun?.course || firstCourse
 
   const getRunForCourse = (course: any) =>
     trailRuns.find(
@@ -265,11 +296,17 @@ function LandingClassic({
               {displayedCourses.slice(0, 6).map((course: any) => (
                 <DashboardCourseCard
                   key={course.course_uuid}
-                  course={course}
+                  course={getHydratedCourse(course)}
                   org={org}
                   orgslug={orgslug}
                   progress={getCourseProgress(course)}
                   lessonCount={getCourseTotalLessons(course)}
+                  userStatus={session?.data?.user?.user_status}
+                  waitlistConfig={orgWaitlists?.data?.find(
+                    (w: any) =>
+                      cleanCourseUuid(w.interest_category) ===
+                      cleanCourseUuid(course.course_uuid)
+                  )}
                 />
               ))}
             </div>
@@ -380,6 +417,16 @@ function LandingClassic({
           </section>
         )}
       </div>
+
+      {firstCourse && (
+        <CourseWaitlistModal
+          isOpen={isWaitlistModalOpen}
+          onClose={() => setIsWaitlistModalOpen(false)}
+          courseName={firstCourse.name}
+          launchDate={firstCourseWaitlist?.launch_datetime}
+          whatsappGroupUrl={firstCourse.whatsapp_group_link}
+        />
+      )}
     </main>
   )
 }
@@ -450,12 +497,16 @@ const DashboardCourseCard = ({
   orgslug,
   progress,
   lessonCount,
+  userStatus,
+  waitlistConfig,
 }: {
   course: any
   org: any
   orgslug: string
   progress: number
   lessonCount: number
+  userStatus?: string
+  waitlistConfig?: any
 }) => (
   <article className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
     <AdminCourseCardActions course={course} orgslug={orgslug} />
@@ -510,15 +561,24 @@ const DashboardCourseCard = ({
           {Math.max(1, Math.ceil((lessonCount * 15) / 60))}h{' '}
           {(lessonCount * 15) % 60}m
         </span>
-        <Link
-          href={getUriWithOrg(
-            orgslug,
-            `/course/${cleanCourseUuid(course.course_uuid)}`
-          )}
-          className="text-sm font-semibold text-blue-400 hover:text-blue-700"
-        >
-          Start learning
-        </Link>
+        {userStatus === 'WAITLIST' ? (
+          <div className="w-[120px] text-right">
+            <CountdownTimer
+              launchDate={waitlistConfig?.launch_datetime}
+              displayFormat="compact"
+            />
+          </div>
+        ) : (
+          <Link
+            href={getUriWithOrg(
+              orgslug,
+              `/course/${cleanCourseUuid(course.course_uuid)}`
+            )}
+            className="text-sm font-semibold text-blue-400 hover:text-blue-700"
+          >
+            Start learning
+          </Link>
+        )}
       </div>
     </div>
   </article>

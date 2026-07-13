@@ -9,11 +9,15 @@ export async function getStudents(
   access_token: string,
   search?: string,
   page: number = 1,
-  pageSize: number = 25
+  pageSize: number = 25,
+  sortBy?: string
 ) {
   let url = `${getAPIUrl()}admin/analytics/orgs/${orgId}/students?page=${page}&page_size=${pageSize}`
   if (search) {
     url += `&search=${encodeURIComponent(search)}`
+  }
+  if (sortBy) {
+    url += `&sort_by=${sortBy}`
   }
   const result = await fetch(
     url,

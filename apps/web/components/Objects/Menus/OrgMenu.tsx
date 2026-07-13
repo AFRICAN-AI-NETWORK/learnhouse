@@ -10,6 +10,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { SearchBar } from '@components/Objects/Search/SearchBar'
 import { usePathname } from 'next/navigation'
 import { Monitor, Moon, Sun } from 'lucide-react'
+import { AnnouncementBell } from '@components/Objects/Announcements/AnnouncementBell'
 
 type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -140,7 +141,7 @@ export const OrgMenu = (props: any) => {
           <div className="flex items-center space-x-5 md:w-auto">
             <div className="logo flex w-auto justify-start">
               <Link href={getUriWithOrg(orgslug, '/?landing=premium')}>
-                <div className="flex w-auto h-9 rounded-md items-center m-auto py-1 justify-center">
+                <div className="flex w-auto h-12 rounded-md items-center m-auto py-1 justify-center">
                   {org?.logo_image ? (
                     <img
                       src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
@@ -173,6 +174,7 @@ export const OrgMenu = (props: any) => {
             >
               <ThemeIcon size={18} />
             </button>
+            <AnnouncementBell orgslug={orgslug} />
             <div className="hidden md:flex">
               <HeaderProfileBox />
             </div>

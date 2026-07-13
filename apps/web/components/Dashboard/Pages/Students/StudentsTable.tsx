@@ -3,7 +3,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 import { getStudents } from '@services/dashboard/students'
-import { Search, ChevronLeft, ChevronRight, Clock, Award } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Clock, Award, ArrowUpDown } from 'lucide-react'
 import UserAvatar from '@components/Objects/UserAvatar'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { useRouter } from 'next/navigation'
@@ -34,11 +34,12 @@ function StudentsTable({ searchQuery, setSearchQuery }: StudentsTableProps) {
   const router = useRouter()
 
   const [page, setPage] = useState(1)
+  const [sortBy, setSortBy] = useState<string>('')
   const pageSize = 20
 
   const { data, isLoading } = useSWR(
-    org ? [`students_list_${org.id}`, page, searchQuery] : null,
-    () => getStudents(org.id, access_token, searchQuery, page, pageSize)
+    org ? [`students_list_${org.id}`, page, searchQuery, sortBy] : null,
+    () => getStudents(org.id, access_token, searchQuery, page, pageSize, sortBy)
   )
 
   const handleRowClick = (user_id: number) => {
@@ -61,15 +62,32 @@ function StudentsTable({ searchQuery, setSearchQuery }: StudentsTableProps) {
             {data?.total || 0} students found
           </h2>
         </div>
-        <div className="relative w-full md:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/35" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            placeholder="Search names or emails..."
-            className="w-full rounded-md border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-gray-300 focus:ring-2 focus:ring-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:placeholder:text-white/35 dark:focus:border-white/20 dark:focus:ring-white/10"
-          />
+        <div className="flex items-center space-x-3 w-full md:w-auto">
+          <div className="relative flex items-center">
+            <ArrowUpDown className="absolute left-3 h-4 w-4 text-gray-400 dark:text-white/35" />
+            <select
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value)
+                setPage(1)
+              }}
+              className="w-full md:w-auto rounded-md border border-gray-200 bg-white py-2 pl-9 pr-8 text-sm font-medium text-gray-700 outline-none transition-all focus:border-gray-300 focus:ring-2 focus:ring-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:focus:border-white/20 dark:focus:ring-white/10 appearance-none cursor-pointer"
+            >
+              <option value="">Default Sorting</option>
+              <option value="progress_desc">Progress: Highest First</option>
+              <option value="progress_asc">Progress: Lowest First</option>
+            </select>
+          </div>
+          <div className="relative w-full md:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-white/35" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search names or emails..."
+              className="w-full rounded-md border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-gray-700 outline-none transition-all placeholder:text-gray-400 focus:border-gray-300 focus:ring-2 focus:ring-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:placeholder:text-white/35 dark:focus:border-white/20 dark:focus:ring-white/10"
+            />
+          </div>
         </div>
       </div>
 

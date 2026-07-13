@@ -62,4 +62,7 @@ class TrailRunRead(BaseModel):
     # number of activities in course
     course_total_steps: int
     steps: list[TrailStep]
+    # Cohort locking info
+    is_locked: bool = False
+    cohort_start_date: Optional[str] = None
     pass

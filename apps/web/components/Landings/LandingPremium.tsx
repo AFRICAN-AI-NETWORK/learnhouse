@@ -14,6 +14,7 @@ import PersonalizedPathSection from './Sections/PersonalizedPathSection'
 import FAQSection from './Sections/FAQSection'
 import ReferAndEarnSection from './Sections/ReferAndEarnSection'
 import ImpactProgramsSection from './Sections/ImpactProgramsSection'
+import MobileAppLaunchSection from './Sections/MobileAppLaunchSection'
 import GlobalFooter from './GlobalFooter'
 
 interface LandingPremiumProps {
@@ -265,6 +266,9 @@ export default function LandingPremium({
         }
       )}
 
+      {/* 7.5 Mobile App Launch (Phase 5) */}
+      <MobileAppLaunchSection />
+
       {/* 8. Secondary Offerings */}
       <ReferAndEarnSection />
 
@@ -272,7 +276,10 @@ export default function LandingPremium({
       <FAQSection />
 
       {/* Awesome Final CTA */}
-      <section className="relative py-24 px-6 overflow-hidden bg-white">
+      <section
+        id="contact"
+        className="relative py-24 px-6 overflow-hidden bg-white"
+      >
         <div className="relative max-w-6xl mx-auto bg-[#0a0f1e] rounded-[32px] p-12 md:p-20 text-center overflow-hidden">
           {/* Subtle glowing corners */}
           <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#0057ff] rounded-full blur-[120px] opacity-20 pointer-events-none" />
@@ -283,8 +290,8 @@ export default function LandingPremium({
               Ready to start?
             </span>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight">
-              Your tech career starts today.
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight uppercase">
+              YOUR TECH CAREER STARTS TODAY.
             </h2>
 
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed pb-4">

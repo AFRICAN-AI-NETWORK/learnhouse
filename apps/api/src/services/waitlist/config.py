@@ -14,6 +14,8 @@ from src.db.waitlist import (
     WaitlistStatusEnum,
 )
 from src.db.organizations import Organization
+from src.db.cohorts import CohortCreate
+from src.services.cohorts.cohorts import create_cohort
 
 
 async def create_waitlist_config(
@@ -86,6 +88,21 @@ async def create_waitlist_config(
     db_session.add(waitlist)
     db_session.commit()
     db_session.refresh(waitlist)
+
+    # Auto-create the upcoming cohort linked to this waitlist launch date
+    try:
+        cohort_data = CohortCreate(
+            org_id=waitlist.org_id,
+            name=f"{waitlist.name} Cohort",
+            cohort_number=0,  # Will be auto-incremented by the service
+            start_date=waitlist.launch_datetime,
+            status="upcoming",
+        )
+        await create_cohort(cohort_data, db_session)
+    except Exception as e:
+        # We don't fail the waitlist creation if cohort creation fails, 
+        # but we should log it (using standard fastAPI logging).
+        print(f"Failed to auto-create cohort for waitlist: {e}")
 
     return WaitlistConfigRead.model_validate(waitlist)
 

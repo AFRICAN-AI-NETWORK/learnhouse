@@ -1,5 +1,5 @@
 'use client'
-import africanAiLogo from 'public/african_ai_horizontal.png'
+import ainaLogo from 'public/aina_logo.png'
 import FormLayout, {
   FormField,
   FormLabelAndMessage,
@@ -22,6 +22,7 @@ import {
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
+import { getOrgLogoMediaDirectory } from '@services/media/media'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
 
@@ -105,33 +106,6 @@ const LoginClient = (props: LoginClientProps) => {
     })
 
     if (res && res.error) {
-      // Show waitlist error directly, no redirect
-      if (
-        res.error.includes('waitlist') ||
-        res.error.includes('launch date')
-      ) {
-        // Format date in error message for user-friendly display
-        let formattedError = res.error
-        const dateMatch = res.error.match(
-          /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
-        )
-        if (dateMatch && dateMatch[1]) {
-          const dateObj = new Date(dateMatch[1])
-          const formattedDate = dateObj.toLocaleString(undefined, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          })
-          formattedError = res.error.replace(dateMatch[1], formattedDate)
-        }
-        setError(formattedError)
-        setShowResendButton(false)
-        setIsSubmitting(false)
-        return
-      }
       if (
         res.error.includes('verify your email') ||
         res.error.includes('email address before') ||
@@ -170,9 +144,17 @@ const LoginClient = (props: LoginClientProps) => {
             <Image
               quality={100}
               width={160}
-              src={africanAiLogo}
-              alt="African AI Network"
-              className="w-auto h-8 hover:opacity-80 transition-opacity"
+              height={56}
+              src={
+                props.org?.logo_image
+                  ? getOrgLogoMediaDirectory(
+                      props.org.org_uuid,
+                      props.org.logo_image
+                    )
+                  : ainaLogo
+              }
+              alt={props.org?.name || 'African AI Network'}
+              className="w-auto h-14 hover:opacity-80 transition-opacity"
             />
           </Link>
           <LanguageSwitcher />
@@ -327,13 +309,10 @@ const LoginClient = (props: LoginClientProps) => {
           <p className="text-center text-sm text-slate-600">
             {t('auth.no_account')}{' '}
             <Link
-              href={{
-                pathname: getUriWithoutOrg('/signup'),
-                query: props.org.slug ? { orgslug: props.org.slug } : null,
-              }}
+              href={getUriWithOrg(props.org?.slug, '/#programs')}
               className="font-bold text-black hover:underline underline-offset-4"
             >
-              {t('auth.sign_up')}
+              Apply Now
             </Link>
           </p>
         </div>
