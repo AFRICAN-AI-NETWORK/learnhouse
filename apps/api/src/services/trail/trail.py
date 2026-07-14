@@ -130,6 +130,8 @@ async def get_user_trails(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 
@@ -297,6 +299,8 @@ async def get_user_trail_with_orgid(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 
@@ -541,6 +545,8 @@ async def add_activity_to_trail(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 
@@ -632,6 +638,8 @@ async def remove_activity_from_trail(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 
@@ -768,6 +776,8 @@ async def add_course_to_trail(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 
@@ -846,6 +856,8 @@ async def remove_course_from_trail(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 
