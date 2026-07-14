@@ -523,14 +523,32 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
         return (
           <>
             {/* Professional double border */}
-            <div className="absolute inset-2 border-2 border-slate-300 opacity-50"></div>
-            <div className="absolute inset-3 border border-slate-400 opacity-40"></div>
+            <div
+              className="absolute inset-2 border-2 opacity-50"
+              style={{ borderColor: theme.hex?.border }}
+            ></div>
+            <div
+              className="absolute inset-3 border opacity-40"
+              style={{ borderColor: theme.hex?.secondary }}
+            ></div>
 
             {/* Professional corner brackets */}
-            <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-slate-400 opacity-60"></div>
-            <div className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 border-slate-400 opacity-60"></div>
-            <div className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 border-slate-400 opacity-60"></div>
-            <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-slate-400 opacity-60"></div>
+            <div
+              className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 opacity-60"
+              style={{ borderColor: theme.hex?.secondary }}
+            ></div>
+            <div
+              className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 opacity-60"
+              style={{ borderColor: theme.hex?.secondary }}
+            ></div>
+            <div
+              className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 opacity-60"
+              style={{ borderColor: theme.hex?.secondary }}
+            ></div>
+            <div
+              className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 opacity-60"
+              style={{ borderColor: theme.hex?.secondary }}
+            ></div>
 
             {/* Subtle professional background */}
             <div className="absolute inset-0 opacity-2">
@@ -683,7 +701,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             background: `linear-gradient(to bottom right, #eff6ff, #eef2ff)`,
           }}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-sm p-6 relative overflow-hidden w-full flex flex-col"
             style={{ minHeight: '480px' }}
           >
@@ -692,12 +710,43 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
             {/* Certificate ID - Top Left */}
             <div className="absolute top-6 left-6 z-20">
-              <div className="flex items-center space-x-1">
-                <Hash className={`w-4 h-4 ${theme.icon}`} />
-                <span className={`text-sm ${theme.secondary} font-medium`}>
-                  ID: {certificateId || 'LH-2024-001'}
-                </span>
-              </div>
+              <table
+                cellPadding={0}
+                cellSpacing={0}
+                style={{ border: 0, margin: 0, padding: 0, width: 'auto' }}
+              >
+                <tbody>
+                  <tr>
+                    <td
+                      style={{
+                        width: '16px',
+                        verticalAlign: 'middle',
+                        paddingRight: '4px',
+                      }}
+                    >
+                      <Hash
+                        className={`w-4 h-4`}
+                        style={{
+                          color: theme.hex?.icon,
+                          display: 'block',
+                          width: '16px',
+                          height: '16px',
+                        }}
+                      />
+                    </td>
+                    <td
+                      style={{ verticalAlign: 'middle', whiteSpace: 'nowrap' }}
+                    >
+                      <span
+                        className={`text-sm font-medium`}
+                        style={{ color: theme.hex?.secondary, lineHeight: '1' }}
+                      >
+                        ID: {certificateId || 'LH-2024-001'}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {/* QR Code Box - Top Right */}
@@ -758,20 +807,36 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                   {/* Decorative rays */}
                   <div className="absolute inset-0 rounded-full">
                     <div
-                      className={`absolute top-0 left-1/2 w-px h-3 transform -translate-x-1/2 -translate-y-1 opacity-60`}
-                      style={{ backgroundColor: theme.hex?.secondary }}
+                      className={`absolute top-0 left-1/2 w-px h-3 opacity-60`}
+                      style={{
+                        backgroundColor: theme.hex?.secondary,
+                        marginLeft: '-0.5px',
+                        marginTop: '-4px',
+                      }}
                     ></div>
                     <div
-                      className={`absolute bottom-0 left-1/2 w-px h-3 transform -translate-x-1/2 translate-y-1 opacity-60`}
-                      style={{ backgroundColor: theme.hex?.secondary }}
+                      className={`absolute bottom-0 left-1/2 w-px h-3 opacity-60`}
+                      style={{
+                        backgroundColor: theme.hex?.secondary,
+                        marginLeft: '-0.5px',
+                        marginBottom: '-4px',
+                      }}
                     ></div>
                     <div
-                      className={`absolute left-0 top-1/2 w-3 h-px transform -translate-y-1/2 -translate-x-1 opacity-60`}
-                      style={{ backgroundColor: theme.hex?.secondary }}
+                      className={`absolute left-0 top-1/2 w-3 h-px opacity-60`}
+                      style={{
+                        backgroundColor: theme.hex?.secondary,
+                        marginTop: '-0.5px',
+                        marginLeft: '-4px',
+                      }}
                     ></div>
                     <div
-                      className={`absolute right-0 top-1/2 w-3 h-px transform -translate-y-1/2 translate-x-1 opacity-60`}
-                      style={{ backgroundColor: theme.hex?.secondary }}
+                      className={`absolute right-0 top-1/2 w-3 h-px opacity-60`}
+                      style={{
+                        backgroundColor: theme.hex?.secondary,
+                        marginTop: '-0.5px',
+                        marginRight: '-4px',
+                      }}
                     ></div>
                   </div>
                 </div>
@@ -780,32 +845,39 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               {/* Certificate Content */}
               <div className="flex flex-col justify-center items-center max-w-full w-full">
                 <div
-                  className={`text-xs ${theme.secondary} uppercase tracking-[0.2em] mb-1 font-semibold opacity-80`}
+                  className={`text-xs uppercase tracking-[0.2em] mb-1 font-semibold opacity-80`}
+                  style={{ color: theme.hex?.secondary }}
                 >
                   This is to certify that
                 </div>
                 <h3
-                  className={`font-bold text-2xl ${theme.primary} mb-2 text-center tracking-tight leading-tight`}
+                  className={`font-bold text-2xl mb-2 text-center tracking-tight leading-tight`}
+                  style={{ color: theme.hex?.primary }}
                 >
                   {studentName || 'Student Name'}
                 </h3>
                 <div
-                  className={`text-xs ${theme.secondary} mb-3 italic opacity-80`}
+                  className={`text-xs mb-3 italic opacity-80`}
+                  style={{ color: theme.hex?.secondary }}
                 >
                   has successfully completed the requirements for
                 </div>
 
                 <h4
-                  className={`font-bold text-base ${theme.primary} mb-2 text-center`}
+                  className={`font-bold text-base mb-2 text-center`}
+                  style={{ color: theme.hex?.primary }}
                 >
                   {certificationName || 'Certification Name'}
                 </h4>
-                <p
-                  className={`text-sm ${theme.secondary} text-center leading-relaxed max-w-sm`}
-                >
-                  {certificationDescription ||
-                    'Certification description will appear here...'}
-                </p>
+                {certificationDescription &&
+                  certificationDescription !== certificationName && (
+                    <p
+                      className={`text-sm text-center leading-relaxed max-w-sm`}
+                      style={{ color: theme.hex?.secondary }}
+                    >
+                      {certificationDescription}
+                    </p>
+                  )}
 
                 {formattedGrade && (
                   <div
@@ -840,53 +912,55 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
               {/* Certification Type Badge */}
               <div
-                className={`text-sm px-3 py-1 rounded-full border`}
+                className={`text-sm rounded-full border`}
                 style={{
-                  position: 'relative',
-                  display: 'inline-block',
                   backgroundColor: theme.hex?.bg,
                   color: theme.hex?.primary,
                   borderColor: theme.hex?.border,
-                  lineHeight: 1,
-                  minHeight: 24,
-                  paddingLeft: 27,
-                  paddingRight: 12,
-                  paddingTop: 6,
-                  paddingBottom: 6,
+                  padding: '5px 16px',
+                  display: 'inline-block',
+                  textAlign: 'center',
                 }}
               >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    left: 12,
-                    top: '50%',
-                    width: 12,
-                    height: 12,
-                    lineHeight: 0,
-                    transform: 'translateY(-50%)',
-                  }}
+                <table
+                  cellPadding={0}
+                  cellSpacing={0}
+                  style={{ border: 0, margin: 0, padding: 0, width: 'auto' }}
                 >
-                  <CheckCircle
-                    size={12}
-                    style={{
-                      display: 'block',
-                      width: 12,
-                      height: 12,
-                      verticalAlign: 'top',
-                    }}
-                  />
-                </span>
-                <span
-                  className="font-medium"
-                  style={{
-                    display: 'block',
-                    lineHeight: '12px',
-                    paddingTop: 0,
-                  }}
-                >
-                  {certificationTypeLabel}
-                </span>
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          width: '14px',
+                          verticalAlign: 'middle',
+                          paddingRight: '6px',
+                        }}
+                      >
+                        <CheckCircle
+                          size={14}
+                          style={{
+                            display: 'block',
+                            width: '14px',
+                            height: '14px',
+                          }}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          verticalAlign: 'middle',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <span
+                          className="font-medium"
+                          style={{ lineHeight: '1' }}
+                        >
+                          {certificationTypeLabel}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -895,18 +969,49 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
               <div className="flex items-end justify-between w-full">
                 {/* Left: Chief Instructor */}
                 <div className="flex flex-col items-start space-y-1 w-1/3">
-                  <div className="flex items-center space-x-1">
-                    <User
-                      className={`w-2.5 h-2.5 `}
-                      style={{ color: theme.hex?.icon }}
-                    />
-                    <span
-                      className={`text-xs font-bold uppercase tracking-wider`}
-                      style={{ color: theme.hex?.secondary }}
-                    >
-                      Chief Instructor
-                    </span>
-                  </div>
+                  <table
+                    cellPadding={0}
+                    cellSpacing={0}
+                    style={{ border: 0, margin: 0, padding: 0, width: 'auto' }}
+                  >
+                    <tbody>
+                      <tr>
+                        <td
+                          style={{
+                            width: '12px',
+                            verticalAlign: 'middle',
+                            paddingRight: '4px',
+                          }}
+                        >
+                          <User
+                            size={12}
+                            style={{
+                              color: theme.hex?.icon,
+                              display: 'block',
+                              width: '12px',
+                              height: '12px',
+                            }}
+                          />
+                        </td>
+                        <td
+                          style={{
+                            verticalAlign: 'middle',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <span
+                            className={`text-xs font-bold uppercase tracking-wider`}
+                            style={{
+                              color: theme.hex?.secondary,
+                              lineHeight: '1',
+                            }}
+                          >
+                            Chief Instructor
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                   <div
                     className={`text-sm font-extrabold`}
                     style={{ color: theme.hex?.primary }}
@@ -957,18 +1062,49 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
 
                 {/* Right: CEO */}
                 <div className="flex flex-col items-end space-y-1 w-1/3">
-                  <div className="flex items-center space-x-1">
-                    <User
-                      className={`w-2.5 h-2.5 `}
-                      style={{ color: theme.hex?.icon }}
-                    />
-                    <span
-                      className={`text-xs font-bold uppercase tracking-wider`}
-                      style={{ color: theme.hex?.secondary }}
-                    >
-                      CEO
-                    </span>
-                  </div>
+                  <table
+                    cellPadding={0}
+                    cellSpacing={0}
+                    style={{ border: 0, margin: 0, padding: 0, width: 'auto' }}
+                  >
+                    <tbody>
+                      <tr>
+                        <td
+                          style={{
+                            width: '12px',
+                            verticalAlign: 'middle',
+                            paddingRight: '4px',
+                          }}
+                        >
+                          <User
+                            size={12}
+                            style={{
+                              color: theme.hex?.icon,
+                              display: 'block',
+                              width: '12px',
+                              height: '12px',
+                            }}
+                          />
+                        </td>
+                        <td
+                          style={{
+                            verticalAlign: 'middle',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <span
+                            className={`text-xs font-bold uppercase tracking-wider`}
+                            style={{
+                              color: theme.hex?.secondary,
+                              lineHeight: '1',
+                            }}
+                          >
+                            CEO
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                   <div
                     className={`text-sm font-extrabold`}
                     style={{ color: theme.hex?.primary }}

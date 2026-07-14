@@ -9,13 +9,12 @@ import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import { createRoot } from 'react-dom/client'
 import QRCode from 'qrcode'
 import toast from 'react-hot-toast'
 import CertificateExport from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificateExport'
-import copyExportSafeStyles from '@/utils/certificateExport'
 
 interface CertificatePageProps {
   orgslug: string
@@ -148,15 +147,39 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         />
       )
 
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
-
-      const captureElement = captureContainer.querySelector(
-        '#certificate-export-root'
-      ) as HTMLElement | null
-
-      if (!captureElement) {
-        throw new Error('Certificate export element not found')
-      }
+      // Wait for React to fully render the component tree.
+      // A single rAF is insufficient — React batches renders and may need
+      // several frames plus effect cycles (QR code, scale calc) to finish.
+      const captureElement = await new Promise<HTMLElement>(
+        (resolve, reject) => {
+          let elapsed = 0
+          const interval = 50
+          const maxWait = 3000
+          const check = () => {
+            const el = captureContainer!.querySelector(
+              '#certificate-export-root'
+            ) as HTMLElement | null
+            // Ensure the element exists AND has meaningful text content
+            // (not just empty containers)
+            if (el && el.innerText && el.innerText.trim().length > 20) {
+              resolve(el)
+              return
+            }
+            elapsed += interval
+            if (elapsed >= maxWait) {
+              if (el) {
+                resolve(el) // Use whatever we have
+              } else {
+                reject(new Error('Certificate export element not found'))
+              }
+              return
+            }
+            setTimeout(check, interval)
+          }
+          // Start after one rAF to let React's first commit happen
+          requestAnimationFrame(() => setTimeout(check, interval))
+        }
+      )
 
       await Promise.all(
         Array.from(captureElement.querySelectorAll('img')).map((img) =>
@@ -173,51 +196,32 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         await document.fonts.ready
       }
 
-      const exportSafeElement = captureElement.cloneNode(true) as HTMLElement
-      exportSafeElement.id = 'certificate-export-root-export-safe'
-      copyExportSafeStyles(captureElement, exportSafeElement)
-      captureContainer.appendChild(exportSafeElement)
-      captureElement.style.display = 'none'
-
-      await Promise.all(
-        Array.from(exportSafeElement.querySelectorAll('img')).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise<void>((resolve) => {
-                img.onload = () => resolve()
-                img.onerror = () => resolve()
-              })
-        )
-      )
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
 
       const captureWidth = Math.max(
-        exportSafeElement.scrollWidth,
-        exportSafeElement.offsetWidth,
-        exportSafeElement.clientWidth
+        captureElement.scrollWidth,
+        captureElement.offsetWidth,
+        captureElement.clientWidth
       )
       const captureHeight = Math.max(
-        exportSafeElement.scrollHeight,
-        exportSafeElement.offsetHeight,
-        exportSafeElement.clientHeight
+        captureElement.scrollHeight,
+        captureElement.offsetHeight,
+        captureElement.clientHeight
       )
 
-      const canvas = await html2canvas(exportSafeElement, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
+      // Convert to PNG using html-to-image (native browser engine)
+      const imgData = await toPng(captureElement, {
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        foreignObjectRendering: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: captureWidth,
-        windowHeight: captureHeight,
         width: captureWidth,
         height: captureHeight,
+        style: { margin: '0' },
       })
 
-      const imgData = canvas.toDataURL('image/png', 1.0)
       const pdf = new jsPDF(
-        canvas.width >= canvas.height ? 'landscape' : 'portrait',
+        captureWidth >= captureHeight ? 'landscape' : 'portrait',
         'mm',
         'a4'
       )
@@ -225,8 +229,8 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
-      const canvasWidth = canvas.width
-      const canvasHeight = canvas.height
+      const canvasWidth = captureWidth * 2
+      const canvasHeight = captureHeight * 2
 
       const pxPerMm = 96 / 25.4
       const imgWidthMm = canvasWidth / pxPerMm

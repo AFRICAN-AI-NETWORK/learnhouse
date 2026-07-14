@@ -44,10 +44,18 @@ const nextConfig = {
   },
 
   images: {
+    // In development, localhost resolves to private IPs (::1, 127.0.0.1) which
+    // Next.js Image Optimization blocks. Disable optimization in dev to avoid this.
+    unoptimized: process.env.NODE_ENV === 'development',
     formats: ['image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     qualities: [75, 100], // Support both default and high-quality images
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'http', hostname: '127.0.0.1' },
+    ],
   },
 }
 
@@ -73,10 +81,15 @@ if (process.env.NODE_ENV === 'development') {
   )
 }
 
-module.exports = withSentryConfig(withPWA(nextConfig), {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: true,
-  disableLogger: true,
-})
+const finalConfig = withPWA(nextConfig)
+
+module.exports =
+  process.env.NODE_ENV === 'development'
+    ? finalConfig
+    : withSentryConfig(finalConfig, {
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        silent: true,
+        disableLogger: true,
+      })
