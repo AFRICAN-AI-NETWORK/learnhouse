@@ -22,6 +22,7 @@ from src.routers.courses import (
     courses,
     assignments,
     certifications,
+    grade,
     live_sessions,
     prerequisites,
     schedules,
@@ -68,6 +69,7 @@ v1_router.include_router(
 v1_router.include_router(
     prerequisites.router, prefix="/prerequisites", tags=["prerequisites"]
 )
+v1_router.include_router(grade.router, prefix="/courses", tags=["course-grade"])
 v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
 v1_router.include_router(

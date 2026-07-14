@@ -42,5 +42,11 @@ class TrailStep(SQLModel, table=True):
     update_date: str
 
 
-# note : prepare assignments support
-# an assignment object will be linked to a trail step object in the future
+# note: assignments support
+# `grade` stores the normalized assignment score string (e.g. "0.80") for
+# gradeable (assignment-backed) activities, so the per-activity weighting is
+# auditable without re-joining the assignment tables. It is "" for
+# completion-based activities. `points_earned` stores the effective,
+# performance- and lateness-weighted points the user earned for this activity.
+# Both fields are written by
+# src.services.courses.grade.compute_and_store_trail_step_grade.

@@ -14,6 +14,7 @@ interface CertificateExportProps {
   ceo?: string
   awardedDate?: string
   qrCodeUrl?: string
+  gradePercentage?: number | string | null
 }
 
 const CertificateExport: React.FC<CertificateExportProps> = ({
@@ -29,6 +30,7 @@ const CertificateExport: React.FC<CertificateExportProps> = ({
   ceo,
   awardedDate,
   qrCodeUrl,
+  gradePercentage,
 }) => {
   return (
     <div
@@ -54,6 +56,7 @@ const CertificateExport: React.FC<CertificateExportProps> = ({
         studentName={studentName}
         orgName={orgName}
         orgLogoUrl={orgLogoUrl}
+        gradePercentage={gradePercentage}
       />
     </div>
   )

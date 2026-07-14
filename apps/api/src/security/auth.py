@@ -117,19 +117,21 @@ async def authenticate_user(
                     is_launched = True
                 else:
                     try:
-                        launch_dt = datetime.fromisoformat(waitlist.launch_datetime.replace("Z", "+00:00"))
+                        launch_dt = datetime.fromisoformat(
+                            waitlist.launch_datetime.replace("Z", "+00:00")
+                        )
                         if launch_dt.tzinfo is None:
                             launch_dt = launch_dt.replace(tzinfo=timezone.utc)
                         else:
                             launch_dt = launch_dt.astimezone(timezone.utc)
-                        
+
                         if datetime.now(timezone.utc) >= launch_dt:
                             is_launched = True
                     except ValueError:
                         pass
-                
+
                 if is_launched:
-                    # Waitlist is live! The user was likely skipped by the email cron job 
+                    # Waitlist is live! The user was likely skipped by the email cron job
                     # (e.g. email was unverified at the time). Activate them now!
                     user.user_status = UserStatusEnum.ACTIVE.value
                     db_session.add(user)

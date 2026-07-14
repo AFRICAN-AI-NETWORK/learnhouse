@@ -4,7 +4,15 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 import { getTopStudents } from '@services/dashboard/students'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { Trophy, Star, Medal, Calendar, Download } from 'lucide-react'
+import {
+  Trophy,
+  Star,
+  Medal,
+  Calendar,
+  Download,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import Link from 'next/link'
 import jsPDF from 'jspdf'
@@ -16,11 +24,12 @@ function TopStudentsList() {
   const access_token = session?.data?.tokens?.access_token
 
   const [daysFilter, setDaysFilter] = useState<number | undefined>(undefined)
+  const [limit, setLimit] = useState<number>(5)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const { data, isLoading } = useSWR(
-    org ? [`top_students_${org.id}`, 5, daysFilter] : null,
-    () => getTopStudents(org.id, access_token, 5, daysFilter)
+    org ? [`top_students_all_${org.id}`, daysFilter, limit] : null,
+    () => getTopStudents(org.id, access_token, limit, daysFilter)
   )
 
   const formatTime = (seconds: number) => {

@@ -215,6 +215,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
             day: 'numeric',
           })}
           qrCodeUrl={qrCodeUrl}
+          gradePercentage={userCertificate?.certificate_user?.grade_percentage}
         />
       )
 
@@ -492,6 +493,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                     studentName={
                       `${session?.data?.user?.first_name || ''} ${session?.data?.user?.last_name || ''}`.trim() ||
                       'Student Name'
+                    }
+                    gradePercentage={
+                      userCertificate?.certificate_user?.grade_percentage
                     }
                   />
                 </div>

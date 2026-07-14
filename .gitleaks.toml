@@ -1,0 +1,51 @@
+# Gitleaks configuration for LearnHouse.
+#
+# We keep the full default ruleset (useDefault = true) so real secrets are still
+# detected everywhere. The allowlist below only suppresses example/placeholder
+# tokens that live in internal documentation which was committed and later
+# deleted. These were manually verified to contain NO real credentials — only
+# placeholders such as `Bearer ADMIN_TOKEN`, `Bearer USER_A_TOKEN`,
+# `sk_test_...`, `pk_test_xxxxxxxxxxxxx`, and the public JWT header
+# `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`. Because these findings are in git
+# history (the files no longer exist in the tree), they are scoped by path so
+# the gate stops flagging them without rewriting history.
+#
+# Adding a new doc here should be a deliberate, reviewed decision. Source code is
+# intentionally NOT allowlisted, so an accidentally committed real secret in code
+# still fails the scan.
+
+title = "LearnHouse gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholder tokens in deleted internal documentation (verified non-secret)."
+
+# Internal guide/plan/testing docs (all removed from the tree; history only).
+paths = [
+    '''CHAT_SYSTEM_FRONTEND_GUIDE\.md''',
+    '''CHAT_SYSTEM_IMPLEMENTATION_PLAN\.md''',
+    '''CHAT_SYSTEM_TESTING_GUIDE\.md''',
+    '''DISCOUNT_CODE_IMPLEMENTATION\.md''',
+    '''PAYMENT_TESTING_GUIDE\.md''',
+    '''PAYSTACK_MIGRATION_GUIDE\.md''',
+    '''PAYSTACK_PAYMENT_TESTING_GUIDE\.md''',
+    '''PAYSTACK_QUICK_TEST_REFERENCE\.md''',
+    '''QUIZ_AUTOGRADE_PLAN\.md''',
+    '''SELF_HOSTING\.md''',
+    '''SENTRY_SECURITY_IMPLEMENTATION_PLAN\.md''',
+    '''TECHNICAL_DISCOUNT_CODE_PROPOSAL\.md''',
+    '''TESTING_GUIDE_DISCOUNT_CODES\.md''',
+    '''WAITLIST_BACKEND_IMPLEMENTATION\.md''',
+    '''WAITLIST_IMPLEMENTATION_PLAN\.md''',
+]
+
+# Defense-in-depth: lines that are obviously placeholders, matched anywhere.
+# (Independent of `paths`; helps if example docs are re-added elsewhere.)
+regexTarget = "line"
+regexes = [
+    '''(?i)Bearer\s+(ADMIN|USER_[AB]|STUDENT|INVALID|YOUR|TEST)_TOKEN''',
+    '''(?i)(sk|pk)_(test|live)_(\.\.\.|x{3,}|your[_-]?key)''',
+    '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
+]
