@@ -176,9 +176,32 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         userCertificate?.certification?.config?.certificate_ceo ||
         'LearnHouse CEO'
       const organizationName = org?.name || 'DEFAULT ORGANIZATION'
-      const organizationLogoUrl = org?.logo_image
+      const rawOrgLogoUrl = org?.logo_image
         ? getOrgLogoMediaDirectory(org.org_uuid, org.logo_image)
         : undefined
+
+      // Pre-convert org logo to a data URL so html-to-image doesn't need
+      // to re-fetch it cross-origin (which causes canvas tainting).
+      let organizationLogoUrl = rawOrgLogoUrl
+      if (rawOrgLogoUrl) {
+        try {
+          const logoRes = await fetch(rawOrgLogoUrl, { cache: 'no-store' })
+          if (logoRes.ok) {
+            const blob = await logoRes.blob()
+            organizationLogoUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader()
+              reader.onloadend = () => resolve(reader.result as string)
+              reader.onerror = () => resolve(rawOrgLogoUrl)
+              reader.readAsDataURL(blob)
+            })
+          }
+        } catch {
+          // If fetch fails, fall back to the original URL — toPng may still
+          // work if same-origin, and we'll catch the outer error regardless.
+          organizationLogoUrl = rawOrgLogoUrl
+        }
+      }
+
       const qrCodeValue = qrCodeLink || certificateId || 'LH-CERT'
       const qrCodeUrl = await QRCode.toDataURL(qrCodeValue, {
         width: 185,
@@ -264,15 +287,46 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         await document.fonts.ready
       }
 
+      // Inline any remaining cross-origin images as data URLs via canvas so
+      // html-to-image never needs to re-fetch them.
       await Promise.all(
-        Array.from(captureElement.querySelectorAll('img')).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise<void>((resolve) => {
-                img.onload = () => resolve()
-                img.onerror = () => resolve()
-              })
-        )
+        Array.from(captureElement.querySelectorAll('img')).map(async (img) => {
+          const src = img.getAttribute('src') || ''
+          // Skip images that are already data URLs or same-origin
+          if (
+            src.startsWith('data:') ||
+            src.startsWith(window.location.origin)
+          ) {
+            return
+          }
+          try {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.naturalWidth || img.width || 200
+            canvas.height = img.naturalHeight || img.height || 200
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(img, 0, 0)
+              img.src = canvas.toDataURL('image/png')
+            }
+          } catch {
+            // If canvas draw fails (tainted), try fetch+blob approach
+            try {
+              const res = await fetch(src)
+              if (res.ok) {
+                const blob = await res.blob()
+                const dataUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader()
+                  reader.onloadend = () => resolve(reader.result as string)
+                  reader.onerror = () => resolve(src)
+                  reader.readAsDataURL(blob)
+                })
+                img.src = dataUrl
+              }
+            } catch {
+              // Give up on this image — toPng will do its best
+            }
+          }
+        })
       )
 
       const captureWidth = Math.max(
