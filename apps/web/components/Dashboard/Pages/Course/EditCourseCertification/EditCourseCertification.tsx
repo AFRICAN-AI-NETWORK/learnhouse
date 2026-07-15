@@ -122,7 +122,10 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
   const existingCertification = certifications?.data?.[0] // Assuming one certification per course
   const hasExistingCertification = !!existingCertification
 
-  // Create initial values object
+  // Create initial values object — ONLY from API data and course defaults.
+  // Do NOT read from courseStructure._certificationData (the local draft) here,
+  // because that data is written by the form-sync effect below, creating a cycle:
+  // reset() → watch() → dispatch _certificationData → getInitialValues → reset() → ∞
   const getInitialValues = useCallback(() => {
     // Helper function to get instructor name from authors
     const getInstructorName = () => {
@@ -139,49 +142,34 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
       return ''
     }
 
-    // Prefer unsaved local edits, then API data, then course defaults.
-    const localDraftConfig = courseStructure?._certificationData?.config || {}
-
     // Use existing certification data if available, otherwise fall back to course data
     const config = existingCertification?.config || {}
 
     return {
       enable_certification: hasExistingCertification,
       certification_name:
-        localDraftConfig.certification_name ||
-        config.certification_name ||
-        courseStructure?.name ||
-        '',
+        config.certification_name || courseStructure?.name || '',
       certification_description:
-        localDraftConfig.certification_description ||
-        config.certification_description ||
-        courseStructure?.description ||
-        '',
-      certification_type:
-        localDraftConfig.certification_type ||
-        config.certification_type ||
-        'completion',
-      certificate_pattern:
-        localDraftConfig.certificate_pattern ||
-        config.certificate_pattern ||
-        'professional',
+        config.certification_description || courseStructure?.description || '',
+      certification_type: config.certification_type || 'completion',
+      certificate_pattern: config.certificate_pattern || 'professional',
       certificate_instructor:
-        localDraftConfig.certificate_instructor ||
-        config.certificate_instructor ||
-        getInstructorName(),
-      certificate_ceo:
-        localDraftConfig.certificate_ceo || config.certificate_ceo || '',
+        config.certificate_instructor || getInstructorName(),
+      certificate_ceo: config.certificate_ceo || '',
     }
   }, [courseStructure, existingCertification, hasExistingCertification])
 
-  const initialValues = React.useMemo(() => getInitialValues(), [getInitialValues])
+  const initialValues = React.useMemo(
+    () => getInitialValues(),
+    [getInitialValues]
+  )
 
   const {
     register,
     watch,
     setValue,
     reset,
-    formState: { errors }
+    formState: { errors },
   } = useForm({
     defaultValues: initialValues,
     resolver: (async (values: any) => {
@@ -189,19 +177,30 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
       if (Object.keys(formErrors).length > 0) {
         return {
           values: {},
-          errors: Object.keys(formErrors).reduce((acc, key) => {
-            acc[key] = { type: 'manual', message: formErrors[key] }
-            return acc
-          }, {} as Record<string, any>),
+          errors: Object.keys(formErrors).reduce(
+            (acc, key) => {
+              acc[key] = { type: 'manual', message: formErrors[key] }
+              return acc
+            },
+            {} as Record<string, any>
+          ),
         }
       }
       return { values, errors: {} }
-    }) as any
+    }) as any,
   })
 
+  // Reset form when API data changes (e.g. after certification is created/deleted).
+  // Use a ref to track the previous fingerprint so we never re-run for the same data.
+  const prevResetRef = React.useRef<string | null>(null)
+  const initialValuesFingerprint = JSON.stringify(initialValues)
+
   React.useEffect(() => {
+    if (prevResetRef.current === initialValuesFingerprint) return
+    prevResetRef.current = initialValuesFingerprint
     reset(initialValues)
-  }, [initialValues, reset])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValuesFingerprint])
 
   const formValues = watch() as any
 
@@ -219,8 +218,7 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
             courseStructure?.description ||
             '',
           certification_type: formValues.certification_type || 'completion',
-          certificate_pattern:
-            formValues.certificate_pattern || 'professional',
+          certificate_pattern: formValues.certificate_pattern || 'professional',
           certificate_instructor: formValues.certificate_instructor || '',
           certificate_ceo: formValues.certificate_ceo || '',
         }
@@ -507,7 +505,9 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                         label={t(
                           'dashboard.courses.certification.form.certification_description_label'
                         )}
-                        message={errors.certification_description?.message as string}
+                        message={
+                          errors.certification_description?.message as string
+                        }
                       />
                       <Form.Control asChild>
                         <Textarea
@@ -563,16 +563,12 @@ function EditCourseCertification(props: EditCourseCertificationProps) {
                           <div
                             key={patternValue}
                             className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                              formValues.certificate_pattern ===
-                              patternValue
+                              formValues.certificate_pattern === patternValue
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                             onClick={() =>
-                              setValue(
-                                'certificate_pattern',
-                                patternValue
-                              )
+                              setValue('certificate_pattern', patternValue)
                             }
                           >
                             <div className="text-center">
