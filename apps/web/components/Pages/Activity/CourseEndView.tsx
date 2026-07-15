@@ -20,13 +20,12 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getUserCertificates } from '@services/courses/certifications'
 import CertificatePreview from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificatePreview'
 import CertificateExport from '@components/Dashboard/Pages/Course/EditCourseCertification/CertificateExport'
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 import jsPDF from 'jspdf'
 import { createRoot } from 'react-dom/client'
 import QRCode from 'qrcode'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import copyExportSafeStyles from '@/utils/certificateExport'
 
 interface CourseEndViewProps {
   courseName: string
@@ -177,9 +176,32 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         userCertificate?.certification?.config?.certificate_ceo ||
         'LearnHouse CEO'
       const organizationName = org?.name || 'DEFAULT ORGANIZATION'
-      const organizationLogoUrl = org?.logo_image
+      const rawOrgLogoUrl = org?.logo_image
         ? getOrgLogoMediaDirectory(org.org_uuid, org.logo_image)
         : undefined
+
+      // Pre-convert org logo to a data URL so html-to-image doesn't need
+      // to re-fetch it cross-origin (which causes canvas tainting).
+      let organizationLogoUrl = rawOrgLogoUrl
+      if (rawOrgLogoUrl) {
+        try {
+          const logoRes = await fetch(rawOrgLogoUrl, { cache: 'no-store' })
+          if (logoRes.ok) {
+            const blob = await logoRes.blob()
+            organizationLogoUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader()
+              reader.onloadend = () => resolve(reader.result as string)
+              reader.onerror = () => resolve(rawOrgLogoUrl)
+              reader.readAsDataURL(blob)
+            })
+          }
+        } catch {
+          // If fetch fails, fall back to the original URL — toPng may still
+          // work if same-origin, and we'll catch the outer error regardless.
+          organizationLogoUrl = rawOrgLogoUrl
+        }
+      }
+
       const qrCodeValue = qrCodeLink || certificateId || 'LH-CERT'
       const qrCodeUrl = await QRCode.toDataURL(qrCodeValue, {
         width: 185,
@@ -219,13 +241,36 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         />
       )
 
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
-
-      const captureElement = captureContainer.querySelector(
-        '#certificate-export-root'
-      ) as HTMLElement | null
-      if (!captureElement)
-        throw new Error('Certificate export element not found')
+      // Wait for React to fully render the component tree.
+      // A single rAF is insufficient — React batches renders and may need
+      // several frames plus effect cycles (QR code, scale calc) to finish.
+      const captureElement = await new Promise<HTMLElement>(
+        (resolve, reject) => {
+          let elapsed = 0
+          const interval = 50
+          const maxWait = 3000
+          const check = () => {
+            const el = captureContainer!.querySelector(
+              '#certificate-export-root'
+            ) as HTMLElement | null
+            if (el && el.innerText && el.innerText.trim().length > 20) {
+              resolve(el)
+              return
+            }
+            elapsed += interval
+            if (elapsed >= maxWait) {
+              if (el) {
+                resolve(el)
+              } else {
+                reject(new Error('Certificate export element not found'))
+              }
+              return
+            }
+            setTimeout(check, interval)
+          }
+          requestAnimationFrame(() => setTimeout(check, interval))
+        }
+      )
 
       await Promise.all(
         Array.from(captureElement.querySelectorAll('img')).map((img) =>
@@ -242,53 +287,71 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         await document.fonts.ready
       }
 
-      const exportSafeElement = captureElement.cloneNode(true) as HTMLElement
-      exportSafeElement.id = 'certificate-export-root-export-safe'
-      copyExportSafeStyles(captureElement, exportSafeElement)
-      captureContainer.appendChild(exportSafeElement)
-      captureElement.style.display = 'none'
-
+      // Inline any remaining cross-origin images as data URLs via canvas so
+      // html-to-image never needs to re-fetch them.
       await Promise.all(
-        Array.from(exportSafeElement.querySelectorAll('img')).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise<void>((resolve) => {
-                img.onload = () => resolve()
-                img.onerror = () => resolve()
-              })
-        )
+        Array.from(captureElement.querySelectorAll('img')).map(async (img) => {
+          const src = img.getAttribute('src') || ''
+          // Skip images that are already data URLs or same-origin
+          if (
+            src.startsWith('data:') ||
+            src.startsWith(window.location.origin)
+          ) {
+            return
+          }
+          try {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.naturalWidth || img.width || 200
+            canvas.height = img.naturalHeight || img.height || 200
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(img, 0, 0)
+              img.src = canvas.toDataURL('image/png')
+            }
+          } catch {
+            // If canvas draw fails (tainted), try fetch+blob approach
+            try {
+              const res = await fetch(src)
+              if (res.ok) {
+                const blob = await res.blob()
+                const dataUrl = await new Promise<string>((resolve) => {
+                  const reader = new FileReader()
+                  reader.onloadend = () => resolve(reader.result as string)
+                  reader.onerror = () => resolve(src)
+                  reader.readAsDataURL(blob)
+                })
+                img.src = dataUrl
+              }
+            } catch {
+              // Give up on this image — toPng will do its best
+            }
+          }
+        })
       )
 
       const captureWidth = Math.max(
-        exportSafeElement.scrollWidth,
-        exportSafeElement.offsetWidth,
-        exportSafeElement.clientWidth
+        captureElement.scrollWidth,
+        captureElement.offsetWidth,
+        captureElement.clientWidth
       )
       const captureHeight = Math.max(
-        exportSafeElement.scrollHeight,
-        exportSafeElement.offsetHeight,
-        exportSafeElement.clientHeight
+        captureElement.scrollHeight,
+        captureElement.offsetHeight,
+        captureElement.clientHeight
       )
 
-      // Convert to canvas using an export-safe clone of the live element.
-      const canvas = await html2canvas(exportSafeElement, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
+      // Convert to PNG using html-to-image (native browser engine)
+      const imgData = await toPng(captureElement, {
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        foreignObjectRendering: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: captureWidth,
-        windowHeight: captureHeight,
         width: captureWidth,
         height: captureHeight,
+        style: { margin: '0' },
       })
 
       // Create PDF
-      const imgData = canvas.toDataURL('image/png', 1.0)
       const pdf = new jsPDF(
-        canvas.width >= canvas.height ? 'landscape' : 'portrait',
+        captureWidth >= captureHeight ? 'landscape' : 'portrait',
         'mm',
         'a4'
       )
@@ -297,8 +360,9 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = pdf.internal.pageSize.getHeight()
 
-      const canvasWidth = canvas.width
-      const canvasHeight = canvas.height
+      // The rendered image will have dimensions captureWidth * 2 and captureHeight * 2
+      const canvasWidth = captureWidth * 2
+      const canvasHeight = captureHeight * 2
       const aspectRatio = canvasWidth / canvasHeight
 
       // Convert canvas px -> mm (assume 96 DPI) and scale to fit A4 with 10mm margins

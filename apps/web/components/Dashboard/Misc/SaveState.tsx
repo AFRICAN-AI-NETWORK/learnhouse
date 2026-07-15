@@ -8,7 +8,7 @@ import {
 } from '@components/Contexts/CourseContext'
 import { Check, SaveAllIcon, Timer, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { mutate } from 'swr'
 import { updateCourse } from '@services/courses/courses'
 import { updateCertification } from '@services/courses/certifications'
@@ -131,29 +131,45 @@ function SaveState(props: { orgslug: string }) {
     dispatchCourse({ type: 'setIsNotSaved' })
   }
 
-  const initOrderPayload = () => {
-    if (course_structure && course_structure.chapters) {
-      handleCourseOrder(course_structure)
-      dispatchCourse({ type: 'setIsSaved' })
-    }
-  }
-
-  const changeOrderPayload = () => {
-    if (course_structure && course_structure.chapters) {
-      handleCourseOrder(course_structure)
-      dispatchCourse({ type: 'setIsNotSaved' })
-    }
-  }
+  // Ref to track the previous order fingerprint so we only dispatch when structure truly changes
+  const prevOrderRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (course_structure?.chapters) {
-      initOrderPayload()
+    if (!course_structure?.chapters) return
+
+    const chapters = course_structure.chapters
+    const chapter_order_by_ids = chapters.map((chapter: any) => ({
+      chapter_id: chapter.id,
+      activities_order_by_ids: chapter.activities.map((activity: any) => ({
+        activity_id: activity.id,
+      })),
+    }))
+
+    // Compute a fingerprint of the current order to avoid redundant dispatches
+    const orderFingerprint = JSON.stringify(chapter_order_by_ids)
+
+    if (prevOrderRef.current === orderFingerprint) {
+      // Structure hasn't actually changed — skip dispatch to prevent infinite loop
+      return
     }
-    if (course_structure?.chapters && !saved) {
-      changeOrderPayload()
+
+    const isInitialLoad = prevOrderRef.current === null
+    prevOrderRef.current = orderFingerprint
+
+    dispatchCourse({
+      type: 'setCourseOrder',
+      payload: { chapter_order_by_ids },
+    })
+
+    if (isInitialLoad) {
+      // On initial load, mark as saved (we're just syncing the order from the server)
+      dispatchCourse({ type: 'setIsSaved' })
+    } else {
+      // On subsequent changes, mark as unsaved (user reordered something)
+      dispatchCourse({ type: 'setIsNotSaved' })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course_structure]) // This effect depends on the `course_structure` variable
+  }, [course_structure])
 
   return (
     <div className="flex space-x-4">

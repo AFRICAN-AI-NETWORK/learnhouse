@@ -405,6 +405,37 @@ async def get_user_certificates_for_course(
                 }
             )
 
+    # Lazy catch-up: if the user has completed the course but no certificate
+    # was issued (e.g. certification was configured after course completion),
+    # trigger certificate creation now and return the newly created record.
+    if not result and course.id:
+        try:
+            created = await check_course_completion_and_create_certificate(
+                request, current_user.id, course.id, db_session
+            )
+            if created:
+                # Re-query for the newly created certificate
+                for cert_id in certification_ids:
+                    statement = select(CertificateUser).where(
+                        CertificateUser.user_id == current_user.id,
+                        CertificateUser.certification_id == cert_id,
+                    )
+                    cert_user = db_session.exec(statement).first()
+                    if cert_user:
+                        statement = select(Certifications).where(Certifications.id == cert_id)
+                        certification = db_session.exec(statement).first()
+                        result.append(
+                            {
+                                "certificate_user": CertificateUserRead(**cert_user.model_dump()),
+                                "certification": CertificationRead(**certification.model_dump())
+                                if certification
+                                else None,
+                            }
+                        )
+        except Exception:
+            # Don't fail the read if auto-creation fails
+            pass
+
     return result
 
 
@@ -577,10 +608,12 @@ async def get_certificate_by_user_certification_uuid(
     from src.db.users import User
 
     statement = select(User).where(User.id == certificate_user.user_id)
+    user = db_session.exec(statement).first()
 
     return {
         "certificate_user": CertificateUserRead(**certificate_user.model_dump()),
         "certification": CertificationRead(**certification.model_dump()),
+        "user": PublicUser(**user.model_dump()) if user else None,
         "course": {
             "id": course.id,
             "course_uuid": course.course_uuid,

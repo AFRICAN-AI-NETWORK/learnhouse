@@ -4,7 +4,7 @@ import logging as _logging
 import uvicorn
 import logfire
 import sentry_sdk
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from config.config import LearnHouseConfig, get_learnhouse_config
 from src.core.events.events import shutdown_app, startup_app
 from src.core.sentry import init_sentry
@@ -285,8 +285,25 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Static Files
-app.mount("/content", StaticFiles(directory="content"), name="content")
+# Static Files — use a custom subclass to guarantee CORS headers on all
+# responses (including 304 Not Modified) since middlewares can be tricky with mounts.
+class CORSStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        if scope["method"] == "OPTIONS":
+            response = Response(status_code=204)
+        else:
+            response = await super().get_response(path, scope)
+        
+        # Add CORS header so browser fetch() cross-origin works
+        origin = next((v.decode() for k, v in scope["headers"] if k == b"origin"), None)
+        if origin and origin in learnhouse_config.hosting_config.allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+app.mount("/content", CORSStaticFiles(directory="content"), name="content")
 
 # Global Routes
 app.include_router(v1_router)
