@@ -9,6 +9,7 @@ import { getOrgThumbnailMediaDirectory } from '@services/media/media'
 import LandingPremium from '@components/Landings/LandingPremium'
 import LandingClassic from '@components/Landings/LandingClassic'
 import { redirect } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { getUriWithOrg } from '@services/config/config'
 
 type MetadataProps = {
@@ -146,6 +147,10 @@ const OrgHomePage = async (props: OrgHomePageProps) => {
       </div>
     )
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error
+    }
+
     // If org fetch fails, show friendly message
     return (
       <div className="w-full h-screen flex items-center justify-center">

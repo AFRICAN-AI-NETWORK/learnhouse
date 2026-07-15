@@ -23,6 +23,7 @@ from src.db.organization_config import (
 )
 from src.db.organizations import Organization, OrganizationCreate
 from src.db.roles import (
+    AffiliationPermission,
     DashboardPermission,
     Permission,
     PermissionsWithOwn,
@@ -51,7 +52,7 @@ def install_default_elements(db_session: Session):
     statement = select(Role).where(Role.role_type == RoleTypeEnum.TYPE_GLOBAL)
     roles = db_session.exec(statement).all()
 
-    if roles and len(roles) == 9:
+    if roles and len(roles) == 10:
         raise HTTPException(
             status_code=409,
             detail="Default roles already exist",
@@ -346,6 +347,77 @@ def install_default_elements(db_session: Session):
         update_date=str(datetime.now()),
     )
 
+    role_partner = Role(
+        name="Partner",
+        description="Referral partner with access to affiliation dashboard",
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="partner_role",
+        id=10,
+        rights=Rights(
+            courses=PermissionsWithOwn(
+                action_create=False,
+                action_read=True,
+                action_read_own=True,
+                action_update=False,
+                action_update_own=False,
+                action_delete=True,
+                action_delete_own=True,
+            ),
+            users=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            usergroups=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            collections=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            organizations=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            coursechapters=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            activities=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            roles=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            communications=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            dashboard=DashboardPermission(action_access=False),
+            affiliation=AffiliationPermission(action_read=True),
+        ),
+        creation_date=str(datetime.now()),
+        update_date=str(datetime.now()),
+    )
+
     # ── Shared rights blocks reused by support roles ───────────────────────────
 
     _read_only_rights = Rights(
@@ -553,6 +625,7 @@ def install_default_elements(db_session: Session):
     role_global_maintainer.rights = role_global_maintainer.rights.dict()  # type: ignore
     role_global_instructor.rights = role_global_instructor.rights.dict()  # type: ignore
     role_global_user.rights = role_global_user.rights.dict()  # type: ignore
+    role_partner.rights = role_partner.rights.dict()  # type: ignore
     role_teaching_assistant.rights = role_teaching_assistant.rights.dict()  # type: ignore
     role_student_success_coordinator.rights = (
         role_student_success_coordinator.rights.dict()
@@ -566,6 +639,7 @@ def install_default_elements(db_session: Session):
     db_session.add(role_global_maintainer)
     db_session.add(role_global_instructor)
     db_session.add(role_global_user)
+    db_session.add(role_partner)
     db_session.add(role_teaching_assistant)
     db_session.add(role_student_success_coordinator)
     db_session.add(role_student_mentor)
