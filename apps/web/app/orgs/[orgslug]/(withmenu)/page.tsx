@@ -89,11 +89,12 @@ const OrgHomePage = async (props: OrgHomePageProps) => {
       let isAdmin = false
 
       orgRoles.forEach((r: any) => {
-        if (r.role?.rights?.affiliation?.action_read) {
+        if (r.role?.role_uuid === 'partner_role') {
           isPartner = true
         }
         if (
-          r.role?.rights?.dashboard?.action_access ||
+          r.role?.id === 1 ||
+          r.role?.id === 2 ||
           r.role?.rights?.organizations?.action_update
         ) {
           isAdmin = true
@@ -101,7 +102,7 @@ const OrgHomePage = async (props: OrgHomePageProps) => {
       })
 
       if (isPartner && !isAdmin) {
-        redirect(getUriWithOrg(orgslug, '/dash/affiliation'))
+        redirect(getUriWithOrg(orgslug, '/dash/referrals'))
       }
     }
 
