@@ -13,10 +13,12 @@ import {
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
+import { useOrg } from '@components/Contexts/OrgContext'
 
 function DashboardHome() {
   const { t } = useTranslation()
-  const { isAdmin, rights } = useAdminStatus() as any
+  const org = useOrg() as any
+  const { isAdmin, rights, userRoles } = useAdminStatus() as any
 
   const canSeeCourses = isAdmin || rights?.courses?.action_read
   const canSeeOrg = isAdmin || rights?.organizations?.action_read
@@ -24,6 +26,38 @@ function DashboardHome() {
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
   const canSeeHandbook = isAdmin || rights?.handbook?.action_read
   const isPartner = isAdmin || rights?.affiliation?.action_read
+  const hasStrictAdminRole = (userRoles || []).some(
+    (role: any) =>
+      role.org?.id === org?.id && (role.role?.id === 1 || role.role?.id === 2)
+  )
+  const hasPartnerRole = (userRoles || []).some(
+    (role: any) =>
+      role.org?.id === org?.id && role.role?.role_uuid === 'partner_role'
+  )
+  const isPartnerOnly = hasPartnerRole && !hasStrictAdminRole
+
+  if (isPartnerOnly) {
+    return (
+      <div className="flex items-center justify-center mx-auto min-h-screen flex-col p-4 sm:mb-0 mb-16">
+        <div className="mx-auto pb-6 sm:pb-10">
+          <Image
+            alt="African AI Network logo"
+            width={280}
+            src={africanAiLogo}
+            className="w-48 sm:w-auto"
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:gap-6 max-w-2xl w-full">
+          <DashboardCard
+            href="/dash/referrals"
+            icon={<GitMerge className="mx-auto text-gray-500" size={50} />}
+            title="Referrals"
+            description="Track your impact and manage your earnings"
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex items-center justify-center mx-auto min-h-screen flex-col p-4 sm:mb-0 mb-16">

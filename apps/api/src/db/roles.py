@@ -36,6 +36,13 @@ class DashboardPermission(BaseModel):
         return getattr(self, item)
 
 
+class AffiliationPermission(BaseModel):
+    action_read: bool = False
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+
 class Rights(BaseModel):
     courses: PermissionsWithOwn
     users: Permission
@@ -47,6 +54,7 @@ class Rights(BaseModel):
     roles: Permission
     communications: Permission
     dashboard: DashboardPermission
+    affiliation: AffiliationPermission = AffiliationPermission()
 
     def __getitem__(self, item):
         return getattr(self, item)

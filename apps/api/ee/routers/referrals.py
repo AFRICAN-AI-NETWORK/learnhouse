@@ -5,8 +5,8 @@ Handles all referral-related endpoints following RESTful principles
 
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, Request
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlmodel import Session, select
 from src.core.events.database import get_db_session
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
@@ -30,6 +30,33 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _require_referral_access(current_user, org_id, db_session):
+    """Allow referral self-service only to admins, maintainers, and partners."""
+    from src.db.roles import Role
+    from src.db.user_organizations import UserOrganization
+
+    if not current_user or not current_user.id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    statement = (
+        select(Role)
+        .join(UserOrganization, UserOrganization.role_id == Role.id)
+        .where(
+            UserOrganization.user_id == current_user.id,
+            UserOrganization.org_id == org_id,
+        )
+    )
+    roles = db_session.exec(statement).all()
+    for role in roles:
+        if role.id in (1, 2, 4) or role.role_uuid == "partner_role":
+            return
+
+    raise HTTPException(
+        status_code=403,
+        detail="Partner role required to access referrals",
+    )
+
+
 @router.post("/{org_id}/generate-code", response_model=ReferralCodeRead)
 async def api_generate_referral_code(
     request: Request,
@@ -42,6 +69,7 @@ async def api_generate_referral_code(
 
     Returns existing code if already generated (idempotent)
     """
+    _require_referral_access(current_user, org_id, db_session)
     return await create_referral_code_for_user(
         request, org_id, current_user.id, current_user, db_session
     )
@@ -59,6 +87,7 @@ async def api_get_my_referral_code(
 
     Returns null if user hasn't generated a code yet
     """
+    _require_referral_access(current_user, org_id, db_session)
     return await get_my_referral_code(request, org_id, current_user, db_session)
 
 
@@ -78,6 +107,7 @@ async def api_get_commission_balance(
         - pending: Amount pending refund period
         - currency: USD
     """
+    _require_referral_access(current_user, org_id, db_session)
     return await get_commission_balance(request, org_id, current_user, db_session)
 
 
@@ -102,6 +132,7 @@ async def api_get_commission_history(
         - status (pending/eligible/paid/forfeited)
         - dates
     """
+    _require_referral_access(current_user, org_id, db_session)
     return await get_commission_history(
         request, org_id, current_user, db_session, limit
     )
@@ -132,6 +163,7 @@ async def api_request_payout(
         Payout request with status 'requested'
         Processing happens in background
     """
+    _require_referral_access(current_user, org_id, db_session)
     return await create_payout_request(
         request, org_id, amount, bank_details, current_user, db_session
     )
@@ -153,6 +185,7 @@ async def api_get_payout_history(
 
     Returns list of payout requests with status and dates
     """
+    _require_referral_access(current_user, org_id, db_session)
     return await get_payout_history(request, org_id, current_user, db_session, limit)
 
 

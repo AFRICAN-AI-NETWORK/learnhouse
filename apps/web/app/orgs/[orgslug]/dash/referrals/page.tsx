@@ -145,16 +145,16 @@ function ReferralsPage() {
   }
 
   // ─── Admin data ──────────────────────────────────────────────
-  const statsKey = access_token
+  const statsKey = isStrictAdmin && access_token
     ? ['admin-referral-stats', access_token, org_id]
     : null
-  const flaggedKey = access_token
+  const flaggedKey = isStrictAdmin && access_token
     ? ['admin-flagged', access_token, org_id]
     : null
-  const pendingPayoutsKey = access_token
+  const pendingPayoutsKey = isStrictAdmin && access_token
     ? ['admin-payouts', access_token, org_id]
     : null
-  const partnersKey = access_token
+  const partnersKey = isStrictAdmin && access_token
     ? ['admin-partners', access_token, org_id]
     : null
 
