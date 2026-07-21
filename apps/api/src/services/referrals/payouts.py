@@ -66,7 +66,7 @@ CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE = {
     "TZS": "mobile_money",
     "XOF": "mobile_money",
     "EGP": "nuban",
-    "USD": "nuban"
+    "USD": "nuban",
 }
 
 # Redis configuration for distributed caching (multi-worker support)
@@ -308,7 +308,9 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
                 _exchange_rate_cache["rate"] = rate
                 _exchange_rate_cache["timestamp"] = now
 
-                logger.debug(f"Redis cache hit for USD → {target_currency} exchange rate: {rate}")
+                logger.debug(
+                    f"Redis cache hit for USD → {target_currency} exchange rate: {rate}"
+                )
                 return rate
             else:
                 logger.warning(f"Unexpected API response format: {data}")
@@ -316,9 +318,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
     except httpx.TimeoutException:
         logger.warning("Exchange rate API timeout. Using fallback rate.")
     except httpx.HTTPStatusError as e:
-        logger.warning(
-            f"Exchange rate API error: {e}. Falling back to default rate."
-        )
+        logger.warning(f"Exchange rate API error: {e}. Falling back to default rate.")
     except Exception as e:
         logger.warning(f"Failed to fetch exchange rate: {str(e)}. Using fallback rate.")
 

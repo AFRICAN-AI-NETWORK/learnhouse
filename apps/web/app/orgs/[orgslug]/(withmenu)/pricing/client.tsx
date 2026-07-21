@@ -27,7 +27,6 @@ type Props = {
   initialProducts: PaymentsProduct[]
 }
 
-
 const parseBenefits = (benefitsString?: string) => {
   if (!benefitsString) return []
   return benefitsString.split('\n').filter((b) => b.trim() !== '')
@@ -184,10 +183,13 @@ export default function PricingPageClient({
                           path = `/ai-automation-content-creators`
                         } else if (name.includes('business')) {
                           path = `/ai-automation`
-                        } else if (name.includes('fundamental') || name.includes('foundations')) {
+                        } else if (
+                          name.includes('fundamental') ||
+                          name.includes('foundations')
+                        ) {
                           path = `/ai-fundamentals`
                         }
-                        
+
                         if (path) {
                           router.push(path)
                         } else {

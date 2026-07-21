@@ -7,17 +7,18 @@ from src.services.cohorts.cohorts import (
     create_cohort,
     get_org_cohorts,
     get_current_cohort,
-    unlock_cohort
+    unlock_cohort,
 )
 from src.db.cohorts import CohortCreate, CohortRead
 
 router = APIRouter()
 
+
 @router.post("/", response_model=CohortRead)
 async def api_create_cohort(
     cohort_data: CohortCreate,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user)
+    current_user: PublicUser = Depends(get_current_user),
 ):
     # TODO: Add proper admin RBAC check here
     return await create_cohort(cohort_data, db_session)
@@ -27,7 +28,7 @@ async def api_create_cohort(
 async def api_get_org_cohorts(
     org_id: int,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user)
+    current_user: PublicUser = Depends(get_current_user),
 ):
     return await get_org_cohorts(org_id, db_session)
 
@@ -36,11 +37,13 @@ async def api_get_org_cohorts(
 async def api_get_current_cohort(
     org_id: int,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user)
+    current_user: PublicUser = Depends(get_current_user),
 ):
     cohort = await get_current_cohort(org_id, db_session)
     if not cohort:
-        raise HTTPException(status_code=404, detail="No active or upcoming cohort found")
+        raise HTTPException(
+            status_code=404, detail="No active or upcoming cohort found"
+        )
     return cohort
 
 
@@ -48,7 +51,7 @@ async def api_get_current_cohort(
 async def api_unlock_cohort(
     cohort_id: int,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user)
+    current_user: PublicUser = Depends(get_current_user),
 ):
     # TODO: Add proper admin RBAC check here
     return await unlock_cohort(cohort_id, db_session)

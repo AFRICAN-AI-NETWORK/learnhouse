@@ -422,12 +422,18 @@ async def get_user_certificates_for_course(
                     )
                     cert_user = db_session.exec(statement).first()
                     if cert_user:
-                        statement = select(Certifications).where(Certifications.id == cert_id)
+                        statement = select(Certifications).where(
+                            Certifications.id == cert_id
+                        )
                         certification = db_session.exec(statement).first()
                         result.append(
                             {
-                                "certificate_user": CertificateUserRead(**cert_user.model_dump()),
-                                "certification": CertificationRead(**certification.model_dump())
+                                "certificate_user": CertificateUserRead(
+                                    **cert_user.model_dump()
+                                ),
+                                "certification": CertificationRead(
+                                    **certification.model_dump()
+                                )
                                 if certification
                                 else None,
                             }

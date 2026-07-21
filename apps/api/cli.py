@@ -21,7 +21,6 @@ def install(
     short: Annotated[bool, typer.Option(help="Install with predefined values")] = False,
 ):
     # Get the database session
-    from app import app
     learnhouse_config = get_learnhouse_config()
     engine = create_engine(
         learnhouse_config.database_config.sql_connection_string,

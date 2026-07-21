@@ -1,83 +1,91 @@
 # Marketers Implementation Plan
 
 # LearnHouse: Marketer System Implementation Plan
-* * *
+
+---
+
 ## 1\. Executive Summary
+
 This plan introduces a **Marketer** tier on top of the existing referral system. A marketer is a new user who registers specifically to promote the platform. When a student they referred pays for a course, the marketer earns **$7.70 per student per paid course** instead of the $4.00 that standard referrers earn.
 
 The $7.70 replaces the commission amount for marketer-owned referral codes. It is not a separate bonus. The entire existing pipeline (referral code table, commission lifecycle, payout pipeline, fraud detection, bank-data encryption, exchange-rate caching, background job scheduler) is reused. The commission amount is the only value that changes, derived at webhook time by checking whether the referral code owner is a marketer.
 
 **What is built new:**
-*   Marketer registration, admin approval, profile, and identity verification (KYC)
-*   Commission amount differentiation ($7.70 vs $4.00) at commission creation time
-*   Marketer dashboard: students brought, per-course purchases, monthly revenue, payout state
-*   Admin additions: marketer leaderboard, KYC review queue, marketer payout approval
-*   Saved payment method profiles (bank transfer and mobile money)
-*   Mobile money support: Kenya M-Pesa, Ghana MTN MoMo, Rwanda, Tanzania
-*   Expanded African country coverage: RW, TZ, UG, CI, EG
-*   Automated payout on admin approval
-*   Email notifications at every lifecycle event
+
+- Marketer registration, admin approval, profile, and identity verification (KYC)
+- Commission amount differentiation ($7.70 vs $4.00) at commission creation time
+- Marketer dashboard: students brought, per-course purchases, monthly revenue, payout state
+- Admin additions: marketer leaderboard, KYC review queue, marketer payout approval
+- Saved payment method profiles (bank transfer and mobile money)
+- Mobile money support: Kenya M-Pesa, Ghana MTN MoMo, Rwanda, Tanzania
+- Expanded African country coverage: RW, TZ, UG, CI, EG
+- Automated payout on admin approval
+- Email notifications at every lifecycle event
 
 **Bugs fixed as part of this implementation (same deploy):**
-*   `process_payout_request` ignores APPROVED payouts: zero payouts have ever auto-processed
-*   `check_pending_payout` misses APPROVED status: double payout submission is possible
-*   `create_paystack_transfer_recipient` hard-codes `nuban`: fails for all non-Nigerian accounts
-*   Exchange rate function only covers NGN: GHS/KES/ZAR conversions use no dynamic rate
-*   Flutterwave webhook never creates commissions: Flutterwave payments earn referrers nothing
-*   `get_commission_balance` runs 3 DB queries where 1 suffices
-*   `update_pending_commissions_to_eligible` loads all rows into memory: unbounded at scale
-*   Missing DB indexes cause nightly eligibility job to do full table scans
 
-* * *
+- `process_payout_request` ignores APPROVED payouts: zero payouts have ever auto-processed
+- `check_pending_payout` misses APPROVED status: double payout submission is possible
+- `create_paystack_transfer_recipient` hard-codes `nuban`: fails for all non-Nigerian accounts
+- Exchange rate function only covers NGN: GHS/KES/ZAR conversions use no dynamic rate
+- Flutterwave webhook never creates commissions: Flutterwave payments earn referrers nothing
+- `get_commission_balance` runs 3 DB queries where 1 suffices
+- `update_pending_commissions_to_eligible` loads all rows into memory: unbounded at scale
+- Missing DB indexes cause nightly eligibility job to do full table scans
+
+---
+
 ## 2\. Architecture Overview
 
 ```plain
-Marketer registers (new User + Marketer profile)  
-        │  
-        ▼  
-Admin approves (PENDING_APPROVAL → ACTIVE)  
-        │  
-        ▼  
-Referral code auto-generated (reuses ReferralCode table, prefix MKT-)  
-        │  
-        ▼  
-Marketer shares code → Student signs up (ReferralTracking, fraud scored)  
-        │  
-        ▼  
-Student pays (Paystack or Flutterwave webhook fires)  
-        │  
-        ▼  
-create_commission_for_payment() — checks is_active_marketer()  
-        │  
-        ├── YES → commission = $7.70, commission_type = MARKETER  
-        └── NO  → commission = $4.00, commission_type = STANDARD  
-        │  
-        ▼  
-Commission stored (PENDING, 14-day refund period)  
-        │  
-        ▼  daily background job  
-Commission → ELIGIBLE  
-        │  
-        ▼  
-Marketer requests payout (min $7.70, from saved payment method, KYC required)  
-        │  
-        ▼  
-Admin approves → status = APPROVED  
-        │  
-        ▼  background job (every 30 min)  
-Paystack/mobile money transfer fires automatically  
-        │  
-        ▼  
+Marketer registers (new User + Marketer profile)
+        │
+        ▼
+Admin approves (PENDING_APPROVAL → ACTIVE)
+        │
+        ▼
+Referral code auto-generated (reuses ReferralCode table, prefix MKT-)
+        │
+        ▼
+Marketer shares code → Student signs up (ReferralTracking, fraud scored)
+        │
+        ▼
+Student pays (Paystack or Flutterwave webhook fires)
+        │
+        ▼
+create_commission_for_payment() — checks is_active_marketer()
+        │
+        ├── YES → commission = $7.70, commission_type = MARKETER
+        └── NO  → commission = $4.00, commission_type = STANDARD
+        │
+        ▼
+Commission stored (PENDING, 14-day refund period)
+        │
+        ▼  daily background job
+Commission → ELIGIBLE
+        │
+        ▼
+Marketer requests payout (min $7.70, from saved payment method, KYC required)
+        │
+        ▼
+Admin approves → status = APPROVED
+        │
+        ▼  background job (every 30 min)
+Paystack/mobile money transfer fires automatically
+        │
+        ▼
 Commission → PAID, balance decremented, email sent
 ```
 
-* * *
+---
+
 ## 3\. Backend Implementation
 
 Implement everything in this section before touching the frontend. The sections are ordered
 by dependency — implement them in sequence.
 
-* * *
+---
+
 ### 3.1 Database — All Schema Changes
 
 Run all migrations together in one deployment, ordered as listed below.
@@ -87,32 +95,34 @@ Run all migrations together in one deployment, ordered as listed below.
 **`MarketerStatus`** **enum:** `PENDING_APPROVAL`, `ACTIVE`, `SUSPENDED`, `REJECTED`
 
 **`Marketer`** **table fields:**
-*   `id` (int, PK)
-*   `user_id` (BigInteger, FK → [user.id](http://user.id), CASCADE)
-*   `org_id` (BigInteger, FK → [organization.id](http://organization.id), CASCADE)
-*   `referral_code_id` (BigInteger, FK → [referralcode.id](http://referralcode.id), nullable — set on approval)
-*   `status` (MarketerStatus, default PENDING\_APPROVAL)
-*   `commission_rate_usd` (float, default 7.70) — stored per row; resolves the existing
 
-  `COMMISSION_AMOUNT_USD = 4.00` TODO comment in `referral_commissions.py`
+- `id` (int, PK)
+- `user_id` (BigInteger, FK → [user.id](http://user.id), CASCADE)
+- `org_id` (BigInteger, FK → [organization.id](http://organization.id), CASCADE)
+- `referral_code_id` (BigInteger, FK → [referralcode.id](http://referralcode.id), nullable — set on approval)
+- `status` (MarketerStatus, default PENDING_APPROVAL)
+- `commission_rate_usd` (float, default 7.70) — stored per row; resolves the existing
 
-*   `phone_number` (str, 20, nullable) — collected at registration
-*   `approved_by_user_id` (BigInteger, FK → [user.id](http://user.id), nullable)
-*   `approved_at` (datetime, nullable)
-*   `rejection_reason` (Text, nullable)
-*   `total_students_referred` (int, default 0) — denormalized, refreshed by daily job
-*   `total_courses_sold` (int, default 0) — denormalized
-*   `total_earned_usd` (float, default 0.0) — denormalized, lifetime earnings
-*   `total_paid_usd` (float, default 0.0) — denormalized, lifetime paid out
-*   `notes` (Text, nullable) — admin-only internal notes
-*   `creation_date` (datetime)
-*   `update_date` (datetime)
+`COMMISSION_AMOUNT_USD = 4.00` TODO comment in `referral_commissions.py`
+
+- `phone_number` (str, 20, nullable) — collected at registration
+- `approved_by_user_id` (BigInteger, FK → [user.id](http://user.id), nullable)
+- `approved_at` (datetime, nullable)
+- `rejection_reason` (Text, nullable)
+- `total_students_referred` (int, default 0) — denormalized, refreshed by daily job
+- `total_courses_sold` (int, default 0) — denormalized
+- `total_earned_usd` (float, default 0.0) — denormalized, lifetime earnings
+- `total_paid_usd` (float, default 0.0) — denormalized, lifetime paid out
+- `notes` (Text, nullable) — admin-only internal notes
+- `creation_date` (datetime)
+- `update_date` (datetime)
 
 **Constraints and indexes:**
-*   `uq_marketer_user_org` — UNIQUE on `(user_id, org_id)`
-*   `uq_marketer_phone_org` — UNIQUE on `(org_id, phone_number)` (prevents same phone in two accounts)
-*   `idx_marketer_status` on `(org_id, status)`
-*   `idx_marketer_referral_code` on `referral_code_id`
+
+- `uq_marketer_user_org` — UNIQUE on `(user_id, org_id)`
+- `uq_marketer_phone_org` — UNIQUE on `(org_id, phone_number)` (prevents same phone in two accounts)
+- `idx_marketer_status` on `(org_id, status)`
+- `idx_marketer_referral_code` on `referral_code_id`
 
 **Pydantic schemas:** `MarketerCreate`, `MarketerRead`, `MarketerUpdate`,
 `MarketerPublicRead` (hides `rejection_reason`, `notes`, `approved_by_user_id` from non-admins)
@@ -125,33 +135,35 @@ Eliminates the current UX problem where bank details must be re-entered on every
 **`PaymentMethodType`** **enum:** `BANK_TRANSFER`, `MOBILE_MONEY`
 
 **`MarketerPaymentMethod`** **table fields:**
-*   `id` (int, PK)
-*   `marketer_id` (BigInteger, FK → [marketer.id](http://marketer.id), CASCADE)
-*   `user_id` (BigInteger, FK → [user.id](http://user.id), CASCADE)
-*   `org_id` (BigInteger, FK → [organization.id](http://organization.id), CASCADE)
-*   `payment_method_type` (PaymentMethodType)
-*   `currency` (str, 3) — derived from country at save time
-*   `country_code` (str, 2) — NG, GH, KE, ZA, RW, TZ, UG, CI, EG
-*   `account_details` (Text) — Fernet-encrypted JSON blob.
 
-  Bank: `{bank_name, account_number, account_holder, account_type, bank_code}`
+- `id` (int, PK)
+- `marketer_id` (BigInteger, FK → [marketer.id](http://marketer.id), CASCADE)
+- `user_id` (BigInteger, FK → [user.id](http://user.id), CASCADE)
+- `org_id` (BigInteger, FK → [organization.id](http://organization.id), CASCADE)
+- `payment_method_type` (PaymentMethodType)
+- `currency` (str, 3) — derived from country at save time
+- `country_code` (str, 2) — NG, GH, KE, ZA, RW, TZ, UG, CI, EG
+- `account_details` (Text) — Fernet-encrypted JSON blob.
 
-  Mobile: `{phone_number, provider, account_name}` (provider: mpesa, mtn, airtel, etc.)
+Bank: `{bank_name, account_number, account_holder, account_type, bank_code}`
 
-*   `paystack_recipient_code` (str, 255, nullable) — cached after first-time recipient
+Mobile: `{phone_number, provider, account_name}` (provider: mpesa, mtn, airtel, etc.)
 
-  creation. Reused on subsequent payouts to avoid redundant Paystack API calls.
+- `paystack_recipient_code` (str, 255, nullable) — cached after first-time recipient
 
-  Set to `None` when account details change or country changes.
+creation. Reused on subsequent payouts to avoid redundant Paystack API calls.
 
-*   `is_active` (bool, default True)
-*   `verified_at` (datetime, nullable)
-*   `creation_date` (datetime)
-*   `update_date` (datetime)
+Set to `None` when account details change or country changes.
+
+- `is_active` (bool, default True)
+- `verified_at` (datetime, nullable)
+- `creation_date` (datetime)
+- `update_date` (datetime)
 
 **Indexes:**
-*   `idx_payment_method_marketer_active` on `(marketer_id, is_active)`
-*   `idx_payment_method_user` on `user_id`
+
+- `idx_payment_method_marketer_active` on `(marketer_id, is_active)`
+- `idx_payment_method_user` on `user_id`
 
 #### 3.1.3 New Table: `apps/api/src/db/referrals/marketer_kyc.py`
 
@@ -163,33 +175,35 @@ Government ID hash uniqueness prevents one person creating two marketer accounts
 **`KYCDocumentType`** **enum:** `NATIONAL_ID`, `PASSPORT`, `DRIVERS_LICENSE`
 
 **`MarketerKYC`** **table fields:**
-*   `id` (int, PK)
-*   `marketer_id` (BigInteger, FK → [marketer.id](http://marketer.id), CASCADE)
-*   `user_id` (BigInteger, FK → [user.id](http://user.id), CASCADE)
-*   `org_id` (BigInteger, FK → [organization.id](http://organization.id), CASCADE)
-*   `document_type` (KYCDocumentType)
-*   `id_number_hash` (str, 64) — SHA-256 hex of the government ID number (uppercase, trimmed).
 
-  Never stored in plaintext. Used only for uniqueness enforcement.
+- `id` (int, PK)
+- `marketer_id` (BigInteger, FK → [marketer.id](http://marketer.id), CASCADE)
+- `user_id` (BigInteger, FK → [user.id](http://user.id), CASCADE)
+- `org_id` (BigInteger, FK → [organization.id](http://organization.id), CASCADE)
+- `document_type` (KYCDocumentType)
+- `id_number_hash` (str, 64) — SHA-256 hex of the government ID number (uppercase, trimmed).
 
-*   `document_front_url` (str, 500) — S3 key (not public URL; signed on demand)
-*   `document_back_url` (str, 500, nullable) — required for NATIONAL\_ID and DRIVERS\_LICENSE
-*   `selfie_url` (str, 500) — selfie holding the document for liveness proof
-*   `status` (KYCStatus, default UNVERIFIED)
-*   `rejection_reason` (Text, nullable)
-*   `reviewed_by_user_id` (BigInteger, FK → [user.id](http://user.id), nullable)
-*   `reviewed_at` (datetime, nullable)
-*   `submission_count` (int, default 0) — max 3; prevents brute-forcing ID hashes
-*   `creation_date` (datetime)
-*   `update_date` (datetime)
+Never stored in plaintext. Used only for uniqueness enforcement.
+
+- `document_front_url` (str, 500) — S3 key (not public URL; signed on demand)
+- `document_back_url` (str, 500, nullable) — required for NATIONAL_ID and DRIVERS_LICENSE
+- `selfie_url` (str, 500) — selfie holding the document for liveness proof
+- `status` (KYCStatus, default UNVERIFIED)
+- `rejection_reason` (Text, nullable)
+- `reviewed_by_user_id` (BigInteger, FK → [user.id](http://user.id), nullable)
+- `reviewed_at` (datetime, nullable)
+- `submission_count` (int, default 0) — max 3; prevents brute-forcing ID hashes
+- `creation_date` (datetime)
+- `update_date` (datetime)
 
 **Constraints and indexes:**
-*   `uq_kyc_id_number_hash` — UNIQUE on `id_number_hash`. This is the hard anti-duplication
 
-  guarantee. The same government ID cannot appear twice. DB-level, not application-level.
+- `uq_kyc_id_number_hash` — UNIQUE on `id_number_hash`. This is the hard anti-duplication
 
-*   `idx_kyc_marketer` on `marketer_id`
-*   `idx_kyc_status_org` on `(org_id, status)` — admin review queue
+guarantee. The same government ID cannot appear twice. DB-level, not application-level.
+
+- `idx_kyc_marketer` on `marketer_id`
+- `idx_kyc_status_org` on `(org_id, status)` — admin review queue
 
 **\#### 3.1.4 Extend** **`apps/api/src/db/referrals/referral_commissions.py`**
 
@@ -208,8 +222,9 @@ New index: `idx_commission_type_referrer` on `(referrer_user_id, commission_type
 #### 3.1.5 Extend `apps/api/src/db/referrals/payout_requests.py`
 
 Add two fields to `ReferrerPayoutRequest` for the payout retry system (Section 3.6.4):
-*   `retry_count` (int, default 0)
-*   `last_retry_at` (datetime, nullable)
+
+- `retry_count` (int, default 0)
+- `last_retry_at` (datetime, nullable)
 
 Add to `ReferrerPayoutRequestRead` and `ReferrerPayoutRequestUpdate` schemas.
 
@@ -219,20 +234,22 @@ These indexes are missing from the existing schema and cause performance problem
 all users today. Add in the same migration batch:
 
 **On** **`ReferralCommission`**\*\*\*\***:**
-*   `idx_commission_referrer_status` on `(referrer_user_id, status)` — used by balance and
 
-  history queries (currently a filtered full scan)
+- `idx_commission_referrer_status` on `(referrer_user_id, status)` — used by balance and
 
-*   `idx_commission_refund_expiry` on `(status, refund_period_expiration_date)` — used by
+history queries (currently a filtered full scan)
 
-  the nightly eligibility job (currently a full table scan on `ReferralCommission`)
+- `idx_commission_refund_expiry` on `(status, refund_period_expiration_date)` — used by
+
+the nightly eligibility job (currently a full table scan on `ReferralCommission`)
 
 **On** **`ReferrerPayoutRequest`**\*\*\*\***:**
-*   `idx_payout_referrer_status` on `(referrer_user_id, status)` — used by
 
-  `check_pending_payout` and payout history
+- `idx_payout_referrer_status` on `(referrer_user_id, status)` — used by
 
-*   `idx_payout_status` on `status` — used by the background job that queries APPROVED payouts
+`check_pending_payout` and payout history
+
+- `idx_payout_status` on `status` — used by the background job that queries APPROVED payouts
 
 **\#### 3.1.7 Alembic Migration Files**
 
@@ -240,27 +257,28 @@ Four migration files in `apps/api/migrations/versions/`, run in this order:
 
 1. `<ts>_add_indexes_and_payout_retry_fields.py`
 
-   — Adds the 4 indexes above and `retry_count`, `last_retry_at` to `ReferrerPayoutRequest`
+— Adds the 4 indexes above and `retry_count`, `last_retry_at` to `ReferrerPayoutRequest`
 
-   — Deploy this first (no table locks on most Postgres versions for index creation)
+— Deploy this first (no table locks on most Postgres versions for index creation)
 
 1. `<ts>_add_commission_type_to_referralcommission.py`
 
-   — Adds `commission_type` column with `server_default = 'STANDARD'` so all existing
+— Adds `commission_type` column with `server_default = 'STANDARD'` so all existing
 
-   rows are backfilled atomically
+rows are backfilled atomically
 
 1. `<ts>_create_marketer_and_payment_method_tables.py`
 
-   — Creates `marketer` and `marketerpaymethods` tables
+— Creates `marketer` and `marketerpaymethods` tables
 
 1. `<ts>_create_marketer_kyc_table.py`
 
-   — Creates `marketerkyc` table
+— Creates `marketerkyc` table
 
 Each migration must have a correct `downgrade()`.
 
-* * *
+---
+
 ### 3.2 Bug Fixes — Apply Before Any New Feature Code
 
 These fixes go into the same PR as the feature. They touch existing files. Apply them
@@ -279,12 +297,12 @@ payout that has ever been approved has silently been skipped.
 **Fix:** Change line 603:
 
 ```plain
-# Before (broken):  
+# Before (broken):
 if payout.status != PayoutStatus.REQUESTED:
 
 <p><br/></p>
 
-# After (correct):  
+# After (correct):
 if payout.status != PayoutStatus.APPROVED:
 ```
 
@@ -302,12 +320,12 @@ eligible balance.
 **Fix:** Add `PayoutStatus.APPROVED` to the status list at line 415:
 
 ```python
-# Before:  
+# Before:
 [PayoutStatus.REQUESTED, PayoutStatus.PROCESSING]
 
 <p><br/></p>
 
-# After:  
+# After:
 [PayoutStatus.REQUESTED, PayoutStatus.APPROVED, PayoutStatus.PROCESSING]
 ```
 
@@ -322,20 +340,20 @@ Paystack API level with a recipient validation error.
 **Fix:** Add `CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE` map to this file:
 
 ```plain
-NGN → nuban          (Nigerian bank)  
-GHS → ghipss         (Ghanaian bank)  
-KES → mobile_money   (Kenya M-Pesa via Paystack)  
-ZAR → basa           (South African bank)  
-RWF → mobile_money   (Rwanda mobile money)  
-TZS → mobile_money   (Tanzania mobile money)  
-XOF → mobile_money   (West Africa CFA — Paystack limited support)  
-EGP → nuban          (Egypt — Paystack Nile)  
+NGN → nuban          (Nigerian bank)
+GHS → ghipss         (Ghanaian bank)
+KES → mobile_money   (Kenya M-Pesa via Paystack)
+ZAR → basa           (South African bank)
+RWF → mobile_money   (Rwanda mobile money)
+TZS → mobile_money   (Tanzania mobile money)
+XOF → mobile_money   (West Africa CFA — Paystack limited support)
+EGP → nuban          (Egypt — Paystack Nile)
 USD → nuban          (international)
 ```
 
 Update `create_paystack_transfer_recipient` signature to accept `payment_method_type`
-(BANK\_TRANSFER or MOBILE\_MONEY) and `currency`. Replace the hard-coded `"type": "nuban"`
-with `CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE.get(currency, "nuban")`. For MOBILE\_MONEY type,
+(BANK_TRANSFER or MOBILE_MONEY) and `currency`. Replace the hard-coded `"type": "nuban"`
+with `CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE.get(currency, "nuban")`. For MOBILE_MONEY type,
 use `phone_number` from `account_details` instead of `account_number`.
 
 **\#### 3.2.4 Exchange Rate Function Only Covers NGN**
@@ -361,10 +379,10 @@ the same 1-hour TTL. Add env-var fallbacks for each currency:
 **Fix:** Add:
 
 ```plain
-"RW": "RWF"   # Rwanda  
-"TZ": "TZS"   # Tanzania  
-"UG": "UGX"   # Uganda  
-"CI": "XOF"   # Ivory Coast  
+"RW": "RWF"   # Rwanda
+"TZ": "TZS"   # Tanzania
+"UG": "UGX"   # Uganda
+"CI": "XOF"   # Ivory Coast
 "EG": "EGP"   # Egypt
 ```
 
@@ -380,14 +398,14 @@ marketer's referral code earns the marketer nothing.
 
 1. Look up whether the paying user has a `referral_code_id` in `PaymentsUser` or the
 
-   payment metadata.
+payment metadata.
 
 2. If a referral code exists, call `create_commission_for_payment(referral_code_id, payment_user_id, course_id, db_session)`.
 3. The existing unique index on `(payment_user_id, referral_code_id)` prevents duplicates
 
-   even if both Paystack and Flutterwave webhooks fire for the same payment — no extra
+even if both Paystack and Flutterwave webhooks fire for the same payment — no extra
 
-   idempotency logic needed.
+idempotency logic needed.
 
 **\#### 3.2.7** **`get_commission_balance`** **— 3 Queries → 1**
 
@@ -400,10 +418,10 @@ dashboard load and payout page.
 **Fix:** Replace with a single grouped query:
 
 ```sql
-SELECT status, COALESCE(SUM(commission_amount), 0)  
-FROM referralcommission  
-WHERE referrer_user_id = :user_id  
-  AND status IN ('ELIGIBLE', 'PENDING')  
+SELECT status, COALESCE(SUM(commission_amount), 0)
+FROM referralcommission
+WHERE referrer_user_id = :user_id
+  AND status IN ('ELIGIBLE', 'PENDING')
 GROUP BY status
 ```
 
@@ -426,7 +444,8 @@ this exhausts application memory and crashes the job.
 500-row commit is atomic. If the job is interrupted, the next run picks up remaining rows
 because processed commissions are no longer PENDING. Memory usage becomes O(1).
 
-* * *
+---
+
 ### 3.3 Services — New and Extended
 
 #### 3.3.1 `apps/api/src/services/referrals/marketers.py` (new file)
@@ -434,100 +453,110 @@ because processed commissions are no longer PENDING. Memory usage becomes O(1).
 All marketer business logic lives here. All functions are async and receive `db_session`.
 
 **`register_marketer(user_id, org_id, phone_number, db_session) -> Marketer`**
-*   Validates user exists
-*   Checks `uq_marketer_user_org` — raises `MKTR_001` if duplicate
-*   Checks phone uniqueness — raises `MKTR_006` if taken
-*   Checks registration rate limits via Redis (3 per IP per hour → `MKTR_004`;
 
-  3 marketer accounts per IP in 30 days across all orgs → `MKTR_005`)
+- Validates user exists
+- Checks `uq_marketer_user_org` — raises `MKTR_001` if duplicate
+- Checks phone uniqueness — raises `MKTR_006` if taken
+- Checks registration rate limits via Redis (3 per IP per hour → `MKTR_004`;
 
-*   Computes device fingerprint (SHA-256 of User-Agent + Accept-Language + /24 IP range)
+3 marketer accounts per IP in 30 days across all orgs → `MKTR_005`)
 
-  from the request; if same fingerprint is already linked to an ACTIVE marketer in this org,
+- Computes device fingerprint (SHA-256 of User-Agent + Accept-Language + /24 IP range)
 
-  flags the new registration for review (sets internal `needs_review = True`) but does not
+from the request; if same fingerprint is already linked to an ACTIVE marketer in this org,
 
-  auto-reject — shared devices are real
+flags the new registration for review (sets internal `needs_review = True`) but does not
 
-*   Creates `Marketer` row with `status = PENDING_APPROVAL`
-*   Sends acknowledgement email to applicant
+auto-reject — shared devices are real
+
+- Creates `Marketer` row with `status = PENDING_APPROVAL`
+- Sends acknowledgement email to applicant
 
 **`approve_marketer(marketer_id, admin_user_id, db_session) -> Marketer`**
-*   Guards: marketer must be in PENDING\_APPROVAL status, else raise `MKTR_402`
-*   Sets `status = ACTIVE`, `approved_by_user_id`, `approved_at`
-*   Calls `generate_referral_code_for_marketer(marketer_id, db_session)`
-*   Sends approval email with referral link
-*   RBAC: admin or maintainer only
+
+- Guards: marketer must be in PENDING_APPROVAL status, else raise `MKTR_402`
+- Sets `status = ACTIVE`, `approved_by_user_id`, `approved_at`
+- Calls `generate_referral_code_for_marketer(marketer_id, db_session)`
+- Sends approval email with referral link
+- RBAC: admin or maintainer only
 
 **`reject_marketer(marketer_id, reason, admin_user_id, db_session) -> Marketer`**
-*   Sets `status = REJECTED`, stores `rejection_reason`
-*   Sends rejection email
-*   RBAC: admin or maintainer only
+
+- Sets `status = REJECTED`, stores `rejection_reason`
+- Sends rejection email
+- RBAC: admin or maintainer only
 
 **`suspend_marketer(marketer_id, admin_user_id, db_session) -> Marketer`**
-*   Sets `status = SUSPENDED`
-*   Sets `ReferralCode.status = INACTIVE` for the marketer's code (new signups cannot use it)
-*   Immediately deletes Redis key `mkt:active:{user_id}:{org_id}` — the commission rate
 
-  reverts to $4.00 within the same request, not after the 5-minute TTL
+- Sets `status = SUSPENDED`
+- Sets `ReferralCode.status = INACTIVE` for the marketer's code (new signups cannot use it)
+- Immediately deletes Redis key `mkt:active:{user_id}:{org_id}` — the commission rate
 
-*   Existing commissions already created are unaffected
-*   RBAC: admin or maintainer only
+reverts to $4.00 within the same request, not after the 5-minute TTL
+
+- Existing commissions already created are unaffected
+- RBAC: admin or maintainer only
 
 **`reactivate_marketer(marketer_id, admin_user_id, db_session) -> Marketer`**
-*   Guards: must be SUSPENDED (rejected accounts cannot be reactivated — raise `MKTR_404`)
-*   Sets `status = ACTIVE`, re-activates referral code
-*   Invalidates Redis cache key
+
+- Guards: must be SUSPENDED (rejected accounts cannot be reactivated — raise `MKTR_404`)
+- Sets `status = ACTIVE`, re-activates referral code
+- Invalidates Redis cache key
 
 **`generate_referral_code_for_marketer(marketer_id, db_session) -> ReferralCode`**
-*   Calls the existing referral code generation logic from `referral_codes.py`
-*   Prefixes code with `MKT-` (e.g., `MKT-JOHN2024`) for visual distinction in admin view
-*   Sets `User.has_referral_code = True`
-*   Links `ReferralCode.id` → `Marketer.referral_code_id`
+
+- Calls the existing referral code generation logic from `referral_codes.py`
+- Prefixes code with `MKT-` (e.g., `MKT-JOHN2024`) for visual distinction in admin view
+- Sets `User.has_referral_code = True`
+- Links `ReferralCode.id` → `Marketer.referral_code_id`
 
 **`is_active_marketer(user_id, org_id, db_session) -> bool`**
-*   Checks Redis key `mkt:active:{user_id}:{org_id}` first (5-minute TTL)
-*   On cache miss: queries `Marketer WHERE user_id = ? AND org_id = ? AND status = ACTIVE`
-*   Writes result to Redis before returning
-*   Called by `get_commission_amount_for_code` on every payment webhook
+
+- Checks Redis key `mkt:active:{user_id}:{org_id}` first (5-minute TTL)
+- On cache miss: queries `Marketer WHERE user_id = ? AND org_id = ? AND status = ACTIVE`
+- Writes result to Redis before returning
+- Called by `get_commission_amount_for_code` on every payment webhook
 
 **`get_commission_amount_for_code(referral_code_id, db_session) -> tuple[float, CommissionType]`**
-*   Gets `referrer_user_id` from `ReferralCode`
-*   Calls `is_active_marketer(referrer_user_id, org_id, db_session)`
-*   Returns `(marketer.commission_rate_usd, CommissionType.MARKETER)` if marketer is active
-*   Returns `(4.00, CommissionType.STANDARD)` otherwise
-*   Replaces the hard-coded `COMMISSION_AMOUNT_USD = 4.00` constant. This resolves the
 
-  existing TODO comment in `referral_commissions.py`
+- Gets `referrer_user_id` from `ReferralCode`
+- Calls `is_active_marketer(referrer_user_id, org_id, db_session)`
+- Returns `(marketer.commission_rate_usd, CommissionType.MARKETER)` if marketer is active
+- Returns `(4.00, CommissionType.STANDARD)` otherwise
+- Replaces the hard-coded `COMMISSION_AMOUNT_USD = 4.00` constant. This resolves the
+
+existing TODO comment in `referral_commissions.py`
 
 **`get_minimum_payout(user_id, org_id, db_session) -> float`**
-*   Returns `7.70` if active marketer, `1.00` otherwise
-*   Called by `validate_payout_amount` in `payouts.py`
+
+- Returns `7.70` if active marketer, `1.00` otherwise
+- Called by `validate_payout_amount` in `payouts.py`
 
 **`get_marketer_dashboard(marketer_user_id, org_id, db_session) -> MarketerDashboardData`**
 One service call, one database round-trip per panel. Returns:
-*   `profile`: name, email, code, referral\_link, status, approved\_at, commission\_rate\_usd
-*   `summary`:
 
-        - `total_students`: count of distinct `referred_user_id` in `ReferralTracking`
+- `profile`: name, email, code, referral_link, status, approved_at, commission_rate_usd
+- `summary`:
 
-        - `total_courses_sold`: count of marketer's `ReferralCommission` rows
+- `total_students`: count of distinct `referred_user_id` in `ReferralTracking`
 
-        - `total_earned_usd`: sum of all commission amounts (excludes FORFEITED)
+- `total_courses_sold`: count of marketer's `ReferralCommission` rows
 
-        - `eligible_for_payout_usd`: sum where `status = ELIGIBLE`
+- `total_earned_usd`: sum of all commission amounts (excludes FORFEITED)
 
-        - `pending_usd`: sum where `status = PENDING`
+- `eligible_for_payout_usd`: sum where `status = ELIGIBLE`
 
-        - `total_paid_usd`: sum where `status = PAID`
+- `pending_usd`: sum where `status = PENDING`
 
-*   `monthly_revenue`: last 12 months via single `GROUP BY DATE_TRUNC('month', ...)` query
-*   `recent_students`: top 5 most recent (paginated list is a separate endpoint)
-*   `payout_info`: balance, last payout date, minimum payout amount, payment method summary,
+- `total_paid_usd`: sum where `status = PAID`
 
-  kyc\_status, profile\_complete flag
+- `monthly_revenue`: last 12 months via single `GROUP BY DATE_TRUNC('month', ...)` query
+- `recent_students`: top 5 most recent (paginated list is a separate endpoint)
+- `payout_info`: balance, last payout date, minimum payout amount, payment method summary,
 
-*   `completeness_flags`: `{ country_set, phone_set, kyc_verified, payment_method_saved }`
+kyc_status, profile_complete flag
+
+- `completeness_flags`: `{ country_set, phone_set, kyc_verified, payment_method_saved }`
 
 Use batch fetching for all list data — no N+1 queries. Summary stats read from
 denormalized `Marketer` counters (updated daily by background job) except
@@ -554,12 +583,13 @@ after payout completion.
 **\#### 3.3.2** **`apps/api/src/services/referrals/marketer_kyc.py`** **(new file)**
 
 **`submit_kyc(marketer_id, document_type, id_number, front_key, back_key, selfie_key, db_session)`**
-*   Computes `SHA-256(id_number.strip().upper())` → `id_number_hash`
-*   Checks uniqueness: `SELECT 1 FROM marketerkyc WHERE id_number_hash = :hash`
-*   If found: raise `MKTR_201` — "This government ID is already linked to another account"
-*   Checks `submission_count < 3`; if at limit: raise `MKTR_202`
-*   Creates or updates `MarketerKYC` with `status = PENDING_REVIEW`, increments `submission_count`
-*   Notifies admin of pending review
+
+- Computes `SHA-256(id_number.strip().upper())` → `id_number_hash`
+- Checks uniqueness: `SELECT 1 FROM marketerkyc WHERE id_number_hash = :hash`
+- If found: raise `MKTR_201` — "This government ID is already linked to another account"
+- Checks `submission_count < 3`; if at limit: raise `MKTR_202`
+- Creates or updates `MarketerKYC` with `status = PENDING_REVIEW`, increments `submission_count`
+- Notifies admin of pending review
 
 **`approve_kyc(kyc_id, admin_user_id, db_session)`**
 Sets `status = VERIFIED`. Sends "KYC verified — payouts unlocked" email to marketer.
@@ -575,7 +605,7 @@ Raises specific errors in order:
 
 1. Profile has no country set → `MKTR_305`
 2. KYC status is UNVERIFIED → `MKTR_206`
-3. KYC status is PENDING\_REVIEW → `MKTR_207`
+3. KYC status is PENDING_REVIEW → `MKTR_207`
 4. No active payment method → `MKTR_304`
 
 Called at the start of `create_payout_request` before any other logic.
@@ -607,15 +637,16 @@ Apply bug fixes 3.2.1 through 3.2.5 above. Then add:
 Returns the marketer's active payment method row. Returns None if none saved.
 
 **`save_payment_method(marketer_id, payment_method_type, country_code, account_details, db_session) -> MarketerPaymentMethod`**
-*   Validates `country_code` is in `COUNTRY_TO_CURRENCY`. Raises `MKTR_351` if not.
-*   Validates `payment_method_type` is available for that country. Raises `MKTR_352`/`MKTR_353`.
-*   Derives `currency` from country map
-*   Encrypts `account_details` with `encrypt_bank_data` (existing Fernet function)
-*   Sets all existing active methods to `is_active = False`
-*   Creates new record with `is_active = True`, `paystack_recipient_code = None`
-*   If marketer's country changes in their user profile later, a post-save hook in the user
 
-  profile update endpoint calls this reset: `paystack_recipient_code = None` on all methods
+- Validates `country_code` is in `COUNTRY_TO_CURRENCY`. Raises `MKTR_351` if not.
+- Validates `payment_method_type` is available for that country. Raises `MKTR_352`/`MKTR_353`.
+- Derives `currency` from country map
+- Encrypts `account_details` with `encrypt_bank_data` (existing Fernet function)
+- Sets all existing active methods to `is_active = False`
+- Creates new record with `is_active = True`, `paystack_recipient_code = None`
+- If marketer's country changes in their user profile later, a post-save hook in the user
+
+profile update endpoint calls this reset: `paystack_recipient_code = None` on all methods
 
 **`cache_paystack_recipient_code(payment_method_id, recipient_code, db_session) -> None`**
 Writes `paystack_recipient_code` to the `MarketerPaymentMethod` row after first creation.
@@ -623,24 +654,27 @@ On subsequent payouts, `process_payout_request` checks: if `payment_method.payst
 is not None, skip the Paystack `/transferrecipient` call and use the cached code directly.
 
 **Update** **`create_payout_request`**\*\*\*\***:**
-*   Accept `use_saved_method: bool = False` parameter
-*   When `True`: fetch active payment method via `get_active_payment_method`, decrypt
 
-  `account_details`, use those as bank\_details. The caller passes `bank_details=None`.
+- Accept `use_saved_method: bool = False` parameter
+- When `True`: fetch active payment method via `get_active_payment_method`, decrypt
 
-*   Call `validate_payout_prerequisites(user_id, org_id, db_session)` at the start
+`account_details`, use those as bank_details. The caller passes `bank_details=None`.
+
+- Call `validate_payout_prerequisites(user_id, org_id, db_session)` at the start
 
 **Update** **`process_payout_request`** **(after applying bug fix 3.2.1):**
 Add retry logic:
-*   On Paystack failure: increment `payout.retry_count`, set `payout.last_retry_at = now()`
-*   If `payout.retry_count >= 3`: set `status = FAILED`, send `marketer_payout_failed` email
 
-  to marketer and alert email to admin
+- On Paystack failure: increment `payout.retry_count`, set `payout.last_retry_at = now()`
+- If `payout.retry_count >= 3`: set `status = FAILED`, send `marketer_payout_failed` email
 
-*   Otherwise: set status back to `APPROVED` (background job will retry on next run)
-*   Saves marketer from a permanent-fail on a transient Paystack error
+to marketer and alert email to admin
 
-* * *
+- Otherwise: set status back to `APPROVED` (background job will retry on next run)
+- Saves marketer from a permanent-fail on a transient Paystack error
+
+---
+
 ### 3.4 API Endpoints
 
 Create `apps/api/src/routers/referrals/marketers.py`. Register in `apps/api/src/router.py`
@@ -727,7 +761,7 @@ Calls `reactivate_marketer`.
 Admin view of a specific marketer's student list.
 
 `GET /marketers/{org_id}/admin/kyc/pending?page=1&limit=20`
-Lists PENDING\_REVIEW KYC submissions with marketer name, document type, submitted date,
+Lists PENDING_REVIEW KYC submissions with marketer name, document type, submitted date,
 and pre-signed document URLs (15-min expiry, generated per request).
 
 `POST /marketers/{org_id}/admin/kyc/{kyc_id}/approve`
@@ -746,7 +780,8 @@ Sets payout to APPROVED. Background job picks it up and processes automatically.
 `POST /marketers/{org_id}/admin/payouts/{payout_id}/reject`
 Body: `{ reason }`. Raises `MKTR_406` if payout is already APPROVED or beyond.
 
-* * *
+---
+
 ### 3.5 Background Jobs
 
 **File:** `apps/api/src/jobs/referral_jobs.py`
@@ -754,15 +789,17 @@ Body: `{ reason }`. Raises `MKTR_406` if payout is already APPROVED or beyond.
 Apply bug fix 3.2.8 (chunked processing) to the existing `update_pending_commissions_to_eligible`.
 
 Add `refresh_all_marketer_counters_job` running daily at 01:00 UTC:
-*   Queries all active `Marketer` rows across all orgs
-*   Calls `refresh_marketer_counters([marketer.id](http://marketer.id), db_session)` for each
-*   Keeps denormalized counter fields accurate
+
+- Queries all active `Marketer` rows across all orgs
+- Calls `refresh_marketer_counters([marketer.id](http://marketer.id), db_session)` for each
+- Keeps denormalized counter fields accurate
 
 The existing `process_payout_requests_job` runs every 30 minutes, queries for `APPROVED`
 payouts, and calls `process_payout_request` — this already works correctly once bug 3.2.1
 is fixed. No structural change to the job itself.
 
-* * *
+---
+
 ### 3.6 Error Handling
 
 **\#### 3.6.1 Error Response Shape**
@@ -770,84 +807,91 @@ is fixed. No structural change to the job itself.
 All marketer endpoint errors use:
 
 ```json
-{  
-  "error_code": "MKTR_301",  
-  "message": "Human-readable explanation for the user",  
-  "field": "amount"  
+{
+  "error_code": "MKTR_301",
+  "message": "Human-readable explanation for the user",
+  "field": "amount"
 }
 ```
 
 `field` is optional — only present when the error is tied to a specific input field.
-Internal details (stack trace, user\_id, SQL) are logged server-side only, never in the response.
+Internal details (stack trace, user_id, SQL) are logged server-side only, never in the response.
 
 **\#### 3.6.2 Global Exception Handler**
 
 In `apps/api/src/routers/referrals/marketers.py`, add an exception handler on the router:
 
 1. Catches any unhandled exception
-2. Logs full traceback + request context (user\_id, org\_id, endpoint, timestamp) to Sentry
+2. Logs full traceback + request context (user_id, org_id, endpoint, timestamp) to Sentry
 3. Returns HTTP 500 with `{ "error_code": "MKTR_500", "message": "An unexpected error occurred. Our team has been notified." }`
 
 **\#### 3.6.3 Error Code Registry**
 
-**Registration (MKTR\_001–099):**
-*   `MKTR_001` — User already has a marketer profile in this org
-*   `MKTR_002` — User account not found
-*   `MKTR_003` — Organisation not found or inactive
-*   `MKTR_004` — Registration rate limit exceeded (3 attempts/hour/IP)
-*   `MKTR_005` — Network registration limit reached (3 accounts/30 days/IP)
-*   `MKTR_006` — Phone number already registered to another marketer in this org
-*   `MKTR_007` — Marketer account is suspended — contact support
-*   `MKTR_008` — Marketer application was rejected — contact support to appeal
+**Registration (MKTR_001–099):**
 
-**Commission (MKTR\_100–199):**
-*   `MKTR_101` — Referral code not found for this marketer
-*   `MKTR_102` — Commission already exists (idempotency duplicate — logged, not surfaced to caller)
-*   `MKTR_103` — Commission amount calculation failed (internal — logged, falls back to $4.00)
+- `MKTR_001` — User already has a marketer profile in this org
+- `MKTR_002` — User account not found
+- `MKTR_003` — Organisation not found or inactive
+- `MKTR_004` — Registration rate limit exceeded (3 attempts/hour/IP)
+- `MKTR_005` — Network registration limit reached (3 accounts/30 days/IP)
+- `MKTR_006` — Phone number already registered to another marketer in this org
+- `MKTR_007` — Marketer account is suspended — contact support
+- `MKTR_008` — Marketer application was rejected — contact support to appeal
 
-**KYC (MKTR\_200–299):**
-*   `MKTR_201` — This government ID is already linked to another account
-*   `MKTR_202` — Maximum KYC submission attempts reached (3/3) — contact support
-*   `MKTR_203` — Invalid document type
-*   `MKTR_204` — File type not supported — use JPEG, PNG, or PDF
-*   `MKTR_205` — File size exceeds 10MB limit
-*   `MKTR_206` — KYC required before payout — complete identity verification first
-*   `MKTR_207` — KYC is under review — payouts unlock once verification is complete
+**Commission (MKTR_100–199):**
 
-**Payout (MKTR\_300–399):**
-*   `MKTR_301` — Payout amount below minimum ($7.70)
-*   `MKTR_302` — Requested amount exceeds eligible balance
-*   `MKTR_303` — A payout is already in progress — wait for it to complete
-*   `MKTR_304` — No payment method saved — add bank or mobile money details first
-*   `MKTR_305` — Country not set on profile — update your profile before requesting a payout
-*   `MKTR_306` — Paystack recipient creation failed — check your bank details
-*   `MKTR_307` — Payout transfer failed after retries — your balance has been restored
-*   `MKTR_308` — Payout not found
-*   `MKTR_309` — Payout cannot be approved — it is not in REQUESTED status
-*   `MKTR_310` — Currency not supported for your country
+- `MKTR_101` — Referral code not found for this marketer
+- `MKTR_102` — Commission already exists (idempotency duplicate — logged, not surfaced to caller)
+- `MKTR_103` — Commission amount calculation failed (internal — logged, falls back to $4.00)
 
-**Payment Method (MKTR\_350–399):**
-*   `MKTR_351` — Country not supported
-*   `MKTR_352` — Mobile money not available for this country
-*   `MKTR_353` — Bank transfer not available for this country
-*   `MKTR_354` — Account details invalid (Paystack verification failed)
-*   `MKTR_355` — Cannot update payment method — payout is currently processing
+**KYC (MKTR_200–299):**
 
-**Admin (MKTR\_400–499):**
-*   `MKTR_401` — Marketer not found
-*   `MKTR_402` — Cannot approve — marketer is not in PENDING\_APPROVAL status
-*   `MKTR_403` — Cannot suspend — marketer is already suspended
-*   `MKTR_404` — Cannot reactivate — rejected accounts must re-apply
-*   `MKTR_405` — KYC record not found
-*   `MKTR_406` — Payout already approved or processed — cannot modify
+- `MKTR_201` — This government ID is already linked to another account
+- `MKTR_202` — Maximum KYC submission attempts reached (3/3) — contact support
+- `MKTR_203` — Invalid document type
+- `MKTR_204` — File type not supported — use JPEG, PNG, or PDF
+- `MKTR_205` — File size exceeds 10MB limit
+- `MKTR_206` — KYC required before payout — complete identity verification first
+- `MKTR_207` — KYC is under review — payouts unlock once verification is complete
+
+**Payout (MKTR_300–399):**
+
+- `MKTR_301` — Payout amount below minimum ($7.70)
+- `MKTR_302` — Requested amount exceeds eligible balance
+- `MKTR_303` — A payout is already in progress — wait for it to complete
+- `MKTR_304` — No payment method saved — add bank or mobile money details first
+- `MKTR_305` — Country not set on profile — update your profile before requesting a payout
+- `MKTR_306` — Paystack recipient creation failed — check your bank details
+- `MKTR_307` — Payout transfer failed after retries — your balance has been restored
+- `MKTR_308` — Payout not found
+- `MKTR_309` — Payout cannot be approved — it is not in REQUESTED status
+- `MKTR_310` — Currency not supported for your country
+
+**Payment Method (MKTR_350–399):**
+
+- `MKTR_351` — Country not supported
+- `MKTR_352` — Mobile money not available for this country
+- `MKTR_353` — Bank transfer not available for this country
+- `MKTR_354` — Account details invalid (Paystack verification failed)
+- `MKTR_355` — Cannot update payment method — payout is currently processing
+
+**Admin (MKTR_400–499):**
+
+- `MKTR_401` — Marketer not found
+- `MKTR_402` — Cannot approve — marketer is not in PENDING_APPROVAL status
+- `MKTR_403` — Cannot suspend — marketer is already suspended
+- `MKTR_404` — Cannot reactivate — rejected accounts must re-apply
+- `MKTR_405` — KYC record not found
+- `MKTR_406` — Payout already approved or processed — cannot modify
 
 **\#### 3.6.4 Graceful Payout Retry**
 
 `process_payout_request` (after fix 3.2.1) on Paystack API failure:
-*   Increments `payout.retry_count`, sets `payout.last_retry_at`
-*   If `retry_count < 3`: sets status back to `APPROVED` (auto-retried on next job run in 30 min)
-*   If `retry_count >= 3`: sets status to `FAILED`, sends `MKTR_307` to marketer and admin alert
-*   Marketer balance is restored on FAILED (existing two-phase commit logic handles this)
+
+- Increments `payout.retry_count`, sets `payout.last_retry_at`
+- If `retry_count < 3`: sets status back to `APPROVED` (auto-retried on next job run in 30 min)
+- If `retry_count >= 3`: sets status to `FAILED`, sends `MKTR_307` to marketer and admin alert
+- Marketer balance is restored on FAILED (existing two-phase commit logic handles this)
 
 **\---**
 
@@ -855,91 +899,92 @@ In `apps/api/src/routers/referrals/marketers.py`, add an exception handler on th
 
 Add these templates to `apps/api/src/services/email/templates/`:
 
-*   `marketer_application_received.html` — sent on registration
-*   `marketer_approved.html` — sent on admin approval; includes referral link and instruction to add payment method
-*   `marketer_rejected.html` — sent on rejection; includes reason and support contact
-*   `marketer_commission_eligible.html` — sent daily (digest) when commissions move to ELIGIBLE; includes eligible amount and link to request payout
-*   `marketer_payout_processing.html` — sent when admin approves and job starts
-*   `marketer_payout_completed.html` — sent on COMPLETED; includes amount, local currency equivalent, last 4 digits, Paystack reference
-*   `marketer_payout_failed.html` — sent on FAILED after all retries; includes reason and link to update payment method
-*   `marketer_kyc_verified.html` — sent on KYC approval; confirms payouts are now unlocked
-*   `marketer_kyc_rejected.html` — sent on KYC rejection; includes reason and resubmission instructions if attempts remain
+- `marketer_application_received.html` — sent on registration
+- `marketer_approved.html` — sent on admin approval; includes referral link and instruction to add payment method
+- `marketer_rejected.html` — sent on rejection; includes reason and support contact
+- `marketer_commission_eligible.html` — sent daily (digest) when commissions move to ELIGIBLE; includes eligible amount and link to request payout
+- `marketer_payout_processing.html` — sent when admin approves and job starts
+- `marketer_payout_completed.html` — sent on COMPLETED; includes amount, local currency equivalent, last 4 digits, Paystack reference
+- `marketer_payout_failed.html` — sent on FAILED after all retries; includes reason and link to update payment method
+- `marketer_kyc_verified.html` — sent on KYC approval; confirms payouts are now unlocked
+- `marketer_kyc_rejected.html` — sent on KYC rejection; includes reason and resubmission instructions if attempts remain
 
-* * *
+---
+
 ### 3.8 Backend Files Summary
 
 **New files:**
 
 ```plain
-apps/api/src/db/referrals/marketers.py  
-apps/api/src/db/referrals/marketer_payment_methods.py  
-apps/api/src/db/referrals/marketer_kyc.py  
-apps/api/src/services/referrals/marketers.py  
-apps/api/src/services/referrals/marketer_kyc.py  
-apps/api/src/routers/referrals/marketers.py  
-apps/api/migrations/versions/<ts>_add_indexes_and_payout_retry_fields.py  
-apps/api/migrations/versions/<ts>_add_commission_type_to_referralcommission.py  
-apps/api/migrations/versions/<ts>_create_marketer_and_payment_method_tables.py  
-apps/api/migrations/versions/<ts>_create_marketer_kyc_table.py  
-apps/api/src/tests/marketers/test_commission_amount.py  
-apps/api/src/tests/marketers/test_marketer_service.py  
-apps/api/src/tests/marketers/test_marketer_kyc.py  
-apps/api/src/tests/marketers/test_marketer_payout.py  
-apps/api/src/tests/marketers/test_flutterwave_commission.py  
-apps/api/src/tests/marketers/test_marketer_registration_flow.py  
-apps/api/src/tests/marketers/test_marketer_payout_flow.py  
+apps/api/src/db/referrals/marketers.py
+apps/api/src/db/referrals/marketer_payment_methods.py
+apps/api/src/db/referrals/marketer_kyc.py
+apps/api/src/services/referrals/marketers.py
+apps/api/src/services/referrals/marketer_kyc.py
+apps/api/src/routers/referrals/marketers.py
+apps/api/migrations/versions/<ts>_add_indexes_and_payout_retry_fields.py
+apps/api/migrations/versions/<ts>_add_commission_type_to_referralcommission.py
+apps/api/migrations/versions/<ts>_create_marketer_and_payment_method_tables.py
+apps/api/migrations/versions/<ts>_create_marketer_kyc_table.py
+apps/api/src/tests/marketers/test_commission_amount.py
+apps/api/src/tests/marketers/test_marketer_service.py
+apps/api/src/tests/marketers/test_marketer_kyc.py
+apps/api/src/tests/marketers/test_marketer_payout.py
+apps/api/src/tests/marketers/test_flutterwave_commission.py
+apps/api/src/tests/marketers/test_marketer_registration_flow.py
+apps/api/src/tests/marketers/test_marketer_payout_flow.py
 apps/api/src/services/email/templates/marketer_*.html  (9 templates)
 ```
 
 **Modified files:**
 
 ```plain
-apps/api/src/db/referrals/referral_commissions.py  
-  — add CommissionType enum  
+apps/api/src/db/referrals/referral_commissions.py
+  — add CommissionType enum
   — add commission_type field to ReferralCommission + schemas
 
 <p><br/></p>
 
-apps/api/src/db/referrals/payout_requests.py  
+apps/api/src/db/referrals/payout_requests.py
   — add retry_count, last_retry_at fields + schemas
 
 <p><br/></p>
 
-apps/api/src/services/referrals/referral_commissions.py  
-  — replace COMMISSION_AMOUNT_USD constant with get_commission_amount_for_code()  
-  — update create_commission_for_payment to call get_commission_amount_for_code  
-  — update validate_payout_amount to call get_minimum_payout()  
-  — FIX: get_commission_balance — 3 queries → 1  
+apps/api/src/services/referrals/referral_commissions.py
+  — replace COMMISSION_AMOUNT_USD constant with get_commission_amount_for_code()
+  — update create_commission_for_payment to call get_commission_amount_for_code
+  — update validate_payout_amount to call get_minimum_payout()
+  — FIX: get_commission_balance — 3 queries → 1
   — FIX: update_pending_commissions_to_eligible — chunked 500 rows
 
 <p><br/></p>
 
-apps/api/src/services/referrals/payouts.py  
-  — FIX line 603: REQUESTED → APPROVED guard  
-  — FIX line 415: add APPROVED to in-flight check  
-  — FIX: replace nuban hard-code with CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE map  
-  — FIX: rename + generalise exchange rate function for all currencies  
-  — FIX: expand COUNTRY_TO_CURRENCY (RW, TZ, UG, CI, EG)  
-  — add get_active_payment_method()  
-  — add save_payment_method()  
-  — add cache_paystack_recipient_code()  
-  — update create_payout_request for use_saved_method + prerequisites check  
+apps/api/src/services/referrals/payouts.py
+  — FIX line 603: REQUESTED → APPROVED guard
+  — FIX line 415: add APPROVED to in-flight check
+  — FIX: replace nuban hard-code with CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE map
+  — FIX: rename + generalise exchange rate function for all currencies
+  — FIX: expand COUNTRY_TO_CURRENCY (RW, TZ, UG, CI, EG)
+  — add get_active_payment_method()
+  — add save_payment_method()
+  — add cache_paystack_recipient_code()
+  — update create_payout_request for use_saved_method + prerequisites check
   — add retry logic to process_payout_request
 
 <p><br/></p>
 
-apps/api/src/routers/webhooks/flutterwave.py  
+apps/api/src/routers/webhooks/flutterwave.py
   — FIX: add commission creation after successful course enrollment
 
 <p><br/></p>
 
-apps/api/src/jobs/referral_jobs.py  
-  — FIX: apply chunking to update_pending_commissions_to_eligible  
+apps/api/src/jobs/referral_jobs.py
+  — FIX: apply chunking to update_pending_commissions_to_eligible
   — add refresh_all_marketer_counters_job at 01:00 UTC
 
 <p><br/></p>
 
-apps/api/src/router.py  
+apps/api/src/router.py
   — register marketers router
 ```
 
@@ -950,7 +995,8 @@ apps/api/src/router.py
 Implement everything in this section after the backend is deployed. The sections are
 ordered by dependency.
 
-* * *
+---
+
 ### 4.1 Service Layer — `apps/web/services/referral/marketer.service.ts` (new file)
 
 Define TypeScript interfaces first:
@@ -961,49 +1007,50 @@ Define TypeScript interfaces first:
 `MarketerError` shape:
 
 ```plain
-interface MarketerError {  
-  error_code: string   // e.g. "MKTR_301"  
-  message: string      // human-readable, show this to user  
-  field?: string       // optional field that caused the error  
+interface MarketerError {
+  error_code: string   // e.g. "MKTR_301"
+  message: string      // human-readable, show this to user
+  field?: string       // optional field that caused the error
 }
 ```
 
 Central error handler:
 
 ```plain
-function handleMarketerError(err: MarketerError): void {  
-  // maps error_code to user-facing message (localised)  
-  // logs error_code to console for debugging  
-  // never displays raw error_code in the UI  
-  toast.error(err.message)  
+function handleMarketerError(err: MarketerError): void {
+  // maps error_code to user-facing message (localised)
+  // logs error_code to console for debugging
+  // never displays raw error_code in the UI
+  toast.error(err.message)
 }
 ```
 
 Export async functions for every endpoint:
-*   `registerAsMarketer(orgSlug, data)`
-*   `getMarketerDashboard(orgSlug)`
-*   `getMarketerStudents(orgSlug, page, limit)`
-*   `getMarketerMonthlyRevenue(orgSlug, year)`
-*   `savePaymentMethod(orgSlug, data)`
-*   `getPaymentMethod(orgSlug)`
-*   `deletePaymentMethod(orgSlug)`
-*   `uploadKYCDocuments(orgSlug, formData)`
-*   `getKYCStatus(orgSlug)`
-*   `requestMarketerPayout(orgSlug, amount)`
-*   `getMarketerPayoutHistory(orgSlug)`
-*   `adminGetMarketers(orgSlug, status, page, limit)`
-*   `adminGetMarketerStats(orgSlug)`
-*   `adminGetLeaderboard(orgSlug)`
-*   `adminApproveMarketer(orgSlug, marketerId)`
-*   `adminRejectMarketer(orgSlug, marketerId, reason)`
-*   `adminSuspendMarketer(orgSlug, marketerId)`
-*   `adminReactivateMarketer(orgSlug, marketerId)`
-*   `adminGetKYCQueue(orgSlug, page, limit)`
-*   `adminApproveKYC(orgSlug, kycId)`
-*   `adminRejectKYC(orgSlug, kycId, reason)`
-*   `adminGetMarketerPayouts(orgSlug, status, page, limit)`
-*   `adminApproveMarketerPayout(orgSlug, payoutId)`
-*   `adminRejectMarketerPayout(orgSlug, payoutId, reason)`
+
+- `registerAsMarketer(orgSlug, data)`
+- `getMarketerDashboard(orgSlug)`
+- `getMarketerStudents(orgSlug, page, limit)`
+- `getMarketerMonthlyRevenue(orgSlug, year)`
+- `savePaymentMethod(orgSlug, data)`
+- `getPaymentMethod(orgSlug)`
+- `deletePaymentMethod(orgSlug)`
+- `uploadKYCDocuments(orgSlug, formData)`
+- `getKYCStatus(orgSlug)`
+- `requestMarketerPayout(orgSlug, amount)`
+- `getMarketerPayoutHistory(orgSlug)`
+- `adminGetMarketers(orgSlug, status, page, limit)`
+- `adminGetMarketerStats(orgSlug)`
+- `adminGetLeaderboard(orgSlug)`
+- `adminApproveMarketer(orgSlug, marketerId)`
+- `adminRejectMarketer(orgSlug, marketerId, reason)`
+- `adminSuspendMarketer(orgSlug, marketerId)`
+- `adminReactivateMarketer(orgSlug, marketerId)`
+- `adminGetKYCQueue(orgSlug, page, limit)`
+- `adminApproveKYC(orgSlug, kycId)`
+- `adminRejectKYC(orgSlug, kycId, reason)`
+- `adminGetMarketerPayouts(orgSlug, status, page, limit)`
+- `adminApproveMarketerPayout(orgSlug, payoutId)`
+- `adminRejectMarketerPayout(orgSlug, payoutId, reason)`
 
 Use SWR for all read endpoints with sensible keys. Payout balance uses a 60-second
 revalidation interval. Dashboard summary uses a 5-minute interval (reads denormalized counters).
@@ -1031,10 +1078,11 @@ a course — paid to your bank or mobile money account."
 #### `apps/web/app/orgs/[orgslug]/marketer/page.tsx`
 
 Root marketer dashboard. Gated by marketer status:
-*   `PENDING_APPROVAL`: shows holding page — "Your application is under review. We'll email you when approved."
-*   `REJECTED`: shows rejection reason and a "Contact Support" link
-*   `SUSPENDED`: shows suspension notice with a "Contact Support" link
-*   `ACTIVE`: shows full dashboard (see components below)
+
+- `PENDING_APPROVAL`: shows holding page — "Your application is under review. We'll email you when approved."
+- `REJECTED`: shows rejection reason and a "Contact Support" link
+- `SUSPENDED`: shows suspension notice with a "Contact Support" link
+- `ACTIVE`: shows full dashboard (see components below)
 
 Fetches `getMarketerDashboard` via SWR. Passes data down to child components as props.
 No child component fetches its own data — one network call per page load.
@@ -1063,16 +1111,18 @@ Three panels on one page:
 2. Saved payment method (bank or mobile money, masked)
 3. Payout history table
 
-* * *
+---
+
 ### 4.3 Components
 
 #### `apps/web/components/Marketer/MarketerSummaryCards.tsx`
 
 Four stat cards at the top of the dashboard:
-*   Total Students Referred (number)
-*   Total Courses Sold (number)
-*   Total Earned (USD formatted)
-*   Available for Payout (USD — highlighted green if > $7.70, grey otherwise)
+
+- Total Students Referred (number)
+- Total Courses Sold (number)
+- Total Earned (USD formatted)
+- Available for Payout (USD — highlighted green if > $7.70, grey otherwise)
 
 Accepts pre-fetched `summary` from dashboard response as props. No internal fetch.
 
@@ -1121,11 +1171,12 @@ country.
 #### `apps/web/components/Marketer/MarketerPayoutPanel.tsx`
 
 Shows:
-*   Eligible balance (USD)
-*   Minimum payout reminder ($7.70)
-*   Saved payment method summary (masked account, last 4 digits)
-*   Amount input with max button (fills eligible balance)
-*   "Request Payout" button
+
+- Eligible balance (USD)
+- Minimum payout reminder ($7.70)
+- Saved payment method summary (masked account, last 4 digits)
+- Amount input with max button (fills eligible balance)
+- "Request Payout" button
 
 Disabled with tooltip when any prerequisite is unmet (balance < $7.70, no payment method,
 KYC not verified). Tooltip text maps to the specific missing prerequisite, not a generic
@@ -1140,7 +1191,7 @@ Error display: `MKTR_303` → "A payout is already in progress — wait for it t
 Three-step form:
 
 Step 1: Select document type → upload front image (required for all types) → upload back
-image (required for NATIONAL\_ID and DRIVERS\_LICENSE, hidden for PASSPORT).
+image (required for NATIONAL_ID and DRIVERS_LICENSE, hidden for PASSPORT).
 
 Step 2: Upload selfie. Instruction text: "Hold your \[document type\] next to your face and
 take a clear photo." File restrictions shown: max 10MB, JPEG/PNG/PDF.
@@ -1153,15 +1204,17 @@ On `MKTR_202`: show "You have reached the maximum submission attempts. Contact s
 On success: show "Documents submitted. You'll receive an email once reviewed."
 
 KYC status banner in the dashboard sidebar uses `kyc_status` from the dashboard response:
-*   `UNVERIFIED` → "Complete identity verification to unlock payouts" (orange, links to KYC form)
-*   `PENDING_REVIEW` → "Identity verification in progress" (yellow)
-*   `VERIFIED` → "Identity verified" (green, no link)
-*   `REJECTED` → "Verification failed — \[reason\]. Resubmit →" (red)
+
+- `UNVERIFIED` → "Complete identity verification to unlock payouts" (orange, links to KYC form)
+- `PENDING_REVIEW` → "Identity verification in progress" (yellow)
+- `VERIFIED` → "Identity verified" (green, no link)
+- `REJECTED` → "Verification failed — \[reason\]. Resubmit →" (red)
 
 **\####** **`apps/web/components/Marketer/AdminMarketerStats.tsx`**
 
 Summary bar at top of the admin Marketers tab:
-*   Total Marketers, Active, Pending Approval, Total Commissions Paid to Marketers
+
+- Total Marketers, Active, Pending Approval, Total Commissions Paid to Marketers
 
 Each number is a link that filters the table below to that status.
 
@@ -1175,14 +1228,14 @@ Add a "Marketers" top-level tab alongside existing referral tabs. Three sub-tabs
 
 **Sub-tab: Applications**
 Table: Name, Email, Country, Phone, Applied Date, Status badge, Actions.
-Filter by status (PENDING\_APPROVAL, ACTIVE, REJECTED, SUSPENDED). Each row: "Approve" and
+Filter by status (PENDING_APPROVAL, ACTIVE, REJECTED, SUSPENDED). Each row: "Approve" and
 "Reject" actions for PENDING rows, "Suspend" / "Reactivate" for ACTIVE/SUSPENDED rows.
 On Approve: confirmation dialog with the marketer's name. On Reject: modal with required
 reason textarea.
 
 **Sub-tab: KYC Review**
 Table: Marketer Name, Email, Document Type, Submitted Date, Status badge, "Review" action.
-Badge on the sub-tab heading shows count of PENDING\_REVIEW items.
+Badge on the sub-tab heading shows count of PENDING_REVIEW items.
 "Review" action opens a side panel (`AdminKYCReviewPanel.tsx` — see below).
 
 **Sub-tab: Leaderboard**
@@ -1201,28 +1254,31 @@ On approve: row updates to APPROVED status inline (optimistic update then revali
 
 Side panel (slide-over) opened from the KYC Review sub-tab.
 Shows:
-*   Marketer name, email, registration date
-*   Document type label
-*   Document front image (rendered from pre-signed URL, 15-min expiry)
-*   Document back image if present
-*   Selfie image
-*   Approve and Reject buttons
-*   Reject button opens an inline textarea for rejection reason
-*   Images load with a spinner; if the pre-signed URL expires while the panel is open,
 
-  show "Image expired — close and reopen to refresh"
+- Marketer name, email, registration date
+- Document type label
+- Document front image (rendered from pre-signed URL, 15-min expiry)
+- Document back image if present
+- Selfie image
+- Approve and Reject buttons
+- Reject button opens an inline textarea for rejection reason
+- Images load with a spinner; if the pre-signed URL expires while the panel is open,
 
-* * *
+show "Image expired — close and reopen to refresh"
+
+---
+
 ### 4.5 Navigation
 
 In the org sidebar (wherever the existing nav items live):
-*   Add "Marketer Dashboard" nav item visible only when `session.user` has a marketer profile
 
-  (any status — so PENDING and REJECTED users can check their status)
+- Add "Marketer Dashboard" nav item visible only when `session.user` has a marketer profile
 
-*   Show a dot indicator on the nav item when `kyc_status = PENDING_REVIEW` or
+(any status — so PENDING and REJECTED users can check their status)
 
-  `status = PENDING_APPROVAL` to indicate something awaits their attention
+- Show a dot indicator on the nav item when `kyc_status = PENDING_REVIEW` or
+
+`status = PENDING_APPROVAL` to indicate something awaits their attention
 
 Profile page: no new page needed. Add a "Marketer: View Dashboard" link in the existing
 user profile page sidebar if the user has a marketer profile. Profile photo, name, country
@@ -1240,43 +1296,44 @@ your country changed. Please re-add your payment details."
 **New files:**
 
 ```plain
-apps/web/services/referral/marketer.service.ts  
-apps/web/app/orgs/[orgslug]/marketer/register/page.tsx  
-apps/web/app/orgs/[orgslug]/marketer/page.tsx  
-apps/web/app/orgs/[orgslug]/marketer/students/page.tsx  
-apps/web/app/orgs/[orgslug]/marketer/revenue/page.tsx  
-apps/web/app/orgs/[orgslug]/marketer/payouts/page.tsx  
-apps/web/components/Marketer/MarketerSummaryCards.tsx  
-apps/web/components/Marketer/MarketerRevenueChart.tsx  
-apps/web/components/Marketer/MarketerStudentTable.tsx  
-apps/web/components/Marketer/ReferralCodeCard.tsx  
-apps/web/components/Marketer/PaymentMethodForm.tsx  
-apps/web/components/Marketer/MarketerPayoutPanel.tsx  
-apps/web/components/Marketer/KYCUploadForm.tsx  
-apps/web/components/Marketer/AdminMarketerStats.tsx  
+apps/web/services/referral/marketer.service.ts
+apps/web/app/orgs/[orgslug]/marketer/register/page.tsx
+apps/web/app/orgs/[orgslug]/marketer/page.tsx
+apps/web/app/orgs/[orgslug]/marketer/students/page.tsx
+apps/web/app/orgs/[orgslug]/marketer/revenue/page.tsx
+apps/web/app/orgs/[orgslug]/marketer/payouts/page.tsx
+apps/web/components/Marketer/MarketerSummaryCards.tsx
+apps/web/components/Marketer/MarketerRevenueChart.tsx
+apps/web/components/Marketer/MarketerStudentTable.tsx
+apps/web/components/Marketer/ReferralCodeCard.tsx
+apps/web/components/Marketer/PaymentMethodForm.tsx
+apps/web/components/Marketer/MarketerPayoutPanel.tsx
+apps/web/components/Marketer/KYCUploadForm.tsx
+apps/web/components/Marketer/AdminMarketerStats.tsx
 apps/web/components/Marketer/AdminKYCReviewPanel.tsx
 ```
 
 **Modified files:**
 
 ```plain
-apps/web/app/orgs/[orgslug]/dash/referrals/page.tsx  
-  — add Marketers tab with Applications, KYC Review, Leaderboard, Marketer Payouts sub-tabs  
+apps/web/app/orgs/[orgslug]/dash/referrals/page.tsx
+  — add Marketers tab with Applications, KYC Review, Leaderboard, Marketer Payouts sub-tabs
   — add AdminMarketerStats summary bar
 
 <p><br/></p>
 
-apps/web/app/orgs/[orgslug]/layout.tsx (or sidebar component)  
+apps/web/app/orgs/[orgslug]/layout.tsx (or sidebar component)
   — add Marketer Dashboard nav item with dot indicator
 
 <p><br/></p>
 
-apps/web/app/orgs/[orgslug]/profile/page.tsx (or equivalent)  
-  — add country-change side effect for payment method invalidation  
+apps/web/app/orgs/[orgslug]/profile/page.tsx (or equivalent)
+  — add country-change side effect for payment method invalidation
   — add "View Marketer Dashboard" link if user is a marketer
 ```
 
-* * *
+---
+
 ## 5\. Security
 
 **RBAC:** `require_active_marketer` guard on all self-service endpoints. Admin endpoints
@@ -1304,7 +1361,8 @@ not application level. Application catches `IntegrityError` and raises `MKTR_201
 **Rate limits:** Registration endpoint: 3 per IP per hour (Redis counter).
 
 **Audit trail:** `approved_by_user_id` + `approved_at` on `Marketer`. `reviewed_by_user_id`
-*   `reviewed_at` on `MarketerKYC`. All admin actions are attributable.
+
+- `reviewed_at` on `MarketerKYC`. All admin actions are attributable.
 
 **\---**
 
@@ -1313,65 +1371,74 @@ not application level. Application catches `IntegrityError` and raises `MKTR_201
 **Unit tests —** **`apps/api/src/tests/marketers/`**
 
 `test_commission_amount.py`
-*   Active marketer → returns 7.70 and CommissionType.MARKETER
-*   Non-marketer → returns 4.00 and CommissionType.STANDARD
-*   Suspended marketer → returns 4.00 (Redis cache invalidated on suspend)
-*   Marketer with custom rate → returns custom rate
+
+- Active marketer → returns 7.70 and CommissionType.MARKETER
+- Non-marketer → returns 4.00 and CommissionType.STANDARD
+- Suspended marketer → returns 4.00 (Redis cache invalidated on suspend)
+- Marketer with custom rate → returns custom rate
 
 `test_marketer_service.py`
-*   `register_marketer` creates PENDING\_APPROVAL row
-*   `register_marketer` raises MKTR\_001 on duplicate user\_org
-*   `register_marketer` raises MKTR\_006 on duplicate phone
-*   `approve_marketer` sets ACTIVE, generates referral code, sends email
-*   `reject_marketer` sets REJECTED, stores reason
-*   `suspend_marketer` sets SUSPENDED, deactivates code, deletes Redis key
-*   `is_active_marketer` returns False for SUSPENDED, REJECTED, PENDING\_APPROVAL
+
+- `register_marketer` creates PENDING_APPROVAL row
+- `register_marketer` raises MKTR_001 on duplicate user_org
+- `register_marketer` raises MKTR_006 on duplicate phone
+- `approve_marketer` sets ACTIVE, generates referral code, sends email
+- `reject_marketer` sets REJECTED, stores reason
+- `suspend_marketer` sets SUSPENDED, deactivates code, deletes Redis key
+- `is_active_marketer` returns False for SUSPENDED, REJECTED, PENDING_APPROVAL
 
 `test_marketer_kyc.py`
-*   Duplicate ID hash raises MKTR\_201
-*   submission\_count >= 3 raises MKTR\_202
-*   Approved KYC sends email
-*   `validate_payout_prerequisites` raises MKTR\_206 when UNVERIFIED
-*   `validate_payout_prerequisites` raises MKTR\_207 when PENDING\_REVIEW
+
+- Duplicate ID hash raises MKTR_201
+- submission_count >= 3 raises MKTR_202
+- Approved KYC sends email
+- `validate_payout_prerequisites` raises MKTR_206 when UNVERIFIED
+- `validate_payout_prerequisites` raises MKTR_207 when PENDING_REVIEW
 
 `test_marketer_payout.py`
-*   Minimum payout $7.70 enforced (MKTR\_301 below minimum)
-*   Payout uses saved payment method without requiring bank details in request
-*   Cached recipient code reused when `paystack_recipient_code` is set
-*   New recipient created when `paystack_recipient_code` is None
-*   Mobile money recipient uses phone\_number not account\_number
-*   `check_pending_payout` blocks when APPROVED payout exists
-*   Retry count increments on Paystack failure; FAILED after 3 retries
-*   Bug fix: `process_payout_request` processes APPROVED (not REQUESTED) payouts
+
+- Minimum payout $7.70 enforced (MKTR_301 below minimum)
+- Payout uses saved payment method without requiring bank details in request
+- Cached recipient code reused when `paystack_recipient_code` is set
+- New recipient created when `paystack_recipient_code` is None
+- Mobile money recipient uses phone_number not account_number
+- `check_pending_payout` blocks when APPROVED payout exists
+- Retry count increments on Paystack failure; FAILED after 3 retries
+- Bug fix: `process_payout_request` processes APPROVED (not REQUESTED) payouts
 
 `test_flutterwave_commission.py`
-*   Flutterwave charge.completed with referral\_code\_id → commission created
-*   Flutterwave charge.completed without referral\_code\_id → no commission
-*   Duplicate Flutterwave webhook → no duplicate commission (idempotency)
+
+- Flutterwave charge.completed with referral_code_id → commission created
+- Flutterwave charge.completed without referral_code_id → no commission
+- Duplicate Flutterwave webhook → no duplicate commission (idempotency)
 
 **Integration tests**
 
 `test_marketer_registration_flow.py`
-*   Full flow: register → pending → approve → code generated → $7.70 commission on payment
+
+- Full flow: register → pending → approve → code generated → $7.70 commission on payment
 
 `test_marketer_payout_flow.py`
-*   Full flow: commission created → eligible → KYC verified → payout requested → admin
 
-  approves → background job processes → payout completed → balance decremented
+- Full flow: commission created → eligible → KYC verified → payout requested → admin
+
+approves → background job processes → payout completed → balance decremented
 
 **Frontend tests**
 
 Playwright e2e:
-*   Registration form submits and shows holding page
-*   Admin approves — marketer sees full dashboard on next login
-*   Dashboard cards show correct values matching API
-*   Payment method form saves (bank and mobile money paths)
-*   Request payout disabled below $7.70; enabled above
-*   KYC form uploads documents and shows PENDING\_REVIEW status
-*   Error codes map to correct visible messages (not raw codes)
-*   Country change shows payment method reset notice
 
-* * *
+- Registration form submits and shows holding page
+- Admin approves — marketer sees full dashboard on next login
+- Dashboard cards show correct values matching API
+- Payment method form saves (bank and mobile money paths)
+- Request payout disabled below $7.70; enabled above
+- KYC form uploads documents and shows PENDING_REVIEW status
+- Error codes map to correct visible messages (not raw codes)
+- Country change shows payment method reset notice
+
+---
+
 ## 7\. Rollout Plan
 
 **Phase 1 — Hotfix (deploy immediately, before any feature work):**
@@ -1398,20 +1465,20 @@ KYC upload flow, nav additions. Announce marketer program.
 
 **\## 8. DRY Enforcement Summary**
 
-| Concern | Single Source |
-| ---| --- |
-| Commission amount per code | `get_commission_amount_for_code()` in `marketers.py` |
-| Marketer active check | `is_active_marketer()` with Redis cache in `marketers.py` |
-| Minimum payout per user type | `get_minimum_payout()` in `marketers.py` |
-| Payout prerequisites validation | `validate_payout_prerequisites()` in `marketer_kyc.py` |
-| Bank data encryption | `encrypt_bank_data()` / `decrypt_bank_data()` in `payouts.py` |
-| Paystack recipient creation | `create_paystack_transfer_recipient()` in `payouts.py` |
-| Payout pipeline | `process_payout_request()` in `payouts.py` |
-| Commission lifecycle | `update_pending_commissions_to_eligible()` job |
-| Exchange rate | `get_usd_to_currency_exchange_rate(target)` in `payouts.py` |
-| Frontend error display | `handleMarketerError(err)` in `marketer.service.ts` |
-| RBAC guard | `require_active_marketer()` applied once per router, not per endpoint |
-| Fraud detection | Existing `validate_and_track_referral()` — unchanged |
+| Concern                         | Single Source                                                         |
+| ------------------------------- | --------------------------------------------------------------------- |
+| Commission amount per code      | `get_commission_amount_for_code()` in `marketers.py`                  |
+| Marketer active check           | `is_active_marketer()` with Redis cache in `marketers.py`             |
+| Minimum payout per user type    | `get_minimum_payout()` in `marketers.py`                              |
+| Payout prerequisites validation | `validate_payout_prerequisites()` in `marketer_kyc.py`                |
+| Bank data encryption            | `encrypt_bank_data()` / `decrypt_bank_data()` in `payouts.py`         |
+| Paystack recipient creation     | `create_paystack_transfer_recipient()` in `payouts.py`                |
+| Payout pipeline                 | `process_payout_request()` in `payouts.py`                            |
+| Commission lifecycle            | `update_pending_commissions_to_eligible()` job                        |
+| Exchange rate                   | `get_usd_to_currency_exchange_rate(target)` in `payouts.py`           |
+| Frontend error display          | `handleMarketerError(err)` in `marketer.service.ts`                   |
+| RBAC guard                      | `require_active_marketer()` applied once per router, not per endpoint |
+| Fraud detection                 | Existing `validate_and_track_referral()` — unchanged                  |
 
 No commission arithmetic in any router or frontend file. All financial calculations in the
 service layer. Frontend receives pre-computed USD amounts and renders them only.

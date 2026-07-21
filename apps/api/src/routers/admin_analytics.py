@@ -35,7 +35,13 @@ async def api_list_org_students(
 ) -> StudentListResponse:
     """List all students in an organization with their progress metrics."""
     return await list_org_students(
-        org_id, user, db_session, search=search, page=page, page_size=page_size, sort_by=sort_by
+        org_id,
+        user,
+        db_session,
+        search=search,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
     )
 
 

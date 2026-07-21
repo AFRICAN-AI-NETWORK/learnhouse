@@ -100,7 +100,7 @@ async def create_waitlist_config(
         )
         await create_cohort(cohort_data, db_session)
     except Exception as e:
-        # We don't fail the waitlist creation if cohort creation fails, 
+        # We don't fail the waitlist creation if cohort creation fails,
         # but we should log it (using standard fastAPI logging).
         print(f"Failed to auto-create cohort for waitlist: {e}")
 

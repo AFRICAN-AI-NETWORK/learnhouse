@@ -9,10 +9,11 @@ from src.services.payments.payments_users import update_payment_user_status
 from src.services.payments.payments_flutterwave import verify_transaction
 from src.services.payments.discount_codes import (
     record_discount_usage,
-    increment_discount_usage_atomic
+    increment_discount_usage_atomic,
 )
 
 logger = logging.getLogger(__name__)
+
 
 async def verify_flutterwave_webhook_signature(
     request: Request,
@@ -31,11 +32,15 @@ async def handle_flutterwave_webhook(
 ) -> dict:
     """Handle Flutterwave webhook events"""
     learnhouse_config = get_learnhouse_config()
-    webhook_secret = learnhouse_config.payments_config.flutterwave.flutterwave_webhook_secret
+    webhook_secret = (
+        learnhouse_config.payments_config.flutterwave.flutterwave_webhook_secret
+    )
 
     if not webhook_secret:
         logger.error("Flutterwave webhook secret not configured")
-        raise HTTPException(status_code=400, detail="Flutterwave webhook secret not configured")
+        raise HTTPException(
+            status_code=400, detail="Flutterwave webhook secret not configured"
+        )
 
     if not await verify_flutterwave_webhook_signature(request, webhook_secret):
         logger.error("Invalid Flutterwave webhook signature")
@@ -44,7 +49,7 @@ async def handle_flutterwave_webhook(
     payload = await request.body()
     try:
         event_data = json.loads(payload.decode("utf-8"))
-        
+
         event_type = event_data.get("event")
         data = event_data.get("data", {})
 
@@ -54,15 +59,18 @@ async def handle_flutterwave_webhook(
             status = data.get("status")
             if status != "successful":
                 return {"status": "ignored", "message": "Transaction not successful"}
-                
+
             transaction_reference = data.get("tx_ref")
-            data.get("id") # The FW transaction ID
+            data.get("id")  # The FW transaction ID
             metadata = data.get("meta", {})
             payment_user_id = metadata.get("payment_user_id")
 
             if not payment_user_id:
                 logger.warning("No payment_user_id in webhook metadata")
-                return {"status": "ignored", "message": "No payment_user_id in metadata"}
+                return {
+                    "status": "ignored",
+                    "message": "No payment_user_id in metadata",
+                }
 
             try:
                 # We can verify by tx_ref
@@ -86,20 +94,26 @@ async def handle_flutterwave_webhook(
 
                     if discount_code_id and (course_id or product_id):
                         payment_user = db_session.exec(
-                            select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
+                            select(PaymentsUser).where(
+                                PaymentsUser.id == int(payment_user_id)
+                            )
                         ).first()
 
                         if payment_user and payment_user.discount_code_id:
                             try:
-                                increment_success = await increment_discount_usage_atomic(
-                                    int(discount_code_id), db_session
+                                increment_success = (
+                                    await increment_discount_usage_atomic(
+                                        int(discount_code_id), db_session
+                                    )
                                 )
                                 if increment_success:
                                     await record_discount_usage(
                                         discount_code_id=int(discount_code_id),
                                         user_id=int(metadata.get("user_id")),
                                         course_id=int(course_id) if course_id else None,
-                                        product_id=int(product_id) if product_id else None,
+                                        product_id=int(product_id)
+                                        if product_id
+                                        else None,
                                         payment_user_id=int(payment_user_id),
                                         original_amount=payment_user.original_amount,
                                         discount_amount=payment_user.discount_amount,
@@ -107,26 +121,42 @@ async def handle_flutterwave_webhook(
                                         db_session=db_session,
                                     )
                                 else:
-                                    logger.warning(f"Failed to increment discount usage for {discount_code_id}")
+                                    logger.warning(
+                                        f"Failed to increment discount usage for {discount_code_id}"
+                                    )
                             except Exception as e:
-                                logger.error(f"Error recording discount usage: {str(e)}")
+                                logger.error(
+                                    f"Error recording discount usage: {str(e)}"
+                                )
 
                     # Referral processing
                     payment_user = db_session.exec(
-                        select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
+                        select(PaymentsUser).where(
+                            PaymentsUser.id == int(payment_user_id)
+                        )
                     ).first()
-                    
+
                     if payment_user and payment_user.referral_code_id:
                         try:
                             from datetime import datetime
-                            from src.services.referrals.referral_commissions import create_commission_for_payment
+                            from src.services.referrals.referral_commissions import (
+                                create_commission_for_payment,
+                            )
                             from sqlmodel import and_
-                            from src.db.referrals.referral_tracking import ReferralTracking
+                            from src.db.referrals.referral_tracking import (
+                                ReferralTracking,
+                            )
 
-                            tracking = db_session.exec(select(ReferralTracking).where(
-                                and_(ReferralTracking.referred_user_id == payment_user.user_id,
-                                     ReferralTracking.referral_code_id == payment_user.referral_code_id)
-                            )).first()
+                            tracking = db_session.exec(
+                                select(ReferralTracking).where(
+                                    and_(
+                                        ReferralTracking.referred_user_id
+                                        == payment_user.user_id,
+                                        ReferralTracking.referral_code_id
+                                        == payment_user.referral_code_id,
+                                    )
+                                )
+                            ).first()
 
                             if tracking:
                                 await create_commission_for_payment(
@@ -140,20 +170,35 @@ async def handle_flutterwave_webhook(
                                     db_session=db_session,
                                 )
                         except Exception as e:
-                            logger.error(f"Error creating referral commission: {str(e)}")
+                            logger.error(
+                                f"Error creating referral commission: {str(e)}"
+                            )
 
-                    return {"status": "success", "message": "Payment processed successfully"}
+                    return {
+                        "status": "success",
+                        "message": "Payment processed successfully",
+                    }
                 else:
-                    return {"status": "ignored", "message": "Transaction verification failed"}
+                    return {
+                        "status": "ignored",
+                        "message": "Transaction verification failed",
+                    }
             except Exception as e:
                 logger.error(f"Error verifying transaction: {str(e)}")
-                raise HTTPException(status_code=400, detail=f"Error verifying transaction: {str(e)}")
+                raise HTTPException(
+                    status_code=400, detail=f"Error verifying transaction: {str(e)}"
+                )
 
-        elif event_type == "subscription.created" or event_type == "subscription.renewed":
-             # We might have separate subscription logic, similar to paystack
-             pass
+        elif (
+            event_type == "subscription.created" or event_type == "subscription.renewed"
+        ):
+            # We might have separate subscription logic, similar to paystack
+            pass
         else:
-             return {"status": "ignored", "message": f"Unhandled event type: {event_type}"}
+            return {
+                "status": "ignored",
+                "message": f"Unhandled event type: {event_type}",
+            }
 
         return {"status": "ok"}
     except json.JSONDecodeError as e:
@@ -161,4 +206,6 @@ async def handle_flutterwave_webhook(
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:
         logger.error(f"Error processing Flutterwave webhook: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing webhook: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing webhook: {str(e)}"
+        )

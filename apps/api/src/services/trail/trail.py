@@ -98,12 +98,14 @@ async def get_user_trails(
         cohort_enroll = db_session.exec(
             select(CohortEnrollment).where(
                 CohortEnrollment.user_id == trail_run.user_id,
-                CohortEnrollment.course_id == trail_run.course_id
+                CohortEnrollment.course_id == trail_run.course_id,
             )
         ).first()
         if cohort_enroll:
             trail_run.is_locked = cohort_enroll.is_locked
-            cohort = db_session.exec(select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)).first()
+            cohort = db_session.exec(
+                select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)
+            ).first()
             if cohort:
                 trail_run.cohort_start_date = cohort.start_date
 
@@ -265,12 +267,14 @@ async def get_user_trail_with_orgid(
         cohort_enroll = db_session.exec(
             select(CohortEnrollment).where(
                 CohortEnrollment.user_id == trail_run.user_id,
-                CohortEnrollment.course_id == trail_run.course_id
+                CohortEnrollment.course_id == trail_run.course_id,
             )
         ).first()
         if cohort_enroll:
             trail_run.is_locked = cohort_enroll.is_locked
-            cohort = db_session.exec(select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)).first()
+            cohort = db_session.exec(
+                select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)
+            ).first()
             if cohort:
                 trail_run.cohort_start_date = cohort.start_date
 
@@ -486,8 +490,7 @@ async def add_activity_to_trail(
     # Only enforce locks on paid courses (assuming paid courses have cohort enrollments)
     cohort_enrollment = db_session.exec(
         select(CohortEnrollment).where(
-            CohortEnrollment.user_id == user.id,
-            CohortEnrollment.course_id == course.id
+            CohortEnrollment.user_id == user.id, CohortEnrollment.course_id == course.id
         )
     ).first()
 
@@ -496,12 +499,13 @@ async def add_activity_to_trail(
         is_editor = False
         try:
             from src.security.courses_security import courses_rbac_check
+
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, user, "update", db_session
             )
         except Exception:
             pass
-            
+
         if not is_editor:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

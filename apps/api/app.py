@@ -293,7 +293,7 @@ class CORSStaticFiles(StaticFiles):
             response = Response(status_code=204)
         else:
             response = await super().get_response(path, scope)
-        
+
         # Add CORS header so browser fetch() cross-origin works
         origin = next((v.decode() for k, v in scope["headers"] if k == b"origin"), None)
         if origin and origin in learnhouse_config.hosting_config.allowed_origins:
@@ -302,6 +302,7 @@ class CORSStaticFiles(StaticFiles):
             response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
             response.headers["Access-Control-Allow-Headers"] = "*"
         return response
+
 
 app.mount("/content", CORSStaticFiles(directory="content"), name="content")
 

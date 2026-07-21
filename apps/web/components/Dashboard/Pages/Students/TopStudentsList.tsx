@@ -4,7 +4,15 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 import { getTopStudents } from '@services/dashboard/students'
 import UserAvatar from '@components/Objects/UserAvatar'
-import { Trophy, Star, Medal, Calendar, Download, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Trophy,
+  Star,
+  Medal,
+  Calendar,
+  Download,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import Link from 'next/link'
 import jsPDF from 'jspdf'
@@ -25,28 +33,33 @@ function TopStudentsList() {
   )
 
   const formatTime = (seconds: number) => {
-    if (!seconds) return '—';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
+    if (!seconds) return '—'
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    if (h > 0) return `${h}h ${m}m`
+    return `${m}m`
   }
 
   const handleDownloadPdf = async () => {
-    if (!org) return;
-    setIsGeneratingPdf(true);
+    if (!org) return
+    setIsGeneratingPdf(true)
     try {
       // Fetch top 1000 to get everyone for the selected timeframe
-      const reportData = await getTopStudents(org.id, access_token, 1000, daysFilter);
-      if (!reportData || !reportData.students) return;
+      const reportData = await getTopStudents(
+        org.id,
+        access_token,
+        1000,
+        daysFilter
+      )
+      if (!reportData || !reportData.students) return
 
-      const doc = new jsPDF();
-      
-      const timeframeText = daysFilter ? `Last ${daysFilter} Days` : 'All Time';
-      doc.setFontSize(16);
-      doc.text(`Student Progress Report (${timeframeText})`, 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+      const doc = new jsPDF()
+
+      const timeframeText = daysFilter ? `Last ${daysFilter} Days` : 'All Time'
+      doc.setFontSize(16)
+      doc.text(`Student Progress Report (${timeframeText})`, 14, 15)
+      doc.setFontSize(10)
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22)
 
       const tableData = reportData.students.map((s: any, idx: number) => [
         idx + 1,
@@ -54,22 +67,24 @@ function TopStudentsList() {
         `@${s.username}`,
         `${s.average_progress}%`,
         s.total_points,
-        formatTime(s.total_time_spent_seconds)
-      ]);
+        formatTime(s.total_time_spent_seconds),
+      ])
 
       autoTable(doc, {
         startY: 30,
-        head: [['Rank', 'Name', 'Username', 'Progress', 'Points', 'Time Spent']],
+        head: [
+          ['Rank', 'Name', 'Username', 'Progress', 'Points', 'Time Spent'],
+        ],
         body: tableData,
-      });
+      })
 
-      doc.save(`Student_Report_${timeframeText.replace(/ /g, '_')}.pdf`);
+      doc.save(`Student_Report_${timeframeText.replace(/ /g, '_')}.pdf`)
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setIsGeneratingPdf(false);
+      setIsGeneratingPdf(false)
     }
-  };
+  }
 
   if (isLoading || !data?.students) return null
 
@@ -84,7 +99,7 @@ function TopStudentsList() {
           <Trophy className="text-yellow-500" size={24} />
           <h2 className="text-lg font-bold">Top Students</h2>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <button
             onClick={handleDownloadPdf}
@@ -98,7 +113,11 @@ function TopStudentsList() {
             <Calendar className="text-gray-400 dark:text-white/50" size={16} />
             <select
               value={daysFilter || ''}
-              onChange={(e) => setDaysFilter(e.target.value ? Number(e.target.value) : undefined)}
+              onChange={(e) =>
+                setDaysFilter(
+                  e.target.value ? Number(e.target.value) : undefined
+                )
+              }
               className="text-sm border border-gray-200 rounded-md py-1.5 px-2 bg-white text-gray-700 dark:bg-white/5 dark:border-white/10 dark:text-white/80 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
             >
               <option value="">All Time</option>
@@ -173,7 +192,7 @@ function TopStudentsList() {
           </Link>
         ))}
       </div>
-      
+
       {sortedStudents.length >= 5 && (
         <div className="mt-6 flex justify-center">
           {limit === 5 ? (

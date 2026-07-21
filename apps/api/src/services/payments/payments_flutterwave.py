@@ -28,7 +28,16 @@ FLUTTERWAVE_API_BASE_URL = "https://api.flutterwave.com/v3"
 
 # Supported currencies
 FLUTTERWAVE_SUPPORTED_CURRENCIES = {
-    "NGN", "USD", "GHS", "ZAR", "KES", "XOF", "XAF", "GBP", "EUR", "RWF"
+    "NGN",
+    "USD",
+    "GHS",
+    "ZAR",
+    "KES",
+    "XOF",
+    "XAF",
+    "GBP",
+    "EUR",
+    "RWF",
 }
 
 FLUTTERWAVE_CURRENCY_INFO = {
@@ -38,11 +47,16 @@ FLUTTERWAVE_CURRENCY_INFO = {
     "ZAR": {"name": "South African Rand", "symbol": "R", "subunit": "Cent"},
     "KES": {"name": "Kenyan Shilling", "symbol": "Ksh.", "subunit": "Cent"},
     "XOF": {"name": "West African CFA Franc", "symbol": "CFA", "subunit": "Centime"},
-    "XAF": {"name": "Central African CFA Franc", "symbol": "FCFA", "subunit": "Centime"},
+    "XAF": {
+        "name": "Central African CFA Franc",
+        "symbol": "FCFA",
+        "subunit": "Centime",
+    },
     "GBP": {"name": "British Pound", "symbol": "£", "subunit": "Penny"},
     "EUR": {"name": "Euro", "symbol": "€", "subunit": "Cent"},
     "RWF": {"name": "Rwandan Franc", "symbol": "FRw", "subunit": "Cent"},
 }
+
 
 def get_supported_currencies() -> dict:
     return {
@@ -54,7 +68,9 @@ async def get_flutterwave_secret_key() -> str:
     config = get_learnhouse_config()
     key = config.payments_config.flutterwave.flutterwave_secret_key
     if not key:
-        raise HTTPException(status_code=400, detail="Flutterwave secret key not configured")
+        raise HTTPException(
+            status_code=400, detail="Flutterwave secret key not configured"
+        )
     return key
 
 
@@ -62,7 +78,9 @@ async def get_flutterwave_public_key() -> str:
     config = get_learnhouse_config()
     key = config.payments_config.flutterwave.flutterwave_public_key
     if not key:
-        raise HTTPException(status_code=400, detail="Flutterwave public key not configured")
+        raise HTTPException(
+            status_code=400, detail="Flutterwave public key not configured"
+        )
     return key
 
 
@@ -84,7 +102,9 @@ async def make_flutterwave_request(
     async with httpx.AsyncClient() as client:
         try:
             logger.info(f"Making Flutterwave {method} request to {endpoint}")
-            with sentry_sdk.start_span(op="payment.flutterwave", description=f"{method.upper()} {endpoint}"):
+            with sentry_sdk.start_span(
+                op="payment.flutterwave", description=f"{method.upper()} {endpoint}"
+            ):
                 if method.upper() == "GET":
                     response = await client.get(url, headers=headers)
                 elif method.upper() == "POST":
@@ -94,7 +114,9 @@ async def make_flutterwave_request(
                 elif method.upper() == "DELETE":
                     response = await client.delete(url, headers=headers)
                 else:
-                    raise HTTPException(status_code=400, detail=f"Unsupported HTTP method: {method}")
+                    raise HTTPException(
+                        status_code=400, detail=f"Unsupported HTTP method: {method}"
+                    )
 
             if response.status_code >= 400:
                 error_data = {}
@@ -103,19 +125,27 @@ async def make_flutterwave_request(
                 except Exception:
                     pass
                 msg = error_data.get("message", response.text)
-                raise HTTPException(status_code=response.status_code, detail=f"Flutterwave API error: {msg}")
-                
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Flutterwave API error: {msg}",
+                )
+
             result = response.json()
             if result.get("status") not in ["success", "error"]:
-                 # Flutterwave often returns 'success' or 'error' in status
-                 pass
-            
+                # Flutterwave often returns 'success' or 'error' in status
+                pass
+
             return result.get("data", result)
-            
+
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=f"Flutterwave API error: {e.response.text}")
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Flutterwave API error: {e.response.text}",
+            )
         except httpx.RequestError as e:
-            raise HTTPException(status_code=500, detail=f"Error connecting to Flutterwave: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Error connecting to Flutterwave: {str(e)}"
+            )
 
 
 async def create_flutterwave_customer(
@@ -125,7 +155,7 @@ async def create_flutterwave_customer(
     phone: str | None = None,
     metadata: dict | None = None,
 ) -> dict:
-    # Flutterwave creates customers automatically on first transaction. 
+    # Flutterwave creates customers automatically on first transaction.
     # We can just return a dummy customer representation for internal compatibility.
     return {
         "email": email,
@@ -133,7 +163,7 @@ async def create_flutterwave_customer(
         "last_name": last_name,
         "phone": phone,
         "metadata": metadata,
-        "customer_code": email  # use email as identifier
+        "customer_code": email,  # use email as identifier
     }
 
 
@@ -155,19 +185,22 @@ async def create_flutterwave_product(
             "monthly": "monthly",
             "yearly": "yearly",
             "weekly": "weekly",
-            "daily": "daily"
+            "daily": "daily",
         }
-        interval = interval_map.get(product_data.interval.value if product_data.interval else "monthly", "monthly")
-        
+        interval = interval_map.get(
+            product_data.interval.value if product_data.interval else "monthly",
+            "monthly",
+        )
+
         plan_data = {
             "amount": float(product_data.amount),
             "name": product_data.name,
             "interval": interval,
-            "duration": 0, # 0 means run indefinitely
+            "duration": 0,  # 0 means run indefinitely
         }
 
         plan = await make_flutterwave_request("POST", "/payment-plans", plan_data)
-        
+
         plan_id = str(plan.get("id"))
         return {
             "id": plan_id,
@@ -191,9 +224,9 @@ async def archive_flutterwave_product(
     if product_id.isdigit():
         # It's a payment plan
         try:
-             await make_flutterwave_request("PUT", f"/payment-plans/{product_id}/cancel")
+            await make_flutterwave_request("PUT", f"/payment-plans/{product_id}/cancel")
         except Exception:
-             pass
+            pass
     return {"id": product_id, "active": False}
 
 
@@ -205,14 +238,19 @@ async def update_flutterwave_product(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> dict:
-    if product_data.product_type == PaymentProductTypeEnum.SUBSCRIPTION and product_id.isdigit():
+    if (
+        product_data.product_type == PaymentProductTypeEnum.SUBSCRIPTION
+        and product_id.isdigit()
+    ):
         interval = product_data.interval.value if product_data.interval else "monthly"
         plan_data = {
             "name": product_data.name,
             "amount": float(product_data.amount),
-            "interval": interval
+            "interval": interval,
         }
-        updated_plan = await make_flutterwave_request("PUT", f"/payment-plans/{product_id}", plan_data)
+        updated_plan = await make_flutterwave_request(
+            "PUT", f"/payment-plans/{product_id}", plan_data
+        )
         return updated_plan
     else:
         return {"id": product_id}
@@ -236,7 +274,9 @@ async def initialize_transaction(
     current_user: PublicUser | AnonymousUser = None,
     db_session: Session = None,
 ) -> dict:
-    with sentry_sdk.start_span(op="payment.initialize", description="Initialize Flutterwave transaction"):
+    with sentry_sdk.start_span(
+        op="payment.initialize", description="Initialize Flutterwave transaction"
+    ):
         check_limits_with_usage("payments", org_id, db_session)
 
     statement = select(PaymentsProduct).where(
@@ -247,6 +287,7 @@ async def initialize_transaction(
         raise HTTPException(status_code=404, detail="Product not found")
 
     from src.db.payments.payments import PaymentsConfig
+
     config_statement = select(PaymentsConfig).where(
         PaymentsConfig.org_id == org_id,
         PaymentsConfig.active == True,
@@ -270,18 +311,32 @@ async def initialize_transaction(
 
     if discount_code:
         try:
-            (discount_code_obj, discount_amount, final_amount) = await validate_discount_code(
-                code=discount_code, org_id=org_id, user_id=current_user.id,
-                course_id=course_id, product_id=product_id, original_amount=original_amount,
-                db_session=db_session, check_usage=True,
+            (
+                discount_code_obj,
+                discount_amount,
+                final_amount,
+            ) = await validate_discount_code(
+                code=discount_code,
+                org_id=org_id,
+                user_id=current_user.id,
+                course_id=course_id,
+                product_id=product_id,
+                original_amount=original_amount,
+                db_session=db_session,
+                check_usage=True,
             )
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Discount code error: {str(e)}")
+            raise HTTPException(
+                status_code=400, detail=f"Discount code error: {str(e)}"
+            )
 
     referral_code_id = None
     try:
         from src.db.referrals.referral_tracking import ReferralTracking
-        tracking_statement = select(ReferralTracking).where(ReferralTracking.referred_user_id == current_user.id)
+
+        tracking_statement = select(ReferralTracking).where(
+            ReferralTracking.referred_user_id == current_user.id
+        )
         tracking = db_session.exec(tracking_statement).first()
         if tracking:
             referral_code_id = tracking.referral_code_id
@@ -310,22 +365,44 @@ async def initialize_transaction(
 
     if amount_to_charge <= 0:
         payment_user = await create_payment_user(
-            request=request, org_id=org_id, user_id=current_user.id,
-            product_id=product_id, status=PaymentStatusEnum.COMPLETED,
-            provider_data={"bypass_reason": "free_product", "selected_currency": selected_currency},
-            current_user=InternalUser(), db_session=db_session, referral_code_id=referral_code_id,
+            request=request,
+            org_id=org_id,
+            user_id=current_user.id,
+            product_id=product_id,
+            status=PaymentStatusEnum.COMPLETED,
+            provider_data={
+                "bypass_reason": "free_product",
+                "selected_currency": selected_currency,
+            },
+            current_user=InternalUser(),
+            db_session=db_session,
+            referral_code_id=referral_code_id,
         )
         separator = "&" if "?" in redirect_uri else "?"
         success_url = f"{redirect_uri}{separator}payment_success=true&reference=free_{payment_user.id}"
-        return {"checkout_url": success_url, "reference": f"free_{payment_user.id}", "access_code": "free_bypass"}
+        return {
+            "checkout_url": success_url,
+            "reference": f"free_{payment_user.id}",
+            "access_code": "free_bypass",
+        }
 
-    customer = await create_flutterwave_customer(current_user.email, current_user.first_name, current_user.last_name)
+    customer = await create_flutterwave_customer(
+        current_user.email, current_user.first_name, current_user.last_name
+    )
 
     payment_user = await create_payment_user(
-        request=request, org_id=org_id, user_id=current_user.id,
-        product_id=product_id, status=PaymentStatusEnum.PENDING,
-        provider_data={"flutterwave_customer": customer, "customer_code": customer.get("customer_code")},
-        current_user=InternalUser(), db_session=db_session, referral_code_id=referral_code_id,
+        request=request,
+        org_id=org_id,
+        user_id=current_user.id,
+        product_id=product_id,
+        status=PaymentStatusEnum.PENDING,
+        provider_data={
+            "flutterwave_customer": customer,
+            "customer_code": customer.get("customer_code"),
+        },
+        current_user=InternalUser(),
+        db_session=db_session,
+        referral_code_id=referral_code_id,
     )
 
     if discount_code_obj:
@@ -342,7 +419,7 @@ async def initialize_transaction(
 
     transaction_data = {
         "tx_ref": tx_ref,
-        "amount": str(amount_to_charge), # Flutterwave uses decimal amount, not subunit
+        "amount": str(amount_to_charge),  # Flutterwave uses decimal amount, not subunit
         "currency": selected_currency,
         "redirect_url": redirect_uri,
         "customer": {
@@ -353,23 +430,32 @@ async def initialize_transaction(
     }
 
     if org_payment_config and org_payment_config.provider_specific_id:
-        transaction_data["subaccounts"] = [{"id": org_payment_config.provider_specific_id}]
+        transaction_data["subaccounts"] = [
+            {"id": org_payment_config.provider_specific_id}
+        ]
 
     if product.product_type == PaymentProductTypeEnum.SUBSCRIPTION:
         if product.provider_product_id:
             transaction_data["payment_plan"] = product.provider_product_id
 
     try:
-        transaction_response = await make_flutterwave_request("POST", "/payments", transaction_data)
+        transaction_response = await make_flutterwave_request(
+            "POST", "/payments", transaction_data
+        )
         authorization_url = transaction_response.get("link")
-        
-        if not authorization_url:
-            raise HTTPException(status_code=400, detail="Failed to get authorization URL from Flutterwave")
 
-        payment_user.provider_specific_data.update({
-            "flutterwave_tx_ref": tx_ref,
-            "selected_currency": selected_currency,
-        })
+        if not authorization_url:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to get authorization URL from Flutterwave",
+            )
+
+        payment_user.provider_specific_data.update(
+            {
+                "flutterwave_tx_ref": tx_ref,
+                "selected_currency": selected_currency,
+            }
+        )
         db_session.add(payment_user)
         db_session.commit()
 
@@ -380,7 +466,9 @@ async def initialize_transaction(
 
     except Exception as e:
         if payment_user and payment_user.id:
-            await delete_payment_user(request, org_id, payment_user.id, InternalUser(), db_session)
+            await delete_payment_user(
+                request, org_id, payment_user.id, InternalUser(), db_session
+            )
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -389,9 +477,11 @@ async def verify_transaction(reference: str) -> dict:
     # If reference passed here is tx_ref, we need a different endpoint: /transactions/verify_by_reference?tx_ref={reference}
     # Let's use verify_by_reference
     try:
-         data = await make_flutterwave_request("GET", f"/transactions/verify_by_reference?tx_ref={reference}")
-         return {"status": "success", "data": data}
+        data = await make_flutterwave_request(
+            "GET", f"/transactions/verify_by_reference?tx_ref={reference}"
+        )
+        return {"status": "success", "data": data}
     except HTTPException as e:
-         if e.status_code == 404:
-             return {"status": "error", "message": "Transaction not found"}
-         raise
+        if e.status_code == 404:
+            return {"status": "error", "message": "Transaction not found"}
+        raise

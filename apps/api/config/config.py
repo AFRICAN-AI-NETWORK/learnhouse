@@ -257,7 +257,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
     # Safely get Flutterwave config from YAML
     payments_config = yaml_config.get("payments_config", {}) if yaml_config else {}
     flutterwave_config = (
-        payments_config.get("flutterwave", {}) if isinstance(payments_config, dict) else {}
+        payments_config.get("flutterwave", {})
+        if isinstance(payments_config, dict)
+        else {}
     )
 
     flutterwave_secret_key = env_flutterwave_secret_key or flutterwave_config.get(
@@ -266,8 +268,9 @@ def get_learnhouse_config() -> LearnHouseConfig:
     flutterwave_public_key = env_flutterwave_public_key or flutterwave_config.get(
         "flutterwave_public_key"
     )
-    flutterwave_webhook_secret = env_flutterwave_webhook_secret or flutterwave_config.get(
-        "flutterwave_webhook_secret"
+    flutterwave_webhook_secret = (
+        env_flutterwave_webhook_secret
+        or flutterwave_config.get("flutterwave_webhook_secret")
     )
 
     # Create HostingConfig and DatabaseConfig objects
