@@ -1786,6 +1786,7 @@
         "hint": "Hint",
         "reference_document": "Reference Document",
         "revision_feedback_placeholder": "Tell the learner what to revise",
+        "grade_feedback_placeholder": "Optional feedback for the learner",
         "actions": {
           "reject": "Request Revision",
           "set_final_grade": "Set final grade",
