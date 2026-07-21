@@ -113,6 +113,7 @@ try:
         process_commission_eligibility_job,
         process_payout_requests_job,
     )
+    from src.jobs.notification_jobs import run_notification_email_job
 
     _APSCHEDULER_AVAILABLE = True
 except ImportError as e:
@@ -149,8 +150,15 @@ async def start_scheduler():
     REFERRAL_COMMISSION_CHECK_HOUR = int(
         os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0")
     )
+    NOTIFICATION_PROCESSOR_ENABLED = (
+        os.getenv("NOTIFICATION_PROCESSOR_ENABLED", "true").lower() == "true"
+    )
 
-    if not (WAITLIST_PROCESSOR_ENABLED or REFERRAL_PROCESSOR_ENABLED):
+    if not (
+        WAITLIST_PROCESSOR_ENABLED
+        or REFERRAL_PROCESSOR_ENABLED
+        or NOTIFICATION_PROCESSOR_ENABLED
+    ):
         print("  [X] Background jobs disabled by environment config")
         return
 
@@ -210,6 +218,20 @@ async def start_scheduler():
             trigger=CronTrigger.from_crontab("*/5 * * * *"),
             id="referral_payout_processing",
             name="Process Payout Requests",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            jitter=10,
+            misfire_grace_time=120,
+        )
+
+    # ── Notification jobs ──────────────────────────────────────────
+    if NOTIFICATION_PROCESSOR_ENABLED:
+        scheduler.add_job(
+            run_notification_email_job,
+            trigger=CronTrigger.from_crontab("*/5 * * * *"),
+            id="notification_email_retry",
+            name="Send/Retry Pending Notification Emails",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
