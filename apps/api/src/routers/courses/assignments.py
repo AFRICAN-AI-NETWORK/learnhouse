@@ -1,6 +1,8 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, UploadFile, HTTPException
 from src.db.courses.assignments import (
     AssignmentCreate,
+    AssignmentGradeCreate,
     AssignmentRead,
     AssignmentTaskCreate,
     AssignmentTaskSubmissionUpdate,
@@ -498,6 +500,7 @@ async def api_final_grade_submission(
     request: Request,
     assignment_uuid: str,
     user_id: str,
+    grade_data: Optional[AssignmentGradeCreate] = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ):
@@ -506,7 +509,12 @@ async def api_final_grade_submission(
     """
 
     return await grade_assignment_submission(
-        request, user_id, assignment_uuid, current_user, db_session
+        request,
+        user_id,
+        assignment_uuid,
+        current_user,
+        db_session,
+        feedback=grade_data.feedback if grade_data else None,
     )
 
 

@@ -1,4 +1,6 @@
+import logging
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 from fastapi import HTTPException, Request, UploadFile
 from sqlmodel import Session, select
@@ -48,6 +50,14 @@ from src.services.courses.certifications import (
 from src.services.courses.grade import compute_and_store_trail_step_grade
 from src.security.courses_security import courses_rbac_check_for_assignments
 from src.services.code_execution import execute_and_grade
+from src.services.notifications import notification_service
+
+logger = logging.getLogger(__name__)
+
+
+def _display_name(user: PublicUser | User) -> str:
+    full_name = f"{user.first_name} {user.last_name}".strip()
+    return full_name or user.username
 
 
 async def perform_auto_grading(
@@ -2047,6 +2057,27 @@ async def reject_assignment_submission(
     db_session.commit()
     db_session.refresh(assignment_user_submission)
 
+    # Notification is a side effect of the review action, not part of it —
+    # a failure here must never turn a successful revision request into a
+    # 500 for the instructor.
+    try:
+        await notification_service.notify_retake_requested(
+            db_session,
+            user_id=assignment_user_submission.user_id,
+            org_id=assignment.org_id,
+            assignment_id=assignment.id,
+            assignment_uuid=assignment.assignment_uuid,
+            assignment_title=assignment.title,
+            instructor_name=_display_name(current_user),
+            feedback=revision_object.submission_feedback,
+        )
+    except Exception as e:
+        logger.warning(
+            "Failed to send retake_requested notification for assignment %s: %s",
+            assignment.assignment_uuid,
+            e,
+        )
+
     return AssignmentUserSubmissionRead.model_validate(assignment_user_submission)
 
 
@@ -2109,6 +2140,7 @@ async def grade_assignment_submission(
     assignment_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
+    feedback: Optional[str] = None,
 ):
     # SECURITY: This function should only be accessible by course owners or instructors
     # Check if assignment exists
@@ -2162,6 +2194,8 @@ async def grade_assignment_submission(
 
     # Update the assignment user submission
     assignment_user_submission.grade = grade
+    if feedback is not None:
+        assignment_user_submission.submission_feedback = feedback
 
     # Insert Assignment User Submission in DB
     db_session.add(assignment_user_submission)
@@ -2175,6 +2209,44 @@ async def grade_assignment_submission(
     db_session.add(assignment_user_submission)
     db_session.commit()
     db_session.refresh(assignment_user_submission)
+
+    # Notification (and, for capstone-flagged assignments, a re-check of
+    # certificate eligibility) is a side effect of grading, not part of it —
+    # neither must ever turn a successful grade save into a 500.
+    try:
+        max_grade_statement = select(AssignmentTask.max_grade_value).where(
+            AssignmentTask.assignment_id == assignment.id
+        )
+        max_grade = sum(db_session.exec(max_grade_statement).all())
+
+        unlocks_certificate = False
+        if assignment.required_for_certificate:
+            unlocks_certificate = await check_course_completion_and_create_certificate(
+                request,
+                assignment_user_submission.user_id,
+                assignment.course_id,
+                db_session,
+            )
+
+        await notification_service.notify_assignment_reviewed(
+            db_session,
+            user_id=assignment_user_submission.user_id,
+            org_id=assignment.org_id,
+            assignment_id=assignment.id,
+            assignment_uuid=assignment.assignment_uuid,
+            assignment_title=assignment.title,
+            instructor_name=_display_name(current_user),
+            grade=grade,
+            max_grade=max_grade,
+            feedback=feedback,
+            unlocks_certificate=unlocks_certificate,
+        )
+    except Exception as e:
+        logger.warning(
+            "Failed to send assignment_reviewed notification for assignment %s: %s",
+            assignment.assignment_uuid,
+            e,
+        )
 
     # return OK
     return {
