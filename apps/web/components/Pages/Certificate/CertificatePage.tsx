@@ -302,11 +302,13 @@ const CertificatePage: React.FC<CertificatePageProps> = ({
         <div className="text-center max-w-md mx-auto p-6">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-yellow-800 mb-2">
-              No Certificate Found
+              Certificate Not Yet Available
             </h2>
             <p className="text-yellow-600 mb-4">
-              No certificate is available for this course. Please contact your
-              instructor for more information.
+              Your certificate isn't ready yet. This usually means the course
+              isn't fully complete, or a required assignment is still awaiting
+              instructor grading. Contact your instructor if you believe this is
+              a mistake.
             </p>
             <Link
               href={getUriWithOrg(orgslug, '') + `/course/${courseid}`}
