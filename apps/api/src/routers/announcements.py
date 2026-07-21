@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, select, desc
 from src.core.events.database import get_db_session
@@ -12,6 +14,8 @@ from src.security.auth import get_current_user
 from src.db.users import PublicUser
 from src.services.orgs.orgs import get_organization_by_slug
 from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -81,6 +85,34 @@ async def create_announcement(
     db_session.add(new_announcement)
     db_session.commit()
     db_session.refresh(new_announcement)
+
+    # Real-time nudge for currently-online org members only — no per-user
+    # notification rows are created here (see the notification system's
+    # design decision to keep Announcements a parallel, sparse-by-design
+    # backend rather than fan out an eager row per member). Offline users
+    # still see it via the existing GET /announcements list, unchanged.
+    if new_announcement.is_active:
+        try:
+            from src.services.notifications.fanout_jobs import sync_fanout_app_update
+            from src.services.notifications.scheduling import enqueue_job
+
+            enqueue_job(
+                f"app_update_notif_{new_announcement.id}",
+                sync_fanout_app_update,
+                [
+                    new_announcement.id,
+                    org.id,
+                    new_announcement.title,
+                    new_announcement.content,
+                ],
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to schedule app_update fan-out for announcement %s: %s",
+                new_announcement.id,
+                e,
+            )
+
     return new_announcement
 
 
