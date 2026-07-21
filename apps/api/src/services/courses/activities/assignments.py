@@ -1354,6 +1354,8 @@ async def read_user_assignment_task_submissions_me(
             AssignmentTaskTypeEnum.FORM,
         ):
             default_task_submission = {"submissions": []}
+        elif assignment_task.assignment_type == AssignmentTaskTypeEnum.LINK_SUBMISSION:
+            default_task_submission = {"linkUrl": ""}
 
         return AssignmentTaskSubmissionRead.model_validate(
             {
