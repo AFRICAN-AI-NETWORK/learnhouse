@@ -1,5 +1,24 @@
 // Utility helpers for sounds, browser notifications, and permission requests.
 
+import {
+  CheckCircle2,
+  BookOpen,
+  FileText,
+  Megaphone,
+  RotateCcw,
+  type LucideIcon,
+} from 'lucide-react'
+import { NotificationType } from '@/types/notifications'
+
+/** Small type badge icon for a notification, used by NotificationBell. */
+export const getNotificationIcon = (type: NotificationType): LucideIcon => {
+  if (type === 'assignment_reviewed') return CheckCircle2
+  if (type === 'retake_requested') return RotateCcw
+  if (type === 'chapter_added') return BookOpen
+  if (type === 'activity_added') return FileText
+  return Megaphone
+}
+
 export const playNotificationSound = () => {
   try {
     const audio = new Audio('/sounds/notification.mp3')
