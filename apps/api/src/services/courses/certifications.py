@@ -12,11 +12,51 @@ from src.db.courses.certifications import (
     CertificateUserRead,
 )
 from src.db.courses.courses import Course
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentUserSubmission,
+    AssignmentUserSubmissionStatus,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_runs import StatusEnum, TrailRun
 from src.db.trail_steps import TrailStep
 from src.db.users import PublicUser, AnonymousUser
 from src.security.courses_security import courses_rbac_check_for_certifications
+
+
+def has_ungraded_required_assignments(
+    user_id: int, course_id: int, db_session: Session
+) -> bool:
+    """
+    True if the course has any assignment flagged required_for_certificate
+    that this user hasn't been graded on yet (missing submission, or
+    submitted but not yet GRADED).
+
+    Kept as its own function — separate from the completion/email-verified
+    checks — so the capstone gate can be tested and reasoned about on its
+    own.
+    """
+    required_assignments = db_session.exec(
+        select(Assignment).where(
+            Assignment.course_id == course_id,
+            Assignment.required_for_certificate == True,  # noqa: E712
+        )
+    ).all()
+
+    for assignment in required_assignments:
+        submission = db_session.exec(
+            select(AssignmentUserSubmission).where(
+                AssignmentUserSubmission.assignment_id == assignment.id,
+                AssignmentUserSubmission.user_id == user_id,
+            )
+        ).first()
+        if (
+            not submission
+            or submission.submission_status != AssignmentUserSubmissionStatus.GRADED
+        ):
+            return True
+
+    return False
 
 
 ####################################################
@@ -532,6 +572,11 @@ async def check_course_completion_and_create_certificate(
 
         # If user doesn't exist or isn't email_verified, do not generate certificate
         if not user or not user.email_verified:
+            return False
+
+        # Capstone gate: any assignment flagged required_for_certificate must
+        # be graded (not just submitted) before a certificate can issue.
+        if has_ungraded_required_assignments(user_id, course_id, db_session):
             return False
 
         # All activities completed, check if certification exists for this course
