@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import List
 from uuid import uuid4
@@ -16,6 +17,8 @@ from src.db.courses.chapters import (
 from src.db.courses.courses import Course
 from fastapi import HTTPException, status, Request
 from src.security.courses_security import courses_rbac_check_for_chapters
+
+logger = logging.getLogger(__name__)
 
 
 ####################################################
@@ -170,6 +173,8 @@ async def update_chapter(
         request, course.course_uuid, current_user, "update", db_session
     )
 
+    was_published = chapter.published
+
     # Update only the fields that were passed in
     for var, value in vars(chapter_object).items():
         if value is not None:
@@ -194,6 +199,28 @@ async def update_chapter(
 
     db_session.commit()
     db_session.refresh(chapter)
+
+    # Notify enrolled students the first time a chapter becomes published.
+    # Fanned out as a background job (never inline) since course enrollment
+    # can be large — see src.services.notifications.fanout_jobs. This is a
+    # side effect of publishing, not part of it: a scheduling failure must
+    # never turn a successful publish into an error for the instructor.
+    if not was_published and chapter.published:
+        try:
+            from src.services.notifications.fanout_jobs import (
+                sync_fanout_chapter_added,
+            )
+            from src.services.notifications.scheduling import enqueue_job
+
+            enqueue_job(
+                f"chapter_notif_{chapter.id}", sync_fanout_chapter_added, [chapter.id]
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to schedule chapter_added fan-out for chapter %s: %s",
+                chapter.id,
+                e,
+            )
 
     if chapter:
         chapter = await get_chapter(

@@ -1,3 +1,4 @@
+import logging
 from sqlmodel import Session, select
 from src.db.courses.courses import Course
 from src.db.courses.chapters import Chapter
@@ -20,6 +21,8 @@ from src.security.courses_security import courses_rbac_check_for_activities
 from src.db.organization_config import OrganizationConfig
 from src.services.integrations.youtube import create_automated_youtube_session
 import sys
+
+logger = logging.getLogger(__name__)
 
 print("[ACTIVITIES_SERVICE] Module loaded!", file=sys.stderr, flush=True)
 
@@ -257,6 +260,8 @@ async def update_activity(
         request, course.course_uuid, current_user, "update", db_session
     )
 
+    was_published = activity.published
+
     # Update only the fields that were passed in
     for var, value in vars(activity_object).items():
         if value is not None:
@@ -265,6 +270,30 @@ async def update_activity(
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(activity)
+
+    # Notify enrolled students the first time an activity becomes published.
+    # Fanned out as a background job (never inline) since course enrollment
+    # can be large — see src.services.notifications.fanout_jobs. This is a
+    # side effect of publishing, not part of it: a scheduling failure must
+    # never turn a successful publish into an error for the instructor.
+    if not was_published and activity.published:
+        try:
+            from src.services.notifications.fanout_jobs import (
+                sync_fanout_activity_added,
+            )
+            from src.services.notifications.scheduling import enqueue_job
+
+            enqueue_job(
+                f"activity_notif_{activity.id}",
+                sync_fanout_activity_added,
+                [activity.id],
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to schedule activity_added fan-out for activity %s: %s",
+                activity.id,
+                e,
+            )
 
     activity = ActivityRead.model_validate(activity)
 
