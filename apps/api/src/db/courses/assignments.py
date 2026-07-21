@@ -93,6 +93,7 @@ class AssignmentTaskTypeEnum(str, Enum):
     QUIZ = "QUIZ"
     FORM = "FORM"
     CODE_EDITOR = "CODE_EDITOR"
+    LINK_SUBMISSION = "LINK_SUBMISSION"
     OTHER = "OTHER"
 
 
