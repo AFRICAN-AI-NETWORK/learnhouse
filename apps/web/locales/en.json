@@ -390,6 +390,7 @@
     "file_submission": "File Submission",
     "form": "Form",
     "code_editor": "Code Editor",
+    "link_submission": "Link Submission",
     "interactive": "Interactive",
     "activities": "Activities",
     "current_activity": "Current Activity",
@@ -1710,6 +1711,10 @@
             "description": "Code challenges for students to solve",
             "coming_soon": "Code Editor is coming soon! Stay tuned.",
             "badge": "Soon"
+          },
+          "link_submission": {
+            "title": "Link submission",
+            "description": "Students can submit a link for this task"
           }
         },
         "toasts": {
