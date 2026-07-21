@@ -28,6 +28,22 @@ from src.services.courses.grade import (
 from dateutil import parser
 
 
+def get_enrolled_user_ids_for_course(course_id: int, db_session: Session) -> list[int]:
+    """
+    All user ids with an active enrollment (TrailRun) in a course.
+
+    A TrailRun is created when a user adds a course to their trail
+    (add_course_to_trail) and removed when they leave it
+    (remove_course_from_trail), so it's the same enrollment signal the rest
+    of the trail system already relies on. Used by notification fan-out for
+    "new chapter/activity" triggers.
+    """
+    statement = (
+        select(TrailRun.user_id).where(TrailRun.course_id == course_id).distinct()
+    )
+    return list(db_session.exec(statement).all())
+
+
 async def create_user_trail(
     request: Request,
     user: PublicUser,
