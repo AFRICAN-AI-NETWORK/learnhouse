@@ -6,6 +6,7 @@ import TaskQuizObject from '../../_components/TaskEditor/Subs/TaskTypes/TaskQuiz
 import TaskFileObject from '../../_components/TaskEditor/Subs/TaskTypes/TaskFileObject'
 import TaskFormObject from '../../_components/TaskEditor/Subs/TaskTypes/TaskFormObject'
 import TaskCodeEditorObject from '../../_components/TaskEditor/Subs/TaskTypes/TaskCodeEditorObject'
+import TaskLinkObject from '../../_components/TaskEditor/Subs/TaskTypes/TaskLinkObject'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getTaskRefFileDir } from '@services/media/media'
 import {
@@ -183,6 +184,14 @@ function EvaluateAssignment({ user_id }: any) {
                   )}
                   {task.assignment_type === 'CODE_EDITOR' && (
                     <TaskCodeEditorObject
+                      key={task.assignment_task_uuid}
+                      view="custom-grading"
+                      user_id={user_id}
+                      assignmentTaskUUID={task.assignment_task_uuid}
+                    />
+                  )}
+                  {task.assignment_type === 'LINK_SUBMISSION' && (
+                    <TaskLinkObject
                       key={task.assignment_task_uuid}
                       view="custom-grading"
                       user_id={user_id}
