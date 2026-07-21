@@ -23,12 +23,14 @@ function EvaluateAssignment({ user_id }: any) {
   const session = useLHSession() as any
   const org = useOrg() as any
   const [revisionFeedback, setRevisionFeedback] = React.useState('')
+  const [gradeFeedback, setGradeFeedback] = React.useState('')
 
   async function gradeAssignment(showToast = true) {
     const res = await putFinalGrade(
       user_id,
       assignments?.assignment_object.assignment_uuid,
-      session.data?.tokens?.access_token
+      session.data?.tokens?.access_token,
+      gradeFeedback
     )
     if (showToast) {
       if (res.success) toast.success(res.data.message)
@@ -209,20 +211,28 @@ function EvaluateAssignment({ user_id }: any) {
             <span>{t('dashboard.assignments.submissions.actions.reject')}</span>
           </button>
         </div>
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
-          <div className="flex flex-col sm:items-end sm:mr-4">
-            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+        <div className="flex w-full flex-col gap-2 lg:max-w-[320px]">
+          <textarea
+            value={gradeFeedback}
+            onChange={(e) => setGradeFeedback(e.target.value)}
+            placeholder={t(
+              'dashboard.assignments.submissions.grade_feedback_placeholder'
+            )}
+            className="min-h-[74px] w-full resize-none rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-violet-300"
+          />
+          <div className="flex items-center space-x-2 text-slate-500">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Manual Flow
             </span>
-            <div className="flex items-center space-x-2 text-slate-500">
-              <span className="text-xs">Grade</span>
-              <MoveRight size={14} className="opacity-40" />
-              <span className="text-xs">Done</span>
-            </div>
+            <span className="text-xs">Grade</span>
+            <MoveRight size={14} className="opacity-40" />
+            <span className="text-xs">Done</span>
           </div>
+        </div>
+        <div className="flex w-full sm:justify-end lg:w-auto">
           <button
             onClick={gradeAndComplete}
-            className="flex min-h-11 items-center justify-center space-x-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all cursor-pointer hover:scale-[1.02] hover:shadow-indigo-200 active:scale-[0.98]"
+            className="flex min-h-11 w-full items-center justify-center space-x-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition-all cursor-pointer hover:scale-[1.02] hover:shadow-indigo-200 active:scale-[0.98] lg:w-auto"
           >
             <BookOpenCheck size={18} />
             <span>

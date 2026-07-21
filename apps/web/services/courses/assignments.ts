@@ -257,11 +257,17 @@ export async function putUserSubmission(
 export async function putFinalGrade(
   user_id: string,
   assignmentUUID: string,
-  access_token: string
+  access_token: string,
+  feedback?: string
 ) {
   const result: any = await fetch(
     `${getAPIUrl()}assignments/${assignmentUUID}/submissions/${user_id}/grade`,
-    RequestBodyWithAuthHeader('POST', null, null, access_token)
+    RequestBodyWithAuthHeader(
+      'POST',
+      feedback ? { feedback } : null,
+      null,
+      access_token
+    )
   )
   const res = await getResponseMetadata(result)
   return res
