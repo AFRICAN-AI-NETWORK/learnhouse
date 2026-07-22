@@ -13,7 +13,10 @@ from src.db.announcements import (
 from src.security.auth import get_current_user
 from src.db.users import PublicUser
 from src.services.orgs.orgs import get_organization_by_slug
-from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
+from src.security.rbac.rbac import (
+    authorization_verify_based_on_org_admin_status,
+    authorization_verify_has_rights,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +73,16 @@ async def create_announcement(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    is_admin = await authorization_verify_based_on_org_admin_status(
-        request, current_user.id, "create", org.org_uuid, db_session
+    # Rights-based (not admin-hardcoded): any role whose rights grant
+    # announcements/create qualifies — currently Admin, Maintainer, and
+    # Instructor. Admins/Maintainers are still always authorized regardless
+    # of the announcements right specifically (authorization_verify_has_rights
+    # treats ADMIN_ROLE_IDS as an automatic pass).
+    is_authorized = await authorization_verify_has_rights(
+        current_user.id, [("announcements", "create")], db_session
     )
 
-    if not is_admin:
+    if not is_authorized:
         raise HTTPException(
             status_code=403, detail="Not authorized to create announcements"
         )
