@@ -71,7 +71,7 @@ async def create_announcement(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     is_admin = await authorization_verify_based_on_org_admin_status(
-        request, current_user.id, "create", org.slug, db_session
+        request, current_user.id, "create", org.org_uuid, db_session
     )
 
     if not is_admin:
@@ -130,7 +130,7 @@ async def update_announcement(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     is_admin = await authorization_verify_based_on_org_admin_status(
-        request, current_user.id, "update", org.slug, db_session
+        request, current_user.id, "update", org.org_uuid, db_session
     )
 
     if not is_admin:
