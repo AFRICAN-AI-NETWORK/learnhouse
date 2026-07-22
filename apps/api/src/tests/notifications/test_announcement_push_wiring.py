@@ -1,8 +1,9 @@
 """
 Tests for the announcement -> live WS push wiring in create_announcement().
 
-RBAC and org lookup are monkeypatched to bypass — they're pre-existing,
-unmodified. These tests target only the new fan-out scheduling call.
+RBAC (both the legacy admin-status check and the current rights-based one)
+and org lookup are monkeypatched to bypass. These tests target only the
+fan-out scheduling call, not authorization itself.
 """
 
 from unittest.mock import AsyncMock, MagicMock
@@ -23,6 +24,11 @@ def _bypass_org_and_rbac(monkeypatch, org):
     monkeypatch.setattr(
         announcements_router,
         "authorization_verify_based_on_org_admin_status",
+        AsyncMock(return_value=True),
+    )
+    monkeypatch.setattr(
+        announcements_router,
+        "authorization_verify_has_rights",
         AsyncMock(return_value=True),
     )
 
