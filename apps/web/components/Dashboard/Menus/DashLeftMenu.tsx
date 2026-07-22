@@ -94,6 +94,15 @@ function DashLeftMenu() {
   const canSeeCommunications = isAdmin || rights?.communications?.action_read
   const canSeeHandbook = isAdmin || rights?.handbook?.action_read
   const isPartner = isAdmin || rights?.affiliation?.action_read
+  const hasStrictAdminRole = (session?.data?.roles || []).some(
+    (role: any) =>
+      role.org?.id === org?.id && (role.role?.id === 1 || role.role?.id === 2)
+  )
+  const hasPartnerRole = (session?.data?.roles || []).some(
+    (role: any) =>
+      role.org?.id === org?.id && role.role?.role_uuid === 'partner_role'
+  )
+  const isPartnerOnly = hasPartnerRole && !hasStrictAdminRole
   const canSeeStudents =
     isAdmin || (rights?.dashboard?.action_access && rights?.users?.action_read)
 
@@ -142,13 +151,15 @@ function DashLeftMenu() {
         </div>
 
         <div className="flex-1 flex flex-col justify-center space-y-1 py-8">
-          <MenuLink
-            href="/dash"
-            icon={<Home size={18} />}
-            label={t('common.home')}
-            isCollapsed={isCollapsed}
-          />
-          {canSeeCourses && (
+          {!isPartnerOnly && (
+            <MenuLink
+              href="/dash"
+              icon={<Home size={18} />}
+              label={t('common.home')}
+              isCollapsed={isCollapsed}
+            />
+          )}
+          {!isPartnerOnly && canSeeCourses && (
             <MenuLink
               href="/dash/courses"
               icon={<BookCopy size={18} />}
@@ -156,7 +167,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeAssignments && (
+          {!isPartnerOnly && canSeeAssignments && (
             <MenuLink
               href="/dash/assignments"
               icon={<Backpack size={18} />}
@@ -164,7 +175,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeUsers && (
+          {!isPartnerOnly && canSeeUsers && (
             <MenuLink
               href="/dash/users/settings/users"
               icon={<Users size={18} />}
@@ -172,7 +183,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeStudents && (
+          {!isPartnerOnly && canSeeStudents && (
             <MenuLink
               href="/dash/students"
               icon={<GraduationCap size={18} />}
@@ -180,7 +191,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {isPaymentsEnabled && isAdmin && (
+          {!isPartnerOnly && isPaymentsEnabled && isAdmin && (
             <MenuLink
               href="/dash/payments/customers"
               icon={<BadgeDollarSign size={18} />}
@@ -188,7 +199,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {isAdmin && (
+          {(isAdmin || isPartnerOnly) && (
             <MenuLink
               href="/dash/referrals"
               icon={<Link2 size={18} />}
@@ -196,7 +207,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {isPartner && !isAdmin && (
+          {!isPartnerOnly && isPartner && !isAdmin && (
             <MenuLink
               href="/dash/affiliation"
               icon={<Users size={18} />}
@@ -204,7 +215,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeHandbook && (
+          {!isPartnerOnly && canSeeHandbook && (
             <MenuLink
               href="/dash/handbook"
               icon={<BookCopy size={18} />}
@@ -212,7 +223,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeCommunications && (
+          {!isPartnerOnly && canSeeCommunications && (
             <MenuLink
               href="/dash/communications"
               icon={<Megaphone size={18} />}
@@ -220,7 +231,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeCommunications && (
+          {!isPartnerOnly && canSeeCommunications && (
             <MenuLink
               href="/dash/announcements"
               icon={<Bell size={18} />}
@@ -228,7 +239,7 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {canSeeOrg && (
+          {!isPartnerOnly && canSeeOrg && (
             <MenuLink
               href="/dash/org/settings/general"
               icon={<School size={18} />}
