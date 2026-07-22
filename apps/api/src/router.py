@@ -14,6 +14,7 @@ from src.routers import (
     communications,
     cohorts,
     announcements,
+    notifications,
 )
 from src.routers.ai import ai
 from src.routers.courses import (
@@ -82,9 +83,16 @@ v1_router.include_router(
 )
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
 v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
-v1_router.include_router(flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"])
+v1_router.include_router(
+    flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"]
+)
 v1_router.include_router(cohorts.router, prefix="/cohorts", tags=["cohorts"])
-v1_router.include_router(announcements.router, prefix="/announcements", tags=["announcements"])
+v1_router.include_router(
+    announcements.router, prefix="/announcements", tags=["announcements"]
+)
+v1_router.include_router(
+    notifications.router, prefix="/notifications", tags=["notifications"]
+)
 
 # Chat Routes
 v1_router.include_router(

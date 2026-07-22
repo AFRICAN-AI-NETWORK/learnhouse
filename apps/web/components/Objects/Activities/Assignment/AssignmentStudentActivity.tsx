@@ -6,6 +6,7 @@ import TaskFileObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]
 import TaskQuizObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskQuizObject'
 import TaskFormObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskFormObject'
 import TaskCodeEditorObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskCodeEditorObject'
+import TaskLinkObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskLinkObject'
 import {
   Backpack,
   Calendar,
@@ -188,6 +189,14 @@ function AssignmentStudentActivity({
                   )}
                   {task.assignment_type === 'CODE_EDITOR' && (
                     <TaskCodeEditorObject
+                      key={task.assignment_task_uuid}
+                      view="student"
+                      assignmentTaskUUID={task.assignment_task_uuid}
+                      isFocusMode={isFocusMode}
+                    />
+                  )}
+                  {task.assignment_type === 'LINK_SUBMISSION' && (
+                    <TaskLinkObject
                       key={task.assignment_task_uuid}
                       view="student"
                       assignmentTaskUUID={task.assignment_task_uuid}

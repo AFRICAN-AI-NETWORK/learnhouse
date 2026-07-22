@@ -135,7 +135,7 @@ const LearnHousePlayer: React.FC<LearnHousePlayerProps> = ({
           onComplete?.()
         }
 
-        // Trigger onWatchSatisfied for the fallback when 2 minutes are remaining 
+        // Trigger onWatchSatisfied for the fallback when 2 minutes are remaining
         // (or 80% completion for short videos)
         if (duration > 0) {
           const fallbackThreshold = Math.min(120, duration * 0.2)

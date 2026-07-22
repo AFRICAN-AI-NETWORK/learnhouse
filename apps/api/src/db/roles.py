@@ -53,6 +53,11 @@ class Rights(BaseModel):
     activities: Permission
     roles: Permission
     communications: Permission
+    # Defaulted (unlike the fields above) so already-stored role rows from
+    # before this field existed still deserialize without a migration.
+    announcements: Permission = Permission(
+        action_create=False, action_read=True, action_update=False, action_delete=False
+    )
     dashboard: DashboardPermission
     affiliation: AffiliationPermission = AffiliationPermission()
 

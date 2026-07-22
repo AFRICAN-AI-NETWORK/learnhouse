@@ -94,10 +94,10 @@ export default function ClickToPayButton({
       if (result && result.data && result.data.valid) {
         // Convert the backend final_amount to the selected currency
         const convertedFinalAmount = convertAmount(result.data.final_amount)
-        
+
         setAppliedDiscount({
           ...result.data,
-          final_amount: convertedFinalAmount // store the converted amount so flutterwave gets the right amount
+          final_amount: convertedFinalAmount, // store the converted amount so flutterwave gets the right amount
         })
         toast.success('Discount applied successfully!')
       } else {
@@ -197,7 +197,7 @@ export default function ClickToPayButton({
     // Close auth modal if open
     setIsModalOpen(false)
     setIsProcessing(false)
-    
+
     if (skipDiscountModal) {
       setTimeout(() => {
         triggerPayment(userEmail, userName)
@@ -211,7 +211,10 @@ export default function ClickToPayButton({
   const handleClick = () => {
     if (session.status === 'authenticated') {
       // User is logged in, skip signup, proceed to discount modal
-      processPayment(session.data.user.email, session.data.username || session.data.user.name || '')
+      processPayment(
+        session.data.user.email,
+        session.data.username || session.data.user.name || ''
+      )
     } else {
       // User is not logged in, show signup modal first
       setIsModalOpen(true)
@@ -243,7 +246,7 @@ export default function ClickToPayButton({
     // Actually trigger Paystack/Flutterwave
     setIsProcessing(true)
     setIsDiscountModalOpen(false)
-    
+
     setTimeout(() => {
       triggerPayment(dynamicEmail, dynamicName)
     }, 100)
@@ -304,7 +307,10 @@ export default function ClickToPayButton({
       </Dialog.Root>
 
       {/* DISCOUNT & CHECKOUT MODAL */}
-      <Dialog.Root open={isDiscountModalOpen} onOpenChange={setIsDiscountModalOpen}>
+      <Dialog.Root
+        open={isDiscountModalOpen}
+        onOpenChange={setIsDiscountModalOpen}
+      >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-in fade-in duration-200" />
           <Dialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-sm overflow-hidden bg-white rounded-3xl shadow-2xl z-[100] animate-in zoom-in-95 duration-200 border border-gray-100">
@@ -318,7 +324,7 @@ export default function ClickToPayButton({
               <Dialog.Description className="text-sm text-gray-500">
                 {courseName}
               </Dialog.Description>
-              
+
               <div className="mt-4 flex items-center justify-center">
                 <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
                   {new Intl.NumberFormat('en-US', {
@@ -348,7 +354,9 @@ export default function ClickToPayButton({
                     <Input
                       placeholder="Enter code"
                       value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        setDiscountCode(e.target.value.toUpperCase())
+                      }
                       className="uppercase bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                       disabled={isValidatingDiscount}
                     />
@@ -358,11 +366,17 @@ export default function ClickToPayButton({
                       disabled={!discountCode.trim() || isValidatingDiscount}
                       className="font-semibold px-6 shadow-sm"
                     >
-                      {isValidatingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                      {isValidatingDiscount ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Apply'
+                      )}
                     </Button>
                   </div>
                   {discountError && (
-                    <p className="text-sm text-red-500 font-medium animate-in slide-in-from-top-1">{discountError}</p>
+                    <p className="text-sm text-red-500 font-medium animate-in slide-in-from-top-1">
+                      {discountError}
+                    </p>
                   )}
                 </div>
               ) : (

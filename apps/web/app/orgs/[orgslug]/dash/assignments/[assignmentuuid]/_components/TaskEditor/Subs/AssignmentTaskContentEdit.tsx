@@ -8,6 +8,7 @@ import TaskQuizObject from './TaskTypes/TaskQuizObject'
 import TaskFileObject from './TaskTypes/TaskFileObject'
 import TaskFormObject from './TaskTypes/TaskFormObject'
 import TaskCodeEditorObject from './TaskTypes/TaskCodeEditorObject'
+import TaskLinkObject from './TaskTypes/TaskLinkObject'
 
 function AssignmentTaskContentEdit() {
   const session = useLHSession() as any
@@ -43,6 +44,13 @@ function AssignmentTaskContentEdit() {
       )}
       {assignment_task?.assignmentTask.assignment_type === 'CODE_EDITOR' && (
         <TaskCodeEditorObject
+          key={assignment_task?.assignmentTask.assignment_task_uuid}
+          view="teacher"
+        />
+      )}
+      {assignment_task?.assignmentTask.assignment_type ===
+        'LINK_SUBMISSION' && (
+        <TaskLinkObject
           key={assignment_task?.assignmentTask.assignment_task_uuid}
           view="teacher"
         />

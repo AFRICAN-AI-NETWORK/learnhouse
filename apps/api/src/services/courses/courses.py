@@ -191,9 +191,7 @@ async def get_course_meta(
     # Check if course is paid
     payment_statement = (
         select(PaymentsCourse)
-        .join(
-            PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id
-        )
+        .join(PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id)
         .where(PaymentsCourse.course_id == course.id, PaymentsProduct.amount > 0)
     )
     is_paid = db_session.exec(payment_statement).first() is not None

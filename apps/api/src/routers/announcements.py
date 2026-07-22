@@ -1,13 +1,27 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, select, desc
 from src.core.events.database import get_db_session
-from src.db.announcements import Announcement, AnnouncementCreate, AnnouncementReadResponse, AnnouncementUpdate, AnnouncementRead
+from src.db.announcements import (
+    Announcement,
+    AnnouncementCreate,
+    AnnouncementReadResponse,
+    AnnouncementUpdate,
+    AnnouncementRead,
+)
 from src.security.auth import get_current_user
 from src.db.users import PublicUser
 from src.services.orgs.orgs import get_organization_by_slug
-from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
+from src.security.rbac.rbac import (
+    authorization_verify_based_on_org_admin_status,
+    authorization_verify_has_rights,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 @router.get("/{orgslug}")
 async def list_announcements(
@@ -15,7 +29,7 @@ async def list_announcements(
     request: Request,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
-    active_only: bool = Query(True)
+    active_only: bool = Query(True),
 ):
     org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
@@ -24,7 +38,7 @@ async def list_announcements(
     statement = select(Announcement).where(Announcement.org_id == org.id)
     if active_only:
         statement = statement.where(Announcement.is_active == True)
-        
+
     statement = statement.order_by(desc(Announcement.creation_date))
     announcements = db_session.exec(statement).all()
 
@@ -34,7 +48,7 @@ async def list_announcements(
         ann_ids = [a.id for a in announcements]
         reads_statement = select(AnnouncementRead.announcement_id).where(
             AnnouncementRead.user_id == current_user.id,
-            AnnouncementRead.announcement_id.in_(ann_ids)
+            AnnouncementRead.announcement_id.in_(ann_ids),
         )
         read_announcements_ids = set(db_session.exec(reads_statement).all())
 
@@ -45,6 +59,7 @@ async def list_announcements(
         response.append(AnnouncementReadResponse(**resp_dict))
 
     return response
+
 
 @router.post("/{orgslug}")
 async def create_announcement(
@@ -57,23 +72,57 @@ async def create_announcement(
     org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-        
-    is_admin = await authorization_verify_based_on_org_admin_status(
-        request, current_user.id, "create", org.slug, db_session
+
+    # Rights-based (not admin-hardcoded): any role whose rights grant
+    # announcements/create qualifies — currently Admin, Maintainer, and
+    # Instructor. Admins/Maintainers are still always authorized regardless
+    # of the announcements right specifically (authorization_verify_has_rights
+    # treats ADMIN_ROLE_IDS as an automatic pass).
+    is_authorized = await authorization_verify_has_rights(
+        current_user.id, [("announcements", "create")], db_session
     )
-    
-    if not is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized to create announcements")
+
+    if not is_authorized:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to create announcements"
+        )
 
     new_announcement = Announcement(
-        **announcement.dict(),
-        org_id=org.id,
-        created_by_user_id=current_user.id
+        **announcement.dict(), org_id=org.id, created_by_user_id=current_user.id
     )
     db_session.add(new_announcement)
     db_session.commit()
     db_session.refresh(new_announcement)
+
+    # Real-time nudge for currently-online org members only — no per-user
+    # notification rows are created here (see the notification system's
+    # design decision to keep Announcements a parallel, sparse-by-design
+    # backend rather than fan out an eager row per member). Offline users
+    # still see it via the existing GET /announcements list, unchanged.
+    if new_announcement.is_active:
+        try:
+            from src.services.notifications.fanout_jobs import sync_fanout_app_update
+            from src.services.notifications.scheduling import enqueue_job
+
+            enqueue_job(
+                f"app_update_notif_{new_announcement.id}",
+                sync_fanout_app_update,
+                [
+                    new_announcement.id,
+                    org.id,
+                    new_announcement.title,
+                    new_announcement.content,
+                ],
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to schedule app_update fan-out for announcement %s: %s",
+                new_announcement.id,
+                e,
+            )
+
     return new_announcement
+
 
 @router.put("/{orgslug}/{announcement_id}")
 async def update_announcement(
@@ -87,13 +136,15 @@ async def update_announcement(
     org = await get_organization_by_slug(request, orgslug, db_session, current_user)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-        
+
     is_admin = await authorization_verify_based_on_org_admin_status(
-        request, current_user.id, "update", org.slug, db_session
+        request, current_user.id, "update", org.org_uuid, db_session
     )
-    
+
     if not is_admin:
-        raise HTTPException(status_code=403, detail="Not authorized to update announcements")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to update announcements"
+        )
 
     announcement = db_session.get(Announcement, announcement_id)
     if not announcement or announcement.org_id != org.id:
@@ -107,6 +158,7 @@ async def update_announcement(
     db_session.commit()
     db_session.refresh(announcement)
     return announcement
+
 
 @router.post("/{orgslug}/{announcement_id}/read")
 async def mark_announcement_read(
@@ -127,14 +179,13 @@ async def mark_announcement_read(
     existing_read = db_session.exec(
         select(AnnouncementRead).where(
             AnnouncementRead.announcement_id == announcement_id,
-            AnnouncementRead.user_id == current_user.id
+            AnnouncementRead.user_id == current_user.id,
         )
     ).first()
 
     if not existing_read:
         read_record = AnnouncementRead(
-            announcement_id=announcement_id,
-            user_id=current_user.id
+            announcement_id=announcement_id, user_id=current_user.id
         )
         db_session.add(read_record)
         db_session.commit()

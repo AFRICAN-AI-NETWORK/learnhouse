@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 from src.core.events.database import get_db_session
-from src.services.payments.webhooks.payments_flutterwave_webhooks import handle_flutterwave_webhook
+from src.services.payments.webhooks.payments_flutterwave_webhooks import (
+    handle_flutterwave_webhook,
+)
 
 router = APIRouter()
+
 
 @router.post("/flutterwave")
 async def flutterwave_webhook(

@@ -13,6 +13,7 @@ class PaymentPriceTypeEnum(str, Enum):
     CUSTOMER_CHOICE = "customer_choice"
     FIXED_PRICE = "fixed_price"
 
+
 class PaymentIntervalEnum(str, Enum):
     MONTHLY = "monthly"
     YEARLY = "yearly"

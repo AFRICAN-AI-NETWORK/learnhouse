@@ -19,6 +19,10 @@ class AssignmentBase(SQLModel):
     due_date: str
     published: Optional[bool] = False
     grading_type: GradingTypeEnum
+    # When True, this assignment must be graded before a certificate can be
+    # issued for the course (e.g. a capstone project). See
+    # check_course_completion_and_create_certificate().
+    required_for_certificate: Optional[bool] = False
 
     org_id: int
     course_id: int
@@ -49,6 +53,7 @@ class AssignmentUpdate(SQLModel):
     due_date: Optional[str]
     published: Optional[bool]
     grading_type: Optional[GradingTypeEnum]
+    required_for_certificate: Optional[bool]
     org_id: Optional[int]
     course_id: Optional[int]
     chapter_id: Optional[int]
@@ -88,6 +93,7 @@ class AssignmentTaskTypeEnum(str, Enum):
     QUIZ = "QUIZ"
     FORM = "FORM"
     CODE_EDITOR = "CODE_EDITOR"
+    LINK_SUBMISSION = "LINK_SUBMISSION"
     OTHER = "OTHER"
 
 
@@ -277,6 +283,12 @@ class AssignmentUserSubmissionRevisionCreate(SQLModel):
     """Model for requesting assignment revisions."""
 
     submission_feedback: Optional[str] = ""
+
+
+class AssignmentGradeCreate(SQLModel):
+    """Optional body for the final-grade endpoint, carrying instructor feedback."""
+
+    feedback: Optional[str] = None
 
 
 class AssignmentUserSubmissionRead(AssignmentUserSubmissionBase):

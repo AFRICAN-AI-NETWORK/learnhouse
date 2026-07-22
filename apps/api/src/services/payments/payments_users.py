@@ -58,9 +58,7 @@ async def create_payment_user(
             customer_code=provider_data.get("customer_code")
             if "customer_code" in provider_data
             else None,
-            flutterwave_tx_ref=provider_data.get(
-                "flutterwave_tx_ref"
-            )
+            flutterwave_tx_ref=provider_data.get("flutterwave_tx_ref")
             if "flutterwave_tx_ref" in provider_data
             else None,
             # Flutterwave doesn't have an equivalent of access_code typically, but if needed we can add it here.
@@ -351,7 +349,9 @@ async def get_owned_courses(
         is_paid = db_session.exec(payment_statement).first() is not None
 
         # Create CourseRead object
-        course_read = CourseRead(**course.model_dump(), authors=authors, is_paid=is_paid)
+        course_read = CourseRead(
+            **course.model_dump(), authors=authors, is_paid=is_paid
+        )
         course_reads.append(course_read)
 
     return course_reads
