@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +74,9 @@ export function NotificationBell({ orgslug }: { orgslug: string }) {
   const access_token: string = session?.data?.tokens?.access_token ?? ''
 
   const [isOpen, setIsOpen] = useState(false)
+  // Local-only dismissal for now — hides an item from this user's dropdown
+  // without deleting it server-side. Resets on reload (not persisted).
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set())
 
   const { data: notifications = [], mutate: mutateNotifications } = useSWR(
     access_token ? NOTIFICATIONS_SWR_KEY(access_token) : null,
@@ -91,11 +94,11 @@ export function NotificationBell({ orgslug }: { orgslug: string }) {
     const items = [
       ...notifications.map(toNotificationFeedItem),
       ...announcements.map(toAnnouncementFeedItem),
-    ]
+    ].filter((item) => !dismissedKeys.has(`${item.source}-${item.id}`))
     return items.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
-  }, [notifications, announcements])
+  }, [notifications, announcements, dismissedKeys])
 
   const unreadCount = feed.filter((item) => !item.isRead).length
 
@@ -114,6 +117,19 @@ export function NotificationBell({ orgslug }: { orgslug: string }) {
       // eslint-disable-next-line no-console
       console.error('Failed to mark notification as read', e)
     }
+  }
+
+  // Local-only for now: hides the item from this user's dropdown without
+  // touching the server, so nobody else's view (or this user's, on reload)
+  // is affected. Announcements have no per-user delete endpoint anyway
+  // (they're org-wide broadcasts) — only notification-source items get an X.
+  const handleDismiss = (item: FeedItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDismissedKeys((prev) => {
+      const next = new Set(prev)
+      next.add(`${item.source}-${item.id}`)
+      return next
+    })
   }
 
   if (feed.length === 0) return null
@@ -177,9 +193,21 @@ export function NotificationBell({ orgslug }: { orgslug: string }) {
                     )}
                     <span className="truncate">{item.title}</span>
                   </h4>
-                  <span className="text-[10px] text-gray-400 dark:text-white/40 whitespace-nowrap ml-4 font-semibold">
-                    {new Date(item.date).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-4">
+                    <span className="text-[10px] text-gray-400 dark:text-white/40 whitespace-nowrap font-semibold">
+                      {new Date(item.date).toLocaleDateString()}
+                    </span>
+                    {item.source === 'notification' && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDismiss(item, e)}
+                        aria-label="Remove notification"
+                        className="flex items-center justify-center h-4 w-4 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:text-white/40 dark:hover:bg-white/10 dark:hover:text-white transition-colors"
+                      >
+                        <X size={11} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p
                   className={`text-xs mt-2 whitespace-pre-wrap ${!item.isRead ? 'text-gray-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}`}
