@@ -56,7 +56,9 @@ def _base_permission(**overrides) -> Permission:
     return Permission(**defaults)
 
 
-def _make_role(session: Session, name: str, announcements_create: bool, role_id: int = 100):
+def _make_role(
+    session: Session, name: str, announcements_create: bool, role_id: int = 100
+):
     from src.db.roles import Role, RoleTypeEnum
 
     # role_id defaults well outside ADMIN_ROLE_IDS ({1, 2}) — SQLite
@@ -105,7 +107,9 @@ def _make_role(session: Session, name: str, announcements_create: bool, role_id:
     return role
 
 
-def _make_user_with_role(session: Session, org: Organization, role, username: str) -> User:
+def _make_user_with_role(
+    session: Session, org: Organization, role, username: str
+) -> User:
     user = User(
         user_uuid=f"usr_{uuid4()}",
         username=username,
