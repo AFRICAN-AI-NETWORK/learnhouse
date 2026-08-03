@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 from sqlmodel import Field, SQLModel, Column, JSON
+from sqlalchemy import Enum as SAEnum
 
 
 class NotificationType(str, Enum):
@@ -20,7 +21,15 @@ class EmailStatus(str, Enum):
 
 
 class NotificationBase(SQLModel):
-    notification_type: NotificationType
+    notification_type: NotificationType = Field(
+        sa_column=Column(
+            SAEnum(
+                NotificationType,
+                name="notificationtype",
+                values_callable=lambda obj: [e.value for e in obj],
+            )
+        )
+    )
     target_type: str  # 'assignment' | 'chapter' | 'activity' | 'app'
     target_id: Optional[int] = None
     target_uuid: Optional[str] = None
@@ -53,7 +62,18 @@ class Notification(NotificationBase, table=True):
     is_read: bool = False
     read_at: Optional[datetime] = None
 
-    email_status: EmailStatus = EmailStatus.PENDING
+    email_status: EmailStatus = Field(
+        default=EmailStatus.PENDING,
+        sa_column=Column(
+            SAEnum(
+                EmailStatus,
+                name="emailstatus",
+                values_callable=lambda obj: [e.value for e in obj],
+            ),
+            nullable=False,
+            default=EmailStatus.PENDING,
+        ),
+    )
     email_retry_count: int = 0
     email_last_error: Optional[str] = None
     email_sent_at: Optional[datetime] = None

@@ -46,10 +46,11 @@ export default function AIAutomationContentCreatorsPage() {
     () => getProductsByCourse(org.id, courseId, undefined)
   )
 
-  const oneTimeProduct = products?.data?.find(
+  const productsList = Array.isArray(products?.data) ? products.data : []
+  const oneTimeProduct = productsList.find(
     (p: any) => p.product_type === 'one_time'
   )
-  const subscriptionProduct = products?.data?.find(
+  const subscriptionProduct = productsList.find(
     (p: any) => p.product_type === 'subscription'
   )
 
