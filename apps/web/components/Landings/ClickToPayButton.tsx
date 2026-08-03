@@ -122,6 +122,7 @@ export default function ClickToPayButton({
     tx_ref: txRef,
     amount: finalAmount,
     currency: finalCurrency,
+    ...(planId ? { payment_plan: planId } : {}),
 
     customer: {
       email: dynamicEmail,
@@ -145,6 +146,7 @@ export default function ClickToPayButton({
     amount: finalAmount * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
     publicKey: psPublicKey,
     currency: finalCurrency,
+    ...(planId ? { plan: planId } : {}),
     metadata: {
       course_uuid: courseId,
       custom_fields: [],

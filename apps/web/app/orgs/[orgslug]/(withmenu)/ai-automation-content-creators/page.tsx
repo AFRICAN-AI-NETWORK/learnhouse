@@ -29,12 +29,36 @@ import GlobalFooter from '@components/Landings/GlobalFooter'
 import Countdown from '@components/Landings/Countdown'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
 import PriceDisplay from '@components/Landings/PriceDisplay'
+import useSWR from 'swr'
+import { getProductsByCourse } from '@services/payments/products'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
 export default function AIAutomationContentCreatorsPage() {
   const org = useOrg() as any
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
+  const [isSubscription, setIsSubscription] = useState(true)
+
+  const courseId = '1fc9f960-3d69-4003-a2d9-2acc98d0ca48'
+
+  const { data: products, isLoading } = useSWR(
+    org ? [`/payments/${org.id}/courses/${courseId}/products`] : null,
+    () => getProductsByCourse(org.id, courseId, undefined)
+  )
+
+  const oneTimeProduct = products?.data?.find(
+    (p: any) => p.product_type === 'one_time'
+  )
+  const subscriptionProduct = products?.data?.find(
+    (p: any) => p.product_type === 'subscription'
+  )
+
+  // Fallbacks if products aren't created yet
+  const PRICE_ONE_TIME = oneTimeProduct?.price || 60
+  const PRICE_SUBSCRIPTION = subscriptionProduct?.price || 20
+
+  const currentProduct = isSubscription ? subscriptionProduct : oneTimeProduct
+  const PLAN_ID = currentProduct?.provider_product_id || ''
 
   const modules = [
     {
@@ -209,7 +233,38 @@ export default function AIAutomationContentCreatorsPage() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                     Tuition
                   </p>
-                  <PriceDisplay basePriceUSD={37} interval="/mo" />
+                  <div className="mb-4 flex items-center p-1 bg-white/10 rounded-xl">
+                    <button
+                      onClick={() => setIsSubscription(true)}
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                        isSubscription
+                          ? 'bg-[oklch(59.2%_.249_.584)] text-white shadow-md'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Subscription
+                    </button>
+                    <button
+                      onClick={() => setIsSubscription(false)}
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                        !isSubscription
+                          ? 'bg-[oklch(59.2%_.249_.584)] text-white shadow-md'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      One-time
+                    </button>
+                  </div>
+                  {isLoading ? (
+                    <div className="h-10 bg-white/10 animate-pulse rounded-lg mt-2 mb-4"></div>
+                  ) : (
+                    <PriceDisplay
+                      basePriceUSD={
+                        isSubscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME
+                      }
+                      interval={isSubscription ? '/mo' : ''}
+                    />
+                  )}
                   <div className="mt-3 flex flex-col gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[oklch(59.2%_.249_.584)]/20 text-[oklch(59.2%_.249_.584)] text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-[oklch(59.2%_.249_.584)] rounded-full animate-pulse" />
@@ -238,10 +293,13 @@ export default function AIAutomationContentCreatorsPage() {
                 </div>
                 <div className="pt-2">
                   <ClickToPayButton
-                    courseId="ai-automation-course-id"
+                    courseId={courseId}
                     courseName="AI Automation for Content Creators"
-                    priceAmount={37}
+                    priceAmount={
+                      isSubscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME
+                    }
                     currency="USD"
+                    planId={isSubscription ? PLAN_ID : undefined}
                   />
                 </div>
               </div>
@@ -518,8 +576,15 @@ export default function AIAutomationContentCreatorsPage() {
             Value Breakdown
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
-            Why <PriceDisplay basePriceUSD={37} interval="/month" hideSwitcher className="inline-flex items-center text-[#0a0f1e]" priceClassName="text-[inherit] font-bold" /> is{' '}
-            <span className="text-[#ff0066]">underpriced.</span>
+            Why{' '}
+            <PriceDisplay
+              basePriceUSD={37}
+              interval="/month"
+              hideSwitcher
+              className="inline-flex items-center text-[#0a0f1e]"
+              priceClassName="text-[inherit] font-bold"
+            />{' '}
+            is <span className="text-[#ff0066]">underpriced.</span>
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -703,8 +768,16 @@ export default function AIAutomationContentCreatorsPage() {
               </span>
             </h2>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              No code. Massive impact. From manual editing to automating
-              real businesses at <PriceDisplay basePriceUSD={37} interval="/month" hideSwitcher className="inline-flex items-center text-[#ff0066] ml-1" priceClassName="text-[inherit]" />.
+              No code. Massive impact. From manual editing to automating real
+              businesses at{' '}
+              <PriceDisplay
+                basePriceUSD={37}
+                interval="/month"
+                hideSwitcher
+                className="inline-flex items-center text-[#ff0066] ml-1"
+                priceClassName="text-[inherit]"
+              />
+              .
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link

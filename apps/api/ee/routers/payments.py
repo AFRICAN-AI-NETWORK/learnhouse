@@ -245,7 +245,7 @@ async def api_get_products_by_course(
     request: Request,
     org_id: int,
     course_id: int,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
     return await get_products_by_course(
