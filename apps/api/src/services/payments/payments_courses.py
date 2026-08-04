@@ -40,13 +40,16 @@ async def link_course_to_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Check if course is already linked to another product
-    statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
+    # Check if course is already linked to THIS specific product
+    statement = select(PaymentsCourse).where(
+        PaymentsCourse.course_id == course.id,
+        PaymentsCourse.payment_product_id == product_id
+    )
     existing_link = db_session.exec(statement).first()
 
     if existing_link:
         raise HTTPException(
-            status_code=400, detail="Course is already linked to a product"
+            status_code=400, detail="Course is already linked to this product"
         )
 
     # Create new payment course link
