@@ -43,7 +43,7 @@ async def link_course_to_product(
     # Check if course is already linked to THIS specific product
     statement = select(PaymentsCourse).where(
         PaymentsCourse.course_id == course.id,
-        PaymentsCourse.payment_product_id == product_id
+        PaymentsCourse.payment_product_id == product_id,
     )
     existing_link = db_session.exec(statement).first()
 
