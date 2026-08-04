@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from unittest.mock import patch
+import smtplib
 
 import pytest
 
@@ -281,7 +282,7 @@ class TestActivateWaitlist:
     ):
         """Test that activation handles email failures"""
         # Simulate email failure
-        mock_send_activation.side_effect = Exception("SMTP error")
+        mock_send_activation.side_effect = smtplib.SMTPException("SMTP error")
 
         # Ensure user has verified email and matching interest
         waitlist_user.email_verified = True
