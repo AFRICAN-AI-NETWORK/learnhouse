@@ -39,8 +39,8 @@ dependencies = [
     "pytest-asyncio>=1.1.0",
     "grpcio>=1.76.0",
     "apscheduler>=3.11.2",
-    "cryptography>=48.0.1",
-    "pypdf>=6.7.5",
+    "cryptography>=50.0.0",
+    "pypdf>=6.14.2",
     "google-generativeai>=0.8.6",
     "websockets>=14.0",
     "google-api-python-client>=2.190.0",
@@ -82,4 +82,5 @@ dev = [
 override-dependencies = [
     "pyjwt>=2.13.0",
     "soupsieve>=2.8.4",
+    "httplib2>=0.32.0",
 ]
