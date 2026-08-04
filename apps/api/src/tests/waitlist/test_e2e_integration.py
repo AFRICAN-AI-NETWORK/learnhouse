@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
+from fastapi import HTTPException
 from sqlmodel import select
 
 from src.db.courses.courses import Course
@@ -171,7 +172,7 @@ class TestCompleteWaitlistFlow:
         assert len(prefs) == 2
 
         # ========== Step 4: User cannot login yet ==========
-        with pytest.raises(Exception):  # HTTPException
+        with pytest.raises(HTTPException):  # HTTPException
             await authenticate_user(
                 mock_request, "e2e@example.com", "SecurePassword123!", db_session
             )
@@ -292,7 +293,7 @@ class TestWaitlistCancellationFlow:
             org_id=sample_org.id,
         )
 
-        with pytest.raises(Exception):  # HTTPException
+        with pytest.raises(HTTPException):  # HTTPException
             await create_waitlist_user(
                 request=mock_request,
                 db_session=db_session,

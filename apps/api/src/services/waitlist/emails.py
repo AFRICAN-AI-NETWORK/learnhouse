@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import smtplib
 from datetime import datetime, timezone
 
 from pydantic import EmailStr
@@ -256,12 +257,10 @@ async def process_waitlist_activations(db_session: Session):
     for waitlist in waitlists:
         try:
             await activate_waitlist(db_session, waitlist)
-        except Exception as e:
-            logger.error(
-                "Error activating waitlist %s: %s",
+        except Exception:
+            logger.exception(
+                "Error activating waitlist %s",
                 waitlist.waitlist_uuid,
-                e,
-                exc_info=True,
             )
             # Continue with other waitlists even if one fails
             continue
@@ -300,7 +299,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
         logger.info("No users found for waitlist %s", waitlist.waitlist_uuid)
         # Mark as completed anyway
         waitlist.status = WaitlistStatusEnum.COMPLETED.value
-        waitlist.activation_date = str(datetime.now())
+        waitlist.activation_date = datetime.now(timezone.utc).isoformat()
         db_session.add(waitlist)
         db_session.commit()
         return
@@ -318,7 +317,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
     def mark_user_activated(user: User) -> None:
         """Transition a waitlisted user into the post-launch active state."""
         user.user_status = UserStatusEnum.WAITLIST_ACTIVATED.value
-        user.waitlist_activated_date = str(datetime.now())
+        user.waitlist_activated_date = datetime.now(timezone.utc).isoformat()
         db_session.add(user)
 
     for i in range(0, len(users), batch_size):
@@ -354,16 +353,16 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
                     waitlist_config_id=waitlist.id,
                     user_id=user.id,
                     email_sent=True,
-                    email_sent_date=str(datetime.now()),
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    email_sent_date=datetime.now(timezone.utc).isoformat(),
+                    creation_date=datetime.now(timezone.utc).isoformat(),
+                    update_date=datetime.now(timezone.utc).isoformat(),
                 )
                 db_session.add(email_log)
 
                 emails_sent += 1
                 logger.info("Activated user %d (%s)", user.id, user.email)
 
-            except Exception as e:
+            except (smtplib.SMTPException, ConnectionError) as e:
                 # Account activation must not depend on email delivery once the waitlist has launched.
                 mark_user_activated(user)
 
@@ -374,17 +373,12 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
                     email_sent=False,
                     email_error=str(e),
                     retry_count=1,
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    creation_date=datetime.now(timezone.utc).isoformat(),
+                    update_date=datetime.now(timezone.utc).isoformat(),
                 )
                 db_session.add(email_log)
                 emails_failed += 1
-                logger.error(
-                    "Failed to activate user %d: %s",
-                    user.id,
-                    e,
-                    exc_info=True,
-                )
+                logger.exception("Failed to activate user %d", user.id)
 
         # Commit batch
         db_session.commit()
@@ -395,7 +389,7 @@ async def activate_waitlist(db_session: Session, waitlist: WaitlistConfig):
 
     # Mark waitlist as COMPLETED
     waitlist.status = WaitlistStatusEnum.COMPLETED.value
-    waitlist.activation_date = str(datetime.now())
+    waitlist.activation_date = datetime.now(timezone.utc).isoformat()
     waitlist.emails_sent_count = emails_sent
     db_session.add(waitlist)
     db_session.commit()
@@ -467,21 +461,21 @@ async def retry_failed_waitlist_emails(db_session: Session):
 
             # Update log
             log.email_sent = True
-            log.email_sent_date = str(datetime.now())
-            log.update_date = str(datetime.now())
+            log.email_sent_date = datetime.now(timezone.utc).isoformat()
+            log.update_date = datetime.now(timezone.utc).isoformat()
 
             # Update user status
             user.user_status = UserStatusEnum.WAITLIST_ACTIVATED.value
-            user.waitlist_activated_date = str(datetime.now())
+            user.waitlist_activated_date = datetime.now(timezone.utc).isoformat()
             db_session.add(user)
 
             logger.info("Retry successful for user %d", user.id)
 
-        except Exception as e:
+        except (smtplib.SMTPException, ConnectionError) as e:
             # Increment retry count
             log.retry_count += 1
             log.email_error = str(e)
-            log.update_date = str(datetime.now())
+            log.update_date = datetime.now(timezone.utc).isoformat()
             logger.warning("Retry failed for user %d: %s", user.id, e)
 
         db_session.add(log)

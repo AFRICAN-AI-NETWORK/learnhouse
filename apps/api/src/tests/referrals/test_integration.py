@@ -4,10 +4,10 @@ Tests end-to-end flows and interactions between components
 """
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-
+from fastapi import HTTPException
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
 from src.db.referrals.referral_commissions import CommissionStatus
 from src.db.users import PublicUser, User
@@ -189,7 +189,7 @@ class TestReferralE2EFlow:
             "src.services.referrals.referral_tracking.validate_referral_code_exists",
             return_value=mock_code,
         ):
-            with pytest.raises(Exception) as exc_info:
+            with pytest.raises(HTTPException) as exc_info:
                 await validate_and_track_referral(
                     mock_request,
                     referred_user_id=500,  # Same as referrer

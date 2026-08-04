@@ -1,6 +1,7 @@
 """Aggregation correctness tests for the student dashboard service."""
 
 import pytest
+from fastapi import HTTPException
 
 from src.services.admin_analytics.students import (get_org_analytics_summary,
                                                    get_student_course_detail,
@@ -55,7 +56,7 @@ async def test_completed_course_counts(session, org, admin_user, student_user):
 
 @pytest.mark.asyncio
 async def test_list_is_forbidden_for_plain_student(session, org, student_user):
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException):
         await list_org_students(org.id, current_user(student_user), session)
 
 
@@ -105,8 +106,6 @@ async def test_student_detail_breakdown(session, org, admin_user, student_user):
 
 @pytest.mark.asyncio
 async def test_student_detail_unknown_user_404(session, org, admin_user):
-    from fastapi import HTTPException
-
     with pytest.raises(HTTPException) as exc:
         await get_student_detail(org.id, 999999, current_user(admin_user), session)
     assert exc.value.status_code == 404

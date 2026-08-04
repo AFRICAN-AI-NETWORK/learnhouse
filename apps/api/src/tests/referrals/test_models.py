@@ -6,6 +6,7 @@ Tests database models, enums, and validation
 from datetime import datetime, timezone
 
 import pytest
+from pydantic import ValidationError
 
 from src.db.referrals.referral_codes import (ReferralCode, ReferralCodeBase,
                                              ReferralCodeCreate,
@@ -81,7 +82,7 @@ class TestReferralCodeCreate:
 
     def test_create_model_validation(self):
         """Test that org_id is required"""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             ReferralCodeCreate()  # Should fail without org_id
 
 
