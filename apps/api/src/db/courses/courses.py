@@ -1,11 +1,14 @@
+from enum import Enum
 from typing import List, Optional
+
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from enum import Enum
-from src.db.users import UserRead
-from src.db.trails import TrailRead
+
 from src.db.courses.chapters import ChapterRead
-from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
+from src.db.resource_authors import (ResourceAuthorshipEnum,
+                                     ResourceAuthorshipStatusEnum)
+from src.db.trails import TrailRead
+from src.db.users import UserRead
 
 
 class ThumbnailType(str, Enum):

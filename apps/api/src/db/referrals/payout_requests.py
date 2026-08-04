@@ -6,7 +6,9 @@ Manages payout requests from referrers with Paystack integration
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey, Index, JSON, Text
+
+from sqlmodel import (JSON, BigInteger, Column, Field, ForeignKey, Index,
+                      SQLModel, Text)
 
 
 class PayoutStatus(str, Enum):

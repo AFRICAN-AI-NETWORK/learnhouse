@@ -1,6 +1,7 @@
 """Apply Smart Article enum values directly to Postgres."""
 
 import os
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 

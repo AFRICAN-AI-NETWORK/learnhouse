@@ -6,19 +6,14 @@ publish action itself.
 """
 
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-
 from sqlmodel import Session
 
-from src.db.courses.activities import (
-    Activity,
-    ActivitySubTypeEnum,
-    ActivityTypeEnum,
-    ActivityUpdate,
-)
+from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
+                                       ActivityTypeEnum, ActivityUpdate)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter, ChapterUpdate
 from src.services.courses import chapters as chapters_service

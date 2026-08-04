@@ -1,9 +1,10 @@
 """Waitlist Course Service - Course listing with pricing information"""
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
 from sqlalchemy import func
+from sqlmodel import Session, select
 
 from src.db.courses.courses import Course
 from src.db.payments.payments_courses import PaymentsCourse

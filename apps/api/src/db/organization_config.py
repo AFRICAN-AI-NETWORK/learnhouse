@@ -1,4 +1,5 @@
 from typing import Literal, Optional
+
 from pydantic import BaseModel
 from sqlalchemy import JSON, BigInteger, Column, ForeignKey
 from sqlmodel import Field, SQLModel

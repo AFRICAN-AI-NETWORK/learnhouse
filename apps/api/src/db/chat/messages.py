@@ -1,8 +1,9 @@
-from typing import Optional, List, Union
 from datetime import datetime
-from sqlmodel import Field, SQLModel, Column, JSON, Integer
-from sqlalchemy import ForeignKey, CheckConstraint, UniqueConstraint
+from typing import List, Optional, Union
+
 from pydantic import BaseModel
+from sqlalchemy import CheckConstraint, ForeignKey, UniqueConstraint
+from sqlmodel import JSON, Column, Field, Integer, SQLModel
 
 
 class MessageBase(SQLModel):

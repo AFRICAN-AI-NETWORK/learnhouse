@@ -8,9 +8,9 @@ Create Date: 2025-03-20 11:05:24.951129
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa  # noqa: F401
 import sqlmodel  # noqa: F401
+from alembic import op
 from alembic_postgresql_enum import TableReference
 from sqlalchemy.dialects import postgresql
 

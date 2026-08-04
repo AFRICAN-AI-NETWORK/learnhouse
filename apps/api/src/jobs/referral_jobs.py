@@ -11,11 +11,12 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
+
 from sqlmodel import Session, select
+
 from src.core.events.database import engine
-from src.services.referrals.referral_commissions import (
-    update_pending_commissions_to_eligible,
-)
+from src.services.referrals.referral_commissions import \
+    update_pending_commissions_to_eligible
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,8 @@ def _sync_process_commissions() -> dict:
 
 def _sync_process_payouts() -> dict:
     """Process payout requests on a worker thread."""
-    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
+    from src.db.referrals.payout_requests import (PayoutStatus,
+                                                  ReferrerPayoutRequest)
     from src.services.referrals.payouts import process_payout_request
 
     start = time.monotonic()

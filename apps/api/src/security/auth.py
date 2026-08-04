@@ -1,20 +1,21 @@
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from sqlmodel import Session, select  # Added 'select' here
-from src.core.events.database import get_db_session
-from src.db.users import AnonymousUser, PublicUser, User, UserRead
-from src.services.users.users import security_get_user
-from config.config import get_learnhouse_config
-from pydantic import BaseModel
+
+import jwt as pyjwt_lib
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from datetime import datetime, timedelta, timezone
-from src.services.dev.dev import isDevModeEnabled
-from src.services.users.users import security_verify_password
-from src.security.security import ALGORITHM, SECRET_KEY
-from src.db.waitlist import UserStatusEnum
+from pydantic import BaseModel
+from sqlmodel import Session, select  # Added 'select' here
 
-import jwt as pyjwt_lib
+from config.config import get_learnhouse_config
+from src.core.events.database import get_db_session
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
+from src.db.waitlist import UserStatusEnum
+from src.security.security import ALGORITHM, SECRET_KEY
+from src.services.dev.dev import isDevModeEnabled
+from src.services.users.users import (security_get_user,
+                                      security_verify_password)
 
 if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
     _original_encode = pyjwt_lib.encode
@@ -219,10 +220,12 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
     )
     """
     try:
-        from fastapi_jwt_auth import AuthJWT
-        from src.db.users import User
-        from sqlmodel import select
         import logging
+
+        from fastapi_jwt_auth import AuthJWT
+        from sqlmodel import select
+
+        from src.db.users import User
 
         # Create AuthJWT instance with the token
         auth = AuthJWT()

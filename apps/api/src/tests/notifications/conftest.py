@@ -1,9 +1,9 @@
 """Fixtures for notification service tests."""
 
-import pytest
 from datetime import datetime
 from uuid import uuid4
 
+import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -12,10 +12,9 @@ from sqlmodel.pool import StaticPool
 # only indirectly (e.g. trail -> cohorts -> paymentsuser) can be missing
 # from metadata depending on which modules a given test file imports.
 import src.core.events.database  # noqa: F401
-
-from src.db.users import User
-from src.db.organizations import Organization
 from src.db.courses.courses import Course
+from src.db.organizations import Organization
+from src.db.users import User
 
 
 @pytest.fixture(name="session", scope="function")

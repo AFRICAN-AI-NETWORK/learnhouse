@@ -4,20 +4,16 @@ from fastapi import APIRouter, Depends, Query, Request
 
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
-from src.services.admin_analytics.schemas import (
-    OrgAnalyticsSummary,
-    StudentCourseDetail,
-    StudentDetail,
-    StudentListResponse,
-    TopStudentsResponse,
-)
-from src.services.admin_analytics.students import (
-    get_org_analytics_summary,
-    get_student_course_detail,
-    get_student_detail,
-    list_org_students,
-    get_top_org_students,
-)
+from src.services.admin_analytics.schemas import (OrgAnalyticsSummary,
+                                                  StudentCourseDetail,
+                                                  StudentDetail,
+                                                  StudentListResponse,
+                                                  TopStudentsResponse)
+from src.services.admin_analytics.students import (get_org_analytics_summary,
+                                                   get_student_course_detail,
+                                                   get_student_detail,
+                                                   get_top_org_students,
+                                                   list_org_students)
 
 router = APIRouter()
 

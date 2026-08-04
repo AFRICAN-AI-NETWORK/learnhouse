@@ -1,21 +1,17 @@
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 from fastapi import HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
-from sqlmodel import Session, create_engine, SQLModel
-from src.security.auth import (
-    authenticate_user,
-    create_access_token,
-    get_current_user,
-    non_public_endpoint,
-    Token,
-    TokenData,
-    Settings,
-)
-from src.db.users import User, AnonymousUser, PublicUser
-from datetime import datetime, timedelta, timezone
 from jose import jwt
-from src.security.security import SECRET_KEY, ALGORITHM, security_hash_password
+from sqlmodel import Session, SQLModel, create_engine
+
+from src.db.users import AnonymousUser, PublicUser, User
+from src.security.auth import (Settings, Token, TokenData, authenticate_user,
+                               create_access_token, get_current_user,
+                               non_public_endpoint)
+from src.security.security import ALGORITHM, SECRET_KEY, security_hash_password
 
 
 class TestAuth:

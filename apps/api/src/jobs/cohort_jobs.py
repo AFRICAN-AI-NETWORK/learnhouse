@@ -6,10 +6,11 @@ This module contains scheduled jobs for processing cohort unlocking.
 import asyncio
 import logging
 from datetime import datetime, timezone
+
 from sqlmodel import Session, select
 
 from src.core.events.database import engine
-from src.db.cohorts import Cohort, CohortStatusEnum, CohortEnrollment
+from src.db.cohorts import Cohort, CohortEnrollment, CohortStatusEnum
 
 logger = logging.getLogger(__name__)
 

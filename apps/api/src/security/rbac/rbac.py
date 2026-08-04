@@ -1,20 +1,17 @@
 from typing import Literal, Sequence
-from fastapi import HTTPException, status, Request
+
+from fastapi import HTTPException, Request, status
 from sqlalchemy import null
 from sqlmodel import Session, select
+
 from src.db.collections import Collection
 from src.db.courses.courses import Course
-from src.db.resource_authors import (
-    ResourceAuthor,
-    ResourceAuthorshipEnum,
-    ResourceAuthorshipStatusEnum,
-)
+from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
+                                     ResourceAuthorshipStatusEnum)
 from src.db.roles import Role
 from src.db.user_organizations import UserOrganization
-from src.security.rbac.utils import (
-    check_element_type,
-    check_course_permissions_with_own,
-)
+from src.security.rbac.utils import (check_course_permissions_with_own,
+                                     check_element_type)
 
 # Role ids that are treated as organization administrators. Admins bypass the
 # fine-grained rights checks (they implicitly hold every permission).

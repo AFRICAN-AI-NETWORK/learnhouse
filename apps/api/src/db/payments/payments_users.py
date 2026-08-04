@@ -1,8 +1,9 @@
-from openai import BaseModel
-from sqlmodel import SQLModel, Field, Column, BigInteger, ForeignKey, JSON
-from typing import Optional
 from datetime import datetime
 from enum import Enum
+from typing import Optional
+
+from openai import BaseModel
+from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, SQLModel
 
 
 class PaymentStatusEnum(str, Enum):

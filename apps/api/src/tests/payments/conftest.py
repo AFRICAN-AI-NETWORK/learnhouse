@@ -8,31 +8,26 @@ to SQLite in-memory).
 """
 
 import os
-import pytest
 from datetime import datetime, timedelta
-from sqlmodel import Session, SQLModel, create_engine
-from sqlalchemy.pool import StaticPool
 
+import pytest
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
+
+from src.db.courses.courses import Course
 # Import ALL table models so SQLModel.metadata registers them for create_all().
 from src.db.organizations import Organization
-from src.db.users import User
-from src.db.courses.courses import Course
+from src.db.payments.discount_codes import (DiscountCode, DiscountCodeUsage,
+                                            DiscountTypeEnum)
+from src.db.payments.payments import (PaymentProviderEnum,  # noqa: F401
+                                      PaymentsConfig)
+from src.db.payments.payments_products import (  # noqa: F401
+    PaymentPriceTypeEnum, PaymentProductTypeEnum, PaymentsProduct)
+from src.db.payments.payments_users import PaymentsUser
+from src.db.resource_authors import ResourceAuthor  # noqa: F401
 from src.db.roles import Role  # noqa: F401
 from src.db.user_organizations import UserOrganization  # noqa: F401
-from src.db.resource_authors import ResourceAuthor  # noqa: F401
-from src.db.payments.discount_codes import (
-    DiscountCode,
-    DiscountCodeUsage,
-    DiscountTypeEnum,
-)
-from src.db.payments.payments import PaymentsConfig, PaymentProviderEnum  # noqa: F401
-from src.db.payments.payments_products import (
-    PaymentsProduct,
-    PaymentProductTypeEnum,
-    PaymentPriceTypeEnum,
-)  # noqa: F401
-from src.db.payments.payments_users import PaymentsUser
-
+from src.db.users import User
 
 # Use PostgreSQL when available (CI), otherwise fall back to SQLite in-memory.
 TEST_DATABASE_URL = os.getenv(
@@ -293,6 +288,7 @@ def mock_payment_user(
 ):
     """Create a test payment user record."""
     from datetime import datetime
+
     from src.db.payments.payments_users import PaymentStatusEnum
 
     payment = PaymentsUser(

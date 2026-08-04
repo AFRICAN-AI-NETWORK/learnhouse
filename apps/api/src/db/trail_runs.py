@@ -1,8 +1,9 @@
+from enum import Enum
 from typing import Optional
+
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from enum import Enum
 
 from src.db.trail_steps import TrailStep
 

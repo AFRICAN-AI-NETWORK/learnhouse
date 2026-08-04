@@ -1,6 +1,7 @@
-from sqlmodel import SQLModel, Field, Column, BigInteger, ForeignKey
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
 
 class PaymentsCourseBase(SQLModel):

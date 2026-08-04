@@ -1,21 +1,19 @@
 """Shared test fixtures for waitlist tests"""
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
-from sqlmodel import Session, create_engine, SQLModel
-from src.db.users import User
-from src.db.organizations import Organization
+
+import pytest
+from sqlmodel import Session, SQLModel, create_engine
+
 from src.db.courses.courses import Course
-from src.db.waitlist import (
-    WaitlistConfig,
-    WaitlistEmailLog,
-    WaitlistCoursePreference,
-    UserStatusEnum,
-    WaitlistStatusEnum,
-)
+from src.db.organizations import Organization
 from src.db.payments.payments import PaymentsConfig  # noqa: F401
 from src.db.payments.payments_products import PaymentsProduct  # noqa: F401
+from src.db.users import User
+from src.db.waitlist import (UserStatusEnum, WaitlistConfig,
+                             WaitlistCoursePreference, WaitlistEmailLog,
+                             WaitlistStatusEnum)
 
 
 @pytest.fixture
@@ -46,8 +44,9 @@ def db_session(test_db_engine):
 @pytest.fixture
 def sample_org(db_session):
     """Create a sample organization for testing"""
-    from src.db.organization_config import OrganizationConfig
     from datetime import datetime, timezone
+
+    from src.db.organization_config import OrganizationConfig
 
     org = Organization(
         id=1,

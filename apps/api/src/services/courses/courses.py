@@ -1,39 +1,29 @@
+from datetime import datetime
 from typing import List
 from uuid import uuid4
-from sqlmodel import Session, select, or_, and_, text
-from src.db.usergroup_resources import UserGroupResource
-from src.db.usergroup_user import UserGroupUser
+
+from fastapi import HTTPException, Request, UploadFile, status
+from sqlmodel import Session, and_, or_, select, text
+
+from src.db.courses.courses import (AuthorWithRole, Course, CourseCreate,
+                                    CourseRead, CourseUpdate, FullCourseRead,
+                                    ThumbnailType)
 from src.db.organizations import Organization
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentsProduct
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    decrease_feature_usage,
-    increase_feature_usage,
-)
-from src.db.resource_authors import (
-    ResourceAuthor,
-    ResourceAuthorshipEnum,
-    ResourceAuthorshipStatusEnum,
-)
-from src.db.users import PublicUser, AnonymousUser, User, UserRead
-from src.db.courses.courses import (
-    Course,
-    CourseCreate,
-    CourseRead,
-    CourseUpdate,
-    FullCourseRead,
-    AuthorWithRole,
-    ThumbnailType,
-)
-from src.security.rbac.rbac import (
-    authorization_verify_if_user_is_anon,
-    authorization_verify_based_on_org_admin_status,
-)
-from src.services.courses.thumbnails import upload_thumbnail
-from fastapi import HTTPException, Request, UploadFile, status
-from datetime import datetime
+from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
+                                     ResourceAuthorshipStatusEnum)
+from src.db.usergroup_resources import UserGroupResource
+from src.db.usergroup_user import UserGroupUser
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.courses_security import courses_rbac_check
+from src.security.features_utils.usage import (check_limits_with_usage,
+                                               decrease_feature_usage,
+                                               increase_feature_usage)
+from src.security.rbac.rbac import (
+    authorization_verify_based_on_org_admin_status,
+    authorization_verify_if_user_is_anon)
+from src.services.courses.thumbnails import upload_thumbnail
 
 
 async def get_course(
@@ -978,8 +968,9 @@ async def get_course_user_rights(
                 rights["ownership"]["is_owner"] = True
 
     # Check user roles
-    from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
-    from src.security.rbac.rbac import authorization_verify_based_on_roles
+    from src.security.rbac.rbac import (
+        authorization_verify_based_on_org_admin_status,
+        authorization_verify_based_on_roles)
 
     # Check admin/maintainer role
     is_admin_or_maintainer = await authorization_verify_based_on_org_admin_status(

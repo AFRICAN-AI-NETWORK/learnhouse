@@ -7,13 +7,11 @@ from fastapi import HTTPException
 from sqlmodel import select
 
 from src.db.trail_sessions import TrailActivitySession
-from src.services.trail.tracking import (
-    IDLE_GAP_SECONDS,
-    MAX_HEARTBEAT_SECONDS,
-    ActivityHeartbeat,
-    record_activity_heartbeat,
-)
 from src.db.users import AnonymousUser
+from src.services.trail.tracking import (IDLE_GAP_SECONDS,
+                                         MAX_HEARTBEAT_SECONDS,
+                                         ActivityHeartbeat,
+                                         record_activity_heartbeat)
 
 from .conftest import current_user, make_activity, make_chapter, make_course
 

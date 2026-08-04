@@ -1,26 +1,22 @@
 import json
 import logging
+from datetime import datetime
 from io import BytesIO
+from uuid import uuid4
 
+from fastapi import HTTPException, Request, UploadFile, status
 from pypdf import PdfReader
 from sqlmodel import Session, select
-from fastapi import HTTPException, status, UploadFile, Request
-from uuid import uuid4
-from datetime import datetime
 
-from src.db.courses.courses import Course
-from src.db.courses.chapters import Chapter
-from src.db.courses.activities import (
-    Activity,
-    ActivityRead,
-    ActivitySubTypeEnum,
-    ActivityTypeEnum,
-)
+from config.config import get_learnhouse_config
+from src.db.courses.activities import (Activity, ActivityRead,
+                                       ActivitySubTypeEnum, ActivityTypeEnum)
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_activities
-from config.config import get_learnhouse_config
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +69,7 @@ def _parse_ai_response(result_text: str, raw_text: str) -> list[dict]:
 
 async def chunk_text_with_openai(raw_text: str, api_key: str) -> list[dict]:
     """Chunk text using OpenAI's API."""
-    from openai import OpenAI, RateLimitError, APIError
+    from openai import APIError, OpenAI, RateLimitError
 
     client = OpenAI(api_key=api_key)
 

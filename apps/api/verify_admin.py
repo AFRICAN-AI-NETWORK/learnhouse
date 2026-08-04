@@ -4,9 +4,12 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, create_engine
+
 from src.db.users import User
 
 DATABASE_URL = os.getenv("LEARNHOUSE_SQL_CONNECTION_STRING")
@@ -22,5 +25,5 @@ try:
             print("Admin email verified successfully.")
         else:
             print("Admin user not found.")
-except Exception as e:
+except SQLAlchemyError as e:
     print("Failed:", e)

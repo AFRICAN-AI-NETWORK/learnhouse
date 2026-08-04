@@ -1,7 +1,8 @@
-from typing import Optional, Dict, Any
-from uuid import uuid4
-import redis
 import json
+from typing import Any, Dict, Optional
+from uuid import uuid4
+
+import redis
 from openai import OpenAI
 
 from config.config import get_learnhouse_config

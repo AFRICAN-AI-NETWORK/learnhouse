@@ -1,10 +1,11 @@
-import httpx
+import asyncio
+import os
 import subprocess  # nosec B404
 import tempfile
-import os
 import time
-import asyncio
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
+import httpx
 from pydantic import BaseModel
 
 PISTON_URL = os.getenv("PISTON_URL", "http://localhost:2000")

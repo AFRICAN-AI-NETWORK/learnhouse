@@ -1,17 +1,18 @@
 """Fixtures for chat tests."""
 
-import pytest
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.pool import StaticPool
 from datetime import datetime
 from uuid import uuid4
 
-from src.db.users import User
-from src.db.organizations import Organization
-from src.db.user_organizations import UserOrganization
-from src.db.roles import Role
+import pytest
+from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel.pool import StaticPool
+
 from src.db.chat.conversations import Conversation
 from src.db.chat.messages import Message
+from src.db.organizations import Organization
+from src.db.roles import Role
+from src.db.user_organizations import UserOrganization
+from src.db.users import User
 
 
 @pytest.fixture(name="session", scope="function")

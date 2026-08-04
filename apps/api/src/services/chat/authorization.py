@@ -1,10 +1,12 @@
-from typing import Optional, List
 from enum import Enum
+from typing import List, Optional
+
 from fastapi import HTTPException, status
-from sqlmodel import Session, select, func
-from src.db.users import User
-from src.db.user_organizations import UserOrganization
+from sqlmodel import Session, func, select
+
 from src.db.roles import Role
+from src.db.user_organizations import UserOrganization
+from src.db.users import User
 
 
 class ChatRole(str, Enum):

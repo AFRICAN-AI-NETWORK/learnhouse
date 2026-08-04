@@ -8,15 +8,14 @@ import secrets
 import string
 from datetime import datetime
 from typing import Optional
+
 from fastapi import HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, and_, select
+
 from config.config import get_learnhouse_config
-from src.db.referrals.referral_codes import (
-    ReferralCode,
-    ReferralCodeRead,
-    ReferralCodeStatus,
-)
+from src.db.referrals.referral_codes import (ReferralCode, ReferralCodeRead,
+                                             ReferralCodeStatus)
 from src.db.users import PublicUser, User
 
 logger = logging.getLogger(__name__)

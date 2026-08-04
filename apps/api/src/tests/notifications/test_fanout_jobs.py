@@ -1,12 +1,13 @@
 """Tests for the course/org-wide notification fan-out jobs."""
 
-import pytest
 from datetime import datetime
 from uuid import uuid4
 
+import pytest
 from sqlmodel import Session, select
 
-from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
+from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
+                                       ActivityTypeEnum)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.notifications import Notification, NotificationType
@@ -15,11 +16,9 @@ from src.db.trail_runs import TrailRun
 from src.db.trails import Trail
 from src.db.user_organizations import UserOrganization
 from src.db.users import User
-from src.services.notifications.fanout_jobs import (
-    fanout_activity_added,
-    fanout_app_update,
-    fanout_chapter_added,
-)
+from src.services.notifications.fanout_jobs import (fanout_activity_added,
+                                                    fanout_app_update,
+                                                    fanout_chapter_added)
 from src.services.trail.trail import get_enrolled_user_ids_for_course
 
 

@@ -3,21 +3,17 @@ Comprehensive unit tests for referral tracking service
 Tests fraud detection, IP extraction, and signup tracking
 """
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
+
+import pytest
 from fastapi import HTTPException, Request
 
-from src.services.referrals.referral_tracking import (
-    extract_ip_address,
-    calculate_fraud_risk_score,
-    create_referral_tracking,
-    validate_and_track_referral,
-    IP_FRAUD_THRESHOLD,
-    DEVICE_FRAUD_THRESHOLD,
-)
-from src.db.referrals.referral_tracking import ReferralTracking
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
+from src.db.referrals.referral_tracking import ReferralTracking
+from src.services.referrals.referral_tracking import (
+    DEVICE_FRAUD_THRESHOLD, IP_FRAUD_THRESHOLD, calculate_fraud_risk_score,
+    create_referral_tracking, extract_ip_address, validate_and_track_referral)
 
 
 class TestExtractIPAddress:

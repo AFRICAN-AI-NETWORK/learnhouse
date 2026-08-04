@@ -1,15 +1,16 @@
-from typing import List
-from fastapi import APIRouter, Depends, Query, HTTPException, status
-from fastapi.responses import JSONResponse
-from sqlmodel import Session, select, func
-from sqlalchemy.orm import aliased
 from datetime import datetime
+from typing import List
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import aliased
+from sqlmodel import Session, func, select
+
+from src.core.events.database import get_db_session
 from src.db.chat.conversations import Conversation
 from src.db.chat.messages import Message
-from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
 from src.db.users import User
+from src.security.auth import get_current_user
 from src.services.chat.audit import get_audit_logs
 
 router = APIRouter()
@@ -17,8 +18,8 @@ router = APIRouter()
 
 async def verify_admin_permission(current_user: User, org_id: int, db: Session) -> bool:
     """Verify user has admin privileges in the organization."""
-    from src.db.user_organizations import UserOrganization
     from src.db.roles import Role
+    from src.db.user_organizations import UserOrganization
 
     # Get user's role in organization
     user_org = db.exec(
@@ -209,6 +210,7 @@ async def export_conversation(
         # CSV format implementation
         import csv
         from io import StringIO
+
         from fastapi.responses import StreamingResponse
 
         output = StringIO()

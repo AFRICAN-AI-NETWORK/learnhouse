@@ -1,7 +1,10 @@
-from datetime import datetime, timedelta
-from sqlmodel import Session, select
-from src.db.chat.conversations import Conversation, ConversationParticipantState
 import logging
+from datetime import datetime, timedelta
+
+from sqlmodel import Session, select
+
+from src.db.chat.conversations import (Conversation,
+                                       ConversationParticipantState)
 
 logger = logging.getLogger(__name__)
 

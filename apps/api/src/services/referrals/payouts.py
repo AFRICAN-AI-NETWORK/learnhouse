@@ -3,27 +3,28 @@ Payout Service - Manages referrer payout requests with Paystack integration
 Implements safe two-phase commit pattern to prevent balance loss
 """
 
-import os
-import json
 import base64
+import json
 import logging
+import os
 from datetime import datetime
 from typing import Optional
+
+import redis
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select, and_
-import redis
-from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
-from src.db.referrals.payout_requests import (
-    ReferrerPayoutRequest,
-    ReferrerPayoutRequestRead,
-    PayoutStatus,
-    BankDetails,
-)
-from src.db.referrals.referral_commissions import ReferralCommission, CommissionStatus
-from src.db.users import User, PublicUser
-from src.services.payments.payments_paystack import make_paystack_request
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
+from sqlmodel import Session, and_, select
+
 from config.config import get_learnhouse_config
+from src.db.referrals.payout_requests import (BankDetails, PayoutStatus,
+                                              ReferrerPayoutRequest,
+                                              ReferrerPayoutRequestRead)
+from src.db.referrals.referral_commissions import (CommissionStatus,
+                                                   ReferralCommission)
+from src.db.users import PublicUser, User
+from src.services.payments.payments_paystack import make_paystack_request
 
 logger = logging.getLogger(__name__)
 

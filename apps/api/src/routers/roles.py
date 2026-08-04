@@ -1,18 +1,15 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from sqlmodel import Session
-from src.core.events.database import get_db_session
-from src.db.roles import RoleCreate, RoleRead, RoleUpdate
-from src.security.auth import get_current_user
-from src.services.roles.roles import (
-    create_role,
-    delete_role,
-    read_role,
-    update_role,
-    get_roles_by_organization,
-)
-from src.db.users import PublicUser
 from typing import List
 
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlmodel import Session
+
+from src.core.events.database import get_db_session
+from src.db.roles import RoleCreate, RoleRead, RoleUpdate
+from src.db.users import PublicUser
+from src.security.auth import get_current_user
+from src.services.roles.roles import (create_role, delete_role,
+                                      get_roles_by_organization, read_role,
+                                      update_role)
 
 router = APIRouter()
 

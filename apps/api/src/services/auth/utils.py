@@ -1,8 +1,10 @@
 import secrets
 from typing import Optional
-from fastapi import Depends, HTTPException, Request
+
 import httpx
+from fastapi import Depends, HTTPException, Request
 from sqlmodel import Session, select
+
 from src.core.events.database import get_db_session
 from src.db.users import User, UserCreate, UserRead
 from src.security.auth import get_current_user

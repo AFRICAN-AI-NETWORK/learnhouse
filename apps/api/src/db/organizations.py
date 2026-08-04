@@ -1,10 +1,11 @@
 from typing import Optional
+
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
-from src.db.roles import RoleRead
 
 from src.db.organization_config import OrganizationConfig
+from src.db.roles import RoleRead
 
 
 class OrganizationBase(SQLModel):

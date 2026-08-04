@@ -3,22 +3,20 @@ Integration tests for referral system
 Tests end-to-end flows and interactions between components
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
-from src.services.referrals.referral_codes import (
-    create_referral_code_for_user,
-)
-from src.services.referrals.referral_tracking import validate_and_track_referral
-from src.services.referrals.referral_commissions import (
-    create_commission_for_payment,
-    forfeit_commission_for_refund,
-    update_pending_commissions_to_eligible,
-)
+import pytest
+
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
 from src.db.referrals.referral_commissions import CommissionStatus
-from src.db.users import User, PublicUser
+from src.db.users import PublicUser, User
+from src.services.referrals.referral_codes import create_referral_code_for_user
+from src.services.referrals.referral_commissions import (
+    create_commission_for_payment, forfeit_commission_for_refund,
+    update_pending_commissions_to_eligible)
+from src.services.referrals.referral_tracking import \
+    validate_and_track_referral
 
 
 class TestReferralE2EFlow:

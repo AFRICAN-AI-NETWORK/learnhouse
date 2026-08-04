@@ -1,6 +1,7 @@
-from typing import Optional
-from sqlmodel import SQLModel, Field, Column, Integer, ForeignKey
 from datetime import datetime
+from typing import Optional
+
+from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
 
 
 class AnnouncementBase(SQLModel):

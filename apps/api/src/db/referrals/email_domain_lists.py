@@ -4,8 +4,8 @@ Stores disposable and legitimate email domains dynamically
 """
 
 from datetime import datetime
-from typing import Optional
 from enum import Enum
+from typing import Optional
 
 from sqlmodel import Field, SQLModel
 

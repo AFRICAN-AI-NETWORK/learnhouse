@@ -1,49 +1,32 @@
 from typing import List, Literal
+
 from fastapi import APIRouter, Depends, Request, UploadFile
 from sqlmodel import Session
-from src.services.orgs.invites import (
-    create_invite_code,
-    create_invite_code_with_usergroup,
-    delete_invite_code,
-    get_invite_code,
-    get_invite_codes,
-)
-from src.services.orgs.join import JoinOrg, join_org
-from src.services.orgs.users import (
-    get_list_of_invited_users,
-    get_organization_users,
-    invite_batch_users,
-    remove_invited_user,
-    remove_user_from_org,
-    update_user_role,
-)
-from src.db.organization_config import OrganizationConfigBase
-from src.db.users import PublicUser
-from src.db.organizations import (
-    OrganizationCreate,
-    OrganizationRead,
-    OrganizationUpdate,
-    OrganizationUser,
-)
-from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
-from src.services.orgs.orgs import (
-    create_org,
-    create_org_with_config,
-    delete_org,
-    get_organization,
-    get_organization_by_slug,
-    get_orgs_by_user,
-    get_orgs_by_user_admin,
-    update_org,
-    update_org_logo,
-    update_org_preview,
-    update_org_signup_mechanism,
-    update_org_thumbnail,
-    update_org_landing,
-    upload_org_landing_content_service,
-)
 
+from src.core.events.database import get_db_session
+from src.db.organization_config import OrganizationConfigBase
+from src.db.organizations import (OrganizationCreate, OrganizationRead,
+                                  OrganizationUpdate, OrganizationUser)
+from src.db.users import PublicUser
+from src.security.auth import get_current_user
+from src.services.orgs.invites import (create_invite_code,
+                                       create_invite_code_with_usergroup,
+                                       delete_invite_code, get_invite_code,
+                                       get_invite_codes)
+from src.services.orgs.join import JoinOrg, join_org
+from src.services.orgs.orgs import (create_org, create_org_with_config,
+                                    delete_org, get_organization,
+                                    get_organization_by_slug, get_orgs_by_user,
+                                    get_orgs_by_user_admin, update_org,
+                                    update_org_landing, update_org_logo,
+                                    update_org_preview,
+                                    update_org_signup_mechanism,
+                                    update_org_thumbnail,
+                                    upload_org_landing_content_service)
+from src.services.orgs.users import (get_list_of_invited_users,
+                                     get_organization_users,
+                                     invite_batch_users, remove_invited_user,
+                                     remove_user_from_org, update_user_role)
 
 router = APIRouter()
 

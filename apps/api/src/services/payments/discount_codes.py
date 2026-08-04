@@ -5,21 +5,20 @@ Implements critical security measures for race condition prevention.
 
 import logging
 from datetime import datetime
-from typing import Tuple, Literal, Optional
+from typing import Literal, Optional, Tuple
+
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select, and_
-from src.db.payments.discount_codes import (
-    DiscountCode,
-    DiscountCodeUsage,
-    DiscountTypeEnum,
-    DiscountCodeCreate,
-    DiscountCodeRead,
-    DiscountCodeUpdate,
-)
+from sqlalchemy import text
+from sqlmodel import Session, and_, select
+
 from src.db.organizations import Organization
+from src.db.payments.discount_codes import (DiscountCode, DiscountCodeCreate,
+                                            DiscountCodeRead,
+                                            DiscountCodeUpdate,
+                                            DiscountCodeUsage,
+                                            DiscountTypeEnum)
 from src.db.users import PublicUser
 from src.services.orgs.orgs import rbac_check
-from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -545,8 +544,9 @@ async def list_discount_codes(
     if not is_org_admin:
         # For non-admins, only show codes for courses they manage
         # This requires an inner join with ResourceAuthor
-        from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
         from src.db.courses.courses import Course
+        from src.db.resource_authors import (ResourceAuthor,
+                                             ResourceAuthorshipStatusEnum)
 
         query = query.join(
             ResourceAuthor,

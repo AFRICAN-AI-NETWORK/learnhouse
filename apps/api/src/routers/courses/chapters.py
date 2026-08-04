@@ -1,24 +1,17 @@
 from typing import List
-from fastapi import APIRouter, Depends, Request
-from src.core.events.database import get_db_session
-from src.db.courses.chapters import (
-    ChapterCreate,
-    ChapterRead,
-    ChapterUpdate,
-    ChapterUpdateOrder,
-)
-from src.services.courses.chapters import (
-    DEPRECEATED_get_course_chapters,
-    create_chapter,
-    delete_chapter,
-    get_chapter,
-    get_course_chapters,
-    reorder_chapters_and_activities,
-    update_chapter,
-)
 
-from src.services.users.users import PublicUser
+from fastapi import APIRouter, Depends, Request
+
+from src.core.events.database import get_db_session
+from src.db.courses.chapters import (ChapterCreate, ChapterRead, ChapterUpdate,
+                                     ChapterUpdateOrder)
 from src.security.auth import get_current_user
+from src.services.courses.chapters import (DEPRECEATED_get_course_chapters,
+                                           create_chapter, delete_chapter,
+                                           get_chapter, get_course_chapters,
+                                           reorder_chapters_and_activities,
+                                           update_chapter)
+from src.services.users.users import PublicUser
 
 router = APIRouter()
 

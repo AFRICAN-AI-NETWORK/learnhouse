@@ -6,25 +6,23 @@ from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 
 from src.db.courses.courses import Course
-from src.db.courses.schedules import (
-    CourseRegisterEntry,
-    CourseRegisterEntryRead,
-    CourseRegisterEntryUpdate,
-    CourseRegisterPeriodRead,
-    CourseRegisterPolicy,
-    CourseRegisterPolicyRead,
-    CourseRegisterPolicyUpdate,
-    CourseRegisterSummaryRead,
-    CourseTimetableEvent,
-    CourseTimetableEventCreate,
-    CourseTimetableEventRead,
-    CourseTimetableEventUpdate,
-    RegisterEntryMethodEnum,
-    RegisterEntryStatusEnum,
-    RegisterFrequencyEnum,
-    StudentTimetableEventRead,
-    TimetableVisibilityEnum,
-)
+from src.db.courses.schedules import (CourseRegisterEntry,
+                                      CourseRegisterEntryRead,
+                                      CourseRegisterEntryUpdate,
+                                      CourseRegisterPeriodRead,
+                                      CourseRegisterPolicy,
+                                      CourseRegisterPolicyRead,
+                                      CourseRegisterPolicyUpdate,
+                                      CourseRegisterSummaryRead,
+                                      CourseTimetableEvent,
+                                      CourseTimetableEventCreate,
+                                      CourseTimetableEventRead,
+                                      CourseTimetableEventUpdate,
+                                      RegisterEntryMethodEnum,
+                                      RegisterEntryStatusEnum,
+                                      RegisterFrequencyEnum,
+                                      StudentTimetableEventRead,
+                                      TimetableVisibilityEnum)
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check
 

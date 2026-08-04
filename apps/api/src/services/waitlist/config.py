@@ -3,18 +3,15 @@
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
+
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
 
-from src.db.waitlist import (
-    WaitlistConfig,
-    WaitlistConfigCreate,
-    WaitlistConfigUpdate,
-    WaitlistConfigRead,
-    WaitlistStatusEnum,
-)
-from src.db.organizations import Organization
 from src.db.cohorts import CohortCreate
+from src.db.organizations import Organization
+from src.db.waitlist import (WaitlistConfig, WaitlistConfigCreate,
+                             WaitlistConfigRead, WaitlistConfigUpdate,
+                             WaitlistStatusEnum)
 from src.services.cohorts.cohorts import create_cohort
 
 

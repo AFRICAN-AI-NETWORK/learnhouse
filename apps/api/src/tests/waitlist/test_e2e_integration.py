@@ -3,26 +3,22 @@
 These tests verify the complete waitlist flow from creation to user activation.
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
+
+import pytest
 from sqlmodel import select
 
-from src.db.users import User
-from src.db.waitlist import (
-    WaitlistConfig,
-    WaitlistConfigCreate,
-    WaitlistStatusEnum,
-    WaitlistCoursePreference,
-    WaitlistEmailLog,
-    UserStatusEnum,
-)
 from src.db.courses.courses import Course
-from src.services.waitlist.config import create_waitlist_config
+from src.db.users import User
+from src.db.waitlist import (UserStatusEnum, WaitlistConfig,
+                             WaitlistConfigCreate, WaitlistCoursePreference,
+                             WaitlistEmailLog, WaitlistStatusEnum)
+from src.security.auth import authenticate_user
 from src.services.users.waitlist import create_waitlist_user
+from src.services.waitlist.config import create_waitlist_config
 from src.services.waitlist.courses import get_org_courses_for_waitlist
 from src.services.waitlist.emails import process_waitlist_activations
-from src.security.auth import authenticate_user
 
 
 class TestCompleteWaitlistFlow:
@@ -78,8 +74,8 @@ class TestCompleteWaitlistFlow:
         assert waitlist.total_registrations == 0
 
         # ========== Step 2: Create products for selection ==========
-        from src.db.payments.payments_products import PaymentsProduct
         from src.db.payments.payments_courses import PaymentsCourse
+        from src.db.payments.payments_products import PaymentsProduct
 
         course1 = Course(
             name="Python Basics",
@@ -266,8 +262,8 @@ class TestWaitlistCancellationFlow:
         mock_request,
     ):
         """Test that cancelled waitlists prevent new user registrations"""
-        from src.services.waitlist.config import cancel_waitlist_config
         from src.db.users import UserCreate
+        from src.services.waitlist.config import cancel_waitlist_config
 
         mock_check_limits.return_value = None
         mock_increase.return_value = None
@@ -314,10 +310,8 @@ class TestMultipleWaitlistCampaigns:
         self, db_session, sample_org, sample_user, mock_request
     ):
         """Test that an org can have multiple active waitlists"""
-        from src.services.waitlist.config import (
-            create_waitlist_config,
-            get_org_waitlist_configs,
-        )
+        from src.services.waitlist.config import (create_waitlist_config,
+                                                  get_org_waitlist_configs)
 
         # Create multiple waitlists
         for i in range(3):
@@ -364,8 +358,9 @@ class TestWaitlistAnalytics:
         mock_request,
     ):
         """Test analytics for course preferences"""
-        from src.services.waitlist.courses import get_course_preference_analytics
         from src.db.users import UserCreate
+        from src.services.waitlist.courses import \
+            get_course_preference_analytics
 
         mock_check_limits.return_value = None
         mock_increase.return_value = None

@@ -1,20 +1,18 @@
-from typing import List, Optional
-from datetime import datetime
-from uuid import uuid4
-from sqlmodel import Session, select, and_, or_, func
-from fastapi import HTTPException, status
-
-from src.db.chat.conversations import (
-    Conversation,
-    ConversationRead,
-    ConversationWithLastMessage,
-)
-from src.db.chat.messages import Message, MessageReadReceipt
-from src.db.users import User
-from src.db.user_organizations import UserOrganization
-from src.db.roles import Role
-from src.services.chat.authorization import verify_chat_permission
 import logging
+from datetime import datetime
+from typing import List, Optional
+from uuid import uuid4
+
+from fastapi import HTTPException, status
+from sqlmodel import Session, and_, func, or_, select
+
+from src.db.chat.conversations import (Conversation, ConversationRead,
+                                       ConversationWithLastMessage)
+from src.db.chat.messages import Message, MessageReadReceipt
+from src.db.roles import Role
+from src.db.user_organizations import UserOrganization
+from src.db.users import User
+from src.services.chat.authorization import verify_chat_permission
 
 logger = logging.getLogger(__name__)
 

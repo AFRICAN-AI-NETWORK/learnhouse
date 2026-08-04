@@ -1,6 +1,7 @@
 from typing import Optional
+
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from sqlalchemy import Column, Integer, ForeignKey
 
 
 class CoursePrerequisite(SQLModel, table=True):

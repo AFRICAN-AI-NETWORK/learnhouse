@@ -1,17 +1,20 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, HTTPException, status
-from fastapi.responses import StreamingResponse
-from sqlmodel import Session, select, desc, func
-from src.core.events.database import get_db_session
-from ee.db.audit_logs import AuditLog, AuditLogRead, AuditLogPaginated
-from src.db.users import User, PublicUser
-from src.db.organizations import Organization
-from src.db.organization_config import OrganizationConfig, OrganizationConfigBase
-from src.security.auth import get_current_user
-from src.services.orgs.orgs import rbac_check
-from datetime import datetime
 import csv
 import io
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
+from sqlmodel import Session, desc, func, select
+
+from ee.db.audit_logs import AuditLog, AuditLogPaginated, AuditLogRead
+from src.core.events.database import get_db_session
+from src.db.organization_config import (OrganizationConfig,
+                                        OrganizationConfigBase)
+from src.db.organizations import Organization
+from src.db.users import PublicUser, User
+from src.security.auth import get_current_user
+from src.services.orgs.orgs import rbac_check
 
 router = APIRouter()
 
@@ -74,7 +77,7 @@ async def export_audit_logs(
 
     # Apply same filters as get_audit_logs
     if user_id:
-        from sqlalchemy import cast, String
+        from sqlalchemy import String, cast
 
         statement = statement.where(
             cast(AuditLog.user_id, String).ilike(f"%{user_id}%")
@@ -193,7 +196,7 @@ async def get_audit_logs(
     # Apply filters
     filters = []
     if user_id:
-        from sqlalchemy import cast, String
+        from sqlalchemy import String, cast
 
         filters.append(cast(AuditLog.user_id, String).ilike(f"%{user_id}%"))
     if username:

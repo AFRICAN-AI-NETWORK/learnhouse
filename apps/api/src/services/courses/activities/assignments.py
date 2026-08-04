@@ -2,55 +2,46 @@ import logging
 from datetime import datetime
 from typing import Optional
 from uuid import uuid4
+
 from fastapi import HTTPException, Request, UploadFile
 from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentCreate,
-    AssignmentRead,
-    AssignmentTask,
-    AssignmentTaskCreate,
-    AssignmentTaskRead,
-    AssignmentTaskSubmission,
-    AssignmentTaskSubmissionCreate,
-    AssignmentTaskSubmissionRead,
-    AssignmentTaskSubmissionUpdate,
-    AssignmentTaskUpdate,
-    AssignmentUpdate,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionCreate,
-    AssignmentUserSubmissionRead,
-    AssignmentUserSubmissionRevisionCreate,
-    AssignmentUserSubmissionStatus,
-    AssignmentTaskTypeEnum,
-)
+from src.db.courses.assignments import (Assignment, AssignmentCreate,
+                                        AssignmentRead, AssignmentTask,
+                                        AssignmentTaskCreate,
+                                        AssignmentTaskRead,
+                                        AssignmentTaskSubmission,
+                                        AssignmentTaskSubmissionCreate,
+                                        AssignmentTaskSubmissionRead,
+                                        AssignmentTaskSubmissionUpdate,
+                                        AssignmentTaskTypeEnum,
+                                        AssignmentTaskUpdate, AssignmentUpdate,
+                                        AssignmentUserSubmission,
+                                        AssignmentUserSubmissionCreate,
+                                        AssignmentUserSubmissionRead,
+                                        AssignmentUserSubmissionRevisionCreate,
+                                        AssignmentUserSubmissionStatus)
 from src.db.courses.courses import Course
 from src.db.organizations import Organization
 from src.db.trail_runs import TrailRun
 from src.db.trail_steps import TrailStep
 from src.db.users import AnonymousUser, PublicUser, User
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    decrease_feature_usage,
-    increase_feature_usage,
-)
-from src.security.rbac.rbac import (
-    authorization_verify_based_on_roles,
-)
-from src.services.courses.activities.uploads.sub_file import upload_submission_file
-from src.services.courses.activities.uploads.tasks_ref_files import (
-    upload_reference_file,
-)
-from src.services.trail.trail import check_trail_presence
-from src.services.courses.certifications import (
-    check_course_completion_and_create_certificate,
-)
-from src.services.courses.grade import compute_and_store_trail_step_grade
 from src.security.courses_security import courses_rbac_check_for_assignments
+from src.security.features_utils.usage import (check_limits_with_usage,
+                                               decrease_feature_usage,
+                                               increase_feature_usage)
+from src.security.rbac.rbac import authorization_verify_based_on_roles
 from src.services.code_execution import execute_and_grade
+from src.services.courses.activities.uploads.sub_file import \
+    upload_submission_file
+from src.services.courses.activities.uploads.tasks_ref_files import \
+    upload_reference_file
+from src.services.courses.certifications import \
+    check_course_completion_and_create_certificate
+from src.services.courses.grade import compute_and_store_trail_step_grade
 from src.services.notifications import notification_service
+from src.services.trail.trail import check_trail_presence
 
 logger = logging.getLogger(__name__)
 

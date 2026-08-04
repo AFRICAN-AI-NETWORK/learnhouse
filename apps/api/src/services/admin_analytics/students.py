@@ -11,12 +11,12 @@ Design notes:
   every list load.
 """
 
-from typing import Optional, Sequence
 from datetime import datetime, timedelta
+from typing import Optional, Sequence
 
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
 from sqlalchemy import func, or_
+from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity
 from src.db.courses.certifications import CertificateUser, Certifications
@@ -30,18 +30,16 @@ from src.db.trail_steps import TrailStep
 from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.dashboard_security import verify_student_dashboard_access
-from src.services.admin_analytics.schemas import (
-    OrgAnalyticsSummary,
-    StudentActivityProgress,
-    StudentChapterProgress,
-    StudentCourseDetail,
-    StudentCourseProgress,
-    StudentDetail,
-    StudentListResponse,
-    TopStudentsResponse,
-    StudentRoleInfo,
-    StudentSummary,
-)
+from src.services.admin_analytics.schemas import (OrgAnalyticsSummary,
+                                                  StudentActivityProgress,
+                                                  StudentChapterProgress,
+                                                  StudentCourseDetail,
+                                                  StudentCourseProgress,
+                                                  StudentDetail,
+                                                  StudentListResponse,
+                                                  StudentRoleInfo,
+                                                  StudentSummary,
+                                                  TopStudentsResponse)
 
 STATUS_COMPLETED = "completed"
 STATUS_IN_PROGRESS = "in_progress"

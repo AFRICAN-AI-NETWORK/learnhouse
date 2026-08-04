@@ -1,27 +1,24 @@
-from fastapi import HTTPException, Request
-from sqlmodel import Session, select, text
-from sqlalchemy.exc import IntegrityError
-from src.db.courses.courses import Course
-from src.db.payments.payments import PaymentsConfig
-from src.db.payments.payments_courses import PaymentsCourse
-from src.db.payments.payments_products import (
-    PaymentsProduct,
-    PaymentsProductCreate,
-    PaymentsProductUpdate,
-    PaymentsProductRead,
-)
-from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
-from src.db.users import PublicUser, AnonymousUser
-from src.db.organizations import Organization
-from src.services.orgs.orgs import rbac_check
-from src.security.features_utils.usage import check_limits_with_usage
 from datetime import datetime
 
+from fastapi import HTTPException, Request
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select, text
+
+from src.db.courses.courses import Course
+from src.db.organizations import Organization
+from src.db.payments.payments import PaymentsConfig
+from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import (PaymentsProduct,
+                                               PaymentsProductCreate,
+                                               PaymentsProductRead,
+                                               PaymentsProductUpdate)
+from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
+from src.db.users import AnonymousUser, PublicUser
+from src.security.features_utils.usage import check_limits_with_usage
+from src.services.orgs.orgs import rbac_check
 from src.services.payments.payments_flutterwave import (
-    archive_flutterwave_product,
-    create_flutterwave_product,
-    update_flutterwave_product,
-)
+    archive_flutterwave_product, create_flutterwave_product,
+    update_flutterwave_product)
 
 
 async def create_payments_product(

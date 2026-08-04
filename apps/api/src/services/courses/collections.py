@@ -1,19 +1,16 @@
 from datetime import datetime
 from typing import List
 from uuid import uuid4
+
+from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
-from src.db.users import AnonymousUser, PublicUser
-from src.db.collections import (
-    Collection,
-    CollectionCreate,
-    CollectionRead,
-    CollectionUpdate,
-)
+
+from src.db.collections import (Collection, CollectionCreate, CollectionRead,
+                                CollectionUpdate)
 from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course
-from fastapi import HTTPException, status, Request
+from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_collections
-
 
 ####################################################
 # CRUD

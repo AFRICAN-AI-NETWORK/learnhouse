@@ -8,10 +8,9 @@ Create Date: 2026-07-08 23:07:36.811615
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa  # noqa: F401
 import sqlmodel  # noqa: F401
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "13fd650276ae"
@@ -21,11 +20,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    from sqlmodel import Session, select
     from datetime import datetime, timezone
-    from src.db.trail_runs import TrailRun
-    from src.db.payments.payments_courses import PaymentsCourse
+
+    from sqlmodel import Session, select
+
     from src.db.cohorts import Cohort, CohortEnrollment, CohortStatusEnum
+    from src.db.payments.payments_courses import PaymentsCourse
+    from src.db.trail_runs import TrailRun
 
     bind = op.get_bind()
     session = Session(bind=bind)

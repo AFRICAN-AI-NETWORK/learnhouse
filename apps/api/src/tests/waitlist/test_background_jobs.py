@@ -1,15 +1,14 @@
 """Unit tests for waitlist background job processor"""
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.jobs.waitlist_processor import (
-    run_waitlist_activation_job,
-    run_retry_failed_emails_job,
-    sync_run_waitlist_activation_job,
-    sync_run_retry_failed_emails_job,
-)
+import pytest
+
+from src.jobs.waitlist_processor import (run_retry_failed_emails_job,
+                                         run_waitlist_activation_job,
+                                         sync_run_retry_failed_emails_job,
+                                         sync_run_waitlist_activation_job)
 
 
 class TestWaitlistActivationJob:
@@ -118,8 +117,8 @@ class TestWaitlistActivationIntegration:
         self, mock_activate, db_session, sample_org, sample_user
     ):
         """Test processing waitlists that have reached launch date"""
-        from src.db.waitlist import WaitlistConfig, WaitlistStatusEnum
         from src.db.users import User
+        from src.db.waitlist import WaitlistConfig, WaitlistStatusEnum
         from src.services.waitlist.emails import process_waitlist_activations
 
         # Create expired waitlist

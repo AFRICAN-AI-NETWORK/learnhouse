@@ -1,48 +1,33 @@
 from typing import List
-from fastapi import APIRouter, Depends, UploadFile, Form, Request
-from sqlmodel import Session
-from src.core.events.database import get_db_session
-from src.db.courses.course_updates import (
-    CourseUpdateCreate,
-    CourseUpdateRead,
-    CourseUpdateUpdate,
-)
-from src.db.users import PublicUser
-from src.db.courses.courses import (
-    CourseCreate,
-    CourseRead,
-    CourseUpdate,
-    FullCourseRead,
-    ThumbnailType,
-)
-from src.security.auth import get_current_user
-from src.services.courses.courses import (
-    create_course,
-    get_course,
-    get_course_by_id,
-    get_course_meta,
-    get_courses_orgslug,
-    update_course,
-    delete_course,
-    update_course_thumbnail,
-    search_courses,
-    get_course_user_rights,
-)
-from src.services.courses.updates import (
-    create_update,
-    delete_update,
-    get_updates_by_course_uuid,
-    update_update,
-)
-from src.services.courses.contributors import (
-    apply_course_contributor,
-    update_course_contributor,
-    get_course_contributors,
-    add_bulk_course_contributors,
-    remove_bulk_course_contributors,
-)
-from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
 
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
+from sqlmodel import Session
+
+from src.core.events.database import get_db_session
+from src.db.courses.course_updates import (CourseUpdateCreate,
+                                           CourseUpdateRead,
+                                           CourseUpdateUpdate)
+from src.db.courses.courses import (CourseCreate, CourseRead, CourseUpdate,
+                                    FullCourseRead, ThumbnailType)
+from src.db.resource_authors import (ResourceAuthorshipEnum,
+                                     ResourceAuthorshipStatusEnum)
+from src.db.users import PublicUser
+from src.security.auth import get_current_user
+from src.services.courses.contributors import (add_bulk_course_contributors,
+                                               apply_course_contributor,
+                                               get_course_contributors,
+                                               remove_bulk_course_contributors,
+                                               update_course_contributor)
+from src.services.courses.courses import (create_course, delete_course,
+                                          get_course, get_course_by_id,
+                                          get_course_meta,
+                                          get_course_user_rights,
+                                          get_courses_orgslug, search_courses,
+                                          update_course,
+                                          update_course_thumbnail)
+from src.services.courses.updates import (create_update, delete_update,
+                                          get_updates_by_course_uuid,
+                                          update_update)
 
 router = APIRouter()
 

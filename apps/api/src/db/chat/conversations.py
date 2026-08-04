@@ -1,8 +1,9 @@
-from typing import Optional
 from datetime import datetime
-from sqlmodel import Field, SQLModel, Column, Integer
-from sqlalchemy import ForeignKey, UniqueConstraint
+from typing import Optional
+
 from pydantic import BaseModel
+from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlmodel import Column, Field, Integer, SQLModel
 
 
 class ConversationBase(SQLModel):

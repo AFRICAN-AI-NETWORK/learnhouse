@@ -2,10 +2,12 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import List
+
 from sqlmodel import Session, select
+
 from src.db.communications import Campaign, CampaignStatus, CampaignTargetType
-from src.db.users import User
 from src.db.resource_authors import ResourceAuthor
+from src.db.users import User
 from src.services.email.utils import send_email
 
 logger = logging.getLogger(__name__)
@@ -39,8 +41,8 @@ async def get_target_users(db_session: Session, campaign: Campaign) -> List[User
     """
     Retrieve users based on campaign targeting filters.
     """
-    from src.db.user_organizations import UserOrganization
     from src.db.roles import Role
+    from src.db.user_organizations import UserOrganization
 
     query = select(User).join(UserOrganization, User.id == UserOrganization.user_id)
 
@@ -200,11 +202,11 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                     logger.info(f"Skipping chat message to self: {user.email}")
                 else:
                     try:
-                        from src.services.chat.conversation_service import (
-                            ConversationService,
-                        )
-                        from src.services.chat.message_service import MessageService
                         from src.db.chat.messages import MessageCreate
+                        from src.services.chat.conversation_service import \
+                            ConversationService
+                        from src.services.chat.message_service import \
+                            MessageService
 
                         # Create or get conversation between the sender and the target student
                         conversation = (

@@ -1,18 +1,14 @@
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
-from src.services.ai.ai import (
-    ai_send_activity_chat_message,
-    ai_start_activity_chat_session,
-)
-from src.services.ai.schemas.ai import (
-    ActivityAIChatSessionResponse,
-    SendActivityAIChatMessage,
-    StartActivityAIChatSession,
-)
+
 from src.core.events.database import get_db_session
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
-
+from src.services.ai.ai import (ai_send_activity_chat_message,
+                                ai_start_activity_chat_session)
+from src.services.ai.schemas.ai import (ActivityAIChatSessionResponse,
+                                        SendActivityAIChatMessage,
+                                        StartActivityAIChatSession)
 
 router = APIRouter()
 

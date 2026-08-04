@@ -1,8 +1,9 @@
-from datetime import datetime
-from uuid import uuid4
-from sqlmodel import Session
-from typing import Optional
 import logging
+from datetime import datetime
+from typing import Optional
+from uuid import uuid4
+
+from sqlmodel import Session
 
 from src.db.chat.audit import ChatAuditLog
 

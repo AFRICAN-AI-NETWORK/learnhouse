@@ -6,12 +6,13 @@ Implements disposable email detection and domain validation with dynamic domain 
 import asyncio
 import logging
 import re
-import httpx
-from typing import Set, Optional
 from datetime import datetime
+from typing import Optional, Set
+
+import httpx
 from sqlmodel import Session, select
 
-from src.db.referrals.email_domain_lists import EmailDomainList, DomainListType
+from src.db.referrals.email_domain_lists import DomainListType, EmailDomainList
 
 logger = logging.getLogger(__name__)
 

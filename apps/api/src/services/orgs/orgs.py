@@ -3,45 +3,29 @@ import logging
 from datetime import datetime
 from typing import Literal
 from uuid import uuid4
+
+from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
-from src.db.organization_config import (
-    AIOrgConfig,
-    APIOrgConfig,
-    AnalyticsOrgConfig,
-    AssignmentOrgConfig,
-    CollaborationOrgConfig,
-    CourseOrgConfig,
-    DiscussionOrgConfig,
-    MemberOrgConfig,
-    OrgCloudConfig,
-    OrgFeatureConfig,
-    OrgGeneralConfig,
-    OrganizationConfig,
-    OrganizationConfigBase,
-    PaymentOrgConfig,
-    StorageOrgConfig,
-    UserGroupOrgConfig,
-)
+
+from src.db.organization_config import (AIOrgConfig, AnalyticsOrgConfig,
+                                        APIOrgConfig, AssignmentOrgConfig,
+                                        CollaborationOrgConfig,
+                                        CourseOrgConfig, DiscussionOrgConfig,
+                                        MemberOrgConfig, OrganizationConfig,
+                                        OrganizationConfigBase, OrgCloudConfig,
+                                        OrgFeatureConfig, OrgGeneralConfig,
+                                        PaymentOrgConfig, StorageOrgConfig,
+                                        UserGroupOrgConfig)
+from src.db.organizations import (Organization, OrganizationCreate,
+                                  OrganizationRead, OrganizationUpdate)
+from src.db.user_organizations import UserOrganization
+from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
-    authorization_verify_if_user_is_anon,
-)
-from src.db.users import AnonymousUser, InternalUser, PublicUser
-from src.db.user_organizations import UserOrganization
-from src.db.organizations import (
-    Organization,
-    OrganizationCreate,
-    OrganizationRead,
-    OrganizationUpdate,
-)
-from fastapi import HTTPException, UploadFile, status, Request
-
-from src.services.orgs.uploads import (
-    upload_org_logo,
-    upload_org_preview,
-    upload_org_thumbnail,
-    upload_org_landing_content,
-)
+    authorization_verify_if_user_is_anon)
+from src.services.orgs.uploads import (upload_org_landing_content,
+                                       upload_org_logo, upload_org_preview,
+                                       upload_org_thumbnail)
 
 
 async def get_organization(

@@ -1,36 +1,23 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from uuid import uuid4
+
 from fastapi import HTTPException
 from sqlmodel import Session, select
-from src.db.organization_config import (
-    AIOrgConfig,
-    APIOrgConfig,
-    AnalyticsOrgConfig,
-    AssignmentOrgConfig,
-    CollaborationOrgConfig,
-    CourseOrgConfig,
-    DiscussionOrgConfig,
-    MemberOrgConfig,
-    OrgCloudConfig,
-    OrgFeatureConfig,
-    OrgGeneralConfig,
-    OrganizationConfig,
-    OrganizationConfigBase,
-    PaymentOrgConfig,
-    StorageOrgConfig,
-    UserGroupOrgConfig,
-)
+
+from src.db.organization_config import (AIOrgConfig, AnalyticsOrgConfig,
+                                        APIOrgConfig, AssignmentOrgConfig,
+                                        CollaborationOrgConfig,
+                                        CourseOrgConfig, DiscussionOrgConfig,
+                                        MemberOrgConfig, OrganizationConfig,
+                                        OrganizationConfigBase, OrgCloudConfig,
+                                        OrgFeatureConfig, OrgGeneralConfig,
+                                        PaymentOrgConfig, StorageOrgConfig,
+                                        UserGroupOrgConfig)
 from src.db.organizations import Organization, OrganizationCreate
-from src.db.roles import (
-    AffiliationPermission,
-    DashboardPermission,
-    Permission,
-    PermissionsWithOwn,
-    Rights,
-    Role,
-    RoleTypeEnum,
-)
+from src.db.roles import (AffiliationPermission, DashboardPermission,
+                          Permission, PermissionsWithOwn, Rights, Role,
+                          RoleTypeEnum)
 from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate, UserRead
 from src.security.security import security_hash_password

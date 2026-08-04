@@ -4,13 +4,12 @@ Run these jobs to keep email domain lists up-to-date
 """
 
 import logging
+
 from sqlmodel import Session
 
 from src.db.db import engine
 from src.services.referrals.fraud_prevention import (
-    update_disposable_email_list,
-    seed_initial_domain_lists,
-)
+    seed_initial_domain_lists, update_disposable_email_list)
 
 logger = logging.getLogger(__name__)
 

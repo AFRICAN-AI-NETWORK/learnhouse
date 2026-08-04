@@ -4,18 +4,17 @@ Allows manual triggering of domain list updates
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session
 
 from src.core.events.database import get_db_session
-from src.services.orgs.orgs import rbac_check
-from src.security.auth import get_current_user
-from src.db.users import User
 from src.db.organizations import Organization
+from src.db.users import User
+from src.security.auth import get_current_user
+from src.services.orgs.orgs import rbac_check
 from src.services.referrals.fraud_prevention import (
-    update_disposable_email_list,
-    seed_initial_domain_lists,
-)
+    seed_initial_domain_lists, update_disposable_email_list)
 
 logger = logging.getLogger(__name__)
 

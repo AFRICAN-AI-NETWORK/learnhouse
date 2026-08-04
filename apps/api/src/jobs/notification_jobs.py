@@ -15,9 +15,8 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlmodel import Session
 
 from src.core.events.database import engine
-from src.services.notifications.email_dispatch import (
-    process_pending_notification_emails,
-)
+from src.services.notifications.email_dispatch import \
+    process_pending_notification_emails
 
 logger = logging.getLogger(__name__)
 

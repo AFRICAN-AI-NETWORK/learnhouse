@@ -5,25 +5,22 @@ Handles all referral-related endpoints following RESTful principles
 
 import logging
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
+
 from src.core.events.database import get_db_session
+from src.db.referrals.payout_requests import (BankDetails,
+                                              ReferrerPayoutRequestRead)
+from src.db.referrals.referral_codes import ReferralCodeRead
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
-from src.db.referrals.referral_codes import ReferralCodeRead
-from src.db.referrals.payout_requests import ReferrerPayoutRequestRead, BankDetails
+from src.services.referrals.payouts import (create_payout_request,
+                                            get_payout_history)
 from src.services.referrals.referral_codes import (
-    create_referral_code_for_user,
-    get_my_referral_code,
-)
+    create_referral_code_for_user, get_my_referral_code)
 from src.services.referrals.referral_commissions import (
-    get_commission_balance,
-    get_commission_history,
-)
-from src.services.referrals.payouts import (
-    create_payout_request,
-    get_payout_history,
-)
+    get_commission_balance, get_commission_history)
 
 logger = logging.getLogger(__name__)
 
@@ -194,9 +191,10 @@ async def api_get_payout_history(
 
 def _require_admin(current_user, org_id, db_session):
     """Helper to enforce admin/maintainer role for an org."""
-    from src.db.user_organizations import UserOrganization
-    from sqlmodel import select
     from fastapi import HTTPException
+    from sqlmodel import select
+
+    from src.db.user_organizations import UserOrganization
 
     if not current_user or not current_user.id:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -229,8 +227,9 @@ async def api_get_flagged_referrals(
     Admin-only endpoint.
     """
     from sqlmodel import select
-    from src.db.referrals.referral_tracking import ReferralTracking
+
     from src.db.referrals.referral_codes import ReferralCode
+    from src.db.referrals.referral_tracking import ReferralTracking
     from src.db.users import User
 
     _require_admin(current_user, org_id, db_session)
@@ -288,7 +287,9 @@ async def api_get_pending_payouts(
     Admin-only endpoint.
     """
     from sqlmodel import select
-    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
+
+    from src.db.referrals.payout_requests import (PayoutStatus,
+                                                  ReferrerPayoutRequest)
     from src.db.users import User
 
     _require_admin(current_user, org_id, db_session)
@@ -338,9 +339,12 @@ async def api_approve_payout(
     The background worker will then process APPROVED payouts.
     Admin-only endpoint.
     """
-    from fastapi import HTTPException
-    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
     from datetime import datetime
+
+    from fastapi import HTTPException
+
+    from src.db.referrals.payout_requests import (PayoutStatus,
+                                                  ReferrerPayoutRequest)
 
     _require_admin(current_user, org_id, db_session)
 
@@ -380,9 +384,12 @@ async def api_reject_payout(
     Reject a payout request. Moves status to FAILED with a reason.
     Admin-only endpoint.
     """
-    from fastapi import HTTPException
-    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
     from datetime import datetime
+
+    from fastapi import HTTPException
+
+    from src.db.referrals.payout_requests import (PayoutStatus,
+                                                  ReferrerPayoutRequest)
 
     _require_admin(current_user, org_id, db_session)
 
@@ -428,9 +435,10 @@ async def api_get_referral_stats(
         - total_referrers: Number of users who have referred others
         - leaderboard: Top referrers ranked by referral count
     """
-    from sqlmodel import select, func
-    from src.db.referrals.referral_tracking import ReferralTracking
+    from sqlmodel import func, select
+
     from src.db.referrals.referral_codes import ReferralCode
+    from src.db.referrals.referral_tracking import ReferralTracking
     from src.db.users import User
 
     _require_admin(current_user, org_id, db_session)
@@ -489,7 +497,8 @@ async def api_get_all_partners(
     Get all users who have a referral code in this organization.
     Admin-only endpoint.
     """
-    from sqlmodel import select, func
+    from sqlmodel import func, select
+
     from src.db.referrals.referral_codes import ReferralCode
     from src.db.referrals.referral_tracking import ReferralTracking
     from src.db.users import User
@@ -538,8 +547,9 @@ async def api_get_partner_students(
     Get detailed student tracking for a specific partner.
     Admin-only endpoint.
     """
-    from src.services.referrals.referral_commissions import get_commission_history
     from src.db.users import PublicUser as InternalPublicUser
+    from src.services.referrals.referral_commissions import \
+        get_commission_history
 
     _require_admin(current_user, org_id, db_session)
 

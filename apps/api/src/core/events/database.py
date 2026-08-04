@@ -1,13 +1,15 @@
+import importlib
+import importlib.util
 import logging
 import os
 import re
 import sys
-import importlib
-import importlib.util
-from config.config import get_learnhouse_config
+
 from fastapi import FastAPI
-from sqlmodel import SQLModel, Session, create_engine
 from sqlalchemy import event
+from sqlmodel import Session, SQLModel, create_engine
+
+from config.config import get_learnhouse_config
 
 
 def import_all_models():

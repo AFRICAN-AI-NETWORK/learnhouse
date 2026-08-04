@@ -1,19 +1,16 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query
-from sqlmodel import Session
-from sqlmodel import select
 
-from src.db.chat.conversations import (
-    ConversationCreate,
-    ConversationRead,
-    ConversationWithLastMessage,
-)
-from src.services.chat.conversation_service import ConversationService
+from fastapi import APIRouter, Depends, Query
+from sqlmodel import Session, select
+
 from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
-from src.db.users import User
-from src.db.user_organizations import UserOrganization
+from src.db.chat.conversations import (ConversationCreate, ConversationRead,
+                                       ConversationWithLastMessage)
 from src.db.roles import Role
+from src.db.user_organizations import UserOrganization
+from src.db.users import User
+from src.security.auth import get_current_user
+from src.services.chat.conversation_service import ConversationService
 
 router = APIRouter()
 

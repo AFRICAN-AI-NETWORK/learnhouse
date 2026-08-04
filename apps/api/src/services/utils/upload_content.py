@@ -1,9 +1,11 @@
-from typing import Literal, Optional
-import boto3
-from botocore.exceptions import ClientError
 import os
 from pathlib import Path
+from typing import Literal, Optional
+
+import boto3
+from botocore.exceptions import ClientError
 from fastapi import HTTPException, UploadFile
+
 from config.config import get_learnhouse_config
 from src.security.file_validation import validate_upload
 
@@ -56,6 +58,7 @@ async def upload_file(
         The saved filename
     """
     from uuid import uuid4
+
     from src.security.file_validation import get_safe_filename
 
     # Validate the file

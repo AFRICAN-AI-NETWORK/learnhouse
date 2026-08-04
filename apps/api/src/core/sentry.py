@@ -117,9 +117,8 @@ def init_sentry(site_name: str, development_mode: bool) -> None:
     signoz_endpoint = os.environ.get("SIGNOZ_ENDPOINT")
     if signoz_endpoint:
         from opentelemetry import trace
-        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-            OTLPSpanExporter,
-        )
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import \
+            OTLPSpanExporter
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 

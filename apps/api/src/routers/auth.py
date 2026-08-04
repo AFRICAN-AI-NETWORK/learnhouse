@@ -1,17 +1,20 @@
 from datetime import timedelta
 from typing import Literal, Optional
-from fastapi import Depends, APIRouter, HTTPException, Response, status, Request, Form
+
+from fastapi import (APIRouter, Depends, Form, HTTPException, Request,
+                     Response, status)
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Session, select
-from src.db.users import AnonymousUser, UserRead, User
-from src.db.organizations import Organization, OrganizationRead
-from src.core.events.database import get_db_session
+
 from config.config import get_learnhouse_config
+from src.core.events.database import get_db_session
+from src.db.organizations import Organization, OrganizationRead
+from src.db.users import AnonymousUser, User, UserRead
 from src.security.auth import AuthJWT, authenticate_user, get_current_user
 from src.services.auth.utils import signWithGoogle
-from src.services.users.users import verify_user_email, generate_verification_token
 from src.services.users.emails import send_account_creation_email
-
+from src.services.users.users import (generate_verification_token,
+                                      verify_user_email)
 
 router = APIRouter()
 

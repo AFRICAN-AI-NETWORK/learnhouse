@@ -7,10 +7,10 @@ for a short-lived, single-use ticket via a regular authenticated POST request.
 The ticket is then passed in the WebSocket query string.
 """
 
+import logging
 import secrets
 import time
-import logging
-from typing import Optional, Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

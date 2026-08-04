@@ -1,7 +1,9 @@
 from typing import Optional
+
 from pydantic import BaseModel, EmailStr, validator
-from sqlmodel import Field, SQLModel
 from sqlalchemy import JSON, Column
+from sqlmodel import Field, SQLModel
+
 from src.db.roles import RoleRead
 from src.security.phone_validation import validate_e164_phone_number
 

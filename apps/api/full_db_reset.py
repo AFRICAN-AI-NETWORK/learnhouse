@@ -4,19 +4,18 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from sqlmodel import Session, create_engine, text
+from pydantic import EmailStr
+from sqlmodel import Session, SQLModel, create_engine, text
+
+from src.db.models import *  # This imports all SQLModels so metadata has them
 from src.db.organizations import OrganizationCreate
 from src.db.users import UserCreate
-from src.services.setup.setup import (
-    install_create_organization,
-    install_create_organization_user,
-    install_default_elements,
-)
-from src.db.models import *  # This imports all SQLModels so metadata has them
-from sqlmodel import SQLModel
-from pydantic import EmailStr
+from src.services.setup.setup import (install_create_organization,
+                                      install_create_organization_user,
+                                      install_default_elements)
 
 DATABASE_URL = os.getenv("LEARNHOUSE_SQL_CONNECTION_STRING")
 engine = create_engine(DATABASE_URL, isolation_level="AUTOCOMMIT")
@@ -57,6 +56,7 @@ install_create_organization_user(user, "default", db_session)
 
 # Force verify the admin email
 from src.db.users import User
+
 admin_db = db_session.query(User).filter(User.email == email).first()
 if admin_db:
     admin_db.email_verified = True

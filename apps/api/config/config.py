@@ -1,8 +1,9 @@
 import os
-import yaml
 from typing import Literal, Optional
-from pydantic import BaseModel
+
+import yaml
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 
 class CookieConfig(BaseModel):

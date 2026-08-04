@@ -1,6 +1,7 @@
-from typing import Optional
 from datetime import datetime
-from sqlmodel import Field, SQLModel, Column, JSON
+from typing import Optional
+
+from sqlmodel import JSON, Column, Field, SQLModel
 
 
 class ChatNotification(SQLModel, table=True):

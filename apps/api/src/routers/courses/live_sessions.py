@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, Request
+
 from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
 from src.db.users import PublicUser
-from src.services.courses.live_sessions import (
-    register_for_live_session,
-    get_live_session_registrations,
-    is_user_registered,
-    send_manual_notifications,
-    end_live_session,
-)
+from src.security.auth import get_current_user
+from src.services.courses.live_sessions import (end_live_session,
+                                                get_live_session_registrations,
+                                                is_user_registered,
+                                                register_for_live_session,
+                                                send_manual_notifications)
 
 router = APIRouter()
 

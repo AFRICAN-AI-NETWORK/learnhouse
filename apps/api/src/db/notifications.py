@@ -1,8 +1,9 @@
-from typing import Optional
 from datetime import datetime
 from enum import Enum
-from sqlmodel import Field, SQLModel, Column, JSON
+from typing import Optional
+
 from sqlalchemy import Enum as SAEnum
+from sqlmodel import JSON, Column, Field, SQLModel
 
 
 class NotificationType(str, Enum):
@@ -27,6 +28,7 @@ class NotificationBase(SQLModel):
                 NotificationType,
                 name="notificationtype",
                 values_callable=lambda obj: [e.value for e in obj],
+                metadata=SQLModel.metadata,
             )
         )
     )
@@ -69,6 +71,7 @@ class Notification(NotificationBase, table=True):
                 EmailStatus,
                 name="emailstatus",
                 values_callable=lambda obj: [e.value for e in obj],
+                metadata=SQLModel.metadata,
             ),
             nullable=False,
             default=EmailStatus.PENDING,

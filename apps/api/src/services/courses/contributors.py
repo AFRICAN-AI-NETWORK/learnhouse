@@ -1,16 +1,15 @@
 from datetime import datetime
-from fastapi import HTTPException, Request
-from sqlmodel import Session, select, and_
-from src.db.users import PublicUser, AnonymousUser, User, UserRead
-from src.db.courses.courses import Course
-from src.db.resource_authors import (
-    ResourceAuthor,
-    ResourceAuthorshipEnum,
-    ResourceAuthorshipStatusEnum,
-)
-from src.security.rbac.rbac import authorization_verify_if_user_is_anon
-from src.security.courses_security import courses_rbac_check
 from typing import List
+
+from fastapi import HTTPException, Request
+from sqlmodel import Session, and_, select
+
+from src.db.courses.courses import Course
+from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
+                                     ResourceAuthorshipStatusEnum)
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
+from src.security.courses_security import courses_rbac_check
+from src.security.rbac.rbac import authorization_verify_if_user_is_anon
 
 
 async def apply_course_contributor(

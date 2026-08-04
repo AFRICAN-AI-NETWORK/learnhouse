@@ -1,7 +1,8 @@
-from typing import Optional, Dict
+from enum import Enum
+from typing import Dict, Optional
+
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, SQLModel
-from enum import Enum
 
 
 ## Assignment ##

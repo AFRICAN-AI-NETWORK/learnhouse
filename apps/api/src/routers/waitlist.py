@@ -1,37 +1,28 @@
 """Waitlist API Router - All waitlist-related endpoints"""
 
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, validator
 from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
-from src.db.users import AnonymousUser, PublicUser, UserRead
 from src.db.user_organizations import UserOrganization
-from src.db.waitlist import (
-    WaitlistConfigCreate,
-    WaitlistConfigUpdate,
-    WaitlistConfigRead,
-)
+from src.db.users import AnonymousUser, PublicUser, UserRead
+from src.db.waitlist import (WaitlistConfigCreate, WaitlistConfigRead,
+                             WaitlistConfigUpdate)
 from src.security.auth import get_current_user
-from src.services.waitlist.config import (
-    create_waitlist_config,
-    get_waitlist_config,
-    get_org_waitlist_configs,
-    update_waitlist_config,
-    cancel_waitlist_config,
-)
-from src.services.waitlist.courses import (
-    get_org_courses_for_waitlist,
-    get_course_preference_analytics,
-    get_user_course_preferences,
-)
-from src.services.users.waitlist import (
-    create_waitlist_user,
-    get_waitlist_users,
-)
 from src.security.phone_validation import validate_e164_phone_number
-
+from src.services.users.waitlist import (create_waitlist_user,
+                                         get_waitlist_users)
+from src.services.waitlist.config import (cancel_waitlist_config,
+                                          create_waitlist_config,
+                                          get_org_waitlist_configs,
+                                          get_waitlist_config,
+                                          update_waitlist_config)
+from src.services.waitlist.courses import (get_course_preference_analytics,
+                                           get_org_courses_for_waitlist,
+                                           get_user_course_preferences)
 
 router = APIRouter()
 

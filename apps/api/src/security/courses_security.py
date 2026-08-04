@@ -90,21 +90,19 @@ CRITICAL SECURITY FIXES:
 """
 
 from typing import Literal
+
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
-from src.db.users import AnonymousUser, PublicUser
+
 from src.db.courses.courses import Course
-from src.db.resource_authors import (
-    ResourceAuthor,
-    ResourceAuthorshipEnum,
-    ResourceAuthorshipStatusEnum,
-)
+from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
+                                     ResourceAuthorshipStatusEnum)
+from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac.rbac import (
+    authorization_verify_based_on_org_admin_status,
     authorization_verify_based_on_roles_and_authorship,
     authorization_verify_if_element_is_public,
-    authorization_verify_if_user_is_anon,
-    authorization_verify_based_on_org_admin_status,
-)
+    authorization_verify_if_user_is_anon)
 
 
 async def courses_rbac_check(
@@ -159,7 +157,8 @@ async def courses_rbac_check(
         if action == "create" and course_uuid == "course_x":
             # This is course creation - allow instructors (role 3) or higher
             # Check if user has instructor role or higher
-            from src.security.rbac.rbac import authorization_verify_based_on_roles
+            from src.security.rbac.rbac import \
+                authorization_verify_based_on_roles
 
             has_create_permission = await authorization_verify_based_on_roles(
                 request, current_user.id, "create", "course_x", db_session

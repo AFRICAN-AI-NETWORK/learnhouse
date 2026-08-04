@@ -11,20 +11,17 @@ Tests requiring PaymentsProduct/PaymentsUser integration will be added
 after those schema issues are resolved.
 """
 
-import pytest
 import asyncio
 
+import pytest
 from sqlmodel import Session
-from src.services.payments.discount_codes import (
-    calculate_discounted_amount,
-    increment_discount_usage_atomic,
-    DiscountValidationError,
-)
-from src.db.payments.discount_codes import (
-    DiscountCode,
-    DiscountTypeEnum,
-)
+
 from src.db.organizations import Organization
+from src.db.payments.discount_codes import DiscountCode, DiscountTypeEnum
+from src.services.payments.discount_codes import (
+    DiscountValidationError, calculate_discounted_amount,
+    increment_discount_usage_atomic)
+
 from .conftest import create_discount_code_helper
 
 

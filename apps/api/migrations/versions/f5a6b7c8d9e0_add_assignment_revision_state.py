@@ -8,11 +8,10 @@ Create Date: 2026-05-30 00:00:00.000000
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 import sqlmodel  # noqa: F401
+from alembic import op
 from alembic_postgresql_enum import TableReference  # type: ignore
-
 
 # revision identifiers, used by Alembic.
 revision: str = "f5a6b7c8d9e0"

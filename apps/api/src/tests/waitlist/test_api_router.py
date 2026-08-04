@@ -1,9 +1,10 @@
 """Unit tests for waitlist API router endpoints"""
 
-import pytest
-from unittest.mock import patch
-from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
+import pytest
+from fastapi import HTTPException
 
 from src.routers.waitlist import router
 

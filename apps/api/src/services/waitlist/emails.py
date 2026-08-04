@@ -7,14 +7,10 @@ from datetime import datetime, timezone
 from pydantic import EmailStr
 from sqlmodel import Session, select
 
-from src.db.users import User, UserRead
 from src.db.organizations import Organization, OrganizationRead
-from src.db.waitlist import (
-    WaitlistConfig,
-    WaitlistStatusEnum,
-    WaitlistEmailLog,
-    UserStatusEnum,
-)
+from src.db.users import User, UserRead
+from src.db.waitlist import (UserStatusEnum, WaitlistConfig, WaitlistEmailLog,
+                             WaitlistStatusEnum)
 from src.services.email.utils import send_email
 
 logger = logging.getLogger(__name__)

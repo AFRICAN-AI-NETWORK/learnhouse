@@ -1,22 +1,20 @@
-from datetime import datetime, timedelta
 import json
 import logging
+from datetime import datetime, timedelta
 
 import redis
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
+
+from config.config import get_learnhouse_config
+from src.db.organizations import (Organization, OrganizationRead,
+                                  OrganizationUser)
+from src.db.roles import Role, RoleRead
+from src.db.user_organizations import UserOrganization
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.features_utils.usage import decrease_feature_usage
 from src.services.orgs.invites import send_invite_email
-from config.config import get_learnhouse_config
 from src.services.orgs.orgs import rbac_check
-from src.db.roles import Role, RoleRead
-from src.db.users import AnonymousUser, PublicUser, User, UserRead
-from src.db.user_organizations import UserOrganization
-from src.db.organizations import (
-    Organization,
-    OrganizationRead,
-    OrganizationUser,
-)
 
 
 async def get_organization_users(

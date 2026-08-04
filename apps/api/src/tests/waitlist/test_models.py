@@ -1,16 +1,14 @@
 """Unit tests for waitlist database models"""
 
-import pytest
 from datetime import datetime, timezone
-from src.db.waitlist import (
-    UserStatusEnum,
-    WaitlistStatusEnum,
-    WaitlistConfig,
-    WaitlistEmailLog,
-    WaitlistCoursePreference,
-    WaitlistConfigCreate,
-    WaitlistConfigUpdate,
-)
+from sqlalchemy.exc import IntegrityError
+
+import pytest
+
+from src.db.waitlist import (UserStatusEnum, WaitlistConfig,
+                             WaitlistConfigCreate, WaitlistConfigUpdate,
+                             WaitlistCoursePreference, WaitlistEmailLog,
+                             WaitlistStatusEnum)
 
 
 class TestUserStatusEnum:
@@ -128,7 +126,7 @@ class TestWaitlistConfigModel:
             update_date=now,
         )
 
-        with pytest.raises(Exception):  # IntegrityError
+        with pytest.raises(IntegrityError):  # IntegrityError
             db_session.add(config2)
             db_session.commit()
 

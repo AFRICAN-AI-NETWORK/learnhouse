@@ -1,8 +1,9 @@
-from pydantic import EmailStr
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from pydantic import EmailStr
 
 
 def send_email(to: EmailStr, subject: str, body: str):

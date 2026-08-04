@@ -1,45 +1,25 @@
 from fastapi import APIRouter, Depends
-from src.routers import health
-from src.routers import usergroups
-from src.routers import (
-    admin_analytics,
-    dev,
-    trail,
-    users,
-    auth,
-    orgs,
-    roles,
-    search,
-    waitlist,
-    communications,
-    cohorts,
-    announcements,
-    notifications,
-)
+
+from ee.routers import referrals
+from src.core.ee_hooks import register_ee_routers
+from src.routers import (admin_analytics, announcements, auth, cohorts,
+                         communications, dev, health, notifications, orgs,
+                         roles, search, trail, usergroups, users, waitlist)
 from src.routers.ai import ai
-from src.routers.courses import (
-    chapters,
-    collections,
-    courses,
-    assignments,
-    certifications,
-    grade,
-    live_sessions,
-    prerequisites,
-    schedules,
-)
-from src.routers.courses.activities import activities, blocks
+from src.routers.chat import admin as chat_admin
 from src.routers.chat import conversations as chat_conversations
 from src.routers.chat import messages as chat_messages
 from src.routers.chat import websocket as chat_websocket
-from src.routers.chat import admin as chat_admin
-from src.core.ee_hooks import register_ee_routers
-from src.services.dev.dev import isDevModeEnabledOrRaise
-from src.routers.utils import router as utils_router
 from src.routers.code import router as code_router
-from ee.routers import referrals
 from src.routers.contact import router as contact_router
-from src.routers.webhooks.flutterwave import router as flutterwave_webhook_router
+from src.routers.courses import (assignments, certifications, chapters,
+                                 collections, courses, grade, live_sessions,
+                                 prerequisites, schedules)
+from src.routers.courses.activities import activities, blocks
+from src.routers.utils import router as utils_router
+from src.routers.webhooks.flutterwave import \
+    router as flutterwave_webhook_router
+from src.services.dev.dev import isDevModeEnabledOrRaise
 
 v1_router = APIRouter(prefix="/api/v1")
 

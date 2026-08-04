@@ -1,26 +1,22 @@
+from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
-from datetime import datetime
-from sqlmodel import Session, select
+
 from fastapi import HTTPException, Request
-from src.db.courses.certifications import (
-    Certifications,
-    CertificationCreate,
-    CertificationRead,
-    CertificationUpdate,
-    CertificateUser,
-    CertificateUserRead,
-)
-from src.db.courses.courses import Course
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionStatus,
-)
+from sqlmodel import Session, select
+
+from src.db.courses.assignments import (Assignment, AssignmentUserSubmission,
+                                        AssignmentUserSubmissionStatus)
+from src.db.courses.certifications import (CertificateUser,
+                                           CertificateUserRead,
+                                           CertificationCreate,
+                                           CertificationRead, Certifications,
+                                           CertificationUpdate)
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.courses import Course
 from src.db.trail_runs import StatusEnum, TrailRun
 from src.db.trail_steps import TrailStep
-from src.db.users import PublicUser, AnonymousUser
+from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_certifications
 
 

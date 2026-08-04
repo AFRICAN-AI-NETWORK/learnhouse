@@ -1,13 +1,13 @@
+import logging
 from datetime import datetime, timedelta
 from uuid import uuid4
-from sqlmodel import Session, select
-import logging
 
-from src.db.chat.messages import Message
-from src.db.chat.notifications import ChatNotification
+from sqlmodel import Session, select
+
 from src.db.chat.conversations import Conversation
+from src.db.chat.messages import Message, MessageReadReceipt
+from src.db.chat.notifications import ChatNotification
 from src.db.users import User
-from src.db.chat.messages import MessageReadReceipt
 
 logger = logging.getLogger(__name__)
 

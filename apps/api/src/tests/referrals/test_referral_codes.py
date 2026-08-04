@@ -3,25 +3,20 @@ Comprehensive unit tests for referral code service
 Tests code generation, validation, uniqueness, and CRUD operations
 """
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
+
+import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from src.services.referrals.referral_codes import (
-    generate_unique_code,
-    build_referral_link,
-    get_referral_code_by_code,
-    get_referral_code_by_user,
-    validate_referral_code_exists,
-    create_referral_code_for_user,
-    get_my_referral_code,
-    REFERRAL_CODE_LENGTH,
-    REFERRAL_CODE_MAX_ATTEMPTS,
-)
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
-from src.db.users import User, PublicUser
+from src.db.users import PublicUser, User
+from src.services.referrals.referral_codes import (
+    REFERRAL_CODE_LENGTH, REFERRAL_CODE_MAX_ATTEMPTS, build_referral_link,
+    create_referral_code_for_user, generate_unique_code, get_my_referral_code,
+    get_referral_code_by_code, get_referral_code_by_user,
+    validate_referral_code_exists)
 
 
 class TestGenerateUniqueCode:

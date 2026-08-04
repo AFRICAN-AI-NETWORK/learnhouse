@@ -1,16 +1,16 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
+
 from src.core.events.database import get_db_session
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
-from src.services.courses.prerequisites import (
-    PrerequisiteCreate,
-    PrerequisiteRead,
-    get_course_prerequisites,
-    set_course_prerequisites,
-    delete_course_prerequisites,
-)
+from src.services.courses.prerequisites import (PrerequisiteCreate,
+                                                PrerequisiteRead,
+                                                delete_course_prerequisites,
+                                                get_course_prerequisites,
+                                                set_course_prerequisites)
 
 router = APIRouter()
 

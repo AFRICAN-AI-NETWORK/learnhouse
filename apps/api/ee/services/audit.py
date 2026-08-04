@@ -1,12 +1,15 @@
 import json
 import logging
-import redis
 from datetime import datetime
-from typing import Any, Optional, Dict
+from typing import Any, Dict, Optional
+
+import redis
 from sqlmodel import Session, select
+
 from config.config import get_learnhouse_config
 from ee.db.audit_logs import AuditLog
-from src.db.organization_config import OrganizationConfig, OrganizationConfigBase
+from src.db.organization_config import (OrganizationConfig,
+                                        OrganizationConfigBase)
 
 logger = logging.getLogger(__name__)
 LH_CONFIG = get_learnhouse_config()
@@ -54,9 +57,10 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             return int(org_id)
         except (ValueError, TypeError):
             # Try resolving from slug/uuid
-            from src.db.organizations import Organization
             from sqlalchemy import or_
             from sqlmodel import select
+
+            from src.db.organizations import Organization
 
             try:
                 statement = select(Organization.id).where(

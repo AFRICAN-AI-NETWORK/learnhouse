@@ -1,23 +1,18 @@
 """Unit tests for waitlist configuration service"""
 
-import pytest
 from datetime import datetime, timedelta, timezone
+
+import pytest
 from fastapi import HTTPException
 from sqlmodel import select
 
-from src.services.waitlist.config import (
-    create_waitlist_config,
-    get_waitlist_config,
-    get_org_waitlist_configs,
-    update_waitlist_config,
-    cancel_waitlist_config,
-)
-from src.db.waitlist import (
-    WaitlistConfig,
-    WaitlistConfigCreate,
-    WaitlistConfigUpdate,
-    WaitlistStatusEnum,
-)
+from src.db.waitlist import (WaitlistConfig, WaitlistConfigCreate,
+                             WaitlistConfigUpdate, WaitlistStatusEnum)
+from src.services.waitlist.config import (cancel_waitlist_config,
+                                          create_waitlist_config,
+                                          get_org_waitlist_configs,
+                                          get_waitlist_config,
+                                          update_waitlist_config)
 
 
 class TestCreateWaitlistConfig:

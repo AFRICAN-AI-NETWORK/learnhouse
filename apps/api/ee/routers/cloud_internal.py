@@ -1,16 +1,16 @@
 import os
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
+
 from src.core.events.database import get_db_session
 from src.db.organization_config import OrganizationConfigBase
-from src.services.explore.explore import (
-    get_course_for_explore,
-    get_courses_for_an_org_explore,
-    get_org_for_explore,
-    get_orgs_for_explore,
-    search_orgs_for_explore,
-)
+from src.services.explore.explore import (get_course_for_explore,
+                                          get_courses_for_an_org_explore,
+                                          get_org_for_explore,
+                                          get_orgs_for_explore,
+                                          search_orgs_for_explore)
 from src.services.orgs.orgs import update_org_with_config_no_auth
 
 router = APIRouter()

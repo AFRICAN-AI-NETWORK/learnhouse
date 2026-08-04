@@ -1,25 +1,21 @@
 import logging
+import uuid
+
 import httpx
 import sentry_sdk
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
+
 from config.config import get_learnhouse_config
-from src.db.payments.payments_products import (
-    PaymentProductTypeEnum,
-    PaymentsProduct,
-)
 from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import (PaymentProductTypeEnum,
+                                               PaymentsProduct)
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
-from src.services.payments.payments_users import (
-    create_payment_user,
-    delete_payment_user,
-)
-from src.services.payments.discount_codes import (
-    validate_discount_code,
-)
-import uuid
+from src.services.payments.discount_codes import validate_discount_code
+from src.services.payments.payments_users import (create_payment_user,
+                                                  delete_payment_user)
 
 logger = logging.getLogger(__name__)
 

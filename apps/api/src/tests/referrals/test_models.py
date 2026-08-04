@@ -3,16 +3,15 @@ Comprehensive unit tests for referral code models
 Tests database models, enums, and validation
 """
 
-import pytest
 from datetime import datetime, timezone
-from src.db.referrals.referral_codes import (
-    ReferralCode,
-    ReferralCodeBase,
-    ReferralCodeRead,
-    ReferralCodeCreate,
-    ReferralCodeUpdate,
-    ReferralCodeStatus,
-)
+
+import pytest
+
+from src.db.referrals.referral_codes import (ReferralCode, ReferralCodeBase,
+                                             ReferralCodeCreate,
+                                             ReferralCodeRead,
+                                             ReferralCodeStatus,
+                                             ReferralCodeUpdate)
 
 
 class TestReferralCodeStatus:

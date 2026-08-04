@@ -1,16 +1,14 @@
 from typing import Literal
+
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select, text
-from src.db.payments.payments import (
-    PaymentProviderEnum,
-    PaymentsConfig,
-    PaymentsConfigUpdate,
-    PaymentsConfigRead,
-)
-from src.db.users import PublicUser, AnonymousUser, InternalUser
+
 from src.db.organizations import Organization
-from src.services.orgs.orgs import rbac_check
+from src.db.payments.payments import (PaymentProviderEnum, PaymentsConfig,
+                                      PaymentsConfigRead, PaymentsConfigUpdate)
+from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
+from src.services.orgs.orgs import rbac_check
 
 
 async def init_payments_config(

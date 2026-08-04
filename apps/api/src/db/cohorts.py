@@ -1,7 +1,8 @@
+from enum import Enum
 from typing import Optional
+
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from enum import Enum
 
 
 class CohortStatusEnum(str, Enum):

@@ -1,32 +1,24 @@
-from fastapi import Depends, HTTPException, Request
 import sentry_sdk
+from fastapi import Depends, HTTPException, Request
 from sqlmodel import Session, select
+
+from src.core.events.database import get_db_session
+from src.db.courses.activities import Activity, ActivityRead
+from src.db.courses.courses import Course, CourseRead
 from src.db.organization_config import OrganizationConfig
 from src.db.organizations import Organization
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    increase_feature_usage,
-)
-from src.db.courses.courses import Course, CourseRead
-from src.core.events.database import get_db_session
 from src.db.users import PublicUser
-from src.db.courses.activities import Activity, ActivityRead
 from src.security.auth import get_current_user
-from src.services.ai.base import (
-    ask_ai,
-    get_chat_session_history,
-    save_message_to_history,
-)
-
-from src.services.ai.schemas.ai import (
-    ActivityAIChatSessionResponse,
-    SendActivityAIChatMessage,
-    StartActivityAIChatSession,
-)
+from src.security.features_utils.usage import (check_limits_with_usage,
+                                               increase_feature_usage)
+from src.services.ai.base import (ask_ai, get_chat_session_history,
+                                  save_message_to_history)
+from src.services.ai.schemas.ai import (ActivityAIChatSessionResponse,
+                                        SendActivityAIChatMessage,
+                                        StartActivityAIChatSession)
 from src.services.courses.activities.utils import (
     serialize_activity_text_to_ai_comprehensible_text,
-    structure_activity_content_by_type,
-)
+    structure_activity_content_by_type)
 
 
 def ai_start_activity_chat_session(

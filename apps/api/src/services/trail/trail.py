@@ -1,31 +1,29 @@
 from datetime import datetime
 from uuid import uuid4
-from src.db.courses.chapter_activities import ChapterActivity
+
+from dateutil import parser
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
 from sqlalchemy import func
+from sqlmodel import Session, select
+
+from src.db.cohorts import Cohort, CohortEnrollment
 from src.db.courses.activities import Activity
+from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
+from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.courses.courses import Course
-from src.db.trail_runs import TrailRun, TrailRunRead
+from src.db.trail_runs import StatusEnum, TrailRun, TrailRunRead
 from src.db.trail_steps import TrailStep
 from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
-    sync_course_trail_run_completion_status,
-)
-from src.db.cohorts import CohortEnrollment, Cohort
-from src.db.courses.course_prerequisites import CoursePrerequisite
-from src.db.trail_runs import StatusEnum
-from src.db.courses.chapters import Chapter
-from src.db.courses.course_chapters import CourseChapter
-from src.services.courses.grade import (
-    LATE_PENALTY_MULTIPLIER,
-    get_activity_weighted_points_earned,
-    load_activity_grade_inputs,
-    normalized_assignment_score,
-)
-from dateutil import parser
+    sync_course_trail_run_completion_status)
+from src.services.courses.grade import (LATE_PENALTY_MULTIPLIER,
+                                        get_activity_weighted_points_earned,
+                                        load_activity_grade_inputs,
+                                        normalized_assignment_score)
 
 
 def get_enrolled_user_ids_for_course(course_id: int, db_session: Session) -> list[int]:

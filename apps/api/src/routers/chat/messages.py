@@ -1,21 +1,18 @@
 from typing import List, Optional, Union
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+
+from fastapi import (APIRouter, Depends, File, HTTPException, Query,
+                     UploadFile, status)
 from sqlmodel import Session, select
 
-from src.db.chat.messages import (
-    MessageCreate,
-    MessageUpdate,
-    MessageRead,
-    Message,
-    MessageReadReceipt,
-)
-from src.db.chat.attachments import MessageAttachmentRead, MessageAttachment
-from src.db.chat.conversations import Conversation
-from src.db.organizations import Organization
-from src.services.chat.message_service import MessageService
 from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
+from src.db.chat.attachments import MessageAttachment, MessageAttachmentRead
+from src.db.chat.conversations import Conversation
+from src.db.chat.messages import (Message, MessageCreate, MessageRead,
+                                  MessageReadReceipt, MessageUpdate)
+from src.db.organizations import Organization
 from src.db.users import User
+from src.security.auth import get_current_user
+from src.services.chat.message_service import MessageService
 
 router = APIRouter()
 
@@ -229,8 +226,8 @@ async def upload_attachment(
     and returns the attachment metadata with a relative file_url that can
     be fetched from /content/...
     """
-    from src.services.chat.attachment_service import AttachmentService
     from src.db.chat.messages import Message
+    from src.services.chat.attachment_service import AttachmentService
 
     # ── Resolve org_uuid from org_id ─────────────────────────────────────────
     org = db.exec(select(Organization).where(Organization.id == org_id)).first()

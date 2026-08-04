@@ -14,40 +14,30 @@ from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
-from sqlmodel import Session, SQLModel, create_engine, select
 from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine, select
 
-# Import every model module touched so create_all builds the full schema.
-from src.db.users import User, AnonymousUser  # noqa: F401
-from src.db.organizations import Organization  # noqa: F401
-from src.db.courses.courses import Course
-from src.db.courses.chapters import Chapter  # noqa: F401
-from src.db.courses.activities import (
-    Activity,
-    ActivityTypeEnum,
-    ActivitySubTypeEnum,
-)
+from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
+                                       ActivityTypeEnum)
+from src.db.courses.assignments import (Assignment, AssignmentTask,
+                                        AssignmentTaskTypeEnum,
+                                        AssignmentUserSubmission,
+                                        AssignmentUserSubmissionStatus,
+                                        GradingTypeEnum)
+from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapter_activities import ChapterActivity
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentTask,
-    AssignmentTaskTypeEnum,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionStatus,
-    GradingTypeEnum,
-)
-from src.db.courses.certifications import Certifications, CertificateUser
-from src.db.trails import Trail  # noqa: F401
+from src.db.courses.chapters import Chapter  # noqa: F401
+from src.db.courses.courses import Course
+from src.db.organizations import Organization  # noqa: F401
 from src.db.trail_runs import TrailRun
 from src.db.trail_steps import TrailStep
-
-from src.services.courses.grade import (
-    LATE_PENALTY_MULTIPLIER,
-    compute_course_grade,
-    get_activity_weighted_points_earned,
-    normalized_assignment_score,
-)
-
+from src.db.trails import Trail  # noqa: F401
+# Import every model module touched so create_all builds the full schema.
+from src.db.users import AnonymousUser, User  # noqa: F401
+from src.services.courses.grade import (LATE_PENALTY_MULTIPLIER,
+                                        compute_course_grade,
+                                        get_activity_weighted_points_earned,
+                                        normalized_assignment_score)
 
 # ─────────────────────────── DB fixture ────────────────────────────
 
@@ -426,9 +416,9 @@ class TestCertificateStoresGrade:
     @pytest.mark.asyncio
     async def test_certificate_stores_grade(self, db):
         from unittest.mock import Mock
-        from src.services.courses.certifications import (
-            check_course_completion_and_create_certificate,
-        )
+
+        from src.services.courses.certifications import \
+            check_course_completion_and_create_certificate
 
         _make_course(db)
         _make_activity(db, 1, 100)
@@ -493,6 +483,7 @@ class TestGradeEndpointAuthorization:
     @pytest.mark.asyncio
     async def test_authentication_required(self, db):
         from fastapi import HTTPException
+
         from src.services.courses.grade import get_course_grade_for_user
 
         _make_course(db, uuid="course_auth")
@@ -503,6 +494,7 @@ class TestGradeEndpointAuthorization:
     @pytest.mark.asyncio
     async def test_non_enrolled_forbidden(self, db):
         from fastapi import HTTPException
+
         from src.services.courses.grade import get_course_grade_for_user
 
         _make_course(db, uuid="course_enroll")
@@ -514,6 +506,7 @@ class TestGradeEndpointAuthorization:
     @pytest.mark.asyncio
     async def test_unknown_course_404(self, db):
         from fastapi import HTTPException
+
         from src.services.courses.grade import get_course_grade_for_user
 
         user = SimpleNamespace(id=_USER_ID)

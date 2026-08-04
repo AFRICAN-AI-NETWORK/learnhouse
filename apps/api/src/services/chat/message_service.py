@@ -1,20 +1,16 @@
-from typing import List, Optional
-from datetime import datetime
-from uuid import uuid4
-from sqlmodel import Session, select
-from fastapi import HTTPException, status
 import logging
+from datetime import datetime
+from typing import List, Optional
+from uuid import uuid4
 
-from src.db.chat.messages import (
-    Message,
-    MessageCreate,
-    MessageUpdate,
-    MessageRead,
-    MessageEditHistory,
-    MessageReadReceipt,
-)
-from src.db.chat.conversations import Conversation
+from fastapi import HTTPException, status
+from sqlmodel import Session, select
+
 from src.db.chat.attachments import MessageAttachment
+from src.db.chat.conversations import Conversation
+from src.db.chat.messages import (Message, MessageCreate, MessageEditHistory,
+                                  MessageRead, MessageReadReceipt,
+                                  MessageUpdate)
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +189,8 @@ class MessageService:
 
         # Send notification
         try:
-            from src.services.chat.notification_service import NotificationService
+            from src.services.chat.notification_service import \
+                NotificationService
 
             await NotificationService.send_message_notification(db, new_message)
         except Exception as e:

@@ -16,12 +16,8 @@ from sqlmodel import Session, func, select
 
 from src.db.notifications import Notification, NotificationType
 from src.services.notifications.notification_copy import (
-    NotificationCopy,
-    activity_added_copy,
-    assignment_reviewed_copy,
-    chapter_added_copy,
-    retake_requested_copy,
-)
+    NotificationCopy, activity_added_copy, assignment_reviewed_copy,
+    chapter_added_copy, retake_requested_copy)
 
 logger = logging.getLogger(__name__)
 

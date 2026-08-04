@@ -12,9 +12,7 @@ from sqlmodel import Session
 from src.db.notifications import EmailStatus, Notification, NotificationType
 from src.db.users import User
 from src.services.notifications.email_dispatch import (
-    MAX_EMAIL_ATTEMPTS,
-    process_pending_notification_emails,
-)
+    MAX_EMAIL_ATTEMPTS, process_pending_notification_emails)
 
 
 def _make_notification(session: Session, user: User, org, **overrides) -> Notification:

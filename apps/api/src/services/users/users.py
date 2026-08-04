@@ -1,40 +1,29 @@
+import os
 from datetime import datetime, timedelta
 from typing import Literal
 from uuid import uuid4
+
+import jwt
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
-import jwt
-import os
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    increase_feature_usage,
-)
-from src.services.users.usergroups import add_users_to_usergroup
-from src.services.users.emails import (
-    send_account_creation_email,
-)
-from src.services.orgs.invites import get_invite_code
-from src.services.users.avatars import upload_avatar
+
+from src.db.organizations import Organization, OrganizationRead
 from src.db.roles import Role, RoleRead
+from src.db.user_organizations import UserOrganization
+from src.db.users import (AnonymousUser, InternalUser, PublicUser, User,
+                          UserCreate, UserRead, UserRoleWithOrg, UserSession,
+                          UserUpdate, UserUpdatePassword)
+from src.security.features_utils.usage import (check_limits_with_usage,
+                                               increase_feature_usage)
 from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon,
-)
-from src.db.organizations import Organization, OrganizationRead
-from src.db.user_organizations import UserOrganization
-from src.db.users import (
-    AnonymousUser,
-    InternalUser,
-    PublicUser,
-    User,
-    UserCreate,
-    UserRead,
-    UserRoleWithOrg,
-    UserSession,
-    UserUpdate,
-    UserUpdatePassword,
-)
-from src.security.security import security_hash_password, security_verify_password
+    authorization_verify_if_user_is_anon)
+from src.security.security import (security_hash_password,
+                                   security_verify_password)
+from src.services.orgs.invites import get_invite_code
+from src.services.users.avatars import upload_avatar
+from src.services.users.emails import send_account_creation_email
+from src.services.users.usergroups import add_users_to_usergroup
 
 
 # JWT Verification Token Functions
@@ -181,7 +170,8 @@ async def create_user(
 
     # Referral system: Validate disposable email
     if user_object.referral_code:
-        from src.services.referrals.fraud_prevention import validate_email_for_referral
+        from src.services.referrals.fraud_prevention import \
+            validate_email_for_referral
 
         is_valid, error_msg = await validate_email_for_referral(user.email, db_session)
         if not is_valid:
@@ -203,9 +193,8 @@ async def create_user(
     # Referral system: Track referral if code provided
     if user_object.referral_code:
         try:
-            from src.services.referrals.referral_tracking import (
-                validate_and_track_referral,
-            )
+            from src.services.referrals.referral_tracking import \
+                validate_and_track_referral
 
             referral_code_obj, fraud_score = await validate_and_track_referral(
                 request=request,

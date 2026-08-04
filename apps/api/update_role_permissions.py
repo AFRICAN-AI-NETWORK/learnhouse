@@ -1,14 +1,15 @@
-import sys
 import os
+import sys
 
 sys.path.append(os.getcwd())
-from datetime import datetime
-from sqlmodel import Session, select
-from src.core.events.database import engine
-from src.db.roles import Role, RoleTypeEnum
-
+from datetime import datetime, timezone
 
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlmodel import Session, select
+
+from src.core.events.database import engine
+from src.db.roles import Role, RoleTypeEnum
 
 
 def update_roles():
@@ -20,7 +21,7 @@ def update_roles():
             )
             session.commit()
             print("Reset role_id_seq successfully.")
-        except Exception as e:
+        except SQLAlchemyError as e:
             session.rollback()
             print(f"Warning: Could not reset sequence: {e}")
 
@@ -130,7 +131,7 @@ def update_roles():
             statement = select(Role).where(Role.role_uuid == uuid)
             role = session.exec(statement).first()
 
-            now_str = datetime.now().isoformat()
+            now_str = datetime.now(timezone.utc).isoformat()
 
             if role:
                 print(f"Updating existing role: {name} ({uuid})")
@@ -170,7 +171,7 @@ def update_roles():
         try:
             session.commit()
             print("Roles sync completed successfully.")
-        except Exception as e:
+        except SQLAlchemyError as e:
             session.rollback()
             print(f"Error during commit: {e}")
             raise

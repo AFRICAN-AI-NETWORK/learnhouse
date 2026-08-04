@@ -2,20 +2,17 @@ import logging
 from datetime import datetime
 from typing import List
 from uuid import uuid4
+
+from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
-from src.db.users import AnonymousUser, PublicUser
-from src.db.courses.course_chapters import CourseChapter
+
 from src.db.courses.activities import Activity, ActivityRead
 from src.db.courses.chapter_activities import ChapterActivity
-from src.db.courses.chapters import (
-    Chapter,
-    ChapterCreate,
-    ChapterRead,
-    ChapterUpdate,
-    ChapterUpdateOrder,
-)
+from src.db.courses.chapters import (Chapter, ChapterCreate, ChapterRead,
+                                     ChapterUpdate, ChapterUpdateOrder)
+from src.db.courses.course_chapters import CourseChapter
 from src.db.courses.courses import Course
-from fastapi import HTTPException, status, Request
+from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_chapters
 
 logger = logging.getLogger(__name__)
@@ -207,9 +204,8 @@ async def update_chapter(
     # never turn a successful publish into an error for the instructor.
     if not was_published and chapter.published:
         try:
-            from src.services.notifications.fanout_jobs import (
-                sync_fanout_chapter_added,
-            )
+            from src.services.notifications.fanout_jobs import \
+                sync_fanout_chapter_added
             from src.services.notifications.scheduling import enqueue_job
 
             enqueue_job(

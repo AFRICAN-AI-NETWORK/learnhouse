@@ -1,15 +1,15 @@
 from datetime import datetime
 from typing import Optional
+
 from fastapi import HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
+
 from src.db.organizations import Organization
 from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, PublicUser, User
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    increase_feature_usage,
-)
+from src.security.features_utils.usage import (check_limits_with_usage,
+                                               increase_feature_usage)
 from src.services.orgs.invites import get_invite_code
 from src.services.orgs.orgs import get_org_join_mechanism
 

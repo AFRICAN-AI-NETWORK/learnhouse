@@ -6,12 +6,12 @@ Implements multi-factor fraud detection (IP + device fingerprint)
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select, and_, func, case
-from src.db.referrals.referral_tracking import (
-    ReferralTracking,
-)
+from sqlmodel import Session, and_, case, func, select
+
 from src.db.referrals.referral_codes import ReferralCode
+from src.db.referrals.referral_tracking import ReferralTracking
 from src.services.referrals.referral_codes import validate_referral_code_exists
 
 logger = logging.getLogger(__name__)

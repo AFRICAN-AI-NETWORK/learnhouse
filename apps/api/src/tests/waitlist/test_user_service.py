@@ -1,17 +1,16 @@
 """Unit tests for waitlist user service"""
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
-from fastapi import HTTPException
 
-from src.services.users.waitlist import (
-    create_waitlist_user,
-    get_waitlist_users,
-)
-from src.db.users import UserCreate
-from src.db.waitlist import WaitlistStatusEnum, WaitlistCoursePreference
+import pytest
+from fastapi import HTTPException
 from sqlmodel import select
+
+from src.db.users import UserCreate
+from src.db.waitlist import WaitlistCoursePreference, WaitlistStatusEnum
+from src.services.users.waitlist import (create_waitlist_user,
+                                         get_waitlist_users)
 
 
 class TestCreateWaitlistUser:

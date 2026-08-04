@@ -1,8 +1,8 @@
 """Tests for the core notification service: create, query, and read-state."""
 
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
 from sqlmodel import Session
 
 from src.db.notifications import EmailStatus, Notification, NotificationType

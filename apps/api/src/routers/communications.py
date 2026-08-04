@@ -1,22 +1,18 @@
-from fastapi import (
-    APIRouter,
-    Depends,
-    Request,
-    BackgroundTasks,
-    HTTPException,
-    UploadFile,
-)
+from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
+                     Request, UploadFile)
 from sqlmodel import Session, select
+
 from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
-from src.db.users import PublicUser
-from src.db.user_organizations import UserOrganization
-from src.db.organizations import Organization
 from src.db.communications import Campaign, CampaignCreate, CampaignRead
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
-from src.services.communications.dispatcher import create_campaign, dispatch_campaign
+from src.db.organizations import Organization
+from src.db.user_organizations import UserOrganization
+from src.db.users import PublicUser
+from src.security.auth import get_current_user
+from src.services.communications.dispatcher import (create_campaign,
+                                                    dispatch_campaign)
 from src.services.utils.upload_content import upload_file
 
 router = APIRouter()

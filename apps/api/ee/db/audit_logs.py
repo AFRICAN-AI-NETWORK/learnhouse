@@ -1,6 +1,7 @@
-from typing import Optional, Any, Dict, List
-from sqlmodel import SQLModel, Field, Column, Integer, ForeignKey, JSON
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from sqlmodel import JSON, Column, Field, ForeignKey, Integer, SQLModel
 
 
 class AuditLogBase(SQLModel):

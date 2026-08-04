@@ -1,14 +1,15 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
-from sqlmodel import Session
 import json
 import logging
 from typing import Optional
 
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from sqlmodel import Session
+
+from src.core.events.database import get_db_session
+from src.db.users import User
+from src.security.auth import get_current_user
 from src.services.chat.websocket_manager import connection_manager
 from src.services.chat.ws_ticket_service import create_ticket, redeem_ticket
-from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
-from src.db.users import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,8 +25,9 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
     """
     try:
         from fastapi_jwt_auth import AuthJWT
-        from src.db.users import User as UserModel
         from sqlmodel import select
+
+        from src.db.users import User as UserModel
 
         # Create AuthJWT instance with the token
         auth = AuthJWT()
@@ -137,9 +139,11 @@ async def websocket_endpoint(
             elif message_type == "typing_start":
                 conversation_uuid = payload.get("conversation_uuid")
                 # Get conversation and notify other participant
-                from src.db.chat.conversations import Conversation
                 from sqlmodel import select
-                from src.services.chat.typing_indicator import TypingIndicatorService
+
+                from src.db.chat.conversations import Conversation
+                from src.services.chat.typing_indicator import \
+                    TypingIndicatorService
 
                 conversation = db.exec(
                     select(Conversation).where(
@@ -173,9 +177,11 @@ async def websocket_endpoint(
 
             elif message_type == "typing_stop":
                 conversation_uuid = payload.get("conversation_uuid")
-                from src.db.chat.conversations import Conversation
                 from sqlmodel import select
-                from src.services.chat.typing_indicator import TypingIndicatorService
+
+                from src.db.chat.conversations import Conversation
+                from src.services.chat.typing_indicator import \
+                    TypingIndicatorService
 
                 conversation = db.exec(
                     select(Conversation).where(
@@ -209,10 +215,13 @@ async def websocket_endpoint(
 
             elif message_type == "mark_read":
                 message_uuid = payload.get("message_uuid")
-                from src.services.chat.message_service import ReadReceiptService
-                from src.db.chat.messages import Message
-                from sqlmodel import select
                 from datetime import datetime
+
+                from sqlmodel import select
+
+                from src.db.chat.messages import Message
+                from src.services.chat.message_service import \
+                    ReadReceiptService
 
                 await ReadReceiptService.mark_as_read(db, message_uuid, user_id)
 

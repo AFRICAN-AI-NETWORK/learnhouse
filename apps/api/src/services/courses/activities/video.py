@@ -1,25 +1,22 @@
-from typing import Literal
 import json
-from src.db.courses.courses import Course
-from src.db.organizations import Organization
+from datetime import datetime
+from typing import Literal
+from uuid import uuid4
 
+from fastapi import HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
-from src.db.courses.chapters import Chapter
-from src.db.courses.activities import (
-    Activity,
-    ActivityRead,
-    ActivitySubTypeEnum,
-    ActivityTypeEnum,
-)
+
+from src.db.courses.activities import (Activity, ActivityRead,
+                                       ActivitySubTypeEnum, ActivityTypeEnum)
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.courses import Course
+from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
-from src.services.courses.activities.uploads.videos import upload_video
-from fastapi import HTTPException, status, UploadFile, Request
-from uuid import uuid4
-from datetime import datetime
 from src.security.courses_security import courses_rbac_check_for_activities
+from src.services.courses.activities.uploads.videos import upload_video
 
 
 async def create_video_activity(

@@ -1,24 +1,19 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
+
 from src.core.events.database import get_db_session
-from src.db.courses.certifications import (
-    CertificationCreate,
-    CertificationRead,
-    CertificationUpdate,
-)
+from src.db.courses.certifications import (CertificationCreate,
+                                           CertificationRead,
+                                           CertificationUpdate)
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.certifications import (
-    create_certification,
-    get_certification,
-    get_certifications_by_course,
-    update_certification,
-    delete_certification,
-    get_user_certificates_for_course,
-    get_certificate_by_user_certification_uuid,
-    get_all_user_certificates,
-)
+    create_certification, delete_certification, get_all_user_certificates,
+    get_certificate_by_user_certification_uuid, get_certification,
+    get_certifications_by_course, get_user_certificates_for_course,
+    update_certification)
 
 router = APIRouter()
 

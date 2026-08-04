@@ -1,16 +1,16 @@
-import logging
 import json
+import logging
+
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
+
 from config.config import get_learnhouse_config
 from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import InternalUser
-from src.services.payments.payments_users import update_payment_user_status
-from src.services.payments.payments_flutterwave import verify_transaction
 from src.services.payments.discount_codes import (
-    record_discount_usage,
-    increment_discount_usage_atomic,
-)
+    increment_discount_usage_atomic, record_discount_usage)
+from src.services.payments.payments_flutterwave import verify_transaction
+from src.services.payments.payments_users import update_payment_user_status
 
 logger = logging.getLogger(__name__)
 
@@ -139,13 +139,13 @@ async def handle_flutterwave_webhook(
                     if payment_user and payment_user.referral_code_id:
                         try:
                             from datetime import datetime
-                            from src.services.referrals.referral_commissions import (
-                                create_commission_for_payment,
-                            )
+
                             from sqlmodel import and_
-                            from src.db.referrals.referral_tracking import (
-                                ReferralTracking,
-                            )
+
+                            from src.db.referrals.referral_tracking import \
+                                ReferralTracking
+                            from src.services.referrals.referral_commissions import \
+                                create_commission_for_payment
 
                             tracking = db_session.exec(
                                 select(ReferralTracking).where(

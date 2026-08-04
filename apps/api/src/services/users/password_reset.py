@@ -1,24 +1,19 @@
-from datetime import datetime
 import json
 import secrets
-import redis
 import string
 import uuid
+from datetime import datetime
+
+import redis
 from fastapi import HTTPException, Request
 from pydantic import EmailStr
 from sqlmodel import Session, select
-from src.db.organizations import Organization, OrganizationRead
-from src.security.security import security_hash_password
+
 from config.config import get_learnhouse_config
-from src.services.users.emails import (
-    send_password_reset_email,
-)
-from src.db.users import (
-    AnonymousUser,
-    PublicUser,
-    User,
-    UserRead,
-)
+from src.db.organizations import Organization, OrganizationRead
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
+from src.security.security import security_hash_password
+from src.services.users.emails import send_password_reset_email
 
 
 async def send_reset_password_code(

@@ -1,7 +1,8 @@
 import logging
-from src.services.email.utils import send_email
-from src.db.users import User
+
 from src.db.courses.activities import Activity
+from src.db.users import User
+from src.services.email.utils import send_email
 
 logger = logging.getLogger(__name__)
 

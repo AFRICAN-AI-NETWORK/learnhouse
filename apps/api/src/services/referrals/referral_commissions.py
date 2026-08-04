@@ -6,16 +6,16 @@ Follows DRY principles with reusable utilities
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select, and_, func
-from src.db.referrals.referral_commissions import (
-    ReferralCommission,
-    CommissionStatus,
-)
-from src.db.referrals.referral_tracking import ReferralTracking
+from sqlmodel import Session, and_, func, select
+
 from src.db.referrals.referral_codes import ReferralCode
-from src.db.users import User, PublicUser
+from src.db.referrals.referral_commissions import (CommissionStatus,
+                                                   ReferralCommission)
+from src.db.referrals.referral_tracking import ReferralTracking
+from src.db.users import PublicUser, User
 
 logger = logging.getLogger(__name__)
 

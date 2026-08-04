@@ -1,7 +1,9 @@
 from typing import Optional
+
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
+
 from src.db.trail_runs import TrailRunRead
 
 

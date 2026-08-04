@@ -12,24 +12,17 @@ All tests are self-contained; no database or network required.
 """
 
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, patch
 
 from src.db.courses.assignments import AssignmentTaskTypeEnum
 from src.services.courses.activities.assignments import (
-    _AUTO_GRADABLE_TYPES,
-    _AUTO_GRADE_DISPATCH,
-    _is_form_answer_correct,
-    dispatch_auto_grading,
-    perform_form_auto_grading,
-    perform_quiz_auto_grading,
-)
-from src.services.courses.grade import (
-    LATE_PENALTY_MULTIPLIER,
-    get_activity_weighted_points_earned,
-)
-
+    _AUTO_GRADABLE_TYPES, _AUTO_GRADE_DISPATCH, _is_form_answer_correct,
+    dispatch_auto_grading, perform_form_auto_grading,
+    perform_quiz_auto_grading)
+from src.services.courses.grade import (LATE_PENALTY_MULTIPLIER,
+                                        get_activity_weighted_points_earned)
 
 # ─── Minimal stand-ins (no DB / SQLModel machinery needed) ───────────────────
 

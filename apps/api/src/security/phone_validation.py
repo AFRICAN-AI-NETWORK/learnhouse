@@ -1,7 +1,6 @@
 import re
 from typing import Optional
 
-
 E164_PATTERN = re.compile(r"^\+[1-9]\d{1,14}$")
 
 

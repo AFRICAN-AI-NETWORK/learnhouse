@@ -16,12 +16,11 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from src.services.waitlist.emails import (
-    process_waitlist_activations,
-    retry_failed_waitlist_emails,
-)
 from sqlmodel import Session
+
 from src.core.events.database import engine
+from src.services.waitlist.emails import (process_waitlist_activations,
+                                          retry_failed_waitlist_emails)
 
 logger = logging.getLogger(__name__)
 

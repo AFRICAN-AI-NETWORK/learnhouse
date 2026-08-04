@@ -1,9 +1,10 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey
+from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
 
 # PaymentsConfig

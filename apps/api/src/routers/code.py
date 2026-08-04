@@ -1,17 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from pydantic import BaseModel
-from typing import List, Dict
-import httpx
 import time
 from collections import defaultdict
+from typing import Dict, List
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+
 from config.config import LearnHouseConfig, get_learnhouse_config
-from src.services.code_execution import (
-    execute_and_grade,
-    run_python_locally,
-    TestCaseResult,
-    CodeExecutionResponse,
-    PISTON_URL,
-)
+from src.services.code_execution import (PISTON_URL, CodeExecutionResponse,
+                                         TestCaseResult, execute_and_grade,
+                                         run_python_locally)
 
 router = APIRouter()
 

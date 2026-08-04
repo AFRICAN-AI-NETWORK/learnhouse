@@ -11,9 +11,9 @@ Usage:
     python run_chat_tests.py --fast             # Run in parallel
 """
 
-import sys
-import subprocess
 import argparse
+import subprocess
+import sys
 from pathlib import Path
 
 

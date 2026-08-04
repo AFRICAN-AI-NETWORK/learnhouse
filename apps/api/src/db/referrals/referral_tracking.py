@@ -5,7 +5,9 @@ Tracks signup events with referral codes for fraud prevention
 
 from datetime import datetime
 from typing import Optional
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey, Index, JSON
+
+from sqlmodel import (JSON, BigInteger, Column, Field, ForeignKey, Index,
+                      SQLModel)
 
 
 class ReferralTrackingBase(SQLModel):

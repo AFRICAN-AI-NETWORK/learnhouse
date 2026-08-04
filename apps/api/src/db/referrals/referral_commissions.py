@@ -6,7 +6,8 @@ Tracks commission earned from successful referrals
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey, Index
+
+from sqlmodel import BigInteger, Column, Field, ForeignKey, Index, SQLModel
 
 
 class CommissionStatus(str, Enum):

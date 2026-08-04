@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.routers import announcements as announcements_router
 from src.db.announcements import AnnouncementCreate
+from src.routers import announcements as announcements_router
 
 
 @pytest.fixture(autouse=True)

@@ -4,9 +4,10 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from sqlmodel import Session, create_engine, text
+from sqlmodel import create_engine, text
 
 DATABASE_URL = os.getenv("LEARNHOUSE_SQL_CONNECTION_STRING")
 # Must use isolation_level="AUTOCOMMIT" to drop database/schema if needed

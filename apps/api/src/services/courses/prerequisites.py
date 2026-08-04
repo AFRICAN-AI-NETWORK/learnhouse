@@ -1,12 +1,15 @@
 from datetime import datetime
 from typing import List
+
+from fastapi import HTTPException, Request, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
+
 from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.courses.courses import Course
-from src.db.users import PublicUser, AnonymousUser
-from fastapi import HTTPException, Request, status
-from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
+from src.db.users import AnonymousUser, PublicUser
+from src.security.rbac.rbac import \
+    authorization_verify_based_on_org_admin_status
 
 
 class PrerequisiteCreate(BaseModel):

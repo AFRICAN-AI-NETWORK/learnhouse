@@ -3,26 +3,20 @@ Comprehensive unit tests for referral commission service
 Tests commission creation, forfeiture, balance updates, and temporal checks
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
+
+import pytest
 from fastapi import HTTPException
 
+from src.db.referrals.referral_commissions import (CommissionStatus,
+                                                   ReferralCommission)
+from src.db.users import PublicUser, User
 from src.services.referrals.referral_commissions import (
-    get_commission_by_payment,
-    create_commission_for_payment,
-    forfeit_commission_for_refund,
-    update_pending_commissions_to_eligible,
-    get_commission_balance,
-    get_commission_history,
-    REFUND_PERIOD_DAYS,
-    COMMISSION_AMOUNT_USD,
-)
-from src.db.referrals.referral_commissions import (
-    ReferralCommission,
-    CommissionStatus,
-)
-from src.db.users import User, PublicUser
+    COMMISSION_AMOUNT_USD, REFUND_PERIOD_DAYS, create_commission_for_payment,
+    forfeit_commission_for_refund, get_commission_balance,
+    get_commission_by_payment, get_commission_history,
+    update_pending_commissions_to_eligible)
 
 
 class TestGetCommissionByPayment:

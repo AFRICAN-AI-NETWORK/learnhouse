@@ -1,7 +1,9 @@
+import os
+
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
+
 from src.services.email.utils import send_email
-import os
 
 router = APIRouter()
 

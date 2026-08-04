@@ -1,12 +1,15 @@
 import asyncio
 import json
 import logging
+
 from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from ee.services.audit import queue_audit_log, resolve_org_id, is_enterprise_plan
-from src.db.users import PublicUser
-from src.core.events.database import engine
 from sqlmodel import Session
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from ee.services.audit import (is_enterprise_plan, queue_audit_log,
+                               resolve_org_id)
+from src.core.events.database import engine
+from src.db.users import PublicUser
 
 logger = logging.getLogger(__name__)
 

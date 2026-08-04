@@ -1,15 +1,17 @@
 """Critical end-to-end tests for chat system."""
 
-import pytest
-from sqlmodel import Session
 from datetime import datetime
 from uuid import uuid4
 
-from src.services.chat.conversation_service import ConversationService
-from src.services.chat.message_service import MessageService, ReadReceiptService
+import pytest
+from sqlmodel import Session
+
 from src.db.chat.messages import MessageCreate
-from src.db.users import User
 from src.db.organizations import Organization
+from src.db.users import User
+from src.services.chat.conversation_service import ConversationService
+from src.services.chat.message_service import (MessageService,
+                                               ReadReceiptService)
 
 
 class TestCriticalChatFlows:
@@ -71,6 +73,7 @@ class TestCriticalChatFlows:
 
         # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
         from sqlmodel import select
+
         from src.db.chat.messages import Message
 
         db_message2 = session.exec(
@@ -325,8 +328,8 @@ class TestCriticalChatFlows:
         instructor_user: User,
     ):
         """Test that conversations are ordered by most recent message."""
-        from src.db.users import User
         from src.db.user_organizations import UserOrganization
+        from src.db.users import User
 
         # Create multiple instructors for multiple conversations
         instructors = []
@@ -345,8 +348,9 @@ class TestCriticalChatFlows:
             session.commit()
             session.refresh(instructor)
 
-            from src.db.roles import Role
             from sqlmodel import select
+
+            from src.db.roles import Role
 
             instructor_role = session.exec(
                 select(Role).where(Role.name == "Instructor")
@@ -480,6 +484,7 @@ class TestCriticalErrorScenarios:
 
         # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
         from sqlmodel import select
+
         from src.db.chat.messages import Message
 
         db_message = session.exec(

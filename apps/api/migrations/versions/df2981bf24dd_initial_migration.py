@@ -8,12 +8,11 @@ Create Date: 2024-07-11 19:33:37.993767
 
 from typing import Sequence, Union
 
-from alembic import op
-from grpc import server  # noqa: F401
 import sqlalchemy as sa
 import sqlmodel  # noqa: F401
+from alembic import op
+from grpc import server  # noqa: F401
 from sqlalchemy import inspect
-
 
 # revision identifiers, used by Alembic.
 revision: str = "df2981bf24dd"

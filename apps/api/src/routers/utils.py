@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+
 from src.services.utils.link_preview import fetch_link_preview
 
 router = APIRouter()

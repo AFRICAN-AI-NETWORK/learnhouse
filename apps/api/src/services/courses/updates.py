@@ -1,14 +1,13 @@
 from datetime import datetime
 from typing import List
 from uuid import uuid4
+
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
-from src.db.courses.course_updates import (
-    CourseUpdate,
-    CourseUpdateCreate,
-    CourseUpdateRead,
-    CourseUpdateUpdate,
-)
+
+from src.db.courses.course_updates import (CourseUpdate, CourseUpdateCreate,
+                                           CourseUpdateRead,
+                                           CourseUpdateUpdate)
 from src.db.courses.courses import Course
 from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser

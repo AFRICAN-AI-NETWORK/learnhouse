@@ -1,7 +1,8 @@
-from typing import Optional
 from datetime import datetime
-from sqlmodel import Field, SQLModel, Column, JSON, Integer
+from typing import Optional
+
 from sqlalchemy import ForeignKey
+from sqlmodel import JSON, Column, Field, Integer, SQLModel
 
 
 class ChatAuditLog(SQLModel, table=True):

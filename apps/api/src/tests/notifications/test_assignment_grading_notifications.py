@@ -10,23 +10,19 @@ these tests target only the new notification wiring.
 """
 
 from datetime import datetime
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
-from unittest.mock import AsyncMock
-
 from sqlmodel import Session, select
 
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentTask,
-    AssignmentTaskSubmission,
-    AssignmentTaskTypeEnum,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionRevisionCreate,
-    AssignmentUserSubmissionStatus,
-    GradingTypeEnum,
-)
+from src.db.courses.assignments import (Assignment, AssignmentTask,
+                                        AssignmentTaskSubmission,
+                                        AssignmentTaskTypeEnum,
+                                        AssignmentUserSubmission,
+                                        AssignmentUserSubmissionRevisionCreate,
+                                        AssignmentUserSubmissionStatus,
+                                        GradingTypeEnum)
 from src.db.notifications import Notification, NotificationType
 from src.db.users import User
 from src.services.courses.activities import assignments as assignments_service

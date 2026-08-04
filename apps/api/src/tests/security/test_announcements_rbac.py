@@ -14,7 +14,8 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from src.db.organizations import Organization
-from src.db.roles import DashboardPermission, Permission, PermissionsWithOwn, Rights
+from src.db.roles import (DashboardPermission, Permission, PermissionsWithOwn,
+                          Rights)
 from src.db.user_organizations import UserOrganization
 from src.db.users import User
 from src.security.rbac.rbac import authorization_verify_has_rights

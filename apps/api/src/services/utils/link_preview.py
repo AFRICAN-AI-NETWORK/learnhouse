@@ -1,7 +1,8 @@
+from typing import Dict, Optional
+from urllib.parse import urljoin, urlparse
+
 import httpx
 from bs4 import BeautifulSoup, Tag
-from typing import Optional, Dict
-from urllib.parse import urljoin, urlparse
 
 
 async def fetch_link_preview(url: str) -> Dict[str, Optional[str]]:

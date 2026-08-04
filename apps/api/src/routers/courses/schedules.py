@@ -4,33 +4,29 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
 from src.core.events.database import get_db_session
-from src.db.courses.schedules import (
-    CourseRegisterEntryRead,
-    CourseRegisterEntryUpdate,
-    CourseRegisterPolicyRead,
-    CourseRegisterPolicyUpdate,
-    CourseRegisterSummaryRead,
-    CourseTimetableEventCreate,
-    CourseTimetableEventRead,
-    CourseTimetableEventUpdate,
-    RegisterEntryStatusEnum,
-    StudentTimetableEventRead,
-)
+from src.db.courses.schedules import (CourseRegisterEntryRead,
+                                      CourseRegisterEntryUpdate,
+                                      CourseRegisterPolicyRead,
+                                      CourseRegisterPolicyUpdate,
+                                      CourseRegisterSummaryRead,
+                                      CourseTimetableEventCreate,
+                                      CourseTimetableEventRead,
+                                      CourseTimetableEventUpdate,
+                                      RegisterEntryStatusEnum,
+                                      StudentTimetableEventRead)
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
-from src.services.courses.schedules import (
-    create_timetable_event,
-    delete_timetable_event,
-    get_register_entries,
-    get_register_policy,
-    get_register_summary,
-    get_my_timetable_events,
-    get_timetable_events,
-    mark_register,
-    update_register_entry,
-    update_register_policy,
-    update_timetable_event,
-)
+from src.services.courses.schedules import (create_timetable_event,
+                                            delete_timetable_event,
+                                            get_my_timetable_events,
+                                            get_register_entries,
+                                            get_register_policy,
+                                            get_register_summary,
+                                            get_timetable_events,
+                                            mark_register,
+                                            update_register_entry,
+                                            update_register_policy,
+                                            update_timetable_event)
 
 router = APIRouter()
 

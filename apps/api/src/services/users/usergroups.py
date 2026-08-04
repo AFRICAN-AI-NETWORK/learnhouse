@@ -1,22 +1,23 @@
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import Literal
 from uuid import uuid4
+
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    increase_feature_usage,
-)
-from src.security.rbac.rbac import (
-    authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon,
-)
+
+from src.db.organizations import Organization
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
-from src.db.organizations import Organization
-from src.db.usergroups import UserGroup, UserGroupCreate, UserGroupRead, UserGroupUpdate
-from src.db.users import AnonymousUser, InternalUser, PublicUser, User, UserRead
+from src.db.usergroups import (UserGroup, UserGroupCreate, UserGroupRead,
+                               UserGroupUpdate)
+from src.db.users import (AnonymousUser, InternalUser, PublicUser, User,
+                          UserRead)
+from src.security.features_utils.usage import (check_limits_with_usage,
+                                               increase_feature_usage)
+from src.security.rbac.rbac import (
+    authorization_verify_based_on_roles_and_authorship,
+    authorization_verify_if_user_is_anon)
 
 
 async def create_usergroup(

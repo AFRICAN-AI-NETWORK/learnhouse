@@ -4,10 +4,10 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from src.services.chat.conversation_service import ConversationService
 from src.db.chat.conversations import Conversation
-from src.db.users import User
 from src.db.organizations import Organization
+from src.db.users import User
+from src.services.chat.conversation_service import ConversationService
 
 
 class TestCreateOrGetConversation:
@@ -205,8 +205,8 @@ class TestGetUserConversations:
         instructor_user: User,
     ):
         """Test conversation list pagination."""
-        from uuid import uuid4
         from datetime import datetime, timedelta
+        from uuid import uuid4
 
         # Create multiple conversations
         for i in range(5):

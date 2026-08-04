@@ -3,15 +3,13 @@
 import pytest
 from fastapi import HTTPException
 
-from src.services.waitlist.courses import (
-    get_org_courses_for_waitlist,
-    get_course_preference_analytics,
-    get_user_course_preferences,
-)
 from src.db.courses.courses import Course
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentsProduct
 from src.db.waitlist import WaitlistCoursePreference
+from src.services.waitlist.courses import (get_course_preference_analytics,
+                                           get_org_courses_for_waitlist,
+                                           get_user_course_preferences)
 
 
 class TestGetOrgCoursesForWaitlist:
@@ -218,6 +216,7 @@ class TestGetCoursePreferenceAnalytics:
     ):
         """Test that analytics aggregate preferences from multiple users"""
         from datetime import datetime, timezone
+
         from src.db.users import User
 
         # Create multiple users with same course preference

@@ -1,17 +1,18 @@
-from typing import Literal, List
+from datetime import datetime
+from typing import List, Literal
 from uuid import uuid4
-from sqlmodel import Session, select, text
+
+from fastapi import HTTPException, Request
 from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select, text
+
+from src.db.organizations import Organization
+from src.db.roles import Role, RoleCreate, RoleRead, RoleTypeEnum, RoleUpdate
+from src.db.user_organizations import UserOrganization
+from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon,
-)
-from src.db.users import AnonymousUser, PublicUser
-from src.db.roles import Role, RoleCreate, RoleRead, RoleUpdate, RoleTypeEnum
-from src.db.organizations import Organization
-from src.db.user_organizations import UserOrganization
-from fastapi import HTTPException, Request
-from datetime import datetime
+    authorization_verify_if_user_is_anon)
 
 
 async def create_role(

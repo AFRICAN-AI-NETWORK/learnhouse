@@ -2,22 +2,13 @@
 
 import pytest
 
-from src.services.admin_analytics.students import (
-    get_org_analytics_summary,
-    get_student_course_detail,
-    get_student_detail,
-    list_org_students,
-)
+from src.services.admin_analytics.students import (get_org_analytics_summary,
+                                                   get_student_course_detail,
+                                                   get_student_detail,
+                                                   list_org_students)
 
-from .conftest import (
-    add_time,
-    complete_activity,
-    current_user,
-    enroll,
-    make_activity,
-    make_chapter,
-    make_course,
-)
+from .conftest import (add_time, complete_activity, current_user, enroll,
+                       make_activity, make_chapter, make_course)
 
 
 def _build_course_with_two_activities(session, org):

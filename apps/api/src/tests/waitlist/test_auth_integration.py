@@ -3,9 +3,9 @@
 import pytest
 from fastapi import HTTPException
 
-from src.security.auth import authenticate_user
 from src.db.users import User
 from src.db.waitlist import UserStatusEnum
+from src.security.auth import authenticate_user
 
 
 class TestWaitlistAuthenticationFlow:

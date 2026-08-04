@@ -1,7 +1,8 @@
 from typing import Any, List, Optional
+
 from pydantic import BaseModel
-from sqlmodel import Column, ForeignKey, Integer
-from sqlmodel import Field, SQLModel
+from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
+
 from src.db.courses.activities import ActivityRead
 
 

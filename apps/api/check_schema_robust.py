@@ -1,8 +1,9 @@
-import sys
 import os
+import sys
 
 sys.path.append(os.getcwd())
 from sqlalchemy import inspect
+
 from src.core.events.database import engine
 
 

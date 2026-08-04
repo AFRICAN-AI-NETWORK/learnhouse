@@ -10,16 +10,13 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-
 from sqlmodel import Session, select
 
-from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentUserSubmission,
-    AssignmentUserSubmissionStatus,
-    GradingTypeEnum,
-)
+from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
+                                       ActivityTypeEnum)
+from src.db.courses.assignments import (Assignment, AssignmentUserSubmission,
+                                        AssignmentUserSubmissionStatus,
+                                        GradingTypeEnum)
 from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_runs import TrailRun
@@ -28,8 +25,7 @@ from src.db.trails import Trail
 from src.db.users import User
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
-    has_ungraded_required_assignments,
-)
+    has_ungraded_required_assignments)
 
 
 def _make_assignment(session: Session, course, required: bool) -> Assignment:

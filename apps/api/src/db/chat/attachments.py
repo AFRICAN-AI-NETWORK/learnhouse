@@ -1,8 +1,9 @@
-from typing import Optional
 from datetime import datetime
-from sqlmodel import Field, SQLModel
-from sqlalchemy import CheckConstraint, Column, Integer, ForeignKey
+from typing import Optional
+
 from pydantic import BaseModel
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer
+from sqlmodel import Field, SQLModel
 
 
 class MessageAttachmentBase(SQLModel):

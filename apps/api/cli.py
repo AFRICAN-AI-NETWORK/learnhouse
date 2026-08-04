@@ -1,17 +1,17 @@
 import os
 from typing import Annotated
+
+import typer
 from pydantic import EmailStr
 from sqlalchemy import create_engine
-from sqlmodel import SQLModel, Session
-import typer
+from sqlmodel import Session, SQLModel
+
 from config.config import get_learnhouse_config
 from src.db.organizations import OrganizationCreate
 from src.db.users import UserCreate
-from src.services.setup.setup import (
-    install_create_organization,
-    install_create_organization_user,
-    install_default_elements,
-)
+from src.services.setup.setup import (install_create_organization,
+                                      install_create_organization_user,
+                                      install_default_elements)
 
 cli = typer.Typer()
 

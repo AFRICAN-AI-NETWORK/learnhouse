@@ -39,11 +39,8 @@ from typing import List, Optional
 from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity
-from src.db.courses.assignments import (
-    Assignment,
-    AssignmentTask,
-    AssignmentUserSubmission,
-)
+from src.db.courses.assignments import (Assignment, AssignmentTask,
+                                        AssignmentUserSubmission)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_steps import TrailStep
 
@@ -357,6 +354,7 @@ async def get_course_grade_for_user(
         enroll time, so it is a sufficient gate for a self-only read.
     """
     from fastapi import HTTPException, status
+
     from src.db.courses.courses import Course
     from src.db.trail_runs import TrailRun
 

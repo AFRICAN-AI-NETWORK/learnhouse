@@ -1,23 +1,21 @@
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
+
+from src.core.events.database import get_db_session
 from src.db.usergroups import UserGroupCreate, UserGroupRead, UserGroupUpdate
 from src.db.users import PublicUser, UserRead
-from src.services.users.usergroups import (
-    add_resources_to_usergroup,
-    add_users_to_usergroup,
-    create_usergroup,
-    delete_usergroup_by_id,
-    get_usergroups_by_resource,
-    get_users_linked_to_usergroup,
-    read_usergroup_by_id,
-    read_usergroups_by_org_id,
-    remove_resources_from_usergroup,
-    remove_users_from_usergroup,
-    update_usergroup_by_id,
-)
 from src.security.auth import get_current_user
-from src.core.events.database import get_db_session
-
+from src.services.users.usergroups import (add_resources_to_usergroup,
+                                           add_users_to_usergroup,
+                                           create_usergroup,
+                                           delete_usergroup_by_id,
+                                           get_usergroups_by_resource,
+                                           get_users_linked_to_usergroup,
+                                           read_usergroup_by_id,
+                                           read_usergroups_by_org_id,
+                                           remove_resources_from_usergroup,
+                                           remove_users_from_usergroup,
+                                           update_usergroup_by_id)
 
 router = APIRouter()
 

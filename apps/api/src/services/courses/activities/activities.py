@@ -1,26 +1,22 @@
 import logging
-from sqlmodel import Session, select
-from src.db.courses.courses import Course
-from src.db.courses.chapters import Chapter
-from src.db.courses.activities import (
-    ActivityCreate,
-    Activity,
-    ActivityRead,
-    ActivityUpdate,
-    ActivityTypeEnum,
-)
-from src.db.courses.chapter_activities import ChapterActivity
-from src.db.organizations import Organization
-from src.db.users import AnonymousUser, PublicUser
-from fastapi import HTTPException, Request
-from uuid import uuid4
+import sys
 from datetime import datetime
+from uuid import uuid4
+
+from fastapi import HTTPException, Request
+from sqlmodel import Session, select
 
 import src.services.payments.payments_access as payments_access
-from src.security.courses_security import courses_rbac_check_for_activities
+from src.db.courses.activities import (Activity, ActivityCreate, ActivityRead,
+                                       ActivityTypeEnum, ActivityUpdate)
+from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
+from src.db.courses.courses import Course
 from src.db.organization_config import OrganizationConfig
+from src.db.organizations import Organization
+from src.db.users import AnonymousUser, PublicUser
+from src.security.courses_security import courses_rbac_check_for_activities
 from src.services.integrations.youtube import create_automated_youtube_session
-import sys
 
 logger = logging.getLogger(__name__)
 
@@ -278,9 +274,8 @@ async def update_activity(
     # never turn a successful publish into an error for the instructor.
     if not was_published and activity.published:
         try:
-            from src.services.notifications.fanout_jobs import (
-                sync_fanout_activity_added,
-            )
+            from src.services.notifications.fanout_jobs import \
+                sync_fanout_activity_added
             from src.services.notifications.scheduling import enqueue_job
 
             enqueue_job(

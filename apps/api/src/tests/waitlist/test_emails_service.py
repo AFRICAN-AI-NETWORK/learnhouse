@@ -1,17 +1,16 @@
 """Unit tests for waitlist email service"""
 
-import pytest
-from unittest.mock import patch
 from datetime import datetime, timezone
+from unittest.mock import patch
 
-from src.services.waitlist.emails import (
-    send_waitlist_confirmation_email,
-    send_waitlist_activation_email,
-    activate_waitlist,
-)
-from src.db.users import UserRead
+import pytest
+
 from src.db.organizations import OrganizationRead
-from src.db.waitlist import WaitlistEmailLog, UserStatusEnum
+from src.db.users import UserRead
+from src.db.waitlist import UserStatusEnum, WaitlistEmailLog
+from src.services.waitlist.emails import (activate_waitlist,
+                                          send_waitlist_activation_email,
+                                          send_waitlist_confirmation_email)
 
 
 class TestSendWaitlistConfirmationEmail:

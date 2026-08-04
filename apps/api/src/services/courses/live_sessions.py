@@ -1,19 +1,17 @@
 from datetime import datetime
 from typing import List
+
 from fastapi import Request
 from sqlmodel import Session, select
-from src.db.courses.live_sessions import (
-    LiveSessionRegistration,
-    LiveSessionRegistrationRead,
-)
-from src.db.users import PublicUser, User
+
 from src.db.courses.activities import Activity
-from src.services.communications.notifications import (
-    send_session_confirmation_email,
-    send_enrolment_invitation_email,
-    send_session_reminder_email,
-)
+from src.db.courses.live_sessions import (LiveSessionRegistration,
+                                          LiveSessionRegistrationRead)
 from src.db.organization_config import OrganizationConfig
+from src.db.users import PublicUser, User
+from src.services.communications.notifications import (
+    send_enrolment_invitation_email, send_session_confirmation_email,
+    send_session_reminder_email)
 from src.services.integrations.youtube import YouTubeService
 
 

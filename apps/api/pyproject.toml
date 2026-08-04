@@ -54,7 +54,7 @@ dependencies = [
 ]
 
 [tool.ruff]
-lint.ignore = ["E501", "E712"]
+lint.ignore = ["E501", "E712", "E402", "F403"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -74,6 +74,7 @@ filterwarnings = [
 
 [dependency-groups]
 dev = [
+    "isort>=8.0.1",
     "ruff>=0.14.14",
 ]
 
