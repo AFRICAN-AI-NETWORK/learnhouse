@@ -38,7 +38,7 @@ const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 export default function AIFundamentalsPage() {
   const org = useOrg() as any
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
-  const [isSubscription, setIsSubscription] = useState(true)
+  const [isSubscription, setIsSubscription] = useState(false)
 
   const courseId = '3ef9cfef-c271-448f-be18-703ac4f17f05'
 
@@ -58,6 +58,8 @@ export default function AIFundamentalsPage() {
   // Fallbacks if products aren't created yet
   const PRICE_ONE_TIME = oneTimeProduct?.price || 90
   const PRICE_SUBSCRIPTION = subscriptionProduct?.price || 30
+  const ORIGINAL_PRICE_ONE_TIME = 120
+  const ORIGINAL_PRICE_SUBSCRIPTION = 40
 
   const currentProduct = isSubscription ? subscriptionProduct : oneTimeProduct
   const PLAN_ID = currentProduct?.provider_product_id || ''
@@ -260,6 +262,9 @@ export default function AIFundamentalsPage() {
                       basePriceUSD={
                         isSubscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME
                       }
+                      originalPriceUSD={
+                        isSubscription ? ORIGINAL_PRICE_SUBSCRIPTION : ORIGINAL_PRICE_ONE_TIME
+                      }
                       interval={isSubscription ? '/mo' : ''}
                     />
                   )}
@@ -267,7 +272,7 @@ export default function AIFundamentalsPage() {
                   <div className="mt-8 space-y-4">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                      COMING LIVE IN 1 WEEK
+                      PRICE INCREASES IN
                     </span>
                     <Countdown targetDate={LAUNCH_DATE} />
                   </div>

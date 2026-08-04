@@ -5,6 +5,7 @@ import { useCurrency } from '@components/Contexts/CurrencyContext'
 
 interface PriceDisplayProps {
   basePriceUSD: number
+  originalPriceUSD?: number
   interval?: string // e.g. "/mo", "/year", or ""
   className?: string
   priceClassName?: string
@@ -24,6 +25,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 export default function PriceDisplay({
   basePriceUSD,
+  originalPriceUSD,
   interval = '',
   className = '',
   priceClassName = 'text-[56px]',
@@ -46,8 +48,24 @@ export default function PriceDisplay({
         ? finalAmount.toString()
         : finalAmount.toFixed(2)
 
+  const finalOriginalAmount = originalPriceUSD ? convertAmount(originalPriceUSD) : null
+  const formattedOriginalAmount = finalOriginalAmount !== null
+    ? (finalOriginalAmount > 1000
+        ? Math.round(finalOriginalAmount).toLocaleString()
+        : Number.isInteger(finalOriginalAmount)
+          ? finalOriginalAmount.toString()
+          : finalOriginalAmount.toFixed(2))
+    : null
+
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
+      {formattedOriginalAmount && (
+        <div className="text-gray-500 font-bold line-through text-2xl -mb-3">
+          {symbol}
+          {formattedOriginalAmount}
+          {interval && <span className="text-lg"> {interval}</span>}
+        </div>
+      )}
       <div className="flex items-baseline gap-1">
         <span
           className={`${priceClassName} font-bold text-white tracking-tight`}

@@ -38,7 +38,7 @@ const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 export default function AIAutomationBusinessesPage() {
   const org = useOrg() as any
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
-  const [isSubscription, setIsSubscription] = useState(true)
+  const [isSubscription, setIsSubscription] = useState(false)
 
   const courseId = '6868a95a-c2d7-4ef0-9271-03fbba7aae38'
 
@@ -58,6 +58,8 @@ export default function AIAutomationBusinessesPage() {
   // Fallbacks if products aren't created yet
   const PRICE_ONE_TIME = oneTimeProduct?.price || 60
   const PRICE_SUBSCRIPTION = subscriptionProduct?.price || 20
+  const ORIGINAL_PRICE_ONE_TIME = 111
+  const ORIGINAL_PRICE_SUBSCRIPTION = 37
 
   const currentProduct = isSubscription ? subscriptionProduct : oneTimeProduct
   const PLAN_ID = currentProduct?.provider_product_id || ''
@@ -264,13 +266,16 @@ export default function AIAutomationBusinessesPage() {
                       basePriceUSD={
                         isSubscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME
                       }
+                      originalPriceUSD={
+                        isSubscription ? ORIGINAL_PRICE_SUBSCRIPTION : ORIGINAL_PRICE_ONE_TIME
+                      }
                       interval={isSubscription ? '/mo' : ''}
                     />
                   )}
                   <div className="mt-3 flex flex-col gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
-                      COMING LIVE IN 1 WEEK
+                      PRICE INCREASES IN
                     </span>
                     <Countdown targetDate={LAUNCH_DATE} />
                   </div>
