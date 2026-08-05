@@ -384,7 +384,7 @@ async def api_reject_payout(
     Reject a payout request. Moves status to FAILED with a reason.
     Admin-only endpoint.
     """
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from fastapi import HTTPException
 
