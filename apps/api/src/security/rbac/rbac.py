@@ -1,4 +1,5 @@
-from typing import Literal, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 from fastapi import HTTPException, Request, status
 from sqlalchemy import null
@@ -6,12 +7,17 @@ from sqlmodel import Session, select
 
 from src.db.collections import Collection
 from src.db.courses.courses import Course
-from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
-                                     ResourceAuthorshipStatusEnum)
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.roles import Role
 from src.db.user_organizations import UserOrganization
-from src.security.rbac.utils import (check_course_permissions_with_own,
-                                     check_element_type)
+from src.security.rbac.utils import (
+    check_course_permissions_with_own,
+    check_element_type,
+)
 
 # Role ids that are treated as organization administrators. Admins bypass the
 # fine-grained rights checks (they implicitly hold every permission).
@@ -118,7 +124,7 @@ async def authorization_verify_if_user_is_author(
         if resource_author:
             # Defense in depth: Verify user_id matches (fixes unit test edge cases)
             try:
-                author_id = getattr(resource_author, "user_id")
+                author_id = resource_author.user_id
                 if int(author_id) != int(user_id):
                     return False
             except (AttributeError, TypeError, ValueError):

@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
@@ -53,7 +52,7 @@ async def verify_admin_permission(current_user: User, org_id: int, db: Session) 
     return True
 
 
-@router.get("/conversations", response_model=List[dict])
+@router.get("/conversations", response_model=list[dict])
 async def get_all_org_conversations(
     org_id: int = Query(..., description="Organization ID"),
     limit: int = Query(50, le=100, description="Number of conversations to return"),
@@ -173,7 +172,7 @@ async def export_conversation(
     if format == "json":
         export_data = {
             "conversation_uuid": conversation.conversation_uuid,
-            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
             "exported_by": current_user.username,
             "participants": [
                 {
@@ -254,7 +253,7 @@ async def export_conversation(
         )
 
 
-@router.get("/audit-logs", response_model=List[dict])
+@router.get("/audit-logs", response_model=list[dict])
 async def get_chat_audit_logs(
     org_id: int = Query(..., description="Organization ID"),
     action: str = Query(None, description="Filter by action type"),
@@ -328,7 +327,7 @@ async def get_chat_statistics(
         .where(Conversation.org_id == org_id)
         .where(
             Message.created_at
-            >= datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            >= datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         )
     ).one()
 

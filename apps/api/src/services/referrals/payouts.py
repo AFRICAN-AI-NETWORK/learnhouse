@@ -7,8 +7,7 @@ import base64
 import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import redis
 from cryptography.fernet import Fernet, InvalidToken
@@ -18,11 +17,13 @@ from redis.exceptions import RedisError
 from sqlmodel import Session, and_, select
 
 from config.config import get_learnhouse_config
-from src.db.referrals.payout_requests import (BankDetails, PayoutStatus,
-                                              ReferrerPayoutRequest,
-                                              ReferrerPayoutRequestRead)
-from src.db.referrals.referral_commissions import (CommissionStatus,
-                                                   ReferralCommission)
+from src.db.referrals.payout_requests import (
+    BankDetails,
+    PayoutStatus,
+    ReferrerPayoutRequest,
+    ReferrerPayoutRequestRead,
+)
+from src.db.referrals.referral_commissions import CommissionStatus, ReferralCommission
 from src.db.users import PublicUser, User
 from src.services.payments.payments_paystack import make_paystack_request
 
@@ -128,7 +129,7 @@ try:
         if isinstance(_ENCRYPTION_KEY, str)
         else _ENCRYPTION_KEY
     )
-except Exception as e:  # noqa: BLE001
+except Exception as e:
     logger.error(
         f"Failed to initialize encryption: {e}. Generate key with: Fernet.generate_key()"
     )
@@ -170,7 +171,7 @@ def encrypt_bank_data(bank_data: dict) -> str:
 
 
 async def get_payout_currency(
-    user: User, org_id: Optional[int] = None, db_session: Optional[Session] = None
+    user: User, org_id: int | None = None, db_session: Session | None = None
 ) -> str:
     """
     Determine payout currency from user's country or organization settings
@@ -260,7 +261,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
             logger.warning(f"Redis cache read failed: {e}. Falling back to API.")
 
     # Fallback: Check in-memory cache (single-worker only)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if _exchange_rate_cache.get("rate") and _exchange_rate_cache.get("timestamp"):
         cache_age = (now - _exchange_rate_cache["timestamp"]).total_seconds()
         if cache_age < EXCHANGE_RATE_CACHE_TTL:
@@ -421,7 +422,7 @@ async def validate_payout_amount(
 
 async def check_pending_payout(
     user_id: int, db_session: Session
-) -> Optional[ReferrerPayoutRequest]:
+) -> ReferrerPayoutRequest | None:
     """
     Check if user has pending payout request (DRY utility)
     Prevents multiple simultaneous payouts
@@ -486,7 +487,7 @@ async def initiate_paystack_transfer(
     recipient_code: str,
     reference: str,
     reason: str = "Referral commission payout",
-    idempotency_key: Optional[str] = None,
+    idempotency_key: str | None = None,
 ) -> dict:
     """
     Initiate Paystack transfer (DRY utility)
@@ -585,9 +586,9 @@ async def create_payout_request(
         currency="USD",  # Base currency
         status=PayoutStatus.REQUESTED,
         bank_account_info=encrypted_bank_info,  # Encrypted for security
-        request_date=datetime.now(timezone.utc),
-        creation_date=datetime.now(timezone.utc),
-        update_date=datetime.now(timezone.utc),
+        request_date=datetime.now(UTC),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
 
     db_session.add(payout)
@@ -630,7 +631,7 @@ async def process_payout_request(
 
     # Update status to PROCESSING
     payout.status = PayoutStatus.PROCESSING
-    payout.update_date = datetime.now(timezone.utc)
+    payout.update_date = datetime.now(UTC)
     db_session.add(payout)
     db_session.commit()
 
@@ -677,7 +678,7 @@ async def process_payout_request(
         )
 
         # Initiate transfer with idempotency key to prevent double-charging on retries
-        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now(timezone.utc).timestamp())}"
+        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now(UTC).timestamp())}"
         idempotency_key = (
             f"payout_{payout.id}_{payout.request_date.strftime('%Y%m%d%H%M%S')}"
         )
@@ -701,7 +702,7 @@ async def process_payout_request(
                 # Update payout status
                 payout.paystack_transfer_code = transfer_code
                 payout.status = PayoutStatus.COMPLETED
-                payout.completion_date = datetime.now(timezone.utc)
+                payout.completion_date = datetime.now(UTC)
                 db_session.add(payout)
 
                 # Fetch all eligible commissions for this user
@@ -733,7 +734,7 @@ async def process_payout_request(
 
                     # Mark commission as PAID
                     commission.status = CommissionStatus.PAID
-                    commission.payout_date = datetime.now(timezone.utc)
+                    commission.payout_date = datetime.now(UTC)
                     commission.payout_request_id = payout.id  # Link to payout
                     db_session.add(commission)
 
@@ -795,14 +796,14 @@ async def process_payout_request(
             # Mark payout as FAILED with reason
             payout.status = PayoutStatus.FAILED
             payout.failure_reason = str(validation_error)
-            payout.update_date = datetime.now(timezone.utc)
+            payout.update_date = datetime.now(UTC)
             db_session.add(payout)
             db_session.commit()
 
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=str(validation_error)
             )
-        except Exception as commit_error:  # noqa: BLE001
+        except Exception as commit_error:
             logger.error(
                 f"Failed to commit payout {payout_id} transaction: {commit_error}"
             )
@@ -817,7 +818,7 @@ async def process_payout_request(
         # Update status to FAILED (balance not deducted)
         payout.status = PayoutStatus.FAILED
         payout.failure_reason = str(e)
-        payout.update_date = datetime.now(timezone.utc)
+        payout.update_date = datetime.now(UTC)
         db_session.add(payout)
         db_session.commit()
 

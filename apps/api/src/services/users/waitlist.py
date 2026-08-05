@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
@@ -10,10 +9,11 @@ from src.db.organizations import Organization, OrganizationRead
 from src.db.payments.payments_products import PaymentsProduct
 from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate, UserRead
-from src.db.waitlist import (WaitlistConfig, WaitlistCoursePreference,
-                             WaitlistStatusEnum)
-from src.security.features_utils.usage import (check_limits_with_usage,
-                                               increase_feature_usage)
+from src.db.waitlist import WaitlistConfig, WaitlistCoursePreference, WaitlistStatusEnum
+from src.security.features_utils.usage import (
+    check_limits_with_usage,
+    increase_feature_usage,
+)
 from src.security.security import security_hash_password
 from src.services.users.emails import send_account_creation_email
 from src.services.users.users import generate_verification_token
@@ -27,7 +27,7 @@ async def create_waitlist_user(
     db_session: Session,
     user_object: UserCreate,
     waitlist_uuid: str,
-    selected_product_ids: List[int] = [],
+    selected_product_ids: list[int] | None = None,
 ) -> UserRead:
     """
     Create a new user who joins via waitlist invite link.
@@ -50,6 +50,8 @@ async def create_waitlist_user(
     # ========== 1. VALIDATION PHASE ==========
 
     # Verify waitlist exists and is ACTIVE
+    if selected_product_ids is None:
+        selected_product_ids = []
     waitlist_query = select(WaitlistConfig).where(
         WaitlistConfig.waitlist_uuid == waitlist_uuid,
         WaitlistConfig.status == WaitlistStatusEnum.ACTIVE.value,
@@ -64,18 +66,17 @@ async def create_waitlist_user(
 
     # Verify launch datetime hasn't passed (UTC-aware comparison)
     try:
-        from datetime import timezone as tz
 
         # Parse launch_datetime with timezone awareness
         launch_dt = datetime.fromisoformat(
-            waitlist.launch_datetime.replace("Z", "+00:00")
+            waitlist.launch_datetime
         )
         if launch_dt.tzinfo is None:
-            launch_dt = launch_dt.replace(tzinfo=tz.utc)
+            launch_dt = launch_dt.replace(tzinfo=UTC)
         else:
-            launch_dt = launch_dt.astimezone(tz.utc)
+            launch_dt = launch_dt.astimezone(UTC)
         # Get current time in UTC for consistent comparison
-        current_time_utc = datetime.now(tz.utc)
+        current_time_utc = datetime.now(UTC)
         if current_time_utc >= launch_dt:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -87,7 +88,7 @@ async def create_waitlist_user(
             waitlist.waitlist_uuid,
             e,
         )
-        pass  # If datetime parsing fails, continue anyway
+        # If datetime parsing fails, continue anyway
 
     # Resolve org_id from waitlist (NOT user-provided)
     org_id = waitlist.org_id
@@ -128,8 +129,7 @@ async def create_waitlist_user(
 
     # Referral system: Validate disposable email
     if user_object.referral_code:
-        from src.services.referrals.fraud_prevention import \
-            validate_email_for_referral
+        from src.services.referrals.fraud_prevention import validate_email_for_referral
 
         is_valid, error_msg = await validate_email_for_referral(
             user_object.email, db_session
@@ -159,11 +159,11 @@ async def create_waitlist_user(
 
     # Store waitlist information
     user.waitlist_interest = user_object.waitlist_interest or waitlist.interest_category
-    user.waitlist_joined_date = str(datetime.now(timezone.utc))
+    user.waitlist_joined_date = str(datetime.now(UTC))
 
     # Set timestamps
-    user.creation_date = str(datetime.now(timezone.utc))
-    user.update_date = str(datetime.now(timezone.utc))
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Add user to database
     db_session.add(user)
@@ -173,8 +173,9 @@ async def create_waitlist_user(
     # Referral system: Track referral if code provided
     if user_object.referral_code:
         try:
-            from src.services.referrals.referral_tracking import \
-                validate_and_track_referral
+            from src.services.referrals.referral_tracking import (
+                validate_and_track_referral,
+            )
 
             _referral_code_obj, fraud_score = await validate_and_track_referral(
                 request=request,
@@ -229,7 +230,7 @@ async def create_waitlist_user(
                 payments_product_id=product_id,
                 waitlist_config_id=waitlist.id,
                 org_id=org_id,
-                creation_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
             )
 
             db_session.add(preference)
@@ -243,8 +244,8 @@ async def create_waitlist_user(
         user_id=user.id if user.id else 0,
         org_id=org_id,
         role_id=4,  # Learner role
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_organization)
@@ -294,7 +295,7 @@ async def get_waitlist_users(
     waitlist_uuid: str,
     skip: int = 0,
     limit: int = 100,
-) -> List[UserRead]:
+) -> list[UserRead]:
     """
     Get all users registered on a specific waitlist.
     Admin-only function with RBAC check.
@@ -307,7 +308,7 @@ async def get_waitlist_users(
         limit: Maximum number of records to return
 
     Returns:
-        List[UserRead]: List of users on the waitlist
+        list[UserRead]: List of users on the waitlist
     """
 
     # Get waitlist config
@@ -341,8 +342,8 @@ async def get_waitlist_user_course_preferences(
     request: Request,
     db_session: Session,
     waitlist_uuid: str,
-    user_id: Optional[int] = None,
-) -> List[dict]:
+    user_id: int | None = None,
+) -> list[dict]:
     """
     Get course preferences for waitlist analytics.
 
@@ -353,7 +354,7 @@ async def get_waitlist_user_course_preferences(
         user_id: Optional user ID to get preferences for specific user
 
     Returns:
-        List[dict]: Course preferences with details
+        list[dict]: Course preferences with details
     """
 
     # Get waitlist config

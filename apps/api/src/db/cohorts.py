@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
@@ -15,12 +14,12 @@ class CohortBase(SQLModel):
     name: str
     cohort_number: int
     start_date: str
-    end_date: Optional[str] = None
+    end_date: str | None = None
     status: CohortStatusEnum = CohortStatusEnum.UPCOMING
 
 
 class Cohort(CohortBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     cohort_uuid: str = Field(default="", index=True)
     org_id: int = Field(
         sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
@@ -31,14 +30,13 @@ class Cohort(CohortBase, table=True):
 
 class CohortCreate(CohortBase):
     org_id: int = Field(default=None, foreign_key="organization.id")
-    pass
 
 
 class CohortUpdate(SQLModel):
-    name: Optional[str] = None
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    status: Optional[CohortStatusEnum] = None
+    name: str | None = None
+    start_date: str | None = None
+    end_date: str | None = None
+    status: CohortStatusEnum | None = None
 
 
 class CohortRead(CohortBase):
@@ -47,7 +45,6 @@ class CohortRead(CohortBase):
     org_id: int = Field(default=None, foreign_key="organization.id")
     creation_date: str
     update_date: str
-    pass
 
 
 class CohortEnrollmentBase(SQLModel):
@@ -57,7 +54,7 @@ class CohortEnrollmentBase(SQLModel):
 
 
 class CohortEnrollment(CohortEnrollmentBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     cohort_id: int = Field(
         sa_column=Column(Integer, ForeignKey("cohort.id", ondelete="CASCADE"))
     )
@@ -67,7 +64,7 @@ class CohortEnrollment(CohortEnrollmentBase, table=True):
     course_id: int = Field(
         sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
     )
-    payment_user_id: Optional[int] = Field(
+    payment_user_id: int | None = Field(
         default=None,
         sa_column=Column(Integer, ForeignKey("paymentsuser.id", ondelete="SET NULL")),
     )
@@ -82,5 +79,4 @@ class CohortEnrollmentRead(CohortEnrollmentBase):
     cohort_id: int
     user_id: int
     course_id: int
-    payment_user_id: Optional[int] = None
-    pass
+    payment_user_id: int | None = None

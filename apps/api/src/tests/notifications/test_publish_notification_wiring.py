@@ -5,15 +5,19 @@ published transition, and a scheduling failure must never break the
 publish action itself.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 from sqlmodel import Session
 
-from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
-                                       ActivityTypeEnum, ActivityUpdate)
+from src.db.courses.activities import (
+    Activity,
+    ActivitySubTypeEnum,
+    ActivityTypeEnum,
+    ActivityUpdate,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter, ChapterUpdate
 from src.services.courses import chapters as chapters_service
@@ -42,8 +46,8 @@ class TestChapterPublishFanout:
             course_id=course.id,
             published=published,
             chapter_uuid=f"chapter_{uuid4()}",
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(chapter)
         session.commit()
@@ -59,8 +63,8 @@ class TestChapterPublishFanout:
             org_id=course.org_id,
             course_id=course.id,
             activity_uuid=f"activity_{uuid4()}",
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(activity)
         session.commit()
@@ -72,8 +76,8 @@ class TestChapterPublishFanout:
                 activity_id=activity.id,
                 course_id=course.id,
                 org_id=course.org_id,
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
         )
         session.commit()
@@ -182,8 +186,8 @@ class TestActivityPublishFanout:
             org_id=course.org_id,
             course_id=course.id,
             activity_uuid=f"activity_{uuid4()}",
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(activity)
         session.commit()

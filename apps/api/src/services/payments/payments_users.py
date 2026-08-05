@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException, Request
@@ -8,12 +8,13 @@ from src.db.courses.courses import AuthorWithRole, Course, CourseRead
 from src.db.organizations import Organization
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentsProduct
-from src.db.payments.payments_users import (PaymentStatusEnum, PaymentsUser,
-                                            ProviderSpecificData)
-from src.db.resource_authors import (ResourceAuthor,
-                                     ResourceAuthorshipStatusEnum)
-from src.db.users import (AnonymousUser, InternalUser, PublicUser, User,
-                          UserRead)
+from src.db.payments.payments_users import (
+    PaymentStatusEnum,
+    PaymentsUser,
+    ProviderSpecificData,
+)
+from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
+from src.db.users import AnonymousUser, InternalUser, PublicUser, User, UserRead
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.orgs.orgs import rbac_check
 
@@ -172,7 +173,7 @@ async def update_payment_user_status(
 
     # Update status
     payment_user.status = status
-    payment_user.update_date = datetime.now(timezone.utc)
+    payment_user.update_date = datetime.now(UTC)
 
     db_session.add(payment_user)
     db_session.commit()

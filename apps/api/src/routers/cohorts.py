@@ -5,8 +5,12 @@ from src.core.events.database import get_db_session
 from src.db.cohorts import CohortCreate, CohortRead
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
-from src.services.cohorts.cohorts import (create_cohort, get_current_cohort,
-                                          get_org_cohorts, unlock_cohort)
+from src.services.cohorts.cohorts import (
+    create_cohort,
+    get_current_cohort,
+    get_org_cohorts,
+    unlock_cohort,
+)
 
 router = APIRouter()
 

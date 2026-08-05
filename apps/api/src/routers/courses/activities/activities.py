@@ -1,23 +1,25 @@
-from typing import List
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 
 from src.core.events.database import get_db_session
-from src.db.courses.activities import (ActivityCreate, ActivityRead,
-                                       ActivityUpdate)
+from src.db.courses.activities import ActivityCreate, ActivityRead, ActivityUpdate
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
-from src.services.courses.activities.activities import (create_activity,
-                                                        delete_activity,
-                                                        get_activities,
-                                                        get_activity,
-                                                        get_activityby_id,
-                                                        update_activity)
+from src.services.courses.activities.activities import (
+    create_activity,
+    delete_activity,
+    get_activities,
+    get_activity,
+    get_activityby_id,
+    update_activity,
+)
 from src.services.courses.activities.pdf import create_documentpdf_activity
-from src.services.courses.activities.smart_article import \
-    create_smart_article_activity
+from src.services.courses.activities.smart_article import create_smart_article_activity
 from src.services.courses.activities.video import (
-    ExternalVideo, create_external_video_activity, create_video_activity)
+    ExternalVideo,
+    create_external_video_activity,
+    create_video_activity,
+)
 
 router = APIRouter()
 
@@ -71,7 +73,7 @@ async def api_get_chapter_activities(
     chapter_id: int,
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
-) -> List[ActivityRead]:
+) -> list[ActivityRead]:
     """
     Get Activities for a chapter
     """

@@ -3,20 +3,22 @@ Integration tests for referral system
 Tests end-to-end flows and interactions between components
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import HTTPException
+
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
 from src.db.referrals.referral_commissions import CommissionStatus
 from src.db.users import PublicUser, User
 from src.services.referrals.referral_codes import create_referral_code_for_user
 from src.services.referrals.referral_commissions import (
-    create_commission_for_payment, forfeit_commission_for_refund,
-    update_pending_commissions_to_eligible)
-from src.services.referrals.referral_tracking import \
-    validate_and_track_referral
+    create_commission_for_payment,
+    forfeit_commission_for_refund,
+    update_pending_commissions_to_eligible,
+)
+from src.services.referrals.referral_tracking import validate_and_track_referral
 
 
 class TestReferralE2EFlow:
@@ -47,8 +49,8 @@ class TestReferralE2EFlow:
             code="REF123",
             referral_link="http://localhost:3000/ref/REF123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         mock_session.exec.return_value.first.return_value = None
@@ -56,30 +58,29 @@ class TestReferralE2EFlow:
         with patch(
             "src.services.referrals.referral_codes.generate_unique_code",
             return_value="REF123",
-        ):
-            with patch(
-                "src.services.referrals.referral_codes.get_learnhouse_config"
-            ) as mock_config:
-                mock_config.return_value.hosting_config.app_base_url = (
-                    "http://localhost:3000"
-                )
+        ), patch(
+            "src.services.referrals.referral_codes.get_learnhouse_config"
+        ) as mock_config:
+            mock_config.return_value.hosting_config.app_base_url = (
+                "http://localhost:3000"
+            )
 
-                # Step 2: Validate and track referral (user signs up)
+            # Step 2: Validate and track referral (user signs up)
 
-                # Step 3: Create commission for payment
-                payment_date = datetime.now(timezone.utc)
+            # Step 3: Create commission for payment
+            payment_date = datetime.now(UTC)
 
-                # Mock commission creation
-                await create_commission_for_payment(
-                    org_id=100,
-                    referrer_user_id=500,
-                    referred_user_id=600,
-                    payment_user_id=1,
-                    course_id=10,
-                    referral_code_id=1,
-                    payment_completion_date=payment_date,
-                    db_session=mock_session,
-                )
+            # Mock commission creation
+            await create_commission_for_payment(
+                org_id=100,
+                referrer_user_id=500,
+                referred_user_id=600,
+                payment_user_id=1,
+                course_id=10,
+                referral_code_id=1,
+                payment_completion_date=payment_date,
+                db_session=mock_session,
+            )
 
         # Verify the flow executed
         assert mock_session.add.called
@@ -135,8 +136,8 @@ class TestReferralE2EFlow:
             code="FRAUD123",
             referral_link="http://localhost:3000/ref/FRAUD123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         # High fraud indicators - handle chained calls
@@ -181,25 +182,24 @@ class TestReferralE2EFlow:
             code="SELF123",
             referral_link="http://localhost:3000/ref/SELF123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         with patch(
             "src.services.referrals.referral_tracking.validate_referral_code_exists",
             return_value=mock_code,
-        ):
-            with pytest.raises(HTTPException) as exc_info:
-                await validate_and_track_referral(
-                    mock_request,
-                    referred_user_id=500,  # Same as referrer
-                    referral_code="SELF123",
-                    device_id="device123",
-                    browser_fingerprint={},
-                    db_session=mock_session,
-                )
+        ), pytest.raises(HTTPException) as exc_info:
+            await validate_and_track_referral(
+                mock_request,
+                referred_user_id=500,  # Same as referrer
+                referral_code="SELF123",
+                device_id="device123",
+                browser_fingerprint={},
+                db_session=mock_session,
+            )
 
-        # Should raise exception
+        # Should raise
         assert "own referral code" in str(exc_info.value.detail).lower()
 
     @pytest.mark.asyncio
@@ -219,8 +219,8 @@ class TestReferralE2EFlow:
             code="FIRST123",
             referral_link="http://localhost:3000/ref/FIRST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         # User already has tracking
@@ -297,7 +297,7 @@ class TestConcurrencyAndRaceConditions:
         mock_session = Mock()
 
         # Mock multiple commissions expiring simultaneously
-        expired_date = datetime.now(timezone.utc) - timedelta(days=15)
+        expired_date = datetime.now(UTC) - timedelta(days=15)
 
         commissions = []
         for i in range(5):
@@ -333,7 +333,7 @@ class TestEdgeCases:
         mock_session = Mock()
         mock_session.exec.return_value.first.return_value = None
 
-        payment_date = datetime.now(timezone.utc)
+        payment_date = datetime.now(UTC)
 
         await create_commission_for_payment(
             org_id=100,
@@ -373,7 +373,7 @@ class TestEdgeCases:
         """Test updating a large batch of commissions"""
         mock_session = Mock()
 
-        expired_date = datetime.now(timezone.utc) - timedelta(days=15)
+        expired_date = datetime.now(UTC) - timedelta(days=15)
 
         # Create 100 mock commissions
         commissions = []

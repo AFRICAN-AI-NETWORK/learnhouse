@@ -1,31 +1,50 @@
 import json
 import logging
-from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
 
-from src.db.organization_config import (AIOrgConfig, AnalyticsOrgConfig,
-                                        APIOrgConfig, AssignmentOrgConfig,
-                                        CollaborationOrgConfig,
-                                        CourseOrgConfig, DiscussionOrgConfig,
-                                        MemberOrgConfig, OrganizationConfig,
-                                        OrganizationConfigBase, OrgCloudConfig,
-                                        OrgFeatureConfig, OrgGeneralConfig,
-                                        PaymentOrgConfig, StorageOrgConfig,
-                                        UserGroupOrgConfig)
-from src.db.organizations import (Organization, OrganizationCreate,
-                                  OrganizationRead, OrganizationUpdate)
+from src.db.organization_config import (
+    AIOrgConfig,
+    AnalyticsOrgConfig,
+    APIOrgConfig,
+    AssignmentOrgConfig,
+    CollaborationOrgConfig,
+    CourseOrgConfig,
+    DiscussionOrgConfig,
+    MemberOrgConfig,
+    OrganizationConfig,
+    OrganizationConfigBase,
+    OrgCloudConfig,
+    OrgFeatureConfig,
+    OrgGeneralConfig,
+    PaymentOrgConfig,
+    StorageOrgConfig,
+    UserGroupOrgConfig,
+)
+from src.db.organizations import (
+    Organization,
+    OrganizationCreate,
+    OrganizationRead,
+    OrganizationUpdate,
+)
 from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
-    authorization_verify_if_user_is_anon)
-from src.services.orgs.uploads import (upload_org_landing_content,
-                                       upload_org_logo, upload_org_preview,
-                                       upload_org_thumbnail)
+    authorization_verify_if_user_is_anon,
+)
+from src.services.orgs.uploads import (
+    upload_org_landing_content,
+    upload_org_logo,
+    upload_org_preview,
+    upload_org_thumbnail,
+)
 
 
 async def get_organization(
@@ -55,7 +74,7 @@ async def get_organization(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_id} has no config")
+        logger.error(f"Organization {org_id} has no config")
 
     config = OrganizationConfig.model_validate(org_config) if org_config else {}
 
@@ -91,7 +110,7 @@ async def get_organization_by_slug(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_slug} has no config")
+        logger.error(f"Organization {org_slug} has no config")
 
     config = OrganizationConfig.model_validate(org_config) if org_config else {}
 
@@ -127,8 +146,8 @@ async def create_org(
 
     # Complete the org object
     org.org_uuid = f"org_{uuid4()}"
-    org.creation_date = str(datetime.now(timezone.utc))
-    org.update_date = str(datetime.now(timezone.utc))
+    org.creation_date = str(datetime.now(UTC))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -139,8 +158,8 @@ async def create_org(
         user_id=int(current_user.id),
         org_id=int(org.id if org.id else 0),
         role_id=1,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_org)
@@ -178,8 +197,8 @@ async def create_org(
     org_settings = OrganizationConfig(
         org_id=int(org.id if org.id else 0),
         config=org_config,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(org_settings)
@@ -193,7 +212,7 @@ async def create_org(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org.id} has no config")
+        logger.error(f"Organization {org.id} has no config")
 
     config = OrganizationConfig.model_validate(org_config)
 
@@ -230,8 +249,8 @@ async def create_org_with_config(
 
     # Complete the org object
     org.org_uuid = f"org_{uuid4()}"
-    org.creation_date = str(datetime.now(timezone.utc))
-    org.update_date = str(datetime.now(timezone.utc))
+    org.creation_date = str(datetime.now(UTC))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -242,8 +261,8 @@ async def create_org_with_config(
         user_id=int(current_user.id),
         org_id=int(org.id if org.id else 0),
         role_id=1,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_org)
@@ -258,8 +277,8 @@ async def create_org_with_config(
     org_settings = OrganizationConfig(
         org_id=int(org.id if org.id else 0),
         config=org_config,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(org_settings)
@@ -273,7 +292,7 @@ async def create_org_with_config(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org.id} has no config")
+        logger.error(f"Organization {org.id} has no config")
 
     config = OrganizationConfig.model_validate(org_config)
 
@@ -321,7 +340,7 @@ async def update_org(
             setattr(org, var, value)
 
     # Complete the org object
-    org.update_date = str(datetime.now(timezone.utc))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -356,7 +375,7 @@ async def update_org_with_config_no_auth(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_id} has no config")
+        logger.error(f"Organization {org_id} has no config")
         raise HTTPException(
             status_code=404,
             detail="Organization config not found",
@@ -366,7 +385,7 @@ async def update_org_with_config_no_auth(
 
     # Update the database
     org_config.config = json.loads(updated_config.json())
-    org_config.update_date = str(datetime.now(timezone.utc))
+    org_config.update_date = str(datetime.now(UTC))
 
     db_session.add(org_config)
     db_session.commit()
@@ -403,7 +422,7 @@ async def update_org_logo(
     org.logo_image = name_in_disk
 
     # Complete the org object
-    org.update_date = str(datetime.now(timezone.utc))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -440,7 +459,7 @@ async def update_org_thumbnail(
     org.thumbnail_image = name_in_disk
 
     # Complete the org object
-    org.update_date = str(datetime.now(timezone.utc))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -614,7 +633,7 @@ async def update_org_signup_mechanism(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_id} has no config")
+        logger.error(f"Organization {org_id} has no config")
         raise HTTPException(
             status_code=404,
             detail="Organization config not found",
@@ -628,7 +647,7 @@ async def update_org_signup_mechanism(
 
     # Update the database
     org_config.config = json.loads(updated_config.json())
-    org_config.update_date = str(datetime.now(timezone.utc))
+    org_config.update_date = str(datetime.now(UTC))
 
     db_session.add(org_config)
     db_session.commit()
@@ -664,7 +683,7 @@ async def get_org_join_mechanism(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_id} has no config")
+        logger.error(f"Organization {org_id} has no config")
         raise HTTPException(
             status_code=404,
             detail="Organization config not found",
@@ -719,7 +738,7 @@ async def update_org_landing(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_id} has no config")
+        logger.error(f"Organization {org_id} has no config")
         raise HTTPException(
             status_code=404,
             detail="Organization config not found",
@@ -734,7 +753,7 @@ async def update_org_landing(
     # Convert back to dict and update
     updated_config = json.loads(config_model.json())
     org_config.config = updated_config
-    org_config.update_date = str(datetime.now(timezone.utc))
+    org_config.update_date = str(datetime.now(UTC))
 
     db_session.add(org_config)
     db_session.commit()
@@ -771,7 +790,7 @@ async def update_org_integrations(
     org_config = result.first()
 
     if org_config is None:
-        logging.error(f"Organization {org_id} has no config")
+        logger.error(f"Organization {org_id} has no config")
         raise HTTPException(
             status_code=404,
             detail="Organization config not found",
@@ -790,7 +809,7 @@ async def update_org_integrations(
 
     # Map back to the model field
     org_config.config = config_data
-    org_config.update_date = str(datetime.now(timezone.utc))
+    org_config.update_date = str(datetime.now(UTC))
 
     # SQLAlchemy doesn't detect in-place mutations to JSON columns.
     # flag_modified tells SQLAlchemy the column has actually changed.

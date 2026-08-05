@@ -6,7 +6,7 @@ Create Date: 2026-02-18 00:40:50.475203
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa  # noqa: F401
 import sqlmodel  # noqa: F401
@@ -15,9 +15,9 @@ from alembic_postgresql_enum import TableReference  # type: ignore
 
 # revision identifiers, used by Alembic.
 revision: str = "376da94767ae"
-down_revision: Union[str, None] = "62a6b8a08322"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "62a6b8a08322"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

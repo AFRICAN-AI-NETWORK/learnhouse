@@ -1,6 +1,6 @@
 """Waitlist Course Service - Course listing with pricing information"""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from sqlalchemy import func
@@ -16,7 +16,7 @@ async def get_org_courses_for_waitlist(
     request: Request,
     db_session: Session,
     waitlist_uuid: str,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get all courses for the organization with pricing information.
     Used in waitlist registration form (Step 3) to display course options.
@@ -27,7 +27,7 @@ async def get_org_courses_for_waitlist(
         waitlist_uuid: UUID of the waitlist campaign
 
     Returns:
-        List[Dict]: Courses with pricing info (is_free, price, currency)
+        list[Dict]: Courses with pricing info (is_free, price, currency)
 
     Raises:
         HTTPException: If waitlist not found
@@ -125,7 +125,7 @@ async def get_course_preference_analytics(
     request: Request,
     db_session: Session,
     waitlist_uuid: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get aggregated course preference analytics for a waitlist campaign.
     Admin function for demand forecasting.
@@ -227,7 +227,7 @@ async def get_user_course_preferences(
     db_session: Session,
     waitlist_uuid: str,
     user_id: int,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Get course preferences for a specific user.
 
@@ -238,7 +238,7 @@ async def get_user_course_preferences(
         user_id: User ID
 
     Returns:
-        List[Dict]: User's course preferences with details
+        list[Dict]: User's course preferences with details
 
     Raises:
         HTTPException: If waitlist not found

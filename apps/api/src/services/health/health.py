@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -11,10 +11,7 @@ async def check_database_health(db_session: Session) -> bool:
     statement = select(Organization)
     result = db_session.exec(statement)
 
-    if not result:
-        return False
-
-    return True
+    return result
 
 
 async def check_health(db_session: Session) -> dict:
@@ -26,7 +23,7 @@ async def check_health(db_session: Session) -> dict:
 
     return {
         "status": "ok",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "environment": os.environ.get("ENVIRONMENT", "production"),
         "database_healthy": True,
         "service": "learnhouse-api",

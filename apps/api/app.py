@@ -108,10 +108,14 @@ try:
 
     from src.jobs.cohort_jobs import sync_process_cohort_unlocks
     from src.jobs.notification_jobs import run_notification_email_job
-    from src.jobs.referral_jobs import (process_commission_eligibility_job,
-                                        process_payout_requests_job)
-    from src.jobs.waitlist_processor import (run_retry_failed_emails_job,
-                                             run_waitlist_activation_job)
+    from src.jobs.referral_jobs import (
+        process_commission_eligibility_job,
+        process_payout_requests_job,
+    )
+    from src.jobs.waitlist_processor import (
+        run_retry_failed_emails_job,
+        run_waitlist_activation_job,
+    )
 
     _APSCHEDULER_AVAILABLE = True
 except ImportError as e:
@@ -257,7 +261,7 @@ async def start_scheduler():
 
     # ── Startup banner ────────────────────────────────────────────
     jobs = scheduler.get_jobs()
-    print("")
+    print()
     print("=" * 60)
     print("  🚀 Background job scheduler started")
     print("=" * 60)
@@ -268,7 +272,7 @@ async def start_scheduler():
     print("-" * 60)
     print(f"  Total: {len(jobs)} job(s) running")
     print("=" * 60)
-    print("")
+    print()
 
 
 @app.on_event("shutdown")

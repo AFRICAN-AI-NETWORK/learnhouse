@@ -1,4 +1,3 @@
-from typing import Optional
 
 from fastapi import HTTPException, Request
 from sqlalchemy import String, cast, func, literal
@@ -118,7 +117,7 @@ async def search_orgs_for_explore(
     request: Request,
     db_session: Session,
     search_query: str,
-    label: Optional[str] = None,
+    label: str | None = None,
     page: int = 1,
     limit: int = 10,
     salt: str = "",

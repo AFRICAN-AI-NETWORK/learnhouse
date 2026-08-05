@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlmodel import Field, SQLModel
@@ -43,10 +42,10 @@ class RegisterEntryMethodEnum(str, Enum):
 
 class CourseTimetableEventBase(SQLModel):
     title: str
-    description: Optional[str] = None
-    instructor_name: Optional[str] = None
-    location: Optional[str] = None
-    meeting_url: Optional[str] = None
+    description: str | None = None
+    instructor_name: str | None = None
+    location: str | None = None
+    meeting_url: str | None = None
     starts_at: str
     ends_at: str
     timezone: str
@@ -59,7 +58,7 @@ class CourseTimetableEventBase(SQLModel):
 class CourseTimetableEvent(CourseTimetableEventBase, table=True):
     __tablename__ = "course_timetable_event"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     event_uuid: str = Field(index=True, unique=True)
     course_uuid: str = Field(index=True)
     course_id: int = Field(
@@ -91,7 +90,7 @@ class CourseTimetableEventRead(CourseTimetableEventBase):
 class StudentTimetableEventRead(CourseTimetableEventRead):
     course_id: int
     course_name: str
-    course_description: Optional[str] = None
+    course_description: str | None = None
 
 
 class CourseRegisterPolicyBase(SQLModel):
@@ -101,13 +100,13 @@ class CourseRegisterPolicyBase(SQLModel):
     checkin_closes_minutes_after: int = 30
     requires_enrollment: bool = True
     allow_late: bool = True
-    linked_timetable_event_uuid: Optional[str] = None
+    linked_timetable_event_uuid: str | None = None
 
 
 class CourseRegisterPolicy(CourseRegisterPolicyBase, table=True):
     __tablename__ = "course_register_policy"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     policy_uuid: str = Field(index=True, unique=True)
     course_uuid: str = Field(index=True, unique=True)
     course_id: int = Field(
@@ -121,7 +120,7 @@ class CourseRegisterPolicy(CourseRegisterPolicyBase, table=True):
 
 
 class CourseRegisterPolicyUpdate(CourseRegisterPolicyBase):
-    course_uuid: Optional[str] = None
+    course_uuid: str | None = None
 
 
 class CourseRegisterPolicyRead(CourseRegisterPolicyBase):
@@ -133,19 +132,19 @@ class CourseRegisterPolicyRead(CourseRegisterPolicyBase):
 
 
 class CourseRegisterEntryBase(SQLModel):
-    timetable_event_uuid: Optional[str] = None
+    timetable_event_uuid: str | None = None
     period_start: str
     period_end: str
     status: RegisterEntryStatusEnum
-    marked_at: Optional[str] = None
+    marked_at: str | None = None
     method: RegisterEntryMethodEnum
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class CourseRegisterEntry(CourseRegisterEntryBase, table=True):
     __tablename__ = "course_register_entry"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     entry_uuid: str = Field(index=True, unique=True)
     course_uuid: str = Field(index=True)
     course_id: int = Field(
@@ -180,9 +179,9 @@ class CourseRegisterEntryRead(CourseRegisterEntryBase):
 
 
 class CourseRegisterEntryUpdate(SQLModel):
-    status: Optional[RegisterEntryStatusEnum] = None
-    marked_at: Optional[str] = None
-    notes: Optional[str] = None
+    status: RegisterEntryStatusEnum | None = None
+    marked_at: str | None = None
+    notes: str | None = None
 
 
 class CourseRegisterPeriodRead(SQLModel):
@@ -196,5 +195,5 @@ class CourseRegisterPeriodRead(SQLModel):
 class CourseRegisterSummaryRead(SQLModel):
     policy: CourseRegisterPolicyRead
     current_period: CourseRegisterPeriodRead
-    current_entry: Optional[CourseRegisterEntryRead] = None
+    current_entry: CourseRegisterEntryRead | None = None
     entries: list[CourseRegisterEntryRead]

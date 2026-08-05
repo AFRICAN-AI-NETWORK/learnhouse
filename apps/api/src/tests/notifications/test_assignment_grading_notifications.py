@@ -9,20 +9,23 @@ it's pre-existing, unmodified, and already covered by src/tests/security;
 these tests target only the new notification wiring.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
 from sqlmodel import Session, select
 
-from src.db.courses.assignments import (Assignment, AssignmentTask,
-                                        AssignmentTaskSubmission,
-                                        AssignmentTaskTypeEnum,
-                                        AssignmentUserSubmission,
-                                        AssignmentUserSubmissionRevisionCreate,
-                                        AssignmentUserSubmissionStatus,
-                                        GradingTypeEnum)
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentTask,
+    AssignmentTaskSubmission,
+    AssignmentTaskTypeEnum,
+    AssignmentUserSubmission,
+    AssignmentUserSubmissionRevisionCreate,
+    AssignmentUserSubmissionStatus,
+    GradingTypeEnum,
+)
 from src.db.notifications import Notification, NotificationType
 from src.db.users import User
 from src.services.courses.activities import assignments as assignments_service
@@ -52,8 +55,8 @@ def _make_assignment(
         chapter_id=1,
         activity_id=1,
         assignment_uuid=f"assignment_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(assignment)
     session.commit()
@@ -76,8 +79,8 @@ def _make_task(session: Session, assignment: Assignment, max_grade_value=100):
         chapter_id=assignment.chapter_id,
         activity_id=assignment.activity_id,
         assignment_task_uuid=f"task_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(task)
     session.commit()
@@ -95,8 +98,8 @@ def _make_submission(
         user_id=user.id,
         assignment_id=assignment.id,
         assignmentusersubmission_uuid=f"submission_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(submission)
     session.commit()
@@ -122,8 +125,8 @@ def _make_task_submission(
         course_id=assignment.course_id,
         chapter_id=assignment.chapter_id,
         assignment_task_id=task.id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(task_submission)
     session.commit()

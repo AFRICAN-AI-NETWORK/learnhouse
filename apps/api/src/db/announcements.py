@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
 
@@ -11,7 +10,7 @@ class AnnouncementBase(SQLModel):
 
 
 class Announcement(AnnouncementBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
     )
@@ -19,15 +18,15 @@ class Announcement(AnnouncementBase, table=True):
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     )
     creation_date: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
+        default_factory=lambda: datetime.now(UTC).isoformat() + "Z"
     )
     update_date: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
+        default_factory=lambda: datetime.now(UTC).isoformat() + "Z"
     )
 
 
 class AnnouncementRead(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     announcement_id: int = Field(
         sa_column=Column(Integer, ForeignKey("announcement.id", ondelete="CASCADE"))
     )
@@ -35,7 +34,7 @@ class AnnouncementRead(SQLModel, table=True):
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     )
     creation_date: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
+        default_factory=lambda: datetime.now(UTC).isoformat() + "Z"
     )
 
 
@@ -44,9 +43,9 @@ class AnnouncementCreate(AnnouncementBase):
 
 
 class AnnouncementUpdate(SQLModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    content: str | None = None
+    is_active: bool | None = None
 
 
 class AnnouncementReadResponse(AnnouncementBase):

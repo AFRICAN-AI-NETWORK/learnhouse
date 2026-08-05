@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 import boto3
 from botocore.exceptions import ClientError
@@ -40,7 +40,7 @@ async def upload_file(
     uuid: str,
     allowed_types: list[str],
     filename_prefix: str,
-    max_size: Optional[int] = None,
+    max_size: int | None = None,
 ) -> str:
     """
     Secure file upload with validation.
@@ -86,7 +86,7 @@ async def upload_content(
     uuid: str,  # org_uuid or user_uuid
     file_binary: bytes,
     file_and_format: str,
-    allowed_formats: Optional[list[str]] = None,
+    allowed_formats: list[str] | None = None,
 ):
     # Get Learnhouse Config
     learnhouse_config = get_learnhouse_config()
@@ -97,12 +97,11 @@ async def upload_content(
     content_delivery = learnhouse_config.hosting_config.content_delivery.type
 
     # Check if format file is allowed
-    if allowed_formats:
-        if file_format not in allowed_formats:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File format {file_format} not allowed",
-            )
+    if allowed_formats and file_format not in allowed_formats:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File format {file_format} not allowed",
+        )
 
     local_directory = Path("content") / type_of_dir / uuid / Path(directory)
     ensure_directory_exists(local_directory)

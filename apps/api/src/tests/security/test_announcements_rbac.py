@@ -6,7 +6,7 @@ a hardcoded admin-role list, so Admin, Maintainer, and Instructor can all
 post announcements while a plain student ("User" role) cannot.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -14,8 +14,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from src.db.organizations import Organization
-from src.db.roles import (DashboardPermission, Permission, PermissionsWithOwn,
-                          Rights)
+from src.db.roles import DashboardPermission, Permission, PermissionsWithOwn, Rights
 from src.db.user_organizations import UserOrganization
 from src.db.users import User
 from src.security.rbac.rbac import authorization_verify_has_rights
@@ -40,8 +39,8 @@ def organization_fixture(session: Session):
         name="Test Organization",
         slug="test-org",
         email="test@testorg.com",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(org)
     session.commit()
@@ -50,9 +49,9 @@ def organization_fixture(session: Session):
 
 
 def _base_permission(**overrides) -> Permission:
-    defaults = dict(
-        action_create=False, action_read=True, action_update=False, action_delete=False
-    )
+    defaults = {
+        "action_create": False, "action_read": True, "action_update": False, "action_delete": False
+    }
     defaults.update(overrides)
     return Permission(**defaults)
 
@@ -95,8 +94,8 @@ def _make_role(
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid=f"role_{uuid4()}",
         rights=rights,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     # Union[Rights, dict] re-validates a plain dict passed at construction
     # time back into a Rights object, so serialize *after* construction —
@@ -118,8 +117,8 @@ def _make_user_with_role(
         password="hashed_password",
         first_name="Test",
         last_name="User",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -130,8 +129,8 @@ def _make_user_with_role(
             user_id=user.id,
             org_id=org.id,
             role_id=role.id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
     )
     session.commit()
@@ -185,8 +184,8 @@ class TestAnnouncementCreateAuthorization:
             role_type=RoleTypeEnum.TYPE_GLOBAL,
             role_uuid="role_global_admin_test",
             rights={},
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(admin_role)
         session.commit()

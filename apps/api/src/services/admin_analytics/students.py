@@ -11,8 +11,8 @@ Design notes:
   every list load.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_
@@ -30,16 +30,18 @@ from src.db.trail_steps import TrailStep
 from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, PublicUser, User
 from src.security.dashboard_security import verify_student_dashboard_access
-from src.services.admin_analytics.schemas import (OrgAnalyticsSummary,
-                                                  StudentActivityProgress,
-                                                  StudentChapterProgress,
-                                                  StudentCourseDetail,
-                                                  StudentCourseProgress,
-                                                  StudentDetail,
-                                                  StudentListResponse,
-                                                  StudentRoleInfo,
-                                                  StudentSummary,
-                                                  TopStudentsResponse)
+from src.services.admin_analytics.schemas import (
+    OrgAnalyticsSummary,
+    StudentActivityProgress,
+    StudentChapterProgress,
+    StudentCourseDetail,
+    StudentCourseProgress,
+    StudentDetail,
+    StudentListResponse,
+    StudentRoleInfo,
+    StudentSummary,
+    TopStudentsResponse,
+)
 
 STATUS_COMPLETED = "completed"
 STATUS_IN_PROGRESS = "in_progress"
@@ -70,7 +72,7 @@ def _completed_steps_by_user_course(
         .where(
             TrailStep.org_id == org_id,
             TrailStep.user_id.in_(user_ids),  # type: ignore[attr-defined]
-            TrailStep.complete == True,  # noqa: E712
+            TrailStep.complete == True,
         )
         .group_by(TrailStep.user_id, TrailStep.course_id)
     ).all()
@@ -85,7 +87,7 @@ def _points_by_user(
         .where(
             TrailStep.org_id == org_id,
             TrailStep.user_id.in_(user_ids),  # type: ignore[attr-defined]
-            TrailStep.complete == True,  # noqa: E712
+            TrailStep.complete == True,
         )
         .group_by(TrailStep.user_id)
     ).all()
@@ -111,7 +113,7 @@ def _time_by_user(
 
 def _last_active_by_user(
     org_id: int, user_ids: Sequence[int], db_session: Session
-) -> dict[int, Optional[str]]:
+) -> dict[int, str | None]:
     rows = db_session.exec(
         select(
             TrailActivitySession.user_id,
@@ -162,10 +164,10 @@ async def list_org_students(
     org_id: int,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-    search: Optional[str] = None,
+    search: str | None = None,
     page: int = 1,
     page_size: int = 25,
-    sort_by: Optional[str] = None,
+    sort_by: str | None = None,
 ) -> StudentListResponse:
     """Paginated, searchable list of org members with their progress metrics."""
     await verify_student_dashboard_access(current_user, db_session)
@@ -325,7 +327,7 @@ async def get_student_detail(
             .where(
                 TrailStep.org_id == org_id,
                 TrailStep.user_id == user_id,
-                TrailStep.complete == True,  # noqa: E712
+                TrailStep.complete == True,
             )
             .group_by(TrailStep.course_id)
         ).all()
@@ -336,7 +338,7 @@ async def get_student_detail(
             .where(
                 TrailStep.org_id == org_id,
                 TrailStep.user_id == user_id,
-                TrailStep.complete == True,  # noqa: E712
+                TrailStep.complete == True,
             )
             .group_by(TrailStep.course_id)
         ).all()
@@ -618,7 +620,7 @@ async def get_org_analytics_summary(
 async def get_top_org_students(
     org_id: int,
     limit: int,
-    days: Optional[int],
+    days: int | None,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> TopStudentsResponse:
@@ -636,7 +638,7 @@ async def get_top_org_students(
     )
 
     if days is not None and days > 0:
-        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        cutoff_date = (datetime.now(UTC) - timedelta(days=days)).isoformat()
         members = members.where(UserOrganization.creation_date >= cutoff_date)
 
     users = db_session.exec(members).all()

@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Optional
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, func, select
@@ -176,7 +175,7 @@ async def verify_chat_permission(
 
 async def get_user_role_in_org(
     db: Session, user_id: int, org_id: int
-) -> Optional[Role]:
+) -> Role | None:
     """Get user's role in specific organization."""
     statement = (
         select(Role)
@@ -190,7 +189,7 @@ async def get_user_role_in_org(
 
 async def get_chatable_users_for_user(
     db: Session, current_user_id: int, org_id: int
-) -> List[User]:
+) -> list[User]:
     """
     Get list of users that current user can chat with in organization.
     """

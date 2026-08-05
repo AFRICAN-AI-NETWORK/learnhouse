@@ -1,7 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
@@ -24,8 +23,8 @@ async def create_campaign(
         org_id=org_id,
         created_by_user_id=user_id,
         status=CampaignStatus.PENDING,
-        creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
+        update_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(campaign)
     db_session.commit()
@@ -37,7 +36,7 @@ async def create_campaign(
     return campaign
 
 
-async def get_target_users(db_session: Session, campaign: Campaign) -> List[User]:
+async def get_target_users(db_session: Session, campaign: Campaign) -> list[User]:
     """
     Retrieve users based on campaign targeting filters.
     """
@@ -203,10 +202,10 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                 else:
                     try:
                         from src.db.chat.messages import MessageCreate
-                        from src.services.chat.conversation_service import \
-                            ConversationService
-                        from src.services.chat.message_service import \
-                            MessageService
+                        from src.services.chat.conversation_service import (
+                            ConversationService,
+                        )
+                        from src.services.chat.message_service import MessageService
 
                         # Create or get conversation between the sender and the target student
                         conversation = (
@@ -246,7 +245,7 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
             await asyncio.sleep(8.0)
 
         campaign.status = CampaignStatus.SENT
-        campaign.update_date = datetime.now(timezone.utc).isoformat()
+        campaign.update_date = datetime.now(UTC).isoformat()
         db_session.add(campaign)
         db_session.commit()
 

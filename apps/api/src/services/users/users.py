@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
 
@@ -10,16 +10,27 @@ from sqlmodel import Session, select
 from src.db.organizations import Organization, OrganizationRead
 from src.db.roles import Role, RoleRead
 from src.db.user_organizations import UserOrganization
-from src.db.users import (AnonymousUser, InternalUser, PublicUser, User,
-                          UserCreate, UserRead, UserRoleWithOrg, UserSession,
-                          UserUpdate, UserUpdatePassword)
-from src.security.features_utils.usage import (check_limits_with_usage,
-                                               increase_feature_usage)
+from src.db.users import (
+    AnonymousUser,
+    InternalUser,
+    PublicUser,
+    User,
+    UserCreate,
+    UserRead,
+    UserRoleWithOrg,
+    UserSession,
+    UserUpdate,
+    UserUpdatePassword,
+)
+from src.security.features_utils.usage import (
+    check_limits_with_usage,
+    increase_feature_usage,
+)
 from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon)
-from src.security.security import (security_hash_password,
-                                   security_verify_password)
+    authorization_verify_if_user_is_anon,
+)
+from src.security.security import security_hash_password, security_verify_password
 from src.services.orgs.invites import get_invite_code
 from src.services.users.avatars import upload_avatar
 from src.services.users.emails import send_account_creation_email
@@ -32,7 +43,7 @@ def generate_verification_token(user_email: str, user_id: int, org_slug: str) ->
     secret = os.getenv(
         "JWT_VERIFICATION_TOKEN_SECRET", "your-secret-key-change-in-production"
     )
-    expiry = datetime.now(timezone.utc) + timedelta(days=7)  # Token valid for 7 days
+    expiry = datetime.now(UTC) + timedelta(days=7)  # Token valid for 7 days
 
     payload = {
         "email": user_email,
@@ -100,7 +111,7 @@ async def verify_user_email(
 
     # Mark email as verified
     user.email_verified = True
-    user.update_date = str(datetime.now(timezone.utc))
+    user.update_date = str(datetime.now(UTC))
 
     db_session.add(user)
     db_session.commit()
@@ -129,8 +140,8 @@ async def create_user(
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
-    user.creation_date = str(datetime.now(timezone.utc))
-    user.update_date = str(datetime.now(timezone.utc))
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Verifications
 
@@ -170,8 +181,7 @@ async def create_user(
 
     # Referral system: Validate disposable email
     if user_object.referral_code:
-        from src.services.referrals.fraud_prevention import \
-            validate_email_for_referral
+        from src.services.referrals.fraud_prevention import validate_email_for_referral
 
         is_valid, error_msg = await validate_email_for_referral(user.email, db_session)
         if not is_valid:
@@ -193,8 +203,9 @@ async def create_user(
     # Referral system: Track referral if code provided
     if user_object.referral_code:
         try:
-            from src.services.referrals.referral_tracking import \
-                validate_and_track_referral
+            from src.services.referrals.referral_tracking import (
+                validate_and_track_referral,
+            )
 
             _referral_code_obj, fraud_score = await validate_and_track_referral(
                 request=request,
@@ -242,8 +253,8 @@ async def create_user(
         user_id=user.id if user.id else 0,
         org_id=int(org_id),
         role_id=target_role_id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_organization)
@@ -325,8 +336,8 @@ async def create_user_without_org(
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
-    user.creation_date = str(datetime.now(timezone.utc))
-    user.update_date = str(datetime.now(timezone.utc))
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Verifications
 
@@ -424,7 +435,7 @@ async def update_user(
     for key, value in user_data.items():
         setattr(user, key, value)
 
-    user.update_date = str(datetime.now(timezone.utc))
+    user.update_date = str(datetime.now(UTC))
 
     # Update user in database
     db_session.add(user)
@@ -503,7 +514,7 @@ async def update_user_password(
 
     # Update user
     user.password = security_hash_password(form.new_password)
-    user.update_date = str(datetime.now(timezone.utc))
+    user.update_date = str(datetime.now(UTC))
 
     # Update user in database
     db_session.add(user)

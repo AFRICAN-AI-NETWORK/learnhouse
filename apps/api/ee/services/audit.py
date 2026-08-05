@@ -1,15 +1,14 @@
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import redis
 from sqlmodel import Session, select
 
 from config.config import get_learnhouse_config
 from ee.db.audit_logs import AuditLog
-from src.db.organization_config import (OrganizationConfig,
-                                        OrganizationConfigBase)
+from src.db.organization_config import OrganizationConfig, OrganizationConfigBase
 
 logger = logging.getLogger(__name__)
 LH_CONFIG = get_learnhouse_config()
@@ -46,7 +45,7 @@ def get_redis_client():
         return None
 
 
-def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
+def resolve_org_id(session: Session, data: dict[str, Any]) -> int | None:
     """
     Elegantly resolve org_id from various data identifiers.
     """
@@ -263,16 +262,16 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
 
 
 async def queue_audit_log(
-    user_id: Optional[int],
+    user_id: int | None,
     action: str,
     resource: str,
     method: str,
     path: str,
     status_code: int,
-    payload: Optional[Dict[str, Any]] = None,
-    resource_id: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    org_id: Optional[int] = None,
+    payload: dict[str, Any] | None = None,
+    resource_id: str | None = None,
+    ip_address: str | None = None,
+    org_id: int | None = None,
 ):
     r = get_redis_client()
     if not r:
@@ -289,7 +288,7 @@ async def queue_audit_log(
         "status_code": status_code,
         "payload": payload,
         "ip_address": ip_address,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
     try:
         r.lpush(REDIS_AUDIT_LOG_KEY, json.dumps(log_data))

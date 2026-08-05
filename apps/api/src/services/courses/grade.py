@@ -33,14 +33,16 @@ path when the trail step is flagged late.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity
-from src.db.courses.assignments import (Assignment, AssignmentTask,
-                                        AssignmentUserSubmission)
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentTask,
+    AssignmentUserSubmission,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_steps import TrailStep
 
@@ -60,7 +62,7 @@ class ActivityGradeDetail:
     points_earned: float
     # Raw normalized assignment score (0.0-1.0), or None for completion-based
     # activities or assignment activities the user has not submitted.
-    assignment_score: Optional[float]
+    assignment_score: float | None
     is_late: bool
     is_complete: bool
 
@@ -73,8 +75,8 @@ class GradeResult:
     total_points_earned: float
     # (earned / possible) × 100, rounded to 2 dp. None when the course has no
     # activities worth any points (avoids a division by zero).
-    grade_percentage: Optional[float]
-    activity_breakdown: List[ActivityGradeDetail] = field(default_factory=list)
+    grade_percentage: float | None
+    activity_breakdown: list[ActivityGradeDetail] = field(default_factory=list)
 
 
 ####################################################
@@ -83,9 +85,9 @@ class GradeResult:
 
 
 def normalized_assignment_score(
-    submission: Optional[AssignmentUserSubmission],
+    submission: AssignmentUserSubmission | None,
     task_max_sum: float,
-) -> Optional[float]:
+) -> float | None:
     """
     Return the assignment's normalized score in the [0, 1] range, or None.
 
@@ -112,9 +114,9 @@ def normalized_assignment_score(
 
 def get_activity_weighted_points_earned(
     activity: Activity,
-    trail_step: Optional[TrailStep],
-    assignment: Optional[Assignment],
-    submission: Optional[AssignmentUserSubmission],
+    trail_step: TrailStep | None,
+    assignment: Assignment | None,
+    submission: AssignmentUserSubmission | None,
     task_max_sum: float,
 ) -> float:
     """
@@ -158,7 +160,7 @@ def get_activity_weighted_points_earned(
 
 def get_assignment_for_activity(
     activity_id: int, db_session: Session
-) -> Optional[Assignment]:
+) -> Assignment | None:
     return db_session.exec(
         select(Assignment).where(Assignment.activity_id == activity_id)
     ).first()
@@ -166,7 +168,7 @@ def get_assignment_for_activity(
 
 def get_user_assignment_submission(
     assignment_id: int, user_id: int, db_session: Session
-) -> Optional[AssignmentUserSubmission]:
+) -> AssignmentUserSubmission | None:
     return db_session.exec(
         select(AssignmentUserSubmission).where(
             AssignmentUserSubmission.assignment_id == assignment_id,
@@ -230,7 +232,7 @@ def compute_and_store_trail_step_grade(
     if normalized is not None:
         # Persist the normalized score for auditing (e.g. "0.80").
         trail_step.grade = f"{normalized:.2f}"
-    trail_step.update_date = str(datetime.now(timezone.utc))
+    trail_step.update_date = str(datetime.now(UTC))
 
     db_session.add(trail_step)
     db_session.commit()
@@ -263,7 +265,7 @@ def compute_course_grade(
     seen_activity_ids: set[int] = set()
     total_points_possible = 0.0
     total_points_earned = 0.0
-    breakdown: List[ActivityGradeDetail] = []
+    breakdown: list[ActivityGradeDetail] = []
 
     for chapter_activity in chapter_activities:
         activity_id = chapter_activity.activity_id
@@ -318,7 +320,7 @@ def compute_course_grade(
             )
         )
 
-    grade_percentage: Optional[float] = None
+    grade_percentage: float | None = None
     if total_points_possible > 0:
         grade_percentage = round(total_points_earned / total_points_possible * 100, 2)
 

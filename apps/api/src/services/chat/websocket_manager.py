@@ -1,7 +1,6 @@
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Dict, Set
+from datetime import UTC, datetime
 
 from fastapi import WebSocket
 
@@ -38,10 +37,10 @@ class ConnectionManager:
             return
 
         # {user_id: {websocket_connection}}
-        self.active_connections: Dict[int, Set[WebSocket]] = {}
+        self.active_connections: dict[int, set[WebSocket]] = {}
 
         # {room_id: {websocket_connection}}
-        self.rooms: Dict[str, Set[WebSocket]] = {}
+        self.rooms: dict[str, set[WebSocket]] = {}
 
         # Redis client for Pub/Sub (optional - for horizontal scaling)
         self.redis_client = None
@@ -91,7 +90,7 @@ class ConnectionManager:
                         {
                             "user_id": user_id,
                             "status": "online",
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         }
                     ),
                 )
@@ -117,7 +116,7 @@ class ConnectionManager:
                                 {
                                     "user_id": user_id,
                                     "status": "offline",
-                                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                                    "timestamp": datetime.now(UTC).isoformat(),
                                 }
                             ),
                         )

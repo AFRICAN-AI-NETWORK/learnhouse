@@ -1,6 +1,5 @@
 """Waitlist API Router - All waitlist-related endpoints"""
 
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, validator
@@ -9,20 +8,26 @@ from sqlmodel import Session, select
 from src.core.events.database import get_db_session
 from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, PublicUser, UserRead
-from src.db.waitlist import (WaitlistConfigCreate, WaitlistConfigRead,
-                             WaitlistConfigUpdate)
+from src.db.waitlist import (
+    WaitlistConfigCreate,
+    WaitlistConfigRead,
+    WaitlistConfigUpdate,
+)
 from src.security.auth import get_current_user
 from src.security.phone_validation import validate_e164_phone_number
-from src.services.users.waitlist import (create_waitlist_user,
-                                         get_waitlist_users)
-from src.services.waitlist.config import (cancel_waitlist_config,
-                                          create_waitlist_config,
-                                          get_org_waitlist_configs,
-                                          get_waitlist_config,
-                                          update_waitlist_config)
-from src.services.waitlist.courses import (get_course_preference_analytics,
-                                           get_org_courses_for_waitlist,
-                                           get_user_course_preferences)
+from src.services.users.waitlist import create_waitlist_user, get_waitlist_users
+from src.services.waitlist.config import (
+    cancel_waitlist_config,
+    create_waitlist_config,
+    get_org_waitlist_configs,
+    get_waitlist_config,
+    update_waitlist_config,
+)
+from src.services.waitlist.courses import (
+    get_course_preference_analytics,
+    get_org_courses_for_waitlist,
+    get_user_course_preferences,
+)
 
 router = APIRouter()
 
@@ -39,12 +44,12 @@ class WaitlistUserRegistration(BaseModel):
     phone_number: str
     first_name: str = ""
     last_name: str = ""
-    bio: Optional[str] = ""
-    selected_product_ids: List[int] = []
+    bio: str | None = ""
+    selected_product_ids: list[int] = []
     # Referral tracking fields
-    referral_code: Optional[str] = None
-    device_id: Optional[str] = None
-    browser_fingerprint: Optional[dict] = None
+    referral_code: str | None = None
+    device_id: str | None = None
+    browser_fingerprint: dict | None = None
 
     @validator("phone_number", pre=True, always=True)
     def validate_phone_number(cls, value):
@@ -103,12 +108,12 @@ async def get_waitlist_details(
 
 
 @router.get(
-    "/config/org/{org_id}", response_model=List[WaitlistConfigRead], tags=["waitlist"]
+    "/config/org/{org_id}", response_model=list[WaitlistConfigRead], tags=["waitlist"]
 )
 async def list_org_waitlists(
     request: Request,
     org_id: int,
-    status_filter: Optional[str] = None,
+    status_filter: str | None = None,
     current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -276,7 +281,7 @@ async def join_waitlist(
 
 
 @router.get(
-    "/config/{waitlist_uuid}/users", response_model=List[UserRead], tags=["waitlist"]
+    "/config/{waitlist_uuid}/users", response_model=list[UserRead], tags=["waitlist"]
 )
 async def list_waitlist_users(
     request: Request,

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request
 from sqlalchemy.exc import IntegrityError
@@ -8,17 +8,21 @@ from src.db.courses.courses import Course
 from src.db.organizations import Organization
 from src.db.payments.payments import PaymentsConfig
 from src.db.payments.payments_courses import PaymentsCourse
-from src.db.payments.payments_products import (PaymentsProduct,
-                                               PaymentsProductCreate,
-                                               PaymentsProductRead,
-                                               PaymentsProductUpdate)
+from src.db.payments.payments_products import (
+    PaymentsProduct,
+    PaymentsProductCreate,
+    PaymentsProductRead,
+    PaymentsProductUpdate,
+)
 from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import AnonymousUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.orgs.orgs import rbac_check
 from src.services.payments.payments_flutterwave import (
-    archive_flutterwave_product, create_flutterwave_product,
-    update_flutterwave_product)
+    archive_flutterwave_product,
+    create_flutterwave_product,
+    update_flutterwave_product,
+)
 
 
 async def create_payments_product(
@@ -71,8 +75,8 @@ async def create_payments_product(
     new_product = PaymentsProduct(
         **product_data, org_id=org_id, payments_config_id=config.id
     )
-    new_product.creation_date = datetime.now(timezone.utc)
-    new_product.update_date = datetime.now(timezone.utc)
+    new_product.creation_date = datetime.now(UTC)
+    new_product.update_date = datetime.now(UTC)
 
     # Create product in Flutterwave if provider_product_id is not manually provided
     if payments_product.provider_product_id:
@@ -199,7 +203,7 @@ async def update_payments_product(
     for key, value in payments_product.model_dump().items():
         setattr(product, key, value)
 
-    product.update_date = datetime.now(timezone.utc)
+    product.update_date = datetime.now(UTC)
 
     db_session.add(product)
     db_session.commit()

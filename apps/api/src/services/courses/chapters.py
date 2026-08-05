@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
@@ -8,8 +7,13 @@ from sqlmodel import Session, select
 
 from src.db.courses.activities import Activity, ActivityRead
 from src.db.courses.chapter_activities import ChapterActivity
-from src.db.courses.chapters import (Chapter, ChapterCreate, ChapterRead,
-                                     ChapterUpdate, ChapterUpdateOrder)
+from src.db.courses.chapters import (
+    Chapter,
+    ChapterCreate,
+    ChapterRead,
+    ChapterUpdate,
+    ChapterUpdateOrder,
+)
 from src.db.courses.course_chapters import CourseChapter
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
@@ -44,8 +48,8 @@ async def create_chapter(
     # complete chapter object
     chapter.course_id = chapter_object.course_id
     chapter.chapter_uuid = f"chapter_{uuid4()}"
-    chapter.creation_date = str(datetime.now(timezone.utc))
-    chapter.update_date = str(datetime.now(timezone.utc))
+    chapter.creation_date = str(datetime.now(UTC))
+    chapter.update_date = str(datetime.now(UTC))
     chapter.org_id = course.org_id
 
     # Find the last chapter in the course and add it to the list
@@ -83,8 +87,8 @@ async def create_chapter(
             course_id=chapter.course_id,
             chapter_id=chapter.id,
             org_id=chapter.org_id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
             order=to_be_used_order,
         )
 
@@ -192,7 +196,7 @@ async def update_chapter(
                 detail=f"Total points for activities in a module must equal 100. Current total: {total_points}",
             )
 
-    chapter.update_date = str(datetime.now(timezone.utc))
+    chapter.update_date = str(datetime.now(UTC))
 
     db_session.commit()
     db_session.refresh(chapter)
@@ -204,8 +208,7 @@ async def update_chapter(
     # never turn a successful publish into an error for the instructor.
     if not was_published and chapter.published:
         try:
-            from src.services.notifications.fanout_jobs import \
-                sync_fanout_chapter_added
+            from src.services.notifications.fanout_jobs import sync_fanout_chapter_added
             from src.services.notifications.scheduling import enqueue_job
 
             enqueue_job(
@@ -279,7 +282,7 @@ async def get_course_chapters(
     with_unpublished_activities: bool = False,
     page: int = 1,
     limit: int = 10,
-) -> List[ChapterRead]:
+) -> list[ChapterRead]:
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
 
@@ -521,8 +524,8 @@ async def reorder_chapters_and_activities(
                 chapter_id=chapter_order.chapter_id,
                 course_id=course.id,  # type: ignore
                 org_id=course.org_id,
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
                 order=index,
             )
             db_session.add(course_chapter)
@@ -572,8 +575,8 @@ async def reorder_chapters_and_activities(
                     activity_id=activity_order.activity_id,
                     org_id=course.org_id,
                     course_id=course.id,  # type: ignore
-                    creation_date=str(datetime.now(timezone.utc)),
-                    update_date=str(datetime.now(timezone.utc)),
+                    creation_date=str(datetime.now(UTC)),
+                    update_date=str(datetime.now(UTC)),
                     order=index,
                 )
                 db_session.add(chapter_activity)

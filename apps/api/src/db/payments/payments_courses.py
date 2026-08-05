@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
@@ -11,7 +10,7 @@ class PaymentsCourseBase(SQLModel):
 
 
 class PaymentsCourse(PaymentsCourseBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     payment_product_id: int = Field(
         sa_column=Column(
             BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE")
@@ -20,5 +19,5 @@ class PaymentsCourse(PaymentsCourseBase, table=True):
     org_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("organization.id", ondelete="CASCADE"))
     )
-    creation_date: datetime = Field(default=datetime.now(timezone.utc))
-    update_date: datetime = Field(default=datetime.now(timezone.utc))
+    creation_date: datetime = Field(default=datetime.now(UTC))
+    update_date: datetime = Field(default=datetime.now(UTC))

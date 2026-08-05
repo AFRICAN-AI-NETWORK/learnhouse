@@ -1,10 +1,9 @@
 import re
-from typing import Optional
 
 E164_PATTERN = re.compile(r"^\+[1-9]\d{1,14}$")
 
 
-def normalize_phone_number(raw_phone_number: Optional[str]) -> Optional[str]:
+def normalize_phone_number(raw_phone_number: str | None) -> str | None:
     """Normalize phone numbers to a compact E.164-compatible representation."""
     if raw_phone_number is None:
         return None
@@ -24,8 +23,8 @@ def normalize_phone_number(raw_phone_number: Optional[str]) -> Optional[str]:
 
 
 def validate_e164_phone_number(
-    phone_number: Optional[str], required: bool = False
-) -> Optional[str]:
+    phone_number: str | None, required: bool = False
+) -> str | None:
     """Validate and normalize a phone number in strict E.164 format."""
     normalized_phone_number = normalize_phone_number(phone_number)
 

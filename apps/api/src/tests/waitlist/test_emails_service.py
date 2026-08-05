@@ -1,17 +1,19 @@
 """Unit tests for waitlist email service"""
 
-from datetime import datetime, timezone
-from unittest.mock import patch
 import smtplib
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
 from src.db.organizations import OrganizationRead
 from src.db.users import UserRead
 from src.db.waitlist import UserStatusEnum, WaitlistEmailLog
-from src.services.waitlist.emails import (activate_waitlist,
-                                          send_waitlist_activation_email,
-                                          send_waitlist_confirmation_email)
+from src.services.waitlist.emails import (
+    activate_waitlist,
+    send_waitlist_activation_email,
+    send_waitlist_confirmation_email,
+)
 
 
 class TestSendWaitlistConfirmationEmail:
@@ -290,7 +292,7 @@ class TestActivateWaitlist:
         db_session.add(waitlist_user)
         db_session.commit()
 
-        # Activate waitlist - should not raise exception
+        # Activate waitlist - should not raise
         await activate_waitlist(db_session, sample_waitlist_config)
 
         # Check email log records failure
@@ -334,9 +336,9 @@ class TestActivateWaitlist:
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
             email_sent=True,
-            email_sent_date=datetime.now(timezone.utc).isoformat(),
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            email_sent_date=datetime.now(UTC).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(existing_log)
         db_session.commit()

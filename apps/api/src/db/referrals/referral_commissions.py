@@ -5,7 +5,6 @@ Tracks commission earned from successful referrals
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from sqlmodel import BigInteger, Column, Field, ForeignKey, Index, SQLModel
 
@@ -25,10 +24,10 @@ class ReferralCommissionBase(SQLModel):
 
     commission_amount: float = Field(default=4.00)  # Fixed $4 USD commission
     status: CommissionStatus = Field(default=CommissionStatus.PENDING)
-    payment_completion_date: Optional[datetime] = None
-    refund_period_expiration_date: Optional[datetime] = None
-    payout_date: Optional[datetime] = None
-    payout_request_id: Optional[int] = None  # Links to ReferrerPayoutRequest when paid
+    payment_completion_date: datetime | None = None
+    refund_period_expiration_date: datetime | None = None
+    payout_date: datetime | None = None
+    payout_request_id: int | None = None  # Links to ReferrerPayoutRequest when paid
 
 
 class ReferralCommission(ReferralCommissionBase, table=True):
@@ -49,7 +48,7 @@ class ReferralCommission(ReferralCommissionBase, table=True):
         ),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(
             BigInteger,
@@ -74,7 +73,7 @@ class ReferralCommission(ReferralCommissionBase, table=True):
             nullable=False,
         )
     )
-    course_id: Optional[int] = Field(
+    course_id: int | None = Field(
         sa_column=Column(BigInteger, ForeignKey("course.id", ondelete="SET NULL"))
     )
     referral_code_id: int = Field(
@@ -96,7 +95,7 @@ class ReferralCommissionRead(ReferralCommissionBase):
     referrer_user_id: int
     referred_user_id: int
     payment_user_id: int
-    course_id: Optional[int]
+    course_id: int | None
     referral_code_id: int
     creation_date: datetime
     update_date: datetime
@@ -109,7 +108,7 @@ class ReferralCommissionCreate(SQLModel):
     referrer_user_id: int
     referred_user_id: int
     payment_user_id: int
-    course_id: Optional[int] = None
+    course_id: int | None = None
     referral_code_id: int
     commission_amount: float = 4.00
     payment_completion_date: datetime
@@ -119,5 +118,5 @@ class ReferralCommissionCreate(SQLModel):
 class ReferralCommissionUpdate(SQLModel):
     """Model for updating referral commission"""
 
-    status: Optional[CommissionStatus] = None
-    payout_date: Optional[datetime] = None
+    status: CommissionStatus | None = None
+    payout_date: datetime | None = None

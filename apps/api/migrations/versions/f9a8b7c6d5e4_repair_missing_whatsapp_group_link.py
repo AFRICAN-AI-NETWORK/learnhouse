@@ -10,7 +10,7 @@ not run c8e7f9a0b1c2 during a normal upgrade, so repair the schema at the
 current head.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 import sqlmodel
@@ -18,9 +18,9 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "f9a8b7c6d5e4"
-down_revision: Union[str, None] = "e1f2a3b4c5d6"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "e1f2a3b4c5d6"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _column_exists(table_name: str, column_name: str) -> bool:

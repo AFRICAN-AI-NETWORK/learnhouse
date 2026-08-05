@@ -15,8 +15,9 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlmodel import Session
 
 from src.core.events.database import engine
-from src.services.notifications.email_dispatch import \
-    process_pending_notification_emails
+from src.services.notifications.email_dispatch import (
+    process_pending_notification_emails,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ async def run_notification_email_job():
             result["failed"],
             result["total"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception("Notification email job failed: %s", e)
 
 

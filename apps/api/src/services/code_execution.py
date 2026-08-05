@@ -3,7 +3,6 @@ import os
 import subprocess  # nosec B404
 import tempfile
 import time
-from typing import Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel
@@ -25,7 +24,7 @@ class CodeExecutionResponse(BaseModel):
     stderr: str
     exit_code: int = 0
     execution_time_ms: int = 0
-    test_results: Optional[List[TestCaseResult]] = None
+    test_results: list[TestCaseResult] | None = None
     passed_count: int = 0
     total_count: int = 0
 
@@ -64,9 +63,11 @@ async def run_piston_execution(
     code: str,
     stdin: str = "",
     client_ip: str = "unknown",
-    additional_files: List[Dict] = [],
+    additional_files: list[dict] | None = None,
 ):
     # Map language to proper file extension
+    if additional_files is None:
+        additional_files = []
     ext_map = {
         "python": "py",
         "javascript": "js",
@@ -124,11 +125,15 @@ async def run_piston_execution(
 async def execute_and_grade(
     language: str,
     code: str,
-    test_cases: List[Dict] = [],
+    test_cases: list[dict] | None = None,
     stdin: str = "",
     client_ip: str = "unknown",
-    dataset_files: List[Dict] = [],
+    dataset_files: list[dict] | None = None,
 ):
+    if dataset_files is None:
+        dataset_files = []
+    if test_cases is None:
+        test_cases = []
     version_map = {
         "python": "3.10.0",
         "javascript": "*",

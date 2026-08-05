@@ -5,7 +5,6 @@ recomputation. They are derived from existing trail / course / user data plus
 the lightweight time-tracking table.
 """
 
-from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -16,7 +15,7 @@ class StudentCourseProgress(BaseModel):
     course_id: int
     course_uuid: str
     course_name: str
-    thumbnail_image: Optional[str] = ""
+    thumbnail_image: str | None = ""
     status: str  # "completed" | "in_progress"
     total_activities: int
     completed_activities: int
@@ -24,8 +23,8 @@ class StudentCourseProgress(BaseModel):
     points_earned: float
     time_spent_seconds: int
     is_certified: bool
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
+    started_at: str | None = None
+    completed_at: str | None = None
 
 
 class StudentSummary(BaseModel):
@@ -37,7 +36,7 @@ class StudentSummary(BaseModel):
     first_name: str
     last_name: str
     email: str
-    avatar_image: Optional[str] = ""
+    avatar_image: str | None = ""
     courses_enrolled: int
     courses_in_progress: int
     courses_completed: int
@@ -45,7 +44,7 @@ class StudentSummary(BaseModel):
     total_time_spent_seconds: int
     total_points: float
     certificates_count: int
-    last_active: Optional[str] = None
+    last_active: str | None = None
 
 
 class StudentListResponse(BaseModel):
@@ -54,13 +53,13 @@ class StudentListResponse(BaseModel):
     total: int
     page: int
     page_size: int
-    students: List[StudentSummary]
+    students: list[StudentSummary]
 
 
 class TopStudentsResponse(BaseModel):
     """Top students list."""
 
-    students: List[StudentSummary]
+    students: list[StudentSummary]
 
 
 class StudentRoleInfo(BaseModel):
@@ -77,14 +76,14 @@ class StudentDetail(BaseModel):
     first_name: str
     last_name: str
     email: str
-    phone_number: Optional[str] = None
-    avatar_image: Optional[str] = ""
-    bio: Optional[str] = ""
-    details: Optional[dict] = None
-    profile: Optional[dict] = None
-    user_status: Optional[str] = None
-    creation_date: Optional[str] = None
-    roles: List[StudentRoleInfo] = []
+    phone_number: str | None = None
+    avatar_image: str | None = ""
+    bio: str | None = ""
+    details: dict | None = None
+    profile: dict | None = None
+    user_status: str | None = None
+    creation_date: str | None = None
+    roles: list[StudentRoleInfo] = []
     # aggregates
     courses_enrolled: int
     courses_in_progress: int
@@ -93,8 +92,8 @@ class StudentDetail(BaseModel):
     total_time_spent_seconds: int
     total_points: float
     certificates_count: int
-    last_active: Optional[str] = None
-    courses: List[StudentCourseProgress] = []
+    last_active: str | None = None
+    courses: list[StudentCourseProgress] = []
 
 
 class StudentActivityProgress(BaseModel):
@@ -108,7 +107,7 @@ class StudentActivityProgress(BaseModel):
     points_earned: float
     is_late: bool
     time_spent_seconds: int
-    completed_at: Optional[str] = None
+    completed_at: str | None = None
 
 
 class StudentChapterProgress(BaseModel):
@@ -116,7 +115,7 @@ class StudentChapterProgress(BaseModel):
     name: str
     total_activities: int
     completed_activities: int
-    activities: List[StudentActivityProgress] = []
+    activities: list[StudentActivityProgress] = []
 
 
 class StudentCourseDetail(BaseModel):
@@ -131,7 +130,7 @@ class StudentCourseDetail(BaseModel):
     progress_percentage: float
     points_earned: float
     time_spent_seconds: int
-    chapters: List[StudentChapterProgress] = []
+    chapters: list[StudentChapterProgress] = []
 
 
 class OrgAnalyticsSummary(BaseModel):

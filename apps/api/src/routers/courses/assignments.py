@@ -1,33 +1,52 @@
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 
 from src.core.events.database import get_db_session
-from src.db.courses.assignments import (AssignmentCreate,
-                                        AssignmentGradeCreate, AssignmentRead,
-                                        AssignmentTaskCreate,
-                                        AssignmentTaskSubmissionUpdate,
-                                        AssignmentTaskUpdate, AssignmentUpdate,
-                                        AssignmentUserSubmissionCreate,
-                                        AssignmentUserSubmissionRevisionCreate)
+from src.db.courses.assignments import (
+    AssignmentCreate,
+    AssignmentGradeCreate,
+    AssignmentRead,
+    AssignmentTaskCreate,
+    AssignmentTaskSubmissionUpdate,
+    AssignmentTaskUpdate,
+    AssignmentUpdate,
+    AssignmentUserSubmissionCreate,
+    AssignmentUserSubmissionRevisionCreate,
+)
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.activities.assignments import (
-    create_assignment, create_assignment_submission, create_assignment_task,
-    delete_assignment, delete_assignment_from_activity_uuid,
-    delete_assignment_submission, delete_assignment_task,
-    delete_assignment_task_submission, get_assignments_from_course,
-    get_grade_assignment_submission, grade_assignment_submission,
-    handle_assignment_task_submission, mark_activity_as_done_for_user,
-    put_assignment_task_reference_file, put_assignment_task_submission_file,
-    read_assignment, read_assignment_from_activity_uuid,
-    read_assignment_submissions, read_assignment_task,
-    read_assignment_task_submissions, read_assignment_tasks,
+    create_assignment,
+    create_assignment_submission,
+    create_assignment_task,
+    delete_assignment,
+    delete_assignment_from_activity_uuid,
+    delete_assignment_submission,
+    delete_assignment_task,
+    delete_assignment_task_submission,
+    get_assignments_from_course,
+    get_grade_assignment_submission,
+    grade_assignment_submission,
+    handle_assignment_task_submission,
+    mark_activity_as_done_for_user,
+    put_assignment_task_reference_file,
+    put_assignment_task_submission_file,
+    read_assignment,
+    read_assignment_from_activity_uuid,
+    read_assignment_submissions,
+    read_assignment_task,
+    read_assignment_task_submissions,
+    read_assignment_tasks,
     read_user_assignment_all_tasks_submissions_me,
-    read_user_assignment_submissions, read_user_assignment_submissions_me,
+    read_user_assignment_submissions,
+    read_user_assignment_submissions_me,
     read_user_assignment_task_submissions,
-    read_user_assignment_task_submissions_me, reject_assignment_submission,
-    update_assignment, update_assignment_submission, update_assignment_task)
+    read_user_assignment_task_submissions_me,
+    reject_assignment_submission,
+    update_assignment,
+    update_assignment_submission,
+    update_assignment_task,
+)
 
 router = APIRouter()
 
@@ -482,7 +501,7 @@ async def api_final_grade_submission(
     request: Request,
     assignment_uuid: str,
     user_id: str,
-    grade_data: Optional[AssignmentGradeCreate] = None,
+    grade_data: AssignmentGradeCreate | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ):

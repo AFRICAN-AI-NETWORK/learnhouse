@@ -6,8 +6,7 @@ Implements disposable email detection and domain validation with dynamic domain 
 import asyncio
 import logging
 import re
-from datetime import datetime, timezone
-from typing import Optional, Set
+from datetime import UTC, datetime
 
 import httpx
 from sqlmodel import Session, select
@@ -33,9 +32,9 @@ CIRCUIT_BREAKER_THRESHOLD = 3  # Open circuit after 3 consecutive failures
 CIRCUIT_BREAKER_TIMEOUT = 300  # Try again after 5 minutes
 CIRCUIT_BREAKER_HALF_OPEN_TIMEOUT = 60  # In half-open state, try after 1 minute
 
-FALLBACK_DISPOSABLE_DOMAINS: Set[str] = {"tempmail.com", "throwaway.email"}
+FALLBACK_DISPOSABLE_DOMAINS: set[str] = {"tempmail.com", "throwaway.email"}
 
-FALLBACK_LEGITIMATE_DOMAINS: Set[str] = {
+FALLBACK_LEGITIMATE_DOMAINS: set[str] = {
     "gmail.com",
     "yahoo.com",
     "outlook.com",
@@ -103,7 +102,7 @@ async def load_domain_lists_from_db(db_session: Session) -> None:
                     for d in all_domains
                     if d.list_type == DomainListType.LEGITIMATE
                 },
-                "last_updated": datetime.now(timezone.utc),
+                "last_updated": datetime.now(UTC),
             }
 
             # Atomic update: replace entire cache reference at once (fully atomic, prevents partial reads)
@@ -119,7 +118,7 @@ async def load_domain_lists_from_db(db_session: Session) -> None:
             _domain_cache = {
                 "disposable": FALLBACK_DISPOSABLE_DOMAINS.copy(),
                 "legitimate": FALLBACK_LEGITIMATE_DOMAINS.copy(),
-                "last_updated": datetime.now(timezone.utc),
+                "last_updated": datetime.now(UTC),
             }
 
 
@@ -128,11 +127,11 @@ def is_cache_expired() -> bool:
     if _domain_cache["last_updated"] is None:
         return True
 
-    elapsed = (datetime.now(timezone.utc) - _domain_cache["last_updated"]).total_seconds()
+    elapsed = (datetime.now(UTC) - _domain_cache["last_updated"]).total_seconds()
     return elapsed > CACHE_TTL_SECONDS
 
 
-async def get_disposable_domains(db_session: Session) -> Set[str]:
+async def get_disposable_domains(db_session: Session) -> set[str]:
     """
     Get disposable email domains (with caching)
 
@@ -148,7 +147,7 @@ async def get_disposable_domains(db_session: Session) -> Set[str]:
     return _domain_cache["disposable"]
 
 
-async def get_legitimate_domains(db_session: Session) -> Set[str]:
+async def get_legitimate_domains(db_session: Session) -> set[str]:
     """
     Get legitimate email domains (with caching)
 
@@ -262,7 +261,7 @@ def _check_circuit_breaker() -> bool:
         last_failure = _circuit_breaker["last_failure_time"]
         if (
             last_failure
-            and (datetime.now(timezone.utc) - last_failure).total_seconds()
+            and (datetime.now(UTC) - last_failure).total_seconds()
             > CIRCUIT_BREAKER_TIMEOUT
         ):
             # Move to half-open state
@@ -289,14 +288,14 @@ def _record_circuit_breaker_success() -> None:
     _circuit_breaker["state"] = "closed"
 
 
-def _record_circuit_breaker_failure(exception: Optional[Exception] = None) -> None:
+def _record_circuit_breaker_failure(exception: Exception | None = None) -> None:
     """Record failed API call, update circuit breaker state
 
     Args:
         exception: Optional exception object for detailed logging
     """
     _circuit_breaker["failures"] += 1
-    _circuit_breaker["last_failure_time"] = datetime.now(timezone.utc)
+    _circuit_breaker["last_failure_time"] = datetime.now(UTC)
 
     # Log exception details for debugging (distinguish timeout vs 500 vs rate limit, etc.)
     exception_details = ""
@@ -325,7 +324,7 @@ def _record_circuit_breaker_failure(exception: Optional[Exception] = None) -> No
         )
 
 
-async def fetch_disposable_domains_from_github() -> Set[str]:
+async def fetch_disposable_domains_from_github() -> set[str]:
     """
     Fetch disposable email domains from GitHub repository with circuit breaker pattern
 
@@ -365,7 +364,7 @@ async def fetch_disposable_domains_from_github() -> Set[str]:
             logger.info(f"Fetched {len(domains)} disposable domains from GitHub")
             return domains
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         # Record failure in circuit breaker with exception details
         _record_circuit_breaker_failure(exception=e)
 
@@ -415,14 +414,14 @@ async def update_disposable_email_list(db_session: Session) -> dict:
                     list_type=DomainListType.DISPOSABLE,
                     source="github:disposable",
                     is_active=True,
-                    last_verified_at=datetime.now(timezone.utc),
+                    last_verified_at=datetime.now(UTC),
                 )
                 db_session.add(new_record)
                 stats["added"] += 1
             else:
                 # Update last_verified_at for existing domains
                 record = existing_domains[domain]
-                record.last_verified_at = datetime.now(timezone.utc)
+                record.last_verified_at = datetime.now(UTC)
                 record.is_active = True
                 db_session.add(record)
 

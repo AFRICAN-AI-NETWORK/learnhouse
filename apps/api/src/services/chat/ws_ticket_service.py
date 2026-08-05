@@ -10,12 +10,11 @@ The ticket is then passed in the WebSocket query string.
 import logging
 import secrets
 import time
-from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 # In-memory store for pending tickets:  ticket_id -> (user_id, expires_at)
-_pending_tickets: Dict[str, Tuple[int, float]] = {}
+_pending_tickets: dict[str, tuple[int, float]] = {}
 
 # Ticket lifetime in seconds (30s is plenty for a WebSocket handshake)
 TICKET_TTL_SECONDS = 30
@@ -30,7 +29,7 @@ def create_ticket(user_id: int) -> str:
     return ticket
 
 
-def redeem_ticket(ticket: str) -> Optional[int]:
+def redeem_ticket(ticket: str) -> int | None:
     """
     Redeem a ticket and return the associated user_id.
     Returns None if the ticket is invalid or expired.

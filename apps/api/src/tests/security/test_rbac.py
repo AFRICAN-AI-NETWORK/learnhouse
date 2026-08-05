@@ -6,8 +6,11 @@ from sqlmodel import Session
 
 from src.db.collections import Collection
 from src.db.courses.courses import Course
-from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
-                                     ResourceAuthorshipStatusEnum)
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.roles import Role
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
@@ -15,7 +18,8 @@ from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
     authorization_verify_if_element_is_public,
     authorization_verify_if_user_is_anon,
-    authorization_verify_if_user_is_author)
+    authorization_verify_if_user_is_author,
+)
 
 
 class TestRBAC:
@@ -59,8 +63,13 @@ class TestRBAC:
     @pytest.fixture
     def mock_role(self):
         """Create a mock role object"""
-        from src.db.roles import (DashboardPermission, Permission,
-                                  PermissionsWithOwn, Rights, RoleTypeEnum)
+        from src.db.roles import (
+            DashboardPermission,
+            Permission,
+            PermissionsWithOwn,
+            Rights,
+            RoleTypeEnum,
+        )
 
         role = Mock(spec=Role)
         role.id = 1

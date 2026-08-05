@@ -19,8 +19,10 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlmodel import Session
 
 from src.core.events.database import engine
-from src.services.waitlist.emails import (process_waitlist_activations,
-                                          retry_failed_waitlist_emails)
+from src.services.waitlist.emails import (
+    process_waitlist_activations,
+    retry_failed_waitlist_emails,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +100,7 @@ async def run_waitlist_activation_job():
             "Waitlist activation job completed in %.2fs",
             result["elapsed_s"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception("Waitlist activation job failed: %s", e)
 
 
@@ -115,7 +117,7 @@ async def run_retry_failed_emails_job():
             "Retry failed emails job completed in %.2fs",
             result["elapsed_s"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception("Retry failed emails job failed: %s", e)
 
 

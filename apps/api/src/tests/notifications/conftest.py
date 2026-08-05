@@ -1,6 +1,6 @@
 """Fixtures for notification service tests."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -37,8 +37,8 @@ def organization_fixture(session: Session):
         name="Test Organization",
         slug="test-org",
         email="test@testorg.com",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(org)
     session.commit()
@@ -55,8 +55,8 @@ def user_fixture(session: Session):
         password="hashed_password",
         first_name="Notif",
         last_name="Test",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -76,8 +76,8 @@ def course_fixture(session: Session, org: Organization):
         tags="",
         public=True,
         open_to_contributors=False,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(course)
     session.commit()
@@ -94,8 +94,8 @@ def other_user_fixture(session: Session):
         password="hashed_password",
         first_name="Other",
         last_name="Test",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()

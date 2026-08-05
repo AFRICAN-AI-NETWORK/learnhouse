@@ -5,15 +5,13 @@ Follows DRY principles with reusable utilities
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, and_, func, select
 
 from src.db.referrals.referral_codes import ReferralCode
-from src.db.referrals.referral_commissions import (CommissionStatus,
-                                                   ReferralCommission)
+from src.db.referrals.referral_commissions import CommissionStatus, ReferralCommission
 from src.db.referrals.referral_tracking import ReferralTracking
 from src.db.users import PublicUser, User
 
@@ -26,7 +24,7 @@ COMMISSION_AMOUNT_USD = 4.00  # TODO: Move to org-level config for multi-tenant 
 
 async def get_commission_by_payment(
     payment_user_id: int, referral_code_id: int, db_session: Session
-) -> Optional[ReferralCommission]:
+) -> ReferralCommission | None:
     """
     Get commission by payment user and referral code (DRY utility)
     Prevents duplicate commissions
@@ -53,11 +51,11 @@ async def create_commission_for_payment(
     referrer_user_id: int,
     referred_user_id: int,
     payment_user_id: int,
-    course_id: Optional[int],
+    course_id: int | None,
     referral_code_id: int,
     payment_completion_date: datetime,
     db_session: Session,
-) -> Optional[ReferralCommission]:
+) -> ReferralCommission | None:
     """
     Create referral commission for successful payment (Core logic - DRY)
     Implements idempotency to prevent duplicate commissions from webhook retries
@@ -100,8 +98,8 @@ async def create_commission_for_payment(
         status=CommissionStatus.PENDING,
         payment_completion_date=payment_completion_date,
         refund_period_expiration_date=refund_expiration,
-        creation_date=datetime.now(timezone.utc),
-        update_date=datetime.now(timezone.utc),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
 
     db_session.add(commission)
@@ -116,8 +114,8 @@ async def create_commission_for_payment(
 
 
 async def forfeit_commission_for_refund(
-    payment_user_id: int, db_session: Session, refund_reason: Optional[str] = None
-) -> Optional[ReferralCommission]:
+    payment_user_id: int, db_session: Session, refund_reason: str | None = None
+) -> ReferralCommission | None:
     """
     Forfeit commission when payment is refunded (Core logic - DRY)
     Deducts from referrer's balance if commission was eligible
@@ -155,8 +153,7 @@ async def forfeit_commission_for_refund(
         if user:
             user.referral_commission_balance -= commission.commission_amount
             # Ensure balance doesn't go negative
-            if user.referral_commission_balance < 0:
-                user.referral_commission_balance = 0
+            user.referral_commission_balance = max(user.referral_commission_balance, 0)
             db_session.add(user)
             logger.info(
                 f"Deducted ${commission.commission_amount} from user {user.id} balance (refund)"
@@ -164,7 +161,7 @@ async def forfeit_commission_for_refund(
 
     # Update commission status
     commission.status = CommissionStatus.FORFEITED
-    commission.update_date = datetime.now(timezone.utc)
+    commission.update_date = datetime.now(UTC)
     db_session.add(commission)
     db_session.commit()
     db_session.refresh(commission)
@@ -190,7 +187,7 @@ async def update_pending_commissions_to_eligible(db_session: Session) -> int:
     Returns:
         Number of commissions updated
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Query pending commissions with expired refund period
     statement = select(ReferralCommission).where(
@@ -299,7 +296,7 @@ async def get_commission_history(
     current_user: PublicUser,
     db_session: Session,
     limit: int = 50,
-) -> List[dict]:
+) -> list[dict]:
     """
     Get unified referral tracking history for current user.
     Includes both registrations (from tracking) and payments (from commissions).

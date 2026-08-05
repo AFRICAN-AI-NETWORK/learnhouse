@@ -1,17 +1,22 @@
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 
-from src.db.courses.assignments import (Assignment, AssignmentUserSubmission,
-                                        AssignmentUserSubmissionStatus)
-from src.db.courses.certifications import (CertificateUser,
-                                           CertificateUserRead,
-                                           CertificationCreate,
-                                           CertificationRead, Certifications,
-                                           CertificationUpdate)
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentUserSubmission,
+    AssignmentUserSubmissionStatus,
+)
+from src.db.courses.certifications import (
+    CertificateUser,
+    CertificateUserRead,
+    CertificationCreate,
+    CertificationRead,
+    Certifications,
+    CertificationUpdate,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.courses import Course
 from src.db.trail_runs import StatusEnum, TrailRun
@@ -35,7 +40,7 @@ def has_ungraded_required_assignments(
     required_assignments = db_session.exec(
         select(Assignment).where(
             Assignment.course_id == course_id,
-            Assignment.required_for_certificate == True,  # noqa: E712
+            Assignment.required_for_certificate == True,
         )
     ).all()
 
@@ -88,8 +93,8 @@ async def create_certification(
         course_id=certification_object.course_id,
         config=certification_object.config or {},
         certification_uuid=str(f"certification_{uuid4()}"),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # Insert certification in DB
@@ -142,7 +147,7 @@ async def get_certifications_by_course(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[CertificationRead]:
+) -> list[CertificationRead]:
     """Get all certifications for a course"""
 
     # Get course for RBAC check
@@ -211,7 +216,7 @@ async def update_certification(
             setattr(certification, var, value)
 
     # Update the update_date
-    certification.update_date = str(datetime.now(timezone.utc))
+    certification.update_date = str(datetime.now(UTC))
 
     db_session.add(certification)
     db_session.commit()
@@ -271,7 +276,7 @@ async def create_certificate_user(
     certification_id: int,
     db_session: Session,
     current_user: PublicUser | AnonymousUser | None = None,
-    grade_percentage: Optional[float] = None,
+    grade_percentage: float | None = None,
 ) -> CertificateUserRead:
     """
     Create a certificate user link
@@ -327,9 +332,9 @@ async def create_certificate_user(
         )
 
     # Generate readable certificate user UUID
-    current_year = datetime.now(timezone.utc).year
-    current_month = datetime.now(timezone.utc).month
-    current_day = datetime.now(timezone.utc).day
+    current_year = datetime.now(UTC).year
+    current_month = datetime.now(UTC).month
+    current_day = datetime.now(UTC).day
 
     # Get user to extract user_uuid
     from src.db.users import User
@@ -373,8 +378,8 @@ async def create_certificate_user(
         certification_id=certification_id,
         user_certification_uuid=user_certification_uuid,
         grade_percentage=grade_percentage,
-        created_at=str(datetime.now(timezone.utc)),
-        updated_at=str(datetime.now(timezone.utc)),
+        created_at=str(datetime.now(UTC)),
+        updated_at=str(datetime.now(UTC)),
     )
 
     db_session.add(certificate_user)
@@ -389,7 +394,7 @@ async def get_user_certificates_for_course(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[dict]:
+) -> list[dict]:
     """Get all certificates for a user in a specific course with certification details"""
 
     # Check if course exists
@@ -524,12 +529,12 @@ def sync_course_trail_run_completion_status(
 
     if is_complete and trail_run.status != StatusEnum.STATUS_COMPLETED:
         trail_run.status = StatusEnum.STATUS_COMPLETED
-        trail_run.update_date = str(datetime.now(timezone.utc))
+        trail_run.update_date = str(datetime.now(UTC))
         db_session.add(trail_run)
         db_session.commit()
     elif not is_complete and trail_run.status == StatusEnum.STATUS_COMPLETED:
         trail_run.status = StatusEnum.STATUS_IN_PROGRESS
-        trail_run.update_date = str(datetime.now(timezone.utc))
+        trail_run.update_date = str(datetime.now(UTC))
         db_session.add(trail_run)
         db_session.commit()
 
@@ -602,8 +607,7 @@ async def check_course_completion_and_create_certificate(
                     # Certificate already exists, which is fine
                     return True
                 else:
-                    raise e
-
+                    raise
     return False
 
 
@@ -675,7 +679,7 @@ async def get_all_user_certificates(
     request: Request,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[dict]:
+) -> list[dict]:
     """Get all certificates for the current user with complete linked information"""
 
     # Get all certificate users for this user

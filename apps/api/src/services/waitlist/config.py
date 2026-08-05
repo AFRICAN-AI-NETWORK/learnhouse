@@ -1,7 +1,6 @@
 """Waitlist Configuration CRUD Service"""
 
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
@@ -9,9 +8,13 @@ from sqlmodel import Session, select
 
 from src.db.cohorts import CohortCreate
 from src.db.organizations import Organization
-from src.db.waitlist import (WaitlistConfig, WaitlistConfigCreate,
-                             WaitlistConfigRead, WaitlistConfigUpdate,
-                             WaitlistStatusEnum)
+from src.db.waitlist import (
+    WaitlistConfig,
+    WaitlistConfigCreate,
+    WaitlistConfigRead,
+    WaitlistConfigUpdate,
+    WaitlistStatusEnum,
+)
 from src.services.cohorts.cohorts import create_cohort
 
 
@@ -48,7 +51,7 @@ async def create_waitlist_config(
     # Validate launch datetime is in the future
     try:
         launch_dt = datetime.fromisoformat(
-            config_data.launch_datetime.replace("Z", "+00:00")
+            config_data.launch_datetime
         )
         if launch_dt <= datetime.now(launch_dt.tzinfo):
             raise HTTPException(
@@ -74,8 +77,8 @@ async def create_waitlist_config(
         status=WaitlistStatusEnum.ACTIVE.value,
         total_registrations=0,
         emails_sent_count=0,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # Get created_by_user_id from request state if available
@@ -139,8 +142,8 @@ async def get_org_waitlist_configs(
     request: Request,
     db_session: Session,
     org_id: int,
-    status_filter: Optional[str] = None,
-) -> List[WaitlistConfigRead]:
+    status_filter: str | None = None,
+) -> list[WaitlistConfigRead]:
     """
     Get all waitlist configurations for an organization.
 
@@ -151,7 +154,7 @@ async def get_org_waitlist_configs(
         status_filter: Optional status filter (ACTIVE, COMPLETED, CANCELLED, SCHEDULED)
 
     Returns:
-        List[WaitlistConfigRead]: List of waitlist configurations
+        list[WaitlistConfigRead]: List of waitlist configurations
     """
 
     # Build query
@@ -203,7 +206,7 @@ async def update_waitlist_config(
     if update_data.launch_datetime:
         try:
             launch_dt = datetime.fromisoformat(
-                update_data.launch_datetime.replace("Z", "+00:00")
+                update_data.launch_datetime
             )
             if launch_dt <= datetime.now(launch_dt.tzinfo):
                 raise HTTPException(
@@ -232,7 +235,7 @@ async def update_waitlist_config(
         # User said "allow reactivation... will not affect the users who have already gained access"
         # Keeping counters is fine as they represent historical registrations.
 
-    waitlist.update_date = str(datetime.now(timezone.utc))
+    waitlist.update_date = str(datetime.now(UTC))
 
     db_session.add(waitlist)
     db_session.commit()
@@ -273,7 +276,7 @@ async def cancel_waitlist_config(
 
     # Change status to CANCELLED
     waitlist.status = WaitlistStatusEnum.CANCELLED.value
-    waitlist.update_date = str(datetime.now(timezone.utc))
+    waitlist.update_date = str(datetime.now(UTC))
 
     db_session.add(waitlist)
     db_session.commit()

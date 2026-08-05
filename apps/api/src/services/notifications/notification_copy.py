@@ -7,7 +7,6 @@ of being duplicated across each trigger call site.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 FEEDBACK_PREVIEW_LENGTH = 140
 ANNOUNCEMENT_PREVIEW_LENGTH = 160
@@ -19,7 +18,7 @@ class NotificationCopy:
     message: str
 
 
-def truncate(text: Optional[str], limit: int) -> str:
+def truncate(text: str | None, limit: int) -> str:
     """Trim ``text`` to ``limit`` characters, appending an ellipsis if cut."""
     text = (text or "").strip()
     if len(text) <= limit:
@@ -32,7 +31,7 @@ def assignment_reviewed_copy(
     assignment_title: str,
     grade: int,
     max_grade: int,
-    feedback: Optional[str] = None,
+    feedback: str | None = None,
 ) -> NotificationCopy:
     message = (
         f'{instructor_name} graded your submission for "{assignment_title}" '
@@ -46,7 +45,7 @@ def assignment_reviewed_copy(
 def retake_requested_copy(
     instructor_name: str,
     assignment_title: str,
-    feedback: Optional[str] = None,
+    feedback: str | None = None,
 ) -> NotificationCopy:
     feedback_preview = (
         truncate(feedback, FEEDBACK_PREVIEW_LENGTH)

@@ -1,11 +1,13 @@
-from typing import List
 
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
-from src.db.chat.conversations import (ConversationCreate, ConversationRead,
-                                       ConversationWithLastMessage)
+from src.db.chat.conversations import (
+    ConversationCreate,
+    ConversationRead,
+    ConversationWithLastMessage,
+)
 from src.db.roles import Role
 from src.db.user_organizations import UserOrganization
 from src.db.users import User
@@ -32,7 +34,7 @@ async def create_conversation(
     return conversation
 
 
-@router.get("/", response_model=List[ConversationWithLastMessage])
+@router.get("/", response_model=list[ConversationWithLastMessage])
 async def get_user_conversations(
     org_id: int = Query(..., description="Organization ID"),
     include_archived: bool = Query(False, description="Include archived conversations"),
@@ -66,7 +68,7 @@ async def archive_conversation(
     return conversation
 
 
-@router.get("/chatable-users", response_model=List[dict])
+@router.get("/chatable-users", response_model=list[dict])
 async def get_chatable_users(
     org_id: int = Query(..., description="Organization ID"),
     search: str = Query(None, description="Search query for user name"),

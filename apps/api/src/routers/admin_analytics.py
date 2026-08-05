@@ -1,19 +1,22 @@
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
 
 from src.core.events.database import get_db_session
 from src.security.auth import get_current_user
-from src.services.admin_analytics.schemas import (OrgAnalyticsSummary,
-                                                  StudentCourseDetail,
-                                                  StudentDetail,
-                                                  StudentListResponse,
-                                                  TopStudentsResponse)
-from src.services.admin_analytics.students import (get_org_analytics_summary,
-                                                   get_student_course_detail,
-                                                   get_student_detail,
-                                                   get_top_org_students,
-                                                   list_org_students)
+from src.services.admin_analytics.schemas import (
+    OrgAnalyticsSummary,
+    StudentCourseDetail,
+    StudentDetail,
+    StudentListResponse,
+    TopStudentsResponse,
+)
+from src.services.admin_analytics.students import (
+    get_org_analytics_summary,
+    get_student_course_detail,
+    get_student_detail,
+    get_top_org_students,
+    list_org_students,
+)
 
 router = APIRouter()
 
@@ -22,10 +25,10 @@ router = APIRouter()
 async def api_list_org_students(
     request: Request,
     org_id: int,
-    search: Optional[str] = Query(default=None),
+    search: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
-    sort_by: Optional[str] = Query(default=None),
+    sort_by: str | None = Query(default=None),
     user=Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> StudentListResponse:
@@ -46,7 +49,7 @@ async def api_get_top_org_students(
     request: Request,
     org_id: int,
     limit: int = Query(default=5, ge=1, le=10000),
-    days: Optional[int] = Query(default=None, ge=1),
+    days: int | None = Query(default=None, ge=1),
     user=Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> TopStudentsResponse:

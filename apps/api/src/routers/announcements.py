@@ -4,14 +4,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, desc, select
 
 from src.core.events.database import get_db_session
-from src.db.announcements import (Announcement, AnnouncementCreate,
-                                  AnnouncementRead, AnnouncementReadResponse,
-                                  AnnouncementUpdate)
+from src.db.announcements import (
+    Announcement,
+    AnnouncementCreate,
+    AnnouncementRead,
+    AnnouncementReadResponse,
+    AnnouncementUpdate,
+)
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
-    authorization_verify_has_rights)
+    authorization_verify_has_rights,
+)
 from src.services.orgs.orgs import get_organization_by_slug
 
 logger = logging.getLogger(__name__)
@@ -97,8 +102,7 @@ async def create_announcement(
     # still see it via the existing GET /announcements list, unchanged.
     if new_announcement.is_active:
         try:
-            from src.services.notifications.fanout_jobs import \
-                sync_fanout_app_update
+            from src.services.notifications.fanout_jobs import sync_fanout_app_update
             from src.services.notifications.scheduling import enqueue_job
 
             enqueue_job(

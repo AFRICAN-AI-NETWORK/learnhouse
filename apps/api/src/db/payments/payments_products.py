@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel, String
 
@@ -24,18 +23,18 @@ class PaymentIntervalEnum(str, Enum):
 
 class PaymentsProductBase(SQLModel):
     name: str = ""
-    description: Optional[str] = ""
+    description: str | None = ""
     product_type: PaymentProductTypeEnum = PaymentProductTypeEnum.ONE_TIME
     price_type: PaymentPriceTypeEnum = PaymentPriceTypeEnum.FIXED_PRICE
     benefits: str = ""
     amount: float = 0.0
     currency: str = "USD"
-    interval: Optional[PaymentIntervalEnum] = None
+    interval: PaymentIntervalEnum | None = None
     trial_days: int = 0
 
 
 class PaymentsProduct(PaymentsProductBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("organization.id", ondelete="CASCADE"))
     )
@@ -45,12 +44,12 @@ class PaymentsProduct(PaymentsProductBase, table=True):
         )
     )
     provider_product_id: str = Field(sa_column=Column(String))
-    creation_date: datetime = Field(default=datetime.now(timezone.utc))
-    update_date: datetime = Field(default=datetime.now(timezone.utc))
+    creation_date: datetime = Field(default=datetime.now(UTC))
+    update_date: datetime = Field(default=datetime.now(UTC))
 
 
 class PaymentsProductCreate(PaymentsProductBase):
-    provider_product_id: Optional[str] = None
+    provider_product_id: str | None = None
 
 
 class PaymentsProductUpdate(PaymentsProductBase):

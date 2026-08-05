@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import UTC
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
@@ -8,7 +9,9 @@ from config.config import get_learnhouse_config
 from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import InternalUser
 from src.services.payments.discount_codes import (
-    increment_discount_usage_atomic, record_discount_usage)
+    increment_discount_usage_atomic,
+    record_discount_usage,
+)
 from src.services.payments.payments_flutterwave import verify_transaction
 from src.services.payments.payments_users import update_payment_user_status
 
@@ -21,9 +24,7 @@ async def verify_flutterwave_webhook_signature(
 ) -> bool:
     """Verify Flutterwave webhook signature"""
     signature = request.headers.get("verif-hash")
-    if not signature or signature != secret:
-        return False
-    return True
+    return not (not signature or signature != secret)
 
 
 async def handle_flutterwave_webhook(
@@ -138,14 +139,16 @@ async def handle_flutterwave_webhook(
 
                     if payment_user and payment_user.referral_code_id:
                         try:
-                            from datetime import datetime, timezone
+                            from datetime import datetime
 
                             from sqlmodel import and_
 
-                            from src.db.referrals.referral_tracking import \
-                                ReferralTracking
-                            from src.services.referrals.referral_commissions import \
-                                create_commission_for_payment
+                            from src.db.referrals.referral_tracking import (
+                                ReferralTracking,
+                            )
+                            from src.services.referrals.referral_commissions import (
+                                create_commission_for_payment,
+                            )
 
                             tracking = db_session.exec(
                                 select(ReferralTracking).where(
@@ -166,7 +169,7 @@ async def handle_flutterwave_webhook(
                                     payment_user_id=payment_user.id,
                                     course_id=int(course_id) if course_id else None,
                                     referral_code_id=payment_user.referral_code_id,
-                                    payment_completion_date=datetime.now(timezone.utc),
+                                    payment_completion_date=datetime.now(UTC),
                                     db_session=db_session,
                                 )
                         except Exception as e:  # noqa: BLE001

@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request, status
 from pydantic import BaseModel
@@ -8,14 +7,13 @@ from sqlmodel import Session, select
 from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
-from src.security.rbac.rbac import \
-    authorization_verify_based_on_org_admin_status
+from src.security.rbac.rbac import authorization_verify_based_on_org_admin_status
 
 
 class PrerequisiteCreate(BaseModel):
     """Request body for setting prerequisites on a course."""
 
-    prerequisite_course_ids: List[int]  # Ordered list of prerequisite course IDs
+    prerequisite_course_ids: list[int]  # Ordered list of prerequisite course IDs
 
 
 class PrerequisiteRead(BaseModel):
@@ -33,7 +31,7 @@ async def get_course_prerequisites(
     request: Request,
     course_uuid: str,
     db_session: Session,
-) -> List[PrerequisiteRead]:
+) -> list[PrerequisiteRead]:
     """Get all prerequisites for a course, ordered by sequence."""
     statement = select(Course).where(Course.course_uuid == course_uuid)
     course = db_session.exec(statement).first()
@@ -75,7 +73,7 @@ async def set_course_prerequisites(
     prereq_data: PrerequisiteCreate,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[PrerequisiteRead]:
+) -> list[PrerequisiteRead]:
     """
     Set prerequisites for a course. Replaces any existing prerequisites.
     Only admins, maintainers, and instructors (course owners) can do this.
@@ -131,8 +129,8 @@ async def set_course_prerequisites(
             prerequisite_course_id=prereq_course_id,
             org_id=course.org_id,
             order=order,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(new_prereq)
 

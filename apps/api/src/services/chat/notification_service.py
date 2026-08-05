@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from sqlmodel import Session, select
@@ -45,7 +45,7 @@ class NotificationService:
             message_id=message.id,
             conversation_id=message.conversation_id,
             notification_type="new_message",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         db.add(notification)
@@ -81,7 +81,7 @@ class NotificationService:
                         "message": "You have a new message",
                         "conversation_id": message.conversation_id,
                         "sender_id": message.sender_id,
-                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                     },
                 },
                 message.receiver_id,
@@ -114,7 +114,7 @@ class NotificationService:
             scheduler = AsyncIOScheduler()
 
             # Schedule job for 24 hours from now
-            run_time = datetime.now(timezone.utc) + timedelta(
+            run_time = datetime.now(UTC) + timedelta(
                 hours=NotificationService.EMAIL_DELAY_HOURS
             )
 

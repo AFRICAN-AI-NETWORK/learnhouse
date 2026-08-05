@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import uuid4
 
 import redis
@@ -24,7 +24,7 @@ def ask_ai(
     text_reference: str,
     message_for_the_prompt: str,
     openai_model_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Process an AI query using OpenAI SDK directly with course content as context
     """
@@ -69,7 +69,7 @@ def ask_ai(
         raise Exception(f"Error processing AI request: {e!s}")
 
 
-def get_chat_session_history(aichat_uuid: Optional[str] = None) -> Dict[str, Any]:
+def get_chat_session_history(aichat_uuid: str | None = None) -> dict[str, Any]:
     """Get or create a new chat session history using Redis"""
     session_id = aichat_uuid if aichat_uuid else f"aichat_{uuid4()}"
 

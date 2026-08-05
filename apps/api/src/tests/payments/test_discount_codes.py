@@ -13,21 +13,28 @@ Tests cover all 8 critical security and business logic scenarios:
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlmodel import Session, select
 
 from src.db.courses.courses import Course
 from src.db.organizations import Organization
-from src.db.payments.discount_codes import (DiscountCode, DiscountCodeUsage,
-                                            DiscountTypeEnum)
+from src.db.payments.discount_codes import (
+    DiscountCode,
+    DiscountCodeUsage,
+    DiscountTypeEnum,
+)
 from src.db.payments.payments_users import PaymentsUser
 from src.db.users import User
 from src.services.payments.discount_codes import (
-    DiscountValidationError, calculate_discounted_amount,
-    decrement_discount_usage, increment_discount_usage_atomic,
-    record_discount_usage, validate_discount_code)
+    DiscountValidationError,
+    calculate_discounted_amount,
+    decrement_discount_usage,
+    increment_discount_usage_atomic,
+    record_discount_usage,
+    validate_discount_code,
+)
 
 from .conftest import create_discount_code_helper, create_usage_record_helper
 
@@ -238,8 +245,8 @@ class TestDiscountCodeValidation:
             discount_value=20.0,
             max_uses=100,
             current_uses=0,
-            valid_from=datetime.now(timezone.utc) + timedelta(days=7),  # Starts in 7 days
-            valid_until=datetime.now(timezone.utc) + timedelta(days=30),
+            valid_from=datetime.now(UTC) + timedelta(days=7),  # Starts in 7 days
+            valid_until=datetime.now(UTC) + timedelta(days=30),
             is_active=True,
             description="Future-dated code",
         )

@@ -5,10 +5,8 @@ Manages payout requests from referrers with Paystack integration
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
-from sqlmodel import (JSON, BigInteger, Column, Field, ForeignKey, Index,
-                      SQLModel, Text)
+from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, Index, SQLModel, Text
 
 
 class PayoutStatus(str, Enum):
@@ -26,18 +24,18 @@ class ReferrerPayoutRequestBase(SQLModel):
 
     total_amount: float = Field(ge=1.0)  # Minimum $1 USD
     currency: str = Field(default="USD", max_length=3)
-    converted_amount: Optional[float] = None
+    converted_amount: float | None = None
     status: PayoutStatus = Field(default=PayoutStatus.REQUESTED)
-    paystack_transfer_recipient_code: Optional[str] = Field(
+    paystack_transfer_recipient_code: str | None = Field(
         default=None, max_length=255
     )
-    paystack_transfer_code: Optional[str] = Field(default=None, max_length=255)
+    paystack_transfer_code: str | None = Field(default=None, max_length=255)
     bank_account_info: dict = Field(
         default={}, sa_column=Column(JSON)
     )  # Encrypted bank details
     request_date: datetime = Field(default_factory=datetime.now)
-    completion_date: Optional[datetime] = None
-    failure_reason: Optional[str] = Field(default=None, sa_column=Column(Text))
+    completion_date: datetime | None = None
+    failure_reason: str | None = Field(default=None, sa_column=Column(Text))
 
 
 class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
@@ -49,7 +47,7 @@ class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
         Index("idx_payoutrequest_org", "org_id"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(
             BigInteger,
@@ -90,12 +88,12 @@ class ReferrerPayoutRequestCreate(SQLModel):
 class ReferrerPayoutRequestUpdate(SQLModel):
     """Model for updating payout request"""
 
-    status: Optional[PayoutStatus] = None
-    paystack_transfer_recipient_code: Optional[str] = None
-    paystack_transfer_code: Optional[str] = None
-    converted_amount: Optional[float] = None
-    completion_date: Optional[datetime] = None
-    failure_reason: Optional[str] = None
+    status: PayoutStatus | None = None
+    paystack_transfer_recipient_code: str | None = None
+    paystack_transfer_code: str | None = None
+    converted_amount: float | None = None
+    completion_date: datetime | None = None
+    failure_reason: str | None = None
 
 
 class BankDetails(SQLModel):
@@ -105,6 +103,6 @@ class BankDetails(SQLModel):
     account_number: str
     account_holder: str
     account_type: str  # "savings" or "current"
-    bank_code: Optional[str] = (
+    bank_code: str | None = (
         None  # Bank code for Paystack (e.g., "044" for Access Bank)
     )

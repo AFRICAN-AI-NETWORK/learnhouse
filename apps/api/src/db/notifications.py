@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import JSON, Column, Field, SQLModel
@@ -33,8 +32,8 @@ class NotificationBase(SQLModel):
         )
     )
     target_type: str  # 'assignment' | 'chapter' | 'activity' | 'app'
-    target_id: Optional[int] = None
-    target_uuid: Optional[str] = None
+    target_id: int | None = None
+    target_uuid: str | None = None
     title: str
     message: str
 
@@ -52,7 +51,7 @@ class Notification(NotificationBase, table=True):
 
     __tablename__ = "notification"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     notification_uuid: str = Field(unique=True, index=True)
     user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     org_id: int = Field(foreign_key="organization.id", ondelete="CASCADE")
@@ -62,7 +61,7 @@ class Notification(NotificationBase, table=True):
     metadata_json: dict = Field(default={}, sa_column=Column("metadata", JSON))
 
     is_read: bool = False
-    read_at: Optional[datetime] = None
+    read_at: datetime | None = None
 
     email_status: EmailStatus = Field(
         default=EmailStatus.PENDING,
@@ -78,8 +77,8 @@ class Notification(NotificationBase, table=True):
         ),
     )
     email_retry_count: int = 0
-    email_last_error: Optional[str] = None
-    email_sent_at: Optional[datetime] = None
+    email_last_error: str | None = None
+    email_sent_at: datetime | None = None
 
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
@@ -95,5 +94,5 @@ class NotificationRead(NotificationBase):
     notification_uuid: str
     metadata_json: dict
     is_read: bool
-    read_at: Optional[datetime]
+    read_at: datetime | None
     created_at: datetime

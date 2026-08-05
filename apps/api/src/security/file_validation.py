@@ -5,7 +5,6 @@ Validates file types and content to prevent unrestricted uploads (CWE-434).
 """
 
 import re
-from typing import List, Optional, Tuple
 
 from fastapi import HTTPException, UploadFile
 
@@ -27,14 +26,11 @@ def validate_image_content(content: bytes) -> bool:
         return True
 
     # GIF: GIF87a or GIF89a
-    if magic_bytes.startswith(b"GIF87a") or magic_bytes.startswith(b"GIF89a"):
+    if magic_bytes.startswith((b"GIF87a", b"GIF89a")):
         return True
 
     # WebP: RIFF....WEBP
-    if magic_bytes.startswith(b"RIFF") and b"WEBP" in content[:16]:
-        return True
-
-    return False
+    return bool(magic_bytes.startswith(b"RIFF") and b"WEBP" in content[:16])
 
 
 def validate_video_content(content: bytes) -> bool:
@@ -53,10 +49,7 @@ def validate_video_content(content: bytes) -> bool:
         return True
 
     # WebM: EBML header
-    if magic_bytes.startswith(b"\x1a\x45\xdf\xa3"):
-        return True
-
-    return False
+    return bool(magic_bytes.startswith(b"\x1aE\xdf\xa3"))
 
 
 # File type configurations
@@ -83,8 +76,8 @@ FILE_TYPES = {
 
 
 def validate_upload(
-    file: UploadFile, allowed_types: List[str], max_size: Optional[int] = None
-) -> Tuple[str, bytes]:
+    file: UploadFile, allowed_types: list[str], max_size: int | None = None
+) -> tuple[str, bytes]:
     """
     Validate uploaded file for security and type compliance.
 

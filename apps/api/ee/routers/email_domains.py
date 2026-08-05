@@ -14,7 +14,9 @@ from src.db.users import User
 from src.security.auth import get_current_user
 from src.services.orgs.orgs import rbac_check
 from src.services.referrals.fraud_prevention import (
-    seed_initial_domain_lists, update_disposable_email_list)
+    seed_initial_domain_lists,
+    update_disposable_email_list,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from uuid import uuid4
 
@@ -9,8 +9,12 @@ from pypdf import PdfReader
 from sqlmodel import Session, select
 
 from config.config import get_learnhouse_config
-from src.db.courses.activities import (Activity, ActivityRead,
-                                       ActivitySubTypeEnum, ActivityTypeEnum)
+from src.db.courses.activities import (
+    Activity,
+    ActivityRead,
+    ActivitySubTypeEnum,
+    ActivityTypeEnum,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
@@ -214,7 +218,7 @@ async def chunk_text_with_ai(raw_text: str, config) -> list[dict]:
 
     # All providers failed
     if isinstance(last_error, HTTPException):
-        raise last_error
+        raise
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=f"Smart Article: All AI providers failed. Last error: {str(last_error)[:200]}",
@@ -311,8 +315,8 @@ async def create_smart_article_activity(
         org_id=org_id if org_id else 0,
         course_id=coursechapter.course_id,
         activity_uuid=activity_uuid,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(activity)
@@ -335,8 +339,8 @@ async def create_smart_article_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=next_order,
     )
 

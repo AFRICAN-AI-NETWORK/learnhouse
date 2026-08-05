@@ -6,7 +6,8 @@ Create Date: 2026-07-08 23:07:36.811615
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
+from datetime import UTC
 
 import sqlalchemy as sa  # noqa: F401
 import sqlmodel  # noqa: F401
@@ -14,13 +15,13 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "13fd650276ae"
-down_revision: Union[str, None] = "a357f4d8baae"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "a357f4d8baae"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from sqlmodel import Session, select
 
@@ -43,16 +44,16 @@ def upgrade() -> None:
             org_id=org_id,
             name="Cohort 1",
             cohort_number=1,
-            start_date=str(datetime.now(timezone.utc)),
+            start_date=str(datetime.now(UTC)),
             status=CohortStatusEnum.ACTIVE,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(cohort1)
         session.flush()
 
     paid_course_links = session.exec(select(PaymentsCourse)).all()
-    paid_course_ids = set([p.course_id for p in paid_course_links if p.course_id])
+    paid_course_ids = {p.course_id for p in paid_course_links if p.course_id}
 
     if not paid_course_ids:
         return
@@ -76,9 +77,9 @@ def upgrade() -> None:
                 course_id=run.course_id,
                 org_id=run.org_id,
                 is_locked=False,
-                enrolled_date=str(datetime.now(timezone.utc)),
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                enrolled_date=str(datetime.now(UTC)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
             session.add(enrollment)
 

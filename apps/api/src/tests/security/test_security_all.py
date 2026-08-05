@@ -37,8 +37,11 @@ class TestSecurityComprehensive:
 
     def test_security_constants(self):
         """Test that security constants are properly defined"""
-        from src.security.security import (ACCESS_TOKEN_EXPIRE_MINUTES,
-                                           ALGORITHM, SECRET_KEY)
+        from src.security.security import (
+            ACCESS_TOKEN_EXPIRE_MINUTES,
+            ALGORITHM,
+            SECRET_KEY,
+        )
 
         assert ACCESS_TOKEN_EXPIRE_MINUTES == 30
         assert ALGORITHM == "HS256"

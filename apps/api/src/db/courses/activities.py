@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
@@ -44,13 +43,13 @@ class ActivityBase(SQLModel):
     activity_type: ActivityTypeEnum
     activity_sub_type: ActivitySubTypeEnum
     content: dict = Field(default={}, sa_column=Column(JSON))
-    details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    details: dict | None = Field(default=None, sa_column=Column(JSON))
     published: bool = False
     points: float = Field(default=0)
 
 
 class Activity(ActivityBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
     )
@@ -71,24 +70,24 @@ class ActivityCreate(ActivityBase):
 
 
 class ActivityUpdate(ActivityBase):
-    name: Optional[str] = None  # type: ignore
-    content: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    activity_type: Optional[ActivityTypeEnum] = None  # type: ignore
-    activity_sub_type: Optional[ActivitySubTypeEnum] = None  # type: ignore
-    details: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # type: ignore
-    published_version: Optional[int] = None
-    version: Optional[int] = None
-    points: Optional[float] = None
+    name: str | None = None  # type: ignore
+    content: dict | None = Field(default=None, sa_column=Column(JSON))
+    activity_type: ActivityTypeEnum | None = None  # type: ignore
+    activity_sub_type: ActivitySubTypeEnum | None = None  # type: ignore
+    details: dict | None = Field(default=None, sa_column=Column(JSON))  # type: ignore
+    published_version: int | None = None
+    version: int | None = None
+    points: float | None = None
 
 
 class ActivityRead(ActivityBase):
     id: int
     org_id: int
-    org_slug: Optional[str] = None
+    org_slug: str | None = None
     course_id: int
-    course_uuid: Optional[str] = None
+    course_uuid: str | None = None
     activity_uuid: str
     creation_date: str
     update_date: str
-    details: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    is_locked: Optional[bool] = False
+    details: dict | None = Field(default=None, sa_column=Column(JSON))
+    is_locked: bool | None = False

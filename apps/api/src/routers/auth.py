@@ -1,8 +1,7 @@
 from datetime import timedelta
-from typing import Literal, Optional
+from typing import Literal
 
-from fastapi import (APIRouter, Depends, Form, HTTPException, Request,
-                     Response, status)
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Session, select
 
@@ -13,8 +12,7 @@ from src.db.users import AnonymousUser, User, UserRead
 from src.security.auth import AuthJWT, authenticate_user, get_current_user
 from src.services.auth.utils import signWithGoogle
 from src.services.users.emails import send_account_creation_email
-from src.services.users.users import (generate_verification_token,
-                                      verify_user_email)
+from src.services.users.users import generate_verification_token, verify_user_email
 
 router = APIRouter()
 
@@ -102,7 +100,7 @@ async def third_party_login(
     request: Request,
     response: Response,
     body: ThirdPartyLogin,
-    org_id: Optional[int] = None,
+    org_id: int | None = None,
     current_user: AnonymousUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
     Authorize: AuthJWT = Depends(),

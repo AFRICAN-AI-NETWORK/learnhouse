@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import Literal
 
 import yaml
 from dotenv import load_dotenv
@@ -54,11 +54,11 @@ class MailingConfig(BaseModel):
 
 
 class DatabaseConfig(BaseModel):
-    sql_connection_string: Optional[str]
+    sql_connection_string: str | None
 
 
 class RedisConfig(BaseModel):
-    redis_connection_string: Optional[str]
+    redis_connection_string: str | None
 
 
 class InternalFlutterwaveConfig(BaseModel):

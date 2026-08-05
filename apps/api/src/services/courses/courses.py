@@ -1,28 +1,39 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, and_, or_, select, text
 
-from src.db.courses.courses import (AuthorWithRole, Course, CourseCreate,
-                                    CourseRead, CourseUpdate, FullCourseRead,
-                                    ThumbnailType)
+from src.db.courses.courses import (
+    AuthorWithRole,
+    Course,
+    CourseCreate,
+    CourseRead,
+    CourseUpdate,
+    FullCourseRead,
+    ThumbnailType,
+)
 from src.db.organizations import Organization
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentsProduct
-from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
-                                     ResourceAuthorshipStatusEnum)
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.courses_security import courses_rbac_check
-from src.security.features_utils.usage import (check_limits_with_usage,
-                                               decrease_feature_usage,
-                                               increase_feature_usage)
+from src.security.features_utils.usage import (
+    check_limits_with_usage,
+    decrease_feature_usage,
+    increase_feature_usage,
+)
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
-    authorization_verify_if_user_is_anon)
+    authorization_verify_if_user_is_anon,
+)
 from src.services.courses.thumbnails import upload_thumbnail
 
 
@@ -201,7 +212,7 @@ async def get_courses_orgslug(
     db_session: Session,
     page: int = 1,
     limit: int = 10,
-) -> List[CourseRead]:
+) -> list[CourseRead]:
     offset = (page - 1) * limit
 
     # Base query
@@ -234,7 +245,7 @@ async def get_courses_orgslug(
                 or_(
                     Course.public == True,
                     UserGroupResource.resource_uuid
-                    == None,  # Courses not in any UserGroup # noqa: E711
+                    == None,  # Courses not in any UserGroup
                     UserGroupUser.user_id
                     == current_user.id,  # Courses in UserGroups where user is a member
                     ResourceAuthor.user_id
@@ -327,7 +338,7 @@ async def search_courses(
     db_session: Session,
     page: int = 1,
     limit: int = 10,
-) -> List[CourseRead]:
+) -> list[CourseRead]:
     offset = (page - 1) * limit
 
     # Base query
@@ -373,7 +384,7 @@ async def search_courses(
                 or_(
                     Course.public == True,
                     UserGroupResource.resource_uuid
-                    == None,  # Courses not in any UserGroup # noqa: E711
+                    == None,  # Courses not in any UserGroup
                     UserGroupUser.user_id
                     == current_user.id,  # Courses in UserGroups where user is a member
                     ResourceAuthor.user_id
@@ -482,8 +493,8 @@ async def create_course(
     org = db_session.exec(org_statement).first()
 
     course.course_uuid = str(f"course_{uuid4()}")
-    course.creation_date = str(datetime.now(timezone.utc))
-    course.update_date = str(datetime.now(timezone.utc))
+    course.creation_date = str(datetime.now(UTC))
+    course.update_date = str(datetime.now(UTC))
 
     # Upload thumbnail
     if thumbnail_file and thumbnail_file.filename:
@@ -516,8 +527,8 @@ async def create_course(
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CREATOR,
         authorship_status=ResourceAuthorshipStatusEnum.ACTIVE,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # Insert course author
@@ -617,7 +628,7 @@ async def update_course_thumbnail(
         )
 
     # Complete the course object
-    course.update_date = str(datetime.now(timezone.utc))
+    course.update_date = str(datetime.now(UTC))
 
     db_session.add(course)
     db_session.commit()
@@ -700,16 +711,15 @@ async def update_course(
         resource_author = db_session.exec(statement).first()
 
         is_course_owner = False
-        if resource_author:
-            if (
-                (
-                    (resource_author.authorship == ResourceAuthorshipEnum.CREATOR)
-                    or (resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER)
-                )
-                and resource_author.authorship_status
-                == ResourceAuthorshipStatusEnum.ACTIVE
-            ):
-                is_course_owner = True
+        if resource_author and (
+            (
+                (resource_author.authorship == ResourceAuthorshipEnum.CREATOR)
+                or (resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER)
+            )
+            and resource_author.authorship_status
+            == ResourceAuthorshipStatusEnum.ACTIVE
+        ):
+            is_course_owner = True
 
         # Check if user has admin or maintainer role
         is_admin_or_maintainer = await authorization_verify_based_on_org_admin_status(
@@ -729,7 +739,7 @@ async def update_course(
             setattr(course, var, value)
 
     # Complete the course object
-    course.update_date = str(datetime.now(timezone.utc))
+    course.update_date = str(datetime.now(UTC))
 
     db_session.add(course)
     db_session.commit()
@@ -799,7 +809,7 @@ async def get_user_courses(
     db_session: Session,
     page: int = 1,
     limit: int = 10,
-) -> List[CourseRead]:
+) -> list[CourseRead]:
     # Verify user is not anonymous
     await authorization_verify_if_user_is_anon(current_user.id)
 
@@ -970,7 +980,8 @@ async def get_course_user_rights(
     # Check user roles
     from src.security.rbac.rbac import (
         authorization_verify_based_on_org_admin_status,
-        authorization_verify_based_on_roles)
+        authorization_verify_based_on_roles,
+    )
 
     # Check admin/maintainer role
     is_admin_or_maintainer = await authorization_verify_based_on_org_admin_status(

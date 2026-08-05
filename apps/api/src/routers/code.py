@@ -1,15 +1,18 @@
 import time
 from collections import defaultdict
-from typing import Dict, List
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from config.config import LearnHouseConfig, get_learnhouse_config
-from src.services.code_execution import (PISTON_URL, CodeExecutionResponse,
-                                         TestCaseResult, execute_and_grade,
-                                         run_python_locally)
+from src.services.code_execution import (
+    PISTON_URL,
+    CodeExecutionResponse,
+    TestCaseResult,
+    execute_and_grade,
+    run_python_locally,
+)
 
 router = APIRouter()
 
@@ -48,8 +51,8 @@ class CodeExecutionRequest(BaseModel):
     language: str
     code: str
     stdin: str = ""
-    test_cases: List[Dict] = []
-    dataset_files: List[Dict] = []
+    test_cases: list[dict] = []
+    dataset_files: list[dict] = []
 
 
 @router.post("/execute", response_model=CodeExecutionResponse)

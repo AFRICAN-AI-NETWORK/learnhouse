@@ -124,7 +124,7 @@ class TestWaitlistAuthenticationFlow:
         db_session.add(suspended_user)
         db_session.commit()
 
-        # Attempt login should raise exception
+        # Attempt login should raise
         with pytest.raises(HTTPException) as exc_info:
             await authenticate_user(
                 mock_request, "suspended@example.com", "Password123!", db_session
@@ -154,7 +154,7 @@ class TestWaitlistAuthenticationFlow:
         db_session.add(unverified_user)
         db_session.commit()
 
-        # Attempt login should raise exception
+        # Attempt login should raise
         with pytest.raises(HTTPException) as exc_info:
             await authenticate_user(
                 mock_request, "unverified@example.com", "Password123!", db_session

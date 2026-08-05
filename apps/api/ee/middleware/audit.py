@@ -6,8 +6,7 @@ from fastapi import Request, Response
 from sqlmodel import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ee.services.audit import (is_enterprise_plan, queue_audit_log,
-                               resolve_org_id)
+from ee.services.audit import is_enterprise_plan, queue_audit_log, resolve_org_id
 from src.core.events.database import engine
 from src.db.users import PublicUser
 
@@ -24,10 +23,7 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
         # Skip health checks, documentation, and static files
         path = request.url.path
         if (
-            path.startswith("/api/v1/health")
-            or path.startswith("/docs")
-            or path.startswith("/redoc")
-            or path.startswith("/content")
+            path.startswith(("/api/v1/health", "/docs", "/redoc", "/content"))
         ):
             return await call_next(request)
 

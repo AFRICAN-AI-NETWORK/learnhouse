@@ -12,19 +12,21 @@ from sqlmodel import Session
 from src.db.notifications import EmailStatus, Notification, NotificationType
 from src.db.users import User
 from src.services.notifications.email_dispatch import (
-    MAX_EMAIL_ATTEMPTS, process_pending_notification_emails)
+    MAX_EMAIL_ATTEMPTS,
+    process_pending_notification_emails,
+)
 
 
 def _make_notification(session: Session, user: User, org, **overrides) -> Notification:
-    defaults = dict(
-        notification_uuid=f"notif_{overrides.pop('suffix', 'x')}",
-        user_id=user.id,
-        org_id=org.id,
-        notification_type=NotificationType.CHAPTER_ADDED,
-        target_type="chapter",
-        title="New chapter available",
-        message="A new chapter was added.",
-    )
+    defaults = {
+        "notification_uuid": f"notif_{overrides.pop('suffix', 'x')}",
+        "user_id": user.id,
+        "org_id": org.id,
+        "notification_type": NotificationType.CHAPTER_ADDED,
+        "target_type": "chapter",
+        "title": "New chapter available",
+        "message": "A new chapter was added.",
+    }
     defaults.update(overrides)
     notification = Notification(**defaults)
     session.add(notification)

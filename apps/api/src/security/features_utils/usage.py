@@ -1,4 +1,4 @@
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import redis
 from fastapi import HTTPException
@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 from config.config import get_learnhouse_config
 from src.db.organization_config import OrganizationConfig
 
-FeatureSet: TypeAlias = Literal[
+type FeatureSet = Literal[
     "ai",
     "analytics",
     "api",

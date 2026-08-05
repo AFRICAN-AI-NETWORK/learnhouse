@@ -1,48 +1,72 @@
-from typing import Literal, Optional
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 
 from src.core.events.database import get_db_session
 from src.db.courses.courses import Course
-from src.db.payments.discount_codes import (DiscountCodeCreate,
-                                            DiscountCodeRead,
-                                            DiscountCodeUpdate)
-from src.db.payments.payments import (PaymentsConfig, PaymentsConfigRead,
-                                      PaymentsConfigUpdate)
-from src.db.payments.payments_products import (PaymentsProductCreate,
-                                               PaymentsProductRead,
-                                               PaymentsProductUpdate)
+from src.db.payments.discount_codes import (
+    DiscountCodeCreate,
+    DiscountCodeRead,
+    DiscountCodeUpdate,
+)
+from src.db.payments.payments import (
+    PaymentsConfig,
+    PaymentsConfigRead,
+    PaymentsConfigUpdate,
+)
+from src.db.payments.payments_products import (
+    PaymentsProductCreate,
+    PaymentsProductRead,
+    PaymentsProductUpdate,
+)
 from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.auth import get_current_user
-from src.services.payments.discount_codes import (DiscountValidationError,
-                                                  create_discount_code,
-                                                  deactivate_discount_code,
-                                                  get_discount_code,
-                                                  get_discount_code_analytics,
-                                                  list_discount_codes,
-                                                  update_discount_code,
-                                                  validate_discount_code)
+from src.services.payments.discount_codes import (
+    DiscountValidationError,
+    create_discount_code,
+    deactivate_discount_code,
+    get_discount_code,
+    get_discount_code_analytics,
+    list_discount_codes,
+    update_discount_code,
+    validate_discount_code,
+)
 from src.services.payments.payments_access import check_course_paid_access
-from src.services.payments.payments_config import (delete_payments_config,
-                                                   get_payments_config,
-                                                   init_payments_config,
-                                                   update_payments_config)
-from src.services.payments.payments_courses import (get_courses_by_product,
-                                                    link_course_to_product,
-                                                    unlink_course_from_product)
+from src.services.payments.payments_config import (
+    delete_payments_config,
+    get_payments_config,
+    init_payments_config,
+    update_payments_config,
+)
+from src.services.payments.payments_courses import (
+    get_courses_by_product,
+    link_course_to_product,
+    unlink_course_from_product,
+)
 from src.services.payments.payments_customers import get_customers
 from src.services.payments.payments_flutterwave import (
-    get_supported_currencies, initialize_transaction, verify_transaction)
+    get_supported_currencies,
+    initialize_transaction,
+    verify_transaction,
+)
 from src.services.payments.payments_products import (
-    create_payments_product, delete_payments_product, get_payments_product,
-    get_products_by_course, list_payments_products,
-    list_public_payments_products, update_payments_product)
-from src.services.payments.payments_users import (get_owned_courses,
-                                                  update_payment_user_status)
-from src.services.payments.webhooks.payments_flutterwave_webhooks import \
-    handle_flutterwave_webhook
+    create_payments_product,
+    delete_payments_product,
+    get_payments_product,
+    get_products_by_course,
+    list_payments_products,
+    list_public_payments_products,
+    update_payments_product,
+)
+from src.services.payments.payments_users import (
+    get_owned_courses,
+    update_payment_user_status,
+)
+from src.services.payments.webhooks.payments_flutterwave_webhooks import (
+    handle_flutterwave_webhook,
+)
 
 router = APIRouter()
 
@@ -423,8 +447,7 @@ async def api_check_course_paid_access(
     is_author = False
     if request and not isinstance(current_user, AnonymousUser):
         try:
-            from src.security.rbac.rbac import \
-                authorization_verify_if_user_is_author
+            from src.security.rbac.rbac import authorization_verify_if_user_is_author
 
             is_author = await authorization_verify_if_user_is_author(
                 request, int(current_user.id), "read", course.course_uuid, db_session
@@ -584,8 +607,8 @@ async def api_validate_discount_code(
     org_id: int,
     code: str,
     amount: float,
-    course_id: Optional[int] = None,
-    product_id: Optional[int] = None,
+    course_id: int | None = None,
+    product_id: int | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> dict:

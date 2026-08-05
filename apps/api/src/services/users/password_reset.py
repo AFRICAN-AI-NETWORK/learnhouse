@@ -2,7 +2,7 @@ import json
 import secrets
 import string
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis
 from fastapi import HTTPException, Request
@@ -70,14 +70,14 @@ async def send_reset_password_code(
     generated_reset_code = generate_code()
     reset_email_invite_uuid = f"reset_email_invite_code_{uuid.uuid4()}"
 
-    ttl = int(datetime.now(timezone.utc).timestamp()) + 60 * 60 * 1  # 1 hour
+    ttl = int(datetime.now(UTC).timestamp()) + 60 * 60 * 1  # 1 hour
 
     resetCodeObject = {
         "reset_code": generated_reset_code,
         "reset_email_invite_uuid": reset_email_invite_uuid,
         "reset_code_expires": ttl,
         "reset_code_type": "signup",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "created_by": user.user_uuid,
         "org_uuid": org.org_uuid,
     }
@@ -178,7 +178,7 @@ async def change_password_with_reset_code(
     reset_code_object = json.loads(reset_code_value)
 
     # Check if reset code is expired
-    if reset_code_object["reset_code_expires"] < int(datetime.now(timezone.utc).timestamp()):
+    if reset_code_object["reset_code_expires"] < int(datetime.now(UTC).timestamp()):
         raise HTTPException(
             status_code=400,
             detail="Reset code expired",

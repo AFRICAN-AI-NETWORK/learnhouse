@@ -9,13 +9,15 @@ load_dotenv()
 
 from pydantic import EmailStr
 from sqlmodel import Session, SQLModel, create_engine, text
-
 from src.db.models import *  # This imports all SQLModels so metadata has them
+
 from src.db.organizations import OrganizationCreate
 from src.db.users import UserCreate
-from src.services.setup.setup import (install_create_organization,
-                                      install_create_organization_user,
-                                      install_default_elements)
+from src.services.setup.setup import (
+    install_create_organization,
+    install_create_organization_user,
+    install_default_elements,
+)
 
 DATABASE_URL = os.getenv("LEARNHOUSE_SQL_CONNECTION_STRING")
 engine = create_engine(DATABASE_URL, isolation_level="AUTOCOMMIT")

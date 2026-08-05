@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import List, Literal
+from datetime import UTC, datetime
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -12,7 +12,8 @@ from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, PublicUser
 from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon)
+    authorization_verify_if_user_is_anon,
+)
 
 
 async def create_role(
@@ -281,8 +282,8 @@ async def create_role(
 
     # Complete the role object
     role.role_uuid = f"role_{uuid4()}"
-    role.creation_date = str(datetime.now(timezone.utc))
-    role.update_date = str(datetime.now(timezone.utc))
+    role.creation_date = str(datetime.now(UTC))
+    role.update_date = str(datetime.now(UTC))
 
     # ============================================================================
     # VERIFICATION 9: Handle ID sequence issue (existing logic)
@@ -326,8 +327,7 @@ async def create_role(
                 pass
         else:
             # Re-raise the original exception if it's not the sequence issue
-            raise e
-
+            raise
     # Create RoleRead object with all required fields
     role_data = role.model_dump()
     # Ensure org_id is properly handled
@@ -343,7 +343,7 @@ async def get_roles_by_organization(
     db_session: Session,
     org_id: int,
     current_user: PublicUser,
-) -> List[RoleRead]:
+) -> list[RoleRead]:
     """
     Get all roles for a specific organization, including global roles.
 
@@ -354,7 +354,7 @@ async def get_roles_by_organization(
         current_user: Current authenticated user
 
     Returns:
-        List[RoleRead]: List of roles for the organization (including global roles)
+        list[RoleRead]: List of roles for the organization (including global roles)
 
     Raises:
         HTTPException: If organization not found or user lacks permissions
@@ -509,7 +509,7 @@ async def update_role(
     await rbac_check(request, current_user, "update", role.role_uuid, db_session)
 
     # Complete the role object
-    role.update_date = str(datetime.now(timezone.utc))
+    role.update_date = str(datetime.now(UTC))
 
     # Remove the role_id from the role_object
     del role_object.role_id

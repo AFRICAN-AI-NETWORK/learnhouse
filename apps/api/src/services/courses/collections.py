@@ -1,12 +1,15 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
 
-from src.db.collections import (Collection, CollectionCreate, CollectionRead,
-                                CollectionUpdate)
+from src.db.collections import (
+    Collection,
+    CollectionCreate,
+    CollectionRead,
+    CollectionUpdate,
+)
 from src.db.collections_courses import CollectionCourse
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
@@ -87,8 +90,8 @@ async def create_collection(
 
     # Complete the collection object
     collection.collection_uuid = f"collection_{uuid4()}"
-    collection.creation_date = str(datetime.now(timezone.utc))
-    collection.update_date = str(datetime.now(timezone.utc))
+    collection.creation_date = str(datetime.now(UTC))
+    collection.update_date = str(datetime.now(UTC))
 
     # Add collection to database
     db_session.add(collection)
@@ -118,8 +121,8 @@ async def create_collection(
                     collection_id=int(collection.id),  # type: ignore
                     course_id=course_id,
                     org_id=int(collection_object.org_id),
-                    creation_date=str(datetime.now(timezone.utc)),
-                    update_date=str(datetime.now(timezone.utc)),
+                    creation_date=str(datetime.now(UTC)),
+                    update_date=str(datetime.now(UTC)),
                 )
                 # Add collection_course to database
                 db_session.add(collection_course)
@@ -170,7 +173,7 @@ async def update_collection(
         if value is not None:
             setattr(collection, var, value)
 
-    collection.update_date = str(datetime.now(timezone.utc))
+    collection.update_date = str(datetime.now(UTC))
 
     # Update only the fields that were passed in
     for var, value in vars(collection_object).items():
@@ -192,8 +195,8 @@ async def update_collection(
             collection_id=int(collection.id),  # type: ignore
             course_id=int(course),
             org_id=int(collection.org_id),
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         # Add collection_course to database
         db_session.add(collection_course)
@@ -254,7 +257,7 @@ async def get_collections(
     db_session: Session,
     page: int = 1,
     limit: int = 10,
-) -> List[CollectionRead]:
+) -> list[CollectionRead]:
     statement_public = select(Collection).where(
         Collection.org_id == org_id, Collection.public == True
     )

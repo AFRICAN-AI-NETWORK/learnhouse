@@ -1,13 +1,12 @@
 """Tests for the course/org-wide notification fan-out jobs."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 from sqlmodel import Session, select
 
-from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
-                                       ActivityTypeEnum)
+from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.notifications import Notification, NotificationType
@@ -16,9 +15,11 @@ from src.db.trail_runs import TrailRun
 from src.db.trails import Trail
 from src.db.user_organizations import UserOrganization
 from src.db.users import User
-from src.services.notifications.fanout_jobs import (fanout_activity_added,
-                                                    fanout_app_update,
-                                                    fanout_chapter_added)
+from src.services.notifications.fanout_jobs import (
+    fanout_activity_added,
+    fanout_app_update,
+    fanout_chapter_added,
+)
 from src.services.trail.trail import get_enrolled_user_ids_for_course
 
 
@@ -27,8 +28,8 @@ def _enroll(session: Session, user: User, course, org) -> TrailRun:
         org_id=org.id,
         user_id=user.id,
         trail_uuid=f"trail_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(trail)
     session.commit()
@@ -39,8 +40,8 @@ def _enroll(session: Session, user: User, course, org) -> TrailRun:
         course_id=course.id,
         org_id=org.id,
         user_id=user.id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(trail_run)
     session.commit()
@@ -55,8 +56,8 @@ def _make_chapter(session: Session, course, org, published: bool = True) -> Chap
         course_id=course.id,
         published=published,
         chapter_uuid=f"chapter_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(chapter)
     session.commit()
@@ -75,8 +76,8 @@ def _make_activity(
         org_id=org.id,
         course_id=course.id,
         activity_uuid=f"activity_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(activity)
     session.commit()
@@ -89,8 +90,8 @@ def _make_activity(
             activity_id=activity.id,
             course_id=course.id,
             org_id=org.id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
     )
     session.commit()
@@ -203,8 +204,8 @@ class TestFanoutAppUpdate:
             name="Student",
             description="Student role",
             role_uuid=f"role_{uuid4()}",
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(role)
         session.commit()
@@ -216,8 +217,8 @@ class TestFanoutAppUpdate:
                     user_id=u.id,
                     org_id=org.id,
                     role_id=role.id,
-                    creation_date=str(datetime.now(timezone.utc)),
-                    update_date=str(datetime.now(timezone.utc)),
+                    creation_date=str(datetime.now(UTC)),
+                    update_date=str(datetime.now(UTC)),
                 )
             )
         session.commit()

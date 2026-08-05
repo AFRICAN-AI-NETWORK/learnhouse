@@ -15,8 +15,9 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlmodel import Session, select
 
 from src.core.events.database import engine
-from src.services.referrals.referral_commissions import \
-    update_pending_commissions_to_eligible
+from src.services.referrals.referral_commissions import (
+    update_pending_commissions_to_eligible,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +72,7 @@ def _sync_process_commissions() -> dict:
 
 def _sync_process_payouts() -> dict:
     """Process payout requests on a worker thread."""
-    from src.db.referrals.payout_requests import (PayoutStatus,
-                                                  ReferrerPayoutRequest)
+    from src.db.referrals.payout_requests import PayoutStatus, ReferrerPayoutRequest
     from src.services.referrals.payouts import process_payout_request
 
     start = time.monotonic()
@@ -92,7 +92,7 @@ def _sync_process_payouts() -> dict:
             try:
                 _safe_asyncio_run(process_payout_request(payout.id, db_session))
                 processed_count += 1
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.exception(
                     "Error processing payout %s: %s", payout.id, e, exc_info=True
                 )
@@ -145,7 +145,7 @@ async def process_payout_requests_job():
             result["processed_count"],
             result["failed_count"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception("Payout processing job failed: %s", e)
 
 

@@ -1,13 +1,15 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 
-from src.db.courses.course_updates import (CourseUpdate, CourseUpdateCreate,
-                                           CourseUpdateRead,
-                                           CourseUpdateUpdate)
+from src.db.courses.course_updates import (
+    CourseUpdate,
+    CourseUpdateCreate,
+    CourseUpdateRead,
+    CourseUpdateUpdate,
+)
 from src.db.courses.courses import Course
 from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
@@ -50,8 +52,8 @@ async def create_update(
         **update_object.model_dump(),
         course_id=course.id,
         courseupdate_uuid=courseupdate_uuid,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(update)
@@ -131,7 +133,7 @@ async def get_updates_by_course_uuid(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[CourseUpdateRead]:
+) -> list[CourseUpdateRead]:
     # FInd if course exists
     statement = select(Course).where(Course.course_uuid == course_uuid)
     course = db_session.exec(statement).first()

@@ -1,28 +1,29 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, col, select
 
 from src.db.courses.courses import Course
-from src.db.courses.schedules import (CourseRegisterEntry,
-                                      CourseRegisterEntryRead,
-                                      CourseRegisterEntryUpdate,
-                                      CourseRegisterPeriodRead,
-                                      CourseRegisterPolicy,
-                                      CourseRegisterPolicyRead,
-                                      CourseRegisterPolicyUpdate,
-                                      CourseRegisterSummaryRead,
-                                      CourseTimetableEvent,
-                                      CourseTimetableEventCreate,
-                                      CourseTimetableEventRead,
-                                      CourseTimetableEventUpdate,
-                                      RegisterEntryMethodEnum,
-                                      RegisterEntryStatusEnum,
-                                      RegisterFrequencyEnum,
-                                      StudentTimetableEventRead,
-                                      TimetableVisibilityEnum)
+from src.db.courses.schedules import (
+    CourseRegisterEntry,
+    CourseRegisterEntryRead,
+    CourseRegisterEntryUpdate,
+    CourseRegisterPeriodRead,
+    CourseRegisterPolicy,
+    CourseRegisterPolicyRead,
+    CourseRegisterPolicyUpdate,
+    CourseRegisterSummaryRead,
+    CourseTimetableEvent,
+    CourseTimetableEventCreate,
+    CourseTimetableEventRead,
+    CourseTimetableEventUpdate,
+    RegisterEntryMethodEnum,
+    RegisterEntryStatusEnum,
+    RegisterFrequencyEnum,
+    StudentTimetableEventRead,
+    TimetableVisibilityEnum,
+)
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check
 
@@ -108,7 +109,7 @@ async def create_timetable_event(
     )
     _validate_timetable_event(event_object)
 
-    now = str(datetime.now(timezone.utc))
+    now = str(datetime.now(UTC))
     event = CourseTimetableEvent(
         **event_object.model_dump(),
         event_uuid=f"timetable_event_{uuid4()}",
@@ -147,7 +148,7 @@ async def update_timetable_event(
     event = _get_event_or_404(course_uuid, event_uuid, db_session)
     for key, value in event_object.model_dump().items():
         setattr(event, key, value)
-    event.update_date = str(datetime.now(timezone.utc))
+    event.update_date = str(datetime.now(UTC))
 
     db_session.add(event)
     db_session.commit()
@@ -213,7 +214,7 @@ async def update_register_policy(
         if key == "course_uuid":
             continue
         setattr(policy, key, value)
-    policy.update_date = str(datetime.now(timezone.utc))
+    policy.update_date = str(datetime.now(UTC))
 
     db_session.add(policy)
     db_session.commit()
@@ -342,10 +343,10 @@ async def get_register_entries(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-    user_id: Optional[int] = None,
-    status_filter: Optional[RegisterEntryStatusEnum] = None,
-    period_start: Optional[str] = None,
-    period_end: Optional[str] = None,
+    user_id: int | None = None,
+    status_filter: RegisterEntryStatusEnum | None = None,
+    period_start: str | None = None,
+    period_end: str | None = None,
 ) -> list[CourseRegisterEntryRead]:
     await _get_course_or_404(course_uuid, db_session)
     await courses_rbac_check(
@@ -405,7 +406,7 @@ async def update_register_entry(
         if value is not None:
             setattr(entry, key, value)
     entry.method = RegisterEntryMethodEnum.instructor_override
-    entry.update_date = str(datetime.now(timezone.utc))
+    entry.update_date = str(datetime.now(UTC))
 
     db_session.add(entry)
     db_session.commit()
@@ -466,7 +467,7 @@ def _get_or_create_register_policy(
     if policy:
         return policy
 
-    now = str(datetime.now(timezone.utc))
+    now = str(datetime.now(UTC))
     policy = CourseRegisterPolicy(
         policy_uuid=f"register_policy_{uuid4()}",
         course_uuid=course.course_uuid,
@@ -592,7 +593,7 @@ def _resolve_current_timetable_event(
     course_uuid: str,
     policy: CourseRegisterPolicy,
     db_session: Session,
-) -> Optional[CourseTimetableEvent]:
+) -> CourseTimetableEvent | None:
     statement = select(CourseTimetableEvent).where(
         CourseTimetableEvent.course_uuid == course_uuid
     )
@@ -605,7 +606,7 @@ def _resolve_current_timetable_event(
 
     now = _utcnow()
     events = db_session.exec(
-        statement.where(CourseTimetableEvent.register_required == True)  # noqa: E712
+        statement.where(CourseTimetableEvent.register_required == True)
         .where(CourseTimetableEvent.visibility == TimetableVisibilityEnum.published)
         .order_by(col(CourseTimetableEvent.starts_at).asc())
     ).all()
@@ -625,7 +626,7 @@ def current_period_timetable_event_uuid(
     policy: CourseRegisterPolicy,
     course_uuid: str,
     db_session: Session,
-) -> Optional[str]:
+) -> str | None:
     event = _resolve_current_timetable_event(course_uuid, policy, db_session)
     return event.event_uuid if event else None
 
@@ -635,9 +636,9 @@ def _get_entry_for_period(
     user_id: int,
     period_start: str,
     period_end: str,
-    timetable_event_uuid: Optional[str],
+    timetable_event_uuid: str | None,
     db_session: Session,
-) -> Optional[CourseRegisterEntry]:
+) -> CourseRegisterEntry | None:
     statement = (
         select(CourseRegisterEntry)
         .where(CourseRegisterEntry.course_uuid == course_uuid)
@@ -650,7 +651,7 @@ def _get_entry_for_period(
             CourseRegisterEntry.timetable_event_uuid == timetable_event_uuid
         )
     else:
-        statement = statement.where(CourseRegisterEntry.timetable_event_uuid == None)  # noqa: E711
+        statement = statement.where(CourseRegisterEntry.timetable_event_uuid == None)
 
     return db_session.exec(statement).first()
 
@@ -659,13 +660,13 @@ def _parse_datetime(value: str) -> datetime:
     normalized = value.replace("Z", "+00:00")
     parsed = datetime.fromisoformat(normalized)
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _datetime_to_api_string(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")

@@ -1,15 +1,16 @@
-from typing import List
 
 from fastapi import APIRouter, Depends, Request
 
 from src.core.events.database import get_db_session
-from src.db.collections import (CollectionCreate, CollectionRead,
-                                CollectionUpdate)
+from src.db.collections import CollectionCreate, CollectionRead, CollectionUpdate
 from src.security.auth import get_current_user
-from src.services.courses.collections import (create_collection,
-                                              delete_collection,
-                                              get_collection, get_collections,
-                                              update_collection)
+from src.services.courses.collections import (
+    create_collection,
+    delete_collection,
+    get_collection,
+    get_collections,
+    update_collection,
+)
 from src.services.users.users import PublicUser
 
 router = APIRouter()
@@ -49,7 +50,7 @@ async def api_get_collections_by(
     org_id: str,
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
-) -> List[CollectionRead]:
+) -> list[CollectionRead]:
     """
     Get collections by page and limit
     """

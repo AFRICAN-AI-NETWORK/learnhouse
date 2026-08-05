@@ -9,9 +9,11 @@ from sqlmodel import Session, SQLModel
 from config.config import get_learnhouse_config
 from src.db.organizations import OrganizationCreate
 from src.db.users import UserCreate
-from src.services.setup.setup import (install_create_organization,
-                                      install_create_organization_user,
-                                      install_default_elements)
+from src.services.setup.setup import (
+    install_create_organization,
+    install_create_organization_user,
+    install_default_elements,
+)
 
 cli = typer.Typer()
 
@@ -79,7 +81,7 @@ def install(
 
         # Show the user how to login
         print("Installation completed ✅")
-        print("")
+        print()
         print("Login with the following credentials:")
         print("email: " + email)
         print("password: (the password you set in LEARNHOUSE_INITIAL_ADMIN_PASSWORD)")
@@ -121,7 +123,7 @@ def install(
 
         # Show the user how to login
         print("Installation completed ✅")
-        print("")
+        print()
         print("Login with the following credentials:")
         print("email: " + email)
         print("password: The password you entered")

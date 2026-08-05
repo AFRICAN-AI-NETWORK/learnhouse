@@ -10,16 +10,16 @@ certificate gate in check_course_completion_and_create_certificate() only
 blocks issuance for courses that explicitly opt an assignment in.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "5c4fe3ba3606"
-down_revision: Union[str, None] = "eb0b6f06c6d3"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "eb0b6f06c6d3"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _column_exists(table_name: str, column_name: str) -> bool:

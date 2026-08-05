@@ -1,12 +1,14 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, and_, select
 
 from src.db.courses.courses import Course
-from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
-                                     ResourceAuthorshipStatusEnum)
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.courses_security import courses_rbac_check
 from src.security.rbac.rbac import authorization_verify_if_user_is_anon
@@ -61,8 +63,8 @@ async def apply_course_contributor(
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CONTRIBUTOR,
         authorship_status=ResourceAuthorshipStatusEnum.PENDING,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(resource_author)
@@ -134,7 +136,7 @@ async def update_course_contributor(
     # Update the contributor's role and status
     existing_authorship.authorship = authorship
     existing_authorship.authorship_status = authorship_status
-    existing_authorship.update_date = str(datetime.now(timezone.utc))
+    existing_authorship.update_date = str(datetime.now(UTC))
 
     db_session.add(existing_authorship)
     db_session.commit()
@@ -148,7 +150,7 @@ async def get_course_contributors(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[dict]:
+) -> list[dict]:
     """
     Get all contributors for a course with their user information
 
@@ -193,7 +195,7 @@ async def get_course_contributors(
 async def add_bulk_course_contributors(
     request: Request,
     course_uuid: str,
-    usernames: List[str],
+    usernames: list[str],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):
@@ -224,7 +226,7 @@ async def add_bulk_course_contributors(
     # Process results
     results = {"successful": [], "failed": []}
 
-    current_time = str(datetime.now(timezone.utc))
+    current_time = str(datetime.now(UTC))
 
     for username in usernames:
         try:
@@ -282,7 +284,7 @@ async def add_bulk_course_contributors(
 async def remove_bulk_course_contributors(
     request: Request,
     course_uuid: str,
-    usernames: List[str],
+    usernames: list[str],
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ):

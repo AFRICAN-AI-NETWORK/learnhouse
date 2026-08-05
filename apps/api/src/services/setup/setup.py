@@ -1,23 +1,38 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from src.db.organization_config import (AIOrgConfig, AnalyticsOrgConfig,
-                                        APIOrgConfig, AssignmentOrgConfig,
-                                        CollaborationOrgConfig,
-                                        CourseOrgConfig, DiscussionOrgConfig,
-                                        MemberOrgConfig, OrganizationConfig,
-                                        OrganizationConfigBase, OrgCloudConfig,
-                                        OrgFeatureConfig, OrgGeneralConfig,
-                                        PaymentOrgConfig, StorageOrgConfig,
-                                        UserGroupOrgConfig)
+from src.db.organization_config import (
+    AIOrgConfig,
+    AnalyticsOrgConfig,
+    APIOrgConfig,
+    AssignmentOrgConfig,
+    CollaborationOrgConfig,
+    CourseOrgConfig,
+    DiscussionOrgConfig,
+    MemberOrgConfig,
+    OrganizationConfig,
+    OrganizationConfigBase,
+    OrgCloudConfig,
+    OrgFeatureConfig,
+    OrgGeneralConfig,
+    PaymentOrgConfig,
+    StorageOrgConfig,
+    UserGroupOrgConfig,
+)
 from src.db.organizations import Organization, OrganizationCreate
-from src.db.roles import (AffiliationPermission, DashboardPermission,
-                          Permission, PermissionsWithOwn, Rights, Role,
-                          RoleTypeEnum)
+from src.db.roles import (
+    AffiliationPermission,
+    DashboardPermission,
+    Permission,
+    PermissionsWithOwn,
+    Rights,
+    Role,
+    RoleTypeEnum,
+)
 from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate, UserRead
 from src.security.security import security_hash_password
@@ -120,8 +135,8 @@ def install_default_elements(db_session: Session):
                 action_access=True,
             ),
         ),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_global_maintainer = Role(
@@ -198,8 +213,8 @@ def install_default_elements(db_session: Session):
                 action_access=True,
             ),
         ),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_global_instructor = Role(
@@ -276,8 +291,8 @@ def install_default_elements(db_session: Session):
                 action_access=True,
             ),
         ),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_global_user = Role(
@@ -354,8 +369,8 @@ def install_default_elements(db_session: Session):
                 action_access=False,
             ),
         ),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_partner = Role(
@@ -431,8 +446,8 @@ def install_default_elements(db_session: Session):
             dashboard=DashboardPermission(action_access=False),
             affiliation=AffiliationPermission(action_read=True),
         ),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # ── Shared rights blocks reused by support roles ───────────────────────────
@@ -580,8 +595,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_teaching_assistant",
         rights=_teaching_rights,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_student_success_coordinator = Role(
@@ -613,8 +628,8 @@ def install_default_elements(db_session: Session):
             announcements=_read_only_rights.announcements,
             dashboard=DashboardPermission(action_access=True),
         ),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_student_mentor = Role(
@@ -624,8 +639,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_student_mentor",
         rights=_read_only_rights,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_community_manager = Role(
@@ -635,8 +650,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_community_manager",
         rights=_teaching_rights,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_lead_instructor = Role(
@@ -646,8 +661,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_lead_instructor",
         rights=_teaching_rights,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # Serialize rights to JSON
@@ -691,8 +706,8 @@ def install_create_organization(org_object: OrganizationCreate, db_session: Sess
 
     # Complete the org object
     org.org_uuid = f"org_{uuid4()}"
-    org.creation_date = str(datetime.now(timezone.utc))
-    org.update_date = str(datetime.now(timezone.utc))
+    org.creation_date = str(datetime.now(UTC))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -731,8 +746,8 @@ def install_create_organization(org_object: OrganizationCreate, db_session: Sess
     org_settings = OrganizationConfig(
         org_id=int(org.id if org.id else 0),
         config=org_config,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(org_settings)
@@ -751,8 +766,8 @@ def install_create_organization_user(
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
-    user.creation_date = str(datetime.now(timezone.utc))
-    user.update_date = str(datetime.now(timezone.utc))
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Verifications
 
@@ -807,8 +822,8 @@ def install_create_organization_user(
         user_id=user.id if user.id else 0,
         org_id=org_id or 0,
         role_id=1,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_organization)

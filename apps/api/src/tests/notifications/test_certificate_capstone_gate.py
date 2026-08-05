@@ -6,17 +6,19 @@ Tests for the capstone-grading gate on certificate issuance:
   assignment has been graded.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 from sqlmodel import Session, select
 
-from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
-                                       ActivityTypeEnum)
-from src.db.courses.assignments import (Assignment, AssignmentUserSubmission,
-                                        AssignmentUserSubmissionStatus,
-                                        GradingTypeEnum)
+from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentUserSubmission,
+    AssignmentUserSubmissionStatus,
+    GradingTypeEnum,
+)
 from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.trail_runs import TrailRun
@@ -25,7 +27,8 @@ from src.db.trails import Trail
 from src.db.users import User
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
-    has_ungraded_required_assignments)
+    has_ungraded_required_assignments,
+)
 
 
 def _make_assignment(session: Session, course, required: bool) -> Assignment:
@@ -41,8 +44,8 @@ def _make_assignment(session: Session, course, required: bool) -> Assignment:
         chapter_id=1,
         activity_id=1,
         assignment_uuid=f"assignment_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(assignment)
     session.commit()
@@ -63,8 +66,8 @@ def _make_submission(
         user_id=user.id,
         assignment_id=assignment.id,
         assignmentusersubmission_uuid=f"submission_{uuid4()}",
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(submission)
     session.commit()
@@ -133,8 +136,8 @@ class TestCertificateGateIntegration:
             org_id=course.org_id,
             course_id=course.id,
             activity_uuid=f"activity_{uuid4()}",
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(activity)
         session.commit()
@@ -147,8 +150,8 @@ class TestCertificateGateIntegration:
                 activity_id=activity.id,
                 course_id=course.id,
                 org_id=course.org_id,
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
         )
         session.commit()
@@ -157,8 +160,8 @@ class TestCertificateGateIntegration:
             org_id=course.org_id,
             user_id=user.id,
             trail_uuid=f"trail_{uuid4()}",
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(trail)
         session.commit()
@@ -169,8 +172,8 @@ class TestCertificateGateIntegration:
             course_id=course.id,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(trail_run)
         session.commit()
@@ -187,8 +190,8 @@ class TestCertificateGateIntegration:
                 course_id=course.id,
                 org_id=course.org_id,
                 user_id=user.id,
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
         )
         session.commit()
@@ -197,8 +200,8 @@ class TestCertificateGateIntegration:
             Certifications(
                 course_id=course.id,
                 certification_uuid=f"certification_{uuid4()}",
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
         )
         session.commit()

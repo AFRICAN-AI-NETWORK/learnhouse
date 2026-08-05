@@ -1,6 +1,6 @@
 """Critical end-to-end tests for chat system."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -10,8 +10,7 @@ from src.db.chat.messages import MessageCreate
 from src.db.organizations import Organization
 from src.db.users import User
 from src.services.chat.conversation_service import ConversationService
-from src.services.chat.message_service import (MessageService,
-                                               ReadReceiptService)
+from src.services.chat.message_service import MessageService, ReadReceiptService
 
 
 class TestCriticalChatFlows:
@@ -341,8 +340,8 @@ class TestCriticalChatFlows:
                 password="hashed",
                 first_name="Instructor",
                 last_name=f"Number{i}",
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
             session.add(instructor)
             session.commit()
@@ -360,8 +359,8 @@ class TestCriticalChatFlows:
                 user_id=instructor.id,
                 org_id=org.id,
                 role_id=instructor_role.id,
-                creation_date=str(datetime.now(timezone.utc)),
-                update_date=str(datetime.now(timezone.utc)),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
             session.add(user_org)
             session.commit()
@@ -474,7 +473,7 @@ class TestCriticalErrorScenarios:
             reply_to_message_id=0,  # Critical: This should not cause error
         )
 
-        # Should not raise exception
+        # Should not raise
         message = await MessageService.create_message(
             db=session,
             message_data=message_data,

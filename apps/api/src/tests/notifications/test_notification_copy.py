@@ -6,9 +6,14 @@ input -> expected string assertion.
 """
 
 from src.services.notifications.notification_copy import (
-    FEEDBACK_PREVIEW_LENGTH, activity_added_copy, app_update_copy,
-    assignment_reviewed_copy, chapter_added_copy, retake_requested_copy,
-    truncate)
+    FEEDBACK_PREVIEW_LENGTH,
+    activity_added_copy,
+    app_update_copy,
+    assignment_reviewed_copy,
+    chapter_added_copy,
+    retake_requested_copy,
+    truncate,
+)
 
 
 class TestTruncate:

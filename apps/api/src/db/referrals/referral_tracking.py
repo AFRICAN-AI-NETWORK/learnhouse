@@ -4,17 +4,15 @@ Tracks signup events with referral codes for fraud prevention
 """
 
 from datetime import datetime
-from typing import Optional
 
-from sqlmodel import (JSON, BigInteger, Column, Field, ForeignKey, Index,
-                      SQLModel)
+from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, Index, SQLModel
 
 
 class ReferralTrackingBase(SQLModel):
     """Base model for referral tracking"""
 
     ip_address: str = Field(max_length=50, index=True)
-    device_id: Optional[str] = Field(
+    device_id: str | None = Field(
         default=None, max_length=64, index=True
     )  # SHA-256 hash
     browser_fingerprint: dict = Field(default={}, sa_column=Column(JSON))
@@ -35,7 +33,7 @@ class ReferralTracking(ReferralTrackingBase, table=True):
         Index("idx_referraltracking_unique_user", "referred_user_id", unique=True),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     referred_user_id: int = Field(
         sa_column=Column(
             BigInteger, ForeignKey("user.id", ondelete="CASCADE"), nullable=False
@@ -75,6 +73,6 @@ class ReferralTrackingCreate(SQLModel):
     referral_code_id: int
     referrer_user_id: int
     ip_address: str
-    device_id: Optional[str] = None
+    device_id: str | None = None
     browser_fingerprint: dict = {}
     fraud_score: int = 0

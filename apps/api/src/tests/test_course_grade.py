@@ -10,20 +10,22 @@ Layers covered:
     `get_course_grade_for_user` service orchestration.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
-from src.db.courses.activities import (Activity, ActivitySubTypeEnum,
-                                       ActivityTypeEnum)
-from src.db.courses.assignments import (Assignment, AssignmentTask,
-                                        AssignmentTaskTypeEnum,
-                                        AssignmentUserSubmission,
-                                        AssignmentUserSubmissionStatus,
-                                        GradingTypeEnum)
+from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentTask,
+    AssignmentTaskTypeEnum,
+    AssignmentUserSubmission,
+    AssignmentUserSubmissionStatus,
+    GradingTypeEnum,
+)
 from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter  # noqa: F401
@@ -32,12 +34,15 @@ from src.db.organizations import Organization  # noqa: F401
 from src.db.trail_runs import TrailRun
 from src.db.trail_steps import TrailStep
 from src.db.trails import Trail  # noqa: F401
+
 # Import every model module touched so create_all builds the full schema.
-from src.db.users import AnonymousUser, User  # noqa: F401
-from src.services.courses.grade import (LATE_PENALTY_MULTIPLIER,
-                                        compute_course_grade,
-                                        get_activity_weighted_points_earned,
-                                        normalized_assignment_score)
+from src.db.users import AnonymousUser, User
+from src.services.courses.grade import (
+    LATE_PENALTY_MULTIPLIER,
+    compute_course_grade,
+    get_activity_weighted_points_earned,
+    normalized_assignment_score,
+)
 
 # ─────────────────────────── DB fixture ────────────────────────────
 
@@ -57,7 +62,7 @@ def db_fixture():
 
 # ─────────────────────────── Seed helpers ──────────────────────────
 
-_NOW = str(datetime.now(timezone.utc))
+_NOW = str(datetime.now(UTC))
 _ORG_ID = 1
 _COURSE_ID = 100
 _CHAPTER_ID = 10
@@ -417,8 +422,9 @@ class TestCertificateStoresGrade:
     async def test_certificate_stores_grade(self, db):
         from unittest.mock import Mock
 
-        from src.services.courses.certifications import \
-            check_course_completion_and_create_certificate
+        from src.services.courses.certifications import (
+            check_course_completion_and_create_certificate,
+        )
 
         _make_course(db)
         _make_activity(db, 1, 100)

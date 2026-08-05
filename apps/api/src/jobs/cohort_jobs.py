@@ -5,7 +5,7 @@ This module contains scheduled jobs for processing cohort unlocking.
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 
@@ -19,7 +19,7 @@ async def process_cohort_unlocks(db_session: Session):
     """
     Checks for cohorts that have reached their start_date and unlocks them.
     """
-    current_time_utc = datetime.now(timezone.utc)
+    current_time_utc = datetime.now(UTC)
 
     # Get all upcoming cohorts
     statement = select(Cohort).where(Cohort.status == CohortStatusEnum.UPCOMING)
@@ -27,16 +27,16 @@ async def process_cohort_unlocks(db_session: Session):
 
     for cohort in cohorts:
         try:
-            start_dt = datetime.fromisoformat(cohort.start_date.replace("Z", "+00:00"))
+            start_dt = datetime.fromisoformat(cohort.start_date)
             if start_dt.tzinfo is None:
-                start_dt = start_dt.replace(tzinfo=timezone.utc)
+                start_dt = start_dt.replace(tzinfo=UTC)
             else:
-                start_dt = start_dt.astimezone(timezone.utc)
+                start_dt = start_dt.astimezone(UTC)
 
             if current_time_utc >= start_dt:
                 # Unlock cohort
                 cohort.status = CohortStatusEnum.ACTIVE
-                cohort.update_date = str(datetime.now(timezone.utc))
+                cohort.update_date = str(datetime.now(UTC))
                 db_session.add(cohort)
 
                 # Unlock all enrollments in this cohort

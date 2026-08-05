@@ -1,6 +1,6 @@
 """Fixtures for student dashboard (admin analytics) tests."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -8,24 +8,23 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.pool import StaticPool
 
-from src.db.courses.activities import (Activity,  # noqa: F401
-                                       ActivitySubTypeEnum, ActivityTypeEnum)
-from src.db.courses.certifications import (CertificateUser,  # noqa: F401
-                                           Certifications)
-from src.db.courses.chapter_activities import ChapterActivity  # noqa: F401
-from src.db.courses.chapters import Chapter  # noqa: F401
-from src.db.courses.courses import Course  # noqa: F401
-from src.db.organizations import Organization  # noqa: F401
-from src.db.roles import Role  # noqa: F401
+from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
+from src.db.courses.certifications import CertificateUser, Certifications  # noqa: F401
+from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
+from src.db.courses.courses import Course
+from src.db.organizations import Organization
+from src.db.roles import Role
 from src.db.trail_runs import StatusEnum, TrailRun  # noqa: F401
-from src.db.trail_sessions import TrailActivitySession  # noqa: F401
-from src.db.trail_steps import TrailStep  # noqa: F401
-from src.db.trails import Trail  # noqa: F401
-from src.db.user_organizations import UserOrganization  # noqa: F401
-# Import every table model so SQLModel.metadata registers them for create_all().
-from src.db.users import User  # noqa: F401
+from src.db.trail_sessions import TrailActivitySession
+from src.db.trail_steps import TrailStep
+from src.db.trails import Trail
+from src.db.user_organizations import UserOrganization
 
-NOW = str(datetime.now(timezone.utc))
+# Import every table model so SQLModel.metadata registers them for create_all().
+from src.db.users import User
+
+NOW = str(datetime.now(UTC))
 
 
 @pytest.fixture(name="session", scope="function")
@@ -324,4 +323,4 @@ def add_time(
 
 @pytest.fixture(name="recent")
 def recent_timestamp():
-    return str(datetime.now(timezone.utc) - timedelta(seconds=5))
+    return str(datetime.now(UTC) - timedelta(seconds=5))

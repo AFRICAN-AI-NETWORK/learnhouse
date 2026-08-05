@@ -56,7 +56,7 @@ async def fanout_chapter_added(chapter_id: int, db_session: Session) -> int:
                 course_title=course.name,
             )
             sent += 1
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.exception(
                 "Failed to notify user %s of new chapter %s: %s",
                 user_id,
@@ -100,7 +100,7 @@ async def fanout_activity_added(activity_id: int, db_session: Session) -> int:
                 course_title=course.name,
             )
             sent += 1
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.exception(
                 "Failed to notify user %s of new activity %s: %s",
                 user_id,
@@ -158,7 +158,7 @@ async def fanout_app_update(
                 user_id,
             )
             sent += 1
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.exception(
                 "Failed to push announcement %s to user %s: %s",
                 announcement_id,

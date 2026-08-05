@@ -3,7 +3,7 @@ Comprehensive unit tests for referral code service
 Tests code generation, validation, uniqueness, and CRUD operations
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -13,10 +13,16 @@ from sqlmodel import Session
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
 from src.db.users import PublicUser, User
 from src.services.referrals.referral_codes import (
-    REFERRAL_CODE_LENGTH, REFERRAL_CODE_MAX_ATTEMPTS, build_referral_link,
-    create_referral_code_for_user, generate_unique_code, get_my_referral_code,
-    get_referral_code_by_code, get_referral_code_by_user,
-    validate_referral_code_exists)
+    REFERRAL_CODE_LENGTH,
+    REFERRAL_CODE_MAX_ATTEMPTS,
+    build_referral_link,
+    create_referral_code_for_user,
+    generate_unique_code,
+    get_my_referral_code,
+    get_referral_code_by_code,
+    get_referral_code_by_user,
+    validate_referral_code_exists,
+)
 
 
 class TestGenerateUniqueCode:
@@ -103,8 +109,8 @@ class TestGetReferralCodeByCode:
             code="TEST123",
             referral_link="http://localhost:3000/ref/TEST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         mock_session.exec.return_value.first.return_value = mock_code
 
@@ -135,8 +141,8 @@ class TestGetReferralCodeByCode:
             code="TEST123",
             referral_link="http://localhost:3000/ref/TEST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         mock_session.exec.return_value.first.return_value = mock_code
 
@@ -161,8 +167,8 @@ class TestGetReferralCodeByUser:
             code="USER123",
             referral_link="http://localhost:3000/ref/USER123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         mock_session.exec.return_value.first.return_value = mock_code
 
@@ -197,8 +203,8 @@ class TestValidateReferralCodeExists:
             code="VALID123",
             referral_link="http://localhost:3000/ref/VALID123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         mock_session.exec.return_value.first.return_value = mock_code
 
@@ -230,8 +236,8 @@ class TestValidateReferralCodeExists:
             code="INACTIVE",
             referral_link="http://localhost:3000/ref/INACTIVE",
             status=ReferralCodeStatus.INACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         mock_session.exec.return_value.first.return_value = mock_code
 
@@ -290,8 +296,8 @@ class TestCreateReferralCodeForUser:
             code="EXIST123",
             referral_link="http://localhost:3000/ref/EXIST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         # Mock: User already has a code
@@ -414,8 +420,8 @@ class TestGetMyReferralCode:
             code="MY123",
             referral_link="http://localhost:3000/ref/MY123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
         mock_session.exec.return_value.first.return_value = mock_code
 

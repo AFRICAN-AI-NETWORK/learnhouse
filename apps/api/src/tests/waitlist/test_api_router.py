@@ -1,6 +1,6 @@
 """Unit tests for waitlist API router endpoints"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -21,7 +21,7 @@ class TestWaitlistConfigEndpoints:
         from src.db.waitlist import WaitlistConfigCreate, WaitlistConfigRead
 
         # Mock service response
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=30)).isoformat()
         mock_response = WaitlistConfigRead(
             id=1,
             waitlist_uuid="test-uuid",
@@ -32,8 +32,8 @@ class TestWaitlistConfigEndpoints:
             status="ACTIVE",
             total_registrations=0,
             emails_sent_count=0,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         mock_create.return_value = mock_response
 
@@ -61,12 +61,12 @@ class TestWaitlistConfigEndpoints:
             org_id=1,
             name="Test",
             interest_category="Cat",
-            launch_datetime=datetime.now(timezone.utc).isoformat(),
+            launch_datetime=datetime.now(UTC).isoformat(),
             status="ACTIVE",
             total_registrations=5,
             emails_sent_count=0,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         mock_get.return_value = mock_response
 
@@ -146,12 +146,12 @@ class TestWaitlistUpdateEndpoints:
             org_id=1,
             name="Updated Name",
             interest_category="Cat",
-            launch_datetime=datetime.now(timezone.utc).isoformat(),
+            launch_datetime=datetime.now(UTC).isoformat(),
             status="ACTIVE",
             total_registrations=5,
             emails_sent_count=0,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         mock_update.return_value = mock_response
 

@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Optional
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlmodel import Session
@@ -15,7 +15,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
+async def verify_websocket_token(token: str, db: Session) -> int | None:
     """
     Verify JWT token for WebSocket connection.
     Returns user_id if valid, None otherwise.
@@ -70,8 +70,8 @@ async def create_ws_ticket(
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    token: Optional[str] = Query(None, description="JWT authentication token (legacy)"),
-    ticket: Optional[str] = Query(
+    token: str | None = Query(None, description="JWT authentication token (legacy)"),
+    ticket: str | None = Query(
         None, description="Single-use WebSocket ticket (preferred)"
     ),
     db: Session = Depends(get_db_session),
@@ -142,8 +142,7 @@ async def websocket_endpoint(
                 from sqlmodel import select
 
                 from src.db.chat.conversations import Conversation
-                from src.services.chat.typing_indicator import \
-                    TypingIndicatorService
+                from src.services.chat.typing_indicator import TypingIndicatorService
 
                 conversation = db.exec(
                     select(Conversation).where(
@@ -180,8 +179,7 @@ async def websocket_endpoint(
                 from sqlmodel import select
 
                 from src.db.chat.conversations import Conversation
-                from src.services.chat.typing_indicator import \
-                    TypingIndicatorService
+                from src.services.chat.typing_indicator import TypingIndicatorService
 
                 conversation = db.exec(
                     select(Conversation).where(
@@ -215,13 +213,12 @@ async def websocket_endpoint(
 
             elif message_type == "mark_read":
                 message_uuid = payload.get("message_uuid")
-                from datetime import datetime, timezone
+                from datetime import datetime
 
                 from sqlmodel import select
 
                 from src.db.chat.messages import Message
-                from src.services.chat.message_service import \
-                    ReadReceiptService
+                from src.services.chat.message_service import ReadReceiptService
 
                 await ReadReceiptService.mark_as_read(db, message_uuid, user_id)
 
@@ -236,7 +233,7 @@ async def websocket_endpoint(
                             "data": {
                                 "message_uuid": message_uuid,
                                 "read_by": user_id,
-                                "read_at": datetime.now(timezone.utc).isoformat(),
+                                "read_at": datetime.now(UTC).isoformat(),
                             },
                         },
                         msg.sender_id,

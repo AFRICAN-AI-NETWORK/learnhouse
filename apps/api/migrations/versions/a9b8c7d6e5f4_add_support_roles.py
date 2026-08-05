@@ -8,16 +8,16 @@ Create Date: 2026-03-15 00:00:00.000000
 """
 
 import json
-from datetime import datetime, timezone
-from typing import Sequence, Union
+from collections.abc import Sequence
+from datetime import UTC, datetime
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a9b8c7d6e5f4"
-down_revision: Union[str, None] = "f2b3c4d5e6f7"
-branch_labels: Union[str, Sequence[str], None] = None
+down_revision: str | None = "f2b3c4d5e6f7"
+branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 # ── Rights JSON payloads ───────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ _COORDINATOR_RIGHTS = {
     "dashboard": {"action_access": True},
 }
 
-_NOW = str(datetime.now(timezone.utc))
+_NOW = str(datetime.now(UTC))
 
 _NEW_ROLES = [
     {

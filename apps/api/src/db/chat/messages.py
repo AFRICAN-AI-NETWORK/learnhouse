@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional, Union
 
 from pydantic import BaseModel
 from sqlalchemy import CheckConstraint, ForeignKey, UniqueConstraint
@@ -17,17 +16,17 @@ class MessageBase(SQLModel):
 class Message(MessageBase, table=True):
     __tablename__ = "message"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     message_uuid: str = Field(unique=True, index=True)
     is_edited: bool = False
-    edited_at: Optional[datetime] = None
+    edited_at: datetime | None = None
     is_deleted: bool = False
-    deleted_at: Optional[datetime] = None
-    deleted_by_user_id: Optional[int] = Field(
+    deleted_at: datetime | None = None
+    deleted_by_user_id: int | None = Field(
         default=None,
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
-    reply_to_message_id: Optional[int] = Field(
+    reply_to_message_id: int | None = Field(
         default=None,
         sa_column=Column(Integer, ForeignKey("message.id", ondelete="SET NULL")),
     )
@@ -43,13 +42,11 @@ class Message(MessageBase, table=True):
 
 
 class MessageCreate(BaseModel):
-    conversation_id: Union[
-        str, int
-    ]  # Accepts conversation UUID (e.g., conv_xxx) or integer
+    conversation_id: str | int  # Accepts conversation UUID (e.g., conv_xxx) or integer
     receiver_id: int
     content: str
     message_type: str = "text"
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: int | None = None
 
 
 class MessageUpdate(BaseModel):
@@ -64,16 +61,16 @@ class MessageRead(MessageBase):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
-    attachments: List[dict] = []
-    read_receipt: Optional[dict] = None
-    reply_to_message_id: Optional[int] = None
-    replied_message: Optional[dict] = None
+    attachments: list[dict] = []
+    read_receipt: dict | None = None
+    reply_to_message_id: int | None = None
+    replied_message: dict | None = None
 
 
 class MessageEditHistory(SQLModel, table=True):
     __tablename__ = "message_edit_history"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     message_id: int = Field(foreign_key="message.id", ondelete="CASCADE")
     previous_content: str
     edited_by_user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
@@ -83,11 +80,11 @@ class MessageEditHistory(SQLModel, table=True):
 class MessageReadReceipt(SQLModel, table=True):
     __tablename__ = "message_read_receipt"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     message_id: int = Field(foreign_key="message.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     delivered_at: datetime = Field(default_factory=datetime.utcnow)
-    read_at: Optional[datetime] = None
+    read_at: datetime | None = None
 
     __table_args__ = (
         UniqueConstraint(

@@ -9,7 +9,7 @@ def send_account_creation_email(
     user: UserRead,
     email: EmailStr,
     organization: OrganizationRead = None,
-    verification_token: str = None,
+    verification_token: str | None = None,
 ):
     """
     Send welcome email to new users with optional email verification

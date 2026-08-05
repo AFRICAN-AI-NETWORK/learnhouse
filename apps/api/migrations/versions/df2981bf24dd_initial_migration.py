@@ -6,7 +6,7 @@ Create Date: 2024-07-11 19:33:37.993767
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 import sqlmodel  # noqa: F401
@@ -16,9 +16,9 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = "df2981bf24dd"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def table_exists(table_name: str, conn) -> bool:
@@ -118,7 +118,7 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="CASCADE",
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             error_msg = str(e).lower()
             if "already exists" not in error_msg and "duplicate" not in error_msg:
                 raise  # Re-raise if it's a different error
@@ -145,7 +145,7 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="CASCADE",
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             error_msg = str(e).lower()
             if "already exists" not in error_msg and "duplicate" not in error_msg:
                 raise  # Re-raise if it's a different error

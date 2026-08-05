@@ -4,8 +4,7 @@ Implements multi-factor fraud detection (IP + device fingerprint)
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request, status
 from sqlmodel import Session, and_, case, func, select
@@ -54,7 +53,7 @@ def extract_ip_address(request: Request) -> str:
 
 async def calculate_fraud_risk_score(
     ip_address: str,
-    device_id: Optional[str],
+    device_id: str | None,
     referral_code_id: int,
     db_session: Session,
 ) -> int:
@@ -80,7 +79,7 @@ async def calculate_fraud_risk_score(
     """
     score = 0
 
-    time_threshold = datetime.now(timezone.utc) - timedelta(hours=FRAUD_TIME_WINDOW_HOURS)
+    time_threshold = datetime.now(UTC) - timedelta(hours=FRAUD_TIME_WINDOW_HOURS)
 
     statement = select(
         # Count same IP + same device (exact duplicate)
@@ -169,7 +168,7 @@ async def create_referral_tracking(
     referral_code_id: int,
     referrer_user_id: int,
     ip_address: str,
-    device_id: Optional[str],
+    device_id: str | None,
     browser_fingerprint: dict,
     db_session: Session,
     fraud_score: int = 0,
@@ -218,8 +217,8 @@ async def create_referral_tracking(
         browser_fingerprint=browser_fingerprint,
         fraud_score=fraud_score,
         registration_complete=True,
-        signup_date=datetime.now(timezone.utc),
-        creation_date=datetime.now(timezone.utc),
+        signup_date=datetime.now(UTC),
+        creation_date=datetime.now(UTC),
     )
 
     db_session.add(tracking)
@@ -238,7 +237,7 @@ async def validate_and_track_referral(
     request: Request,
     referred_user_id: int,
     referral_code: str,
-    device_id: Optional[str],
+    device_id: str | None,
     browser_fingerprint: dict,
     db_session: Session,
 ) -> tuple[ReferralCode, int]:

@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, validator
 from sqlalchemy import JSON, Column
@@ -13,11 +12,11 @@ class UserBase(SQLModel):
     first_name: str
     last_name: str
     email: EmailStr
-    phone_number: Optional[str] = None
-    avatar_image: Optional[str] = ""
-    bio: Optional[str] = ""
-    details: Optional[dict] = Field(default={}, sa_column=Column(JSON))
-    profile: Optional[dict] = Field(default={}, sa_column=Column(JSON))
+    phone_number: str | None = None
+    avatar_image: str | None = ""
+    bio: str | None = ""
+    details: dict | None = Field(default={}, sa_column=Column(JSON))
+    profile: dict | None = Field(default={}, sa_column=Column(JSON))
 
     @validator("phone_number", pre=True, always=False)
     def validate_phone_number(cls, value):
@@ -28,13 +27,13 @@ class UserCreate(UserBase):
     first_name: str = ""
     last_name: str = ""
     password: str
-    is_waitlist: Optional[bool] = False
-    waitlist_interest: Optional[str] = None
+    is_waitlist: bool | None = False
+    waitlist_interest: str | None = None
     # Referral system fields
-    referral_code: Optional[str] = None  # Optional referral code during signup
-    device_id: Optional[str] = None  # Device fingerprint hash
-    browser_fingerprint: Optional[dict] = None  # Full browser fingerprint
-    signup_type: Optional[str] = "student"  # "student" or "partner"
+    referral_code: str | None = None  # Optional referral code during signup
+    device_id: str | None = None  # Device fingerprint hash
+    browser_fingerprint: dict | None = None  # Full browser fingerprint
+    signup_type: str | None = "student"  # "student" or "partner"
 
 
 class SignupUserCreate(UserCreate):
@@ -47,14 +46,14 @@ class SignupUserCreate(UserCreate):
 
 class UserUpdate(UserBase):
     username: str
-    first_name: Optional[str]
-    last_name: Optional[str]
+    first_name: str | None
+    last_name: str | None
     email: str
-    phone_number: Optional[str] = None
-    avatar_image: Optional[str] = ""
-    bio: Optional[str] = ""
-    details: Optional[dict] = {}
-    profile: Optional[dict] = {}
+    phone_number: str | None = None
+    avatar_image: str | None = ""
+    bio: str | None = ""
+    details: dict | None = {}
+    profile: dict | None = {}
 
 
 class UserUpdatePassword(SQLModel):
@@ -65,9 +64,9 @@ class UserUpdatePassword(SQLModel):
 class UserRead(UserBase):
     id: int
     user_uuid: str
-    user_status: Optional[str] = "ACTIVE"
+    user_status: str | None = "ACTIVE"
     email_verified: bool = False
-    waitlist_interest: Optional[str] = None
+    waitlist_interest: str | None = None
 
 
 class PublicUser(UserRead):
@@ -99,14 +98,14 @@ class InternalUser(SQLModel):
 
 
 class User(UserBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     password: str = ""
     user_uuid: str = ""
     email_verified: bool = False
     user_status: str = Field(default="ACTIVE", index=True)
-    waitlist_interest: Optional[str] = None
-    waitlist_joined_date: Optional[str] = None
-    waitlist_activated_date: Optional[str] = None
+    waitlist_interest: str | None = None
+    waitlist_joined_date: str | None = None
+    waitlist_activated_date: str | None = None
     # Referral system fields
     referral_commission_balance: float = Field(default=0.0)
     has_referral_code: bool = Field(default=False)

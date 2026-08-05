@@ -1,12 +1,10 @@
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlmodel import Session, desc, select
 
-from src.db.cohorts import (Cohort, CohortCreate, CohortEnrollment,
-                            CohortStatusEnum)
+from src.db.cohorts import Cohort, CohortCreate, CohortEnrollment, CohortStatusEnum
 
 
 async def create_cohort(cohort_data: CohortCreate, db_session: Session) -> Cohort:
@@ -31,8 +29,8 @@ async def create_cohort(cohort_data: CohortCreate, db_session: Session) -> Cohor
         start_date=cohort_data.start_date,
         end_date=cohort_data.end_date,
         status=cohort_data.status,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(cohort)
@@ -41,7 +39,7 @@ async def create_cohort(cohort_data: CohortCreate, db_session: Session) -> Cohor
     return cohort
 
 
-async def get_org_cohorts(org_id: int, db_session: Session) -> List[Cohort]:
+async def get_org_cohorts(org_id: int, db_session: Session) -> list[Cohort]:
     statement = (
         select(Cohort)
         .where(Cohort.org_id == org_id)
@@ -50,7 +48,7 @@ async def get_org_cohorts(org_id: int, db_session: Session) -> List[Cohort]:
     return db_session.exec(statement).all()
 
 
-async def get_current_cohort(org_id: int, db_session: Session) -> Optional[Cohort]:
+async def get_current_cohort(org_id: int, db_session: Session) -> Cohort | None:
     # Try to find the first UPCOMING or ACTIVE cohort
     statement = (
         select(Cohort)
@@ -79,7 +77,7 @@ async def enroll_user_in_cohort(
     org_id: int,
     course_id: int,
     db_session: Session,
-    payment_user_id: Optional[int] = None,
+    payment_user_id: int | None = None,
 ) -> CohortEnrollment:
     cohort = await get_current_cohort(org_id, db_session)
     if not cohort:
@@ -103,7 +101,7 @@ async def enroll_user_in_cohort(
         course_id=course_id,
         payment_user_id=payment_user_id,
         enrollment_type="paid" if payment_user_id else "free",
-        enrolled_date=str(datetime.now(timezone.utc)),
+        enrolled_date=str(datetime.now(UTC)),
         is_locked=(cohort.status == CohortStatusEnum.UPCOMING),
     )
 
@@ -119,7 +117,7 @@ async def unlock_cohort(cohort_id: int, db_session: Session) -> Cohort:
         raise HTTPException(status_code=404, detail="Cohort not found")
 
     cohort.status = CohortStatusEnum.ACTIVE
-    cohort.update_date = str(datetime.now(timezone.utc))
+    cohort.update_date = str(datetime.now(UTC))
     db_session.add(cohort)
 
     # Unlock all enrollments

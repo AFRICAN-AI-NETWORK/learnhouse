@@ -6,10 +6,12 @@ Run these jobs to keep email domain lists up-to-date
 import logging
 
 from sqlmodel import Session
-
 from src.db.db import engine
+
 from src.services.referrals.fraud_prevention import (
-    seed_initial_domain_lists, update_disposable_email_list)
+    seed_initial_domain_lists,
+    update_disposable_email_list,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ async def seed_domain_lists_job():
         try:
             await seed_initial_domain_lists(session)
             logger.info("Domain list seeding completed")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.exception(f"Domain list seeding failed: {e}")
 
 

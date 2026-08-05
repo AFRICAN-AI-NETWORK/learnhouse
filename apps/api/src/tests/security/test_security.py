@@ -1,6 +1,10 @@
-from src.security.security import (ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM,
-                                   SECRET_KEY, security_hash_password,
-                                   security_verify_password)
+from src.security.security import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
+    SECRET_KEY,
+    security_hash_password,
+    security_verify_password,
+)
 
 
 class TestSecurity:

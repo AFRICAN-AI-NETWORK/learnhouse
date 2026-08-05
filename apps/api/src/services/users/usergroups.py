@@ -1,5 +1,7 @@
 import logging
-from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
@@ -9,15 +11,16 @@ from sqlmodel import Session, select
 from src.db.organizations import Organization
 from src.db.usergroup_resources import UserGroupResource
 from src.db.usergroup_user import UserGroupUser
-from src.db.usergroups import (UserGroup, UserGroupCreate, UserGroupRead,
-                               UserGroupUpdate)
-from src.db.users import (AnonymousUser, InternalUser, PublicUser, User,
-                          UserRead)
-from src.security.features_utils.usage import (check_limits_with_usage,
-                                               increase_feature_usage)
+from src.db.usergroups import UserGroup, UserGroupCreate, UserGroupRead, UserGroupUpdate
+from src.db.users import AnonymousUser, InternalUser, PublicUser, User, UserRead
+from src.security.features_utils.usage import (
+    check_limits_with_usage,
+    increase_feature_usage,
+)
 from src.security.rbac.rbac import (
     authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon)
+    authorization_verify_if_user_is_anon,
+)
 
 
 async def create_usergroup(
@@ -52,8 +55,8 @@ async def create_usergroup(
 
     # Complete the object
     usergroup.usergroup_uuid = f"usergroup_{uuid4()}"
-    usergroup.creation_date = str(datetime.now(timezone.utc))
-    usergroup.update_date = str(datetime.now(timezone.utc))
+    usergroup.creation_date = str(datetime.now(UTC))
+    usergroup.update_date = str(datetime.now(UTC))
 
     # Save the object
     db_session.add(usergroup)
@@ -222,7 +225,7 @@ async def update_usergroup_by_id(
 
     usergroup.name = usergroup_update.name
     usergroup.description = usergroup_update.description
-    usergroup.update_date = str(datetime.now(timezone.utc))
+    usergroup.update_date = str(datetime.now(UTC))
 
     db_session.add(usergroup)
     db_session.commit()
@@ -305,7 +308,7 @@ async def add_users_to_usergroup(
         usergroup_user = db_session.exec(statement).first()
 
         if usergroup_user:
-            logging.error(f"User with id {user_id} already exists in UserGroup")
+            logger.error(f"User with id {user_id} already exists in UserGroup")
             continue
 
         if user:
@@ -315,15 +318,15 @@ async def add_users_to_usergroup(
                     usergroup_id=usergroup_id,
                     user_id=user.id,
                     org_id=usergroup.org_id,
-                    creation_date=str(datetime.now(timezone.utc)),
-                    update_date=str(datetime.now(timezone.utc)),
+                    creation_date=str(datetime.now(UTC)),
+                    update_date=str(datetime.now(UTC)),
                 )
 
                 db_session.add(usergroup_obj)
                 db_session.commit()
                 db_session.refresh(usergroup_obj)
         else:
-            logging.error(f"User with id {user_id} not found")
+            logger.error(f"User with id {user_id} not found")
 
     return "Users added to UserGroup successfully"
 
@@ -365,7 +368,7 @@ async def remove_users_from_usergroup(
             db_session.delete(usergroup_user)
             db_session.commit()
         else:
-            logging.error(f"User with id {user_id} not found in UserGroup")
+            logger.error(f"User with id {user_id} not found in UserGroup")
 
     return "Users removed from UserGroup successfully"
 
@@ -417,8 +420,8 @@ async def add_resources_to_usergroup(
             usergroup_id=usergroup_id,
             resource_uuid=resource_uuid,
             org_id=usergroup.org_id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
 
         db_session.add(usergroup_obj)
@@ -465,7 +468,7 @@ async def remove_resources_from_usergroup(
             db_session.delete(usergroup_resource)
             db_session.commit()
         else:
-            logging.error(f"resource with uuid {resource_uuid} not found in UserGroup")
+            logger.error(f"resource with uuid {resource_uuid} not found in UserGroup")
 
     return "Resources removed from UserGroup successfully"
 

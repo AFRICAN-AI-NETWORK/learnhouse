@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import BaseModel
 from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
@@ -8,9 +8,9 @@ from src.db.courses.activities import ActivityRead
 
 class ChapterBase(SQLModel):
     name: str
-    description: Optional[str] = ""
-    thumbnail_image: Optional[str] = ""
-    due_date: Optional[str] = None
+    description: str | None = ""
+    thumbnail_image: str | None = ""
+    due_date: str | None = None
     published: bool = False
     org_id: int = Field(
         sa_column=Column(
@@ -25,7 +25,7 @@ class ChapterBase(SQLModel):
 
 
 class Chapter(ChapterBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     chapter_uuid: str = ""
     creation_date: str = ""
     update_date: str = ""
@@ -38,22 +38,22 @@ class ChapterCreate(ChapterBase):
 
 
 class ChapterUpdate(ChapterBase):
-    name: Optional[str]
-    description: Optional[str] = ""
-    thumbnail_image: Optional[str] = ""
-    due_date: Optional[str] = None
-    published: Optional[bool] = None
-    course_id: Optional[int]
-    org_id: Optional[int]  # type: ignore
+    name: str | None
+    description: str | None = ""
+    thumbnail_image: str | None = ""
+    due_date: str | None = None
+    published: bool | None = None
+    course_id: int | None
+    org_id: int | None  # type: ignore
 
 
 class ChapterRead(ChapterBase):
     id: int
-    activities: List[ActivityRead]
+    activities: list[ActivityRead]
     chapter_uuid: str
     creation_date: str
     update_date: str
-    is_locked: Optional[bool] = False
+    is_locked: bool | None = False
 
 
 class ActivityOrder(BaseModel):
@@ -62,15 +62,14 @@ class ActivityOrder(BaseModel):
 
 class ChapterOrder(BaseModel):
     chapter_id: int
-    activities_order_by_ids: List[ActivityOrder]
+    activities_order_by_ids: list[ActivityOrder]
 
 
 class ChapterUpdateOrder(BaseModel):
-    chapter_order_by_ids: List[ChapterOrder]
+    chapter_order_by_ids: list[ChapterOrder]
 
 
 class DepreceatedChaptersRead(BaseModel):
     chapterOrder: Any
     chapters: Any
     activities: Any
-    pass

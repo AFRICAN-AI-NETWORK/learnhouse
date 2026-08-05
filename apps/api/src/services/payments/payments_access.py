@@ -10,7 +10,8 @@ from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
-    authorization_verify_if_user_is_author)
+    authorization_verify_if_user_is_author,
+)
 
 logger = logging.getLogger(__name__)
 

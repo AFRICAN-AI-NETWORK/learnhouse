@@ -1,14 +1,16 @@
 """Unit tests for waitlist background job processor"""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.jobs.waitlist_processor import (run_retry_failed_emails_job,
-                                         run_waitlist_activation_job,
-                                         sync_run_retry_failed_emails_job,
-                                         sync_run_waitlist_activation_job)
+from src.jobs.waitlist_processor import (
+    run_retry_failed_emails_job,
+    run_waitlist_activation_job,
+    sync_run_retry_failed_emails_job,
+    sync_run_waitlist_activation_job,
+)
 
 
 class TestWaitlistActivationJob:
@@ -32,7 +34,7 @@ class TestWaitlistActivationJob:
         """Test that activation job handles errors gracefully"""
         mock_sync_process.side_effect = Exception("Database error")
 
-        # Should not raise exception
+        # Should not raise
         await run_waitlist_activation_job()
 
         # Sync wrapper was still called
@@ -76,7 +78,7 @@ class TestRetryFailedEmailsJob:
         """Test that retry job handles errors gracefully"""
         mock_sync_retry.side_effect = Exception("SMTP error")
 
-        # Should not raise exception
+        # Should not raise
         await run_retry_failed_emails_job()
 
         mock_sync_retry.assert_called_once()
@@ -122,7 +124,7 @@ class TestWaitlistActivationIntegration:
         from src.services.waitlist.emails import process_waitlist_activations
 
         # Create expired waitlist
-        past_date = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        past_date = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
         expired_waitlist = WaitlistConfig(
             waitlist_uuid="expired-for-activation",
             org_id=sample_org.id,
@@ -133,8 +135,8 @@ class TestWaitlistActivationIntegration:
             status=WaitlistStatusEnum.ACTIVE.value,
             total_registrations=2,
             emails_sent_count=0,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(expired_waitlist)
         db_session.commit()
@@ -179,7 +181,7 @@ class TestWaitlistActivationIntegration:
         from src.services.waitlist.emails import process_waitlist_activations
 
         # Create future waitlist
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=30)).isoformat()
         future_waitlist = WaitlistConfig(
             waitlist_uuid="future-waitlist",
             org_id=sample_org.id,
@@ -188,8 +190,8 @@ class TestWaitlistActivationIntegration:
             interest_category="Testing",
             launch_datetime=future_date,
             status=WaitlistStatusEnum.ACTIVE.value,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(future_waitlist)
         db_session.commit()

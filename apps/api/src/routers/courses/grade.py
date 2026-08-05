@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -18,7 +17,7 @@ class ActivityGradeDetailRead(BaseModel):
     activity_type: str
     points_possible: float
     points_earned: float
-    assignment_score: Optional[float] = None
+    assignment_score: float | None = None
     is_late: bool
     is_complete: bool
 
@@ -27,8 +26,8 @@ class CourseGradeRead(BaseModel):
     course_uuid: str
     total_points_possible: float
     total_points_earned: float
-    grade_percentage: Optional[float] = None
-    activity_breakdown: List[ActivityGradeDetailRead]
+    grade_percentage: float | None = None
+    activity_breakdown: list[ActivityGradeDetailRead]
 
 
 @router.get("/{course_uuid}/grade")

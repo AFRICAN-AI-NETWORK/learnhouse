@@ -3,7 +3,7 @@ Comprehensive unit tests for referral tracking service
 Tests fraud detection, IP extraction, and signup tracking
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -12,8 +12,13 @@ from fastapi import HTTPException, Request
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
 from src.db.referrals.referral_tracking import ReferralTracking
 from src.services.referrals.referral_tracking import (
-    DEVICE_FRAUD_THRESHOLD, IP_FRAUD_THRESHOLD, calculate_fraud_risk_score,
-    create_referral_tracking, extract_ip_address, validate_and_track_referral)
+    DEVICE_FRAUD_THRESHOLD,
+    IP_FRAUD_THRESHOLD,
+    calculate_fraud_risk_score,
+    create_referral_tracking,
+    extract_ip_address,
+    validate_and_track_referral,
+)
 
 
 class TestExtractIPAddress:
@@ -279,8 +284,8 @@ class TestValidateAndTrackReferral:
             code="TEST123",
             referral_link="http://localhost:3000/ref/TEST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         # Mock DB queries - need to handle chained calls properly
@@ -323,23 +328,22 @@ class TestValidateAndTrackReferral:
             code="SELF123",
             referral_link="http://localhost:3000/ref/SELF123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         with patch(
             "src.services.referrals.referral_tracking.validate_referral_code_exists",
             return_value=mock_code,
-        ):
-            with pytest.raises(HTTPException) as exc_info:
-                await validate_and_track_referral(
-                    mock_request,
-                    referred_user_id=500,  # Same as referrer_user_id
-                    referral_code="SELF123",
-                    device_id="device123",
-                    browser_fingerprint={},
-                    db_session=mock_session,
-                )
+        ), pytest.raises(HTTPException) as exc_info:
+            await validate_and_track_referral(
+                mock_request,
+                referred_user_id=500,  # Same as referrer_user_id
+                referral_code="SELF123",
+                device_id="device123",
+                browser_fingerprint={},
+                db_session=mock_session,
+            )
 
         assert exc_info.value.status_code == 400
         assert "own referral code" in exc_info.value.detail.lower()
@@ -359,8 +363,8 @@ class TestValidateAndTrackReferral:
             code="TEST123",
             referral_link="http://localhost:3000/ref/TEST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         # High fraud score - handle chained calls
@@ -401,8 +405,8 @@ class TestValidateAndTrackReferral:
             code="TEST123",
             referral_link="http://localhost:3000/ref/TEST123",
             status=ReferralCodeStatus.ACTIVE,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
         # User already tracked - handle chained calls

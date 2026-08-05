@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
@@ -59,12 +58,12 @@ class PaymentsConfigBase(SQLModel):
 class PaymentsConfig(PaymentsConfigBase, table=True):
     __tablename__ = "payments_config"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("organization.id", ondelete="CASCADE"))
     )
-    creation_date: datetime = Field(default=datetime.now(timezone.utc))
-    update_date: datetime = Field(default=datetime.now(timezone.utc))
+    creation_date: datetime = Field(default=datetime.now(UTC))
+    update_date: datetime = Field(default=datetime.now(UTC))
 
 
 class PaymentsConfigCreate(PaymentsConfigBase):
@@ -72,10 +71,10 @@ class PaymentsConfigCreate(PaymentsConfigBase):
 
 
 class PaymentsConfigUpdate(PaymentsConfigBase):
-    enabled: Optional[bool] = None
-    active: Optional[bool] = None
-    provider_config: Optional[dict] = None
-    provider_specific_id: Optional[str] = None
+    enabled: bool | None = None
+    active: bool | None = None
+    provider_config: dict | None = None
+    provider_specific_id: str | None = None
 
 
 class PaymentsConfigRead(PaymentsConfigBase):

@@ -14,7 +14,7 @@ test). The fan-out is simply skipped and logged in that case.
 """
 
 import logging
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 logger = logging.getLogger(__name__)
 

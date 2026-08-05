@@ -1,5 +1,4 @@
 import secrets
-from typing import Optional
 
 import httpx
 from fastapi import Depends, HTTPException, Request
@@ -30,7 +29,7 @@ async def signWithGoogle(
     request: Request,
     access_token: str,
     email: str,
-    org_id: Optional[int] = None,
+    org_id: int | None = None,
     current_user=Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):

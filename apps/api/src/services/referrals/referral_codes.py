@@ -6,16 +6,18 @@ Handles referral code generation, validation, and retrieval
 import logging
 import secrets
 import string
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, and_, select
 
 from config.config import get_learnhouse_config
-from src.db.referrals.referral_codes import (ReferralCode, ReferralCodeRead,
-                                             ReferralCodeStatus)
+from src.db.referrals.referral_codes import (
+    ReferralCode,
+    ReferralCodeRead,
+    ReferralCodeStatus,
+)
 from src.db.users import PublicUser, User
 
 logger = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ def generate_unique_code(length: int = REFERRAL_CODE_LENGTH) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def build_referral_link(code: str, base_url: Optional[str] = None) -> str:
+def build_referral_link(code: str, base_url: str | None = None) -> str:
     """
     Build referral link from code (DRY utility)
 
@@ -67,7 +69,7 @@ def build_referral_link(code: str, base_url: Optional[str] = None) -> str:
 
 async def get_referral_code_by_code(
     code: str, db_session: Session
-) -> Optional[ReferralCode]:
+) -> ReferralCode | None:
     """
     Get referral code by code string (DRY utility)
     Case-insensitive lookup
@@ -85,7 +87,7 @@ async def get_referral_code_by_code(
 
 async def get_referral_code_by_user(
     user_id: int, org_id: int, db_session: Session
-) -> Optional[ReferralCode]:
+) -> ReferralCode | None:
     """
     Get referral code by user ID (DRY utility)
 
@@ -194,8 +196,8 @@ async def create_referral_code_for_user(
         code=code,
         referral_link=referral_link,
         status=ReferralCodeStatus.ACTIVE,
-        creation_date=datetime.now(timezone.utc),
-        update_date=datetime.now(timezone.utc),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
 
     db_session.add(referral_code)
@@ -225,7 +227,7 @@ async def create_referral_code_for_user(
 
 async def get_my_referral_code(
     request: Request, org_id: int, current_user: PublicUser, db_session: Session
-) -> Optional[ReferralCodeRead]:
+) -> ReferralCodeRead | None:
     """
     Get current user's referral code
 

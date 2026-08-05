@@ -4,8 +4,12 @@ from fastapi import HTTPException, Request
 from sqlmodel import Session, select, text
 
 from src.db.organizations import Organization
-from src.db.payments.payments import (PaymentProviderEnum, PaymentsConfig,
-                                      PaymentsConfigRead, PaymentsConfigUpdate)
+from src.db.payments.payments import (
+    PaymentProviderEnum,
+    PaymentsConfig,
+    PaymentsConfigRead,
+    PaymentsConfigUpdate,
+)
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.orgs.orgs import rbac_check

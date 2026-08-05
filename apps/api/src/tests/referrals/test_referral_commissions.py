@@ -3,20 +3,24 @@ Comprehensive unit tests for referral commission service
 Tests commission creation, forfeiture, balance updates, and temporal checks
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
 from fastapi import HTTPException
 
-from src.db.referrals.referral_commissions import (CommissionStatus,
-                                                   ReferralCommission)
+from src.db.referrals.referral_commissions import CommissionStatus, ReferralCommission
 from src.db.users import PublicUser, User
 from src.services.referrals.referral_commissions import (
-    COMMISSION_AMOUNT_USD, REFUND_PERIOD_DAYS, create_commission_for_payment,
-    forfeit_commission_for_refund, get_commission_balance,
-    get_commission_by_payment, get_commission_history,
-    update_pending_commissions_to_eligible)
+    COMMISSION_AMOUNT_USD,
+    REFUND_PERIOD_DAYS,
+    create_commission_for_payment,
+    forfeit_commission_for_refund,
+    get_commission_balance,
+    get_commission_by_payment,
+    get_commission_history,
+    update_pending_commissions_to_eligible,
+)
 
 
 class TestGetCommissionByPayment:
@@ -53,7 +57,7 @@ class TestCreateCommissionForPayment:
         mock_session = Mock()
         mock_session.exec.return_value.first.return_value = None  # No existing
 
-        payment_date = datetime.now(timezone.utc)
+        payment_date = datetime.now(UTC)
 
         await create_commission_for_payment(
             org_id=100,
@@ -76,7 +80,7 @@ class TestCreateCommissionForPayment:
         existing_commission = Mock(spec=ReferralCommission)
         mock_session.exec.return_value.first.return_value = existing_commission
 
-        payment_date = datetime.now(timezone.utc)
+        payment_date = datetime.now(UTC)
 
         result = await create_commission_for_payment(
             org_id=100,
@@ -98,7 +102,7 @@ class TestCreateCommissionForPayment:
         mock_session = Mock()
         mock_session.exec.return_value.first.return_value = None
 
-        payment_date = datetime.now(timezone.utc)
+        payment_date = datetime.now(UTC)
 
         await create_commission_for_payment(
             org_id=100,
@@ -123,7 +127,7 @@ class TestCreateCommissionForPayment:
         mock_session = Mock()
         mock_session.exec.return_value.first.return_value = None
 
-        payment_date = datetime.now(timezone.utc)
+        payment_date = datetime.now(UTC)
 
         await create_commission_for_payment(
             org_id=100,
@@ -156,7 +160,7 @@ class TestCreateCommissionForPayment:
         mock_session = Mock()
         mock_session.exec.return_value.first.return_value = None
 
-        payment_date = datetime.now(timezone.utc)
+        payment_date = datetime.now(UTC)
 
         await create_commission_for_payment(
             org_id=100,
@@ -312,7 +316,7 @@ class TestUpdatePendingCommissionsToEligible:
         mock_session = Mock()
 
         # Create mock expired commissions
-        expired_date = datetime.now(timezone.utc) - timedelta(
+        expired_date = datetime.now(UTC) - timedelta(
             days=REFUND_PERIOD_DAYS + 1
         )
 
@@ -348,7 +352,7 @@ class TestUpdatePendingCommissionsToEligible:
         """CRITICAL: Test that balances are updated in bulk (not N+1)"""
         mock_session = Mock()
 
-        expired_date = datetime.now(timezone.utc) - timedelta(
+        expired_date = datetime.now(UTC) - timedelta(
             days=REFUND_PERIOD_DAYS + 1
         )
 
@@ -391,7 +395,7 @@ class TestUpdatePendingCommissionsToEligible:
         """CRITICAL: Test that update uses SELECT FOR UPDATE"""
         mock_session = Mock()
 
-        expired_date = datetime.now(timezone.utc) - timedelta(
+        expired_date = datetime.now(UTC) - timedelta(
             days=REFUND_PERIOD_DAYS + 1
         )
 
@@ -498,7 +502,7 @@ class TestGetCommissionHistory:
         mock_user.id = 500
 
         # Create mock commissions
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         mock_comm1 = Mock(spec=ReferralCommission)
         mock_comm1.id = 1
         mock_comm1.referred_user_id = 100

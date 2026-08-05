@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,14 +6,22 @@ from fastapi import HTTPException
 from sqlmodel import Session
 
 from src.db.courses.courses import Course
-from src.db.payments.discount_codes import (DiscountCode, DiscountCodeCreate,
-                                            DiscountTypeEnum)
-from src.db.resource_authors import (ResourceAuthor, ResourceAuthorshipEnum,
-                                     ResourceAuthorshipStatusEnum)
+from src.db.payments.discount_codes import (
+    DiscountCode,
+    DiscountCodeCreate,
+    DiscountTypeEnum,
+)
+from src.db.resource_authors import (
+    ResourceAuthor,
+    ResourceAuthorshipEnum,
+    ResourceAuthorshipStatusEnum,
+)
 from src.db.users import User
-from src.services.payments.discount_codes import (DiscountValidationError,
-                                                  create_discount_code,
-                                                  validate_discount_code)
+from src.services.payments.discount_codes import (
+    DiscountValidationError,
+    create_discount_code,
+    validate_discount_code,
+)
 
 
 @pytest.fixture
@@ -27,8 +35,8 @@ def authorized_instructor(db_session: Session, mock_org) -> User:
         first_name="Instructor",
         last_name="One",
         email_verified=True,
-        creation_date=datetime.now(timezone.utc),
-        update_date=datetime.now(timezone.utc),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
         role=3,  # Instructor role
     )
     db_session.add(user)
@@ -47,8 +55,8 @@ def instructor_course(db_session: Session, mock_org, authorized_instructor) -> C
         description="A course owned by an instructor",
         public=True,
         open_to_contributors=False,
-        creation_date=datetime.now(timezone.utc),
-        update_date=datetime.now(timezone.utc),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
     db_session.add(course)
     db_session.commit()
@@ -77,7 +85,7 @@ async def test_instructor_can_create_code_for_owned_course(
         code="INST10",
         discount_type=DiscountTypeEnum.PERCENTAGE,
         discount_value=10.0,
-        valid_from=datetime.now(timezone.utc),
+        valid_from=datetime.now(UTC),
         course_id=instructor_course.id,
     )
 
@@ -102,7 +110,7 @@ async def test_instructor_cannot_create_global_code(
         code="GLOBAL_FAIL",
         discount_type=DiscountTypeEnum.PERCENTAGE,
         discount_value=10.0,
-        valid_from=datetime.now(timezone.utc),
+        valid_from=datetime.now(UTC),
         # course_id is None
     )
 
@@ -129,7 +137,7 @@ async def test_course_specific_code_enforcement(
         code="COURSE_ONLY",
         discount_type=DiscountTypeEnum.FIXED,
         discount_value=50.0,
-        valid_from=datetime.now(timezone.utc) - timedelta(days=1),
+        valid_from=datetime.now(UTC) - timedelta(days=1),
         course_id=instructor_course.id,
     )
     db_session.add(code)

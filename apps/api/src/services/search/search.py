@@ -1,4 +1,4 @@
-from typing import List, TypeVar
+from typing import TypeVar
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -17,9 +17,9 @@ T = TypeVar("T")
 
 
 class SearchResult(BaseModel):
-    courses: List[CourseRead]
-    collections: List[CollectionRead]
-    users: List[UserRead]
+    courses: list[CourseRead]
+    collections: list[CollectionRead]
+    users: list[UserRead]
 
     class Config:
         arbitrary_types_allowed = True

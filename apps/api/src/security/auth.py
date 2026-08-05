@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import jwt as pyjwt_lib
 from fastapi import Depends, HTTPException, Request, status
@@ -14,8 +13,7 @@ from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.db.waitlist import UserStatusEnum
 from src.security.security import ALGORITHM, SECRET_KEY
 from src.services.dev.dev import isDevModeEnabled
-from src.services.users.users import (security_get_user,
-                                      security_verify_password)
+from src.services.users.users import security_get_user, security_verify_password
 
 if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
     _original_encode = pyjwt_lib.encode
@@ -122,11 +120,11 @@ async def authenticate_user(
                             waitlist.launch_datetime.replace("Z", "+00:00")
                         )
                         if launch_dt.tzinfo is None:
-                            launch_dt = launch_dt.replace(tzinfo=timezone.utc)
+                            launch_dt = launch_dt.replace(tzinfo=UTC)
                         else:
-                            launch_dt = launch_dt.astimezone(timezone.utc)
+                            launch_dt = launch_dt.astimezone(UTC)
 
-                        if datetime.now(timezone.utc) >= launch_dt:
+                        if datetime.now(UTC) >= launch_dt:
                             is_launched = True
                     except ValueError:
                         pass
@@ -165,9 +163,9 @@ async def authenticate_user(
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -189,11 +187,11 @@ async def get_current_user(
         username = Authorize.get_jwt_subject() or None
         token_data = TokenData(username=username)  # type: ignore
     except JWTError:
-        raise credentials_exception
+        raise
     if username:
         user = await security_get_user(request, db_session, email=token_data.username)  # type: ignore # treated as an email
         if user is None:
-            raise credentials_exception
+            raise
         public_user = PublicUser(**user.model_dump())
         request.state.user = public_user
         return public_user
@@ -206,7 +204,7 @@ async def non_public_endpoint(current_user: UserRead | AnonymousUser):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
 
-async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
+async def verify_websocket_token(token: str, db: Session) -> int | None:
     """
     Verify JWT token for WebSocket connection.
     Returns user_id if valid, None otherwise.
@@ -221,6 +219,7 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
     """
     try:
         import logging
+logger = logging.getLogger(__name__)
 
         from fastapi_jwt_auth import AuthJWT
         from sqlmodel import select
@@ -245,6 +244,7 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
 
     except Exception as e:  # noqa: BLE001
         import logging
+logger = logging.getLogger(__name__)
 
-        logging.error(f"WebSocket token verification failed: {e}")
+        logger.error(f"WebSocket token verification failed: {e}")
         return None

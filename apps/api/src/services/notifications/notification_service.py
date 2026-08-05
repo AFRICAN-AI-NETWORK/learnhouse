@@ -8,16 +8,20 @@ notification (e.g. grading a submission).
 """
 
 import logging
-from datetime import datetime, timezone
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlmodel import Session, func, select
 
 from src.db.notifications import Notification, NotificationType
 from src.services.notifications.notification_copy import (
-    NotificationCopy, activity_added_copy, assignment_reviewed_copy,
-    chapter_added_copy, retake_requested_copy)
+    NotificationCopy,
+    activity_added_copy,
+    assignment_reviewed_copy,
+    chapter_added_copy,
+    retake_requested_copy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +75,9 @@ async def create_notification(
     notification_type: NotificationType,
     target_type: str,
     copy: NotificationCopy,
-    target_id: Optional[int] = None,
-    target_uuid: Optional[str] = None,
-    metadata: Optional[dict] = None,
+    target_id: int | None = None,
+    target_uuid: str | None = None,
+    metadata: dict | None = None,
 ) -> Notification:
     """Persist one notification row and push it in-app immediately."""
     notification = Notification(
@@ -117,7 +121,7 @@ async def notify_assignment_reviewed(
     instructor_name: str,
     grade: int,
     max_grade: int,
-    feedback: Optional[str] = None,
+    feedback: str | None = None,
     unlocks_certificate: bool = False,
 ) -> Notification:
     copy = assignment_reviewed_copy(
@@ -150,7 +154,7 @@ async def notify_retake_requested(
     assignment_uuid: str,
     assignment_title: str,
     instructor_name: str,
-    feedback: Optional[str] = None,
+    feedback: str | None = None,
 ) -> Notification:
     copy = retake_requested_copy(instructor_name, assignment_title, feedback)
     return await create_notification(
@@ -241,21 +245,21 @@ def get_unread_count(db_session: Session, *, user_id: int) -> int:
     statement = (
         select(func.count())
         .select_from(Notification)
-        .where(Notification.user_id == user_id, Notification.is_read == False)  # noqa: E712
+        .where(Notification.user_id == user_id, Notification.is_read == False)
     )
     return db_session.exec(statement).one()
 
 
 def mark_as_read(
     db_session: Session, *, user_id: int, notification_id: int
-) -> Optional[Notification]:
+) -> Notification | None:
     notification = db_session.get(Notification, notification_id)
     if not notification or notification.user_id != user_id:
         return None
 
     if not notification.is_read:
         notification.is_read = True
-        notification.read_at = datetime.now(timezone.utc)
+        notification.read_at = datetime.now(UTC)
         db_session.add(notification)
         db_session.commit()
         db_session.refresh(notification)
@@ -266,11 +270,11 @@ def mark_as_read(
 def mark_all_as_read(db_session: Session, *, user_id: int) -> int:
     statement = select(Notification).where(
         Notification.user_id == user_id,
-        Notification.is_read == False,  # noqa: E712
+        Notification.is_read == False,
     )
     unread = db_session.exec(statement).all()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for notification in unread:
         notification.is_read = True
         notification.read_at = now

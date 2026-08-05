@@ -1,10 +1,9 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session, select
 
-from src.db.chat.conversations import (Conversation,
-                                       ConversationParticipantState)
+from src.db.chat.conversations import Conversation, ConversationParticipantState
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +46,8 @@ class TypingIndicatorService:
             )
 
         state.is_typing = is_typing
-        state.typing_updated_at = datetime.now(timezone.utc)
-        state.updated_at = datetime.now(timezone.utc)
+        state.typing_updated_at = datetime.now(UTC)
+        state.updated_at = datetime.now(UTC)
 
         db.add(state)
         db.commit()
@@ -87,7 +86,7 @@ class TypingIndicatorService:
 
         # Check if typing status has expired
         if state.typing_updated_at:
-            timeout = datetime.now(timezone.utc) - timedelta(
+            timeout = datetime.now(UTC) - timedelta(
                 seconds=TypingIndicatorService.TYPING_TIMEOUT_SECONDS
             )
 
@@ -104,7 +103,7 @@ class TypingIndicatorService:
     async def clear_expired_typing_indicators(db: Session):
         """Clear all expired typing indicators (background job)."""
 
-        timeout = datetime.now(timezone.utc) - timedelta(
+        timeout = datetime.now(UTC) - timedelta(
             seconds=TypingIndicatorService.TYPING_TIMEOUT_SECONDS
         )
 

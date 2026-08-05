@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
@@ -7,8 +7,12 @@ from fastapi import HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from src.db.courses.activities import (Activity, ActivityRead,
-                                       ActivitySubTypeEnum, ActivityTypeEnum)
+from src.db.courses.activities import (
+    Activity,
+    ActivityRead,
+    ActivitySubTypeEnum,
+    ActivityTypeEnum,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
@@ -106,8 +110,8 @@ async def create_video_activity(
             "activity_uuid": activity_uuid,
         },
         details=details if isinstance(details, dict) else json.loads(details),
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # create activity
@@ -132,8 +136,8 @@ async def create_video_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=1,
     )
 
@@ -216,8 +220,8 @@ async def create_external_video_activity(
             "activity_uuid": activity_uuid,
         },
         details=details,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # create activity
@@ -232,8 +236,8 @@ async def create_external_video_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=1,
     )
 

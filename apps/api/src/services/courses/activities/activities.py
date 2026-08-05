@@ -1,14 +1,18 @@
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 
-import src.services.payments.payments_access as payments_access
-from src.db.courses.activities import (Activity, ActivityCreate, ActivityRead,
-                                       ActivityTypeEnum, ActivityUpdate)
+from src.db.courses.activities import (
+    Activity,
+    ActivityCreate,
+    ActivityRead,
+    ActivityTypeEnum,
+    ActivityUpdate,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
@@ -17,6 +21,7 @@ from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_activities
 from src.services.integrations.youtube import create_automated_youtube_session
+from src.services.payments import payments_access
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +67,8 @@ async def create_activity(
     activity = Activity(**activity_object.model_dump())
 
     activity.activity_uuid = str(f"activity_{uuid4()}")
-    activity.creation_date = str(datetime.now(timezone.utc))
-    activity.update_date = str(datetime.now(timezone.utc))
+    activity.creation_date = str(datetime.now(UTC))
+    activity.update_date = str(datetime.now(UTC))
     activity.org_id = chapter.org_id
     activity.course_id = chapter.course_id
 
@@ -92,7 +97,7 @@ async def create_activity(
                         title=f"{course.name} - {activity.name}",
                         start_time=activity.details.get("start_time")
                         if activity.details
-                        else str(datetime.now(timezone.utc)),
+                        else str(datetime.now(UTC)),
                     )
 
                     # Update activity details with the stream info
@@ -133,8 +138,8 @@ async def create_activity(
         activity_id=activity.id if activity.id else 0,
         course_id=chapter.course_id,
         org_id=chapter.org_id,
-        creation_date=str(datetime.now(timezone.utc)),
-        update_date=str(datetime.now(timezone.utc)),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=to_be_used_order,
     )
 
@@ -274,8 +279,9 @@ async def update_activity(
     # never turn a successful publish into an error for the instructor.
     if not was_published and activity.published:
         try:
-            from src.services.notifications.fanout_jobs import \
-                sync_fanout_activity_added
+            from src.services.notifications.fanout_jobs import (
+                sync_fanout_activity_added,
+            )
             from src.services.notifications.scheduling import enqueue_job
 
             enqueue_job(

@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Integer
@@ -17,7 +16,7 @@ class TrailBase(SQLModel):
 
 
 class Trail(TrailBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
     )
@@ -35,12 +34,12 @@ class TrailCreate(TrailBase):
 
 # Read model – plain pydantic BaseModel, no SA columns needed.
 class TrailRead(BaseModel):
-    id: Optional[int] = None
-    trail_uuid: Optional[str] = None
+    id: int | None = None
+    trail_uuid: str | None = None
     org_id: int
     user_id: int
-    creation_date: Optional[str] = None
-    update_date: Optional[str] = None
+    creation_date: str | None = None
+    update_date: str | None = None
     runs: list[TrailRunRead]
 
     class Config:

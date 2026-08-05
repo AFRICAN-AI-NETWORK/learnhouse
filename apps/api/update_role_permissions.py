@@ -2,7 +2,7 @@ import os
 import sys
 
 sys.path.append(os.getcwd())
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -131,7 +131,7 @@ def update_roles():
             statement = select(Role).where(Role.role_uuid == uuid)
             role = session.exec(statement).first()
 
-            now_str = datetime.now(timezone.utc).isoformat()
+            now_str = datetime.now(UTC).isoformat()
 
             if role:
                 print(f"Updating existing role: {name} ({uuid})")

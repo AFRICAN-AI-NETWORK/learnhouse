@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from dateutil import parser
@@ -19,11 +19,14 @@ from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
 from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
-    sync_course_trail_run_completion_status)
-from src.services.courses.grade import (LATE_PENALTY_MULTIPLIER,
-                                        get_activity_weighted_points_earned,
-                                        load_activity_grade_inputs,
-                                        normalized_assignment_score)
+    sync_course_trail_run_completion_status,
+)
+from src.services.courses.grade import (
+    LATE_PENALTY_MULTIPLIER,
+    get_activity_weighted_points_earned,
+    load_activity_grade_inputs,
+    normalized_assignment_score,
+)
 
 
 def get_enrolled_user_ids_for_course(course_id: int, db_session: Session) -> list[int]:
@@ -61,8 +64,8 @@ async def create_user_trail(
 
     trail = Trail.model_validate(trail_object)
 
-    trail.creation_date = str(datetime.now(timezone.utc))
-    trail.update_date = str(datetime.now(timezone.utc))
+    trail.creation_date = str(datetime.now(UTC))
+    trail.update_date = str(datetime.now(UTC))
     trail.org_id = trail_object.org_id
     trail.trail_uuid = str(f"trail_{uuid4()}")
 
@@ -142,7 +145,7 @@ async def get_user_trails(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -231,7 +234,7 @@ def backfill_completed_trail_step_points(
         ):
             trail_step.points_earned = expected_points
             trail_step.grade = expected_grade
-            trail_step.update_date = str(datetime.now(timezone.utc))
+            trail_step.update_date = str(datetime.now(UTC))
             db_session.add(trail_step)
             updated = True
 
@@ -311,7 +314,7 @@ async def get_user_trail_with_orgid(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -365,8 +368,8 @@ async def add_activity_to_trail(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(trailrun)
         db_session.commit()
@@ -485,8 +488,8 @@ async def add_activity_to_trail(
             user_id=user.id,
             points_earned=points_earned,
             is_late=is_late,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(trailstep)
         db_session.commit()
@@ -495,7 +498,7 @@ async def add_activity_to_trail(
         trailstep.complete = True
         trailstep.points_earned = points_earned
         trailstep.is_late = is_late
-        trailstep.update_date = str(datetime.now(timezone.utc))
+        trailstep.update_date = str(datetime.now(UTC))
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -555,7 +558,7 @@ async def add_activity_to_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -618,7 +621,7 @@ async def remove_activity_from_trail(
     trailrun = db_session.exec(statement).first()
     if trailrun and trailrun.status == StatusEnum.STATUS_COMPLETED:
         trailrun.status = StatusEnum.STATUS_IN_PROGRESS
-        trailrun.update_date = str(datetime.now(timezone.utc))
+        trailrun.update_date = str(datetime.now(UTC))
         db_session.add(trailrun)
         db_session.commit()
 
@@ -646,7 +649,7 @@ async def remove_activity_from_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -752,8 +755,8 @@ async def add_course_to_trail(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now(timezone.utc)),
-            update_date=str(datetime.now(timezone.utc)),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(trail_run)
         db_session.commit()
@@ -782,7 +785,7 @@ async def add_course_to_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -860,7 +863,7 @@ async def remove_course_from_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
