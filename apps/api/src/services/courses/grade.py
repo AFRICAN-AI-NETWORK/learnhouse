@@ -33,7 +33,7 @@ path when the trail step is flagged late.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlmodel import Session, select
@@ -230,7 +230,7 @@ def compute_and_store_trail_step_grade(
     if normalized is not None:
         # Persist the normalized score for auditing (e.g. "0.80").
         trail_step.grade = f"{normalized:.2f}"
-    trail_step.update_date = str(datetime.now())
+    trail_step.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(trail_step)
     db_session.commit()

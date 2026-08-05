@@ -33,5 +33,5 @@ async def contact_submit(form: ContactForm, request: Request):
             body=body,
         )
         return {"success": True, "message": "Email sent successfully."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {e!s}")

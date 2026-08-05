@@ -45,7 +45,7 @@ def upgrade() -> None:
             ],
             enum_values_to_rename=[],
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     if not any(

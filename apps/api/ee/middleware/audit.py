@@ -98,7 +98,7 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
                 ]
                 payload = {k: v for k, v in payload.items() if k not in sensitive_keys}
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Audit middleware failed to capture request data: {e}")
 
         # Determine resource and resource_id from path

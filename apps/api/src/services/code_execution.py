@@ -52,7 +52,7 @@ def run_python_locally(code: str, stdin: str = "", timeout: int = 10) -> dict:
         }
     except subprocess.TimeoutExpired:
         return {"stdout": "", "stderr": "Execution timed out", "exit_code": 1}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {"stdout": "", "stderr": str(e), "exit_code": 1}
     finally:
         os.unlink(tmp_path)
@@ -111,7 +111,7 @@ async def run_piston_execution(
                         continue
                     return None
                 return response.json()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(
                     f"[Piston] Execution error for {language} on attempt {attempt + 1}: {e}"
                 )

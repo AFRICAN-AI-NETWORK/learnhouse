@@ -5,7 +5,7 @@ published transition, and a scheduling failure must never break the
 publish action itself.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -42,8 +42,8 @@ class TestChapterPublishFanout:
             course_id=course.id,
             published=published,
             chapter_uuid=f"chapter_{uuid4()}",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(chapter)
         session.commit()
@@ -59,8 +59,8 @@ class TestChapterPublishFanout:
             org_id=course.org_id,
             course_id=course.id,
             activity_uuid=f"activity_{uuid4()}",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(activity)
         session.commit()
@@ -72,8 +72,8 @@ class TestChapterPublishFanout:
                 activity_id=activity.id,
                 course_id=course.id,
                 org_id=course.org_id,
-                creation_date=str(datetime.utcnow()),
-                update_date=str(datetime.utcnow()),
+                creation_date=str(datetime.now(timezone.utc)),
+                update_date=str(datetime.now(timezone.utc)),
             )
         )
         session.commit()
@@ -98,7 +98,7 @@ class TestChapterPublishFanout:
         )
 
         mock_enqueue.assert_called_once()
-        job_id, func, args = mock_enqueue.call_args[0]
+        job_id, _func, args = mock_enqueue.call_args[0]
         assert job_id == f"chapter_notif_{chapter.id}"
         assert args == [chapter.id]
 
@@ -182,8 +182,8 @@ class TestActivityPublishFanout:
             org_id=course.org_id,
             course_id=course.id,
             activity_uuid=f"activity_{uuid4()}",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(activity)
         session.commit()
@@ -209,7 +209,7 @@ class TestActivityPublishFanout:
         )
 
         mock_enqueue.assert_called_once()
-        job_id, func, args = mock_enqueue.call_args[0]
+        job_id, _func, args = mock_enqueue.call_args[0]
         assert job_id == f"activity_notif_{activity.id}"
         assert args == [activity.id]
 

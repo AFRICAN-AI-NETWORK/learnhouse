@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -482,8 +482,8 @@ async def create_course(
     org = db_session.exec(org_statement).first()
 
     course.course_uuid = str(f"course_{uuid4()}")
-    course.creation_date = str(datetime.now())
-    course.update_date = str(datetime.now())
+    course.creation_date = str(datetime.now(timezone.utc))
+    course.update_date = str(datetime.now(timezone.utc))
 
     # Upload thumbnail
     if thumbnail_file and thumbnail_file.filename:
@@ -516,8 +516,8 @@ async def create_course(
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CREATOR,
         authorship_status=ResourceAuthorshipStatusEnum.ACTIVE,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # Insert course author
@@ -617,7 +617,7 @@ async def update_course_thumbnail(
         )
 
     # Complete the course object
-    course.update_date = str(datetime.now())
+    course.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(course)
     db_session.commit()
@@ -729,7 +729,7 @@ async def update_course(
             setattr(course, var, value)
 
     # Complete the course object
-    course.update_date = str(datetime.now())
+    course.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(course)
     db_session.commit()

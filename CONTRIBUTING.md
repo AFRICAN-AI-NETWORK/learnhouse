@@ -10,6 +10,15 @@ To set up your development environment, please follow our [Development Guide](/d
 - Managing environment variables
 - Running migrations and tests
 
+## Linting Best Practices
+
+To keep the codebase consistent and CI green, please adhere to the following linting guidelines (enforced by `ruff`):
+
+- **Timezone-Aware Datetimes**: Always use timezone-aware datetimes. Prefer `datetime.now(timezone.utc)` instead of `datetime.utcnow()` or `datetime.now()`. (Rules `DTZ003`, `DTZ005`)
+- **Specific Exceptions**: Avoid catching bare `Exception`. Catch specific exceptions instead (e.g., `ValueError`, `httpx.RequestError`). If you must write a generic catch-all (like in top-level handlers or background jobs), append `# noqa: BLE001` and ensure you use `logger.exception("...")` to log the traceback. (Rules `BLE001`, `G201`)
+- **String Formatting**: For f-strings containing exception objects, use the explicit string conversion flag: `f"{e!s}"` rather than `f"{str(e)}"`. (Rule `RUF010`)
+- **Run Linter Locally**: Before pushing, run `uv run ruff check .` in the backend directory to catch issues early.
+
 ## Submitting Contributions
 
 This project follows [GitHub's standard forking model](https://guides.github.com/activities/forking/). Please fork the project to submit pull requests.

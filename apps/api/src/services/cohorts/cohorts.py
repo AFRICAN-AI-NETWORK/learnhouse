@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -31,8 +31,8 @@ async def create_cohort(cohort_data: CohortCreate, db_session: Session) -> Cohor
         start_date=cohort_data.start_date,
         end_date=cohort_data.end_date,
         status=cohort_data.status,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(cohort)
@@ -103,7 +103,7 @@ async def enroll_user_in_cohort(
         course_id=course_id,
         payment_user_id=payment_user_id,
         enrollment_type="paid" if payment_user_id else "free",
-        enrolled_date=str(datetime.now()),
+        enrolled_date=str(datetime.now(timezone.utc)),
         is_locked=(cohort.status == CohortStatusEnum.UPCOMING),
     )
 
@@ -119,7 +119,7 @@ async def unlock_cohort(cohort_id: int, db_session: Session) -> Cohort:
         raise HTTPException(status_code=404, detail="Cohort not found")
 
     cohort.status = CohortStatusEnum.ACTIVE
-    cohort.update_date = str(datetime.now())
+    cohort.update_date = str(datetime.now(timezone.utc))
     db_session.add(cohort)
 
     # Unlock all enrollments

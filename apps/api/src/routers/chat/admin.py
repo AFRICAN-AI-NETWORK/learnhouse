@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -173,7 +173,7 @@ async def export_conversation(
     if format == "json":
         export_data = {
             "conversation_uuid": conversation.conversation_uuid,
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
             "exported_by": current_user.username,
             "participants": [
                 {
@@ -328,7 +328,7 @@ async def get_chat_statistics(
         .where(Conversation.org_id == org_id)
         .where(
             Message.created_at
-            >= datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            >= datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         )
     ).one()
 

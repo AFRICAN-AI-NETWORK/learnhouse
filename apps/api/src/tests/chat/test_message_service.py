@@ -1,6 +1,6 @@
 """Unit tests for message service."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from fastapi import HTTPException
@@ -352,8 +352,8 @@ class TestGetConversationMessages:
                 receiver_id=instructor_user.id,
                 content=f"Message {i}",
                 message_type="text",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             session.add(msg)
             session.commit()

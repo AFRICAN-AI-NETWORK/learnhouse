@@ -107,7 +107,7 @@ class TestVerifyChatPermission:
         instructor_role: Role,
     ):
         """Test that instructors can chat with each other."""
-        from datetime import datetime
+        from datetime import datetime, timezone
         from uuid import uuid4
 
         from src.db.user_organizations import UserOrganization
@@ -121,8 +121,8 @@ class TestVerifyChatPermission:
             password="hashed_password",
             first_name="Instructor",
             last_name="Two",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(instructor2)
         session.commit()
@@ -132,8 +132,8 @@ class TestVerifyChatPermission:
             user_id=instructor2.id,
             org_id=org.id,
             role_id=instructor_role.id,
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(user_org)
         session.commit()
@@ -151,7 +151,7 @@ class TestVerifyChatPermission:
         self, session: Session, org: Organization, student_user: User
     ):
         """Test that user not in organization raises error."""
-        from datetime import datetime
+        from datetime import datetime, timezone
         from uuid import uuid4
 
         from src.db.users import User
@@ -164,8 +164,8 @@ class TestVerifyChatPermission:
             password="hashed_password",
             first_name="External",
             last_name="User",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(external_user)
         session.commit()

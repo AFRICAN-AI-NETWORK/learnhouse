@@ -1,6 +1,6 @@
 """Fixtures for student dashboard (admin analytics) tests."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -25,7 +25,7 @@ from src.db.user_organizations import UserOrganization  # noqa: F401
 # Import every table model so SQLModel.metadata registers them for create_all().
 from src.db.users import User  # noqa: F401
 
-NOW = str(datetime.utcnow())
+NOW = str(datetime.now(timezone.utc))
 
 
 @pytest.fixture(name="session", scope="function")
@@ -324,4 +324,4 @@ def add_time(
 
 @pytest.fixture(name="recent")
 def recent_timestamp():
-    return str(datetime.now() - timedelta(seconds=5))
+    return str(datetime.now(timezone.utc) - timedelta(seconds=5))

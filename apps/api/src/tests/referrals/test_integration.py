@@ -4,7 +4,7 @@ Tests end-to-end flows and interactions between components
 """
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -151,7 +151,7 @@ class TestReferralE2EFlow:
             "src.services.referrals.referral_tracking.validate_referral_code_exists",
             return_value=mock_code,
         ):
-            code, fraud_score = await validate_and_track_referral(
+            _code, fraud_score = await validate_and_track_referral(
                 mock_request,
                 referred_user_id=600,
                 referral_code="FRAUD123",
@@ -241,7 +241,7 @@ class TestReferralE2EFlow:
             return_value=mock_code,
         ):
             # Should not raise exception, but tracking should not be created
-            code, fraud_score = await validate_and_track_referral(
+            code, _fraud_score = await validate_and_track_referral(
                 mock_request,
                 referred_user_id=600,
                 referral_code="FIRST123",

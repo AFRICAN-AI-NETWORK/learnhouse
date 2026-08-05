@@ -8,7 +8,7 @@ notification (e.g. grading a submission).
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Sequence
 from uuid import uuid4
 
@@ -54,7 +54,7 @@ async def _push_in_app(notification: Notification) -> None:
             },
             notification.user_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(
             "Failed to push in-app notification %s to user %s: %s",
             notification.notification_uuid,
@@ -255,7 +255,7 @@ def mark_as_read(
 
     if not notification.is_read:
         notification.is_read = True
-        notification.read_at = datetime.utcnow()
+        notification.read_at = datetime.now(timezone.utc)
         db_session.add(notification)
         db_session.commit()
         db_session.refresh(notification)
@@ -270,7 +270,7 @@ def mark_all_as_read(db_session: Session, *, user_id: int) -> int:
     )
     unread = db_session.exec(statement).all()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for notification in unread:
         notification.is_read = True
         notification.read_at = now

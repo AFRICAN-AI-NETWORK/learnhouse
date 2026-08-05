@@ -38,5 +38,5 @@ def enqueue_job(job_id: str, func: Callable, args: Sequence) -> None:
             replace_existing=True,
             misfire_grace_time=300,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Failed to enqueue fan-out job %s: %s", job_id, e)

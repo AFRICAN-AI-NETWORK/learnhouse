@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import uuid4
 
@@ -127,8 +127,8 @@ async def create_org(
 
     # Complete the org object
     org.org_uuid = f"org_{uuid4()}"
-    org.creation_date = str(datetime.now())
-    org.update_date = str(datetime.now())
+    org.creation_date = str(datetime.now(timezone.utc))
+    org.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org)
     db_session.commit()
@@ -139,8 +139,8 @@ async def create_org(
         user_id=int(current_user.id),
         org_id=int(org.id if org.id else 0),
         role_id=1,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(user_org)
@@ -178,8 +178,8 @@ async def create_org(
     org_settings = OrganizationConfig(
         org_id=int(org.id if org.id else 0),
         config=org_config,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(org_settings)
@@ -230,8 +230,8 @@ async def create_org_with_config(
 
     # Complete the org object
     org.org_uuid = f"org_{uuid4()}"
-    org.creation_date = str(datetime.now())
-    org.update_date = str(datetime.now())
+    org.creation_date = str(datetime.now(timezone.utc))
+    org.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org)
     db_session.commit()
@@ -242,8 +242,8 @@ async def create_org_with_config(
         user_id=int(current_user.id),
         org_id=int(org.id if org.id else 0),
         role_id=1,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(user_org)
@@ -258,8 +258,8 @@ async def create_org_with_config(
     org_settings = OrganizationConfig(
         org_id=int(org.id if org.id else 0),
         config=org_config,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(org_settings)
@@ -321,7 +321,7 @@ async def update_org(
             setattr(org, var, value)
 
     # Complete the org object
-    org.update_date = str(datetime.now())
+    org.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org)
     db_session.commit()
@@ -366,7 +366,7 @@ async def update_org_with_config_no_auth(
 
     # Update the database
     org_config.config = json.loads(updated_config.json())
-    org_config.update_date = str(datetime.now())
+    org_config.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org_config)
     db_session.commit()
@@ -403,7 +403,7 @@ async def update_org_logo(
     org.logo_image = name_in_disk
 
     # Complete the org object
-    org.update_date = str(datetime.now())
+    org.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org)
     db_session.commit()
@@ -440,7 +440,7 @@ async def update_org_thumbnail(
     org.thumbnail_image = name_in_disk
 
     # Complete the org object
-    org.update_date = str(datetime.now())
+    org.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org)
     db_session.commit()
@@ -628,7 +628,7 @@ async def update_org_signup_mechanism(
 
     # Update the database
     org_config.config = json.loads(updated_config.json())
-    org_config.update_date = str(datetime.now())
+    org_config.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org_config)
     db_session.commit()
@@ -734,7 +734,7 @@ async def update_org_landing(
     # Convert back to dict and update
     updated_config = json.loads(config_model.json())
     org_config.config = updated_config
-    org_config.update_date = str(datetime.now())
+    org_config.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(org_config)
     db_session.commit()
@@ -790,7 +790,7 @@ async def update_org_integrations(
 
     # Map back to the model field
     org_config.config = config_data
-    org_config.update_date = str(datetime.now())
+    org_config.update_date = str(datetime.now(timezone.utc))
 
     # SQLAlchemy doesn't detect in-place mutations to JSON columns.
     # flag_modified tells SQLAlchemy the column has actually changed.

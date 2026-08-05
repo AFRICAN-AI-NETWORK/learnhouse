@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, Request
 from sqlalchemy.exc import IntegrityError
@@ -71,8 +71,8 @@ async def create_payments_product(
     new_product = PaymentsProduct(
         **product_data, org_id=org_id, payments_config_id=config.id
     )
-    new_product.creation_date = datetime.now()
-    new_product.update_date = datetime.now()
+    new_product.creation_date = datetime.now(timezone.utc)
+    new_product.update_date = datetime.now(timezone.utc)
 
     # Create product in Flutterwave if provider_product_id is not manually provided
     if payments_product.provider_product_id:
@@ -122,12 +122,12 @@ async def create_payments_product(
                 db_session.add(new_product)
                 db_session.commit()
                 db_session.refresh(new_product)
-            except Exception as fix_error:
+            except Exception as fix_error:  # noqa: BLE001
                 db_session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail=f"Failed to fix foreign key constraint. Please ensure the database migration has been run. "
-                    f"Original error: {error_msg}. Fix error: {str(fix_error)}",
+                    f"Original error: {error_msg}. Fix error: {fix_error!s}",
                 )
         else:
             # Different integrity error, re-raise it
@@ -199,7 +199,7 @@ async def update_payments_product(
     for key, value in payments_product.model_dump().items():
         setattr(product, key, value)
 
-    product.update_date = datetime.now()
+    product.update_date = datetime.now(timezone.utc)
 
     db_session.add(product)
     db_session.commit()

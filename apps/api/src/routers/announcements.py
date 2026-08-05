@@ -111,7 +111,7 @@ async def create_announcement(
                     new_announcement.content,
                 ],
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(
                 "Failed to schedule app_update fan-out for announcement %s: %s",
                 new_announcement.id,

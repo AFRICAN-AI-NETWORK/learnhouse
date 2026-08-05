@@ -35,7 +35,7 @@ def upgrade() -> None:
             )
         )
         enum_exists = result.scalar()
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     if not enum_exists:
@@ -79,7 +79,7 @@ def upgrade() -> None:
             )
         )
         prod_enum_exists = result.scalar()
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     if not prod_enum_exists:
@@ -97,7 +97,7 @@ def upgrade() -> None:
             )
         )
         price_enum_exists = result.scalar()
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     if not price_enum_exists:
@@ -177,7 +177,7 @@ def upgrade() -> None:
             )
         )
         status_enum_exists = result.scalar()
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     if not status_enum_exists:

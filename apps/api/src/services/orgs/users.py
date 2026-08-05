@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import redis
 from fastapi import HTTPException, Request
@@ -311,7 +311,7 @@ async def invite_batch_users(
             "pending": True,
             "email_sent": isEmailSent,
             "expires": ttl,
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "created_by": current_user.user_uuid,
         }
 

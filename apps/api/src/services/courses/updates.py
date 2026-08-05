@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -50,8 +50,8 @@ async def create_update(
         **update_object.model_dump(),
         course_id=course.id,
         courseupdate_uuid=courseupdate_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(update)

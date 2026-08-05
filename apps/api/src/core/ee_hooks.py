@@ -27,7 +27,7 @@ def get_ee_hooks():
     except ImportError as e:
         logger.error(f"Failed to import EE hooks: {e}")
         return None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Unexpected error loading EE hooks: {e}")
         return None
 

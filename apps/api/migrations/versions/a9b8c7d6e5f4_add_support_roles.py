@@ -8,7 +8,7 @@ Create Date: 2026-03-15 00:00:00.000000
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -161,7 +161,7 @@ _COORDINATOR_RIGHTS = {
     "dashboard": {"action_access": True},
 }
 
-_NOW = str(datetime.utcnow())
+_NOW = str(datetime.now(timezone.utc))
 
 _NEW_ROLES = [
     {

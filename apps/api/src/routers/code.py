@@ -130,9 +130,9 @@ async def execute_code(
         )
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import traceback
 
         print(f"[CodeExecution] Error executing {request.language} code: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Code execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Code execution failed: {e!s}")

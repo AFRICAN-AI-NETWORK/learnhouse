@@ -85,7 +85,7 @@ async def test_pagination(session, org, admin_user, coordinator_user, student_us
 
 @pytest.mark.asyncio
 async def test_student_detail_breakdown(session, org, admin_user, student_user):
-    course, _, a1, a2 = _build_course_with_two_activities(session, org)
+    course, _, a1, _a2 = _build_course_with_two_activities(session, org)
     run = enroll(session, org, student_user, course)
     complete_activity(session, org, student_user, course, run, a1, points=10)
     add_time(session, org, student_user, course, a1, seconds=60)
@@ -113,7 +113,7 @@ async def test_student_detail_unknown_user_404(session, org, admin_user):
 
 @pytest.mark.asyncio
 async def test_course_detail_drilldown(session, org, admin_user, student_user):
-    course, chapter, a1, a2 = _build_course_with_two_activities(session, org)
+    course, _chapter, a1, _a2 = _build_course_with_two_activities(session, org)
     run = enroll(session, org, student_user, course)
     complete_activity(session, org, student_user, course, run, a1, points=10)
     add_time(session, org, student_user, course, a1, seconds=45)
@@ -135,7 +135,7 @@ async def test_course_detail_drilldown(session, org, admin_user, student_user):
 
 @pytest.mark.asyncio
 async def test_org_summary(session, org, admin_user, student_user):
-    course, _, a1, a2 = _build_course_with_two_activities(session, org)
+    course, _, a1, _a2 = _build_course_with_two_activities(session, org)
     run = enroll(session, org, student_user, course)
     complete_activity(session, org, student_user, course, run, a1)
     add_time(session, org, student_user, course, a1, seconds=90)

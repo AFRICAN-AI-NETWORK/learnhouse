@@ -108,7 +108,7 @@ async def create_timetable_event(
     )
     _validate_timetable_event(event_object)
 
-    now = str(datetime.now())
+    now = str(datetime.now(timezone.utc))
     event = CourseTimetableEvent(
         **event_object.model_dump(),
         event_uuid=f"timetable_event_{uuid4()}",
@@ -147,7 +147,7 @@ async def update_timetable_event(
     event = _get_event_or_404(course_uuid, event_uuid, db_session)
     for key, value in event_object.model_dump().items():
         setattr(event, key, value)
-    event.update_date = str(datetime.now())
+    event.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(event)
     db_session.commit()
@@ -213,7 +213,7 @@ async def update_register_policy(
         if key == "course_uuid":
             continue
         setattr(policy, key, value)
-    policy.update_date = str(datetime.now())
+    policy.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(policy)
     db_session.commit()
@@ -405,7 +405,7 @@ async def update_register_entry(
         if value is not None:
             setattr(entry, key, value)
     entry.method = RegisterEntryMethodEnum.instructor_override
-    entry.update_date = str(datetime.now())
+    entry.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(entry)
     db_session.commit()
@@ -466,7 +466,7 @@ def _get_or_create_register_policy(
     if policy:
         return policy
 
-    now = str(datetime.now())
+    now = str(datetime.now(timezone.utc))
     policy = CourseRegisterPolicy(
         policy_uuid=f"register_policy_{uuid4()}",
         course_uuid=course.course_uuid,

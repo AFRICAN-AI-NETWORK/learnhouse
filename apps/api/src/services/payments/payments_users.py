@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import HTTPException, Request
@@ -172,7 +172,7 @@ async def update_payment_user_status(
 
     # Update status
     payment_user.status = status
-    payment_user.update_date = datetime.now()
+    payment_user.update_date = datetime.now(timezone.utc)
 
     db_session.add(payment_user)
     db_session.commit()

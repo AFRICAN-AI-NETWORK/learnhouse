@@ -339,7 +339,7 @@ async def api_approve_payout(
     The background worker will then process APPROVED payouts.
     Admin-only endpoint.
     """
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from fastapi import HTTPException
 
@@ -358,7 +358,7 @@ async def api_approve_payout(
         )
 
     payout.status = PayoutStatus.APPROVED
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(timezone.utc)
     db_session.add(payout)
     db_session.commit()
 
@@ -404,7 +404,7 @@ async def api_reject_payout(
 
     payout.status = PayoutStatus.FAILED
     payout.failure_reason = reason
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(timezone.utc)
     db_session.add(payout)
     db_session.commit()
 

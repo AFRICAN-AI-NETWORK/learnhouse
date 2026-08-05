@@ -118,7 +118,7 @@ async def make_flutterwave_request(
                 error_data = {}
                 try:
                     error_data = response.json()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 msg = error_data.get("message", response.text)
                 raise HTTPException(
@@ -140,7 +140,7 @@ async def make_flutterwave_request(
             )
         except httpx.RequestError as e:
             raise HTTPException(
-                status_code=500, detail=f"Error connecting to Flutterwave: {str(e)}"
+                status_code=500, detail=f"Error connecting to Flutterwave: {e!s}"
             )
 
 
@@ -221,7 +221,7 @@ async def archive_flutterwave_product(
         # It's a payment plan
         try:
             await make_flutterwave_request("PUT", f"/payment-plans/{product_id}/cancel")
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
     return {"id": product_id, "active": False}
 
@@ -321,9 +321,9 @@ async def initialize_transaction(
                 db_session=db_session,
                 check_usage=True,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(
-                status_code=400, detail=f"Discount code error: {str(e)}"
+                status_code=400, detail=f"Discount code error: {e!s}"
             )
 
     referral_code_id = None
@@ -336,7 +336,7 @@ async def initialize_transaction(
         tracking = db_session.exec(tracking_statement).first()
         if tracking:
             referral_code_id = tracking.referral_code_id
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     metadata_dict = {
@@ -460,7 +460,7 @@ async def initialize_transaction(
             "reference": tx_ref,
         }
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         if payment_user and payment_user.id:
             await delete_payment_user(
                 request, org_id, payment_user.id, InternalUser(), db_session

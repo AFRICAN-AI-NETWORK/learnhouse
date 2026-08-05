@@ -154,7 +154,7 @@ async def edit_message(
             },
             message.receiver_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
 
         logging.warning(f"Failed to send WebSocket notification: {e}")
@@ -181,7 +181,7 @@ async def delete_message(
             {"type": "message_deleted", "data": {"message_uuid": message_uuid}},
             message.receiver_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
 
         logging.warning(f"Failed to send WebSocket notification: {e}")
@@ -303,7 +303,7 @@ async def upload_attachment(
             conversation.participant_two_id,
         ]
         await connection_manager.broadcast_to_conversation(ws_event, participant_ids)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
 
         logging.warning(f"Failed to send attachment websocket update: {e}")
@@ -467,7 +467,7 @@ async def send_message_with_attachment(
             },
             message.receiver_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
 
         logging.warning(f"Failed to send WebSocket notification: {e}")

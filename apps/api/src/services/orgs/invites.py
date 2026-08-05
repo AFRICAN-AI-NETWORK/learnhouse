@@ -2,7 +2,7 @@ import json
 import secrets
 import string
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import redis
 from fastapi import HTTPException, Request
@@ -80,7 +80,7 @@ async def create_invite_code(
         "invite_code_uuid": invite_code_uuid,
         "invite_code_expires": ttl,
         "invite_code_type": "signup",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user.user_uuid,
     }
 
@@ -159,7 +159,7 @@ async def create_invite_code_with_usergroup(
         "invite_code_expires": ttl,
         "usergroup_id": usergroup_id,
         "invite_code_type": "signup",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user.user_uuid,
     }
 

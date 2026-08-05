@@ -243,7 +243,7 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
 
         return None
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
 
         logging.error(f"WebSocket token verification failed: {e}")

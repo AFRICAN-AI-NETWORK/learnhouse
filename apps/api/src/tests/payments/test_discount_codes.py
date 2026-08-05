@@ -13,7 +13,7 @@ Tests cover all 8 critical security and business logic scenarios:
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlmodel import Session, select
@@ -238,8 +238,8 @@ class TestDiscountCodeValidation:
             discount_value=20.0,
             max_uses=100,
             current_uses=0,
-            valid_from=datetime.utcnow() + timedelta(days=7),  # Starts in 7 days
-            valid_until=datetime.utcnow() + timedelta(days=30),
+            valid_from=datetime.now(timezone.utc) + timedelta(days=7),  # Starts in 7 days
+            valid_until=datetime.now(timezone.utc) + timedelta(days=30),
             is_active=True,
             description="Future-dated code",
         )
@@ -376,7 +376,7 @@ class TestRaceConditions:
                 return await increment_discount_usage_atomic(
                     code.id, db_session, auto_commit=False
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return False
 
         # Execute 50 concurrent attempts

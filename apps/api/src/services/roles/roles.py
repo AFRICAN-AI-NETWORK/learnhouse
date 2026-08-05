@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Literal
 from uuid import uuid4
 
@@ -281,8 +281,8 @@ async def create_role(
 
     # Complete the role object
     role.role_uuid = f"role_{uuid4()}"
-    role.creation_date = str(datetime.now())
-    role.update_date = str(datetime.now())
+    role.creation_date = str(datetime.now(timezone.utc))
+    role.update_date = str(datetime.now(timezone.utc))
 
     # ============================================================================
     # VERIFICATION 9: Handle ID sequence issue (existing logic)
@@ -320,7 +320,7 @@ async def create_role(
                     text(f"SELECT setval('role_id_seq', {max_id + 1}, true)")
                 )
                 db_session.commit()
-            except Exception:
+            except Exception as e:  # noqa: BLE001
                 # If sequence doesn't exist or can't be updated, that's okay
                 # The manual ID assignment above will handle it
                 pass
@@ -509,7 +509,7 @@ async def update_role(
     await rbac_check(request, current_user, "update", role.role_uuid, db_session)
 
     # Complete the role object
-    role.update_date = str(datetime.now())
+    role.update_date = str(datetime.now(timezone.utc))
 
     # Remove the role_id from the role_object
     del role_object.role_id

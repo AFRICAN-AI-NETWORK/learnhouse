@@ -1,6 +1,6 @@
 """Critical end-to-end tests for chat system."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -341,8 +341,8 @@ class TestCriticalChatFlows:
                 password="hashed",
                 first_name="Instructor",
                 last_name=f"Number{i}",
-                creation_date=str(datetime.utcnow()),
-                update_date=str(datetime.utcnow()),
+                creation_date=str(datetime.now(timezone.utc)),
+                update_date=str(datetime.now(timezone.utc)),
             )
             session.add(instructor)
             session.commit()
@@ -360,8 +360,8 @@ class TestCriticalChatFlows:
                 user_id=instructor.id,
                 org_id=org.id,
                 role_id=instructor_role.id,
-                creation_date=str(datetime.utcnow()),
-                update_date=str(datetime.utcnow()),
+                creation_date=str(datetime.now(timezone.utc)),
+                update_date=str(datetime.now(timezone.utc)),
             )
             session.add(user_org)
             session.commit()

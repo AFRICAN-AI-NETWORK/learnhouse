@@ -11,7 +11,7 @@ whatever created the notification.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
@@ -60,9 +60,9 @@ def _send_one(db_session: Session, notification: Notification) -> None:
             body=_build_email_body(notification),
         )
         notification.email_status = EmailStatus.SENT
-        notification.email_sent_at = datetime.utcnow()
+        notification.email_sent_at = datetime.now(timezone.utc)
         notification.email_last_error = None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         notification.email_retry_count += 1
         notification.email_last_error = str(e)[:500]
         if notification.email_retry_count >= MAX_EMAIL_ATTEMPTS:
@@ -105,16 +105,14 @@ def process_pending_notification_emails(db_session: Session) -> dict:
     for notification in pending:
         try:
             _send_one(db_session, notification)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # _send_one already isolates send_email() failures; this guards
             # against anything unexpected (e.g. a DB error) so the sweep
             # always continues to the next notification.
-            logger.error(
+            logger.exception(
                 "Unexpected error processing notification %s email: %s",
                 notification.notification_uuid,
-                e,
-                exc_info=True,
-            )
+                e)
             continue
 
         if notification.email_status == EmailStatus.SENT:

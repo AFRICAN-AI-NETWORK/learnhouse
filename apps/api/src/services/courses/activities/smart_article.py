@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from uuid import uuid4
 
@@ -144,7 +144,7 @@ async def chunk_text_with_gemini(raw_text: str, api_key: str) -> list[dict]:
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Gemini API error: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -205,7 +205,7 @@ async def chunk_text_with_ai(raw_text: str, config) -> list[dict]:
                 )
                 continue
             raise  # Re-raise non-recoverable errors
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             last_error = e
             logger.warning(
                 f"Smart Article: {provider_name} failed ({str(e)[:100]}), trying next provider..."
@@ -311,8 +311,8 @@ async def create_smart_article_activity(
         org_id=org_id if org_id else 0,
         course_id=coursechapter.course_id,
         activity_uuid=activity_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(activity)
@@ -335,8 +335,8 @@ async def create_smart_article_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
         order=next_order,
     )
 

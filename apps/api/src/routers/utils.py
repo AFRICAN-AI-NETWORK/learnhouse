@@ -10,7 +10,7 @@ async def link_preview(url: str = Query(..., description="URL to preview")):
     try:
         data = await fetch_link_preview(url)
         return data
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
-            status_code=400, detail=f"Failed to fetch link preview: {str(e)}"
+            status_code=400, detail=f"Failed to fetch link preview: {e!s}"
         )

@@ -33,7 +33,7 @@ async def test():
                 with_unpublished_activities=True
             )
             print("Success")
-        except Exception:
+        except Exception:  # noqa: BLE001
             import traceback
             traceback.print_exc()
 

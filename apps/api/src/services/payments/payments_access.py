@@ -48,7 +48,7 @@ async def check_activity_paid_access(
             )
             if is_admin:
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error checking admin status in payments_access: {e}")
 
     # 2. Author Bypass: If user is the author, they have full access.
@@ -59,7 +59,7 @@ async def check_activity_paid_access(
             )
             if is_author:
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error checking author status in payments_access: {e}")
 
     # 3. Free Course check: If the course is not in PaymentsCourse, it's free.
@@ -115,7 +115,7 @@ async def check_course_paid_access(
             )
             if is_author:
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error in RBAC bypass check for course access: {e}")
 
     statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course_id)

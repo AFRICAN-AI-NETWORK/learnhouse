@@ -7,7 +7,7 @@ import base64
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import redis
@@ -128,7 +128,7 @@ try:
         if isinstance(_ENCRYPTION_KEY, str)
         else _ENCRYPTION_KEY
     )
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     logger.error(
         f"Failed to initialize encryption: {e}. Generate key with: Fernet.generate_key()"
     )
@@ -161,7 +161,7 @@ def encrypt_bank_data(bank_data: dict) -> str:
         logger.debug("Successfully encrypted bank data")
         return encrypted_str
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to encrypt bank data: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -260,7 +260,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
             logger.warning(f"Redis cache read failed: {e}. Falling back to API.")
 
     # Fallback: Check in-memory cache (single-worker only)
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     if _exchange_rate_cache.get("rate") and _exchange_rate_cache.get("timestamp"):
         cache_age = (now - _exchange_rate_cache["timestamp"]).total_seconds()
         if cache_age < EXCHANGE_RATE_CACHE_TTL:
@@ -320,8 +320,8 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
         logger.warning("Exchange rate API timeout. Using fallback rate.")
     except httpx.HTTPStatusError as e:
         logger.warning(f"Exchange rate API error: {e}. Falling back to default rate.")
-    except Exception as e:
-        logger.warning(f"Failed to fetch exchange rate: {str(e)}. Using fallback rate.")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Failed to fetch exchange rate: {e!s}. Using fallback rate.")
 
     # Fallbacks for other currencies if API fails
     fallback_map = {
@@ -371,7 +371,7 @@ def decrypt_bank_data(encrypted_data: str) -> dict:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to decrypt bank account information - invalid key",
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to decrypt bank data: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -473,11 +473,11 @@ async def create_paystack_transfer_recipient(
             "POST", "/transferrecipient", recipient_data
         )
         return result
-    except Exception as e:
-        logger.error(f"Failed to create Paystack transfer recipient: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to create Paystack transfer recipient: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create transfer recipient: {str(e)}",
+            detail=f"Failed to create transfer recipient: {e!s}",
         )
 
 
@@ -523,11 +523,11 @@ async def initiate_paystack_transfer(
             "POST", "/transfer", transfer_data, headers=headers if headers else None
         )
         return result
-    except Exception as e:
-        logger.error(f"Failed to initiate Paystack transfer: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to initiate Paystack transfer: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to initiate transfer: {str(e)}",
+            detail=f"Failed to initiate transfer: {e!s}",
         )
 
 
@@ -585,9 +585,9 @@ async def create_payout_request(
         currency="USD",  # Base currency
         status=PayoutStatus.REQUESTED,
         bank_account_info=encrypted_bank_info,  # Encrypted for security
-        request_date=datetime.now(),
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        request_date=datetime.now(timezone.utc),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
     )
 
     db_session.add(payout)
@@ -630,7 +630,7 @@ async def process_payout_request(
 
     # Update status to PROCESSING
     payout.status = PayoutStatus.PROCESSING
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(timezone.utc)
     db_session.add(payout)
     db_session.commit()
 
@@ -677,7 +677,7 @@ async def process_payout_request(
         )
 
         # Initiate transfer with idempotency key to prevent double-charging on retries
-        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now().timestamp())}"
+        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now(timezone.utc).timestamp())}"
         idempotency_key = (
             f"payout_{payout.id}_{payout.request_date.strftime('%Y%m%d%H%M%S')}"
         )
@@ -701,7 +701,7 @@ async def process_payout_request(
                 # Update payout status
                 payout.paystack_transfer_code = transfer_code
                 payout.status = PayoutStatus.COMPLETED
-                payout.completion_date = datetime.now()
+                payout.completion_date = datetime.now(timezone.utc)
                 db_session.add(payout)
 
                 # Fetch all eligible commissions for this user
@@ -733,7 +733,7 @@ async def process_payout_request(
 
                     # Mark commission as PAID
                     commission.status = CommissionStatus.PAID
-                    commission.payout_date = datetime.now()
+                    commission.payout_date = datetime.now(timezone.utc)
                     commission.payout_request_id = payout.id  # Link to payout
                     db_session.add(commission)
 
@@ -795,14 +795,14 @@ async def process_payout_request(
             # Mark payout as FAILED with reason
             payout.status = PayoutStatus.FAILED
             payout.failure_reason = str(validation_error)
-            payout.update_date = datetime.now()
+            payout.update_date = datetime.now(timezone.utc)
             db_session.add(payout)
             db_session.commit()
 
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=str(validation_error)
             )
-        except Exception as commit_error:
+        except Exception as commit_error:  # noqa: BLE001
             logger.error(
                 f"Failed to commit payout {payout_id} transaction: {commit_error}"
             )
@@ -811,13 +811,13 @@ async def process_payout_request(
 
         logger.info(f"Successfully processed payout {payout_id}")
 
-    except Exception as e:
-        logger.error(f"Failed to process payout {payout_id}: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to process payout {payout_id}: {e!s}")
 
         # Update status to FAILED (balance not deducted)
         payout.status = PayoutStatus.FAILED
         payout.failure_reason = str(e)
-        payout.update_date = datetime.now()
+        payout.update_date = datetime.now(timezone.utc)
         db_session.add(payout)
         db_session.commit()
 

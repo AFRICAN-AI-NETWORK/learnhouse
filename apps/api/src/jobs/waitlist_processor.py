@@ -98,8 +98,8 @@ async def run_waitlist_activation_job():
             "Waitlist activation job completed in %.2fs",
             result["elapsed_s"],
         )
-    except Exception as e:
-        logger.error("Waitlist activation job failed: %s", e, exc_info=True)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Waitlist activation job failed: %s", e)
 
 
 async def run_retry_failed_emails_job():
@@ -115,8 +115,8 @@ async def run_retry_failed_emails_job():
             "Retry failed emails job completed in %.2fs",
             result["elapsed_s"],
         )
-    except Exception as e:
-        logger.error("Retry failed emails job failed: %s", e, exc_info=True)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Retry failed emails job failed: %s", e)
 
 
 def sync_run_waitlist_activation_job():

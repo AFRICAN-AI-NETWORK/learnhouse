@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -45,8 +45,8 @@ class PaymentsProduct(PaymentsProductBase, table=True):
         )
     )
     provider_product_id: str = Field(sa_column=Column(String))
-    creation_date: datetime = Field(default=datetime.now())
-    update_date: datetime = Field(default=datetime.now())
+    creation_date: datetime = Field(default=datetime.now(timezone.utc))
+    update_date: datetime = Field(default=datetime.now(timezone.utc))
 
 
 class PaymentsProductCreate(PaymentsProductBase):

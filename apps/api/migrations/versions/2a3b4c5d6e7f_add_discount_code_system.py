@@ -107,7 +107,7 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="SET NULL",
             )
-    except Exception:
+    except Exception:  # noqa: BLE001
         # Foreign key may already exist or columns may not exist
         # This is safe to ignore
         pass
@@ -120,7 +120,7 @@ def downgrade() -> None:
             batch_op.drop_constraint(
                 "fk_paymentsuser_discount_code_id", type_="foreignkey"
             )
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     # Drop discount_code_usage table

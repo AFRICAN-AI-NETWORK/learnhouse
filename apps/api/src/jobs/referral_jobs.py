@@ -92,8 +92,8 @@ def _sync_process_payouts() -> dict:
             try:
                 _safe_asyncio_run(process_payout_request(payout.id, db_session))
                 processed_count += 1
-            except Exception as e:
-                logger.error(
+            except Exception as e:  # noqa: BLE001
+                logger.exception(
                     "Error processing payout %s: %s", payout.id, e, exc_info=True
                 )
                 failed_count += 1
@@ -126,8 +126,8 @@ async def process_commission_eligibility_job():
             result["elapsed_s"],
             result["updated_count"],
         )
-    except Exception as e:
-        logger.error("Commission eligibility job failed: %s", e, exc_info=True)
+    except Exception as e:  # noqa: BLE001
+        logger.error("Commission eligibility job failed: %s", e)
 
 
 async def process_payout_requests_job():
@@ -145,8 +145,8 @@ async def process_payout_requests_job():
             result["processed_count"],
             result["failed_count"],
         )
-    except Exception as e:
-        logger.error("Payout processing job failed: %s", e, exc_info=True)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Payout processing job failed: %s", e)
 
 
 # Schedule configuration for external scheduler (e.g., APScheduler, Celery)

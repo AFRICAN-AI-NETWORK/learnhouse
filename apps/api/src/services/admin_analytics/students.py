@@ -11,7 +11,7 @@ Design notes:
   every list load.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Sequence
 
 from fastapi import HTTPException, status
@@ -636,7 +636,7 @@ async def get_top_org_students(
     )
 
     if days is not None and days > 0:
-        cutoff_date = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         members = members.where(UserOrganization.creation_date >= cutoff_date)
 
     users = db_session.exec(members).all()

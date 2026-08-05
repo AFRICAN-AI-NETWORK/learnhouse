@@ -375,7 +375,7 @@ class TestValidateAndTrackReferral:
             "src.services.referrals.referral_tracking.validate_referral_code_exists",
             return_value=mock_code,
         ):
-            code, fraud_score = await validate_and_track_referral(
+            _code, fraud_score = await validate_and_track_referral(
                 mock_request,
                 referred_user_id=100,
                 referral_code="TEST123",
@@ -419,7 +419,7 @@ class TestValidateAndTrackReferral:
             return_value=mock_code,
         ):
             # Should not raise exception, allows signup to continue
-            code, fraud_score = await validate_and_track_referral(
+            code, _fraud_score = await validate_and_track_referral(
                 mock_request,
                 referred_user_id=100,
                 referral_code="TEST123",

@@ -22,5 +22,5 @@ try:
         conn.execute(text("GRANT ALL ON SCHEMA public TO postgres;"))
         conn.execute(text("GRANT ALL ON SCHEMA public TO public;"))
         print("Done!")
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("Failed:", e)

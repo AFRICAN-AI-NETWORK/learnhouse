@@ -4,7 +4,7 @@ Implements critical security measures for race condition prevention.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, Optional, Tuple
 
 from fastapi import HTTPException, Request, status
@@ -129,17 +129,20 @@ async def validate_discount_code(
         raise DiscountValidationError("Invalid or inactive discount code")
 
     # Check expiry dates - code with valid_until in past must be rejected
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
-    if discount_code.valid_from > now:
+    valid_from_aware = discount_code.valid_from.replace(tzinfo=timezone.utc) if discount_code.valid_from else None
+    if valid_from_aware and valid_from_aware > now:
         raise DiscountValidationError(
-            f"Discount code is not yet valid. Valid from: {discount_code.valid_from.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            f"Discount code is not yet valid. Valid from: {valid_from_aware.strftime('%Y-%m-%d %H:%M:%S UTC')}"
         )
 
-    if discount_code.valid_until and discount_code.valid_until < now:
-        raise DiscountValidationError(
-            f"Discount code has expired on {discount_code.valid_until.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-        )
+    if discount_code.valid_until:
+        valid_until_aware = discount_code.valid_until.replace(tzinfo=timezone.utc)
+        if valid_until_aware < now:
+            raise DiscountValidationError(
+                f"Discount code has expired on {valid_until_aware.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            )
 
     # Course-Specific Restriction Enforcement
     if discount_code.course_id and discount_code.course_id != course_id:
@@ -189,7 +192,7 @@ async def validate_discount_code(
             original_amount, discount_code.discount_type, discount_code.discount_value
         )
     except DiscountValidationError as e:
-        logger.error(f"Error calculating discount: {str(e)}")
+        logger.error(f"Error calculating discount: {e!s}")
         raise
 
     return discount_code, discount_amount, final_amount
@@ -701,7 +704,7 @@ async def update_discount_code(
     if discount_update.description is not None:
         discount_code.description = discount_update.description
 
-    discount_code.updated_at = datetime.utcnow()
+    discount_code.updated_at = datetime.now(timezone.utc)
 
     db_session.add(discount_code)
     db_session.commit()
@@ -727,7 +730,7 @@ async def deactivate_discount_code(
     )
 
     discount_code.is_active = False
-    discount_code.updated_at = datetime.utcnow()
+    discount_code.updated_at = datetime.now(timezone.utc)
 
     db_session.add(discount_code)
     db_session.commit()

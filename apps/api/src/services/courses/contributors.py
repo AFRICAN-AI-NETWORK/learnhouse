@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import HTTPException, Request
@@ -61,8 +61,8 @@ async def apply_course_contributor(
         user_id=current_user.id,
         authorship=ResourceAuthorshipEnum.CONTRIBUTOR,
         authorship_status=ResourceAuthorshipStatusEnum.PENDING,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(resource_author)
@@ -134,7 +134,7 @@ async def update_course_contributor(
     # Update the contributor's role and status
     existing_authorship.authorship = authorship
     existing_authorship.authorship_status = authorship_status
-    existing_authorship.update_date = str(datetime.now())
+    existing_authorship.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(existing_authorship)
     db_session.commit()
@@ -224,7 +224,7 @@ async def add_bulk_course_contributors(
     # Process results
     results = {"successful": [], "failed": []}
 
-    current_time = str(datetime.now())
+    current_time = str(datetime.now(timezone.utc))
 
     for username in usernames:
         try:
@@ -273,7 +273,7 @@ async def add_bulk_course_contributors(
 
             results["successful"].append({"username": username, "user_id": user.id})
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             results["failed"].append({"username": username, "reason": str(e)})
 
     return results
@@ -358,7 +358,7 @@ async def remove_bulk_course_contributors(
 
             results["successful"].append({"username": username, "user_id": user.id})
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             results["failed"].append({"username": username, "reason": str(e)})
 
     return results

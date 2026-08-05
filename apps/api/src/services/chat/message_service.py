@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -25,7 +25,7 @@ class ReadReceiptService:
         """Create delivery receipt when message is sent."""
 
         receipt = MessageReadReceipt(
-            message_id=message_id, user_id=user_id, delivered_at=datetime.utcnow()
+            message_id=message_id, user_id=user_id, delivered_at=datetime.now(timezone.utc)
         )
 
         db.add(receipt)
@@ -57,10 +57,10 @@ class ReadReceiptService:
 
         if not receipt:
             receipt = MessageReadReceipt(
-                message_id=message.id, user_id=user_id, delivered_at=datetime.utcnow()
+                message_id=message.id, user_id=user_id, delivered_at=datetime.now(timezone.utc)
             )
 
-        receipt.read_at = datetime.utcnow()
+        receipt.read_at = datetime.now(timezone.utc)
 
         db.add(receipt)
         db.commit()
@@ -168,15 +168,15 @@ class MessageService:
             content=message_data.content,
             message_type=message_data.message_type,
             reply_to_message_id=reply_to_id,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         db.add(new_message)
 
         # Update conversation last_message_at
-        conversation.last_message_at = datetime.utcnow()
-        conversation.updated_at = datetime.utcnow()
+        conversation.last_message_at = datetime.now(timezone.utc)
+        conversation.updated_at = datetime.now(timezone.utc)
         db.add(conversation)
 
         db.commit()
@@ -193,7 +193,7 @@ class MessageService:
                 NotificationService
 
             await NotificationService.send_message_notification(db, new_message)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Don't fail message creation if notification fails
             logger.warning(f"Failed to send notification: {e}")
 
@@ -213,7 +213,7 @@ class MessageService:
                     "message_type": message_data.message_type,
                 },
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to log audit: {e}")
 
         logger.info(
@@ -420,15 +420,15 @@ class MessageService:
             message_id=message.id,
             previous_content=message.content,
             edited_by_user_id=user_id,
-            edited_at=datetime.utcnow(),
+            edited_at=datetime.now(timezone.utc),
         )
         db.add(edit_history)
 
         # Update message
         message.content = update_data.content
         message.is_edited = True
-        message.edited_at = datetime.utcnow()
-        message.updated_at = datetime.utcnow()
+        message.edited_at = datetime.now(timezone.utc)
+        message.updated_at = datetime.now(timezone.utc)
 
         db.add(message)
         db.commit()
@@ -461,9 +461,9 @@ class MessageService:
 
         # Soft delete
         message.is_deleted = True
-        message.deleted_at = datetime.utcnow()
+        message.deleted_at = datetime.now(timezone.utc)
         message.deleted_by_user_id = user_id
-        message.updated_at = datetime.utcnow()
+        message.updated_at = datetime.now(timezone.utc)
 
         db.add(message)
         db.commit()

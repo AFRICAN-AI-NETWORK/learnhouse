@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -62,8 +62,8 @@ async def create_activity(
     activity = Activity(**activity_object.model_dump())
 
     activity.activity_uuid = str(f"activity_{uuid4()}")
-    activity.creation_date = str(datetime.now())
-    activity.update_date = str(datetime.now())
+    activity.creation_date = str(datetime.now(timezone.utc))
+    activity.update_date = str(datetime.now(timezone.utc))
     activity.org_id = chapter.org_id
     activity.course_id = chapter.course_id
 
@@ -92,7 +92,7 @@ async def create_activity(
                         title=f"{course.name} - {activity.name}",
                         start_time=activity.details.get("start_time")
                         if activity.details
-                        else str(datetime.now()),
+                        else str(datetime.now(timezone.utc)),
                     )
 
                     # Update activity details with the stream info
@@ -109,9 +109,9 @@ async def create_activity(
                     db_session.add(activity)
                     db_session.commit()
                     db_session.refresh(activity)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
-                f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {str(e)}",
+                f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {e!s}",
                 file=sys.stderr,
             )
             # We don't fail the whole creation if YouTube fails, just log it.
@@ -133,8 +133,8 @@ async def create_activity(
         activity_id=activity.id if activity.id else 0,
         course_id=chapter.course_id,
         org_id=chapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
         order=to_be_used_order,
     )
 
@@ -283,7 +283,7 @@ async def update_activity(
                 sync_fanout_activity_added,
                 [activity.id],
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(
                 "Failed to schedule activity_added fan-out for activity %s: %s",
                 activity.id,

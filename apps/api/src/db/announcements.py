@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import Column, Field, ForeignKey, Integer, SQLModel
@@ -19,10 +19,10 @@ class Announcement(AnnouncementBase, table=True):
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     )
     creation_date: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat() + "Z"
+        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
     )
     update_date: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat() + "Z"
+        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
     )
 
 
@@ -35,7 +35,7 @@ class AnnouncementRead(SQLModel, table=True):
         sa_column=Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     )
     creation_date: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat() + "Z"
+        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
     )
 
 

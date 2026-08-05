@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from sqlmodel import Session, select
@@ -24,8 +24,8 @@ async def create_campaign(
         org_id=org_id,
         created_by_user_id=user_id,
         status=CampaignStatus.PENDING,
-        creation_date=datetime.now().isoformat(),
-        update_date=datetime.now().isoformat(),
+        creation_date=datetime.now(timezone.utc).isoformat(),
+        update_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(campaign)
     db_session.commit()
@@ -192,7 +192,7 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
             if campaign.send_via_email and user.email:
                 try:
                     send_email(to=user.email, subject=campaign.subject, body=email_html)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to send email to {user.email}: {e}")
 
             # 2. Send LMS Chat (System Announcement)
@@ -231,7 +231,7 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                             sender_id=campaign.created_by_user_id,
                             org_id=campaign.org_id,
                         )
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.error(
                             f"Failed to send chat message to {user.email}: {e}"
                         )
@@ -246,11 +246,11 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
             await asyncio.sleep(8.0)
 
         campaign.status = CampaignStatus.SENT
-        campaign.update_date = datetime.now().isoformat()
+        campaign.update_date = datetime.now(timezone.utc).isoformat()
         db_session.add(campaign)
         db_session.commit()
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Campaign {campaign_id} failed: {e}")
         campaign.status = CampaignStatus.FAILED
         campaign.error_log = str(e)

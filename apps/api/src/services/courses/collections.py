@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -87,8 +87,8 @@ async def create_collection(
 
     # Complete the collection object
     collection.collection_uuid = f"collection_{uuid4()}"
-    collection.creation_date = str(datetime.now())
-    collection.update_date = str(datetime.now())
+    collection.creation_date = str(datetime.now(timezone.utc))
+    collection.update_date = str(datetime.now(timezone.utc))
 
     # Add collection to database
     db_session.add(collection)
@@ -118,8 +118,8 @@ async def create_collection(
                     collection_id=int(collection.id),  # type: ignore
                     course_id=course_id,
                     org_id=int(collection_object.org_id),
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    creation_date=str(datetime.now(timezone.utc)),
+                    update_date=str(datetime.now(timezone.utc)),
                 )
                 # Add collection_course to database
                 db_session.add(collection_course)
@@ -170,7 +170,7 @@ async def update_collection(
         if value is not None:
             setattr(collection, var, value)
 
-    collection.update_date = str(datetime.now())
+    collection.update_date = str(datetime.now(timezone.utc))
 
     # Update only the fields that were passed in
     for var, value in vars(collection_object).items():
@@ -192,8 +192,8 @@ async def update_collection(
             collection_id=int(collection.id),  # type: ignore
             course_id=int(course),
             org_id=int(collection.org_id),
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         # Add collection_course to database
         db_session.add(collection_course)

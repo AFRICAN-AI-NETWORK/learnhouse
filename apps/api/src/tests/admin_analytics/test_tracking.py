@@ -1,6 +1,6 @@
 """Tests for learning time-tracking heartbeat ingestion."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi import HTTPException
@@ -69,7 +69,7 @@ async def test_idle_gap_opens_new_session(session, org, student_user):
     )
     # Force the last heartbeat to be older than the idle gap.
     first.last_heartbeat_at = str(
-        datetime.now() - timedelta(seconds=IDLE_GAP_SECONDS + 60)
+        datetime.now(timezone.utc) - timedelta(seconds=IDLE_GAP_SECONDS + 60)
     )
     session.add(first)
     session.commit()

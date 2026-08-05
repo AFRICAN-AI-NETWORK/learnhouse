@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, Request
@@ -80,8 +80,8 @@ async def join_org(
                 user_id=user.id,
                 org_id=org.id,
                 role_id=4,
-                creation_date=str(datetime.now()),
-                update_date=str(datetime.now()),
+                creation_date=str(datetime.now(timezone.utc)),
+                update_date=str(datetime.now(timezone.utc)),
             )
 
             db_session.add(user_organization)
@@ -102,8 +102,8 @@ async def join_org(
                 user_id=user.id,
                 org_id=org.id,
                 role_id=4,
-                creation_date=str(datetime.now()),
-                update_date=str(datetime.now()),
+                creation_date=str(datetime.now(timezone.utc)),
+                update_date=str(datetime.now(timezone.utc)),
             )
 
             db_session.add(user_organization)

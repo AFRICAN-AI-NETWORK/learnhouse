@@ -9,7 +9,7 @@ abandoned tab from inflating the total. Each heartbeat delta is capped so a
 misbehaving or malicious client cannot over-report time.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from dateutil import parser
 from fastapi import HTTPException, Request, status
@@ -64,7 +64,7 @@ async def record_activity_heartbeat(
         )
 
     increment = max(0, min(payload.seconds, MAX_HEARTBEAT_SECONDS))
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     now_str = str(now)
 
     trail_run = db_session.exec(

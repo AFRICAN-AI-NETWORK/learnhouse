@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -325,8 +325,8 @@ async def create_assignment(
     assignment = Assignment(**assignment_object.model_dump())
 
     assignment.assignment_uuid = str(f"assignment_{uuid4()}")
-    assignment.creation_date = str(datetime.now())
-    assignment.update_date = str(datetime.now())
+    assignment.creation_date = str(datetime.now(timezone.utc))
+    assignment.update_date = str(datetime.now(timezone.utc))
     assignment.org_id = course.org_id
 
     # Insert Assignment in DB
@@ -457,7 +457,7 @@ async def update_assignment(
     for var, value in vars(assignment_object).items():
         if value is not None:
             setattr(assignment, var, value)
-    assignment.update_date = str(datetime.now())
+    assignment.update_date = str(datetime.now(timezone.utc))
 
     # Insert Assignment in DB
     db_session.add(assignment)
@@ -601,8 +601,8 @@ async def create_assignment_task(
     assignment_task = AssignmentTask(**assignment_task_object.model_dump())
 
     assignment_task.assignment_task_uuid = str(f"assignmenttask_{uuid4()}")
-    assignment_task.creation_date = str(datetime.now())
-    assignment_task.update_date = str(datetime.now())
+    assignment_task.creation_date = str(datetime.now(timezone.utc))
+    assignment_task.update_date = str(datetime.now(timezone.utc))
     assignment_task.org_id = course.org_id
     assignment_task.chapter_id = assignment.chapter_id
     assignment_task.activity_id = assignment.activity_id
@@ -777,7 +777,7 @@ async def put_assignment_task_reference_file(
         # Update reference file
         assignment_task.reference_file = name_in_disk
 
-    assignment_task.update_date = str(datetime.now())
+    assignment_task.update_date = str(datetime.now(timezone.utc))
 
     # Insert Assignment Task in DB
     db_session.add(assignment_task)
@@ -870,7 +870,7 @@ async def put_assignment_task_submission_file(
         )
         assignment_task_submission = db_session.exec(statement).first()
 
-        current_time = str(datetime.now())
+        current_time = str(datetime.now(timezone.utc))
         if assignment_task_submission:
             updated_task_submission = dict(
                 assignment_task_submission.task_submission or {}
@@ -953,7 +953,7 @@ async def update_assignment_task(
     for var, value in vars(assignment_task_object).items():
         if value is not None:
             setattr(assignment_task, var, value)
-    assignment_task.update_date = str(datetime.now())
+    assignment_task.update_date = str(datetime.now(timezone.utc))
 
     # Insert Assignment Task in DB
     db_session.add(assignment_task)
@@ -1139,7 +1139,7 @@ async def handle_assignment_task_submission(
                     if isinstance(value, dict) and "submissions" in value:
                         # Append the new attempt with timestamp
                         attempt = {
-                            "timestamp": str(datetime.now()),
+                            "timestamp": str(datetime.now(timezone.utc)),
                             "submissions": value.get("submissions", []),
                         }
                         existing_history.append(attempt)
@@ -1152,7 +1152,7 @@ async def handle_assignment_task_submission(
                         value["history"] = existing_history
 
                 setattr(assignment_task_submission, var, value)
-        assignment_task_submission.update_date = str(datetime.now())
+        assignment_task_submission.update_date = str(datetime.now(timezone.utc))
 
         # AUTO-GRADING: dispatch to the correct handler based on task type
         try:
@@ -1161,7 +1161,7 @@ async def handle_assignment_task_submission(
                 print(
                     f"[HandleSubmission] Auto-grading done. Task: {assignment_task.assignment_task_uuid}, Grade: {assignment_task_submission.grade}"
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
                 f"[AutoGrading] Failed (update path), saving submission without grade: {e}"
             )
@@ -1172,7 +1172,7 @@ async def handle_assignment_task_submission(
         db_session.refresh(assignment_task_submission)
     else:
         # Create new Task submission
-        current_time = str(datetime.now())
+        current_time = str(datetime.now(timezone.utc))
 
         # Assuming model_dump() returns a dictionary
         model_data = assignment_task_submission_object.model_dump()
@@ -1211,7 +1211,7 @@ async def handle_assignment_task_submission(
         # AUTO-GRADING: dispatch to the correct handler based on task type
         try:
             await dispatch_auto_grading(assignment_task, assignment_task_submission)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
                 f"[AutoGrading] Failed (create path), saving submission without grade: {e}"
             )
@@ -1491,7 +1491,7 @@ async def update_assignment_task_submission(
     for var, value in vars(assignment_task_submission_object).items():
         if value is not None:
             setattr(assignment_task_submission, var, value)
-    assignment_task_submission.update_date = str(datetime.now())
+    assignment_task_submission.update_date = str(datetime.now(timezone.utc))
 
     # Insert Assignment Task Submission in DB
     db_session.add(assignment_task_submission)
@@ -1667,7 +1667,7 @@ async def create_assignment_submission(
     if all_auto_gradable and submitted_task_ids == task_ids:
         status = AssignmentUserSubmissionStatus.GRADED
 
-    current_time = str(datetime.now())
+    current_time = str(datetime.now(timezone.utc))
 
     if assignment_user_submission:
         assignment_user_submission.grade = total_grade
@@ -1732,8 +1732,8 @@ async def create_assignment_submission(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,  # type: ignore
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         db_session.add(trailrun)
         db_session.commit()
@@ -1758,15 +1758,15 @@ async def create_assignment_submission(
             grade="",
             user_id=user.id,  # type: ignore
             points_earned=0,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
     else:
         trailstep.complete = True
-        trailstep.update_date = str(datetime.now())
+        trailstep.update_date = str(datetime.now(timezone.utc))
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -1981,7 +1981,7 @@ async def update_assignment_submission(
     for var, value in vars(assignment_user_submission_object).items():
         if value is not None:
             setattr(assignment_user_submission, var, value)
-    assignment_user_submission.update_date = str(datetime.now())
+    assignment_user_submission.update_date = str(datetime.now(timezone.utc))
 
     # Insert Assignment User Submission in DB
     db_session.add(assignment_user_submission)
@@ -2044,7 +2044,7 @@ async def reject_assignment_submission(
     assignment_user_submission.submission_feedback = (
         revision_object.submission_feedback or ""
     )
-    assignment_user_submission.update_date = str(datetime.now())
+    assignment_user_submission.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(assignment_user_submission)
     db_session.commit()
@@ -2064,7 +2064,7 @@ async def reject_assignment_submission(
             instructor_name=_display_name(current_user),
             feedback=revision_object.submission_feedback,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(
             "Failed to send retake_requested notification for assignment %s: %s",
             assignment.assignment_uuid,
@@ -2234,7 +2234,7 @@ async def grade_assignment_submission(
             feedback=feedback,
             unlocks_certificate=unlocks_certificate,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(
             "Failed to send assignment_reviewed notification for assignment %s: %s",
             assignment.assignment_uuid,
@@ -2375,7 +2375,7 @@ async def mark_activity_as_done_for_user(
 
     # Mark activity as done
     trailstep.complete = True
-    trailstep.update_date = str(datetime.now())
+    trailstep.update_date = str(datetime.now(timezone.utc))
 
     # Insert TrailStep in DB
     db_session.add(trailstep)

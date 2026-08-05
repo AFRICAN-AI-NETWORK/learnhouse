@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from dateutil import parser
@@ -61,8 +61,8 @@ async def create_user_trail(
 
     trail = Trail.model_validate(trail_object)
 
-    trail.creation_date = str(datetime.now())
-    trail.update_date = str(datetime.now())
+    trail.creation_date = str(datetime.now(timezone.utc))
+    trail.update_date = str(datetime.now(timezone.utc))
     trail.org_id = trail_object.org_id
     trail.trail_uuid = str(f"trail_{uuid4()}")
 
@@ -231,7 +231,7 @@ def backfill_completed_trail_step_points(
         ):
             trail_step.points_earned = expected_points
             trail_step.grade = expected_grade
-            trail_step.update_date = str(datetime.now())
+            trail_step.update_date = str(datetime.now(timezone.utc))
             db_session.add(trail_step)
             updated = True
 
@@ -365,8 +365,8 @@ async def add_activity_to_trail(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         db_session.add(trailrun)
         db_session.commit()
@@ -485,8 +485,8 @@ async def add_activity_to_trail(
             user_id=user.id,
             points_earned=points_earned,
             is_late=is_late,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         db_session.add(trailstep)
         db_session.commit()
@@ -495,7 +495,7 @@ async def add_activity_to_trail(
         trailstep.complete = True
         trailstep.points_earned = points_earned
         trailstep.is_late = is_late
-        trailstep.update_date = str(datetime.now())
+        trailstep.update_date = str(datetime.now(timezone.utc))
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
@@ -517,7 +517,7 @@ async def add_activity_to_trail(
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, user, "update", db_session
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
         if not is_editor:
@@ -618,7 +618,7 @@ async def remove_activity_from_trail(
     trailrun = db_session.exec(statement).first()
     if trailrun and trailrun.status == StatusEnum.STATUS_COMPLETED:
         trailrun.status = StatusEnum.STATUS_IN_PROGRESS
-        trailrun.update_date = str(datetime.now())
+        trailrun.update_date = str(datetime.now(timezone.utc))
         db_session.add(trailrun)
         db_session.commit()
 
@@ -690,7 +690,7 @@ async def add_course_to_trail(
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, user, "update", db_session
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             is_editor = False
 
     if not is_editor:
@@ -752,8 +752,8 @@ async def add_course_to_trail(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         db_session.add(trail_run)
         db_session.commit()

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import Request
@@ -42,7 +42,7 @@ async def register_for_live_session(
         activity_uuid=activity_uuid,
         user_id=current_user.id,
         org_id=org_id,
-        creation_date=datetime.now().isoformat(),
+        creation_date=datetime.now(timezone.utc).isoformat(),
     )
     db_session.add(registration)
     db_session.commit()
@@ -149,8 +149,8 @@ async def end_live_session(
                 if yt_config:
                     yt_service = YouTubeService(yt_config)
                     await yt_service.end_broadcast(youtube_video_id)
-        except Exception as e:
-            print(f"[LIVE_SESSIONS_SERVICE] YouTube End Failed: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[LIVE_SESSIONS_SERVICE] YouTube End Failed: {e!s}")
             # Log but continue to mark as ended locally
 
     # 2. Update status

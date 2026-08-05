@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -27,8 +27,8 @@ def authorized_instructor(db_session: Session, mock_org) -> User:
         first_name="Instructor",
         last_name="One",
         email_verified=True,
-        creation_date=datetime.utcnow(),
-        update_date=datetime.utcnow(),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
         role=3,  # Instructor role
     )
     db_session.add(user)
@@ -47,8 +47,8 @@ def instructor_course(db_session: Session, mock_org, authorized_instructor) -> C
         description="A course owned by an instructor",
         public=True,
         open_to_contributors=False,
-        creation_date=datetime.utcnow(),
-        update_date=datetime.utcnow(),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
     )
     db_session.add(course)
     db_session.commit()
@@ -77,7 +77,7 @@ async def test_instructor_can_create_code_for_owned_course(
         code="INST10",
         discount_type=DiscountTypeEnum.PERCENTAGE,
         discount_value=10.0,
-        valid_from=datetime.utcnow(),
+        valid_from=datetime.now(timezone.utc),
         course_id=instructor_course.id,
     )
 
@@ -102,7 +102,7 @@ async def test_instructor_cannot_create_global_code(
         code="GLOBAL_FAIL",
         discount_type=DiscountTypeEnum.PERCENTAGE,
         discount_value=10.0,
-        valid_from=datetime.utcnow(),
+        valid_from=datetime.now(timezone.utc),
         # course_id is None
     )
 
@@ -129,7 +129,7 @@ async def test_course_specific_code_enforcement(
         code="COURSE_ONLY",
         discount_type=DiscountTypeEnum.FIXED,
         discount_value=50.0,
-        valid_from=datetime.utcnow() - timedelta(days=1),
+        valid_from=datetime.now(timezone.utc) - timedelta(days=1),
         course_id=instructor_course.id,
     )
     db_session.add(code)
@@ -148,7 +148,7 @@ async def test_course_specific_code_enforcement(
     assert "not valid for this course" in str(excinfo.value)
 
     # Execute & Verify: Should succeed for instructor_course (correct course)
-    dc, discount, final = await validate_discount_code(
+    dc, _discount, final = await validate_discount_code(
         code="COURSE_ONLY",
         org_id=mock_org.id,
         user_id=mock_user.id,

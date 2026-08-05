@@ -124,9 +124,9 @@ async def handle_flutterwave_webhook(
                                     logger.warning(
                                         f"Failed to increment discount usage for {discount_code_id}"
                                     )
-                            except Exception as e:
+                            except Exception as e:  # noqa: BLE001
                                 logger.error(
-                                    f"Error recording discount usage: {str(e)}"
+                                    f"Error recording discount usage: {e!s}"
                                 )
 
                     # Referral processing
@@ -138,7 +138,7 @@ async def handle_flutterwave_webhook(
 
                     if payment_user and payment_user.referral_code_id:
                         try:
-                            from datetime import datetime
+                            from datetime import datetime, timezone
 
                             from sqlmodel import and_
 
@@ -166,12 +166,12 @@ async def handle_flutterwave_webhook(
                                     payment_user_id=payment_user.id,
                                     course_id=int(course_id) if course_id else None,
                                     referral_code_id=payment_user.referral_code_id,
-                                    payment_completion_date=datetime.now(),
+                                    payment_completion_date=datetime.now(timezone.utc),
                                     db_session=db_session,
                                 )
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             logger.error(
-                                f"Error creating referral commission: {str(e)}"
+                                f"Error creating referral commission: {e!s}"
                             )
 
                     return {
@@ -183,10 +183,10 @@ async def handle_flutterwave_webhook(
                         "status": "ignored",
                         "message": "Transaction verification failed",
                     }
-            except Exception as e:
-                logger.error(f"Error verifying transaction: {str(e)}")
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Error verifying transaction: {e!s}")
                 raise HTTPException(
-                    status_code=400, detail=f"Error verifying transaction: {str(e)}"
+                    status_code=400, detail=f"Error verifying transaction: {e!s}"
                 )
 
         elif (
@@ -202,10 +202,10 @@ async def handle_flutterwave_webhook(
 
         return {"status": "ok"}
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in webhook payload: {str(e)}")
+        logger.error(f"Invalid JSON in webhook payload: {e!s}")
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
-    except Exception as e:
-        logger.error(f"Error processing Flutterwave webhook: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Error processing Flutterwave webhook: {e!s}")
         raise HTTPException(
-            status_code=400, detail=f"Error processing webhook: {str(e)}"
+            status_code=400, detail=f"Error processing webhook: {e!s}"
         )

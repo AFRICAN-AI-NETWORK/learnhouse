@@ -65,7 +65,7 @@ def import_all_models():
                 # Check that module actually exists before importing
                 try:
                     spec = importlib.util.find_spec(full_module_path)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     spec = None
 
                 if spec is None:
@@ -84,7 +84,7 @@ def import_all_models():
                         continue
                     sys.modules[full_module_path] = module
                     spec.loader.exec_module(module)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     # Remove partial module entries on failure.
                     sys.modules.pop(full_module_path, None)
                     logging.error(f"Failed to import model {full_module_path}: {e}")
@@ -156,7 +156,7 @@ if not is_testing:
                 )
             )
             conn.commit()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logging.warning(f"Could not pre-create paymentproviderenum type: {e}")
 
     SQLModel.metadata.create_all(engine)

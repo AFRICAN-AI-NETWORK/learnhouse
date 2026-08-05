@@ -7,7 +7,7 @@ Create Date: 2026-03-16 00:00:00.000000
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -84,7 +84,7 @@ _READ_ONLY_RIGHTS = {
 
 def upgrade() -> None:
     conn = op.get_bind()
-    now = str(datetime.utcnow())
+    now = str(datetime.now(timezone.utc))
 
     instructor_rights = conn.execute(
         sa.text("SELECT rights FROM role WHERE role_uuid = :uuid"),
@@ -119,7 +119,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    now = str(datetime.utcnow())
+    now = str(datetime.now(timezone.utc))
 
     conn.execute(
         sa.text(

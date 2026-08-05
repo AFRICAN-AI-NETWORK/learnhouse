@@ -257,7 +257,7 @@ async def process_waitlist_activations(db_session: Session):
     for waitlist in waitlists:
         try:
             await activate_waitlist(db_session, waitlist)
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.exception(
                 "Error activating waitlist %s",
                 waitlist.waitlist_uuid,

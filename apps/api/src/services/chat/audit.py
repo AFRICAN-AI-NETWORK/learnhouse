@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -47,7 +47,7 @@ async def log_chat_action(
             action_metadata=metadata or {},
             ip_address=ip_address,
             user_agent=user_agent,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         db.add(audit_log)
@@ -57,7 +57,7 @@ async def log_chat_action(
             f"Audit log created: {action} on {resource_type} by user {user_id}"
         )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to create audit log: {e}")
         # Don't raise exception - audit logging should not break functionality
 

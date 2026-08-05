@@ -4,7 +4,7 @@ Implements multi-factor fraud detection (IP + device fingerprint)
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException, Request, status
@@ -80,7 +80,7 @@ async def calculate_fraud_risk_score(
     """
     score = 0
 
-    time_threshold = datetime.now() - timedelta(hours=FRAUD_TIME_WINDOW_HOURS)
+    time_threshold = datetime.now(timezone.utc) - timedelta(hours=FRAUD_TIME_WINDOW_HOURS)
 
     statement = select(
         # Count same IP + same device (exact duplicate)
@@ -218,8 +218,8 @@ async def create_referral_tracking(
         browser_fingerprint=browser_fingerprint,
         fraud_score=fraud_score,
         registration_complete=True,
-        signup_date=datetime.now(),
-        creation_date=datetime.now(),
+        signup_date=datetime.now(timezone.utc),
+        creation_date=datetime.now(timezone.utc),
     )
 
     db_session.add(tracking)

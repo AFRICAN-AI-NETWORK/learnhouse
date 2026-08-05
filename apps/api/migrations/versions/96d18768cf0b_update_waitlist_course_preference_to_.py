@@ -177,7 +177,7 @@ def upgrade() -> None:
         try:
             with op.get_bind().begin_nested():
                 stmt()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # ### end Alembic commands ###

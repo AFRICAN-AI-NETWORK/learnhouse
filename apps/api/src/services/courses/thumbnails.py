@@ -12,5 +12,5 @@ async def upload_thumbnail(thumbnail_file, name_in_disk, org_uuid, course_id):
             f"{name_in_disk}",
         )
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {"message": "There was an error uploading the file"}

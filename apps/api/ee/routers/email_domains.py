@@ -61,7 +61,7 @@ async def trigger_domain_list_update(
                 "source": stats["source"],
             },
         }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to update domain lists: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -93,7 +93,7 @@ async def trigger_domain_list_seed(
         await seed_initial_domain_lists(db_session)
 
         return {"success": True, "message": "Email domain lists seeded successfully"}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to seed domain lists: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

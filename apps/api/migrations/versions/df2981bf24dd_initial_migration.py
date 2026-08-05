@@ -35,7 +35,7 @@ def column_exists(table_name: str, column_name: str, conn) -> bool:
     try:
         columns = [col["name"] for col in inspector.get_columns(table_name)]
         return column_name in columns
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -44,18 +44,18 @@ def constraint_exists(table_name: str, constraint_name: str, conn) -> bool:
     inspector = inspect(conn)
     try:
         constraints = [c["name"] for c in inspector.get_unique_constraints(table_name)]
-    except Exception:
+    except Exception:  # noqa: BLE001
         constraints = []
 
     try:
         fks = [fk["name"] for fk in inspector.get_foreign_keys(table_name)]
-    except Exception:
+    except Exception:  # noqa: BLE001
         fks = []
 
     try:
         pk_constraint = inspector.get_pk_constraint(table_name)
         pks = [pk_constraint["name"]] if pk_constraint.get("name") else []
-    except Exception:
+    except Exception:  # noqa: BLE001
         pks = []
 
     all_constraints = constraints + fks + pks
@@ -103,10 +103,10 @@ def upgrade() -> None:
                 if "org_id" in fk["constrained_columns"]:
                     try:
                         op.drop_constraint(fk["name"], "trail", type_="foreignkey")
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         pass  # Constraint might have different name or already dropped
                     break
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass  # No foreign keys found
 
         try:
@@ -118,7 +118,7 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="CASCADE",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             error_msg = str(e).lower()
             if "already exists" not in error_msg and "duplicate" not in error_msg:
                 raise  # Re-raise if it's a different error
@@ -130,10 +130,10 @@ def upgrade() -> None:
                 if "user_id" in fk["constrained_columns"]:
                     try:
                         op.drop_constraint(fk["name"], "trail", type_="foreignkey")
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         pass  # Constraint might have different name or already dropped
                     break
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass  # No foreign keys found
 
         try:
@@ -145,7 +145,7 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="CASCADE",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             error_msg = str(e).lower()
             if "already exists" not in error_msg and "duplicate" not in error_msg:
                 raise  # Re-raise if it's a different error

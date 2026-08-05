@@ -17,7 +17,7 @@ def check_schema():
                 print("Role table columns (SQLite):")
                 for col in columns:
                     print(col)
-        except Exception:
+        except Exception:  # noqa: BLE001
             result = session.execute(
                 text(
                     "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'role'"

@@ -172,7 +172,7 @@ def upgrade() -> None:
             ],
             enum_values_to_rename=[],
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
     try:
         op.sync_enum_values(
@@ -201,7 +201,7 @@ def upgrade() -> None:
             ],
             enum_values_to_rename=[],
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
     # ### end Alembic commands ###
 

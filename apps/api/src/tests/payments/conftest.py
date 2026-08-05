@@ -8,7 +8,7 @@ to SQLite in-memory).
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy.pool import StaticPool
@@ -175,8 +175,8 @@ def sample_discount_code(db_session: Session, mock_org: Organization) -> Discoun
         discount_value=20.0,
         max_uses=100,
         current_uses=0,
-        valid_from=datetime.utcnow() - timedelta(days=1),
-        valid_until=datetime.utcnow() + timedelta(days=30),
+        valid_from=datetime.now(timezone.utc) - timedelta(days=1),
+        valid_until=datetime.now(timezone.utc) + timedelta(days=30),
         is_active=True,
         description="Test discount code - 20% off",
     )
@@ -199,8 +199,8 @@ def expired_discount_code(db_session: Session, mock_org: Organization) -> Discou
         discount_value=15.0,
         max_uses=50,
         current_uses=10,
-        valid_from=datetime.utcnow() - timedelta(days=60),
-        valid_until=datetime.utcnow() - timedelta(days=1),  # Expired yesterday
+        valid_from=datetime.now(timezone.utc) - timedelta(days=60),
+        valid_until=datetime.now(timezone.utc) - timedelta(days=1),  # Expired yesterday
         is_active=True,
         description="Expired discount code for testing",
     )
@@ -223,8 +223,8 @@ def max_uses_discount_code(db_session: Session, mock_org: Organization) -> Disco
         discount_value=50.0,
         max_uses=100,
         current_uses=100,  # Already at max
-        valid_from=datetime.utcnow() - timedelta(days=10),
-        valid_until=datetime.utcnow() + timedelta(days=20),
+        valid_from=datetime.now(timezone.utc) - timedelta(days=10),
+        valid_until=datetime.now(timezone.utc) + timedelta(days=20),
         is_active=True,
         description="Maxed out discount code for testing",
     )
@@ -246,8 +246,8 @@ def mock_payments_config(db_session: Session, mock_org: Organization):
         provider=PaymentProviderEnum.FLUTTERWAVE,  # Required NOT NULL
         provider_specific_id="test_provider_id",
         provider_config={"test_key": "test_value"},
-        creation_date=datetime.now(),  # Required NOT NULL
-        update_date=datetime.now(),  # Required NOT NULL
+        creation_date=datetime.now(timezone.utc),  # Required NOT NULL
+        update_date=datetime.now(timezone.utc),  # Required NOT NULL
     )
     db_session.add(config)
     db_session.commit()
@@ -273,8 +273,8 @@ def mock_payments_product(
         currency="USD",  # Required NOT NULL
         provider_product_id="test_product_paystack_id",
         benefits="Access to test course",  # Required NOT NULL
-        creation_date=datetime.now(),  # Required NOT NULL
-        update_date=datetime.now(),  # Required NOT NULL
+        creation_date=datetime.now(timezone.utc),  # Required NOT NULL
+        update_date=datetime.now(timezone.utc),  # Required NOT NULL
     )
     db_session.add(product)
     db_session.commit()
@@ -299,8 +299,8 @@ def mock_payment_user(
         original_amount=500.0,
         discount_amount=100.0,
         final_amount=400.0,
-        creation_date=datetime.now(),  # Required NOT NULL
-        update_date=datetime.now(),  # Required NOT NULL
+        creation_date=datetime.now(timezone.utc),  # Required NOT NULL
+        update_date=datetime.now(timezone.utc),  # Required NOT NULL
     )
     db_session.add(payment)
     db_session.commit()
@@ -332,8 +332,8 @@ def create_discount_code_helper(
         discount_value=discount_value,
         max_uses=max_uses,
         current_uses=current_uses,
-        valid_from=datetime.utcnow() - timedelta(days=1),
-        valid_until=datetime.utcnow() + timedelta(days=30),
+        valid_from=datetime.now(timezone.utc) - timedelta(days=1),
+        valid_until=datetime.now(timezone.utc) + timedelta(days=30),
         is_active=is_active,
         description=f"Helper-created code: {code}",
     )

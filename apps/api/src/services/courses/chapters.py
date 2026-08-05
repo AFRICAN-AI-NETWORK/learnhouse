@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
@@ -44,8 +44,8 @@ async def create_chapter(
     # complete chapter object
     chapter.course_id = chapter_object.course_id
     chapter.chapter_uuid = f"chapter_{uuid4()}"
-    chapter.creation_date = str(datetime.now())
-    chapter.update_date = str(datetime.now())
+    chapter.creation_date = str(datetime.now(timezone.utc))
+    chapter.update_date = str(datetime.now(timezone.utc))
     chapter.org_id = course.org_id
 
     # Find the last chapter in the course and add it to the list
@@ -83,8 +83,8 @@ async def create_chapter(
             course_id=chapter.course_id,
             chapter_id=chapter.id,
             org_id=chapter.org_id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
             order=to_be_used_order,
         )
 
@@ -192,7 +192,7 @@ async def update_chapter(
                 detail=f"Total points for activities in a module must equal 100. Current total: {total_points}",
             )
 
-    chapter.update_date = str(datetime.now())
+    chapter.update_date = str(datetime.now(timezone.utc))
 
     db_session.commit()
     db_session.refresh(chapter)
@@ -211,7 +211,7 @@ async def update_chapter(
             enqueue_job(
                 f"chapter_notif_{chapter.id}", sync_fanout_chapter_added, [chapter.id]
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(
                 "Failed to schedule chapter_added fan-out for chapter %s: %s",
                 chapter.id,
@@ -335,7 +335,7 @@ async def get_course_chapters(
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, current_user, "update", db_session
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             is_editor = False
 
     # Get completed activity ids if user is enrolled
@@ -521,8 +521,8 @@ async def reorder_chapters_and_activities(
                 chapter_id=chapter_order.chapter_id,
                 course_id=course.id,  # type: ignore
                 org_id=course.org_id,
-                creation_date=str(datetime.now()),
-                update_date=str(datetime.now()),
+                creation_date=str(datetime.now(timezone.utc)),
+                update_date=str(datetime.now(timezone.utc)),
                 order=index,
             )
             db_session.add(course_chapter)
@@ -572,8 +572,8 @@ async def reorder_chapters_and_activities(
                     activity_id=activity_order.activity_id,
                     org_id=course.org_id,
                     course_id=course.id,  # type: ignore
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    creation_date=str(datetime.now(timezone.utc)),
+                    update_date=str(datetime.now(timezone.utc)),
                     order=index,
                 )
                 db_session.add(chapter_activity)

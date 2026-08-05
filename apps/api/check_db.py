@@ -16,5 +16,5 @@ try:
     with Session(engine) as session:
         result = session.exec(text("SELECT due_date FROM chapter LIMIT 1")).all()
         print("Success:", result)
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("Failed:", e)

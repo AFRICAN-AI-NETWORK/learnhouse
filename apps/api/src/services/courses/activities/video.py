@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import uuid4
 
@@ -106,8 +106,8 @@ async def create_video_activity(
             "activity_uuid": activity_uuid,
         },
         details=details if isinstance(details, dict) else json.loads(details),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # create activity
@@ -132,8 +132,8 @@ async def create_video_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
         order=1,
     )
 
@@ -216,8 +216,8 @@ async def create_external_video_activity(
             "activity_uuid": activity_uuid,
         },
         details=details,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # create activity
@@ -232,8 +232,8 @@ async def create_external_video_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
         order=1,
     )
 

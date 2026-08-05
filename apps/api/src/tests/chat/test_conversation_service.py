@@ -205,7 +205,7 @@ class TestGetUserConversations:
         instructor_user: User,
     ):
         """Test conversation list pagination."""
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         from uuid import uuid4
 
         # Create multiple conversations
@@ -215,9 +215,9 @@ class TestGetUserConversations:
                 org_id=org.id,
                 participant_one_id=min(student_user.id, instructor_user.id + i),
                 participant_two_id=max(student_user.id, instructor_user.id + i),
-                last_message_at=datetime.utcnow() - timedelta(minutes=i),
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                last_message_at=datetime.now(timezone.utc) - timedelta(minutes=i),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
             session.add(conv)
         session.commit()

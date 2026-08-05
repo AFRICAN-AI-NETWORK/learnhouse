@@ -6,7 +6,7 @@ a hardcoded admin-role list, so Admin, Maintainer, and Instructor can all
 post announcements while a plain student ("User" role) cannot.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 import pytest
@@ -40,8 +40,8 @@ def organization_fixture(session: Session):
         name="Test Organization",
         slug="test-org",
         email="test@testorg.com",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
     session.add(org)
     session.commit()
@@ -95,8 +95,8 @@ def _make_role(
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid=f"role_{uuid4()}",
         rights=rights,
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
     # Union[Rights, dict] re-validates a plain dict passed at construction
     # time back into a Rights object, so serialize *after* construction —
@@ -118,8 +118,8 @@ def _make_user_with_role(
         password="hashed_password",
         first_name="Test",
         last_name="User",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
     session.add(user)
     session.commit()
@@ -130,8 +130,8 @@ def _make_user_with_role(
             user_id=user.id,
             org_id=org.id,
             role_id=role.id,
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
     )
     session.commit()
@@ -185,8 +185,8 @@ class TestAnnouncementCreateAuthorization:
             role_type=RoleTypeEnum.TYPE_GLOBAL,
             role_uuid="role_global_admin_test",
             rights={},
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
         session.add(admin_role)
         session.commit()

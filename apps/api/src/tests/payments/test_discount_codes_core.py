@@ -140,7 +140,7 @@ class TestRaceConditions:
                 return await increment_discount_usage_atomic(
                     code.id, db_session, auto_commit=False
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return False
 
         # Execute 50 concurrent attempts

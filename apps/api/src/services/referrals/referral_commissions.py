@@ -5,7 +5,7 @@ Follows DRY principles with reusable utilities
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import HTTPException, Request
@@ -100,8 +100,8 @@ async def create_commission_for_payment(
         status=CommissionStatus.PENDING,
         payment_completion_date=payment_completion_date,
         refund_period_expiration_date=refund_expiration,
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
     )
 
     db_session.add(commission)
@@ -164,7 +164,7 @@ async def forfeit_commission_for_refund(
 
     # Update commission status
     commission.status = CommissionStatus.FORFEITED
-    commission.update_date = datetime.now()
+    commission.update_date = datetime.now(timezone.utc)
     db_session.add(commission)
     db_session.commit()
     db_session.refresh(commission)
@@ -190,7 +190,7 @@ async def update_pending_commissions_to_eligible(db_session: Session) -> int:
     Returns:
         Number of commissions updated
     """
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     # Query pending commissions with expired refund period
     statement = select(ReferralCommission).where(

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -159,11 +159,11 @@ async def create_waitlist_user(
 
     # Store waitlist information
     user.waitlist_interest = user_object.waitlist_interest or waitlist.interest_category
-    user.waitlist_joined_date = str(datetime.now())
+    user.waitlist_joined_date = str(datetime.now(timezone.utc))
 
     # Set timestamps
-    user.creation_date = str(datetime.now())
-    user.update_date = str(datetime.now())
+    user.creation_date = str(datetime.now(timezone.utc))
+    user.update_date = str(datetime.now(timezone.utc))
 
     # Add user to database
     db_session.add(user)
@@ -176,7 +176,7 @@ async def create_waitlist_user(
             from src.services.referrals.referral_tracking import \
                 validate_and_track_referral
 
-            referral_code_obj, fraud_score = await validate_and_track_referral(
+            _referral_code_obj, fraud_score = await validate_and_track_referral(
                 request=request,
                 referred_user_id=user.id,
                 referral_code=user_object.referral_code,
@@ -198,12 +198,12 @@ async def create_waitlist_user(
             from src.services.referrals.referral_tracking import logger
 
             logger.warning(f"Referral validation failed for user {user.id}: {e.detail}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Log unexpected errors but don't block signup
             from src.services.referrals.referral_tracking import logger
 
             logger.error(
-                f"Unexpected error tracking referral for user {user.id}: {str(e)}"
+                f"Unexpected error tracking referral for user {user.id}: {e!s}"
             )
 
     # ========== 3. COURSE PREFERENCE STORAGE PHASE ==========
@@ -229,7 +229,7 @@ async def create_waitlist_user(
                 payments_product_id=product_id,
                 waitlist_config_id=waitlist.id,
                 org_id=org_id,
-                creation_date=str(datetime.now()),
+                creation_date=str(datetime.now(timezone.utc)),
             )
 
             db_session.add(preference)
@@ -243,8 +243,8 @@ async def create_waitlist_user(
         user_id=user.id if user.id else 0,
         org_id=org_id,
         role_id=4,  # Learner role
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(user_organization)

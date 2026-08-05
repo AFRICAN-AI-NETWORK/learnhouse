@@ -10,7 +10,7 @@ Layers covered:
     `get_course_grade_for_user` service orchestration.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -57,7 +57,7 @@ def db_fixture():
 
 # ─────────────────────────── Seed helpers ──────────────────────────
 
-_NOW = str(datetime.now())
+_NOW = str(datetime.now(timezone.utc))
 _ORG_ID = 1
 _COURSE_ID = 100
 _CHAPTER_ID = 10

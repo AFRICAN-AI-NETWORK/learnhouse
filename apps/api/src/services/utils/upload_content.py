@@ -147,5 +147,5 @@ async def upload_content(
                 Key=s3_key,
             )
             print("File upload successful!")
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            print(f"An error occurred: {e!s}")

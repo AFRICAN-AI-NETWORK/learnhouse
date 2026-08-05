@@ -257,7 +257,7 @@ async def api_ai_interact(
             if resp.status_code == 200:
                 data = resp.json()
                 result_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     if result_text is None and openai_key:
@@ -272,7 +272,7 @@ async def api_ai_interact(
                 max_tokens=4000,
             )
             result_text = response.choices[0].message.content
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     if result_text is None:
@@ -304,7 +304,7 @@ async def api_ai_interact(
                 "result": translated_data.get("content", result_text),
                 "title": translated_data.get("title", ""),
             }
-        except Exception:
+        except Exception:  # noqa: BLE001
             return {"result": result_text, "title": ""}
 
     return {"result": result_text}

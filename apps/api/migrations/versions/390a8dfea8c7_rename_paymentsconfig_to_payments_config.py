@@ -51,7 +51,7 @@ def upgrade() -> None:
                     )
                 )
                 paystack_exists = result.scalar()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
         if enum_exists and not paystack_exists:
@@ -95,7 +95,7 @@ def upgrade() -> None:
                 )
             )
             enum_exists = result.scalar()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
         if not enum_exists:

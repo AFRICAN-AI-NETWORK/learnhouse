@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -55,5 +55,5 @@ class PaymentsUser(PaymentsUserBase, table=True):
             BigInteger, ForeignKey("paymentsproduct.id", ondelete="CASCADE")
         )
     )
-    creation_date: datetime = Field(default=datetime.now())
-    update_date: datetime = Field(default=datetime.now())
+    creation_date: datetime = Field(default=datetime.now(timezone.utc))
+    update_date: datetime = Field(default=datetime.now(timezone.utc))

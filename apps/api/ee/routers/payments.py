@@ -318,10 +318,10 @@ async def api_verify_transaction(
     # Verify transaction with Flutterwave
     try:
         transaction_data = await verify_transaction(reference)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=400,
-            detail=f"Failed to verify transaction with Flutterwave: {str(e)}",
+            detail=f"Failed to verify transaction with Flutterwave: {e!s}",
         )
 
     # Extract transaction details
@@ -374,8 +374,8 @@ async def api_verify_transaction(
                 response["warning"] = (
                     f"Payment user {payment_user_id} not found in database"
                 )
-        except Exception as e:
-            response["warning"] = f"Failed to update payment status: {str(e)}"
+        except Exception as e:  # noqa: BLE001
+            response["warning"] = f"Failed to update payment status: {e!s}"
 
     return response
 
@@ -429,7 +429,7 @@ async def api_check_course_paid_access(
             is_author = await authorization_verify_if_user_is_author(
                 request, int(current_user.id), "read", course.course_uuid, db_session
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     is_admin = isinstance(current_user, InternalUser) or (

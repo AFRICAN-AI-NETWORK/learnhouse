@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -76,8 +76,8 @@ class ConversationService:
                 org_id=org_id,
                 participant_one_id=participant_one,
                 participant_two_id=participant_two,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             )
 
             db.add(conversation)
@@ -347,8 +347,8 @@ class ConversationService:
 
         conversation.is_archived = True
         conversation.archived_by_user_id = user_id
-        conversation.archived_at = datetime.utcnow()
-        conversation.updated_at = datetime.utcnow()
+        conversation.archived_at = datetime.now(timezone.utc)
+        conversation.updated_at = datetime.now(timezone.utc)
 
         db.add(conversation)
         db.commit()

@@ -51,8 +51,8 @@ async def run_notification_email_job():
             result["failed"],
             result["total"],
         )
-    except Exception as e:
-        logger.error("Notification email job failed: %s", e, exc_info=True)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("Notification email job failed: %s", e)
 
 
 def sync_run_notification_email_job():

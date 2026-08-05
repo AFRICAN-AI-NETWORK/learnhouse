@@ -6,7 +6,7 @@ Handles referral code generation, validation, and retrieval
 import logging
 import secrets
 import string
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, Request, status
@@ -194,8 +194,8 @@ async def create_referral_code_for_user(
         code=code,
         referral_link=referral_link,
         status=ReferralCodeStatus.ACTIVE,
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
     )
 
     db_session.add(referral_code)

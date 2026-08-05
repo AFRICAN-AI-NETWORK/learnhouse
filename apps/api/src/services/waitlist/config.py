@@ -1,6 +1,6 @@
 """Waitlist Configuration CRUD Service"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -74,8 +74,8 @@ async def create_waitlist_config(
         status=WaitlistStatusEnum.ACTIVE.value,
         total_registrations=0,
         emails_sent_count=0,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # Get created_by_user_id from request state if available
@@ -96,7 +96,7 @@ async def create_waitlist_config(
             status="upcoming",
         )
         await create_cohort(cohort_data, db_session)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # We don't fail the waitlist creation if cohort creation fails,
         # but we should log it (using standard fastAPI logging).
         print(f"Failed to auto-create cohort for waitlist: {e}")
@@ -232,7 +232,7 @@ async def update_waitlist_config(
         # User said "allow reactivation... will not affect the users who have already gained access"
         # Keeping counters is fine as they represent historical registrations.
 
-    waitlist.update_date = str(datetime.now())
+    waitlist.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(waitlist)
     db_session.commit()
@@ -273,7 +273,7 @@ async def cancel_waitlist_config(
 
     # Change status to CANCELLED
     waitlist.status = WaitlistStatusEnum.CANCELLED.value
-    waitlist.update_date = str(datetime.now())
+    waitlist.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(waitlist)
     db_session.commit()

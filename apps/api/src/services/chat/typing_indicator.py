@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
@@ -47,8 +47,8 @@ class TypingIndicatorService:
             )
 
         state.is_typing = is_typing
-        state.typing_updated_at = datetime.utcnow()
-        state.updated_at = datetime.utcnow()
+        state.typing_updated_at = datetime.now(timezone.utc)
+        state.updated_at = datetime.now(timezone.utc)
 
         db.add(state)
         db.commit()
@@ -87,7 +87,7 @@ class TypingIndicatorService:
 
         # Check if typing status has expired
         if state.typing_updated_at:
-            timeout = datetime.utcnow() - timedelta(
+            timeout = datetime.now(timezone.utc) - timedelta(
                 seconds=TypingIndicatorService.TYPING_TIMEOUT_SECONDS
             )
 
@@ -104,7 +104,7 @@ class TypingIndicatorService:
     async def clear_expired_typing_indicators(db: Session):
         """Clear all expired typing indicators (background job)."""
 
-        timeout = datetime.utcnow() - timedelta(
+        timeout = datetime.now(timezone.utc) - timedelta(
             seconds=TypingIndicatorService.TYPING_TIMEOUT_SECONDS
         )
 

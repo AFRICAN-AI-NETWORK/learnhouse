@@ -47,7 +47,7 @@ async def verify_websocket_token(token: str, db: Session) -> Optional[int]:
 
         return None
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"WebSocket token verification failed: {e}")
         return None
 
@@ -215,7 +215,7 @@ async def websocket_endpoint(
 
             elif message_type == "mark_read":
                 message_uuid = payload.get("message_uuid")
-                from datetime import datetime
+                from datetime import datetime, timezone
 
                 from sqlmodel import select
 
@@ -236,7 +236,7 @@ async def websocket_endpoint(
                             "data": {
                                 "message_uuid": message_uuid,
                                 "read_by": user_id,
-                                "read_at": datetime.utcnow().isoformat(),
+                                "read_at": datetime.now(timezone.utc).isoformat(),
                             },
                         },
                         msg.sender_id,
@@ -250,7 +250,7 @@ async def websocket_endpoint(
             await connection_manager.disconnect(websocket, user_id)
             logger.info(f"User {user_id} disconnected normally")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"WebSocket error for user {user_id}: {e}")
         if user_id:
             await connection_manager.disconnect(websocket, user_id)

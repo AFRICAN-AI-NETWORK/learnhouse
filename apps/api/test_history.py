@@ -1,6 +1,6 @@
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from sqlalchemy import create_engine
@@ -63,7 +63,7 @@ with engine.begin() as conn:
         existing_history = existing_json.get("history", [])
         existing_history.append(
             {
-                "timestamp": str(datetime.now()),
+                "timestamp": str(datetime.now(timezone.utc)),
                 "submissions": [
                     {
                         "exerciseUUID": "ex_1",
@@ -84,14 +84,14 @@ with engine.begin() as conn:
             "submissions": [{"exerciseUUID": "ex_1", "code": "print('Attempt 1')"}],
             "history": [
                 {
-                    "timestamp": str(datetime.now()),
+                    "timestamp": str(datetime.now(timezone.utc)),
                     "submissions": [
                         {"exerciseUUID": "ex_1", "code": "print('Attempt 1')"}
                     ],
                 }
             ],
         }
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         conn.exec_driver_sql(
             """
             INSERT INTO assignmenttasksubmission

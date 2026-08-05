@@ -56,7 +56,7 @@ class TestCreateAnnouncementSchedulesFanout:
         )
 
         mock_enqueue.assert_called_once()
-        job_id, func, args = mock_enqueue.call_args[0]
+        job_id, _func, args = mock_enqueue.call_args[0]
         assert job_id == f"app_update_notif_{announcement.id}"
         assert args == [
             announcement.id,

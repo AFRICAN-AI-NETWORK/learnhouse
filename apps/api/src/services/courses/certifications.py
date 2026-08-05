@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -88,8 +88,8 @@ async def create_certification(
         course_id=certification_object.course_id,
         config=certification_object.config or {},
         certification_uuid=str(f"certification_{uuid4()}"),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # Insert certification in DB
@@ -211,7 +211,7 @@ async def update_certification(
             setattr(certification, var, value)
 
     # Update the update_date
-    certification.update_date = str(datetime.now())
+    certification.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(certification)
     db_session.commit()
@@ -327,9 +327,9 @@ async def create_certificate_user(
         )
 
     # Generate readable certificate user UUID
-    current_year = datetime.now().year
-    current_month = datetime.now().month
-    current_day = datetime.now().day
+    current_year = datetime.now(timezone.utc).year
+    current_month = datetime.now(timezone.utc).month
+    current_day = datetime.now(timezone.utc).day
 
     # Get user to extract user_uuid
     from src.db.users import User
@@ -373,8 +373,8 @@ async def create_certificate_user(
         certification_id=certification_id,
         user_certification_uuid=user_certification_uuid,
         grade_percentage=grade_percentage,
-        created_at=str(datetime.now()),
-        updated_at=str(datetime.now()),
+        created_at=str(datetime.now(timezone.utc)),
+        updated_at=str(datetime.now(timezone.utc)),
     )
 
     db_session.add(certificate_user)
@@ -474,7 +474,7 @@ async def get_user_certificates_for_course(
                                 else None,
                             }
                         )
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Don't fail the read if auto-creation fails
             pass
 
@@ -524,12 +524,12 @@ def sync_course_trail_run_completion_status(
 
     if is_complete and trail_run.status != StatusEnum.STATUS_COMPLETED:
         trail_run.status = StatusEnum.STATUS_COMPLETED
-        trail_run.update_date = str(datetime.now())
+        trail_run.update_date = str(datetime.now(timezone.utc))
         db_session.add(trail_run)
         db_session.commit()
     elif not is_complete and trail_run.status == StatusEnum.STATUS_COMPLETED:
         trail_run.status = StatusEnum.STATUS_IN_PROGRESS
-        trail_run.update_date = str(datetime.now())
+        trail_run.update_date = str(datetime.now(timezone.utc))
         db_session.add(trail_run)
         db_session.commit()
 

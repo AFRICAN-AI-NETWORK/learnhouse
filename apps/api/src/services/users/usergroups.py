@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from uuid import uuid4
 
@@ -52,8 +52,8 @@ async def create_usergroup(
 
     # Complete the object
     usergroup.usergroup_uuid = f"usergroup_{uuid4()}"
-    usergroup.creation_date = str(datetime.now())
-    usergroup.update_date = str(datetime.now())
+    usergroup.creation_date = str(datetime.now(timezone.utc))
+    usergroup.update_date = str(datetime.now(timezone.utc))
 
     # Save the object
     db_session.add(usergroup)
@@ -222,7 +222,7 @@ async def update_usergroup_by_id(
 
     usergroup.name = usergroup_update.name
     usergroup.description = usergroup_update.description
-    usergroup.update_date = str(datetime.now())
+    usergroup.update_date = str(datetime.now(timezone.utc))
 
     db_session.add(usergroup)
     db_session.commit()
@@ -315,8 +315,8 @@ async def add_users_to_usergroup(
                     usergroup_id=usergroup_id,
                     user_id=user.id,
                     org_id=usergroup.org_id,
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    creation_date=str(datetime.now(timezone.utc)),
+                    update_date=str(datetime.now(timezone.utc)),
                 )
 
                 db_session.add(usergroup_obj)
@@ -417,8 +417,8 @@ async def add_resources_to_usergroup(
             usergroup_id=usergroup_id,
             resource_uuid=resource_uuid,
             org_id=usergroup.org_id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(timezone.utc)),
+            update_date=str(datetime.now(timezone.utc)),
         )
 
         db_session.add(usergroup_obj)

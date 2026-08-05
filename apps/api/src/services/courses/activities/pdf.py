@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, UploadFile, status
@@ -100,8 +100,8 @@ async def create_documentpdf_activity(
         org_id=org_id if org_id else 0,
         course_id=coursechapter.course_id,
         activity_uuid=activity_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # Insert Activity in DB
@@ -115,8 +115,8 @@ async def create_documentpdf_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
         order=1,
     )
 

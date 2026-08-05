@@ -36,7 +36,7 @@ async def process_cohort_unlocks(db_session: Session):
             if current_time_utc >= start_dt:
                 # Unlock cohort
                 cohort.status = CohortStatusEnum.ACTIVE
-                cohort.update_date = str(datetime.now())
+                cohort.update_date = str(datetime.now(timezone.utc))
                 db_session.add(cohort)
 
                 # Unlock all enrollments in this cohort
@@ -57,7 +57,7 @@ async def process_cohort_unlocks(db_session: Session):
                 f"Error parsing start_date for cohort {cohort.cohort_uuid}: {e}"
             )
             continue
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error unlocking cohort {cohort.cohort_uuid}: {e}")
             db_session.rollback()
             continue

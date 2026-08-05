@@ -13,5 +13,5 @@ try:
     for column in columns:
         print(f"COL: {column['name']} | {column['type']} | {column['nullable']}")
     print("END_COLUMNS")
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print(f"ERROR: {e}")

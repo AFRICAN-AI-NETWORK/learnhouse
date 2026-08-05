@@ -38,11 +38,11 @@ async def update_email_domain_lists_job():
                     f"{stats['total']} total domains"
                 )
             else:
-                logger.error(
+                logger.exception(
                     f"Email domain list update failed: {stats.get('error', 'Unknown error')}"
                 )
-        except Exception as e:
-            logger.error(f"Email domain list update job failed: {e}", exc_info=True)
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Email domain list update job failed: {e}")
 
 
 async def seed_domain_lists_job():
@@ -56,8 +56,8 @@ async def seed_domain_lists_job():
         try:
             await seed_initial_domain_lists(session)
             logger.info("Domain list seeding completed")
-        except Exception as e:
-            logger.error(f"Domain list seeding failed: {e}", exc_info=True)
+        except Exception as e:  # noqa: BLE001
+            logger.exception(f"Domain list seeding failed: {e}")
 
 
 # Example scheduler configuration (APScheduler):

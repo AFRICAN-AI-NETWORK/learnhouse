@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, UploadFile, status
@@ -61,8 +61,8 @@ async def create_image_block(
         org_id=org.id if org.id else 0,
         course_id=course.id if course.id else 0,
         block_uuid=block_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(timezone.utc)),
+        update_date=str(datetime.now(timezone.utc)),
     )
 
     # insert block

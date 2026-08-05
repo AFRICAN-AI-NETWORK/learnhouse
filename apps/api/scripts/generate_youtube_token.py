@@ -54,8 +54,8 @@ def main():
         print(json.dumps(token_data, indent=2))
         print("\n" + "=" * 60)
 
-    except Exception as e:
-        print(f"\nAn error occurred: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        print(f"\nAn error occurred: {e!s}")
 
 
 if __name__ == "__main__":
