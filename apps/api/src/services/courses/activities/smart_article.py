@@ -218,7 +218,7 @@ async def chunk_text_with_ai(raw_text: str, config) -> list[dict]:
 
     # All providers failed
     if isinstance(last_error, HTTPException):
-        raise
+        raise last_error
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=f"Smart Article: All AI providers failed. Last error: {str(last_error)[:200]}",
