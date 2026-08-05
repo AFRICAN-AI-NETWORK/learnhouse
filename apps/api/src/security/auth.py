@@ -187,11 +187,11 @@ async def get_current_user(
         username = Authorize.get_jwt_subject() or None
         token_data = TokenData(username=username)  # type: ignore
     except JWTError:
-        raise
+        raise credentials_exception
     if username:
         user = await security_get_user(request, db_session, email=token_data.username)  # type: ignore # treated as an email
         if user is None:
-            raise
+            raise credentials_exception
         public_user = PublicUser(**user.model_dump())
         request.state.user = public_user
         return public_user
@@ -219,7 +219,7 @@ async def verify_websocket_token(token: str, db: Session) -> int | None:
     """
     try:
         import logging
-logger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
 
         from fastapi_jwt_auth import AuthJWT
         from sqlmodel import select
@@ -244,7 +244,7 @@ logger = logging.getLogger(__name__)
 
     except Exception as e:  # noqa: BLE001
         import logging
-logger = logging.getLogger(__name__)
+        logger = logging.getLogger(__name__)
 
         logger.error(f"WebSocket token verification failed: {e}")
         return None
