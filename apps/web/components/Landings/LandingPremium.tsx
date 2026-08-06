@@ -12,6 +12,7 @@ import ActiveProgramsSection from './Sections/ActiveProgramsSection'
 import TechSpecializationsSection from './Sections/TechSpecializationsSection'
 import HowYouWillLearnSection from './Sections/HowYouWillLearnSection'
 import PersonalizedPathSection from './Sections/PersonalizedPathSection'
+import LearnerTestimonials from './Sections/LearnerTestimonials'
 import FAQSection from './Sections/FAQSection'
 import ReferAndEarnSection from './Sections/ReferAndEarnSection'
 import ImpactProgramsSection from './Sections/ImpactProgramsSection'
@@ -181,7 +182,10 @@ export default function LandingPremium({
         bgColor="bg-white"
       />
 
-      {/* 7. Social Proof & Impact (Testimonials) */}
+      {/* 7. Learner Testimonials */}
+      <LearnerTestimonials />
+
+      {/* 8. Social Proof & Impact (Testimonials) */}
       {org?.config?.config?.landing?.sections?.map(
         (section: any, index: number) => {
           if (section.type === 'testimonials') {
