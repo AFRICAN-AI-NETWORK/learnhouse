@@ -15,6 +15,7 @@ import logging
 import os
 from datetime import UTC, datetime
 
+import httpx
 import redis
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request, status
@@ -883,12 +884,21 @@ async def process_payout_request(
     except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to process payout {payout_id}: {e!s}")
 
-        # Update status to FAILED (balance not deducted)
-        payout.status = PayoutStatus.FAILED
-        payout.failure_reason = str(e)
-        payout.update_date = datetime.now(UTC)
-        db_session.add(payout)
-        db_session.commit()
+        try:
+            is_transient_network_error = isinstance(
+                e, (httpx.RequestError, httpx.TimeoutException, httpx.HTTPStatusError)
+            )
+        except Exception:
+            is_transient_network_error = False
+
+        if is_transient_network_error:
+            _handle_payout_failure(payout, str(e), db_session)
+        else:
+            payout.status = PayoutStatus.FAILED
+            payout.failure_reason = str(e)
+            payout.update_date = datetime.now(UTC)
+            db_session.add(payout)
+            db_session.commit()
 
     return payout
 
@@ -928,6 +938,27 @@ async def get_payout_history(
 
 
 MAX_PAYOUT_RETRIES = 3  # Transient Paystack failures retried before FAILED
+
+
+def _handle_payout_failure(
+    payout: ReferrerPayoutRequest, reason: str, db_session: Session
+) -> None:
+    payout.retry_count = (payout.retry_count or 0) + 1
+    payout.last_retry_at = datetime.now(UTC)
+    if payout.retry_count < MAX_PAYOUT_RETRIES:
+        payout.status = PayoutStatus.APPROVED
+        payout.failure_reason = (
+            f"Attempt {payout.retry_count}/{MAX_PAYOUT_RETRIES} failed: {reason}"
+        )
+    else:
+        payout.status = PayoutStatus.FAILED
+        payout.failure_reason = (
+            f"Failed after {MAX_PAYOUT_RETRIES} attempts: {reason}"
+        )
+    payout.update_date = datetime.now(UTC)
+    db_session.add(payout)
+    db_session.commit()
+
 
 async def cache_paystack_recipient_code(
     payment_method_id: int, recipient_code: str, db_session: Session
