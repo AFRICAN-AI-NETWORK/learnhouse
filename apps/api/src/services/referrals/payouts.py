@@ -1,3 +1,8 @@
+from src.db.referrals.marketer_payment_methods import (
+    MarketerPaymentMethod,
+    MarketerPaymentMethodRead,
+    PaymentMethodType,
+)
 """
 Payout Service - Manages referrer payout requests with Paystack integration
 Implements safe two-phase commit pattern to prevent balance loss
@@ -5,6 +10,7 @@ Implements safe two-phase commit pattern to prevent balance loss
 
 import base64
 import json
+from typing import Optional, Dict, Any
 import logging
 import os
 from datetime import UTC, datetime
@@ -24,45 +30,24 @@ from src.db.referrals.payout_requests import (
     ReferrerPayoutRequestRead,
 )
 from src.db.referrals.referral_commissions import CommissionStatus, ReferralCommission
-from src.db.referrals.marketer_payment_methods import (
-    MarketerPaymentMethod,
-    MarketerPaymentMethodRead,
-    PaymentMethodType,
-)
 from src.db.users import PublicUser, User
 from src.services.payments.payments_paystack import make_paystack_request
-from src.services.referrals.redis_cache import get_redis_client
 
 logger = logging.getLogger(__name__)
 
 # Configuration constants
-MINIMUM_PAYOUT_AMOUNT = 1.00  # Minimum $1 USD (standard referrers)
-MAX_PAYOUT_RETRIES = 3  # Transient Paystack failures retried before FAILED
+MINIMUM_PAYOUT_AMOUNT = 1.00  # Minimum $1 USD
 
 # Currency configuration
 # Dynamically determined from user's country or organization settings
 DEFAULT_PAYOUT_CURRENCY = "NGN"  # Fallback: Nigerian Naira
+FALLBACK_USD_TO_NGN_RATE = float(
+    os.getenv("USD_TO_NGN_EXCHANGE_RATE", "1500")
+)  # Fallback if API fails
 EXCHANGE_RATE_API_KEY = os.getenv(
     "EXCHANGE_RATE_API_KEY"
 )  # Optional: exchangerate-api.com key
 EXCHANGE_RATE_CACHE_TTL = 3600  # Cache rate for 1 hour (reduce API calls)
-
-# Env-var fallback exchange rates per currency, used when the rate API fails.
-# e.g. USD_TO_NGN_EXCHANGE_RATE=1500, USD_TO_GHS_RATE=15.5, USD_TO_KES_RATE=130
-FALLBACK_EXCHANGE_RATES = {
-    "NGN": float(os.getenv("USD_TO_NGN_EXCHANGE_RATE", "1500")),
-    "GHS": float(os.getenv("USD_TO_GHS_RATE", "15.5")),
-    "KES": float(os.getenv("USD_TO_KES_RATE", "130")),
-    "ZAR": float(os.getenv("USD_TO_ZAR_RATE", "18")),
-    "RWF": float(os.getenv("USD_TO_RWF_RATE", "1350")),
-    "TZS": float(os.getenv("USD_TO_TZS_RATE", "2600")),
-    "UGX": float(os.getenv("USD_TO_UGX_RATE", "3700")),
-    "XOF": float(os.getenv("USD_TO_XOF_RATE", "600")),
-    "EGP": float(os.getenv("USD_TO_EGP_RATE", "48")),
-    "GBP": float(os.getenv("USD_TO_GBP_RATE", "0.78")),
-    "EUR": float(os.getenv("USD_TO_EUR_RATE", "0.92")),
-    "USD": 1.0,
-}
 
 # Country to currency mapping (expandable for multi-currency support)
 COUNTRY_TO_CURRENCY = {
@@ -70,16 +55,6 @@ COUNTRY_TO_CURRENCY = {
     "GH": "GHS",  # Ghana → Cedi
     "KE": "KES",  # Kenya → Shilling
     "ZA": "ZAR",  # South Africa → Rand
-    "RW": "RWF",  # Rwanda → Franc
-    "TZ": "TZS",  # Tanzania → Shilling
-    "UG": "UGX",  # Uganda → Shilling
-    "CI": "XOF",  # Ivory Coast → CFA Franc
-    "EG": "EGP",  # Egypt → Pound
-    "RW": "RWF",  # Rwanda → Franc
-    "TZ": "TZS",  # Tanzania → Shilling
-    "UG": "UGX",  # Uganda → Shilling
-    "CI": "XOF",  # Ivory Coast → CFA Franc
-    "EG": "EGP",  # Egypt → Pound
     "US": "USD",  # United States → Dollar
     "GB": "GBP",  # United Kingdom → Pound
     "EU": "EUR",  # European Union → Euro
@@ -102,41 +77,36 @@ CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE = {
     "USD": "nuban",
 }
 
-# Paystack transfer recipient type per currency.
-# https://paystack.com/docs/transfers/single-transfers
-CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE = {
-    "NGN": "nuban",  # Nigerian bank
-    "GHS": "ghipss",  # Ghanaian bank
-    "KES": "mobile_money",  # Kenya M-Pesa via Paystack
-    "ZAR": "basa",  # South African bank
-    "RWF": "mobile_money",  # Rwanda mobile money
-    "TZS": "mobile_money",  # Tanzania mobile money
-    "UGX": "mobile_money",  # Uganda mobile money
-    "XOF": "mobile_money",  # West Africa CFA — Paystack limited support
-    "EGP": "nuban",  # Egypt — Paystack Nile
-    "USD": "nuban",  # International fallback
-}
+# Redis configuration for distributed caching (multi-worker support)
+_config = get_learnhouse_config()
+REDIS_URL = (
+    os.getenv("REDIS_URL")
+    or _config.redis_config.redis_connection_string
+    or "redis://localhost:6379/0"
+)
+REDIS_ENABLED = os.getenv("REDIS_ENABLED", "true").lower() in ("true", "1", "yes")
 
-# Payment method types available per country (drives MKTR_352 / MKTR_353)
-COUNTRY_TO_AVAILABLE_PAYMENT_METHODS = {
-    "NG": {PaymentMethodType.BANK_TRANSFER},
-    "GH": {PaymentMethodType.BANK_TRANSFER, PaymentMethodType.MOBILE_MONEY},
-    "KE": {PaymentMethodType.MOBILE_MONEY},
-    "ZA": {PaymentMethodType.BANK_TRANSFER},
-    "RW": {PaymentMethodType.MOBILE_MONEY},
-    "TZ": {PaymentMethodType.MOBILE_MONEY},
-    "UG": {PaymentMethodType.MOBILE_MONEY},
-    "CI": {PaymentMethodType.MOBILE_MONEY},
-    "EG": {PaymentMethodType.BANK_TRANSFER},
-    "US": {PaymentMethodType.BANK_TRANSFER},
-    "GB": {PaymentMethodType.BANK_TRANSFER},
-    "EU": {PaymentMethodType.BANK_TRANSFER},
-}
+# Initialize Redis client with connection pooling
+_redis_client = None
+if REDIS_ENABLED:
+    try:
+        _redis_client = redis.Redis.from_url(
+            REDIS_URL,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+            health_check_interval=30,
+        )
+        # Test connection
+        _redis_client.ping()
+        logger.info("Redis connected successfully for exchange rate caching")
+    except (RedisError, RedisConnectionError) as e:
+        logger.warning(f"Redis connection failed: {e}. Using in-memory cache fallback.")
+        _redis_client = None
 
 # Fallback in-memory cache (used when Redis is unavailable)
 _exchange_rate_cache = {}
-
-_config = get_learnhouse_config()
 
 # Encryption configuration
 _ENCRYPTION_KEY = os.getenv("BANK_DATA_ENCRYPTION_KEY")
@@ -269,31 +239,29 @@ async def get_payout_currency(
 
 async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> float:
     """
-    Fetch real-time USD → target currency exchange rate with Redis caching
+    Fetch real-time USD to NGN exchange rate from API with Redis caching
 
     Uses Redis for distributed caching (multi-worker safe).
     Falls back to in-memory cache if Redis unavailable.
     Caches rate for 1 hour to reduce API calls.
 
-    Args:
-        target_currency: ISO 4217 code (e.g. "NGN", "GHS", "KES")
-
     Returns:
-        float: Current USD to target currency exchange rate
+        float: Current USD to NGN exchange rate
+
+    Raises:
+        HTTPException: If both API and fallback fail
     """
     global _exchange_rate_cache
 
     cache_key = f"exchange_rate:USD_{target_currency}"
 
     # Try Redis cache first (distributed, multi-worker safe)
-    if redis_client:
+    if _redis_client:
         try:
-            cached_rate = redis_client.get(cache_key)
+            cached_rate = _redis_client.get(cache_key)
             if cached_rate:
                 rate = float(cached_rate)
-                logger.debug(
-                    f"Using Redis cached exchange rate USD→{target_currency}: {rate}"
-                )
+                logger.debug(f"Using Redis cached exchange rate: {rate}")
                 return rate
         except (RedisError, ValueError) as e:
             logger.warning(f"Redis cache read failed: {e}. Falling back to API.")
@@ -304,10 +272,9 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
         cache_age = (now - _exchange_rate_cache["timestamp"]).total_seconds()
         if cache_age < EXCHANGE_RATE_CACHE_TTL:
             logger.debug(
-                f"Using in-memory cached rate USD→{target_currency}: "
-                f"{mem_cached['rate']} (age: {cache_age:.0f}s)"
+                f"Using in-memory cached exchange rate: {_exchange_rate_cache['rate']} (age: {cache_age:.0f}s)"
             )
-            return mem_cached["rate"]
+            return _exchange_rate_cache["rate"]
 
     # Try fetching from API
     try:
@@ -354,9 +321,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
                 )
                 return rate
             else:
-                logger.warning(
-                    f"Currency {target_currency} not in API response. Using fallback."
-                )
+                logger.warning(f"Unexpected API response format: {data}")
 
     except httpx.TimeoutException:
         logger.warning("Exchange rate API timeout. Using fallback rate.")
@@ -422,36 +387,23 @@ def decrypt_bank_data(encrypted_data: str) -> dict:
 
 
 async def validate_payout_amount(
-    user_id: int, amount: float, db_session: Session, org_id: Optional[int] = None
+    user_id: int, amount: float, db_session: Session
 ) -> None:
     """
     Validate payout amount is within limits (DRY utility)
-    Minimum is dynamic: $7.70 for active marketers, $1.00 for standard referrers.
 
     Args:
         user_id: User ID
         amount: Payout amount requested
         db_session: Database session
-        org_id: Organization ID (needed for marketer minimum lookup)
 
     Raises:
         HTTPException: If amount is invalid
     """
-    # Lazy import to avoid circular dependency (marketers.py imports payouts.py)
-    from src.services.referrals.marketers import get_minimum_payout
-
-    minimum = MINIMUM_PAYOUT_AMOUNT
-    if org_id is not None:
-        minimum = await get_minimum_payout(user_id, org_id, db_session)
-
-    if amount < minimum:
+    if amount < MINIMUM_PAYOUT_AMOUNT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "error_code": "MKTR_301",
-                "message": f"Minimum payout amount is ${minimum:.2f}",
-                "field": "amount",
-            },
+            detail=f"Minimum payout amount is ${MINIMUM_PAYOUT_AMOUNT}",
         )
 
     # Get user's eligible balance
@@ -470,11 +422,7 @@ async def validate_payout_amount(
     if amount > eligible_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "error_code": "MKTR_302",
-                "message": f"Insufficient eligible balance. Available: ${eligible_amount:.2f}",
-                "field": "amount",
-            },
+            detail=f"Insufficient eligible balance. Available: ${eligible_amount:.2f}",
         )
 
 
@@ -495,8 +443,6 @@ async def check_pending_payout(
     statement = select(ReferrerPayoutRequest).where(
         and_(
             ReferrerPayoutRequest.referrer_user_id == user_id,
-            # APPROVED is in-flight too: approved-but-not-yet-processed payouts
-            # must block new requests or two payouts race the same balance
             ReferrerPayoutRequest.status.in_(
                 [PayoutStatus.REQUESTED, PayoutStatus.APPROVED, PayoutStatus.PROCESSING]
             ),
@@ -505,6 +451,11 @@ async def check_pending_payout(
     return db_session.exec(statement).first()
 
 
+async def create_paystack_transfer_recipient(
+    email: str, name: str, bank_account_info: dict, currency: str = "NGN"
+) -> dict:
+    """
+    Create Paystack transfer recipient (DRY utility)
 
     Args:
         email: Recipient email
@@ -523,26 +474,6 @@ async def check_pending_payout(
         "currency": currency,
         "email": email,
     }
-    if headers:
-        req_headers.update(headers)
-        
-    async with httpx.AsyncClient() as client:
-        try:
-            if method.upper() == "POST":
-                response = await client.post(url, headers=req_headers, json=data)
-            elif method.upper() == "GET":
-                response = await client.get(url, headers=req_headers)
-            else:
-                raise ValueError(f"Unsupported method {method}")
-                
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Flutterwave HTTP error {e.response.status_code}: {e.response.text}")
-            raise HTTPException(status_code=e.response.status_code, detail=f"Flutterwave API error: {e.response.text}")
-        except Exception as e:
-            logger.error(f"Flutterwave request failed: {e}")
-            raise HTTPException(status_code=500, detail="Failed to connect to Flutterwave")
 
     try:
         result = await make_paystack_request(
@@ -559,35 +490,33 @@ async def check_pending_payout(
 
 async def initiate_paystack_transfer(
     amount: float,
-    currency: str,
-    bank_account_info: dict,
+    recipient_code: str,
     reference: str,
     reason: str = "Referral commission payout",
     idempotency_key: str | None = None,
 ) -> dict:
     """
-    Directly initiate a transfer using Flutterwave API
+    Initiate Paystack transfer (DRY utility)
+
+    Args:
+        amount: Amount in NGN (already converted from USD)
+        recipient_code: Paystack recipient code
+        reference: Unique transfer reference
+        reason: Transfer reason
+        idempotency_key: Optional idempotency key to prevent double-charging on retries
+
+    Returns:
+        Paystack transfer data
     """
-    account_number = bank_account_info.get("account_number")
-    
-    # For mobile money, account bank is the provider network code (MTN, MPS, etc)
-    # and account number is the phone number
-    if payment_method_type == PaymentMethodType.MOBILE_MONEY:
-        account_number = bank_account_info.get("phone_number")
-        account_bank = bank_account_info.get("provider", "").upper()
-        if not account_bank and bank_account_info.get("bank_code"):
-            account_bank = bank_account_info.get("bank_code")
-    else:
-        account_bank = bank_account_info.get("bank_code")
-        
+    # Convert amount to kobo (NGN subunit - multiply by 100)
+    amount_in_kobo = int(amount * 100)
+
     transfer_data = {
-        "account_bank": account_bank,
-        "account_number": account_number,
-        "amount": amount,
-        "narration": reason,
-        "currency": currency,
+        "source": "balance",
+        "amount": amount_in_kobo,
+        "recipient": recipient_code,
         "reference": reference,
-        "debit_currency": currency
+        "reason": reason,
     }
 
     # Add idempotency key if provided (prevents double-charging on retries)
@@ -712,9 +641,9 @@ async def create_payout_request(
         currency="USD",  # Base currency
         status=PayoutStatus.REQUESTED,
         bank_account_info=encrypted_bank_info,  # Encrypted for security
-        request_date=datetime.now(UTC),
-        creation_date=datetime.now(UTC),
-        update_date=datetime.now(UTC),
+        request_date=datetime.now(),
+        creation_date=datetime.now(),
+        update_date=datetime.now(),
     )
 
     db_session.add(payout)
@@ -769,43 +698,21 @@ async def process_payout_request(
         if not user:
             raise ValueError(f"User {payout.referrer_user_id} not found")
 
-        # Decrypt bank account information (Production security).
-        # Ciphertext is wrapped in {"encrypted": ...}; accept a bare string
-        # for backward compatibility with any legacy rows.
-        stored_info = payout.bank_account_info
-        encrypted_payload = (
-            stored_info.get("encrypted")
-            if isinstance(stored_info, dict)
-            else stored_info
-        )
-        if not encrypted_payload:
-            raise ValueError(f"Payout {payout.id} has no stored bank account details")
-        decrypted_bank_info = decrypt_bank_data(encrypted_payload)
+        # Decrypt bank account information (Production security)
+        decrypted_bank_info = decrypt_bank_data(payout.bank_account_info)
 
         # Determine payout currency from user's country or org settings
         payout_currency = await get_payout_currency(
             user=user, org_id=payout.org_id, db_session=db_session
         )
 
-        # Determine payout currency: saved method currency wins, otherwise
-        # derived from user's country or org settings
-        if saved_currency:
-            payout_currency = saved_currency
-        else:
-            payout_currency = await get_payout_currency(
-                user=user, org_id=payout.org_id, db_session=db_session
-            )
-
-        # Reuse cached Paystack recipient code when available to skip the
-        # /transferrecipient call on subsequent payouts
-        recipient_code = None
-        payment_method = (
-            db_session.get(MarketerPaymentMethod, payment_method_id)
-            if payment_method_id
-            else None
+        # Create Paystack transfer recipient with dynamic currency
+        recipient_result = await create_paystack_transfer_recipient(
+            email=user.email,
+            name=f"{user.first_name} {user.last_name}",
+            bank_account_info=decrypted_bank_info,
+            currency=payout_currency,
         )
-        # Fetch real-time exchange rate (prevents losses from volatility)
-        current_exchange_rate = await get_usd_to_currency_exchange_rate(payout_currency)
 
         recipient_code = recipient_result.get("recipient_code")
         payout.paystack_transfer_recipient_code = recipient_code
@@ -836,12 +743,10 @@ async def process_payout_request(
             recipient_code=recipient_code,
             reference=transfer_reference,
             reason="Referral commission payout",
-            payment_method_type=payment_method_type,
+            idempotency_key=idempotency_key,
         )
 
-        # Flutterwave returns the transfer ID in the data object
-        transfer_data = transfer_result.get("data", {})
-        transfer_code = str(transfer_data.get("id", ""))
+        transfer_code = transfer_result.get("transfer_code")
 
         # CRITICAL: Atomic transaction for balance updates
         # Use explicit transaction to ensure all-or-nothing consistency
@@ -850,7 +755,7 @@ async def process_payout_request(
             # Start explicit transaction
             with db_session.begin_nested():
                 # Update payout status
-                payout.flutterwave_transfer_id = transfer_code
+                payout.paystack_transfer_code = transfer_code
                 payout.status = PayoutStatus.COMPLETED
                 payout.completion_date = datetime.now(UTC)
                 db_session.add(payout)
@@ -975,96 +880,6 @@ async def process_payout_request(
     return payout
 
 
-def _handle_payout_failure(
-    payout: ReferrerPayoutRequest, reason: str, db_session: Session
-) -> None:
-    """
-    Graceful payout retry (DRY utility)
-
-    Transient Paystack failures are retried by the background job: the payout
-    is set back to APPROVED so the next job run (every ~5-30 min) retries it.
-    After MAX_PAYOUT_RETRIES the payout is marked FAILED permanently and the
-    marketer + admin are notified. Balance is never deducted on failure.
-    """
-    payout.retry_count = (payout.retry_count or 0) + 1
-    payout.last_retry_at = datetime.now()
-    payout.failure_reason = reason[:2000] if reason else None
-    payout.update_date = datetime.now()
-
-    if payout.retry_count >= MAX_PAYOUT_RETRIES:
-        payout.status = PayoutStatus.FAILED
-        logger.error(
-            f"Payout {payout.id} FAILED permanently after "
-            f"{payout.retry_count} attempts: {reason}"
-        )
-        user = db_session.get(User, payout.referrer_user_id)
-        if user:
-            _send_marketer_payout_email_safe(
-                payout, user, payout.currency, db_session, completed=False
-            )
-    else:
-        # Back to APPROVED — background job retries on its next run
-        payout.status = PayoutStatus.APPROVED
-        logger.warning(
-            f"Payout {payout.id} attempt {payout.retry_count}/"
-            f"{MAX_PAYOUT_RETRIES} failed, will retry: {reason}"
-        )
-
-    db_session.add(payout)
-    db_session.commit()
-
-
-def _send_marketer_payout_email_safe(
-    payout: ReferrerPayoutRequest,
-    user: User,
-    currency: str,
-    db_session: Session,
-    completed: bool,
-) -> None:
-    """
-    Send payout lifecycle email to marketers. Never raises — email failure
-    must not affect payout state. No-op for standard (non-marketer) referrers.
-    """
-    try:
-        from src.db.referrals.marketers import Marketer, MarketerStatus
-
-        marketer = db_session.exec(
-            select(Marketer).where(
-                and_(
-                    Marketer.user_id == payout.referrer_user_id,
-                    Marketer.org_id == payout.org_id,
-                    Marketer.status == MarketerStatus.ACTIVE,
-                )
-            )
-        ).first()
-        if not marketer:
-            return
-
-        from src.services.referrals.marketer_emails import (
-            send_marketer_payout_completed_email,
-            send_marketer_payout_failed_email,
-        )
-
-        if completed:
-            send_marketer_payout_completed_email(
-                email=user.email,
-                username=user.username,
-                amount_usd=payout.total_amount,
-                converted_amount=payout.converted_amount,
-                currency=currency,
-                reference=payout.flutterwave_transfer_id,
-            )
-        else:
-            send_marketer_payout_failed_email(
-                email=user.email,
-                username=user.username,
-                amount_usd=payout.total_amount,
-                reason=payout.failure_reason,
-            )
-    except Exception as e:
-        logger.error(f"Failed to send marketer payout email: {e}")
-
-
 async def get_payout_history(
     request: Request,
     org_id: int,
@@ -1099,29 +914,48 @@ async def get_payout_history(
     return [ReferrerPayoutRequestRead.model_validate(p) for p in payouts]
 
 
-# ==================== Marketer Payment Methods ====================
+MAX_PAYOUT_RETRIES = 3  # Transient Paystack failures retried before FAILED
 
-
-async def get_active_payment_method(
-    marketer_id: int, db_session: Session
-) -> Optional[MarketerPaymentMethod]:
+async def cache_paystack_recipient_code(
+    payment_method_id: int, recipient_code: str, db_session: Session
+) -> None:
     """
-    Get the marketer's active saved payment method (DRY utility)
-
-    Args:
-        marketer_id: Marketer ID
-        db_session: Database session
-
-    Returns:
-        MarketerPaymentMethod or None if none saved
+    Cache the Paystack recipient code on the saved payment method after
+    first-time creation so subsequent payouts skip the /transferrecipient call.
     """
-    statement = select(MarketerPaymentMethod).where(
-        and_(
-            MarketerPaymentMethod.marketer_id == marketer_id,
-            MarketerPaymentMethod.is_active == True,  # noqa: E712
+    payment_method = db_session.get(MarketerPaymentMethod, payment_method_id)
+    if payment_method:
+        payment_method.paystack_recipient_code = recipient_code
+        payment_method.update_date = datetime.now()
+        db_session.add(payment_method)
+        db_session.commit()
+        logger.info(
+            f"Cached Paystack recipient code on payment method {payment_method_id}"
         )
-    )
-    return db_session.exec(statement).first()
+
+
+
+async def reset_paystack_recipient_codes_for_user(
+    user_id: int, db_session: Session
+) -> None:
+    """
+    Invalidate cached Paystack recipient codes for all of a user's payment
+    methods. Called when the user's country changes in their profile.
+    """
+    methods = db_session.exec(
+        select(MarketerPaymentMethod).where(MarketerPaymentMethod.user_id == user_id)
+    ).all()
+    for method in methods:
+        method.paystack_recipient_code = None
+        method.update_date = datetime.now()
+        db_session.add(method)
+    if methods:
+        db_session.commit()
+        logger.info(
+            f"Reset Paystack recipient codes on {len(methods)} payment methods "
+            f"for user {user_id} (country change)"
+        )
+
 
 
 async def save_payment_method(
@@ -1236,80 +1070,25 @@ async def save_payment_method(
     return payment_method
 
 
-async def cache_paystack_recipient_code(
-    payment_method_id: int, recipient_code: str, db_session: Session
-) -> None:
+
+async def get_active_payment_method(
+    marketer_id: int, db_session: Session
+) -> Optional[MarketerPaymentMethod]:
     """
-    Cache the Paystack recipient code on the saved payment method after
-    first-time creation so subsequent payouts skip the /transferrecipient call.
+    Get the marketer's active saved payment method (DRY utility)
+
+    Args:
+        marketer_id: Marketer ID
+        db_session: Database session
+
+    Returns:
+        MarketerPaymentMethod or None if none saved
     """
-    payment_method = db_session.get(MarketerPaymentMethod, payment_method_id)
-    if payment_method:
-        payment_method.paystack_recipient_code = recipient_code
-        payment_method.update_date = datetime.now()
-        db_session.add(payment_method)
-        db_session.commit()
-        logger.info(
-            f"Cached Paystack recipient code on payment method {payment_method_id}"
+    statement = select(MarketerPaymentMethod).where(
+        and_(
+            MarketerPaymentMethod.marketer_id == marketer_id,
+            MarketerPaymentMethod.is_active == True,  # noqa: E712
         )
-
-
-async def reset_paystack_recipient_codes_for_user(
-    user_id: int, db_session: Session
-) -> None:
-    """
-    Invalidate cached Paystack recipient codes for all of a user's payment
-    methods. Called when the user's country changes in their profile.
-    """
-    methods = db_session.exec(
-        select(MarketerPaymentMethod).where(MarketerPaymentMethod.user_id == user_id)
-    ).all()
-    for method in methods:
-        method.paystack_recipient_code = None
-        method.update_date = datetime.now()
-        db_session.add(method)
-    if methods:
-        db_session.commit()
-        logger.info(
-            f"Reset Paystack recipient codes on {len(methods)} payment methods "
-            f"for user {user_id} (country change)"
-        )
-
-
-def build_masked_payment_method(
-    payment_method: MarketerPaymentMethod,
-) -> MarketerPaymentMethodRead:
-    """
-    Build the masked API representation of a payment method.
-    Full account numbers never leave the service layer — only last 4 digits.
-    """
-    details = decrypt_bank_data(payment_method.account_details)
-
-    if payment_method.payment_method_type == PaymentMethodType.MOBILE_MONEY:
-        raw_number = details.get("phone_number") or ""
-        holder = details.get("account_name")
-        bank_name = None
-        provider = details.get("provider")
-    else:
-        raw_number = details.get("account_number") or ""
-        holder = details.get("account_holder")
-        bank_name = details.get("bank_name")
-        provider = None
-
-    masked = f"****{raw_number[-4:]}" if raw_number else "****"
-
-    return MarketerPaymentMethodRead(
-        id=payment_method.id,
-        marketer_id=payment_method.marketer_id,
-        payment_method_type=payment_method.payment_method_type,
-        currency=payment_method.currency,
-        country_code=payment_method.country_code,
-        is_active=payment_method.is_active,
-        verified_at=payment_method.verified_at,
-        masked_account=masked,
-        account_holder=holder,
-        bank_name=bank_name,
-        provider=provider,
-        has_cached_recipient=payment_method.flutterwave_beneficiary_id is not None,
-        creation_date=payment_method.creation_date,
     )
+    return db_session.exec(statement).first()
+
