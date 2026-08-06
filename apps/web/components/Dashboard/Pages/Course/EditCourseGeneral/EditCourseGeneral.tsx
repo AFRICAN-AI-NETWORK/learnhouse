@@ -139,6 +139,7 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
     return {
       name: courseStructure?.name || '',
       description: courseStructure?.description || '',
+      whatsapp_group_link: courseStructure?.whatsapp_group_link || '',
       about: courseStructure?.about || '',
       learnings: initializeLearnings(courseStructure?.learnings || ''),
       tags: courseStructure?.tags || '',
@@ -279,6 +280,21 @@ function EditCourseGeneral(props: EditCourseStructureProps) {
                     {...register('description')}
                     type="text"
                     required
+                  />
+                </Form.Control>
+              </FormField>
+
+              <FormField name="whatsapp_group_link">
+                <FormLabelAndMessage
+                  label="WhatsApp Group Link (Optional)"
+                  message={errors.whatsapp_group_link?.message as string}
+                />
+                <Form.Control asChild>
+                  <Input
+                    style={{ backgroundColor: 'white' }}
+                    {...register('whatsapp_group_link')}
+                    type="url"
+                    placeholder="https://chat.whatsapp.com/..."
                   />
                 </Form.Control>
               </FormField>

@@ -3,26 +3,28 @@
 These tests verify the complete waitlist flow from creation to user activation.
 """
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
+
+import pytest
+from fastapi import HTTPException
 from sqlmodel import select
 
+from src.db.courses.courses import Course
 from src.db.users import User
 from src.db.waitlist import (
+    UserStatusEnum,
     WaitlistConfig,
     WaitlistConfigCreate,
-    WaitlistStatusEnum,
     WaitlistCoursePreference,
     WaitlistEmailLog,
-    UserStatusEnum,
+    WaitlistStatusEnum,
 )
-from src.db.courses.courses import Course
-from src.services.waitlist.config import create_waitlist_config
+from src.security.auth import authenticate_user
 from src.services.users.waitlist import create_waitlist_user
+from src.services.waitlist.config import create_waitlist_config
 from src.services.waitlist.courses import get_org_courses_for_waitlist
 from src.services.waitlist.emails import process_waitlist_activations
-from src.security.auth import authenticate_user
 
 
 class TestCompleteWaitlistFlow:
@@ -60,7 +62,7 @@ class TestCompleteWaitlistFlow:
         mock_confirmation.return_value = True
 
         # ========== Step 1: Admin creates waitlist campaign ==========
-        future_date = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
         config_data = WaitlistConfigCreate(
             org_id=sample_org.id,
             name="Complete Flow Test Campaign",
@@ -78,8 +80,8 @@ class TestCompleteWaitlistFlow:
         assert waitlist.total_registrations == 0
 
         # ========== Step 2: Create products for selection ==========
-        from src.db.payments.payments_products import PaymentsProduct
         from src.db.payments.payments_courses import PaymentsCourse
+        from src.db.payments.payments_products import PaymentsProduct
 
         course1 = Course(
             name="Python Basics",
@@ -175,14 +177,14 @@ class TestCompleteWaitlistFlow:
         assert len(prefs) == 2
 
         # ========== Step 4: User cannot login yet ==========
-        with pytest.raises(Exception):  # HTTPException
+        with pytest.raises(HTTPException):  # HTTPException
             await authenticate_user(
                 mock_request, "e2e@example.com", "SecurePassword123!", db_session
             )
 
         # ========== Step 5: Simulate launch date passing ==========
         # Update waitlist to expired launch date
-        past_date = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        past_date = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
         waitlist_for_update = db_session.exec(
             select(WaitlistConfig).where(
                 WaitlistConfig.waitlist_uuid == waitlist.waitlist_uuid
@@ -266,8 +268,8 @@ class TestWaitlistCancellationFlow:
         mock_request,
     ):
         """Test that cancelled waitlists prevent new user registrations"""
-        from src.services.waitlist.config import cancel_waitlist_config
         from src.db.users import UserCreate
+        from src.services.waitlist.config import cancel_waitlist_config
 
         mock_check_limits.return_value = None
         mock_increase.return_value = None
@@ -275,7 +277,7 @@ class TestWaitlistCancellationFlow:
         mock_confirmation.return_value = True
 
         # Create waitlist
-        future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=7)).isoformat()
         config_data = WaitlistConfigCreate(
             org_id=sample_org.id,
             name="To Be Cancelled",
@@ -296,7 +298,7 @@ class TestWaitlistCancellationFlow:
             org_id=sample_org.id,
         )
 
-        with pytest.raises(Exception):  # HTTPException
+        with pytest.raises(HTTPException):  # HTTPException
             await create_waitlist_user(
                 request=mock_request,
                 db_session=db_session,
@@ -322,7 +324,7 @@ class TestMultipleWaitlistCampaigns:
         # Create multiple waitlists
         for i in range(3):
             future_date = (
-                datetime.now(timezone.utc) + timedelta(days=7 + i)
+                datetime.now(UTC) + timedelta(days=7 + i)
             ).isoformat()
             config_data = WaitlistConfigCreate(
                 org_id=sample_org.id,
@@ -364,8 +366,8 @@ class TestWaitlistAnalytics:
         mock_request,
     ):
         """Test analytics for course preferences"""
-        from src.services.waitlist.courses import get_course_preference_analytics
         from src.db.users import UserCreate
+        from src.services.waitlist.courses import get_course_preference_analytics
 
         mock_check_limits.return_value = None
         mock_increase.return_value = None
@@ -373,7 +375,7 @@ class TestWaitlistAnalytics:
         mock_confirmation.return_value = True
 
         # Create waitlist
-        future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=7)).isoformat()
         config_data = WaitlistConfigCreate(
             org_id=sample_org.id,
             name="Analytics Test",

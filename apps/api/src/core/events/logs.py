@@ -1,4 +1,6 @@
 import logging
+
+logger = logging.getLogger(__name__)
 import os
 
 
@@ -19,4 +21,4 @@ async def init_logging():
         handlers=[logging.FileHandler("logs/learnhouse.log"), logging.StreamHandler()],
     )
 
-    logging.info("Logging initiated")
+    logger.info("Logging initiated")

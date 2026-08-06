@@ -1,11 +1,13 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
-from src.db.organizations import Organization
-from fastapi import HTTPException, status, UploadFile, Request
+
+from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
+
 from src.db.courses.activities import Activity
 from src.db.courses.blocks import Block, BlockRead, BlockTypeEnum
 from src.db.courses.courses import Course
+from src.db.organizations import Organization
 from src.services.blocks.utils.upload_files import upload_file_and_return_file_object
 from src.services.users.users import PublicUser
 
@@ -58,8 +60,8 @@ async def create_image_block(
         org_id=org.id if org.id else 0,
         course_id=course.id if course.id else 0,
         block_uuid=block_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # insert block

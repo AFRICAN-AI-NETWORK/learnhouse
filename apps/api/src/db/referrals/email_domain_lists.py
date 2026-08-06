@@ -4,7 +4,6 @@ Stores disposable and legitimate email domains dynamically
 """
 
 from datetime import datetime
-from typing import Optional
 from enum import Enum
 
 from sqlmodel import Field, SQLModel
@@ -25,7 +24,7 @@ class EmailDomainList(SQLModel, table=True):
 
     __tablename__ = "emaildomainlist"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
 
     # Domain name (e.g., "gmail.com", "10minutemail.com")
     domain: str = Field(index=True, max_length=255)
@@ -44,7 +43,7 @@ class EmailDomainList(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Last verified date (when external source was last checked)
-    last_verified_at: Optional[datetime] = None
+    last_verified_at: datetime | None = None
 
     class Config:
         use_enum_values = True

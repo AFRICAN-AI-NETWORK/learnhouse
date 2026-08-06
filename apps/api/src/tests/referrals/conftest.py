@@ -3,8 +3,8 @@ Pytest configuration for referral tests
 """
 
 import pytest
-from sqlmodel import create_engine, Session, SQLModel
 from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
 
 @pytest.fixture(name="test_db_session")
@@ -34,6 +34,7 @@ def test_db_session_fixture():
 def mock_request_fixture():
     """Create a mock FastAPI request"""
     from unittest.mock import Mock
+
     from fastapi import Request
 
     request = Mock(spec=Request)
@@ -48,6 +49,7 @@ def mock_request_fixture():
 def mock_user_fixture():
     """Create a mock authenticated user"""
     from unittest.mock import Mock
+
     from src.db.users import PublicUser
 
     user = Mock(spec=PublicUser)

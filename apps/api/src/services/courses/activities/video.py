@@ -1,11 +1,12 @@
-from typing import Literal
 import json
-from src.db.courses.courses import Course
-from src.db.organizations import Organization
+from datetime import UTC, datetime
+from typing import Literal
+from uuid import uuid4
 
+from fastapi import HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
-from src.db.courses.chapters import Chapter
+
 from src.db.courses.activities import (
     Activity,
     ActivityRead,
@@ -13,13 +14,13 @@ from src.db.courses.activities import (
     ActivityTypeEnum,
 )
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.courses import Course
+from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
-from src.services.courses.activities.uploads.videos import upload_video
-from fastapi import HTTPException, status, UploadFile, Request
-from uuid import uuid4
-from datetime import datetime
 from src.security.courses_security import courses_rbac_check_for_activities
+from src.services.courses.activities.uploads.videos import upload_video
 
 
 async def create_video_activity(
@@ -109,8 +110,8 @@ async def create_video_activity(
             "activity_uuid": activity_uuid,
         },
         details=details if isinstance(details, dict) else json.loads(details),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # create activity
@@ -135,8 +136,8 @@ async def create_video_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=1,
     )
 
@@ -219,8 +220,8 @@ async def create_external_video_activity(
             "activity_uuid": activity_uuid,
         },
         details=details,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # create activity
@@ -235,8 +236,8 @@ async def create_external_video_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=1,
     )
 

@@ -1,8 +1,9 @@
-from typing import List, Optional
-from datetime import datetime
+import logging
+from datetime import UTC, datetime
 from uuid import uuid4
-from sqlmodel import Session, select, and_, or_, func
+
 from fastapi import HTTPException, status
+from sqlmodel import Session, and_, func, or_, select
 
 from src.db.chat.conversations import (
     Conversation,
@@ -10,11 +11,10 @@ from src.db.chat.conversations import (
     ConversationWithLastMessage,
 )
 from src.db.chat.messages import Message, MessageReadReceipt
-from src.db.users import User
-from src.db.user_organizations import UserOrganization
 from src.db.roles import Role
+from src.db.user_organizations import UserOrganization
+from src.db.users import User
 from src.services.chat.authorization import verify_chat_permission
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class ConversationService:
     @staticmethod
     def _resolve_user_role_name(
         db: Session, user_id: int, org_id: int
-    ) -> Optional[str]:
+    ) -> str | None:
         """Resolve the role name for a user within an organization."""
         user_org = db.exec(
             select(UserOrganization)
@@ -78,8 +78,8 @@ class ConversationService:
                 org_id=org_id,
                 participant_one_id=participant_one,
                 participant_two_id=participant_two,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
 
             db.add(conversation)
@@ -154,7 +154,7 @@ class ConversationService:
         include_archived: bool = False,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[ConversationWithLastMessage]:
+    ) -> list[ConversationWithLastMessage]:
         """
         Get all conversations for a user with last message and unread count.
 
@@ -349,8 +349,8 @@ class ConversationService:
 
         conversation.is_archived = True
         conversation.archived_by_user_id = user_id
-        conversation.archived_at = datetime.utcnow()
-        conversation.updated_at = datetime.utcnow()
+        conversation.archived_at = datetime.now(UTC)
+        conversation.updated_at = datetime.now(UTC)
 
         db.add(conversation)
         db.commit()

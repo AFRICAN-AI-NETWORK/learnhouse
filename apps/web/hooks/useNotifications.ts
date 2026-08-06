@@ -3,6 +3,8 @@ import toast from 'react-hot-toast'
 import { useRouter, useParams } from 'next/navigation'
 import { NotificationContext } from '@components/Contexts/NotificationContext'
 import MessageNotificationToast from '@components/Objects/StyledElements/Toast/MessageNotificationToast'
+import ActivityNotificationToast from '@components/Objects/StyledElements/Toast/ActivityNotificationToast'
+import { ActivityNotificationEvent } from '@/types/notifications'
 import {
   playNotificationSound,
   showBrowserNotification,
@@ -114,6 +116,49 @@ export const useNotifications = () => {
     }
   }
 
+  const showActivityNotificationToast = (
+    notification: Pick<
+      ActivityNotificationEvent,
+      'notification_type' | 'title' | 'message'
+    >,
+    options: ShowToastOptions & {
+      playSound?: boolean
+      showDesktop?: boolean
+    } = {}
+  ) => {
+    const { duration = 5000, playSound = true, showDesktop = true } = options
+
+    toast.custom(
+      (toastInstance) =>
+        createElement(ActivityNotificationToast, {
+          notificationType: notification.notification_type,
+          title: notification.title,
+          message: notification.message,
+          onClose: () => toast.dismiss(toastInstance.id),
+        }),
+      {
+        duration,
+        style: {
+          background: 'transparent',
+          boxShadow: 'none',
+          padding: 0,
+          right: 0,
+        },
+      }
+    )
+
+    if (playSound) {
+      playNotificationSound()
+    }
+
+    if (showDesktop && !context.windowFocused) {
+      showBrowserNotification(notification.title, {
+        body: notification.message,
+        tag: `notification-${notification.notification_type}`,
+      })
+    }
+  }
+
   const dismissAllToasts = () => {
     toast.remove()
   }
@@ -121,6 +166,7 @@ export const useNotifications = () => {
   return {
     showToast,
     showMessageNotification,
+    showActivityNotificationToast,
     dismissAllToasts,
     requestNotificationPermission,
     unreadCount: context.unreadCount,

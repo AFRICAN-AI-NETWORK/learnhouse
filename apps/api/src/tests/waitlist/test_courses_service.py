@@ -1,17 +1,19 @@
 """Unit tests for waitlist courses service"""
 
+from datetime import UTC
+
 import pytest
 from fastapi import HTTPException
 
-from src.services.waitlist.courses import (
-    get_org_courses_for_waitlist,
-    get_course_preference_analytics,
-    get_user_course_preferences,
-)
 from src.db.courses.courses import Course
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentsProduct
 from src.db.waitlist import WaitlistCoursePreference
+from src.services.waitlist.courses import (
+    get_course_preference_analytics,
+    get_org_courses_for_waitlist,
+    get_user_course_preferences,
+)
 
 
 class TestGetOrgCoursesForWaitlist:
@@ -168,7 +170,7 @@ class TestGetCoursePreferenceAnalytics:
         mock_request,
     ):
         """Test getting course preference analytics"""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Create payment product for preference
         product = PaymentsProduct(
@@ -187,7 +189,7 @@ class TestGetCoursePreferenceAnalytics:
             payments_product_id=product.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_waitlist_config.org_id,
-            creation_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(pref1)
         db_session.commit()
@@ -217,7 +219,8 @@ class TestGetCoursePreferenceAnalytics:
         mock_request,
     ):
         """Test that analytics aggregate preferences from multiple users"""
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         from src.db.users import User
 
         # Create multiple users with same course preference
@@ -252,7 +255,7 @@ class TestGetCoursePreferenceAnalytics:
                 payments_product_id=product.id,
                 waitlist_config_id=sample_waitlist_config.id,
                 org_id=sample_org.id,
-                creation_date=datetime.now(timezone.utc).isoformat(),
+                creation_date=datetime.now(UTC).isoformat(),
             )
             db_session.add(pref)
 
@@ -296,7 +299,7 @@ class TestGetUserCoursePreferences:
         mock_request,
     ):
         """Test getting a specific user's course preferences"""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Create product
         product = PaymentsProduct(
@@ -315,7 +318,7 @@ class TestGetUserCoursePreferences:
             payments_product_id=product.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_waitlist_config.org_id,
-            creation_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(pref)
         db_session.commit()
@@ -340,7 +343,7 @@ class TestGetUserCoursePreferences:
         mock_request,
     ):
         """Test user with multiple course preferences"""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Create multiple products
         products = []
@@ -360,7 +363,7 @@ class TestGetUserCoursePreferences:
                 payments_product_id=product.id,
                 waitlist_config_id=sample_waitlist_config.id,
                 org_id=sample_org.id,
-                creation_date=datetime.now(timezone.utc).isoformat(),
+                creation_date=datetime.now(UTC).isoformat(),
             )
             db_session.add(pref)
 

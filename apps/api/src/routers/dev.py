@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
+
 from config.config import get_learnhouse_config
 from migrations.orgconfigs.orgconfigs_migrations import (
     migrate_to_v1_1,
@@ -8,7 +9,6 @@ from migrations.orgconfigs.orgconfigs_migrations import (
 )
 from src.core.events.database import get_db_session
 from src.db.organization_config import OrganizationConfig
-
 
 router = APIRouter()
 

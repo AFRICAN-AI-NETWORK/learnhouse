@@ -1,8 +1,9 @@
-from datetime import datetime
-from typing import Optional
+from datetime import UTC, datetime
+
 from fastapi import HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
+
 from src.db.organizations import Organization
 from src.db.user_organizations import UserOrganization
 from src.db.users import AnonymousUser, PublicUser, User
@@ -17,7 +18,7 @@ from src.services.orgs.orgs import get_org_join_mechanism
 class JoinOrg(BaseModel):
     org_id: int
     user_id: str
-    invite_code: Optional[str]
+    invite_code: str | None
 
 
 async def join_org(
@@ -80,8 +81,8 @@ async def join_org(
                 user_id=user.id,
                 org_id=org.id,
                 role_id=4,
-                creation_date=str(datetime.now()),
-                update_date=str(datetime.now()),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
 
             db_session.add(user_organization)
@@ -102,8 +103,8 @@ async def join_org(
                 user_id=user.id,
                 org_id=org.id,
                 role_id=4,
-                creation_date=str(datetime.now()),
-                update_date=str(datetime.now()),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
 
             db_session.add(user_organization)

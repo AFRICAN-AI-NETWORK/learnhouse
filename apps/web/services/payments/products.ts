@@ -111,7 +111,7 @@ export async function getCoursesLinkedToProduct(
 export async function getProductsByCourse(
   orgId: number,
   courseId: string,
-  access_token: string
+  access_token?: string
 ) {
   const result = await fetch(
     `${getAPIUrl()}payments/${orgId}/courses/${courseId}/products`,

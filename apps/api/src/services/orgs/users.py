@@ -1,22 +1,21 @@
-from datetime import datetime, timedelta
 import json
 import logging
+
+logger = logging.getLogger(__name__)
+from datetime import UTC, datetime, timedelta
 
 import redis
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
+
+from config.config import get_learnhouse_config
+from src.db.organizations import Organization, OrganizationRead, OrganizationUser
+from src.db.roles import Role, RoleRead
+from src.db.user_organizations import UserOrganization
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.features_utils.usage import decrease_feature_usage
 from src.services.orgs.invites import send_invite_email
-from config.config import get_learnhouse_config
 from src.services.orgs.orgs import rbac_check
-from src.db.roles import Role, RoleRead
-from src.db.users import AnonymousUser, PublicUser, User, UserRead
-from src.db.user_organizations import UserOrganization
-from src.db.organizations import (
-    Organization,
-    OrganizationRead,
-    OrganizationUser,
-)
 
 
 async def get_organization_users(
@@ -58,7 +57,7 @@ async def get_organization_users(
         user_org = result.first()
 
         if not user_org:
-            logging.error("UserOrganization record found but user missing")
+            logger.error("UserOrganization record found but user missing")
 
             # skip this user
             continue
@@ -69,7 +68,7 @@ async def get_organization_users(
         role = result.first()
 
         if not role:
-            logging.error(f"Role {user_org.role_id} not found")
+            logger.error(f"Role {user_org.role_id} not found")
 
             # skip this user
             continue
@@ -80,7 +79,7 @@ async def get_organization_users(
         user = result.first()
 
         if not user:
-            logging.error(f"User {user_org.user_id} not found")
+            logger.error(f"User {user_org.user_id} not found")
 
             # skip this user
             continue
@@ -292,7 +291,7 @@ async def invite_batch_users(
         invited_user = r.get(f"invited_user:{email}:org:{org.org_uuid}")
 
         if invited_user:
-            logging.error("Skipping already-invited recipient")
+            logger.error("Skipping already-invited recipient")
             # skip this user
             continue
 
@@ -313,7 +312,7 @@ async def invite_batch_users(
             "pending": True,
             "email_sent": isEmailSent,
             "expires": ttl,
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "created_by": current_user.user_uuid,
         }
 

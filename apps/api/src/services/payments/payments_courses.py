@@ -1,9 +1,10 @@
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
+
+from src.db.courses.courses import Course
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentsProduct
-from src.db.courses.courses import Course
-from src.db.users import PublicUser, AnonymousUser
+from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check
 from src.security.features_utils.usage import check_limits_with_usage
 
@@ -40,13 +41,16 @@ async def link_course_to_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Check if course is already linked to another product
-    statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course.id)
+    # Check if course is already linked to THIS specific product
+    statement = select(PaymentsCourse).where(
+        PaymentsCourse.course_id == course.id,
+        PaymentsCourse.payment_product_id == product_id,
+    )
     existing_link = db_session.exec(statement).first()
 
     if existing_link:
         raise HTTPException(
-            status_code=400, detail="Course is already linked to a product"
+            status_code=400, detail="Course is already linked to this product"
         )
 
     # Create new payment course link

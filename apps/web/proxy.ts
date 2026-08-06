@@ -108,13 +108,30 @@ export default async function proxy(req: NextRequest) {
       ? pathname
       : `/auth${pathname}`
 
-    const response = NextResponse.rewrite(
-      createRewriteUrl(`${targetPath}${search}`)
-    )
-
     // Parse the search params
     const searchParams = new URLSearchParams(search)
-    const orgslug = searchParams.get('orgslug')
+    let orgslug = searchParams.get('orgslug')
+
+    if (!orgslug) {
+      if (hosting_mode === 'multi') {
+        const LEARNHOUSE_DOMAIN = getLEARNHOUSE_DOMAIN_VAL()
+        orgslug = fullhost
+          ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
+          : (default_org as string)
+      } else {
+        orgslug = default_org as string
+      }
+      if (orgslug) {
+        searchParams.set('orgslug', orgslug)
+      }
+    }
+
+    const queryString = searchParams.toString()
+    const finalSearch = queryString ? `?${queryString}` : ''
+
+    const response = NextResponse.rewrite(
+      createRewriteUrl(`${targetPath}${finalSearch}`)
+    )
 
     if (orgslug) {
       const LEARNHOUSE_TOP_DOMAIN = getLEARNHOUSE_TOP_DOMAIN_VAL()
@@ -200,11 +217,15 @@ export default async function proxy(req: NextRequest) {
 
     const sitemapUrl = new URL(`/api/sitemap`, req.url)
 
-    // Create a response object
-    const response = NextResponse.rewrite(sitemapUrl)
+    // Set the orgslug in a request header for the route handler
+    const requestHeaders = new Headers(req.headers)
+    requestHeaders.set('X-Sitemap-Orgslug', orgslug)
 
-    // Set the orgslug in a header
-    response.headers.set('X-Sitemap-Orgslug', orgslug)
+    const response = NextResponse.rewrite(sitemapUrl, {
+      request: {
+        headers: requestHeaders,
+      },
+    })
 
     return response
   }

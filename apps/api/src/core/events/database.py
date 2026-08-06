@@ -1,13 +1,17 @@
+import importlib
+import importlib.util
 import logging
+
+logger = logging.getLogger(__name__)
 import os
 import re
 import sys
-import importlib
-import importlib.util
-from config.config import get_learnhouse_config
+
 from fastapi import FastAPI
-from sqlmodel import SQLModel, Session, create_engine
 from sqlalchemy import event
+from sqlmodel import Session, SQLModel, create_engine
+
+from config.config import get_learnhouse_config
 
 
 def import_all_models():
@@ -47,7 +51,7 @@ def import_all_models():
                 # Validate module path to avoid importing arbitrary/unexpected modules
                 safe_pattern = re.compile(r"^[A-Za-z0-9_.]+$")
                 if not safe_pattern.match(full_module_path):
-                    logging.warning(f"Skipping unsafe module path: {full_module_path}")
+                    logger.warning(f"Skipping unsafe module path: {full_module_path}")
                     continue
 
                 # Ensure module is under the expected base module path
@@ -55,7 +59,7 @@ def import_all_models():
                     full_module_path == base_module_path
                     or full_module_path.startswith(base_module_path + ".")
                 ):
-                    logging.warning(
+                    logger.warning(
                         f"Skipping module outside base path: {full_module_path}"
                     )
                     continue
@@ -63,11 +67,11 @@ def import_all_models():
                 # Check that module actually exists before importing
                 try:
                     spec = importlib.util.find_spec(full_module_path)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     spec = None
 
                 if spec is None:
-                    logging.debug(f"Module spec not found for {full_module_path}")
+                    logger.debug(f"Module spec not found for {full_module_path}")
                     continue
 
                 try:
@@ -78,14 +82,14 @@ def import_all_models():
                     # Load module via spec loader rather than import_module() to satisfy non-literal-import guardrails.
                     module = importlib.util.module_from_spec(spec)
                     if spec.loader is None:
-                        logging.debug(f"No loader available for {full_module_path}")
+                        logger.debug(f"No loader available for {full_module_path}")
                         continue
                     sys.modules[full_module_path] = module
                     spec.loader.exec_module(module)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     # Remove partial module entries on failure.
                     sys.modules.pop(full_module_path, None)
-                    logging.error(f"Failed to import model {full_module_path}: {e}")
+                    logger.error(f"Failed to import model {full_module_path}: {e}")
 
 
 # Import all models before creating engine
@@ -117,7 +121,7 @@ else:
         pool_timeout=_pool_timeout,
     )
 
-    logging.info(
+    logger.info(
         "Database pool configured: size=%d, overflow=%d, recycle=%ds, timeout=%ds",
         _pool_size,
         _max_overflow,
@@ -128,15 +132,15 @@ else:
     # Add connection pool monitoring for debugging
     @event.listens_for(engine, "connect")
     def receive_connect(dbapi_connection, connection_record):
-        logging.debug("Database connection established")
+        logger.debug("Database connection established")
 
     @event.listens_for(engine, "checkout")
     def receive_checkout(dbapi_connection, connection_record, connection_proxy):
-        logging.debug("Connection checked out from pool")
+        logger.debug("Connection checked out from pool")
 
     @event.listens_for(engine, "checkin")
     def receive_checkin(dbapi_connection, connection_record):
-        logging.debug("Connection returned to pool")
+        logger.debug("Connection returned to pool")
 
 
 # Only create tables if not in test mode (tests will handle this themselves)
@@ -154,8 +158,8 @@ if not is_testing:
                 )
             )
             conn.commit()
-    except Exception as e:
-        logging.warning(f"Could not pre-create paymentproviderenum type: {e}")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Could not pre-create paymentproviderenum type: {e}")
 
     SQLModel.metadata.create_all(engine)
     # Note: logfire instrumentation will be handled in app.py after configuration
@@ -163,7 +167,7 @@ if not is_testing:
 
 async def connect_to_db(app: FastAPI):
     app.db_engine = engine  # type: ignore
-    logging.info("LearnHouse database has been started.")
+    logger.info("LearnHouse database has been started.")
     # Only create tables if not in test mode
     if not is_testing:
         SQLModel.metadata.create_all(engine)
@@ -175,5 +179,5 @@ def get_db_session():
 
 
 async def close_database(app: FastAPI):
-    logging.info("LearnHouse has been shut down.")
+    logger.info("LearnHouse has been shut down.")
     return app

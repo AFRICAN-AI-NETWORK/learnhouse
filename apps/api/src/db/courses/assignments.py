@@ -1,7 +1,7 @@
-from typing import Optional, Dict
+from enum import Enum
+
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, SQLModel
-from enum import Enum
 
 
 ## Assignment ##
@@ -17,8 +17,12 @@ class AssignmentBase(SQLModel):
     title: str
     description: str
     due_date: str
-    published: Optional[bool] = False
+    published: bool | None = False
     grading_type: GradingTypeEnum
+    # When True, this assignment must be graded before a certificate can be
+    # issued for the course (e.g. a capstone project). See
+    # check_course_completion_and_create_certificate().
+    required_for_certificate: bool | None = False
 
     org_id: int
     course_id: int
@@ -29,7 +33,7 @@ class AssignmentBase(SQLModel):
 class AssignmentCreate(AssignmentBase):
     """Model for creating a new assignment."""
 
-    pass  # Inherits all fields from AssignmentBase
+    # Inherits all fields from AssignmentBase
 
 
 class AssignmentRead(AssignmentBase):
@@ -37,31 +41,32 @@ class AssignmentRead(AssignmentBase):
 
     id: int
     assignment_uuid: str
-    creation_date: Optional[str]
-    update_date: Optional[str]
+    creation_date: str | None
+    update_date: str | None
 
 
 class AssignmentUpdate(SQLModel):
     """Model for updating an assignment."""
 
-    title: Optional[str]
-    description: Optional[str]
-    due_date: Optional[str]
-    published: Optional[bool]
-    grading_type: Optional[GradingTypeEnum]
-    org_id: Optional[int]
-    course_id: Optional[int]
-    chapter_id: Optional[int]
-    activity_id: Optional[int]
-    update_date: Optional[str]
+    title: str | None
+    description: str | None
+    due_date: str | None
+    published: bool | None
+    grading_type: GradingTypeEnum | None
+    required_for_certificate: bool | None
+    org_id: int | None
+    course_id: int | None
+    chapter_id: int | None
+    activity_id: int | None
+    update_date: str | None
 
 
 class Assignment(AssignmentBase, table=True):
     """Represents an assignment with relevant details and foreign keys."""
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    creation_date: Optional[str]
-    update_date: Optional[str]
+    id: int | None = Field(default=None, primary_key=True)
+    creation_date: str | None
+    update_date: str | None
     assignment_uuid: str
 
     org_id: int = Field(
@@ -88,6 +93,7 @@ class AssignmentTaskTypeEnum(str, Enum):
     QUIZ = "QUIZ"
     FORM = "FORM"
     CODE_EDITOR = "CODE_EDITOR"
+    LINK_SUBMISSION = "LINK_SUBMISSION"
     OTHER = "OTHER"
 
 
@@ -97,16 +103,16 @@ class AssignmentTaskBase(SQLModel):
     title: str
     description: str
     hint: str
-    reference_file: Optional[str]
+    reference_file: str | None
     assignment_type: AssignmentTaskTypeEnum
-    contents: Dict = Field(default={}, sa_column=Column(JSON))
+    contents: dict = Field(default={}, sa_column=Column(JSON))
     max_grade_value: int = 0  # Value is always between 0-100
 
 
 class AssignmentTaskCreate(AssignmentTaskBase):
     """Model for creating a new assignment task."""
 
-    pass  # Inherits all fields from AssignmentTaskBase
+    # Inherits all fields from AssignmentTaskBase
 
 
 class AssignmentTaskRead(AssignmentTaskBase):
@@ -119,18 +125,18 @@ class AssignmentTaskRead(AssignmentTaskBase):
 class AssignmentTaskUpdate(SQLModel):
     """Model for updating an assignment task."""
 
-    title: Optional[str]
-    description: Optional[str]
-    hint: Optional[str]
-    assignment_type: Optional[AssignmentTaskTypeEnum]
-    contents: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
-    max_grade_value: Optional[int]
+    title: str | None
+    description: str | None
+    hint: str | None
+    assignment_type: AssignmentTaskTypeEnum | None
+    contents: dict | None = Field(default=None, sa_column=Column(JSON))
+    max_grade_value: int | None
 
 
 class AssignmentTask(AssignmentTaskBase, table=True):
     """Represents a task within an assignment with various attributes and foreign keys."""
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
 
     assignment_task_uuid: str
     creation_date: str
@@ -165,7 +171,7 @@ class AssignmentTaskSubmissionBase(SQLModel):
     """Represents the common fields for an assignment task submission."""
 
     assignment_task_submission_uuid: str
-    task_submission: Dict = Field(default={}, sa_column=Column(JSON))
+    task_submission: dict = Field(default={}, sa_column=Column(JSON))
     grade: int = 0  # Value is always between 0-100
     task_submission_grade_feedback: str
     assignment_type: AssignmentTaskTypeEnum
@@ -180,7 +186,7 @@ class AssignmentTaskSubmissionBase(SQLModel):
 class AssignmentTaskSubmissionCreate(AssignmentTaskSubmissionBase):
     """Model for creating a new assignment task submission."""
 
-    pass  # Inherits all fields from AssignmentTaskSubmissionBase
+    # Inherits all fields from AssignmentTaskSubmissionBase
 
 
 class AssignmentTaskSubmissionRead(AssignmentTaskSubmissionBase):
@@ -194,20 +200,20 @@ class AssignmentTaskSubmissionRead(AssignmentTaskSubmissionBase):
 class AssignmentTaskSubmissionUpdate(SQLModel):
     """Model for updating an assignment task submission."""
 
-    assignment_task_id: Optional[int]
-    assignment_task_submission_uuid: Optional[str]
-    task_submission: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
-    grade: Optional[int]
-    task_submission_grade_feedback: Optional[str]
-    assignment_type: Optional[AssignmentTaskTypeEnum]
+    assignment_task_id: int | None
+    assignment_task_submission_uuid: str | None
+    task_submission: dict | None = Field(default=None, sa_column=Column(JSON))
+    grade: int | None
+    task_submission_grade_feedback: str | None
+    assignment_type: AssignmentTaskTypeEnum | None
 
 
 class AssignmentTaskSubmission(AssignmentTaskSubmissionBase, table=True):
     """Represents a submission for a specific assignment task with grade and feedback."""
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     assignment_task_submission_uuid: str
-    task_submission: Dict = Field(default={}, sa_column=Column(JSON))
+    task_submission: dict = Field(default={}, sa_column=Column(JSON))
     grade: int = 0  # Value is always between 0-100
     task_submission_grade_feedback: str
     assignment_type: AssignmentTaskTypeEnum
@@ -255,7 +261,7 @@ class AssignmentUserSubmissionBase(SQLModel):
         AssignmentUserSubmissionStatus.SUBMITTED
     )
     grade: int
-    submission_feedback: Optional[str] = ""
+    submission_feedback: str | None = ""
     user_id: int = Field(
         sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
     )
@@ -270,13 +276,19 @@ class AssignmentUserSubmissionCreate(SQLModel):
     """Model for creating a new assignment user submission."""
 
     assignment_id: int
-    pass  # Inherits all fields from AssignmentUserSubmissionBase
+    # Inherits all fields from AssignmentUserSubmissionBase
 
 
 class AssignmentUserSubmissionRevisionCreate(SQLModel):
     """Model for requesting assignment revisions."""
 
-    submission_feedback: Optional[str] = ""
+    submission_feedback: str | None = ""
+
+
+class AssignmentGradeCreate(SQLModel):
+    """Optional body for the final-grade endpoint, carrying instructor feedback."""
+
+    feedback: str | None = None
 
 
 class AssignmentUserSubmissionRead(AssignmentUserSubmissionBase):
@@ -290,17 +302,17 @@ class AssignmentUserSubmissionRead(AssignmentUserSubmissionBase):
 class AssignmentUserSubmissionUpdate(SQLModel):
     """Model for updating an assignment user submission."""
 
-    submission_status: Optional[AssignmentUserSubmissionStatus]
-    grade: Optional[str]
-    submission_feedback: Optional[str]
-    user_id: Optional[int]
-    assignment_id: Optional[int]
+    submission_status: AssignmentUserSubmissionStatus | None
+    grade: str | None
+    submission_feedback: str | None
+    user_id: int | None
+    assignment_id: int | None
 
 
 class AssignmentUserSubmission(AssignmentUserSubmissionBase, table=True):
     """Represents the submission status of an assignment for a user."""
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     creation_date: str
     update_date: str
     assignmentusersubmission_uuid: str
@@ -309,7 +321,7 @@ class AssignmentUserSubmission(AssignmentUserSubmissionBase, table=True):
         AssignmentUserSubmissionStatus.SUBMITTED
     )
     grade: int
-    submission_feedback: Optional[str] = ""
+    submission_feedback: str | None = ""
     user_id: int = Field(
         sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
     )

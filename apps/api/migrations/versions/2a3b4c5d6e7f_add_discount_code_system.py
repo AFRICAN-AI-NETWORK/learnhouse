@@ -6,17 +6,16 @@ Create Date: 2026-02-06 00:00:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "2a3b4c5d6e7f"
-down_revision: Union[str, None] = "109a76520d3f"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "109a76520d3f"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -108,7 +107,7 @@ def upgrade() -> None:
                 ["id"],
                 ondelete="SET NULL",
             )
-    except Exception:
+    except Exception:  # noqa: BLE001
         # Foreign key may already exist or columns may not exist
         # This is safe to ignore
         pass
@@ -121,7 +120,7 @@ def downgrade() -> None:
             batch_op.drop_constraint(
                 "fk_paymentsuser_discount_code_id", type_="foreignkey"
             )
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
     # Drop discount_code_usage table

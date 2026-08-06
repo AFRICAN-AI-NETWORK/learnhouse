@@ -1,13 +1,13 @@
-from typing import List
-from fastapi import APIRouter, Depends, UploadFile, Form, Request
+
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from sqlmodel import Session
+
 from src.core.events.database import get_db_session
 from src.db.courses.course_updates import (
     CourseUpdateCreate,
     CourseUpdateRead,
     CourseUpdateUpdate,
 )
-from src.db.users import PublicUser
 from src.db.courses.courses import (
     CourseCreate,
     CourseRead,
@@ -15,18 +15,27 @@ from src.db.courses.courses import (
     FullCourseRead,
     ThumbnailType,
 )
+from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
+from src.db.users import PublicUser
 from src.security.auth import get_current_user
+from src.services.courses.contributors import (
+    add_bulk_course_contributors,
+    apply_course_contributor,
+    get_course_contributors,
+    remove_bulk_course_contributors,
+    update_course_contributor,
+)
 from src.services.courses.courses import (
     create_course,
+    delete_course,
     get_course,
     get_course_by_id,
     get_course_meta,
-    get_courses_orgslug,
-    update_course,
-    delete_course,
-    update_course_thumbnail,
-    search_courses,
     get_course_user_rights,
+    get_courses_orgslug,
+    search_courses,
+    update_course,
+    update_course_thumbnail,
 )
 from src.services.courses.updates import (
     create_update,
@@ -34,15 +43,6 @@ from src.services.courses.updates import (
     get_updates_by_course_uuid,
     update_update,
 )
-from src.services.courses.contributors import (
-    apply_course_contributor,
-    update_course_contributor,
-    get_course_contributors,
-    add_bulk_course_contributors,
-    remove_bulk_course_contributors,
-)
-from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
-
 
 router = APIRouter()
 
@@ -158,7 +158,7 @@ async def api_get_course_by_orgslug(
     org_slug: str,
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
-) -> List[CourseRead]:
+) -> list[CourseRead]:
     """
     Get courses by page and limit
     """
@@ -176,7 +176,7 @@ async def api_search_courses(
     limit: int = 10,
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
-) -> List[CourseRead]:
+) -> list[CourseRead]:
     """
     Search courses by title and description
     """
@@ -236,7 +236,7 @@ async def api_get_course_updates(
     course_uuid: str,
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
-) -> List[CourseUpdateRead]:
+) -> list[CourseUpdateRead]:
     """
     Get Course Updates by course_uuid
     """
@@ -338,7 +338,7 @@ async def api_update_course_contributor(
 async def api_add_bulk_course_contributors(
     request: Request,
     course_uuid: str,
-    usernames: List[str],
+    usernames: list[str],
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
 ):
@@ -355,7 +355,7 @@ async def api_add_bulk_course_contributors(
 async def api_remove_bulk_course_contributors(
     request: Request,
     course_uuid: str,
-    usernames: List[str],
+    usernames: list[str],
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
 ):

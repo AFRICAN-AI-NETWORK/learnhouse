@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from datetime import datetime
-from typing import List
+from datetime import UTC, datetime
+
 from sqlmodel import Session, select
+
 from src.db.communications import Campaign, CampaignStatus, CampaignTargetType
-from src.db.users import User
 from src.db.resource_authors import ResourceAuthor
+from src.db.users import User
 from src.services.email.utils import send_email
 
 logger = logging.getLogger(__name__)
@@ -22,8 +23,8 @@ async def create_campaign(
         org_id=org_id,
         created_by_user_id=user_id,
         status=CampaignStatus.PENDING,
-        creation_date=datetime.now().isoformat(),
-        update_date=datetime.now().isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
+        update_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(campaign)
     db_session.commit()
@@ -35,12 +36,12 @@ async def create_campaign(
     return campaign
 
 
-async def get_target_users(db_session: Session, campaign: Campaign) -> List[User]:
+async def get_target_users(db_session: Session, campaign: Campaign) -> list[User]:
     """
     Retrieve users based on campaign targeting filters.
     """
-    from src.db.user_organizations import UserOrganization
     from src.db.roles import Role
+    from src.db.user_organizations import UserOrganization
 
     query = select(User).join(UserOrganization, User.id == UserOrganization.user_id)
 
@@ -190,7 +191,7 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
             if campaign.send_via_email and user.email:
                 try:
                     send_email(to=user.email, subject=campaign.subject, body=email_html)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Failed to send email to {user.email}: {e}")
 
             # 2. Send LMS Chat (System Announcement)
@@ -200,11 +201,11 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                     logger.info(f"Skipping chat message to self: {user.email}")
                 else:
                     try:
+                        from src.db.chat.messages import MessageCreate
                         from src.services.chat.conversation_service import (
                             ConversationService,
                         )
                         from src.services.chat.message_service import MessageService
-                        from src.db.chat.messages import MessageCreate
 
                         # Create or get conversation between the sender and the target student
                         conversation = (
@@ -229,7 +230,7 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
                             sender_id=campaign.created_by_user_id,
                             org_id=campaign.org_id,
                         )
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.error(
                             f"Failed to send chat message to {user.email}: {e}"
                         )
@@ -244,11 +245,11 @@ async def dispatch_campaign(campaign_id: int, db_session: Session):
             await asyncio.sleep(8.0)
 
         campaign.status = CampaignStatus.SENT
-        campaign.update_date = datetime.now().isoformat()
+        campaign.update_date = datetime.now(UTC).isoformat()
         db_session.add(campaign)
         db_session.commit()
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Campaign {campaign_id} failed: {e}")
         campaign.status = CampaignStatus.FAILED
         campaign.error_log = str(e)

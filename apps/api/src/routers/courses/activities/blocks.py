@@ -1,20 +1,20 @@
-from fastapi import APIRouter, Depends, UploadFile, Form, Request
-from src.db.courses.blocks import BlockRead
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
+
 from src.core.events.database import get_db_session
+from src.db.courses.blocks import BlockRead
 from src.security.auth import get_current_user
 from src.services.blocks.block_types.imageBlock.imageBlock import (
     create_image_block,
     get_image_block,
 )
-from src.services.blocks.block_types.videoBlock.videoBlock import (
-    create_video_block,
-    get_video_block,
-)
 from src.services.blocks.block_types.pdfBlock.pdfBlock import (
     create_pdf_block,
     get_pdf_block,
 )
-
+from src.services.blocks.block_types.videoBlock.videoBlock import (
+    create_video_block,
+    get_video_block,
+)
 from src.services.users.users import PublicUser
 
 router = APIRouter()

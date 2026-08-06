@@ -6,20 +6,19 @@ Create Date: 2024-07-11 19:33:37.993767
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
-from grpc import server  # noqa: F401
 import sqlalchemy as sa
 import sqlmodel  # noqa: F401
+from alembic import op
+from grpc import server  # noqa: F401
 from sqlalchemy import inspect
-
 
 # revision identifiers, used by Alembic.
 revision: str = "df2981bf24dd"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def table_exists(table_name: str, conn) -> bool:
@@ -36,7 +35,7 @@ def column_exists(table_name: str, column_name: str, conn) -> bool:
     try:
         columns = [col["name"] for col in inspector.get_columns(table_name)]
         return column_name in columns
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -45,18 +44,18 @@ def constraint_exists(table_name: str, constraint_name: str, conn) -> bool:
     inspector = inspect(conn)
     try:
         constraints = [c["name"] for c in inspector.get_unique_constraints(table_name)]
-    except Exception:
+    except Exception:  # noqa: BLE001
         constraints = []
 
     try:
         fks = [fk["name"] for fk in inspector.get_foreign_keys(table_name)]
-    except Exception:
+    except Exception:  # noqa: BLE001
         fks = []
 
     try:
         pk_constraint = inspector.get_pk_constraint(table_name)
         pks = [pk_constraint["name"]] if pk_constraint.get("name") else []
-    except Exception:
+    except Exception:  # noqa: BLE001
         pks = []
 
     all_constraints = constraints + fks + pks
@@ -104,10 +103,10 @@ def upgrade() -> None:
                 if "org_id" in fk["constrained_columns"]:
                     try:
                         op.drop_constraint(fk["name"], "trail", type_="foreignkey")
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         pass  # Constraint might have different name or already dropped
                     break
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass  # No foreign keys found
 
         try:
@@ -131,10 +130,10 @@ def upgrade() -> None:
                 if "user_id" in fk["constrained_columns"]:
                     try:
                         op.drop_constraint(fk["name"], "trail", type_="foreignkey")
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         pass  # Constraint might have different name or already dropped
                     break
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass  # No foreign keys found
 
         try:

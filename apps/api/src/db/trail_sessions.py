@@ -1,4 +1,4 @@
-from typing import Optional
+
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
@@ -17,7 +17,7 @@ class TrailActivitySession(SQLModel, table=True):
     a student's last activity is ``MAX(last_heartbeat_at)``.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     seconds_spent: int = Field(default=0)
     # foreign keys
     user_id: int = Field(
@@ -36,7 +36,7 @@ class TrailActivitySession(SQLModel, table=True):
     activity_id: int = Field(
         sa_column=Column(Integer, ForeignKey("activity.id", ondelete="CASCADE"))
     )
-    trailrun_id: Optional[int] = Field(
+    trailrun_id: int | None = Field(
         default=None,
         sa_column=Column(Integer, ForeignKey("trailrun.id", ondelete="CASCADE")),
     )

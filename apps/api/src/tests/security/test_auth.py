@@ -1,21 +1,23 @@
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 from fastapi import HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
-from sqlmodel import Session, create_engine, SQLModel
+from jose import jwt
+from sqlmodel import Session, SQLModel, create_engine
+
+from src.db.users import AnonymousUser, PublicUser, User
 from src.security.auth import (
+    Settings,
+    Token,
+    TokenData,
     authenticate_user,
     create_access_token,
     get_current_user,
     non_public_endpoint,
-    Token,
-    TokenData,
-    Settings,
 )
-from src.db.users import User, AnonymousUser, PublicUser
-from datetime import datetime, timedelta, timezone
-from jose import jwt
-from src.security.security import SECRET_KEY, ALGORITHM, security_hash_password
+from src.security.security import ALGORITHM, SECRET_KEY, security_hash_password
 
 
 class TestAuth:
@@ -163,7 +165,7 @@ class TestAuth:
         session.add(user)
         session.commit()
 
-        # Test authentication should raise HTTPException
+        # Test authentication should raise
         with pytest.raises(HTTPException) as exc_info:
             await authenticate_user(
                 request=mock_request,
@@ -201,8 +203,8 @@ class TestAuth:
 
         # Check that expiry time exists and is in the future
         assert "exp" in decoded
-        exp_time = datetime.fromtimestamp(decoded["exp"], tz=timezone.utc)
-        now = datetime.now(timezone.utc)
+        exp_time = datetime.fromtimestamp(decoded["exp"], tz=UTC)
+        now = datetime.now(UTC)
 
         # Verify the token expires in the future
         assert exp_time > now
@@ -252,7 +254,7 @@ class TestAuth:
         """Test getting current user when JWT is invalid"""
         from jose import JWTError
 
-        # Mock AuthJWT to raise JWTError
+        # Mock AuthJWT to raise
         mock_authorize = Mock(spec=AuthJWT)
         mock_authorize.jwt_optional.side_effect = JWTError("Invalid token")
 

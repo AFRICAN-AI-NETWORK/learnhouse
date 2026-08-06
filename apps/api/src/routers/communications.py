@@ -1,28 +1,29 @@
 from fastapi import (
     APIRouter,
-    Depends,
-    Request,
     BackgroundTasks,
+    Depends,
     HTTPException,
+    Request,
     UploadFile,
 )
 from sqlmodel import Session, select
+
 from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
-from src.db.users import PublicUser
-from src.db.user_organizations import UserOrganization
-from src.db.organizations import Organization
 from src.db.communications import Campaign, CampaignCreate, CampaignRead
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
+from src.db.organizations import Organization
+from src.db.user_organizations import UserOrganization
+from src.db.users import PublicUser
+from src.security.auth import get_current_user
 from src.services.communications.dispatcher import create_campaign, dispatch_campaign
 from src.services.utils.upload_content import upload_file
 
 router = APIRouter()
 
 
-def _resolve_org_id(db_session: Session, user_id: int, org_slug: str = None) -> int:
+def _resolve_org_id(db_session: Session, user_id: int, org_slug: str | None = None) -> int:
     """Resolve org_id from the user's organization membership and optional slug."""
     if org_slug:
         statement = (
@@ -56,7 +57,7 @@ async def api_create_campaign(
     request: Request,
     background_tasks: BackgroundTasks,
     campaign_object: CampaignCreate,
-    org_slug: str = None,
+    org_slug: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> CampaignRead:
@@ -77,7 +78,7 @@ async def api_create_campaign(
 
 @router.get("/")
 async def api_get_campaigns(
-    org_slug: str = None,
+    org_slug: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> list[CampaignRead]:
@@ -92,7 +93,7 @@ async def api_get_campaigns(
 
 @router.get("/live-sessions")
 async def api_get_live_sessions(
-    org_slug: str = None,
+    org_slug: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -137,7 +138,7 @@ async def api_get_campaign(
 @router.post("/upload-image")
 async def api_upload_campaign_image(
     image_file: UploadFile,
-    org_slug: str = None,
+    org_slug: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):

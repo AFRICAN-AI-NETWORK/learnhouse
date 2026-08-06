@@ -1,9 +1,11 @@
-from typing import Literal, Optional
-import boto3
-from botocore.exceptions import ClientError
 import os
 from pathlib import Path
+from typing import Literal
+
+import boto3
+from botocore.exceptions import ClientError
 from fastapi import HTTPException, UploadFile
+
 from config.config import get_learnhouse_config
 from src.security.file_validation import validate_upload
 
@@ -38,7 +40,7 @@ async def upload_file(
     uuid: str,
     allowed_types: list[str],
     filename_prefix: str,
-    max_size: Optional[int] = None,
+    max_size: int | None = None,
 ) -> str:
     """
     Secure file upload with validation.
@@ -56,6 +58,7 @@ async def upload_file(
         The saved filename
     """
     from uuid import uuid4
+
     from src.security.file_validation import get_safe_filename
 
     # Validate the file
@@ -83,7 +86,7 @@ async def upload_content(
     uuid: str,  # org_uuid or user_uuid
     file_binary: bytes,
     file_and_format: str,
-    allowed_formats: Optional[list[str]] = None,
+    allowed_formats: list[str] | None = None,
 ):
     # Get Learnhouse Config
     learnhouse_config = get_learnhouse_config()
@@ -94,12 +97,11 @@ async def upload_content(
     content_delivery = learnhouse_config.hosting_config.content_delivery.type
 
     # Check if format file is allowed
-    if allowed_formats:
-        if file_format not in allowed_formats:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File format {file_format} not allowed",
-            )
+    if allowed_formats and file_format not in allowed_formats:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File format {file_format} not allowed",
+        )
 
     local_directory = Path("content") / type_of_dir / uuid / Path(directory)
     ensure_directory_exists(local_directory)
@@ -144,5 +146,5 @@ async def upload_content(
                 Key=s3_key,
             )
             print("File upload successful!")
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            print(f"An error occurred: {e!s}")

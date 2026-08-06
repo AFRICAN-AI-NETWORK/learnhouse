@@ -1,26 +1,27 @@
+from datetime import UTC, datetime
+
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select, text
 from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select, text
+
 from src.db.courses.courses import Course
+from src.db.organizations import Organization
 from src.db.payments.payments import PaymentsConfig
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import (
     PaymentsProduct,
     PaymentsProductCreate,
-    PaymentsProductUpdate,
     PaymentsProductRead,
+    PaymentsProductUpdate,
 )
 from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
-from src.db.users import PublicUser, AnonymousUser
-from src.db.organizations import Organization
-from src.services.orgs.orgs import rbac_check
+from src.db.users import AnonymousUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
-from datetime import datetime
-
-from src.services.payments.payments_paystack import (
-    archive_paystack_product,
-    create_paystack_product,
-    update_paystack_product,
+from src.services.orgs.orgs import rbac_check
+from src.services.payments.payments_flutterwave import (
+    archive_flutterwave_product,
+    create_flutterwave_product,
+    update_flutterwave_product,
 )
 
 
@@ -74,19 +75,19 @@ async def create_payments_product(
     new_product = PaymentsProduct(
         **product_data, org_id=org_id, payments_config_id=config.id
     )
-    new_product.creation_date = datetime.now()
-    new_product.update_date = datetime.now()
+    new_product.creation_date = datetime.now(UTC)
+    new_product.update_date = datetime.now(UTC)
 
-    # Create product in Paystack if provider_product_id is not manually provided
+    # Create product in Flutterwave if provider_product_id is not manually provided
     if payments_product.provider_product_id:
         new_product.provider_product_id = payments_product.provider_product_id
     else:
-        paystack_product = await create_paystack_product(
+        flutterwave_product = await create_flutterwave_product(
             request, org_id, new_product, current_user, db_session
         )
-        new_product.provider_product_id = paystack_product.get(
+        new_product.provider_product_id = flutterwave_product.get(
             "id"
-        ) or paystack_product.get("plan_code", "")
+        ) or flutterwave_product.get("plan_code", "")
 
     # Save to DB - with retry logic for FK constraint issues
     db_session.add(new_product)
@@ -125,12 +126,12 @@ async def create_payments_product(
                 db_session.add(new_product)
                 db_session.commit()
                 db_session.refresh(new_product)
-            except Exception as fix_error:
+            except Exception as fix_error:  # noqa: BLE001
                 db_session.rollback()
                 raise HTTPException(
                     status_code=500,
                     detail=f"Failed to fix foreign key constraint. Please ensure the database migration has been run. "
-                    f"Original error: {error_msg}. Fix error: {str(fix_error)}",
+                    f"Original error: {error_msg}. Fix error: {fix_error!s}",
                 )
         else:
             # Different integrity error, re-raise it
@@ -202,14 +203,14 @@ async def update_payments_product(
     for key, value in payments_product.model_dump().items():
         setattr(product, key, value)
 
-    product.update_date = datetime.now()
+    product.update_date = datetime.now(UTC)
 
     db_session.add(product)
     db_session.commit()
     db_session.refresh(product)
 
-    # Update product in Paystack
-    await update_paystack_product(
+    # Update product in Flutterwave
+    await update_flutterwave_product(
         request, org_id, product.provider_product_id, product, current_user, db_session
     )
 
@@ -257,8 +258,8 @@ async def delete_payments_product(
             detail="Cannot delete product because users have paid access to it.",
         )
 
-    # Archive product in Paystack
-    await archive_paystack_product(
+    # Archive product in Flutterwave
+    await archive_flutterwave_product(
         request, org_id, product.provider_product_id, current_user, db_session
     )
 

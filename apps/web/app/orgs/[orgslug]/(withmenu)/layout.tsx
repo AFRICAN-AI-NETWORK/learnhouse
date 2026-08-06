@@ -12,6 +12,8 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import UnverifiedBanner from '@components/Objects/UnverifiedBanner'
 
+import { CurrencyProvider } from '@components/Contexts/CurrencyContext'
+
 export default function RootLayout(props: {
   children: React.ReactNode
   params: Promise<any>
@@ -47,39 +49,41 @@ export default function RootLayout(props: {
           : 'h-screen overflow-hidden'
       }`}
     >
-      <SessionProvider>
-        <NotificationProvider>
-          <GlobalChatProvider>
-            {shouldShowLandingNavbar ? (
-              <LandingNavbar
-                org={org}
-                orgslug={params?.orgslug}
-                isAuthenticated={!isGuest}
-                variant={
-                  pathname?.endsWith('/about') ||
-                  pathname?.endsWith('/policy') ||
-                  pathname?.endsWith('/contact')
-                    ? 'policy'
-                    : undefined
-                }
-              />
-            ) : (
-              <OrgMenu orgslug={params?.orgslug}></OrgMenu>
-            )}
-            <main
-              className={`flex-1 w-full overflow-x-hidden ${
-                isLandingPage || isProgramDetailPage
-                  ? 'overflow-y-visible'
-                  : 'min-h-0 overflow-y-auto scrollbar-hide'
-              }`}
-            >
-              {!shouldShowLandingNavbar && <UnverifiedBanner />}
-              {children}
-            </main>
-            <FloatingChatWidget />
-          </GlobalChatProvider>
-        </NotificationProvider>
-      </SessionProvider>
+      <CurrencyProvider>
+        <SessionProvider>
+          <NotificationProvider>
+            <GlobalChatProvider>
+              {shouldShowLandingNavbar ? (
+                <LandingNavbar
+                  org={org}
+                  orgslug={params?.orgslug}
+                  isAuthenticated={!isGuest}
+                  variant={
+                    pathname?.endsWith('/about') ||
+                    pathname?.endsWith('/policy') ||
+                    pathname?.endsWith('/contact')
+                      ? 'policy'
+                      : undefined
+                  }
+                />
+              ) : (
+                <OrgMenu orgslug={params?.orgslug}></OrgMenu>
+              )}
+              <main
+                className={`flex-1 w-full overflow-x-hidden ${
+                  isLandingPage || isProgramDetailPage
+                    ? 'overflow-y-visible'
+                    : 'min-h-0 overflow-y-auto scrollbar-hide'
+                }`}
+              >
+                {!shouldShowLandingNavbar && <UnverifiedBanner />}
+                {children}
+              </main>
+              <FloatingChatWidget />
+            </GlobalChatProvider>
+          </NotificationProvider>
+        </SessionProvider>
+      </CurrencyProvider>
     </div>
   )
 }

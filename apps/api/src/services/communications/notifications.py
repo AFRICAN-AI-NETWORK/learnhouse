@@ -1,7 +1,8 @@
 import logging
-from src.services.email.utils import send_email
-from src.db.users import User
+
 from src.db.courses.activities import Activity
+from src.db.users import User
+from src.services.email.utils import send_email
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ def send_session_confirmation_email(user: User, activity: Activity):
     try:
         send_email(to=user.email, subject=subject, body=body)
         logger.info(f"Sent session confirmation to {user.email}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to send session confirmation to {user.email}: {e}")
 
 
@@ -63,7 +64,7 @@ def send_session_reminder_email(user: User, activity: Activity):
     """
     try:
         send_email(to=user.email, subject=subject, body=body)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to send reminder to {user.email}: {e}")
 
 
@@ -94,5 +95,5 @@ def send_enrolment_invitation_email(user: User, activity: Activity):
     try:
         send_email(to=user.email, subject=subject, body=body)
         logger.info(f"Sent enrolment invitation to {user.email}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to send enrolment invitation to {user.email}: {e}")

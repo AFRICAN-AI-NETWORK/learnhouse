@@ -10,11 +10,11 @@ of the security functionality including:
 - Authorization utilities
 """
 
-from src.tests.security.test_security import TestSecurity
 from src.tests.security.test_auth import TestAuth
+from src.tests.security.test_features_utils import TestFeaturesUtils
 from src.tests.security.test_rbac import TestRBAC
 from src.tests.security.test_rbac_utils import TestRBACUtils
-from src.tests.security.test_features_utils import TestFeaturesUtils
+from src.tests.security.test_security import TestSecurity
 
 
 class TestSecurityComprehensive:
@@ -86,12 +86,12 @@ class TestSecurityComprehensive:
         """Test that the security module has the expected structure"""
         import src.security
         import src.security.auth
-        import src.security.security
+        import src.security.features_utils
+        import src.security.features_utils.usage
         import src.security.rbac
         import src.security.rbac.rbac
         import src.security.rbac.utils
-        import src.security.features_utils
-        import src.security.features_utils.usage
+        import src.security.security
 
         # Verify all modules can be imported
         assert src.security is not None

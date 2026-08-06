@@ -1,4 +1,3 @@
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
@@ -21,10 +20,10 @@ from src.security.auth import get_current_user
 from src.services.courses.schedules import (
     create_timetable_event,
     delete_timetable_event,
+    get_my_timetable_events,
     get_register_entries,
     get_register_policy,
     get_register_summary,
-    get_my_timetable_events,
     get_timetable_events,
     mark_register,
     update_register_entry,
@@ -170,10 +169,10 @@ async def api_mark_course_register(
 async def api_get_course_register_entries(
     request: Request,
     course_uuid: str,
-    user_id: Optional[int] = None,
-    status: Optional[RegisterEntryStatusEnum] = None,
-    period_start: Optional[str] = None,
-    period_end: Optional[str] = None,
+    user_id: int | None = None,
+    status: RegisterEntryStatusEnum | None = None,
+    period_start: str | None = None,
+    period_end: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> list[CourseRegisterEntryRead]:

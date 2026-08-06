@@ -1,26 +1,25 @@
 import logging
+
 import httpx
 import sentry_sdk
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
+
 from config.config import get_learnhouse_config
-from src.db.payments.payments_products import (
-    PaymentProductTypeEnum,
-    PaymentsProduct,
-)
-from src.db.payments.payments_courses import PaymentsCourse
-from src.db.payments.payments_users import PaymentStatusEnum
-from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.db.courses.courses import Course
 from src.db.organizations import Organization
+from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import PaymentProductTypeEnum, PaymentsProduct
+from src.db.payments.payments_users import PaymentStatusEnum
+from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
+from src.services.payments.discount_codes import (
+    DiscountValidationError,
+    validate_discount_code,
+)
 from src.services.payments.payments_users import (
     create_payment_user,
     delete_payment_user,
-)
-from src.services.payments.discount_codes import (
-    validate_discount_code,
-    DiscountValidationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -131,7 +130,7 @@ async def make_paystack_request(
 
             if not result.get("status"):
                 error_message = result.get("message", "Unknown error")
-                logger.error(f"Paystack API returned error: {error_message}")
+                logger.exception(f"Paystack API returned error: {error_message}")
                 raise HTTPException(
                     status_code=400, detail=f"Paystack API error: {error_message}"
                 )
@@ -146,16 +145,15 @@ async def make_paystack_request(
                 detail=f"Paystack API error: {e.response.text}",
             )
         except httpx.RequestError as e:
-            logger.error(f"Request error to Paystack: {str(e)}")
+            logger.error(f"Request error to Paystack: {e!s}")
             raise HTTPException(
-                status_code=500, detail=f"Error connecting to Paystack: {str(e)}"
+                status_code=500, detail=f"Error connecting to Paystack: {e!s}"
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(
-                f"Unexpected error making Paystack request: {str(e)}", exc_info=True
-            )
+                f"Unexpected error making Paystack request: {e!s}")
             raise HTTPException(
-                status_code=500, detail=f"Error making Paystack request: {str(e)}"
+                status_code=500, detail=f"Error making Paystack request: {e!s}"
             )
 
 
@@ -381,14 +379,14 @@ async def initialize_transaction(
                 f"Discount code validated: {discount_code}, discount={discount_amount}, final={final_amount}"
             )
         except DiscountValidationError as e:
-            logger.warning(f"Discount code validation failed: {str(e)}")
+            logger.warning(f"Discount code validation failed: {e!s}")
             raise HTTPException(
-                status_code=400, detail=f"Discount code error: {str(e)}"
+                status_code=400, detail=f"Discount code error: {e!s}"
             )
-        except Exception as e:
-            logger.error(f"Error validating discount code: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Error validating discount code: {e!s}")
             raise HTTPException(
-                status_code=400, detail=f"Error validating discount code: {str(e)}"
+                status_code=400, detail=f"Error validating discount code: {e!s}"
             )
 
     # REFERRAL SYSTEM: Check if user has referral tracking
@@ -406,8 +404,8 @@ async def initialize_transaction(
             logger.info(
                 f"User {current_user.id} has referral tracking with code {referral_code_id}"
             )
-    except Exception as e:
-        logger.warning(f"Error checking referral tracking: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Error checking referral tracking: {e!s}")
 
     # Prepare transaction metadata template
     metadata_dict = {
@@ -549,10 +547,10 @@ async def initialize_transaction(
             db_session.commit()
             db_session.refresh(payment_user)
 
-    except Exception as e:
-        logger.error(f"Error creating/retrieving customer: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Error creating/retrieving customer: {e!s}")
         raise HTTPException(
-            status_code=400, detail=f"Error creating/retrieving customer: {str(e)}"
+            status_code=400, detail=f"Error creating/retrieving customer: {e!s}"
         )
 
     # Prepare PAID transaction initialization data
@@ -613,13 +611,13 @@ async def initialize_transaction(
             "access_code": access_code,
         }
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Clean up payment user if transaction initialization fails
         if payment_user and payment_user.id:
             await delete_payment_user(
                 request, org_id, payment_user.id, InternalUser(), db_session
             )
-        logger.error(f"Error initializing transaction: {str(e)}")
+        logger.error(f"Error initializing transaction: {e!s}")
         raise HTTPException(status_code=400, detail=str(e))
 
 

@@ -1,21 +1,23 @@
 """Shared test fixtures for waitlist tests"""
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
-from sqlmodel import Session, create_engine, SQLModel
-from src.db.users import User
-from src.db.organizations import Organization
+
+import pytest
+from sqlmodel import Session, SQLModel, create_engine
+
 from src.db.courses.courses import Course
+from src.db.organizations import Organization
+from src.db.payments.payments import PaymentsConfig  # noqa: F401
+from src.db.payments.payments_products import PaymentsProduct
+from src.db.users import User
 from src.db.waitlist import (
-    WaitlistConfig,
-    WaitlistEmailLog,
-    WaitlistCoursePreference,
     UserStatusEnum,
+    WaitlistConfig,
+    WaitlistCoursePreference,
+    WaitlistEmailLog,
     WaitlistStatusEnum,
 )
-from src.db.payments.payments import PaymentsConfig  # noqa: F401
-from src.db.payments.payments_products import PaymentsProduct  # noqa: F401
 
 
 @pytest.fixture
@@ -46,8 +48,9 @@ def db_session(test_db_engine):
 @pytest.fixture
 def sample_org(db_session):
     """Create a sample organization for testing"""
+    from datetime import datetime
+
     from src.db.organization_config import OrganizationConfig
-    from datetime import datetime, timezone
 
     org = Organization(
         id=1,
@@ -70,8 +73,8 @@ def sample_org(db_session):
                 "storage": {"enabled": True, "limit": 10000},
             }
         },
-        creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
+        update_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(org_config)
     db_session.commit()
@@ -110,7 +113,7 @@ def waitlist_user(db_session, sample_org):
         last_name="User",
         user_status=UserStatusEnum.WAITLIST.value,
         waitlist_interest="Programming",
-        waitlist_joined_date=datetime.now(timezone.utc).isoformat(),
+        waitlist_joined_date=datetime.now(UTC).isoformat(),
         org_id=sample_org.id,
     )
     db_session.add(user)
@@ -140,7 +143,7 @@ def sample_course(db_session, sample_org):
 @pytest.fixture
 def sample_waitlist_config(db_session, sample_org, sample_user):
     """Create a sample waitlist configuration for testing"""
-    future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    future_date = (datetime.now(UTC) + timedelta(days=7)).isoformat()
     config = WaitlistConfig(
         id=1,
         waitlist_uuid="test-waitlist-uuid",
@@ -155,8 +158,8 @@ def sample_waitlist_config(db_session, sample_org, sample_user):
         batch_delay_seconds=2,
         total_registrations=0,
         emails_sent_count=0,
-        creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
+        update_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(config)
     db_session.commit()
@@ -167,7 +170,7 @@ def sample_waitlist_config(db_session, sample_org, sample_user):
 @pytest.fixture
 def expired_waitlist_config(db_session, sample_org, sample_user):
     """Create an expired waitlist configuration for testing"""
-    past_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    past_date = (datetime.now(UTC) - timedelta(days=1)).isoformat()
     config = WaitlistConfig(
         id=2,
         waitlist_uuid="expired-waitlist-uuid",
@@ -182,8 +185,8 @@ def expired_waitlist_config(db_session, sample_org, sample_user):
         batch_delay_seconds=1,
         total_registrations=5,
         emails_sent_count=0,
-        creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
+        update_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(config)
     db_session.commit()
@@ -199,10 +202,10 @@ def sample_email_log(db_session, waitlist_user, sample_waitlist_config):
         user_id=waitlist_user.id,
         waitlist_config_id=sample_waitlist_config.id,
         email_sent=True,
-        email_sent_date=datetime.now(timezone.utc).isoformat(),
+        email_sent_date=datetime.now(UTC).isoformat(),
         retry_count=0,
-        creation_date=datetime.now(timezone.utc).isoformat(),
-        update_date=datetime.now(timezone.utc).isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
+        update_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(log)
     db_session.commit()
@@ -238,7 +241,7 @@ def sample_course_preference(
         payments_product_id=sample_payment_product.id,
         waitlist_config_id=sample_waitlist_config.id,
         org_id=sample_org.id,
-        creation_date=datetime.now(timezone.utc).isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(preference)
     db_session.commit()

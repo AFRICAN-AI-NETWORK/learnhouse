@@ -1,8 +1,8 @@
 # Base image for Python backend
-FROM python:3.12.3-slim-bookworm AS base
+FROM python:3.12-slim-bookworm AS base
 
 # Install Nginx, curl, and build-essential
-RUN apt update && apt install -y nginx curl build-essential \
+RUN apt update && apt upgrade -y && apt install -y nginx curl build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm /etc/nginx/sites-enabled/default

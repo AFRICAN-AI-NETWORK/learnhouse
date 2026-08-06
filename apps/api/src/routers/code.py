@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from pydantic import BaseModel
-from typing import List, Dict
-import httpx
 import time
 from collections import defaultdict
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+
 from config.config import LearnHouseConfig, get_learnhouse_config
 from src.services.code_execution import (
+    PISTON_URL,
+    CodeExecutionResponse,
+    TestCaseResult,
     execute_and_grade,
     run_python_locally,
-    TestCaseResult,
-    CodeExecutionResponse,
-    PISTON_URL,
 )
 
 router = APIRouter()
@@ -50,8 +51,8 @@ class CodeExecutionRequest(BaseModel):
     language: str
     code: str
     stdin: str = ""
-    test_cases: List[Dict] = []
-    dataset_files: List[Dict] = []
+    test_cases: list[dict] = []
+    dataset_files: list[dict] = []
 
 
 @router.post("/execute", response_model=CodeExecutionResponse)
@@ -132,9 +133,9 @@ async def execute_code(
         )
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import traceback
 
         print(f"[CodeExecution] Error executing {request.language} code: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Code execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Code execution failed: {e!s}")

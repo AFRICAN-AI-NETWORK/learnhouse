@@ -2,19 +2,18 @@ import json
 import secrets
 import string
 import uuid
-from pydantic import EmailStr
+from datetime import UTC, datetime, timedelta
+
 import redis
-from datetime import datetime, timedelta
-from sqlmodel import Session, select
-from src.services.email.utils import send_email
-from config.config import get_learnhouse_config
-from src.services.orgs.orgs import rbac_check
-from src.db.users import AnonymousUser, PublicUser, UserRead
-from src.db.organizations import (
-    Organization,
-    OrganizationRead,
-)
 from fastapi import HTTPException, Request
+from pydantic import EmailStr
+from sqlmodel import Session, select
+
+from config.config import get_learnhouse_config
+from src.db.organizations import Organization, OrganizationRead
+from src.db.users import AnonymousUser, PublicUser, UserRead
+from src.services.email.utils import send_email
+from src.services.orgs.orgs import rbac_check
 
 
 async def create_invite_code(
@@ -81,7 +80,7 @@ async def create_invite_code(
         "invite_code_uuid": invite_code_uuid,
         "invite_code_expires": ttl,
         "invite_code_type": "signup",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "created_by": current_user.user_uuid,
     }
 
@@ -160,7 +159,7 @@ async def create_invite_code_with_usergroup(
         "invite_code_expires": ttl,
         "usergroup_id": usergroup_id,
         "invite_code_type": "signup",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "created_by": current_user.user_uuid,
     }
 

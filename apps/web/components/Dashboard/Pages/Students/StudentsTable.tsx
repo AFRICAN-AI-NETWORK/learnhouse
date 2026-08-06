@@ -3,14 +3,7 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import useSWR from 'swr'
 import { getStudents } from '@services/dashboard/students'
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Award,
-  ArrowUpDown,
-} from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Clock, Award, ArrowUpDown } from 'lucide-react'
 import UserAvatar from '@components/Objects/UserAvatar'
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { useRouter } from 'next/navigation'

@@ -29,12 +29,40 @@ import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import Countdown from '@components/Landings/Countdown'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
+import PriceDisplay from '@components/Landings/PriceDisplay'
+import useSWR from 'swr'
+import { getProductsByCourse } from '@services/payments/products'
 
 const LAUNCH_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
 export default function AIAutomationBusinessesPage() {
   const org = useOrg() as any
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
+  const [isSubscription, setIsSubscription] = useState(false)
+
+  const courseId = '6868a95a-c2d7-4ef0-9271-03fbba7aae38'
+
+  const { data: products, isLoading } = useSWR(
+    org ? [`/payments/${org.id}/courses/${courseId}/products`] : null,
+    () => getProductsByCourse(org.id, courseId, undefined)
+  )
+
+  const productsList = Array.isArray(products?.data) ? products.data : []
+  const oneTimeProduct = productsList.find(
+    (p: any) => p.product_type === 'one_time'
+  )
+  const subscriptionProduct = productsList.find(
+    (p: any) => p.product_type === 'subscription'
+  )
+
+  // Fallbacks if products aren't created yet
+  const PRICE_ONE_TIME = oneTimeProduct?.price || 60
+  const PRICE_SUBSCRIPTION = subscriptionProduct?.price || 20
+  const ORIGINAL_PRICE_ONE_TIME = 111
+  const ORIGINAL_PRICE_SUBSCRIPTION = 37
+
+  const currentProduct = isSubscription ? subscriptionProduct : oneTimeProduct
+  const PLAN_ID = currentProduct?.provider_product_id || ''
 
   const modules = [
     {
@@ -207,16 +235,47 @@ export default function AIAutomationBusinessesPage() {
               <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-[24px] p-8 space-y-6">
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                    COURSE FEE
+                    Tuition
                   </p>
-                  <p className="text-5xl font-black text-white">
-                    $37
-                    <span className="text-xl font-bold text-gray-400">/mo</span>
-                  </p>
+                  <div className="mb-4 flex items-center p-1 bg-white/10 rounded-xl">
+                    <button
+                      onClick={() => setIsSubscription(true)}
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                        isSubscription
+                          ? 'bg-purple-600 text-white shadow-md'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Subscription
+                    </button>
+                    <button
+                      onClick={() => setIsSubscription(false)}
+                      className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                        !isSubscription
+                          ? 'bg-purple-600 text-white shadow-md'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      One-time
+                    </button>
+                  </div>
+                  {isLoading ? (
+                    <div className="h-10 bg-white/10 animate-pulse rounded-lg mt-2 mb-4"></div>
+                  ) : (
+                    <PriceDisplay
+                      basePriceUSD={
+                        isSubscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME
+                      }
+                      originalPriceUSD={
+                        isSubscription ? ORIGINAL_PRICE_SUBSCRIPTION : ORIGINAL_PRICE_ONE_TIME
+                      }
+                      interval={isSubscription ? '/mo' : ''}
+                    />
+                  )}
                   <div className="mt-3 flex flex-col gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold uppercase tracking-wider w-max">
                       <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
-                      COMING LIVE IN 1 WEEK
+                      PRICE INCREASES IN
                     </span>
                     <Countdown targetDate={LAUNCH_DATE} />
                   </div>
@@ -241,10 +300,13 @@ export default function AIAutomationBusinessesPage() {
                 </div>
                 <div className="pt-2">
                   <ClickToPayButton
-                    courseId="ai-automation-course-id"
+                    courseId={courseId}
                     courseName="AI Automation for Businesses"
-                    priceAmount={37}
+                    priceAmount={
+                      isSubscription ? PRICE_SUBSCRIPTION : PRICE_ONE_TIME
+                    }
                     currency="USD"
+                    planId={isSubscription ? PLAN_ID : undefined}
                   />
                 </div>
               </div>
@@ -496,8 +558,15 @@ export default function AIAutomationBusinessesPage() {
             Value Breakdown
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-[#0a0f1e] mb-8 uppercase">
-            Why $37/month is{' '}
-            <span className="text-[#0057ff]">extraordinary.</span>
+            Why{' '}
+            <PriceDisplay
+              basePriceUSD={37}
+              interval="/month"
+              hideSwitcher
+              className="inline-flex items-center text-[#0a0f1e]"
+              priceClassName="text-[inherit] font-bold"
+            />{' '}
+            is <span className="text-purple-600">underpriced.</span>
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -681,8 +750,16 @@ export default function AIAutomationBusinessesPage() {
               </span>
             </h2>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              12 weeks. 8 modules. One deployed capstone. Real automations for
-              real businesses at $37/month.
+              No code. Real business results. From manual tasks to automating
+              real businesses at{' '}
+              <PriceDisplay
+                basePriceUSD={37}
+                interval="/month"
+                hideSwitcher
+                className="inline-flex items-center text-purple-400 ml-1"
+                priceClassName="text-[inherit]"
+              />
+              .
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link

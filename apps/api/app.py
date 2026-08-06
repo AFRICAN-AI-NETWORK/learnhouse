@@ -1,22 +1,23 @@
-import os
 import logging as _logging
+import os
 
-import uvicorn
 import logfire
 import sentry_sdk
-from fastapi import FastAPI, Request
-from config.config import LearnHouseConfig, get_learnhouse_config
-from src.core.events.events import shutdown_app, startup_app
-from src.core.sentry import init_sentry
-from src.core.middleware.sentry_context import SentryContextMiddleware
-from src.router import v1_router
+import uvicorn
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_jwt_auth.exceptions import AuthJWTException
-from fastapi.middleware.gzip import GZipMiddleware
-from src.core.ee_hooks import register_ee_middlewares
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from config.config import LearnHouseConfig, get_learnhouse_config
+from src.core.ee_hooks import register_ee_middlewares
+from src.core.events.events import shutdown_app, startup_app
+from src.core.middleware.sentry_context import SentryContextMiddleware
+from src.core.sentry import init_sentry
+from src.router import v1_router
 
 ########################
 # Pre-Alpha Version 0.1.0
@@ -101,17 +102,20 @@ register_ee_middlewares(app)
 # Background Jobs — imports only at module level; scheduler is built at startup
 # so that CronTrigger computes its first next_run_time from now, not from import time.
 try:
+    from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
-    from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
-    from src.jobs.waitlist_processor import (
-        run_waitlist_activation_job,
-        run_retry_failed_emails_job,
-    )
+
+    from src.jobs.cohort_jobs import sync_process_cohort_unlocks
+    from src.jobs.notification_jobs import run_notification_email_job
     from src.jobs.referral_jobs import (
         process_commission_eligibility_job,
         process_payout_requests_job,
         refresh_all_marketer_counters_job,
+    )
+    from src.jobs.waitlist_processor import (
+        run_retry_failed_emails_job,
+        run_waitlist_activation_job,
     )
 
     _APSCHEDULER_AVAILABLE = True
@@ -149,8 +153,15 @@ async def start_scheduler():
     REFERRAL_COMMISSION_CHECK_HOUR = int(
         os.getenv("REFERRAL_COMMISSION_CHECK_HOUR", "0")
     )
+    NOTIFICATION_PROCESSOR_ENABLED = (
+        os.getenv("NOTIFICATION_PROCESSOR_ENABLED", "true").lower() == "true"
+    )
 
-    if not (WAITLIST_PROCESSOR_ENABLED or REFERRAL_PROCESSOR_ENABLED):
+    if not (
+        WAITLIST_PROCESSOR_ENABLED
+        or REFERRAL_PROCESSOR_ENABLED
+        or NOTIFICATION_PROCESSOR_ENABLED
+    ):
         print("  [X] Background jobs disabled by environment config")
         return
 
@@ -158,6 +169,17 @@ async def start_scheduler():
 
     # ── Waitlist jobs ──────────────────────────────────────────────
     if WAITLIST_PROCESSOR_ENABLED:
+        scheduler.add_job(
+            sync_process_cohort_unlocks,
+            trigger=CronTrigger.from_crontab("*/5 * * * *"),
+            id="cohort_unlocks",
+            name="Process Cohort Unlocks",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            jitter=5,
+            misfire_grace_time=30,
+        )
         scheduler.add_job(
             run_waitlist_activation_job,
             trigger=CronTrigger.from_crontab("*/1 * * * *"),
@@ -217,6 +239,20 @@ async def start_scheduler():
             misfire_grace_time=300,
         )
 
+    # ── Notification jobs ──────────────────────────────────────────
+    if NOTIFICATION_PROCESSOR_ENABLED:
+        scheduler.add_job(
+            run_notification_email_job,
+            trigger=CronTrigger.from_crontab("*/5 * * * *"),
+            id="notification_email_retry",
+            name="Send/Retry Pending Notification Emails",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            jitter=10,
+            misfire_grace_time=120,
+        )
+
     # Heartbeat listener for health monitoring
     def _job_heartbeat(event):
         _log = _logging.getLogger("scheduler.heartbeat")
@@ -237,7 +273,7 @@ async def start_scheduler():
 
     # ── Startup banner ────────────────────────────────────────────
     jobs = scheduler.get_jobs()
-    print("")
+    print()
     print("=" * 60)
     print("  🚀 Background job scheduler started")
     print("=" * 60)
@@ -248,7 +284,7 @@ async def start_scheduler():
     print("-" * 60)
     print(f"  Total: {len(jobs)} job(s) running")
     print("=" * 60)
-    print("")
+    print()
 
 
 @app.on_event("shutdown")
@@ -285,8 +321,26 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Static Files
-app.mount("/content", StaticFiles(directory="content"), name="content")
+# Static Files — use a custom subclass to guarantee CORS headers on all
+# responses (including 304 Not Modified) since middlewares can be tricky with mounts.
+class CORSStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        if scope["method"] == "OPTIONS":
+            response = Response(status_code=204)
+        else:
+            response = await super().get_response(path, scope)
+
+        # Add CORS header so browser fetch() cross-origin works
+        origin = next((v.decode() for k, v in scope["headers"] if k == b"origin"), None)
+        if origin and origin in learnhouse_config.hosting_config.allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+
+app.mount("/content", CORSStaticFiles(directory="content"), name="content")
 
 # Global Routes
 app.include_router(v1_router)

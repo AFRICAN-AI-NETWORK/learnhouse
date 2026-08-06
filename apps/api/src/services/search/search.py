@@ -1,23 +1,25 @@
-from typing import List, TypeVar
+from typing import TypeVar
+
 from fastapi import Request
-from sqlmodel import Session, select, or_, text, and_
-from sqlalchemy import true as sa_true
 from pydantic import BaseModel
-from src.db.users import PublicUser, AnonymousUser, UserRead, User
-from src.db.courses.courses import Course, CourseRead
+from sqlalchemy import true as sa_true
+from sqlmodel import Session, and_, or_, select, text
+
 from src.db.collections import Collection, CollectionRead
 from src.db.collections_courses import CollectionCourse
+from src.db.courses.courses import Course, CourseRead
 from src.db.organizations import Organization
 from src.db.user_organizations import UserOrganization
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.services.courses.courses import search_courses
 
 T = TypeVar("T")
 
 
 class SearchResult(BaseModel):
-    courses: List[CourseRead]
-    collections: List[CollectionRead]
-    users: List[UserRead]
+    courses: list[CourseRead]
+    collections: list[CollectionRead]
+    users: list[UserRead]
 
     class Config:
         arbitrary_types_allowed = True

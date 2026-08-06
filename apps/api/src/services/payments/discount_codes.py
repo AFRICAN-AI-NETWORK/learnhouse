@@ -4,22 +4,24 @@ Implements critical security measures for race condition prevention.
 """
 
 import logging
-from datetime import datetime
-from typing import Tuple, Literal, Optional
+from datetime import UTC, datetime
+from typing import Literal
+
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select, and_
+from sqlalchemy import text
+from sqlmodel import Session, and_, select
+
+from src.db.organizations import Organization
 from src.db.payments.discount_codes import (
     DiscountCode,
-    DiscountCodeUsage,
-    DiscountTypeEnum,
     DiscountCodeCreate,
     DiscountCodeRead,
     DiscountCodeUpdate,
+    DiscountCodeUsage,
+    DiscountTypeEnum,
 )
-from src.db.organizations import Organization
 from src.db.users import PublicUser
 from src.services.orgs.orgs import rbac_check
-from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +29,11 @@ logger = logging.getLogger(__name__)
 class DiscountValidationError(Exception):
     """Custom exception for discount code validation errors"""
 
-    pass
 
 
 def calculate_discounted_amount(
     original_amount: float, discount_type: DiscountTypeEnum, discount_value: float
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Calculate discounted amount and discount amount.
     Ensures discounted amount matches calculation exactly.
@@ -72,12 +73,12 @@ async def validate_discount_code(
     code: str,
     org_id: int,
     user_id: int,
-    course_id: Optional[int] = None,
-    product_id: Optional[int] = None,
+    course_id: int | None = None,
+    product_id: int | None = None,
     original_amount: float = 0.0,
     db_session: Session = None,
     check_usage: bool = True,
-) -> Tuple[DiscountCode, float, float]:
+) -> tuple[DiscountCode, float, float]:
     """
     Validate a discount code and calculate discounted amounts.
 
@@ -130,17 +131,20 @@ async def validate_discount_code(
         raise DiscountValidationError("Invalid or inactive discount code")
 
     # Check expiry dates - code with valid_until in past must be rejected
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
-    if discount_code.valid_from > now:
+    valid_from_aware = discount_code.valid_from.replace(tzinfo=UTC) if discount_code.valid_from else None
+    if valid_from_aware and valid_from_aware > now:
         raise DiscountValidationError(
-            f"Discount code is not yet valid. Valid from: {discount_code.valid_from.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            f"Discount code is not yet valid. Valid from: {valid_from_aware.strftime('%Y-%m-%d %H:%M:%S UTC')}"
         )
 
-    if discount_code.valid_until and discount_code.valid_until < now:
-        raise DiscountValidationError(
-            f"Discount code has expired on {discount_code.valid_until.strftime('%Y-%m-%d %H:%M:%S UTC')}"
-        )
+    if discount_code.valid_until:
+        valid_until_aware = discount_code.valid_until.replace(tzinfo=UTC)
+        if valid_until_aware < now:
+            raise DiscountValidationError(
+                f"Discount code has expired on {valid_until_aware.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+            )
 
     # Course-Specific Restriction Enforcement
     if discount_code.course_id and discount_code.course_id != course_id:
@@ -190,7 +194,7 @@ async def validate_discount_code(
             original_amount, discount_code.discount_type, discount_code.discount_value
         )
     except DiscountValidationError as e:
-        logger.error(f"Error calculating discount: {str(e)}")
+        logger.error(f"Error calculating discount: {e!s}")
         raise
 
     return discount_code, discount_amount, final_amount
@@ -246,13 +250,13 @@ async def increment_discount_usage_atomic(
 async def record_discount_usage(
     discount_code_id: int,
     user_id: int,
-    course_id: Optional[int],
+    course_id: int | None,
     payment_user_id: int,
     original_amount: float,
     discount_amount: float,
     final_amount: float,
     db_session: Session,
-    product_id: Optional[int] = None,
+    product_id: int | None = None,
 ) -> DiscountCodeUsage:
     """
     Record a discount code usage after successful payment.
@@ -545,8 +549,8 @@ async def list_discount_codes(
     if not is_org_admin:
         # For non-admins, only show codes for courses they manage
         # This requires an inner join with ResourceAuthor
-        from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
         from src.db.courses.courses import Course
+        from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 
         query = query.join(
             ResourceAuthor,
@@ -701,7 +705,7 @@ async def update_discount_code(
     if discount_update.description is not None:
         discount_code.description = discount_update.description
 
-    discount_code.updated_at = datetime.utcnow()
+    discount_code.updated_at = datetime.now(UTC)
 
     db_session.add(discount_code)
     db_session.commit()
@@ -727,7 +731,7 @@ async def deactivate_discount_code(
     )
 
     discount_code.is_active = False
-    discount_code.updated_at = datetime.utcnow()
+    discount_code.updated_at = datetime.now(UTC)
 
     db_session.add(discount_code)
     db_session.commit()
@@ -772,10 +776,10 @@ async def get_discount_code_analytics(
         usage_percentage = (discount_code.current_uses / discount_code.max_uses) * 100
 
     # Get unique students
-    unique_students = len(set(usage.user_id for usage in usages))
+    unique_students = len({usage.user_id for usage in usages})
 
     # Get unique courses
-    unique_courses = len(set(usage.course_id for usage in usages))
+    unique_courses = len({usage.course_id for usage in usages})
 
     return {
         "code": discount_code.code,

@@ -1,13 +1,15 @@
 """Unit tests for conversation service."""
 
+from datetime import UTC
+
 import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from src.services.chat.conversation_service import ConversationService
 from src.db.chat.conversations import Conversation
-from src.db.users import User
 from src.db.organizations import Organization
+from src.db.users import User
+from src.services.chat.conversation_service import ConversationService
 
 
 class TestCreateOrGetConversation:
@@ -205,8 +207,8 @@ class TestGetUserConversations:
         instructor_user: User,
     ):
         """Test conversation list pagination."""
-        from uuid import uuid4
         from datetime import datetime, timedelta
+        from uuid import uuid4
 
         # Create multiple conversations
         for i in range(5):
@@ -215,9 +217,9 @@ class TestGetUserConversations:
                 org_id=org.id,
                 participant_one_id=min(student_user.id, instructor_user.id + i),
                 participant_two_id=max(student_user.id, instructor_user.id + i),
-                last_message_at=datetime.utcnow() - timedelta(minutes=i),
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                last_message_at=datetime.now(UTC) - timedelta(minutes=i),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             session.add(conv)
         session.commit()

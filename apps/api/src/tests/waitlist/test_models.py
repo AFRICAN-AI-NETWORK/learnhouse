@@ -1,15 +1,18 @@
 """Unit tests for waitlist database models"""
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
+from sqlalchemy.exc import IntegrityError
+
 from src.db.waitlist import (
     UserStatusEnum,
-    WaitlistStatusEnum,
     WaitlistConfig,
-    WaitlistEmailLog,
-    WaitlistCoursePreference,
     WaitlistConfigCreate,
     WaitlistConfigUpdate,
+    WaitlistCoursePreference,
+    WaitlistEmailLog,
+    WaitlistStatusEnum,
 )
 
 
@@ -50,7 +53,7 @@ class TestWaitlistConfigModel:
 
     def test_create_waitlist_config(self, db_session, sample_org, sample_user):
         """Test creating a waitlist configuration"""
-        future_date = datetime.now(timezone.utc).isoformat()
+        future_date = datetime.now(UTC).isoformat()
 
         config = WaitlistConfig(
             waitlist_uuid="test-uuid-123",
@@ -86,9 +89,9 @@ class TestWaitlistConfigModel:
             org_id=sample_org.id,
             name="Default Test",
             interest_category="Category",
-            launch_datetime=datetime.now(timezone.utc).isoformat(),
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            launch_datetime=datetime.now(UTC).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
 
         db_session.add(config)
@@ -104,7 +107,7 @@ class TestWaitlistConfigModel:
     def test_waitlist_config_unique_uuid(self, db_session, sample_org):
         """Test that waitlist_uuid must be unique"""
         uuid = "duplicate-uuid"
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         config1 = WaitlistConfig(
             waitlist_uuid=uuid,
@@ -128,7 +131,7 @@ class TestWaitlistConfigModel:
             update_date=now,
         )
 
-        with pytest.raises(Exception):  # IntegrityError
+        with pytest.raises(IntegrityError):  # IntegrityError
             db_session.add(config2)
             db_session.commit()
 
@@ -142,10 +145,10 @@ class TestWaitlistEmailLogModel:
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
             email_sent=True,
-            email_sent_date=datetime.now(timezone.utc).isoformat(),
+            email_sent_date=datetime.now(UTC).isoformat(),
             retry_count=0,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
 
         db_session.add(log)
@@ -165,8 +168,8 @@ class TestWaitlistEmailLogModel:
         log = WaitlistEmailLog(
             user_id=waitlist_user.id,
             waitlist_config_id=sample_waitlist_config.id,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
 
         db_session.add(log)
@@ -188,8 +191,8 @@ class TestWaitlistEmailLogModel:
             email_sent=False,
             retry_count=1,
             email_error="SMTP connection failed",
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
 
         db_session.add(log)
@@ -222,7 +225,7 @@ class TestWaitlistCoursePreferenceModel:
             payments_product_id=product.id,
             waitlist_config_id=sample_waitlist_config.id,
             org_id=sample_org.id,
-            creation_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
         )
 
         db_session.add(preference)
@@ -253,7 +256,7 @@ class TestWaitlistCoursePreferenceModel:
         db_session.refresh(product1)
         db_session.refresh(product2)
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         pref1 = WaitlistCoursePreference(
             user_id=waitlist_user.id,

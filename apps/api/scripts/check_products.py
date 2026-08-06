@@ -1,14 +1,15 @@
-import sys
 import os
+import sys
 
 # Add the project root and apps/api to path
 sys.path.append(os.getcwd())
 
 from sqlmodel import Session, select
+
 from src.core.events.database import engine
-from src.db.payments.payments_products import PaymentsProduct
-from src.db.payments.payments_courses import PaymentsCourse
 from src.db.courses.courses import Course
+from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import PaymentsProduct
 
 
 def check_products():

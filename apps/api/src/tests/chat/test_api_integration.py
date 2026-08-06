@@ -4,16 +4,17 @@ These tests use FastAPI's dependency_overrides to mock authentication
 and database session, enabling proper endpoint testing.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from unittest.mock import patch, AsyncMock
 
 from app import app
-from src.security.auth import get_current_user
 from src.core.events.database import get_db_session
-from src.db.users import User
 from src.db.organizations import Organization
+from src.db.users import User
+from src.security.auth import get_current_user
 
 
 @pytest.fixture(name="client_as_student")

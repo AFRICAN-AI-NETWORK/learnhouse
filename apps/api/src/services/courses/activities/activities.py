@@ -1,25 +1,29 @@
+import logging
+import sys
+from datetime import UTC, datetime
+from uuid import uuid4
+
+from fastapi import HTTPException, Request
 from sqlmodel import Session, select
-from src.db.courses.courses import Course
-from src.db.courses.chapters import Chapter
+
 from src.db.courses.activities import (
-    ActivityCreate,
     Activity,
+    ActivityCreate,
     ActivityRead,
-    ActivityUpdate,
     ActivityTypeEnum,
+    ActivityUpdate,
 )
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
+from src.db.courses.courses import Course
+from src.db.organization_config import OrganizationConfig
 from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
-from fastapi import HTTPException, Request
-from uuid import uuid4
-from datetime import datetime
-
-import src.services.payments.payments_access as payments_access
 from src.security.courses_security import courses_rbac_check_for_activities
-from src.db.organization_config import OrganizationConfig
 from src.services.integrations.youtube import create_automated_youtube_session
-import sys
+from src.services.payments import payments_access
+
+logger = logging.getLogger(__name__)
 
 print("[ACTIVITIES_SERVICE] Module loaded!", file=sys.stderr, flush=True)
 
@@ -63,8 +67,8 @@ async def create_activity(
     activity = Activity(**activity_object.model_dump())
 
     activity.activity_uuid = str(f"activity_{uuid4()}")
-    activity.creation_date = str(datetime.now())
-    activity.update_date = str(datetime.now())
+    activity.creation_date = str(datetime.now(UTC))
+    activity.update_date = str(datetime.now(UTC))
     activity.org_id = chapter.org_id
     activity.course_id = chapter.course_id
 
@@ -93,7 +97,7 @@ async def create_activity(
                         title=f"{course.name} - {activity.name}",
                         start_time=activity.details.get("start_time")
                         if activity.details
-                        else str(datetime.now()),
+                        else str(datetime.now(UTC)),
                     )
 
                     # Update activity details with the stream info
@@ -110,9 +114,9 @@ async def create_activity(
                     db_session.add(activity)
                     db_session.commit()
                     db_session.refresh(activity)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
-                f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {str(e)}",
+                f"[ACTIVITIES_SERVICE] YouTube Automation Failed: {e!s}",
                 file=sys.stderr,
             )
             # We don't fail the whole creation if YouTube fails, just log it.
@@ -134,8 +138,8 @@ async def create_activity(
         activity_id=activity.id if activity.id else 0,
         course_id=chapter.course_id,
         org_id=chapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=to_be_used_order,
     )
 
@@ -257,6 +261,8 @@ async def update_activity(
         request, course.course_uuid, current_user, "update", db_session
     )
 
+    was_published = activity.published
+
     # Update only the fields that were passed in
     for var, value in vars(activity_object).items():
         if value is not None:
@@ -265,6 +271,30 @@ async def update_activity(
     db_session.add(activity)
     db_session.commit()
     db_session.refresh(activity)
+
+    # Notify enrolled students the first time an activity becomes published.
+    # Fanned out as a background job (never inline) since course enrollment
+    # can be large — see src.services.notifications.fanout_jobs. This is a
+    # side effect of publishing, not part of it: a scheduling failure must
+    # never turn a successful publish into an error for the instructor.
+    if not was_published and activity.published:
+        try:
+            from src.services.notifications.fanout_jobs import (
+                sync_fanout_activity_added,
+            )
+            from src.services.notifications.scheduling import enqueue_job
+
+            enqueue_job(
+                f"activity_notif_{activity.id}",
+                sync_fanout_activity_added,
+                [activity.id],
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Failed to schedule activity_added fan-out for activity %s: %s",
+                activity.id,
+                e,
+            )
 
     activity = ActivityRead.model_validate(activity)
 

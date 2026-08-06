@@ -1,24 +1,19 @@
-from datetime import datetime
 import json
 import secrets
-import redis
 import string
 import uuid
+from datetime import UTC, datetime
+
+import redis
 from fastapi import HTTPException, Request
 from pydantic import EmailStr
 from sqlmodel import Session, select
-from src.db.organizations import Organization, OrganizationRead
-from src.security.security import security_hash_password
+
 from config.config import get_learnhouse_config
-from src.services.users.emails import (
-    send_password_reset_email,
-)
-from src.db.users import (
-    AnonymousUser,
-    PublicUser,
-    User,
-    UserRead,
-)
+from src.db.organizations import Organization, OrganizationRead
+from src.db.users import AnonymousUser, PublicUser, User, UserRead
+from src.security.security import security_hash_password
+from src.services.users.emails import send_password_reset_email
 
 
 async def send_reset_password_code(
@@ -75,14 +70,14 @@ async def send_reset_password_code(
     generated_reset_code = generate_code()
     reset_email_invite_uuid = f"reset_email_invite_code_{uuid.uuid4()}"
 
-    ttl = int(datetime.now().timestamp()) + 60 * 60 * 1  # 1 hour
+    ttl = int(datetime.now(UTC).timestamp()) + 60 * 60 * 1  # 1 hour
 
     resetCodeObject = {
         "reset_code": generated_reset_code,
         "reset_email_invite_uuid": reset_email_invite_uuid,
         "reset_code_expires": ttl,
         "reset_code_type": "signup",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "created_by": user.user_uuid,
         "org_uuid": org.org_uuid,
     }
@@ -183,7 +178,7 @@ async def change_password_with_reset_code(
     reset_code_object = json.loads(reset_code_value)
 
     # Check if reset code is expired
-    if reset_code_object["reset_code_expires"] < int(datetime.now().timestamp()):
+    if reset_code_object["reset_code_expires"] < int(datetime.now(UTC).timestamp()):
         raise HTTPException(
             status_code=400,
             detail="Reset code expired",

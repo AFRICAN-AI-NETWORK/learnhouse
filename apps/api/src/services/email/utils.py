@@ -1,8 +1,9 @@
-from pydantic import EmailStr
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from pydantic import EmailStr
 
 
 def send_email(to: EmailStr, subject: str, body: str):
@@ -63,18 +64,18 @@ def send_email(to: EmailStr, subject: str, body: str):
         }
 
     except smtplib.SMTPAuthenticationError as e:
-        error_msg = f"SMTP Authentication failed: {str(e)}"
+        error_msg = f"SMTP Authentication failed: {e!s}"
         print(f"❌ {error_msg}")
         raise Exception(
-            f"Email authentication failed. Check your EMAIL_ADDRESS and EMAIL_PASSWORD: {str(e)}"
+            f"Email authentication failed. Check your EMAIL_ADDRESS and EMAIL_PASSWORD: {e!s}"
         )
 
     except smtplib.SMTPException as e:
-        error_msg = f"SMTP Error: {str(e)}"
+        error_msg = f"SMTP Error: {e!s}"
         print(f"❌ {error_msg}")
-        raise Exception(f"Failed to send email via SMTP: {str(e)}")
+        raise Exception(f"Failed to send email via SMTP: {e!s}")
 
-    except Exception as e:
-        error_msg = f"Email sending error: {str(e)}"
+    except Exception as e:  # noqa: BLE001
+        error_msg = f"Email sending error: {e!s}"
         print(f"❌ {error_msg}")
-        raise Exception(f"Failed to send email: {str(e)}")
+        raise Exception(f"Failed to send email: {e!s}")

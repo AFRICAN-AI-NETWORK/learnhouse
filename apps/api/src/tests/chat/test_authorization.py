@@ -1,17 +1,19 @@
 """Unit tests for chat authorization service."""
 
+from datetime import UTC
+
 import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from src.services.chat.authorization import (
-    verify_chat_permission,
-    get_user_role_in_org,
-    get_chatable_users_for_user,
-)
-from src.db.users import User
 from src.db.organizations import Organization
 from src.db.roles import Role
+from src.db.users import User
+from src.services.chat.authorization import (
+    get_chatable_users_for_user,
+    get_user_role_in_org,
+    verify_chat_permission,
+)
 
 
 class TestVerifyChatPermission:
@@ -26,7 +28,7 @@ class TestVerifyChatPermission:
         instructor_user: User,
     ):
         """Test that student can chat with instructor."""
-        # Should not raise exception
+        # Should not raise
         result = await verify_chat_permission(
             db=session,
             current_user_id=student_user.id,
@@ -109,10 +111,11 @@ class TestVerifyChatPermission:
         instructor_role: Role,
     ):
         """Test that instructors can chat with each other."""
-        from src.db.users import User
-        from src.db.user_organizations import UserOrganization
-        from uuid import uuid4
         from datetime import datetime
+        from uuid import uuid4
+
+        from src.db.user_organizations import UserOrganization
+        from src.db.users import User
 
         # Create second instructor
         instructor2 = User(
@@ -122,8 +125,8 @@ class TestVerifyChatPermission:
             password="hashed_password",
             first_name="Instructor",
             last_name="Two",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(instructor2)
         session.commit()
@@ -133,8 +136,8 @@ class TestVerifyChatPermission:
             user_id=instructor2.id,
             org_id=org.id,
             role_id=instructor_role.id,
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(user_org)
         session.commit()
@@ -152,9 +155,10 @@ class TestVerifyChatPermission:
         self, session: Session, org: Organization, student_user: User
     ):
         """Test that user not in organization raises error."""
-        from src.db.users import User
-        from uuid import uuid4
         from datetime import datetime
+        from uuid import uuid4
+
+        from src.db.users import User
 
         # Create user not in org
         external_user = User(
@@ -164,8 +168,8 @@ class TestVerifyChatPermission:
             password="hashed_password",
             first_name="External",
             last_name="User",
-            creation_date=str(datetime.utcnow()),
-            update_date=str(datetime.utcnow()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         session.add(external_user)
         session.commit()

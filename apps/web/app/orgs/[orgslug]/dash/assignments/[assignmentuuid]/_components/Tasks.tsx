@@ -1,6 +1,14 @@
 import { useAssignments } from '@components/Contexts/Assignments/AssignmentContext'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
-import { Code, FileUp, ListTodo, PanelLeftOpen, Plus, Type } from 'lucide-react'
+import {
+  Code,
+  FileUp,
+  Link as LinkIcon,
+  ListTodo,
+  PanelLeftOpen,
+  Plus,
+  Type,
+} from 'lucide-react'
 import React, { useEffect } from 'react'
 import NewTaskModal from './Modals/NewTaskModal'
 import {
@@ -72,6 +80,9 @@ function AssignmentTasks({ assignment_uuid }: any) {
                       {task.assignment_type === 'FORM' && <Type size={15} />}
                       {task.assignment_type === 'CODE_EDITOR' && (
                         <Code size={15} />
+                      )}
+                      {task.assignment_type === 'LINK_SUBMISSION' && (
+                        <LinkIcon size={15} />
                       )}
                     </div>
                     <div className="min-w-0 truncate text-sm font-semibold">

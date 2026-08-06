@@ -1,12 +1,14 @@
 import asyncio
 import json
 import logging
+
 from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from ee.services.audit import queue_audit_log, resolve_org_id, is_enterprise_plan
-from src.db.users import PublicUser
-from src.core.events.database import engine
 from sqlmodel import Session
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from ee.services.audit import is_enterprise_plan, queue_audit_log, resolve_org_id
+from src.core.events.database import engine
+from src.db.users import PublicUser
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +23,7 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
         # Skip health checks, documentation, and static files
         path = request.url.path
         if (
-            path.startswith("/api/v1/health")
-            or path.startswith("/docs")
-            or path.startswith("/redoc")
-            or path.startswith("/content")
+            path.startswith(("/api/v1/health", "/docs", "/redoc", "/content"))
         ):
             return await call_next(request)
 
@@ -95,7 +94,7 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
                 ]
                 payload = {k: v for k, v in payload.items() if k not in sensitive_keys}
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Audit middleware failed to capture request data: {e}")
 
         # Determine resource and resource_id from path

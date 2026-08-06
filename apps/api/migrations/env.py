@@ -1,10 +1,10 @@
-from logging.config import fileConfig
 import os
+from logging.config import fileConfig
+
 import alembic_postgresql_enum  # noqa: F401
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from sqlmodel import SQLModel
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+from sqlmodel import SQLModel
 
 from config.config import get_learnhouse_config
 
@@ -68,7 +68,7 @@ for root, dirs, files in os.walk(base_dir):
 # IMPORTING ALL SCHEMAS
 
 target_metadata = SQLModel.metadata
-for _t in target_metadata.tables.keys():
+for _t in target_metadata.tables:
     print(f"DEBUG: Found table '{_t}'")
 
 # other values from the config, defined by the needs of env.py,

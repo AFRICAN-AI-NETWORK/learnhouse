@@ -1,19 +1,20 @@
-from datetime import datetime
-from typing import List
+from datetime import UTC, datetime
+
 from fastapi import Request
 from sqlmodel import Session, select
+
+from src.db.courses.activities import Activity
 from src.db.courses.live_sessions import (
     LiveSessionRegistration,
     LiveSessionRegistrationRead,
 )
+from src.db.organization_config import OrganizationConfig
 from src.db.users import PublicUser, User
-from src.db.courses.activities import Activity
 from src.services.communications.notifications import (
-    send_session_confirmation_email,
     send_enrolment_invitation_email,
+    send_session_confirmation_email,
     send_session_reminder_email,
 )
-from src.db.organization_config import OrganizationConfig
 from src.services.integrations.youtube import YouTubeService
 
 
@@ -44,7 +45,7 @@ async def register_for_live_session(
         activity_uuid=activity_uuid,
         user_id=current_user.id,
         org_id=org_id,
-        creation_date=datetime.now().isoformat(),
+        creation_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(registration)
     db_session.commit()
@@ -94,7 +95,7 @@ async def is_user_registered(
 async def send_manual_notifications(
     db_session: Session,
     activity_uuid: str,
-    user_ids: List[int],
+    user_ids: list[int],
     notification_type: str = "CONFIRMATION",
 ):
     """
@@ -151,8 +152,8 @@ async def end_live_session(
                 if yt_config:
                     yt_service = YouTubeService(yt_config)
                     await yt_service.end_broadcast(youtube_video_id)
-        except Exception as e:
-            print(f"[LIVE_SESSIONS_SERVICE] YouTube End Failed: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[LIVE_SESSIONS_SERVICE] YouTube End Failed: {e!s}")
             # Log but continue to mark as ended locally
 
     # 2. Update status

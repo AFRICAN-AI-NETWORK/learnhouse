@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional
+
+from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from sqlalchemy import ForeignKey, JSON, Column, Integer
 
 
 class TrailStepTypeEnum(str, Enum):
@@ -11,7 +11,7 @@ class TrailStepTypeEnum(str, Enum):
 
 
 class TrailStep(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     complete: bool
     teacher_verified: bool
     grade: str
@@ -42,5 +42,11 @@ class TrailStep(SQLModel, table=True):
     update_date: str
 
 
-# note : prepare assignments support
-# an assignment object will be linked to a trail step object in the future
+# note: assignments support
+# `grade` stores the normalized assignment score string (e.g. "0.80") for
+# gradeable (assignment-backed) activities, so the per-activity weighting is
+# auditable without re-joining the assignment tables. It is "" for
+# completion-based activities. `points_earned` stores the effective,
+# performance- and lateness-weighted points the user earned for this activity.
+# Both fields are written by
+# src.services.courses.grade.compute_and_store_trail_step_grade.

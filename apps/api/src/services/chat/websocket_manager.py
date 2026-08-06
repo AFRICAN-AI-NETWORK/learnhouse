@@ -1,8 +1,8 @@
-from typing import Dict, Set
-from fastapi import WebSocket
-from datetime import datetime
 import json
 import logging
+from datetime import UTC, datetime
+
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,10 @@ class ConnectionManager:
             return
 
         # {user_id: {websocket_connection}}
-        self.active_connections: Dict[int, Set[WebSocket]] = {}
+        self.active_connections: dict[int, set[WebSocket]] = {}
 
         # {room_id: {websocket_connection}}
-        self.rooms: Dict[str, Set[WebSocket]] = {}
+        self.rooms: dict[str, set[WebSocket]] = {}
 
         # Redis client for Pub/Sub (optional - for horizontal scaling)
         self.redis_client = None
@@ -62,7 +62,7 @@ class ConnectionManager:
                     logger.warning(
                         "Redis URL not configured, WebSocket scaling will be limited"
                     )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to initialize Redis for WebSocket manager: {e}")
 
         self._initialized = True
@@ -90,11 +90,11 @@ class ConnectionManager:
                         {
                             "user_id": user_id,
                             "status": "online",
-                            "timestamp": datetime.utcnow().isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                         }
                     ),
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to publish connection event: {e}")
 
     async def disconnect(self, websocket: WebSocket, user_id: int):
@@ -116,11 +116,11 @@ class ConnectionManager:
                                 {
                                     "user_id": user_id,
                                     "status": "offline",
-                                    "timestamp": datetime.utcnow().isoformat(),
+                                    "timestamp": datetime.now(UTC).isoformat(),
                                 }
                             ),
                         )
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.warning(f"Failed to publish disconnect event: {e}")
 
         # Cleanup rooms
@@ -139,7 +139,7 @@ class ConnectionManager:
             for connection in self.active_connections[user_id]:
                 try:
                     await connection.send_json(message)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Error sending message to user {user_id}: {e}")
                     disconnected.add(connection)
 
@@ -152,7 +152,7 @@ class ConnectionManager:
         if client is not None:
             try:
                 await client.publish(f"chat:user:{user_id}", json.dumps(message))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Failed to publish message to Redis: {e}")
 
     async def broadcast_to_conversation(self, message: dict, participant_ids: list):
@@ -182,7 +182,7 @@ class ConnectionManager:
             for connection in self.rooms[room_id]:
                 try:
                     await connection.send_json(message)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(f"Error broadcasting to room {room_id}: {e}")
                     disconnected.add(connection)
 

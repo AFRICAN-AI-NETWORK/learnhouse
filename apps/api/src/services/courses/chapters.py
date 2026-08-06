@@ -1,9 +1,10 @@
-from datetime import datetime
-from typing import List
+import logging
+from datetime import UTC, datetime
 from uuid import uuid4
+
+from fastapi import HTTPException, Request, status
 from sqlmodel import Session, select
-from src.db.users import AnonymousUser, PublicUser
-from src.db.courses.course_chapters import CourseChapter
+
 from src.db.courses.activities import Activity, ActivityRead
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import (
@@ -13,9 +14,12 @@ from src.db.courses.chapters import (
     ChapterUpdate,
     ChapterUpdateOrder,
 )
+from src.db.courses.course_chapters import CourseChapter
 from src.db.courses.courses import Course
-from fastapi import HTTPException, status, Request
+from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_chapters
+
+logger = logging.getLogger(__name__)
 
 
 ####################################################
@@ -44,8 +48,8 @@ async def create_chapter(
     # complete chapter object
     chapter.course_id = chapter_object.course_id
     chapter.chapter_uuid = f"chapter_{uuid4()}"
-    chapter.creation_date = str(datetime.now())
-    chapter.update_date = str(datetime.now())
+    chapter.creation_date = str(datetime.now(UTC))
+    chapter.update_date = str(datetime.now(UTC))
     chapter.org_id = course.org_id
 
     # Find the last chapter in the course and add it to the list
@@ -83,8 +87,8 @@ async def create_chapter(
             course_id=chapter.course_id,
             chapter_id=chapter.id,
             org_id=chapter.org_id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
             order=to_be_used_order,
         )
 
@@ -170,6 +174,8 @@ async def update_chapter(
         request, course.course_uuid, current_user, "update", db_session
     )
 
+    was_published = chapter.published
+
     # Update only the fields that were passed in
     for var, value in vars(chapter_object).items():
         if value is not None:
@@ -190,10 +196,30 @@ async def update_chapter(
                 detail=f"Total points for activities in a module must equal 100. Current total: {total_points}",
             )
 
-    chapter.update_date = str(datetime.now())
+    chapter.update_date = str(datetime.now(UTC))
 
     db_session.commit()
     db_session.refresh(chapter)
+
+    # Notify enrolled students the first time a chapter becomes published.
+    # Fanned out as a background job (never inline) since course enrollment
+    # can be large — see src.services.notifications.fanout_jobs. This is a
+    # side effect of publishing, not part of it: a scheduling failure must
+    # never turn a successful publish into an error for the instructor.
+    if not was_published and chapter.published:
+        try:
+            from src.services.notifications.fanout_jobs import sync_fanout_chapter_added
+            from src.services.notifications.scheduling import enqueue_job
+
+            enqueue_job(
+                f"chapter_notif_{chapter.id}", sync_fanout_chapter_added, [chapter.id]
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Failed to schedule chapter_added fan-out for chapter %s: %s",
+                chapter.id,
+                e,
+            )
 
     if chapter:
         chapter = await get_chapter(
@@ -256,7 +282,7 @@ async def get_course_chapters(
     with_unpublished_activities: bool = False,
     page: int = 1,
     limit: int = 10,
-) -> List[ChapterRead]:
+) -> list[ChapterRead]:
     statement = select(Course).where(Course.id == course_id)
     course = db_session.exec(statement).first()
 
@@ -312,7 +338,7 @@ async def get_course_chapters(
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, current_user, "update", db_session
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             is_editor = False
 
     # Get completed activity ids if user is enrolled
@@ -498,8 +524,8 @@ async def reorder_chapters_and_activities(
                 chapter_id=chapter_order.chapter_id,
                 course_id=course.id,  # type: ignore
                 org_id=course.org_id,
-                creation_date=str(datetime.now()),
-                update_date=str(datetime.now()),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
                 order=index,
             )
             db_session.add(course_chapter)
@@ -549,8 +575,8 @@ async def reorder_chapters_and_activities(
                     activity_id=activity_order.activity_id,
                     org_id=course.org_id,
                     course_id=course.id,  # type: ignore
-                    creation_date=str(datetime.now()),
-                    update_date=str(datetime.now()),
+                    creation_date=str(datetime.now(UTC)),
+                    update_date=str(datetime.now(UTC)),
                     order=index,
                 )
                 db_session.add(chapter_activity)

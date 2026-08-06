@@ -1,20 +1,20 @@
-from typing import List, Optional
-from datetime import datetime
-from uuid import uuid4
-from sqlmodel import Session, select
-from fastapi import HTTPException, status
 import logging
+from datetime import UTC, datetime
+from uuid import uuid4
 
+from fastapi import HTTPException, status
+from sqlmodel import Session, select
+
+from src.db.chat.attachments import MessageAttachment
+from src.db.chat.conversations import Conversation
 from src.db.chat.messages import (
     Message,
     MessageCreate,
-    MessageUpdate,
-    MessageRead,
     MessageEditHistory,
+    MessageRead,
     MessageReadReceipt,
+    MessageUpdate,
 )
-from src.db.chat.conversations import Conversation
-from src.db.chat.attachments import MessageAttachment
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class ReadReceiptService:
         """Create delivery receipt when message is sent."""
 
         receipt = MessageReadReceipt(
-            message_id=message_id, user_id=user_id, delivered_at=datetime.utcnow()
+            message_id=message_id, user_id=user_id, delivered_at=datetime.now(UTC)
         )
 
         db.add(receipt)
@@ -41,7 +41,7 @@ class ReadReceiptService:
     @staticmethod
     async def mark_as_read(
         db: Session, message_uuid: str, user_id: int
-    ) -> Optional[MessageReadReceipt]:
+    ) -> MessageReadReceipt | None:
         """Mark message as read."""
 
         # Get message
@@ -61,10 +61,10 @@ class ReadReceiptService:
 
         if not receipt:
             receipt = MessageReadReceipt(
-                message_id=message.id, user_id=user_id, delivered_at=datetime.utcnow()
+                message_id=message.id, user_id=user_id, delivered_at=datetime.now(UTC)
             )
 
-        receipt.read_at = datetime.utcnow()
+        receipt.read_at = datetime.now(UTC)
 
         db.add(receipt)
         db.commit()
@@ -75,7 +75,7 @@ class ReadReceiptService:
     @staticmethod
     async def get_read_receipt(
         db: Session, message_id: int, user_id: int
-    ) -> Optional[MessageReadReceipt]:
+    ) -> MessageReadReceipt | None:
         """Get read receipt for a message."""
 
         receipt = db.exec(
@@ -172,15 +172,15 @@ class MessageService:
             content=message_data.content,
             message_type=message_data.message_type,
             reply_to_message_id=reply_to_id,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
         db.add(new_message)
 
         # Update conversation last_message_at
-        conversation.last_message_at = datetime.utcnow()
-        conversation.updated_at = datetime.utcnow()
+        conversation.last_message_at = datetime.now(UTC)
+        conversation.updated_at = datetime.now(UTC)
         db.add(conversation)
 
         db.commit()
@@ -196,7 +196,7 @@ class MessageService:
             from src.services.chat.notification_service import NotificationService
 
             await NotificationService.send_message_notification(db, new_message)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Don't fail message creation if notification fails
             logger.warning(f"Failed to send notification: {e}")
 
@@ -216,7 +216,7 @@ class MessageService:
                     "message_type": message_data.message_type,
                 },
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to log audit: {e}")
 
         logger.info(
@@ -265,8 +265,8 @@ class MessageService:
         conversation_id: str,
         user_id: int,
         limit: int = 50,
-        before_message_id: Optional[int] = None,
-    ) -> List[MessageRead]:
+        before_message_id: int | None = None,
+    ) -> list[MessageRead]:
         """
         Get messages for a conversation with pagination.
         Accepts conversation UUID (conv_xxx) or integer ID.
@@ -423,15 +423,15 @@ class MessageService:
             message_id=message.id,
             previous_content=message.content,
             edited_by_user_id=user_id,
-            edited_at=datetime.utcnow(),
+            edited_at=datetime.now(UTC),
         )
         db.add(edit_history)
 
         # Update message
         message.content = update_data.content
         message.is_edited = True
-        message.edited_at = datetime.utcnow()
-        message.updated_at = datetime.utcnow()
+        message.edited_at = datetime.now(UTC)
+        message.updated_at = datetime.now(UTC)
 
         db.add(message)
         db.commit()
@@ -464,9 +464,9 @@ class MessageService:
 
         # Soft delete
         message.is_deleted = True
-        message.deleted_at = datetime.utcnow()
+        message.deleted_at = datetime.now(UTC)
         message.deleted_by_user_id = user_id
-        message.updated_at = datetime.utcnow()
+        message.updated_at = datetime.now(UTC)
 
         db.add(message)
         db.commit()

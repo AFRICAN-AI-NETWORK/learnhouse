@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlmodel import SQLModel, Session, select
+from sqlmodel import Session, SQLModel, select
 
 from cli import install
 from config.config import get_learnhouse_config

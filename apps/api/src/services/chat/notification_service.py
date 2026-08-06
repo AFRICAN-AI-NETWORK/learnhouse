@@ -1,13 +1,13 @@
-from datetime import datetime, timedelta
-from uuid import uuid4
-from sqlmodel import Session, select
 import logging
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
-from src.db.chat.messages import Message
-from src.db.chat.notifications import ChatNotification
+from sqlmodel import Session, select
+
 from src.db.chat.conversations import Conversation
+from src.db.chat.messages import Message, MessageReadReceipt
+from src.db.chat.notifications import ChatNotification
 from src.db.users import User
-from src.db.chat.messages import MessageReadReceipt
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class NotificationService:
             message_id=message.id,
             conversation_id=message.conversation_id,
             notification_type="new_message",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
 
         db.add(notification)
@@ -81,13 +81,13 @@ class NotificationService:
                         "message": "You have a new message",
                         "conversation_id": message.conversation_id,
                         "sender_id": message.sender_id,
-                        "created_at": datetime.utcnow().isoformat(),
+                        "created_at": datetime.now(UTC).isoformat(),
                     },
                 },
                 message.receiver_id,
             )
             logger.debug(f"In-app notification sent to user {message.receiver_id}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to send in-app notification: {e}")
 
     @staticmethod
@@ -114,7 +114,7 @@ class NotificationService:
             scheduler = AsyncIOScheduler()
 
             # Schedule job for 24 hours from now
-            run_time = datetime.utcnow() + timedelta(
+            run_time = datetime.now(UTC) + timedelta(
                 hours=NotificationService.EMAIL_DELAY_HOURS
             )
 
@@ -140,7 +140,7 @@ class NotificationService:
                 f"Email notification scheduled for message {message.message_uuid} at {run_time}"
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to schedule email notification: {e}")
             notification.delivery_status["email"] = "failed"
             db.add(notification)
@@ -196,7 +196,7 @@ class NotificationService:
             # Message still unread after 24 hours, send email
             await NotificationService._send_email_now(db, message, notification_uuid)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error in email notification check: {e}")
         finally:
             db.close()
@@ -287,7 +287,7 @@ class NotificationService:
                     db.add(notification)
                     db.commit()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to send email notification: {e}")
 
             # Update notification status
@@ -302,7 +302,7 @@ class NotificationService:
                     notification.delivery_status["email"] = "failed"
                     db.add(notification)
                     db.commit()
-            except Exception:
+            except Exception as e:  # noqa: BLE001
                 pass
 
     @staticmethod
@@ -321,5 +321,5 @@ class NotificationService:
             if scheduler.get_job(job_id):
                 scheduler.remove_job(job_id)
                 logger.info(f"Cancelled scheduled email for message {message_uuid}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Could not cancel scheduled email: {e}")

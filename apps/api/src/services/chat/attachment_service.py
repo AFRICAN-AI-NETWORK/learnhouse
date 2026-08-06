@@ -107,7 +107,7 @@ class AttachmentService:
             )
         except HTTPException:
             raise  # Re-raise validation errors as-is (4xx)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error(
                 "Attachment upload failed for message %s: %s", message_uuid, exc
             )
@@ -122,7 +122,7 @@ class AttachmentService:
             file.file.seek(0, os.SEEK_END)
             file_size = file.file.tell()
             file.file.seek(0)
-        except Exception:
+        except Exception:  # noqa: BLE001
             file_size = 0
 
         # ── Build absolute URL (served by StaticFiles at /content) ──────────

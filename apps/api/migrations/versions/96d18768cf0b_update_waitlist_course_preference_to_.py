@@ -6,19 +6,19 @@ Create Date: 2026-02-22 10:51:05.788456
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
-import sqlalchemy as sa  # noqa: F401
+import sqlalchemy as sa
 import sqlmodel  # noqa: F401
+from alembic import op
 from alembic_postgresql_enum import TableReference
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "96d18768cf0b"
-down_revision: Union[str, None] = "bb179eae5162"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "bb179eae5162"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -177,7 +177,7 @@ def upgrade() -> None:
         try:
             with op.get_bind().begin_nested():
                 stmt()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # ### end Alembic commands ###

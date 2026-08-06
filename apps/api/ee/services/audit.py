@@ -1,9 +1,11 @@
 import json
 import logging
+from datetime import UTC, datetime
+from typing import Any
+
 import redis
-from datetime import datetime
-from typing import Any, Optional, Dict
 from sqlmodel import Session, select
+
 from config.config import get_learnhouse_config
 from ee.db.audit_logs import AuditLog
 from src.db.organization_config import OrganizationConfig, OrganizationConfigBase
@@ -27,7 +29,7 @@ def is_enterprise_plan(session: Session, org_id: int) -> bool:
 
         config = OrganizationConfigBase(**org_config.config)
         return config.cloud.plan == "enterprise"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Error checking enterprise plan for org {org_id}: {e}")
         return False
 
@@ -38,12 +40,12 @@ def get_redis_client():
         return None
     try:
         return redis.Redis.from_url(redis_conn_string)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to connect to Redis: {e}")
         return None
 
 
-def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
+def resolve_org_id(session: Session, data: dict[str, Any]) -> int | None:
     """
     Elegantly resolve org_id from various data identifiers.
     """
@@ -54,9 +56,10 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
             return int(org_id)
         except (ValueError, TypeError):
             # Try resolving from slug/uuid
-            from src.db.organizations import Organization
             from sqlalchemy import or_
             from sqlmodel import select
+
+            from src.db.organizations import Organization
 
             try:
                 statement = select(Organization.id).where(
@@ -66,7 +69,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                     )
                 )
                 return session.exec(statement).first()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
 
     # 2. From chapter_id
@@ -87,7 +90,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 chapter = session.exec(statement).first()
             if chapter:
                 return chapter.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 3. From course_id
@@ -106,7 +109,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 course = session.exec(statement).first()
             if course:
                 return course.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 4. From activity_id
@@ -129,7 +132,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 activity = session.exec(statement).first()
             if activity:
                 return activity.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 5. From collection_id
@@ -154,7 +157,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 collection = session.exec(statement).first()
             if collection:
                 return collection.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 6. From usergroup_id
@@ -179,7 +182,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 usergroup = session.exec(statement).first()
             if usergroup:
                 return usergroup.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 7. From role_id
@@ -198,7 +201,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 role = session.exec(statement).first()
             if role:
                 return role.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 8. From assignment_id
@@ -223,7 +226,7 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 assignment = session.exec(statement).first()
             if assignment:
                 return assignment.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     # 9. From certification_id
@@ -252,23 +255,23 @@ def resolve_org_id(session: Session, data: Dict[str, Any]) -> Optional[int]:
                 course = session.get(Course, certification.course_id)
                 if course:
                     return course.org_id
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     return None
 
 
 async def queue_audit_log(
-    user_id: Optional[int],
+    user_id: int | None,
     action: str,
     resource: str,
     method: str,
     path: str,
     status_code: int,
-    payload: Optional[Dict[str, Any]] = None,
-    resource_id: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    org_id: Optional[int] = None,
+    payload: dict[str, Any] | None = None,
+    resource_id: str | None = None,
+    ip_address: str | None = None,
+    org_id: int | None = None,
 ):
     r = get_redis_client()
     if not r:
@@ -285,11 +288,11 @@ async def queue_audit_log(
         "status_code": status_code,
         "payload": payload,
         "ip_address": ip_address,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
     try:
         r.lpush(REDIS_AUDIT_LOG_KEY, json.dumps(log_data))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to queue audit log: {e}")
 
 
@@ -310,7 +313,7 @@ def flush_audit_logs_to_db(db_session: Session):
             # Convert ISO string back to datetime object
             data["created_at"] = datetime.fromisoformat(data["created_at"])
             logs.append(AuditLog(**data))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to parse audit log from redis: {e}")
 
     if logs:
@@ -318,6 +321,6 @@ def flush_audit_logs_to_db(db_session: Session):
             db_session.add_all(logs)
             db_session.commit()
             logger.info(f"Successfully flushed {len(logs)} audit logs to database.")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to save audit logs to database: {e}")
             db_session.rollback()

@@ -1,15 +1,14 @@
 import json
 import logging
+from datetime import UTC, datetime
 from io import BytesIO
+from uuid import uuid4
 
+from fastapi import HTTPException, Request, UploadFile, status
 from pypdf import PdfReader
 from sqlmodel import Session, select
-from fastapi import HTTPException, status, UploadFile, Request
-from uuid import uuid4
-from datetime import datetime
 
-from src.db.courses.courses import Course
-from src.db.courses.chapters import Chapter
+from config.config import get_learnhouse_config
 from src.db.courses.activities import (
     Activity,
     ActivityRead,
@@ -17,10 +16,11 @@ from src.db.courses.activities import (
     ActivityTypeEnum,
 )
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_activities
-from config.config import get_learnhouse_config
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def _parse_ai_response(result_text: str, raw_text: str) -> list[dict]:
 
 async def chunk_text_with_openai(raw_text: str, api_key: str) -> list[dict]:
     """Chunk text using OpenAI's API."""
-    from openai import OpenAI, RateLimitError, APIError
+    from openai import APIError, OpenAI, RateLimitError
 
     client = OpenAI(api_key=api_key)
 
@@ -148,7 +148,7 @@ async def chunk_text_with_gemini(raw_text: str, api_key: str) -> list[dict]:
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Gemini API error: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -209,7 +209,7 @@ async def chunk_text_with_ai(raw_text: str, config) -> list[dict]:
                 )
                 continue
             raise  # Re-raise non-recoverable errors
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             last_error = e
             logger.warning(
                 f"Smart Article: {provider_name} failed ({str(e)[:100]}), trying next provider..."
@@ -315,8 +315,8 @@ async def create_smart_article_activity(
         org_id=org_id if org_id else 0,
         course_id=coursechapter.course_id,
         activity_uuid=activity_uuid,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(activity)
@@ -339,8 +339,8 @@ async def create_smart_article_activity(
         activity_id=activity.id,  # type: ignore
         course_id=coursechapter.course_id,
         org_id=coursechapter.org_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
         order=next_order,
     )
 

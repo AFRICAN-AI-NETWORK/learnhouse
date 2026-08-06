@@ -1,17 +1,18 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, HTTPException, status
-from fastapi.responses import StreamingResponse
-from sqlmodel import Session, select, desc, func
-from src.core.events.database import get_db_session
-from ee.db.audit_logs import AuditLog, AuditLogRead, AuditLogPaginated
-from src.db.users import User, PublicUser
-from src.db.organizations import Organization
-from src.db.organization_config import OrganizationConfig, OrganizationConfigBase
-from src.security.auth import get_current_user
-from src.services.orgs.orgs import rbac_check
-from datetime import datetime
 import csv
 import io
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
+from sqlmodel import Session, desc, func, select
+
+from ee.db.audit_logs import AuditLog, AuditLogPaginated, AuditLogRead
+from src.core.events.database import get_db_session
+from src.db.organization_config import OrganizationConfig, OrganizationConfigBase
+from src.db.organizations import Organization
+from src.db.users import PublicUser, User
+from src.security.auth import get_current_user
+from src.services.orgs.orgs import rbac_check
 
 router = APIRouter()
 
@@ -51,15 +52,15 @@ async def export_audit_logs(
     org_id: int,
     current_user: PublicUser = Depends(get_current_user),
     session: Session = Depends(get_db_session),
-    user_id: Optional[str] = None,
-    action: Optional[str] = None,
-    resource: Optional[str] = None,
-    status_code: Optional[int] = None,
-    ip_address: Optional[str] = None,
-    username: Optional[str] = None,
-    name: Optional[str] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    user_id: str | None = None,
+    action: str | None = None,
+    resource: str | None = None,
+    status_code: int | None = None,
+    ip_address: str | None = None,
+    username: str | None = None,
+    name: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ):
     """
     Export audit logs as CSV.
@@ -74,7 +75,7 @@ async def export_audit_logs(
 
     # Apply same filters as get_audit_logs
     if user_id:
-        from sqlalchemy import cast, String
+        from sqlalchemy import String, cast
 
         statement = statement.where(
             cast(AuditLog.user_id, String).ilike(f"%{user_id}%")
@@ -146,7 +147,7 @@ async def export_audit_logs(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={
-            "Content-Disposition": f"attachment; filename=audit_logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            "Content-Disposition": f"attachment; filename=audit_logs_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.csv"
         },
     )
 
@@ -160,15 +161,15 @@ async def get_audit_logs(
     session: Session = Depends(get_db_session),
     offset: int = 0,
     limit: int = Query(default=100, lte=100),
-    user_id: Optional[str] = None,
-    action: Optional[str] = None,
-    resource: Optional[str] = None,
-    status_code: Optional[int] = None,
-    ip_address: Optional[str] = None,
-    username: Optional[str] = None,
-    name: Optional[str] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    user_id: str | None = None,
+    action: str | None = None,
+    resource: str | None = None,
+    status_code: int | None = None,
+    ip_address: str | None = None,
+    username: str | None = None,
+    name: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ):
     """
     Get audit logs with filtering and pagination.
@@ -193,7 +194,7 @@ async def get_audit_logs(
     # Apply filters
     filters = []
     if user_id:
-        from sqlalchemy import cast, String
+        from sqlalchemy import String, cast
 
         filters.append(cast(AuditLog.user_id, String).ilike(f"%{user_id}%"))
     if username:

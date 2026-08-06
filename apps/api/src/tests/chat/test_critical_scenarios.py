@@ -1,15 +1,16 @@
 """Critical end-to-end tests for chat system."""
 
-import pytest
-from sqlmodel import Session
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
+import pytest
+from sqlmodel import Session
+
+from src.db.chat.messages import MessageCreate
+from src.db.organizations import Organization
+from src.db.users import User
 from src.services.chat.conversation_service import ConversationService
 from src.services.chat.message_service import MessageService, ReadReceiptService
-from src.db.chat.messages import MessageCreate
-from src.db.users import User
-from src.db.organizations import Organization
 
 
 class TestCriticalChatFlows:
@@ -71,6 +72,7 @@ class TestCriticalChatFlows:
 
         # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
         from sqlmodel import select
+
         from src.db.chat.messages import Message
 
         db_message2 = session.exec(
@@ -325,8 +327,8 @@ class TestCriticalChatFlows:
         instructor_user: User,
     ):
         """Test that conversations are ordered by most recent message."""
-        from src.db.users import User
         from src.db.user_organizations import UserOrganization
+        from src.db.users import User
 
         # Create multiple instructors for multiple conversations
         instructors = []
@@ -338,15 +340,16 @@ class TestCriticalChatFlows:
                 password="hashed",
                 first_name="Instructor",
                 last_name=f"Number{i}",
-                creation_date=str(datetime.utcnow()),
-                update_date=str(datetime.utcnow()),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
             session.add(instructor)
             session.commit()
             session.refresh(instructor)
 
-            from src.db.roles import Role
             from sqlmodel import select
+
+            from src.db.roles import Role
 
             instructor_role = session.exec(
                 select(Role).where(Role.name == "Instructor")
@@ -356,8 +359,8 @@ class TestCriticalChatFlows:
                 user_id=instructor.id,
                 org_id=org.id,
                 role_id=instructor_role.id,
-                creation_date=str(datetime.utcnow()),
-                update_date=str(datetime.utcnow()),
+                creation_date=str(datetime.now(UTC)),
+                update_date=str(datetime.now(UTC)),
             )
             session.add(user_org)
             session.commit()
@@ -470,7 +473,7 @@ class TestCriticalErrorScenarios:
             reply_to_message_id=0,  # Critical: This should not cause error
         )
 
-        # Should not raise exception
+        # Should not raise
         message = await MessageService.create_message(
             db=session,
             message_data=message_data,
@@ -480,6 +483,7 @@ class TestCriticalErrorScenarios:
 
         # MessageRead doesn't expose reply_to_message_id, verify via DB lookup
         from sqlmodel import select
+
         from src.db.chat.messages import Message
 
         db_message = session.exec(

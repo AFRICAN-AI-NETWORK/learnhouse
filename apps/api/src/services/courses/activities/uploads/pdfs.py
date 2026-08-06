@@ -14,5 +14,5 @@ async def upload_pdf(pdf_file, activity_uuid, org_uuid, course_uuid):
             f"documentpdf.{pdf_format}",
         )
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {"message": "There was an error uploading the file"}

@@ -1,20 +1,22 @@
+from datetime import UTC, datetime
+from typing import Any
+
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
-from typing import Any
-from src.db.courses.courses import Course, CourseRead, AuthorWithRole
+
+from src.db.courses.courses import AuthorWithRole, Course, CourseRead
+from src.db.organizations import Organization
 from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import PaymentsProduct
 from src.db.payments.payments_users import (
-    PaymentsUser,
     PaymentStatusEnum,
+    PaymentsUser,
     ProviderSpecificData,
 )
-from src.db.payments.payments_products import PaymentsProduct
 from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
-from src.db.users import InternalUser, PublicUser, AnonymousUser, User, UserRead
-from src.db.organizations import Organization
-from src.services.orgs.orgs import rbac_check
+from src.db.users import AnonymousUser, InternalUser, PublicUser, User, UserRead
 from src.security.features_utils.usage import check_limits_with_usage
-from datetime import datetime
+from src.services.orgs.orgs import rbac_check
 
 
 async def create_payment_user(
@@ -52,20 +54,17 @@ async def create_payment_user(
     # Handle provider-specific data
     if isinstance(provider_data, dict):
         provider_specific_data = ProviderSpecificData(
-            paystack_customer=provider_data.get("paystack_customer")
-            if "paystack_customer" in provider_data
-            else provider_data,
-            paystack_customer_code=provider_data.get("paystack_customer_code")
-            if "paystack_customer_code" in provider_data
+            flutterwave_customer=provider_data.get("flutterwave_customer")
+            if "flutterwave_customer" in provider_data
             else None,
-            paystack_transaction_reference=provider_data.get(
-                "paystack_transaction_reference"
-            )
-            if "paystack_transaction_reference" in provider_data
+            customer_code=provider_data.get("customer_code")
+            if "customer_code" in provider_data
             else None,
-            paystack_access_code=provider_data.get("paystack_access_code")
-            if "paystack_access_code" in provider_data
+            flutterwave_tx_ref=provider_data.get("flutterwave_tx_ref")
+            if "flutterwave_tx_ref" in provider_data
             else None,
+            # Flutterwave doesn't have an equivalent of access_code typically, but if needed we can add it here.
+            # We removed paystack_access_code.
         )
     else:
         provider_specific_data = ProviderSpecificData()
@@ -174,7 +173,7 @@ async def update_payment_user_status(
 
     # Update status
     payment_user.status = status
-    payment_user.update_date = datetime.now()
+    payment_user.update_date = datetime.now(UTC)
 
     db_session.add(payment_user)
     db_session.commit()
@@ -341,8 +340,20 @@ async def get_owned_courses(
             for resource_author, user in author_results
         ]
 
+        # Check if course is paid
+        payment_statement = (
+            select(PaymentsCourse)
+            .join(
+                PaymentsProduct, PaymentsCourse.payment_product_id == PaymentsProduct.id
+            )
+            .where(PaymentsCourse.course_id == course.id, PaymentsProduct.amount > 0)
+        )
+        is_paid = db_session.exec(payment_statement).first() is not None
+
         # Create CourseRead object
-        course_read = CourseRead(**course.model_dump(), authors=authors)
+        course_read = CourseRead(
+            **course.model_dump(), authors=authors, is_paid=is_paid
+        )
         course_reads.append(course_read)
 
     return course_reads

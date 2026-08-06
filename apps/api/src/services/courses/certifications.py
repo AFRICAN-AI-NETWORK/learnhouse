@@ -1,22 +1,63 @@
-from typing import List
+from datetime import UTC, datetime
 from uuid import uuid4
-from datetime import datetime
-from sqlmodel import Session, select
+
 from fastapi import HTTPException, Request
+from sqlmodel import Session, select
+
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentUserSubmission,
+    AssignmentUserSubmissionStatus,
+)
 from src.db.courses.certifications import (
-    Certifications,
-    CertificationCreate,
-    CertificationRead,
-    CertificationUpdate,
     CertificateUser,
     CertificateUserRead,
+    CertificationCreate,
+    CertificationRead,
+    Certifications,
+    CertificationUpdate,
 )
-from src.db.courses.courses import Course
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.courses import Course
 from src.db.trail_runs import StatusEnum, TrailRun
 from src.db.trail_steps import TrailStep
-from src.db.users import PublicUser, AnonymousUser
+from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_certifications
+
+
+def has_ungraded_required_assignments(
+    user_id: int, course_id: int, db_session: Session
+) -> bool:
+    """
+    True if the course has any assignment flagged required_for_certificate
+    that this user hasn't been graded on yet (missing submission, or
+    submitted but not yet GRADED).
+
+    Kept as its own function — separate from the completion/email-verified
+    checks — so the capstone gate can be tested and reasoned about on its
+    own.
+    """
+    required_assignments = db_session.exec(
+        select(Assignment).where(
+            Assignment.course_id == course_id,
+            Assignment.required_for_certificate == True,
+        )
+    ).all()
+
+    for assignment in required_assignments:
+        submission = db_session.exec(
+            select(AssignmentUserSubmission).where(
+                AssignmentUserSubmission.assignment_id == assignment.id,
+                AssignmentUserSubmission.user_id == user_id,
+            )
+        ).first()
+        if (
+            not submission
+            or submission.submission_status != AssignmentUserSubmissionStatus.GRADED
+        ):
+            return True
+
+    return False
 
 
 ####################################################
@@ -52,8 +93,8 @@ async def create_certification(
         course_id=certification_object.course_id,
         config=certification_object.config or {},
         certification_uuid=str(f"certification_{uuid4()}"),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # Insert certification in DB
@@ -106,7 +147,7 @@ async def get_certifications_by_course(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[CertificationRead]:
+) -> list[CertificationRead]:
     """Get all certifications for a course"""
 
     # Get course for RBAC check
@@ -175,7 +216,7 @@ async def update_certification(
             setattr(certification, var, value)
 
     # Update the update_date
-    certification.update_date = str(datetime.now())
+    certification.update_date = str(datetime.now(UTC))
 
     db_session.add(certification)
     db_session.commit()
@@ -235,6 +276,7 @@ async def create_certificate_user(
     certification_id: int,
     db_session: Session,
     current_user: PublicUser | AnonymousUser | None = None,
+    grade_percentage: float | None = None,
 ) -> CertificateUserRead:
     """
     Create a certificate user link
@@ -243,6 +285,10 @@ async def create_certificate_user(
     - This function should only be called by authorized users (course owners, instructors, or system)
     - When called from check_course_completion_and_create_certificate, it's a system operation
     - When called directly, requires proper RBAC checks
+
+    ``grade_percentage`` is the computed course grade persisted at issuance time
+    (may be None for courses with no graded activities). This is the only place
+    ``CertificateUser`` rows are created, so grade persistence is contained here.
     """
 
     # Check if certification exists
@@ -286,9 +332,9 @@ async def create_certificate_user(
         )
 
     # Generate readable certificate user UUID
-    current_year = datetime.now().year
-    current_month = datetime.now().month
-    current_day = datetime.now().day
+    current_year = datetime.now(UTC).year
+    current_month = datetime.now(UTC).month
+    current_day = datetime.now(UTC).day
 
     # Get user to extract user_uuid
     from src.db.users import User
@@ -331,8 +377,9 @@ async def create_certificate_user(
         user_id=user_id,
         certification_id=certification_id,
         user_certification_uuid=user_certification_uuid,
-        created_at=str(datetime.now()),
-        updated_at=str(datetime.now()),
+        grade_percentage=grade_percentage,
+        created_at=str(datetime.now(UTC)),
+        updated_at=str(datetime.now(UTC)),
     )
 
     db_session.add(certificate_user)
@@ -347,7 +394,7 @@ async def get_user_certificates_for_course(
     course_uuid: str,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[dict]:
+) -> list[dict]:
     """Get all certificates for a user in a specific course with certification details"""
 
     # Check if course exists
@@ -399,6 +446,43 @@ async def get_user_certificates_for_course(
                 }
             )
 
+    # Lazy catch-up: if the user has completed the course but no certificate
+    # was issued (e.g. certification was configured after course completion),
+    # trigger certificate creation now and return the newly created record.
+    if not result and course.id:
+        try:
+            created = await check_course_completion_and_create_certificate(
+                request, current_user.id, course.id, db_session
+            )
+            if created:
+                # Re-query for the newly created certificate
+                for cert_id in certification_ids:
+                    statement = select(CertificateUser).where(
+                        CertificateUser.user_id == current_user.id,
+                        CertificateUser.certification_id == cert_id,
+                    )
+                    cert_user = db_session.exec(statement).first()
+                    if cert_user:
+                        statement = select(Certifications).where(
+                            Certifications.id == cert_id
+                        )
+                        certification = db_session.exec(statement).first()
+                        result.append(
+                            {
+                                "certificate_user": CertificateUserRead(
+                                    **cert_user.model_dump()
+                                ),
+                                "certification": CertificationRead(
+                                    **certification.model_dump()
+                                )
+                                if certification
+                                else None,
+                            }
+                        )
+        except Exception:  # noqa: BLE001
+            # Don't fail the read if auto-creation fails
+            pass
+
     return result
 
 
@@ -445,12 +529,12 @@ def sync_course_trail_run_completion_status(
 
     if is_complete and trail_run.status != StatusEnum.STATUS_COMPLETED:
         trail_run.status = StatusEnum.STATUS_COMPLETED
-        trail_run.update_date = str(datetime.now())
+        trail_run.update_date = str(datetime.now(UTC))
         db_session.add(trail_run)
         db_session.commit()
     elif not is_complete and trail_run.status == StatusEnum.STATUS_COMPLETED:
         trail_run.status = StatusEnum.STATUS_IN_PROGRESS
-        trail_run.update_date = str(datetime.now())
+        trail_run.update_date = str(datetime.now(UTC))
         db_session.add(trail_run)
         db_session.commit()
 
@@ -491,16 +575,31 @@ async def check_course_completion_and_create_certificate(
         if not user or not user.email_verified:
             return False
 
+        # Capstone gate: any assignment flagged required_for_certificate must
+        # be graded (not just submitted) before a certificate can issue.
+        if has_ungraded_required_assignments(user_id, course_id, db_session):
+            return False
+
         # All activities completed, check if certification exists for this course
         statement = select(Certifications).where(Certifications.course_id == course_id)
         certification = db_session.exec(statement).first()
 
         if certification and certification.id:
+            # Compute the performance-weighted course grade at issuance time.
+            # May be None when the course has no graded (points > 0) activities.
+            from src.services.courses.grade import compute_course_grade
+
+            grade_result = compute_course_grade(user_id, course_id, db_session)
+
             # SECURITY: Create certificate user link (system operation, no RBAC needed here)
             # This is called from mark_activity_as_done_for_user which already has proper RBAC checks
             try:
                 await create_certificate_user(
-                    request, user_id, certification.id, db_session
+                    request,
+                    user_id,
+                    certification.id,
+                    db_session,
+                    grade_percentage=grade_result.grade_percentage,
                 )
                 return True
             except HTTPException as e:
@@ -508,8 +607,7 @@ async def check_course_completion_and_create_certificate(
                     # Certificate already exists, which is fine
                     return True
                 else:
-                    raise e
-
+                    raise
     return False
 
 
@@ -561,10 +659,12 @@ async def get_certificate_by_user_certification_uuid(
     from src.db.users import User
 
     statement = select(User).where(User.id == certificate_user.user_id)
+    user = db_session.exec(statement).first()
 
     return {
         "certificate_user": CertificateUserRead(**certificate_user.model_dump()),
         "certification": CertificationRead(**certification.model_dump()),
+        "user": PublicUser(**user.model_dump()) if user else None,
         "course": {
             "id": course.id,
             "course_uuid": course.course_uuid,
@@ -579,7 +679,7 @@ async def get_all_user_certificates(
     request: Request,
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
-) -> List[dict]:
+) -> list[dict]:
     """Get all certificates for the current user with complete linked information"""
 
     # Get all certificate users for this user

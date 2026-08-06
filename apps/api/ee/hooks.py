@@ -1,14 +1,13 @@
 import asyncio
 import logging
-from fastapi import FastAPI, APIRouter, Depends
+
+from fastapi import APIRouter, Depends, FastAPI
 from sqlmodel import Session
-from src.core.events.database import engine
+
 from ee.middleware.audit import EEAuditLogMiddleware
+from ee.routers import audit_logs, cloud_internal, info, payments
 from ee.services.audit import flush_audit_logs_to_db
-from ee.routers import cloud_internal
-from ee.routers import payments
-from ee.routers import info
-from ee.routers import audit_logs
+from src.core.events.database import engine
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ def on_startup(app: FastAPI):
             try:
                 with Session(engine) as session:
                     flush_audit_logs_to_db(session)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"EE Audit log flusher error: {e}")
 
     asyncio.create_task(audit_log_flusher())

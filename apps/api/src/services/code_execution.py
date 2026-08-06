@@ -1,10 +1,10 @@
-import httpx
+import asyncio
+import os
 import subprocess  # nosec B404
 import tempfile
-import os
 import time
-import asyncio
-from typing import List, Dict, Optional
+
+import httpx
 from pydantic import BaseModel
 
 PISTON_URL = os.getenv("PISTON_URL", "http://localhost:2000")
@@ -24,7 +24,7 @@ class CodeExecutionResponse(BaseModel):
     stderr: str
     exit_code: int = 0
     execution_time_ms: int = 0
-    test_results: Optional[List[TestCaseResult]] = None
+    test_results: list[TestCaseResult] | None = None
     passed_count: int = 0
     total_count: int = 0
 
@@ -51,7 +51,7 @@ def run_python_locally(code: str, stdin: str = "", timeout: int = 10) -> dict:
         }
     except subprocess.TimeoutExpired:
         return {"stdout": "", "stderr": "Execution timed out", "exit_code": 1}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {"stdout": "", "stderr": str(e), "exit_code": 1}
     finally:
         os.unlink(tmp_path)
@@ -63,9 +63,11 @@ async def run_piston_execution(
     code: str,
     stdin: str = "",
     client_ip: str = "unknown",
-    additional_files: List[Dict] = [],
+    additional_files: list[dict] | None = None,
 ):
     # Map language to proper file extension
+    if additional_files is None:
+        additional_files = []
     ext_map = {
         "python": "py",
         "javascript": "js",
@@ -110,7 +112,7 @@ async def run_piston_execution(
                         continue
                     return None
                 return response.json()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(
                     f"[Piston] Execution error for {language} on attempt {attempt + 1}: {e}"
                 )
@@ -123,11 +125,15 @@ async def run_piston_execution(
 async def execute_and_grade(
     language: str,
     code: str,
-    test_cases: List[Dict] = [],
+    test_cases: list[dict] | None = None,
     stdin: str = "",
     client_ip: str = "unknown",
-    dataset_files: List[Dict] = [],
+    dataset_files: list[dict] | None = None,
 ):
+    if dataset_files is None:
+        dataset_files = []
+    if test_cases is None:
+        test_cases = []
     version_map = {
         "python": "3.10.0",
         "javascript": "*",

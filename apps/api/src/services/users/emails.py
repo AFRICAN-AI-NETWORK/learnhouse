@@ -1,4 +1,5 @@
 from pydantic import EmailStr
+
 from src.db.organizations import OrganizationRead
 from src.db.users import UserRead
 from src.services.email.utils import send_email
@@ -8,7 +9,7 @@ def send_account_creation_email(
     user: UserRead,
     email: EmailStr,
     organization: OrganizationRead = None,
-    verification_token: str = None,
+    verification_token: str | None = None,
 ):
     """
     Send welcome email to new users with optional email verification

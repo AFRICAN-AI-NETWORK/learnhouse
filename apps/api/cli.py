@@ -1,9 +1,11 @@
 import os
 from typing import Annotated
+
+import typer
 from pydantic import EmailStr
 from sqlalchemy import create_engine
-from sqlmodel import SQLModel, Session
-import typer
+from sqlmodel import Session, SQLModel
+
 from config.config import get_learnhouse_config
 from src.db.organizations import OrganizationCreate
 from src.db.users import UserCreate
@@ -79,7 +81,7 @@ def install(
 
         # Show the user how to login
         print("Installation completed ✅")
-        print("")
+        print()
         print("Login with the following credentials:")
         print("email: " + email)
         print("password: (the password you set in LEARNHOUSE_INITIAL_ADMIN_PASSWORD)")
@@ -121,7 +123,7 @@ def install(
 
         # Show the user how to login
         print("Installation completed ✅")
-        print("")
+        print()
         print("Login with the following credentials:")
         print("email: " + email)
         print("password: The password you entered")

@@ -1,14 +1,14 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
+
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey
+from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
 
 # PaymentsConfig
 class PaymentProviderEnum(str, Enum):
-    PAYSTACK = "paystack"
+    FLUTTERWAVE = "flutterwave"
 
 
 class PaymentProviderEnumType(TypeDecorator):
@@ -18,9 +18,9 @@ class PaymentProviderEnumType(TypeDecorator):
     cache_ok = True
 
     def __init__(self):
-        # Only include 'paystack' since that's the only value in the database
+        # Only include 'flutterwave' since that's the only value in the database
         super().__init__(
-            "paystack",  # Only paystack is valid in the database enum
+            "flutterwave",  # Only flutterwave is valid in the database enum
             name="paymentproviderenum",
             create_type=True,
         )
@@ -30,7 +30,7 @@ class PaymentProviderEnumType(TypeDecorator):
         if value is None:
             return None
         if isinstance(value, PaymentProviderEnum):
-            return value.value  # Return 'paystack', not 'PAYSTACK'
+            return value.value  # Return 'flutterwave', not 'FLUTTERWAVE'
         return value
 
     def process_result_value(self, value, dialect):
@@ -48,7 +48,7 @@ class PaymentsConfigBase(SQLModel):
     enabled: bool = True
     active: bool = False
     provider: PaymentProviderEnum = Field(
-        default=PaymentProviderEnum.PAYSTACK,
+        default=PaymentProviderEnum.FLUTTERWAVE,
         sa_column=Column(PaymentProviderEnumType(), nullable=False),
     )
     provider_specific_id: str | None = None
@@ -58,12 +58,12 @@ class PaymentsConfigBase(SQLModel):
 class PaymentsConfig(PaymentsConfigBase, table=True):
     __tablename__ = "payments_config"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("organization.id", ondelete="CASCADE"))
     )
-    creation_date: datetime = Field(default=datetime.now())
-    update_date: datetime = Field(default=datetime.now())
+    creation_date: datetime = Field(default=datetime.now(UTC))
+    update_date: datetime = Field(default=datetime.now(UTC))
 
 
 class PaymentsConfigCreate(PaymentsConfigBase):
@@ -71,10 +71,10 @@ class PaymentsConfigCreate(PaymentsConfigBase):
 
 
 class PaymentsConfigUpdate(PaymentsConfigBase):
-    enabled: Optional[bool] = None
-    active: Optional[bool] = None
-    provider_config: Optional[dict] = None
-    provider_specific_id: Optional[str] = None
+    enabled: bool | None = None
+    active: bool | None = None
+    provider_config: dict | None = None
+    provider_specific_id: str | None = None
 
 
 class PaymentsConfigRead(PaymentsConfigBase):

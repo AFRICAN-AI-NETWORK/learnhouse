@@ -1,4 +1,4 @@
-from typing import Optional
+
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
@@ -11,7 +11,7 @@ class CertificationBase(SQLModel):
 
 
 class Certifications(CertificationBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     certification_uuid: str = Field(unique=True)
     course_id: int = Field(
         sa_column=Column("course_id", ForeignKey("course.id", ondelete="CASCADE"))
@@ -27,7 +27,7 @@ class CertificationCreate(SQLModel):
 
 
 class CertificationUpdate(SQLModel):
-    config: Optional[dict] = None
+    config: dict | None = None
 
 
 class CertificationRead(SQLModel):
@@ -52,7 +52,7 @@ class CertificateUserBase(SQLModel):
 
 
 class CertificateUser(CertificateUserBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(
         sa_column=Column("user_id", ForeignKey("user.id", ondelete="CASCADE"))
     )
@@ -62,6 +62,8 @@ class CertificateUser(CertificateUserBase, table=True):
         )
     )
     user_certification_uuid: str
+    # Computed course grade (0-100) at the moment the certificate was issued.
+    grade_percentage: float | None = Field(default=None)
     created_at: str = ""
     updated_at: str = ""
 
@@ -77,11 +79,13 @@ class CertificateUserRead(SQLModel):
     user_id: int
     certification_id: int
     user_certification_uuid: str
+    grade_percentage: float | None = None
     created_at: str
     updated_at: str
 
 
 class CertificateUserUpdate(SQLModel):
-    user_id: Optional[int] = None
-    certification_id: Optional[int] = None
-    user_certification_uuid: Optional[str] = None
+    user_id: int | None = None
+    certification_id: int | None = None
+    user_certification_uuid: str | None = None
+    grade_percentage: float | None = None

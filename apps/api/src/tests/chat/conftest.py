@@ -1,17 +1,18 @@
 """Fixtures for chat tests."""
 
+from datetime import UTC, datetime
+from uuid import uuid4
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
-from datetime import datetime
-from uuid import uuid4
 
-from src.db.users import User
-from src.db.organizations import Organization
-from src.db.user_organizations import UserOrganization
-from src.db.roles import Role
 from src.db.chat.conversations import Conversation
 from src.db.chat.messages import Message
+from src.db.organizations import Organization
+from src.db.roles import Role
+from src.db.user_organizations import UserOrganization
+from src.db.users import User
 
 
 @pytest.fixture(name="session", scope="function")
@@ -35,8 +36,8 @@ def organization_fixture(session: Session):
         name="Test Organization",
         slug="test-org",
         email="test@testorg.com",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(org)
     session.commit()
@@ -51,8 +52,8 @@ def student_role_fixture(session: Session):
         name="Student",
         description="Student role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -67,8 +68,8 @@ def instructor_role_fixture(session: Session):
         name="Instructor",
         description="Instructor role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -83,8 +84,8 @@ def admin_role_fixture(session: Session):
         name="Admin",
         description="Admin role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -102,8 +103,8 @@ def student_user_fixture(session: Session, org: Organization, student_role: Role
         password="hashed_password",
         first_name="Student",
         last_name="Test",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -114,8 +115,8 @@ def student_user_fixture(session: Session, org: Organization, student_role: Role
         user_id=user.id,
         org_id=org.id,
         role_id=student_role.id,
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user_org)
     session.commit()
@@ -133,8 +134,8 @@ def instructor_user_fixture(session: Session, org: Organization, instructor_role
         password="hashed_password",
         first_name="Instructor",
         last_name="Test",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -145,8 +146,8 @@ def instructor_user_fixture(session: Session, org: Organization, instructor_role
         user_id=user.id,
         org_id=org.id,
         role_id=instructor_role.id,
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user_org)
     session.commit()
@@ -164,8 +165,8 @@ def admin_user_fixture(session: Session, org: Organization, admin_role: Role):
         password="hashed_password",
         first_name="Admin",
         last_name="Test",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -176,8 +177,8 @@ def admin_user_fixture(session: Session, org: Organization, admin_role: Role):
         user_id=user.id,
         org_id=org.id,
         role_id=admin_role.id,
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user_org)
     session.commit()
@@ -195,8 +196,8 @@ def student_user_two_fixture(session: Session, org: Organization, student_role: 
         password="hashed_password",
         first_name="Student",
         last_name="Two",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -207,8 +208,8 @@ def student_user_two_fixture(session: Session, org: Organization, student_role: 
         user_id=user.id,
         org_id=org.id,
         role_id=student_role.id,
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user_org)
     session.commit()
@@ -226,8 +227,8 @@ def teaching_assistant_role_fixture(session: Session):
         name="Teaching Assistant",
         description="Teaching Assistant role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -242,8 +243,8 @@ def student_success_coordinator_role_fixture(session: Session):
         name="Students Success Coordinator",
         description="Students Success Coordinator role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -258,8 +259,8 @@ def student_mentor_role_fixture(session: Session):
         name="Students Mentor",
         description="Students Mentor role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -274,8 +275,8 @@ def community_manager_role_fixture(session: Session):
         name="Community Manager",
         description="Community Manager role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -290,8 +291,8 @@ def lead_instructor_role_fixture(session: Session):
         name="Lead Instructor",
         description="Lead Instructor role",
         role_uuid=f"role_{uuid4()}",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(role)
     session.commit()
@@ -315,8 +316,8 @@ def _make_user_with_role(
         password="hashed_password",
         first_name=first_name,
         last_name="Test",
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user)
     session.commit()
@@ -325,8 +326,8 @@ def _make_user_with_role(
         user_id=user.id,
         org_id=org.id,
         role_id=role.id,
-        creation_date=str(datetime.utcnow()),
-        update_date=str(datetime.utcnow()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     session.add(user_org)
     session.commit()
@@ -413,8 +414,8 @@ def conversation_fixture(
         org_id=org.id,
         participant_one_id=min(student_user.id, instructor_user.id),
         participant_two_id=max(student_user.id, instructor_user.id),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     session.add(conversation)
     session.commit()
@@ -437,8 +438,8 @@ def message_fixture(
         receiver_id=instructor_user.id,
         content="Test message",
         message_type="text",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     session.add(message)
     session.commit()

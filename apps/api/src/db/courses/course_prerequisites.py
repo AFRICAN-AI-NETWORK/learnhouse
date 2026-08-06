@@ -1,10 +1,10 @@
-from typing import Optional
+
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from sqlalchemy import Column, Integer, ForeignKey
 
 
 class CoursePrerequisite(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     course_id: int = Field(
         sa_column=Column(Integer, ForeignKey("course.id", ondelete="CASCADE"))
     )

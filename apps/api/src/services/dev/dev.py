@@ -1,13 +1,11 @@
 from fastapi import HTTPException
+
 from config.config import get_learnhouse_config
 
 
 def isDevModeEnabled():
     config = get_learnhouse_config()
-    if config.general_config.development_mode:
-        return True
-    else:
-        return False
+    return bool(config.general_config.development_mode)
 
 
 def isDevModeEnabledOrRaise():

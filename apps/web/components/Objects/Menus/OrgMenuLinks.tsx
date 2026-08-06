@@ -57,13 +57,7 @@ function MenuLinks(props: {
           variant={variant}
           collapsed={props.collapsed}
         />
-        <LinkItem
-          link="/pricing"
-          type="pricing"
-          orgslug={props.orgslug}
-          variant={variant}
-          collapsed={props.collapsed}
-        />
+
         <LinkItem
           link="/contact"
           type="contact"

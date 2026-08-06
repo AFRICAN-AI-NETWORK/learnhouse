@@ -1,17 +1,15 @@
 """Unit tests for waitlist user service"""
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
-from fastapi import HTTPException
 
-from src.services.users.waitlist import (
-    create_waitlist_user,
-    get_waitlist_users,
-)
-from src.db.users import UserCreate
-from src.db.waitlist import WaitlistStatusEnum, WaitlistCoursePreference
+import pytest
+from fastapi import HTTPException
 from sqlmodel import select
+
+from src.db.users import UserCreate
+from src.db.waitlist import WaitlistCoursePreference, WaitlistStatusEnum
+from src.services.users.waitlist import create_waitlist_user, get_waitlist_users
 
 
 class TestCreateWaitlistUser:
@@ -140,7 +138,7 @@ class TestCreateWaitlistUser:
         from src.db.waitlist import WaitlistConfig
 
         # Create expired waitlist
-        past_date = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+        past_date = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
         expired_waitlist = WaitlistConfig(
             waitlist_uuid="expired-uuid",
             org_id=sample_org.id,
@@ -149,8 +147,8 @@ class TestCreateWaitlistUser:
             interest_category="Test",
             launch_datetime=past_date,
             status=WaitlistStatusEnum.ACTIVE.value,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(expired_waitlist)
         db_session.commit()
@@ -335,7 +333,7 @@ class TestGetWaitlistUsers:
         # Create new waitlist with no users
         from src.db.waitlist import WaitlistConfig
 
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=30)).isoformat()
         empty_waitlist = WaitlistConfig(
             waitlist_uuid="empty-waitlist-uuid",
             org_id=sample_waitlist_config.org_id,
@@ -344,8 +342,8 @@ class TestGetWaitlistUsers:
             interest_category="Test",
             launch_datetime=future_date,
             status=WaitlistStatusEnum.ACTIVE.value,
-            creation_date=datetime.now(timezone.utc).isoformat(),
-            update_date=datetime.now(timezone.utc).isoformat(),
+            creation_date=datetime.now(UTC).isoformat(),
+            update_date=datetime.now(UTC).isoformat(),
         )
         db_session.add(empty_waitlist)
         db_session.commit()

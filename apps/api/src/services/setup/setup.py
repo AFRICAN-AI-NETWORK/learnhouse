@@ -1,28 +1,31 @@
-from datetime import datetime
 import json
+from datetime import UTC, datetime
 from uuid import uuid4
+
 from fastapi import HTTPException
 from sqlmodel import Session, select
+
 from src.db.organization_config import (
     AIOrgConfig,
-    APIOrgConfig,
     AnalyticsOrgConfig,
+    APIOrgConfig,
     AssignmentOrgConfig,
     CollaborationOrgConfig,
     CourseOrgConfig,
     DiscussionOrgConfig,
     MemberOrgConfig,
+    OrganizationConfig,
+    OrganizationConfigBase,
     OrgCloudConfig,
     OrgFeatureConfig,
     OrgGeneralConfig,
-    OrganizationConfig,
-    OrganizationConfigBase,
     PaymentOrgConfig,
     StorageOrgConfig,
     UserGroupOrgConfig,
 )
 from src.db.organizations import Organization, OrganizationCreate
 from src.db.roles import (
+    AffiliationPermission,
     DashboardPermission,
     Permission,
     PermissionsWithOwn,
@@ -51,7 +54,7 @@ def install_default_elements(db_session: Session):
     statement = select(Role).where(Role.role_type == RoleTypeEnum.TYPE_GLOBAL)
     roles = db_session.exec(statement).all()
 
-    if roles and len(roles) == 9:
+    if roles and len(roles) == 10:
         raise HTTPException(
             status_code=409,
             detail="Default roles already exist",
@@ -122,12 +125,18 @@ def install_default_elements(db_session: Session):
                 action_update=True,
                 action_delete=True,
             ),
+            announcements=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=True,
+                action_delete=True,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
         ),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_global_maintainer = Role(
@@ -194,12 +203,18 @@ def install_default_elements(db_session: Session):
                 action_update=True,
                 action_delete=False,
             ),
+            announcements=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
         ),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_global_instructor = Role(
@@ -266,12 +281,18 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            announcements=Permission(
+                action_create=True,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=True,
             ),
         ),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_global_user = Role(
@@ -338,12 +359,95 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            announcements=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
             dashboard=DashboardPermission(
                 action_access=False,
             ),
         ),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
+    )
+
+    role_partner = Role(
+        name="Partner",
+        description="Referral partner with access to affiliation dashboard",
+        role_type=RoleTypeEnum.TYPE_GLOBAL,
+        role_uuid="partner_role",
+        id=10,
+        rights=Rights(
+            courses=PermissionsWithOwn(
+                action_create=False,
+                action_read=True,
+                action_read_own=True,
+                action_update=False,
+                action_update_own=False,
+                action_delete=True,
+                action_delete_own=True,
+            ),
+            users=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            usergroups=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            collections=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            organizations=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            coursechapters=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            activities=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            roles=Permission(
+                action_create=False,
+                action_read=False,
+                action_update=False,
+                action_delete=False,
+            ),
+            communications=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            announcements=Permission(
+                action_create=False,
+                action_read=True,
+                action_update=False,
+                action_delete=False,
+            ),
+            dashboard=DashboardPermission(action_access=False),
+            affiliation=AffiliationPermission(action_read=True),
+        ),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # ── Shared rights blocks reused by support roles ───────────────────────────
@@ -401,6 +505,12 @@ def install_default_elements(db_session: Session):
             action_delete=False,
         ),
         communications=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
+        announcements=Permission(
             action_create=False,
             action_read=True,
             action_update=False,
@@ -467,6 +577,12 @@ def install_default_elements(db_session: Session):
             action_update=True,
             action_delete=False,
         ),
+        announcements=Permission(
+            action_create=False,
+            action_read=True,
+            action_update=False,
+            action_delete=False,
+        ),
         dashboard=DashboardPermission(action_access=True),
     )
 
@@ -479,8 +595,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_teaching_assistant",
         rights=_teaching_rights,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_student_success_coordinator = Role(
@@ -509,10 +625,11 @@ def install_default_elements(db_session: Session):
                 action_update=True,
                 action_delete=False,
             ),
+            announcements=_read_only_rights.announcements,
             dashboard=DashboardPermission(action_access=True),
         ),
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_student_mentor = Role(
@@ -522,8 +639,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_student_mentor",
         rights=_read_only_rights,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_community_manager = Role(
@@ -533,8 +650,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_community_manager",
         rights=_teaching_rights,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     role_lead_instructor = Role(
@@ -544,8 +661,8 @@ def install_default_elements(db_session: Session):
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_lead_instructor",
         rights=_teaching_rights,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     # Serialize rights to JSON
@@ -553,6 +670,7 @@ def install_default_elements(db_session: Session):
     role_global_maintainer.rights = role_global_maintainer.rights.dict()  # type: ignore
     role_global_instructor.rights = role_global_instructor.rights.dict()  # type: ignore
     role_global_user.rights = role_global_user.rights.dict()  # type: ignore
+    role_partner.rights = role_partner.rights.dict()  # type: ignore
     role_teaching_assistant.rights = role_teaching_assistant.rights.dict()  # type: ignore
     role_student_success_coordinator.rights = (
         role_student_success_coordinator.rights.dict()
@@ -566,6 +684,7 @@ def install_default_elements(db_session: Session):
     db_session.add(role_global_maintainer)
     db_session.add(role_global_instructor)
     db_session.add(role_global_user)
+    db_session.add(role_partner)
     db_session.add(role_teaching_assistant)
     db_session.add(role_student_success_coordinator)
     db_session.add(role_student_mentor)
@@ -587,8 +706,8 @@ def install_create_organization(org_object: OrganizationCreate, db_session: Sess
 
     # Complete the org object
     org.org_uuid = f"org_{uuid4()}"
-    org.creation_date = str(datetime.now())
-    org.update_date = str(datetime.now())
+    org.creation_date = str(datetime.now(UTC))
+    org.update_date = str(datetime.now(UTC))
 
     db_session.add(org)
     db_session.commit()
@@ -627,8 +746,8 @@ def install_create_organization(org_object: OrganizationCreate, db_session: Sess
     org_settings = OrganizationConfig(
         org_id=int(org.id if org.id else 0),
         config=org_config,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(org_settings)
@@ -647,8 +766,8 @@ def install_create_organization_user(
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
-    user.creation_date = str(datetime.now())
-    user.update_date = str(datetime.now())
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Verifications
 
@@ -703,8 +822,8 @@ def install_create_organization_user(
         user_id=user.id if user.id else 0,
         org_id=org_id or 0,
         role_id=1,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_organization)

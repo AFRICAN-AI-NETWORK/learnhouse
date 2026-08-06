@@ -1,15 +1,16 @@
-from typing import List
+
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
+
 from src.core.events.database import get_db_session
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.prerequisites import (
     PrerequisiteCreate,
     PrerequisiteRead,
+    delete_course_prerequisites,
     get_course_prerequisites,
     set_course_prerequisites,
-    delete_course_prerequisites,
 )
 
 router = APIRouter()
@@ -20,7 +21,7 @@ async def api_get_course_prerequisites(
     request: Request,
     course_uuid: str,
     db_session: Session = Depends(get_db_session),
-) -> List[PrerequisiteRead]:
+) -> list[PrerequisiteRead]:
     """
     Get prerequisites for a course.
     """
@@ -34,7 +35,7 @@ async def api_set_course_prerequisites(
     prereq_data: PrerequisiteCreate,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
-) -> List[PrerequisiteRead]:
+) -> list[PrerequisiteRead]:
     """
     Set prerequisites for a course (replaces any existing).
     Requires admin/maintainer/instructor role.

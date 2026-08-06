@@ -1,15 +1,15 @@
-from typing import List
-from fastapi import APIRouter, Depends, Query, HTTPException, status
-from fastapi.responses import JSONResponse
-from sqlmodel import Session, select, func
-from sqlalchemy.orm import aliased
-from datetime import datetime
+from datetime import UTC, datetime
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import aliased
+from sqlmodel import Session, func, select
+
+from src.core.events.database import get_db_session
 from src.db.chat.conversations import Conversation
 from src.db.chat.messages import Message
-from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
 from src.db.users import User
+from src.security.auth import get_current_user
 from src.services.chat.audit import get_audit_logs
 
 router = APIRouter()
@@ -17,8 +17,8 @@ router = APIRouter()
 
 async def verify_admin_permission(current_user: User, org_id: int, db: Session) -> bool:
     """Verify user has admin privileges in the organization."""
-    from src.db.user_organizations import UserOrganization
     from src.db.roles import Role
+    from src.db.user_organizations import UserOrganization
 
     # Get user's role in organization
     user_org = db.exec(
@@ -52,7 +52,7 @@ async def verify_admin_permission(current_user: User, org_id: int, db: Session) 
     return True
 
 
-@router.get("/conversations", response_model=List[dict])
+@router.get("/conversations", response_model=list[dict])
 async def get_all_org_conversations(
     org_id: int = Query(..., description="Organization ID"),
     limit: int = Query(50, le=100, description="Number of conversations to return"),
@@ -172,7 +172,7 @@ async def export_conversation(
     if format == "json":
         export_data = {
             "conversation_uuid": conversation.conversation_uuid,
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
             "exported_by": current_user.username,
             "participants": [
                 {
@@ -209,6 +209,7 @@ async def export_conversation(
         # CSV format implementation
         import csv
         from io import StringIO
+
         from fastapi.responses import StreamingResponse
 
         output = StringIO()
@@ -252,7 +253,7 @@ async def export_conversation(
         )
 
 
-@router.get("/audit-logs", response_model=List[dict])
+@router.get("/audit-logs", response_model=list[dict])
 async def get_chat_audit_logs(
     org_id: int = Query(..., description="Organization ID"),
     action: str = Query(None, description="Filter by action type"),
@@ -326,7 +327,7 @@ async def get_chat_statistics(
         .where(Conversation.org_id == org_id)
         .where(
             Message.created_at
-            >= datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            >= datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         )
     ).one()
 

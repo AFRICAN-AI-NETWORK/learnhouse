@@ -1,4 +1,4 @@
-from typing import Optional
+
 from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
@@ -15,7 +15,7 @@ class LiveSessionRegistrationBase(SQLModel):
 
 class LiveSessionRegistration(LiveSessionRegistrationBase, table=True):
     __tablename__ = "live_session_registration"
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     creation_date: str = ""
 
     __table_args__ = (

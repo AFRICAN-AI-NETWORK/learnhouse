@@ -1,12 +1,19 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
-from src.db.courses.chapter_activities import ChapterActivity
+
+from dateutil import parser
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select
 from sqlalchemy import func
+from sqlmodel import Session, select
+
+from src.db.cohorts import Cohort, CohortEnrollment
 from src.db.courses.activities import Activity
+from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
+from src.db.courses.course_chapters import CourseChapter
+from src.db.courses.course_prerequisites import CoursePrerequisite
 from src.db.courses.courses import Course
-from src.db.trail_runs import TrailRun, TrailRunRead
+from src.db.trail_runs import StatusEnum, TrailRun, TrailRunRead
 from src.db.trail_steps import TrailStep
 from src.db.trails import Trail, TrailCreate, TrailRead
 from src.db.users import AnonymousUser, PublicUser
@@ -14,11 +21,28 @@ from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
     sync_course_trail_run_completion_status,
 )
-from src.db.courses.course_prerequisites import CoursePrerequisite
-from src.db.trail_runs import StatusEnum
-from src.db.courses.chapters import Chapter
-from src.db.courses.course_chapters import CourseChapter
-from dateutil import parser
+from src.services.courses.grade import (
+    LATE_PENALTY_MULTIPLIER,
+    get_activity_weighted_points_earned,
+    load_activity_grade_inputs,
+    normalized_assignment_score,
+)
+
+
+def get_enrolled_user_ids_for_course(course_id: int, db_session: Session) -> list[int]:
+    """
+    All user ids with an active enrollment (TrailRun) in a course.
+
+    A TrailRun is created when a user adds a course to their trail
+    (add_course_to_trail) and removed when they leave it
+    (remove_course_from_trail), so it's the same enrollment signal the rest
+    of the trail system already relies on. Used by notification fan-out for
+    "new chapter/activity" triggers.
+    """
+    statement = (
+        select(TrailRun.user_id).where(TrailRun.course_id == course_id).distinct()
+    )
+    return list(db_session.exec(statement).all())
 
 
 async def create_user_trail(
@@ -40,8 +64,8 @@ async def create_user_trail(
 
     trail = Trail.model_validate(trail_object)
 
-    trail.creation_date = str(datetime.now())
-    trail.update_date = str(datetime.now())
+    trail.creation_date = str(datetime.now(UTC))
+    trail.update_date = str(datetime.now(UTC))
     trail.org_id = trail_object.org_id
     trail.trail_uuid = str(f"trail_{uuid4()}")
 
@@ -87,6 +111,21 @@ async def get_user_trails(
         course = db_session.exec(statement).first()
         trail_run.course = course.model_dump() if course else {}
 
+        # Cohort locking info
+        cohort_enroll = db_session.exec(
+            select(CohortEnrollment).where(
+                CohortEnrollment.user_id == trail_run.user_id,
+                CohortEnrollment.course_id == trail_run.course_id,
+            )
+        ).first()
+        if cohort_enroll:
+            trail_run.is_locked = cohort_enroll.is_locked
+            cohort = db_session.exec(
+                select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)
+            ).first()
+            if cohort:
+                trail_run.cohort_start_date = cohort.start_date
+
         # Add number of activities (steps) in a course
         count_statement = (
             select(func.count())
@@ -106,7 +145,7 @@ async def get_user_trails(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -141,19 +180,34 @@ async def check_trail_presence(
     return trail
 
 
-def get_activity_points_earned(activity: Activity, is_late: bool) -> float:
+def get_completion_based_points_earned(activity: Activity, is_late: bool) -> float:
+    """
+    Flat, completion-based points for an activity that has no assignment.
+
+    Awards the activity's full point value (reduced by the late penalty when
+    applicable). Assignment-backed activities are weighted by submission score
+    instead — see src.services.courses.grade.
+    """
     points = activity.points or 0
-    return points * 0.8 if is_late else points
+    return points * LATE_PENALTY_MULTIPLIER if is_late else points
 
 
 def backfill_completed_trail_step_points(
     trail_steps: list[TrailStep],
     db_session: Session,
 ) -> None:
+    """
+    Recompute and persist ``points_earned`` for completed trail steps.
+
+    Handles both completion-based and assignment-backed (gradeable) activities
+    using the shared grade formula. To stay cheap on hot read paths, a step is
+    only written when its stored value actually drifts from the recomputed value,
+    so once values settle no further writes happen.
+    """
     updated = False
 
     for trail_step in trail_steps:
-        if not trail_step.complete or trail_step.points_earned:
+        if not trail_step.complete:
             continue
 
         activity = db_session.exec(
@@ -162,12 +216,27 @@ def backfill_completed_trail_step_points(
         if not activity or not activity.points:
             continue
 
-        trail_step.points_earned = get_activity_points_earned(
-            activity, trail_step.is_late
+        assignment, submission, task_max_sum = load_activity_grade_inputs(
+            activity, trail_step.user_id, db_session
         )
-        trail_step.update_date = str(datetime.now())
-        db_session.add(trail_step)
-        updated = True
+
+        expected_points = get_activity_weighted_points_earned(
+            activity, trail_step, assignment, submission, task_max_sum
+        )
+        normalized = normalized_assignment_score(submission, task_max_sum)
+        expected_grade = (
+            f"{normalized:.2f}" if normalized is not None else trail_step.grade
+        )
+
+        if (
+            abs((trail_step.points_earned or 0) - expected_points) > 1e-9
+            or trail_step.grade != expected_grade
+        ):
+            trail_step.points_earned = expected_points
+            trail_step.grade = expected_grade
+            trail_step.update_date = str(datetime.now(UTC))
+            db_session.add(trail_step)
+            updated = True
 
     if updated:
         db_session.commit()
@@ -211,6 +280,21 @@ async def get_user_trail_with_orgid(
         course = db_session.exec(statement).first()
         trail_run.course = course.model_dump() if course else {}
 
+        # Cohort locking info
+        cohort_enroll = db_session.exec(
+            select(CohortEnrollment).where(
+                CohortEnrollment.user_id == trail_run.user_id,
+                CohortEnrollment.course_id == trail_run.course_id,
+            )
+        ).first()
+        if cohort_enroll:
+            trail_run.is_locked = cohort_enroll.is_locked
+            cohort = db_session.exec(
+                select(Cohort).where(Cohort.id == cohort_enroll.cohort_id)
+            ).first()
+            if cohort:
+                trail_run.cohort_start_date = cohort.start_date
+
         # Add number of activities (steps) in a course
         count_statement = (
             select(func.count())
@@ -230,7 +314,7 @@ async def get_user_trail_with_orgid(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -284,8 +368,8 @@ async def add_activity_to_trail(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(trailrun)
         db_session.commit()
@@ -386,7 +470,10 @@ async def add_activity_to_trail(
                                 detail="You must complete the previous module before accessing this one.",
                             )
 
-    points_earned = get_activity_points_earned(activity, is_late)
+    # Seed completion-based points up front. For assignment-backed activities
+    # this is corrected to the submission-weighted value by the
+    # backfill_completed_trail_step_points pass below.
+    points_earned = get_completion_based_points_earned(activity, is_late)
 
     if not trailstep:
         trailstep = TrailStep(
@@ -401,8 +488,8 @@ async def add_activity_to_trail(
             user_id=user.id,
             points_earned=points_earned,
             is_late=is_late,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(trailstep)
         db_session.commit()
@@ -411,10 +498,36 @@ async def add_activity_to_trail(
         trailstep.complete = True
         trailstep.points_earned = points_earned
         trailstep.is_late = is_late
-        trailstep.update_date = str(datetime.now())
+        trailstep.update_date = str(datetime.now(UTC))
         db_session.add(trailstep)
         db_session.commit()
         db_session.refresh(trailstep)
+
+    # Cohort lock check
+    # Only enforce locks on paid courses (assuming paid courses have cohort enrollments)
+    cohort_enrollment = db_session.exec(
+        select(CohortEnrollment).where(
+            CohortEnrollment.user_id == user.id, CohortEnrollment.course_id == course.id
+        )
+    ).first()
+
+    if cohort_enrollment and cohort_enrollment.is_locked:
+        # Check if the user is an admin or editor, they bypass locks
+        is_editor = False
+        try:
+            from src.security.courses_security import courses_rbac_check
+
+            is_editor = await courses_rbac_check(
+                request, course.course_uuid, user, "update", db_session
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
+        if not is_editor:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This course is locked until your cohort begins.",
+            )
 
     # Check if all activities in the course are completed and create certificate if so
     if course and course.id:
@@ -445,7 +558,7 @@ async def add_activity_to_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -508,7 +621,7 @@ async def remove_activity_from_trail(
     trailrun = db_session.exec(statement).first()
     if trailrun and trailrun.status == StatusEnum.STATUS_COMPLETED:
         trailrun.status = StatusEnum.STATUS_IN_PROGRESS
-        trailrun.update_date = str(datetime.now())
+        trailrun.update_date = str(datetime.now(UTC))
         db_session.add(trailrun)
         db_session.commit()
 
@@ -536,7 +649,7 @@ async def remove_activity_from_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -580,7 +693,7 @@ async def add_course_to_trail(
             is_editor = await courses_rbac_check(
                 request, course.course_uuid, user, "update", db_session
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             is_editor = False
 
     if not is_editor:
@@ -642,8 +755,8 @@ async def add_course_to_trail(
             course_id=course.id if course.id is not None else 0,
             org_id=course.org_id,
             user_id=user.id,
-            creation_date=str(datetime.now()),
-            update_date=str(datetime.now()),
+            creation_date=str(datetime.now(UTC)),
+            update_date=str(datetime.now(UTC)),
         )
         db_session.add(trail_run)
         db_session.commit()
@@ -672,7 +785,7 @@ async def add_course_to_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),
@@ -750,7 +863,7 @@ async def remove_course_from_trail(
         for trail_step in trail_steps:
             statement = select(Course).where(Course.id == trail_step.course_id)
             course = db_session.exec(statement).first()
-            trail_step.data = dict(course=course)
+            trail_step.data = {"course": course}
 
     trail_read = TrailRead(
         **trail.model_dump(),

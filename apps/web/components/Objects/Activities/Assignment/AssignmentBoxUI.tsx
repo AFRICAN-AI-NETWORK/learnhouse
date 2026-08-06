@@ -7,6 +7,7 @@ import {
   FileUp,
   Forward,
   InfoIcon,
+  Link as LinkIcon,
   ListTodo,
   Save,
   Type,
@@ -16,7 +17,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useTranslation } from 'react-i18next'
 
 type AssignmentBoxProps = {
-  type: 'quiz' | 'file' | 'form' | 'code_editor'
+  type: 'quiz' | 'file' | 'form' | 'code_editor' | 'link'
   view?: 'teacher' | 'student' | 'grading' | 'custom-grading'
   maxPoints?: number
   currentPoints?: number
@@ -101,6 +102,17 @@ function AssignmentBoxUI({
                 />
                 <p className={isFocusMode ? 'text-zinc-100' : ''}>
                   {t('activities.code_editor')}
+                </p>
+              </div>
+            )}
+            {type === 'link' && (
+              <div className="flex space-x-1.5 items-center">
+                <LinkIcon
+                  size={17}
+                  className={isFocusMode ? 'text-zinc-300' : ''}
+                />
+                <p className={isFocusMode ? 'text-zinc-100' : ''}>
+                  {t('activities.link_submission')}
                 </p>
               </div>
             )}

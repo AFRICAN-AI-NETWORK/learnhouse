@@ -1,5 +1,6 @@
 import json
-from typing import Dict, Any
+from typing import Any
+
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -33,7 +34,7 @@ class YouTubeService:
 
     async def create_broadcast(
         self, title: str, description: str, start_time: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Creates a Live Broadcast and a Live Stream, then binds them.
         Returns the videoId and the Stream Key.
@@ -111,9 +112,8 @@ class YouTubeService:
             print(
                 f"An HTTP error {e.resp.status} occurred in create_broadcast: {e.content}"
             )
-            raise e
-
-    async def end_broadcast(self, video_id: str) -> Dict[str, Any]:
+            raise
+    async def end_broadcast(self, video_id: str) -> dict[str, Any]:
         """
         Transitions a Live Broadcast to the 'complete' status.
         This stops the live stream and finalizes the recording.
@@ -129,9 +129,7 @@ class YouTubeService:
             print(
                 f"An HTTP error {e.resp.status} occurred while ending broadcast: {e.content}"
             )
-            raise e
-
-
+            raise
 async def create_automated_youtube_session(
     org_credentials: str, title: str, start_time: str
 ):

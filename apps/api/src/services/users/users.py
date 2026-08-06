@@ -1,26 +1,14 @@
-from datetime import datetime, timedelta
+import os
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
+
+import jwt
 from fastapi import HTTPException, Request, UploadFile, status
 from sqlmodel import Session, select
-import jwt
-import os
-from src.security.features_utils.usage import (
-    check_limits_with_usage,
-    increase_feature_usage,
-)
-from src.services.users.usergroups import add_users_to_usergroup
-from src.services.users.emails import (
-    send_account_creation_email,
-)
-from src.services.orgs.invites import get_invite_code
-from src.services.users.avatars import upload_avatar
-from src.db.roles import Role, RoleRead
-from src.security.rbac.rbac import (
-    authorization_verify_based_on_roles_and_authorship,
-    authorization_verify_if_user_is_anon,
-)
+
 from src.db.organizations import Organization, OrganizationRead
+from src.db.roles import Role, RoleRead
 from src.db.user_organizations import UserOrganization
 from src.db.users import (
     AnonymousUser,
@@ -34,7 +22,19 @@ from src.db.users import (
     UserUpdate,
     UserUpdatePassword,
 )
+from src.security.features_utils.usage import (
+    check_limits_with_usage,
+    increase_feature_usage,
+)
+from src.security.rbac.rbac import (
+    authorization_verify_based_on_roles_and_authorship,
+    authorization_verify_if_user_is_anon,
+)
 from src.security.security import security_hash_password, security_verify_password
+from src.services.orgs.invites import get_invite_code
+from src.services.users.avatars import upload_avatar
+from src.services.users.emails import send_account_creation_email
+from src.services.users.usergroups import add_users_to_usergroup
 
 
 # JWT Verification Token Functions
@@ -43,7 +43,7 @@ def generate_verification_token(user_email: str, user_id: int, org_slug: str) ->
     secret = os.getenv(
         "JWT_VERIFICATION_TOKEN_SECRET", "your-secret-key-change-in-production"
     )
-    expiry = datetime.utcnow() + timedelta(days=7)  # Token valid for 7 days
+    expiry = datetime.now(UTC) + timedelta(days=7)  # Token valid for 7 days
 
     payload = {
         "email": user_email,
@@ -111,7 +111,7 @@ async def verify_user_email(
 
     # Mark email as verified
     user.email_verified = True
-    user.update_date = str(datetime.now())
+    user.update_date = str(datetime.now(UTC))
 
     db_session.add(user)
     db_session.commit()
@@ -140,8 +140,8 @@ async def create_user(
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
-    user.creation_date = str(datetime.now())
-    user.update_date = str(datetime.now())
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Verifications
 
@@ -207,7 +207,7 @@ async def create_user(
                 validate_and_track_referral,
             )
 
-            referral_code_obj, fraud_score = await validate_and_track_referral(
+            _referral_code_obj, fraud_score = await validate_and_track_referral(
                 request=request,
                 referred_user_id=user.id,
                 referral_code=user_object.referral_code,
@@ -229,12 +229,12 @@ async def create_user(
             from src.services.referrals.referral_tracking import logger
 
             logger.warning(f"Referral validation failed for user {user.id}: {e.detail}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Log unexpected errors but don't block signup
             from src.services.referrals.referral_tracking import logger
 
             logger.error(
-                f"Unexpected error tracking referral for user {user.id}: {str(e)}"
+                f"Unexpected error tracking referral for user {user.id}: {e!s}"
             )
 
     # Link user and organization
@@ -253,8 +253,8 @@ async def create_user(
         user_id=user.id if user.id else 0,
         org_id=int(org_id),
         role_id=target_role_id,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
 
     db_session.add(user_organization)
@@ -336,8 +336,8 @@ async def create_user_without_org(
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
-    user.creation_date = str(datetime.now())
-    user.update_date = str(datetime.now())
+    user.creation_date = str(datetime.now(UTC))
+    user.update_date = str(datetime.now(UTC))
 
     # Verifications
 
@@ -435,7 +435,7 @@ async def update_user(
     for key, value in user_data.items():
         setattr(user, key, value)
 
-    user.update_date = str(datetime.now())
+    user.update_date = str(datetime.now(UTC))
 
     # Update user in database
     db_session.add(user)
@@ -471,10 +471,10 @@ async def update_user_avatar(
         try:
             name_in_disk = await upload_avatar(avatar_file, user.user_uuid)
             user.avatar_image = name_in_disk
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(
                 status_code=400,
-                detail=f"Avatar upload failed: {str(e)}",
+                detail=f"Avatar upload failed: {e!s}",
             )
 
     # Update user in database
@@ -514,7 +514,7 @@ async def update_user_password(
 
     # Update user
     user.password = security_hash_password(form.new_password)
-    user.update_date = str(datetime.now())
+    user.update_date = str(datetime.now(UTC))
 
     # Update user in database
     db_session.add(user)

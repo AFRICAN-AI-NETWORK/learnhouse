@@ -1,7 +1,8 @@
-from sqlmodel import Session, select
 from pydantic import EmailStr
-from src.db.user_organizations import UserOrganization
+from sqlmodel import Session, select
+
 from src.db.organizations import OrganizationCreate
+from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate
 from src.services.setup.setup import (
     install_create_organization,

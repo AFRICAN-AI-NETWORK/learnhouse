@@ -6,18 +6,17 @@ Create Date: 2026-03-16 00:00:00.000000
 
 """
 
-from typing import Sequence, Union
 import json
-from datetime import datetime
+from collections.abc import Sequence
+from datetime import UTC, datetime
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b3c4d5e6f7a8"
-down_revision: Union[str, None] = "a9b8c7d6e5f4"
-branch_labels: Union[str, Sequence[str], None] = None
+down_revision: str | None = "a9b8c7d6e5f4"
+branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
@@ -85,7 +84,7 @@ _READ_ONLY_RIGHTS = {
 
 def upgrade() -> None:
     conn = op.get_bind()
-    now = str(datetime.utcnow())
+    now = str(datetime.now(UTC))
 
     instructor_rights = conn.execute(
         sa.text("SELECT rights FROM role WHERE role_uuid = :uuid"),
@@ -120,7 +119,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    now = str(datetime.utcnow())
+    now = str(datetime.now(UTC))
 
     conn.execute(
         sa.text(

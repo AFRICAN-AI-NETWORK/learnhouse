@@ -1,16 +1,11 @@
-from typing import Literal, List
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import EmailStr
 from sqlmodel import Session
-from src.services.users.password_reset import (
-    change_password_with_reset_code,
-    send_reset_password_code,
-)
-from src.services.orgs.orgs import get_org_join_mechanism
-from src.security.auth import get_current_user
+
 from src.core.events.database import get_db_session
 from src.db.courses.courses import CourseRead
-
 from src.db.users import (
     PublicUser,
     SignupUserCreate,
@@ -20,6 +15,13 @@ from src.db.users import (
     UserUpdate,
     UserUpdatePassword,
 )
+from src.security.auth import get_current_user
+from src.services.courses.courses import get_user_courses
+from src.services.orgs.orgs import get_org_join_mechanism
+from src.services.users.password_reset import (
+    change_password_with_reset_code,
+    send_reset_password_code,
+)
 from src.services.users.users import (
     authorize_user_action,
     create_user,
@@ -28,14 +30,12 @@ from src.services.users.users import (
     delete_user_by_id,
     get_user_session,
     read_user_by_id,
-    read_user_by_uuid,
     read_user_by_username,
+    read_user_by_uuid,
     update_user,
     update_user_avatar,
     update_user_password,
 )
-from src.services.courses.courses import get_user_courses
-
 
 router = APIRouter()
 
@@ -281,7 +281,7 @@ async def api_delete_user(
     return await delete_user_by_id(request, db_session, current_user, user_id)
 
 
-@router.get("/{user_id}/courses", response_model=List[CourseRead], tags=["users"])
+@router.get("/{user_id}/courses", response_model=list[CourseRead], tags=["users"])
 async def api_get_user_courses(
     *,
     request: Request,
@@ -290,7 +290,7 @@ async def api_get_user_courses(
     user_id: int,
     page: int = 1,
     limit: int = 10,
-) -> List[CourseRead]:
+) -> list[CourseRead]:
     """
     Get courses made or contributed by a user.
     """

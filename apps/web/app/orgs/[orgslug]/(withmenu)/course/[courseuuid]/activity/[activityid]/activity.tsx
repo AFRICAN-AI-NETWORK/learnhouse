@@ -2863,8 +2863,9 @@ function AssignmentTools(props: {
   }
 
   if (submission[0].submission_status === 'GRADED') {
+    const gradeFeedback = submission[0].submission_feedback
     return (
-      <div className="nice-shadow flex min-h-10 w-full min-w-0 items-center justify-center rounded-md bg-teal-600 px-2.5 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-32 sm:px-4">
+      <div className="nice-shadow flex min-h-10 w-full min-w-0 flex-col justify-center gap-1.5 rounded-md bg-teal-600 px-2.5 py-2 text-white transition delay-150 duration-300 ease-in-out sm:w-auto sm:min-w-32 sm:px-4">
         <div className="flex min-w-0 items-center gap-2">
           <CheckCircle size={17} className="shrink-0" />
           <span className="flex min-w-0 items-center gap-2 text-[11px] font-bold leading-tight sm:text-xs">
@@ -2874,6 +2875,11 @@ function AssignmentTools(props: {
             </span>
           </span>
         </div>
+        {gradeFeedback && (
+          <p className="text-xs font-medium leading-snug text-teal-50">
+            {gradeFeedback}
+          </p>
+        )}
       </div>
     )
   }

@@ -1,7 +1,7 @@
-from sqlmodel import SQLModel, Field, Column, BigInteger, ForeignKey
-from typing import Optional
 from datetime import datetime
 from enum import Enum
+
+from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
 
 class DiscountTypeEnum(str, Enum):
@@ -16,19 +16,19 @@ class DiscountCodeBase(SQLModel):
     code: str = Field(index=True, max_length=50)
     discount_type: DiscountTypeEnum
     discount_value: float  # Percentage (0-100) or fixed amount
-    max_uses: Optional[int] = None  # None means unlimited
+    max_uses: int | None = None  # None means unlimited
     current_uses: int = Field(default=0)
     valid_from: datetime
-    valid_until: Optional[datetime] = None
+    valid_until: datetime | None = None
     is_active: bool = Field(default=True)
-    description: Optional[str] = None
-    course_id: Optional[int] = Field(
+    description: str | None = None
+    course_id: int | None = Field(
         default=None,
         sa_column=Column(
             BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True
         ),
     )
-    product_id: Optional[int] = Field(
+    product_id: int | None = Field(
         default=None,
         sa_column=Column(
             BigInteger,
@@ -39,7 +39,7 @@ class DiscountCodeBase(SQLModel):
 
 
 class DiscountCode(DiscountCodeBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -48,12 +48,12 @@ class DiscountCodeCreate(SQLModel):
     code: str = Field(max_length=50)
     discount_type: DiscountTypeEnum
     discount_value: float
-    max_uses: Optional[int] = None
+    max_uses: int | None = None
     valid_from: datetime
-    valid_until: Optional[datetime] = None
-    description: Optional[str] = None
-    course_id: Optional[int] = None
-    product_id: Optional[int] = None
+    valid_until: datetime | None = None
+    description: str | None = None
+    course_id: int | None = None
+    product_id: int | None = None
 
 
 class DiscountCodeRead(DiscountCodeBase):
@@ -63,13 +63,13 @@ class DiscountCodeRead(DiscountCodeBase):
 
 
 class DiscountCodeUpdate(SQLModel):
-    discount_value: Optional[float] = None
-    max_uses: Optional[int] = None
-    valid_until: Optional[datetime] = None
-    is_active: Optional[bool] = None
-    description: Optional[str] = None
-    course_id: Optional[int] = None
-    product_id: Optional[int] = None
+    discount_value: float | None = None
+    max_uses: int | None = None
+    valid_until: datetime | None = None
+    is_active: bool | None = None
+    description: str | None = None
+    course_id: int | None = None
+    product_id: int | None = None
 
 
 class DiscountCodeUsageBase(SQLModel):
@@ -79,13 +79,13 @@ class DiscountCodeUsageBase(SQLModel):
     user_id: int = Field(
         sa_column=Column(BigInteger, ForeignKey("user.id", ondelete="CASCADE"))
     )
-    course_id: Optional[int] = Field(
+    course_id: int | None = Field(
         default=None,
         sa_column=Column(
             BigInteger, ForeignKey("course.id", ondelete="CASCADE"), nullable=True
         ),
     )
-    product_id: Optional[int] = Field(
+    product_id: int | None = Field(
         default=None,
         sa_column=Column(
             BigInteger,
@@ -102,7 +102,7 @@ class DiscountCodeUsageBase(SQLModel):
 
 
 class DiscountCodeUsage(DiscountCodeUsageBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     used_at: datetime = Field(default_factory=datetime.utcnow)
 
 

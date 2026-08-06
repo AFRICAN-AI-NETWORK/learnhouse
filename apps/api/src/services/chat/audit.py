@@ -1,8 +1,8 @@
-from datetime import datetime
-from uuid import uuid4
-from sqlmodel import Session
-from typing import Optional
 import logging
+from datetime import UTC, datetime
+from uuid import uuid4
+
+from sqlmodel import Session
 
 from src.db.chat.audit import ChatAuditLog
 
@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 async def log_chat_action(
     db: Session,
     org_id: int,
-    user_id: Optional[int],
+    user_id: int | None,
     action: str,
     resource_type: str,
-    resource_id: Optional[str] = None,
-    metadata: Optional[dict] = None,
-    ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None,
+    resource_id: str | None = None,
+    metadata: dict | None = None,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ):
     """
     Create an audit log entry for a chat action.
@@ -46,7 +46,7 @@ async def log_chat_action(
             action_metadata=metadata or {},
             ip_address=ip_address,
             user_agent=user_agent,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
 
         db.add(audit_log)
@@ -56,7 +56,7 @@ async def log_chat_action(
             f"Audit log created: {action} on {resource_type} by user {user_id}"
         )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to create audit log: {e}")
         # Don't raise exception - audit logging should not break functionality
 
@@ -64,9 +64,9 @@ async def log_chat_action(
 async def get_audit_logs(
     db: Session,
     org_id: int,
-    user_id: Optional[int] = None,
-    action: Optional[str] = None,
-    resource_type: Optional[str] = None,
+    user_id: int | None = None,
+    action: str | None = None,
+    resource_type: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ):

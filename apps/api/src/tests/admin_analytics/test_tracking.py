@@ -1,19 +1,19 @@
 """Tests for learning time-tracking heartbeat ingestion."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
 from sqlmodel import select
 
 from src.db.trail_sessions import TrailActivitySession
+from src.db.users import AnonymousUser
 from src.services.trail.tracking import (
     IDLE_GAP_SECONDS,
     MAX_HEARTBEAT_SECONDS,
     ActivityHeartbeat,
     record_activity_heartbeat,
 )
-from src.db.users import AnonymousUser
 
 from .conftest import current_user, make_activity, make_chapter, make_course
 
@@ -71,7 +71,7 @@ async def test_idle_gap_opens_new_session(session, org, student_user):
     )
     # Force the last heartbeat to be older than the idle gap.
     first.last_heartbeat_at = str(
-        datetime.now() - timedelta(seconds=IDLE_GAP_SECONDS + 60)
+        datetime.now(UTC) - timedelta(seconds=IDLE_GAP_SECONDS + 60)
     )
     session.add(first)
     session.commit()

@@ -1,8 +1,8 @@
-from typing import Optional
+from enum import Enum
+
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
-from enum import Enum
 
 from src.db.trail_steps import TrailStep
 
@@ -19,7 +19,7 @@ class StatusEnum(str, Enum):
 
 
 class TrailRun(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     data: dict = Field(default={}, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
@@ -46,7 +46,7 @@ class TrailRunCreate(TrailRun):
 
 # trick because Lists are not supported in SQLModel (runs: list[TrailStep] )
 class TrailRunRead(BaseModel):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     data: dict = Field(default={}, sa_column=Column(JSON))
     status: StatusEnum = StatusEnum.STATUS_IN_PROGRESS
     # foreign keys
@@ -55,11 +55,13 @@ class TrailRunRead(BaseModel):
     org_id: int = Field(default=None, foreign_key="organization.id")
     user_id: int = Field(default=None, foreign_key="user.id")
     # course object
-    course: Optional[dict]
+    course: dict | None
     # timestamps
-    creation_date: Optional[str]
-    update_date: Optional[str]
+    creation_date: str | None
+    update_date: str | None
     # number of activities in course
     course_total_steps: int
     steps: list[TrailStep]
-    pass
+    # Cohort locking info
+    is_locked: bool = False
+    cohort_start_date: str | None = None

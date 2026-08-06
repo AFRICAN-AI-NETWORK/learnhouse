@@ -2,7 +2,13 @@ import { useAssignmentsTaskDispatch } from '@components/Contexts/Assignments/Ass
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { getAPIUrl } from '@services/config/config'
 import { createAssignmentTask } from '@services/courses/assignments'
-import { AArrowUp, Code, FileUp, ListTodo } from 'lucide-react'
+import {
+  AArrowUp,
+  Code,
+  FileUp,
+  Link as LinkIcon,
+  ListTodo,
+} from 'lucide-react'
 import React from 'react'
 import toast from 'react-hot-toast'
 import { mutate } from 'swr'
@@ -113,6 +119,22 @@ function NewTaskModal({ closeModal, assignment_uuid }: any) {
         </p>
         <p className="text-sm text-gray-500 w-40">
           {t('dashboard.assignments.editor.task_types.code_editor.description')}
+        </p>
+      </div>
+      <div
+        onClick={() => createTask('LINK_SUBMISSION')}
+        className="flex flex-col space-y-2 justify-center  text-center pt-10"
+      >
+        <div className="px-5 py-5 rounded-full nice-shadow w-fit mx-auto bg-gray-100/50 text-gray-500 cursor-pointer hover:bg-gray-100 transition-all ease-linear">
+          <LinkIcon size={30} />
+        </div>
+        <p className="text-xl text-gray-700 font-semibold">
+          {t('dashboard.assignments.editor.task_types.link_submission.title')}
+        </p>
+        <p className="text-sm text-gray-500 w-40">
+          {t(
+            'dashboard.assignments.editor.task_types.link_submission.description'
+          )}
         </p>
       </div>
     </div>

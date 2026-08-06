@@ -3,31 +3,35 @@ Payout Service - Manages referrer payout requests with Paystack integration
 Implements safe two-phase commit pattern to prevent balance loss
 """
 
-import os
-import json
 import base64
+import json
 import logging
-from datetime import datetime
-from typing import Optional
+import os
+from datetime import UTC, datetime
+
+import redis
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request, status
-from sqlmodel import Session, select, and_
+from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import RedisError
+from sqlmodel import Session, and_, select
+
+from config.config import get_learnhouse_config
 from src.db.referrals.payout_requests import (
+    BankDetails,
+    PayoutStatus,
     ReferrerPayoutRequest,
     ReferrerPayoutRequestRead,
-    PayoutStatus,
-    BankDetails,
 )
-from src.db.referrals.referral_commissions import ReferralCommission, CommissionStatus
+from src.db.referrals.referral_commissions import CommissionStatus, ReferralCommission
 from src.db.referrals.marketer_payment_methods import (
     MarketerPaymentMethod,
     MarketerPaymentMethodRead,
     PaymentMethodType,
 )
-from src.db.users import User, PublicUser
+from src.db.users import PublicUser, User
+from src.services.payments.payments_paystack import make_paystack_request
 from src.services.referrals.redis_cache import get_redis_client
-from config.config import get_learnhouse_config
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +83,23 @@ COUNTRY_TO_CURRENCY = {
     "US": "USD",  # United States → Dollar
     "GB": "GBP",  # United Kingdom → Pound
     "EU": "EUR",  # European Union → Euro
+    "RW": "RWF",  # Rwanda
+    "TZ": "TZS",  # Tanzania
+    "UG": "UGX",  # Uganda
+    "CI": "XOF",  # Ivory Coast
+    "EG": "EGP",  # Egypt
+}
+
+CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE = {
+    "NGN": "nuban",
+    "GHS": "ghipss",
+    "KES": "mobile_money",
+    "ZAR": "basa",
+    "RWF": "mobile_money",
+    "TZS": "mobile_money",
+    "XOF": "mobile_money",
+    "EGP": "nuban",
+    "USD": "nuban",
 }
 
 # Paystack transfer recipient type per currency.
@@ -177,7 +198,7 @@ def encrypt_bank_data(bank_data: dict) -> str:
         logger.debug("Successfully encrypted bank data")
         return encrypted_str
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to encrypt bank data: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -186,7 +207,7 @@ def encrypt_bank_data(bank_data: dict) -> str:
 
 
 async def get_payout_currency(
-    user: User, org_id: Optional[int] = None, db_session: Optional[Session] = None
+    user: User, org_id: int | None = None, db_session: Session | None = None
 ) -> str:
     """
     Determine payout currency from user's country or organization settings
@@ -246,7 +267,7 @@ async def get_payout_currency(
     return DEFAULT_PAYOUT_CURRENCY
 
 
-async def get_usd_to_currency_exchange_rate(target_currency: str) -> float:
+async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> float:
     """
     Fetch real-time USD → target currency exchange rate with Redis caching
 
@@ -262,12 +283,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str) -> float:
     """
     global _exchange_rate_cache
 
-    target_currency = target_currency.upper()
-    if target_currency == "USD":
-        return 1.0
-
-    cache_key = f"exchange_rate:USD:{target_currency}"
-    redis_client = get_redis_client()
+    cache_key = f"exchange_rate:USD_{target_currency}"
 
     # Try Redis cache first (distributed, multi-worker safe)
     if redis_client:
@@ -283,10 +299,9 @@ async def get_usd_to_currency_exchange_rate(target_currency: str) -> float:
             logger.warning(f"Redis cache read failed: {e}. Falling back to API.")
 
     # Fallback: Check in-memory cache (single-worker only)
-    now = datetime.now()
-    mem_cached = _exchange_rate_cache.get(target_currency)
-    if mem_cached:
-        cache_age = (now - mem_cached["timestamp"]).total_seconds()
+    now = datetime.now(UTC)
+    if _exchange_rate_cache.get("rate") and _exchange_rate_cache.get("timestamp"):
+        cache_age = (now - _exchange_rate_cache["timestamp"]).total_seconds()
         if cache_age < EXCHANGE_RATE_CACHE_TTL:
             logger.debug(
                 f"Using in-memory cached rate USD→{target_currency}: "
@@ -300,9 +315,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str) -> float:
 
         # Option 1: exchangerate-api.com (free tier: 1500 requests/month)
         if EXCHANGE_RATE_API_KEY:
-            url = (
-                f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/latest/USD"
-            )
+            url = f"https://v6.exchangerate-api.com/v6/{EXCHANGE_RATE_API_KEY}/pair/USD/{target_currency}"
         else:
             # Free endpoint (no key required, limited rate)
             url = "https://api.exchangerate-api.com/v4/latest/USD"
@@ -312,39 +325,34 @@ async def get_usd_to_currency_exchange_rate(target_currency: str) -> float:
             response.raise_for_status()
             data = response.json()
 
-            # v6 API nests rates under "conversion_rates"; v4 uses "rates"
-            rates = data.get("rates") or data.get("conversion_rates") or {}
-            if target_currency in rates:
-                rate = float(rates[target_currency])
+            # Extract rate
+            rate = None
+            if EXCHANGE_RATE_API_KEY and "conversion_rate" in data:
+                rate = float(data["conversion_rate"])
+            elif "rates" in data and target_currency in data["rates"]:
+                rate = float(data["rates"][target_currency])
 
-                if rate > 0:
-                    # Store in Redis cache with TTL (multi-worker safe)
-                    if redis_client:
-                        try:
-                            redis_client.setex(
-                                cache_key,
-                                EXCHANGE_RATE_CACHE_TTL,  # 1 hour TTL
-                                str(rate),
-                            )
-                            logger.debug(f"Stored exchange rate in Redis: {rate}")
-                        except RedisError as e:
-                            logger.warning(f"Redis cache write failed: {e}")
+            if rate:
+                # Store in Redis cache with TTL (multi-worker safe)
+                if _redis_client:
+                    try:
+                        _redis_client.setex(
+                            cache_key,
+                            EXCHANGE_RATE_CACHE_TTL,  # 1 hour TTL
+                            str(rate),
+                        )
+                        logger.debug(f"Stored exchange rate in Redis: {rate}")
+                    except RedisError as e:
+                        logger.warning(f"Redis cache write failed: {e}")
 
-                    # Also update in-memory cache as fallback
-                    _exchange_rate_cache[target_currency] = {
-                        "rate": rate,
-                        "timestamp": now,
-                    }
+                # Also update in-memory cache as fallback
+                _exchange_rate_cache["rate"] = rate
+                _exchange_rate_cache["timestamp"] = now
 
-                    logger.info(
-                        f"Fetched current USD→{target_currency} exchange rate: {rate}"
-                    )
-                    return rate
-                else:
-                    logger.warning(
-                        f"Exchange rate {rate} for {target_currency} is not positive. "
-                        "Using fallback."
-                    )
+                logger.debug(
+                    f"Redis cache hit for USD → {target_currency} exchange rate: {rate}"
+                )
+                return rate
             else:
                 logger.warning(
                     f"Currency {target_currency} not in API response. Using fallback."
@@ -353,25 +361,23 @@ async def get_usd_to_currency_exchange_rate(target_currency: str) -> float:
     except httpx.TimeoutException:
         logger.warning("Exchange rate API timeout. Using fallback rate.")
     except httpx.HTTPStatusError as e:
-        logger.warning(
-            f"Exchange rate API error: {e.response.status_code}. Using fallback rate."
-        )
-    except Exception as e:
-        logger.warning(f"Failed to fetch exchange rate: {str(e)}. Using fallback rate.")
+        logger.warning(f"Exchange rate API error: {e}. Falling back to default rate.")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Failed to fetch exchange rate: {e!s}. Using fallback rate.")
 
-    # Fallback to environment variable configured static rate
-    fallback_rate = FALLBACK_EXCHANGE_RATES.get(target_currency)
-    if fallback_rate is None:
-        logger.error(
-            f"No fallback exchange rate configured for {target_currency}. "
-            f"Set USD_TO_{target_currency}_RATE env var."
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Exchange rate unavailable for {target_currency}",
-        )
-    logger.info(f"Using fallback exchange rate USD→{target_currency}: {fallback_rate}")
-    return fallback_rate
+    # Fallbacks for other currencies if API fails
+    fallback_map = {
+        "NGN": FALLBACK_USD_TO_NGN_RATE,
+        "GHS": float(os.getenv("USD_TO_GHS_RATE", "15")),
+        "KES": float(os.getenv("USD_TO_KES_RATE", "130")),
+        "ZAR": float(os.getenv("USD_TO_ZAR_RATE", "18")),
+        "RWF": float(os.getenv("USD_TO_RWF_RATE", "1300")),
+        "TZS": float(os.getenv("USD_TO_TZS_RATE", "2500")),
+        "UGX": float(os.getenv("USD_TO_UGX_RATE", "3800")),
+        "XOF": float(os.getenv("USD_TO_XOF_RATE", "600")),
+        "EGP": float(os.getenv("USD_TO_EGP_RATE", "47")),
+    }
+    return fallback_map.get(target_currency, 1.0)
 
 
 def decrypt_bank_data(encrypted_data: str) -> dict:
@@ -407,7 +413,7 @@ def decrypt_bank_data(encrypted_data: str) -> dict:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to decrypt bank account information - invalid key",
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to decrypt bank data: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -474,7 +480,7 @@ async def validate_payout_amount(
 
 async def check_pending_payout(
     user_id: int, db_session: Session
-) -> Optional[ReferrerPayoutRequest]:
+) -> ReferrerPayoutRequest | None:
     """
     Check if user has pending payout request (DRY utility)
     Prevents multiple simultaneous payouts
@@ -492,11 +498,7 @@ async def check_pending_payout(
             # APPROVED is in-flight too: approved-but-not-yet-processed payouts
             # must block new requests or two payouts race the same balance
             ReferrerPayoutRequest.status.in_(
-                [
-                    PayoutStatus.REQUESTED,
-                    PayoutStatus.APPROVED,
-                    PayoutStatus.PROCESSING,
-                ]
+                [PayoutStatus.REQUESTED, PayoutStatus.APPROVED, PayoutStatus.PROCESSING]
             ),
         )
     )
@@ -504,16 +506,22 @@ async def check_pending_payout(
 
 
 
-async def make_flutterwave_request(method: str, endpoint: str, data: dict = None, headers: dict = None) -> dict:
-    import httpx
-    secret_key = os.getenv("FLUTTERWAVE_SECRET_KEY")
-    if not secret_key:
-        raise HTTPException(status_code=500, detail="FLUTTERWAVE_SECRET_KEY not configured")
-        
-    url = f"https://api.flutterwave.com/v3{endpoint}"
-    req_headers = {
-        "Authorization": f"Bearer {secret_key}",
-        "Content-Type": "application/json"
+    Args:
+        email: Recipient email
+        name: Recipient name
+        bank_account_info: Bank account details
+        currency: Currency code
+
+    Returns:
+        Paystack recipient data with recipient_code
+    """
+    recipient_data = {
+        "type": CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE.get(currency, "nuban"),
+        "name": name,
+        "account_number": bank_account_info.get("account_number"),
+        "bank_code": bank_account_info.get("bank_code"),
+        "currency": currency,
+        "email": email,
     }
     if headers:
         req_headers.update(headers)
@@ -536,13 +544,26 @@ async def make_flutterwave_request(method: str, endpoint: str, data: dict = None
             logger.error(f"Flutterwave request failed: {e}")
             raise HTTPException(status_code=500, detail="Failed to connect to Flutterwave")
 
-async def create_flutterwave_transfer(
+    try:
+        result = await make_paystack_request(
+            "POST", "/transferrecipient", recipient_data
+        )
+        return result
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to create Paystack transfer recipient: {e!s}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create transfer recipient: {e!s}",
+        )
+
+
+async def initiate_paystack_transfer(
     amount: float,
     currency: str,
     bank_account_info: dict,
     reference: str,
     reason: str = "Referral commission payout",
-    payment_method_type: PaymentMethodType = PaymentMethodType.BANK_TRANSFER,
+    idempotency_key: str | None = None,
 ) -> dict:
     """
     Directly initiate a transfer using Flutterwave API
@@ -568,9 +589,24 @@ async def create_flutterwave_transfer(
         "reference": reference,
         "debit_currency": currency
     }
-    
-    result = await make_flutterwave_request("POST", "/transfers", transfer_data)
-    return result
+
+    # Add idempotency key if provided (prevents double-charging on retries)
+    headers = {}
+    if idempotency_key:
+        headers["Idempotency-Key"] = idempotency_key
+        logger.info(f"Using idempotency key: {idempotency_key}")
+
+    try:
+        result = await make_paystack_request(
+            "POST", "/transfer", transfer_data, headers=headers if headers else None
+        )
+        return result
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to initiate Paystack transfer: {e!s}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to initiate transfer: {e!s}",
+        )
 
 
 async def create_payout_request(
@@ -676,9 +712,9 @@ async def create_payout_request(
         currency="USD",  # Base currency
         status=PayoutStatus.REQUESTED,
         bank_account_info=encrypted_bank_info,  # Encrypted for security
-        request_date=datetime.now(),
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        request_date=datetime.now(UTC),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
 
     db_session.add(payout)
@@ -715,15 +751,13 @@ async def process_payout_request(
     if not payout:
         raise ValueError(f"Payout request {payout_id} not found")
 
-    # Only admin-APPROVED payouts are processed. (This guard previously checked
-    # REQUESTED, which silently skipped every approved payout.)
     if payout.status != PayoutStatus.APPROVED:
-        logger.warning(f"Payout {payout_id} is not in APPROVED status")
+        logger.warning(f"Payout {payout_id} is not in REQUESTED status")
         return payout
 
     # Update status to PROCESSING
     payout.status = PayoutStatus.PROCESSING
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(UTC)
     db_session.add(payout)
     db_session.commit()
 
@@ -748,14 +782,9 @@ async def process_payout_request(
             raise ValueError(f"Payout {payout.id} has no stored bank account details")
         decrypted_bank_info = decrypt_bank_data(encrypted_payload)
 
-        # Saved-method payouts carry routing metadata embedded at request time
-        payment_method_id = decrypted_bank_info.pop("_payment_method_id", None)
-        method_type_value = decrypted_bank_info.pop("_payment_method_type", None)
-        saved_currency = decrypted_bank_info.pop("_currency", None)
-        payment_method_type = (
-            PaymentMethodType(method_type_value)
-            if method_type_value
-            else PaymentMethodType.BANK_TRANSFER
+        # Determine payout currency from user's country or org settings
+        payout_currency = await get_payout_currency(
+            user=user, org_id=payout.org_id, db_session=db_session
         )
 
         # Determine payout currency: saved method currency wins, otherwise
@@ -778,20 +807,33 @@ async def process_payout_request(
         # Fetch real-time exchange rate (prevents losses from volatility)
         current_exchange_rate = await get_usd_to_currency_exchange_rate(payout_currency)
 
-        # Convert USD to local currency (Flutterwave requires local amounts)
-        converted_amount = payout.total_amount * current_exchange_rate
-        payout.converted_amount = round(converted_amount, 2)
+        recipient_code = recipient_result.get("recipient_code")
+        payout.paystack_transfer_recipient_code = recipient_code
+        db_session.add(payout)
+        db_session.commit()
+
+        # Fetch real-time USD to currency exchange rate
+        if payout_currency == "USD":
+            conversion_rate = 1.0
+        else:
+            conversion_rate = await get_usd_to_currency_exchange_rate(payout_currency)
+
+        # Convert USD to local currency
+        amount_in_local = payout.total_amount * conversion_rate
         logger.info(
             f"Payout {payout.id}: Converting ${payout.total_amount:.2f} USD to "
-            f"{converted_amount:.2f} {payout_currency} (rate: {current_exchange_rate})"
+            f"{amount_in_local:.2f} {payout_currency} (rate: {conversion_rate})"
         )
 
-        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now().timestamp())}"
+        # Initiate transfer with idempotency key to prevent double-charging on retries
+        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now(UTC).timestamp())}"
+        idempotency_key = (
+            f"payout_{payout.id}_{payout.request_date.strftime('%Y%m%d%H%M%S')}"
+        )
 
-        transfer_result = await create_flutterwave_transfer(
-            amount=converted_amount,  # Already in local currency
-            currency=payout_currency,
-            bank_account_info=decrypted_bank_info,
+        transfer_result = await initiate_paystack_transfer(
+            amount=amount_in_local,
+            recipient_code=recipient_code,
             reference=transfer_reference,
             reason="Referral commission payout",
             payment_method_type=payment_method_type,
@@ -810,7 +852,7 @@ async def process_payout_request(
                 # Update payout status
                 payout.flutterwave_transfer_id = transfer_code
                 payout.status = PayoutStatus.COMPLETED
-                payout.completion_date = datetime.now()
+                payout.completion_date = datetime.now(UTC)
                 db_session.add(payout)
 
                 # Fetch all eligible commissions for this user
@@ -842,7 +884,7 @@ async def process_payout_request(
 
                     # Mark commission as PAID
                     commission.status = CommissionStatus.PAID
-                    commission.payout_date = datetime.now()
+                    commission.payout_date = datetime.now(UTC)
                     commission.payout_request_id = payout.id  # Link to payout
                     db_session.add(commission)
 
@@ -904,7 +946,7 @@ async def process_payout_request(
             # Mark payout as FAILED with reason
             payout.status = PayoutStatus.FAILED
             payout.failure_reason = str(validation_error)
-            payout.update_date = datetime.now()
+            payout.update_date = datetime.now(UTC)
             db_session.add(payout)
             db_session.commit()
 
@@ -920,20 +962,15 @@ async def process_payout_request(
 
         logger.info(f"Successfully processed payout {payout_id}")
 
-        # Notify marketer of completed payout (no-op for non-marketers)
-        _send_marketer_payout_email_safe(
-            payout, user, payout_currency, db_session, completed=True
-        )
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Failed to process payout {payout_id}: {e!s}")
 
-    except HTTPException as e:
-        # HTTPException from the balance-attribution phase (under-collateralized)
-        # is permanent — already marked FAILED above; re-raise for the caller
-        if payout.status == PayoutStatus.FAILED:
-            raise
-        _handle_payout_failure(payout, str(e.detail), db_session)
-    except Exception as e:
-        logger.error(f"Failed to process payout {payout_id}: {str(e)}")
-        _handle_payout_failure(payout, str(e), db_session)
+        # Update status to FAILED (balance not deducted)
+        payout.status = PayoutStatus.FAILED
+        payout.failure_reason = str(e)
+        payout.update_date = datetime.now(UTC)
+        db_session.add(payout)
+        db_session.commit()
 
     return payout
 

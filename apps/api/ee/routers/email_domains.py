@@ -4,17 +4,18 @@ Allows manual triggering of domain list updates
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session
 
 from src.core.events.database import get_db_session
-from src.services.orgs.orgs import rbac_check
-from src.security.auth import get_current_user
-from src.db.users import User
 from src.db.organizations import Organization
+from src.db.users import User
+from src.security.auth import get_current_user
+from src.services.orgs.orgs import rbac_check
 from src.services.referrals.fraud_prevention import (
-    update_disposable_email_list,
     seed_initial_domain_lists,
+    update_disposable_email_list,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ async def trigger_domain_list_update(
                 "source": stats["source"],
             },
         }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to update domain lists: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -94,7 +95,7 @@ async def trigger_domain_list_seed(
         await seed_initial_domain_lists(db_session)
 
         return {"success": True, "message": "Email domain lists seeded successfully"}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to seed domain lists: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

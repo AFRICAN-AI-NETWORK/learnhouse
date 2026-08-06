@@ -1,21 +1,21 @@
-from typing import List, Optional, Union
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException, status
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlmodel import Session, select
 
-from src.db.chat.messages import (
-    MessageCreate,
-    MessageUpdate,
-    MessageRead,
-    Message,
-    MessageReadReceipt,
-)
-from src.db.chat.attachments import MessageAttachmentRead, MessageAttachment
-from src.db.chat.conversations import Conversation
-from src.db.organizations import Organization
-from src.services.chat.message_service import MessageService
 from src.core.events.database import get_db_session
-from src.security.auth import get_current_user
+from src.db.chat.attachments import MessageAttachment, MessageAttachmentRead
+from src.db.chat.conversations import Conversation
+from src.db.chat.messages import (
+    Message,
+    MessageCreate,
+    MessageRead,
+    MessageReadReceipt,
+    MessageUpdate,
+)
+from src.db.organizations import Organization
 from src.db.users import User
+from src.security.auth import get_current_user
+from src.services.chat.message_service import MessageService
 
 router = APIRouter()
 
@@ -103,10 +103,10 @@ async def get_message(
     )
 
 
-@router.get("/conversation/{conversation_id}", response_model=List[MessageRead])
+@router.get("/conversation/{conversation_id}", response_model=list[MessageRead])
 async def get_conversation_messages(
     conversation_id: str,
-    before_message_id: Optional[int] = Query(
+    before_message_id: int | None = Query(
         None, description="Get messages before this ID"
     ),
     limit: int = Query(50, le=100, description="Number of messages to return"),
@@ -157,10 +157,11 @@ async def edit_message(
             },
             message.receiver_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
+        logger = logging.getLogger(__name__)
 
-        logging.warning(f"Failed to send WebSocket notification: {e}")
+        logger.warning(f"Failed to send WebSocket notification: {e}")
 
     return message
 
@@ -184,10 +185,11 @@ async def delete_message(
             {"type": "message_deleted", "data": {"message_uuid": message_uuid}},
             message.receiver_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
+        logger = logging.getLogger(__name__)
 
-        logging.warning(f"Failed to send WebSocket notification: {e}")
+        logger.warning(f"Failed to send WebSocket notification: {e}")
 
     return {"message": "Message deleted successfully"}
 
@@ -229,8 +231,8 @@ async def upload_attachment(
     and returns the attachment metadata with a relative file_url that can
     be fetched from /content/...
     """
-    from src.services.chat.attachment_service import AttachmentService
     from src.db.chat.messages import Message
+    from src.services.chat.attachment_service import AttachmentService
 
     # ── Resolve org_uuid from org_id ─────────────────────────────────────────
     org = db.exec(select(Organization).where(Organization.id == org_id)).first()
@@ -306,10 +308,11 @@ async def upload_attachment(
             conversation.participant_two_id,
         ]
         await connection_manager.broadcast_to_conversation(ws_event, participant_ids)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
+        logger = logging.getLogger(__name__)
 
-        logging.warning(f"Failed to send attachment websocket update: {e}")
+        logger.warning(f"Failed to send attachment websocket update: {e}")
 
     return attachment
 
@@ -326,12 +329,12 @@ async def send_message_with_attachment(
         default="auto",
         description="'text', 'file', 'image', 'video', 'document', or 'auto' (auto-detected)",
     ),
-    reply_to_message_id: Optional[int] = Query(
+    reply_to_message_id: int | None = Query(
         default=None, description="ID of message being replied to (0 = no reply)"
     ),
     db: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
-    file: Union[UploadFile, str, None] = File(None),
+    file: UploadFile | str | None = File(None),
 ):
     """Single unified send endpoint — replaces POST /messages/.
 
@@ -352,9 +355,7 @@ async def send_message_with_attachment(
     from src.services.chat.attachment_service import AttachmentService
 
     # ── Normalize file parameter (handle empty file uploads and strings) ──────
-    if isinstance(file, str) or file is None:
-        file = None
-    elif not file.filename or file.filename == "":
+    if isinstance(file, str) or file is None or not file.filename or file.filename == "":
         file = None
 
     # Content and file are both optional - allow sending either or both
@@ -394,7 +395,7 @@ async def send_message_with_attachment(
             )
 
     # ── Normalise reply_to (0 → None, mirrors existing create_message logic) ──
-    reply_to: Optional[int] = (
+    reply_to: int | None = (
         None
         if (reply_to_message_id is None or reply_to_message_id == 0)
         else reply_to_message_id
@@ -470,9 +471,10 @@ async def send_message_with_attachment(
             },
             message.receiver_id,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import logging
+        logger = logging.getLogger(__name__)
 
-        logging.warning(f"Failed to send WebSocket notification: {e}")
+        logger.warning(f"Failed to send WebSocket notification: {e}")
 
     return message

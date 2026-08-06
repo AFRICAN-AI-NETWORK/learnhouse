@@ -11,8 +11,10 @@ Covers:
 All tests are self-contained; no database or network required.
 """
 
-import pytest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from src.db.courses.assignments import AssignmentTaskTypeEnum
 from src.services.courses.activities.assignments import (
@@ -23,7 +25,10 @@ from src.services.courses.activities.assignments import (
     perform_form_auto_grading,
     perform_quiz_auto_grading,
 )
-
+from src.services.courses.grade import (
+    LATE_PENALTY_MULTIPLIER,
+    get_activity_weighted_points_earned,
+)
 
 # ─── Minimal stand-ins (no DB / SQLModel machinery needed) ───────────────────
 
@@ -639,3 +644,118 @@ class TestAutoGradableTypes:
     def test_all_gradable_task_union_correct_size(self):
         """Exactly 3 types are auto-gradable."""
         assert len(_AUTO_GRADABLE_TYPES) == 3
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 7.  Auto-grading → weighted trail-step points (closing the loop)
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+class TestAutoGradingToWeightedPoints:
+    """
+    Verifies the end-to-end intent: a quiz that auto-grades to a partial score
+    must translate into *weighted* trail-step points, not the activity's full
+    flat point value. This is the regression guard for the core behaviour the
+    grading plan introduces.
+    """
+
+    def _multi_question_quiz_task(self):
+        """A 2-question quiz where exactly one question is answerable correctly."""
+        return _Task(
+            AssignmentTaskTypeEnum.QUIZ,
+            {
+                "questions": [
+                    {
+                        "questionUUID": _Q1,
+                        "options": [
+                            {"optionUUID": _OA, "assigned_right_answer": True},
+                            {"optionUUID": _OB, "assigned_right_answer": False},
+                        ],
+                    },
+                    {
+                        "questionUUID": _Q2,
+                        "options": [
+                            {"optionUUID": _OC, "assigned_right_answer": True},
+                        ],
+                    },
+                ]
+            },
+            100,
+        )
+
+    @pytest.mark.asyncio
+    async def test_partial_quiz_yields_weighted_points_not_flat(self):
+        task = self._multi_question_quiz_task()
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                    {"questionUUID": _Q2, "optionUUID": _OC, "answer": False},
+                ]
+            }
+        )
+        await perform_quiz_auto_grading(task, sub)
+        assert sub.grade == 50  # 1 of 2 questions correct
+
+        # The aggregate AssignmentUserSubmission grade is the sum of task grades.
+        user_submission = SimpleNamespace(grade=sub.grade)
+        activity = SimpleNamespace(id=1, points=60)
+        trail_step = SimpleNamespace(complete=True, is_late=False, user_id=1)
+        assignment = SimpleNamespace(id=1)
+
+        earned = get_activity_weighted_points_earned(
+            activity, trail_step, assignment, user_submission, task.max_grade_value
+        )
+        # 50/100 × 60 = 30, NOT the flat 60.
+        assert earned == pytest.approx(30)
+        assert earned != activity.points
+
+    @pytest.mark.asyncio
+    async def test_perfect_quiz_yields_full_points(self):
+        task = _quiz_task()
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                ]
+            }
+        )
+        await perform_quiz_auto_grading(task, sub)
+        assert sub.grade == 100
+
+        user_submission = SimpleNamespace(grade=sub.grade)
+        activity = SimpleNamespace(id=1, points=60)
+        trail_step = SimpleNamespace(complete=True, is_late=False, user_id=1)
+        assignment = SimpleNamespace(id=1)
+
+        earned = get_activity_weighted_points_earned(
+            activity, trail_step, assignment, user_submission, task.max_grade_value
+        )
+        assert earned == pytest.approx(60)
+
+    @pytest.mark.asyncio
+    async def test_partial_quiz_with_late_penalty(self):
+        task = self._multi_question_quiz_task()
+        sub = _Submission(
+            {
+                "submissions": [
+                    {"questionUUID": _Q1, "optionUUID": _OA, "answer": True},
+                    {"questionUUID": _Q1, "optionUUID": _OB, "answer": False},
+                    {"questionUUID": _Q2, "optionUUID": _OC, "answer": False},
+                ]
+            }
+        )
+        await perform_quiz_auto_grading(task, sub)
+
+        user_submission = SimpleNamespace(grade=sub.grade)
+        activity = SimpleNamespace(id=1, points=60)
+        trail_step = SimpleNamespace(complete=True, is_late=True, user_id=1)
+        assignment = SimpleNamespace(id=1)
+
+        earned = get_activity_weighted_points_earned(
+            activity, trail_step, assignment, user_submission, task.max_grade_value
+        )
+        # 30 × 0.8 = 24
+        assert earned == pytest.approx(30 * LATE_PENALTY_MULTIPLIER)

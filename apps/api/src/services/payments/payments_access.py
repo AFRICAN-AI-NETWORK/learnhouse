@@ -1,15 +1,17 @@
+import logging
+
+from fastapi import Request
 from sqlmodel import Session, select
-from src.security.rbac.rbac import (
-    authorization_verify_if_user_is_author,
-    authorization_verify_based_on_org_admin_status,
-)
-from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
-from src.db.users import PublicUser, AnonymousUser, InternalUser
-from src.db.payments.payments_courses import PaymentsCourse
+
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
-from fastapi import Request
-import logging
+from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
+from src.db.users import AnonymousUser, InternalUser, PublicUser
+from src.security.rbac.rbac import (
+    authorization_verify_based_on_org_admin_status,
+    authorization_verify_if_user_is_author,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ async def check_activity_paid_access(
             )
             if is_admin:
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error checking admin status in payments_access: {e}")
 
     # 2. Author Bypass: If user is the author, they have full access.
@@ -58,7 +60,7 @@ async def check_activity_paid_access(
             )
             if is_author:
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error checking author status in payments_access: {e}")
 
     # 3. Free Course check: If the course is not in PaymentsCourse, it's free.
@@ -114,7 +116,7 @@ async def check_course_paid_access(
             )
             if is_author:
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error in RBAC bypass check for course access: {e}")
 
     statement = select(PaymentsCourse).where(PaymentsCourse.course_id == course_id)

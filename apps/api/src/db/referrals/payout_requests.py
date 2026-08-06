@@ -5,8 +5,8 @@ Manages payout requests from referrers with Paystack integration
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey, Index, JSON, Text
+
+from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, Index, SQLModel, Text
 
 
 class PayoutStatus(str, Enum):
@@ -24,20 +24,24 @@ class ReferrerPayoutRequestBase(SQLModel):
 
     total_amount: float = Field(ge=1.0)  # Minimum $1 USD
     currency: str = Field(default="USD", max_length=3)
-    converted_amount: Optional[float] = None
+    converted_amount: float | None = None
     status: PayoutStatus = Field(default=PayoutStatus.REQUESTED)
-    flutterwave_beneficiary_id: Optional[str] = Field(
+    flutterwave_beneficiary_id: str | None = Field(
         default=None, max_length=255
     )
-    flutterwave_transfer_id: Optional[str] = Field(default=None, max_length=255)
+    flutterwave_transfer_id: str | None = Field(default=None, max_length=255)
+    paystack_transfer_recipient_code: str | None = Field(
+        default=None, max_length=255
+    )
+    paystack_transfer_code: str | None = Field(default=None, max_length=255)
     bank_account_info: dict = Field(
         default={}, sa_column=Column(JSON)
     )  # Encrypted bank details
     request_date: datetime = Field(default_factory=datetime.now)
-    completion_date: Optional[datetime] = None
-    failure_reason: Optional[str] = Field(default=None, sa_column=Column(Text))
+    completion_date: datetime | None = None
+    failure_reason: str | None = Field(default=None, sa_column=Column(Text))
     retry_count: int = Field(default=0)
-    last_retry_at: Optional[datetime] = None
+    last_retry_at: datetime | None = None
 
 
 class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
@@ -50,7 +54,7 @@ class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
         Index("idx_payout_status", "status"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(
             BigInteger,
@@ -91,14 +95,16 @@ class ReferrerPayoutRequestCreate(SQLModel):
 class ReferrerPayoutRequestUpdate(SQLModel):
     """Model for updating payout request"""
 
-    status: Optional[PayoutStatus] = None
-    flutterwave_beneficiary_id: Optional[str] = None
-    flutterwave_transfer_id: Optional[str] = None
-    converted_amount: Optional[float] = None
-    completion_date: Optional[datetime] = None
-    failure_reason: Optional[str] = None
-    retry_count: Optional[int] = None
-    last_retry_at: Optional[datetime] = None
+    status: PayoutStatus | None = None
+    flutterwave_beneficiary_id: str | None = None
+    flutterwave_transfer_id: str | None = None
+    paystack_transfer_recipient_code: str | None = None
+    paystack_transfer_code: str | None = None
+    converted_amount: float | None = None
+    completion_date: datetime | None = None
+    failure_reason: str | None = None
+    retry_count: int | None = None
+    last_retry_at: datetime | None = None
 
 
 class BankDetails(SQLModel):
@@ -108,6 +114,6 @@ class BankDetails(SQLModel):
     account_number: str
     account_holder: str
     account_type: str  # "savings" or "current"
-    bank_code: Optional[str] = (
+    bank_code: str | None = (
         None  # Bank code for Paystack (e.g., "044" for Access Bank)
     )

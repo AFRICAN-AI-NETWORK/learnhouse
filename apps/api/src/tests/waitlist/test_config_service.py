@@ -1,22 +1,23 @@
 """Unit tests for waitlist configuration service"""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlmodel import select
 
-from src.services.waitlist.config import (
-    create_waitlist_config,
-    get_waitlist_config,
-    get_org_waitlist_configs,
-    update_waitlist_config,
-    cancel_waitlist_config,
-)
 from src.db.waitlist import (
     WaitlistConfig,
     WaitlistConfigCreate,
     WaitlistConfigUpdate,
     WaitlistStatusEnum,
+)
+from src.services.waitlist.config import (
+    cancel_waitlist_config,
+    create_waitlist_config,
+    get_org_waitlist_configs,
+    get_waitlist_config,
+    update_waitlist_config,
 )
 
 
@@ -28,7 +29,7 @@ class TestCreateWaitlistConfig:
         self, db_session, sample_org, sample_user, mock_request
     ):
         """Test creating a valid waitlist configuration"""
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=30)).isoformat()
 
         config_data = WaitlistConfigCreate(
             org_id=sample_org.id,
@@ -49,7 +50,7 @@ class TestCreateWaitlistConfig:
     @pytest.mark.asyncio
     async def test_create_waitlist_with_invalid_org(self, db_session, mock_request):
         """Test creating waitlist with non-existent organization"""
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=30)).isoformat()
 
         config_data = WaitlistConfigCreate(
             org_id=99999,  # Non-existent org
@@ -69,7 +70,7 @@ class TestCreateWaitlistConfig:
         self, db_session, sample_org, mock_request
     ):
         """Test creating waitlist with launch date in the past"""
-        past_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        past_date = (datetime.now(UTC) - timedelta(days=1)).isoformat()
 
         config_data = WaitlistConfigCreate(
             org_id=sample_org.id,
@@ -107,7 +108,7 @@ class TestCreateWaitlistConfig:
         self, db_session, sample_org, mock_request
     ):
         """Test creating waitlist with custom batch settings"""
-        future_date = (datetime.now(timezone.utc) + timedelta(days=15)).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=15)).isoformat()
 
         config_data = WaitlistConfigCreate(
             org_id=sample_org.id,
@@ -188,8 +189,8 @@ class TestGetOrgWaitlistConfigs:
         self, db_session, sample_org, sample_user, mock_request
     ):
         """Test that cancelled waitlists are excluded by default"""
-        future_date = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-        now = datetime.now(timezone.utc).isoformat()
+        future_date = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Create cancelled waitlist
         cancelled_config = WaitlistConfig(
@@ -248,7 +249,7 @@ class TestUpdateWaitlistConfig:
         self, db_session, sample_waitlist_config, mock_request
     ):
         """Test extending the launch datetime"""
-        new_future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        new_future_date = (datetime.now(UTC) + timedelta(days=30)).isoformat()
         update_data = WaitlistConfigUpdate(launch_datetime=new_future_date)
 
         result = await update_waitlist_config(
@@ -262,7 +263,7 @@ class TestUpdateWaitlistConfig:
         self, db_session, sample_waitlist_config, mock_request
     ):
         """Test that updating to past date fails"""
-        past_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        past_date = (datetime.now(UTC) - timedelta(days=1)).isoformat()
         update_data = WaitlistConfigUpdate(launch_datetime=past_date)
 
         with pytest.raises(HTTPException) as exc_info:
@@ -337,8 +338,8 @@ class TestCancelWaitlistConfig:
         self, db_session, sample_org, sample_user, mock_request
     ):
         """Test cancelling an already cancelled waitlist"""
-        now = datetime.now(timezone.utc).isoformat()
-        future = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        now = datetime.now(UTC).isoformat()
+        future = (datetime.now(UTC) + timedelta(days=7)).isoformat()
 
         cancelled_config = WaitlistConfig(
             waitlist_uuid="already-cancelled",

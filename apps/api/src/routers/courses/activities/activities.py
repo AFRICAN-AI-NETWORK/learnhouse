@@ -1,17 +1,18 @@
-from typing import List
-from fastapi import APIRouter, Depends, UploadFile, Form, Request
+
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
+
+from src.core.events.database import get_db_session
 from src.db.courses.activities import ActivityCreate, ActivityRead, ActivityUpdate
 from src.db.users import PublicUser
-from src.core.events.database import get_db_session
+from src.security.auth import get_current_user
 from src.services.courses.activities.activities import (
     create_activity,
-    get_activity,
+    delete_activity,
     get_activities,
+    get_activity,
     get_activityby_id,
     update_activity,
-    delete_activity,
 )
-from src.security.auth import get_current_user
 from src.services.courses.activities.pdf import create_documentpdf_activity
 from src.services.courses.activities.smart_article import create_smart_article_activity
 from src.services.courses.activities.video import (
@@ -72,7 +73,7 @@ async def api_get_chapter_activities(
     chapter_id: int,
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
-) -> List[ActivityRead]:
+) -> list[ActivityRead]:
     """
     Get Activities for a chapter
     """
@@ -203,7 +204,9 @@ async def api_ai_interact(
     """
     import json
     import os
+
     import httpx
+
     from config.config import get_learnhouse_config
 
     body = await request.json()
@@ -256,7 +259,7 @@ async def api_ai_interact(
             if resp.status_code == 200:
                 data = resp.json()
                 result_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     if result_text is None and openai_key:
@@ -271,7 +274,7 @@ async def api_ai_interact(
                 max_tokens=4000,
             )
             result_text = response.choices[0].message.content
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     if result_text is None:
@@ -303,7 +306,7 @@ async def api_ai_interact(
                 "result": translated_data.get("content", result_text),
                 "title": translated_data.get("title", ""),
             }
-        except Exception:
+        except Exception:  # noqa: BLE001
             return {"result": result_text, "title": ""}
 
     return {"result": result_text}

@@ -3,15 +3,18 @@ Comprehensive unit tests for referral code models
 Tests database models, enums, and validation
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
+from pydantic import ValidationError
+
 from src.db.referrals.referral_codes import (
     ReferralCode,
     ReferralCodeBase,
-    ReferralCodeRead,
     ReferralCodeCreate,
-    ReferralCodeUpdate,
+    ReferralCodeRead,
     ReferralCodeStatus,
+    ReferralCodeUpdate,
 )
 
 
@@ -82,7 +85,7 @@ class TestReferralCodeCreate:
 
     def test_create_model_validation(self):
         """Test that org_id is required"""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             ReferralCodeCreate()  # Should fail without org_id
 
 
@@ -105,7 +108,7 @@ class TestReferralCodeRead:
 
     def test_read_model_with_all_fields(self):
         """Test ReferralCodeRead with all required fields"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         read_model = ReferralCodeRead(
             code="TEST123ABC",
             referral_link="http://localhost:3000/ref/TEST123ABC",
@@ -125,7 +128,7 @@ class TestReferralCodeRead:
 
     def test_read_model_serialization(self):
         """Test that read model can be serialized"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         read_model = ReferralCodeRead(
             code="TEST123",
             referral_link="http://localhost:3000/ref/TEST123",

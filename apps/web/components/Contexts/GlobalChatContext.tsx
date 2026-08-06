@@ -8,11 +8,14 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import { mutate as mutateSWR } from 'swr'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import useWebSocket from '@/hooks/useWebSocket'
 import { useNotifications } from '@/hooks/useNotifications'
 import { getAPIUrl } from '@services/config/config'
+import { NOTIFICATIONS_SWR_KEY } from '@services/notifications/notificationAPI'
+import { ActivityNotificationEvent } from '@/types/notifications'
 
 interface GlobalChatContextType {
   isConnected: boolean
@@ -49,7 +52,11 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
 }) => {
   const session = useLHSession() as any
   const org = useOrg() as any
-  const { showMessageNotification, windowFocused } = useNotifications()
+  const {
+    showMessageNotification,
+    showActivityNotificationToast,
+    windowFocused,
+  } = useNotifications()
   const conversationsRef = useRef<Map<string, Conversation>>(new Map())
 
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -166,20 +173,44 @@ export const GlobalChatProvider: React.FC<GlobalChatProviderProps> = ({
     [current_user_id, showMessageNotification, windowFocused, isChatOpen]
   )
 
-  // Register global message listener
+  // Handle incoming activity notifications (assignment reviewed, retake
+  // requested, new chapter/activity, app update) pushed over the same
+  // WebSocket connection as chat — see notification_service._push_in_app.
+  const handleActivityNotification = useCallback(
+    (event: { data: ActivityNotificationEvent }) => {
+      const notification = event.data
+
+      showActivityNotificationToast(notification, {
+        showDesktop: !windowFocused,
+      })
+
+      // The WS payload is a real-time nudge, not the source of truth for
+      // list/read state (it has no `id`/`is_read`) — revalidate the SWR
+      // cache so every mounted NotificationBell refetches the real row.
+      if (access_token) {
+        mutateSWR(NOTIFICATIONS_SWR_KEY(access_token))
+      }
+    },
+    [access_token, showActivityNotificationToast, windowFocused]
+  )
+
+  // Register global message listeners
   useEffect(() => {
     if (!isConnected) return
 
     addMessageListener('new_message', handleGlobalMessage)
+    addMessageListener('activity_notification', handleActivityNotification)
 
     return () => {
       removeMessageListener('new_message', handleGlobalMessage)
+      removeMessageListener('activity_notification', handleActivityNotification)
     }
   }, [
     isConnected,
     addMessageListener,
     removeMessageListener,
     handleGlobalMessage,
+    handleActivityNotification,
   ])
 
   return (

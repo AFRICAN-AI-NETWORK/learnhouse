@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+
 from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
@@ -28,7 +28,7 @@ class CampaignBase(SQLModel):
 
 
 class Campaign(CampaignBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     org_id: int = Field(
         sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
     )
@@ -38,7 +38,7 @@ class Campaign(CampaignBase, table=True):
     status: CampaignStatus = CampaignStatus.PENDING
     total_targets: int = 0
     sent_count: int = 0
-    error_log: Optional[str] = None
+    error_log: str | None = None
     creation_date: str = ""
     update_date: str = ""
 

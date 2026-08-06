@@ -1,15 +1,16 @@
 """Unit tests for message service."""
 
+from datetime import UTC, datetime
+
 import pytest
 from fastapi import HTTPException
 from sqlmodel import Session
-from datetime import datetime
 
-from src.services.chat.message_service import MessageService, ReadReceiptService
-from src.db.chat.messages import MessageCreate, MessageUpdate, Message
 from src.db.chat.conversations import Conversation
-from src.db.users import User
+from src.db.chat.messages import Message, MessageCreate, MessageUpdate
 from src.db.organizations import Organization
+from src.db.users import User
+from src.services.chat.message_service import MessageService, ReadReceiptService
 
 
 class TestCreateMessage:
@@ -350,8 +351,8 @@ class TestGetConversationMessages:
                 receiver_id=instructor_user.id,
                 content=f"Message {i}",
                 message_type="text",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             session.add(msg)
             session.commit()
@@ -451,8 +452,9 @@ class TestEditMessage:
         self, session: Session, student_user: User, message: Message
     ):
         """Test that editing creates edit history."""
-        from src.db.chat.messages import MessageEditHistory
         from sqlmodel import select
+
+        from src.db.chat.messages import MessageEditHistory
 
         original_content = message.content
         update_data = MessageUpdate(content="Updated content")
