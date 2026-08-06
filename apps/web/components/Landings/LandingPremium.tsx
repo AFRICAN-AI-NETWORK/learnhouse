@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { Quote, ArrowRight } from 'lucide-react'
+import { SiWhatsapp } from '@icons-pack/react-simple-icons'
 import { getUriWithOrg } from '@services/config/config'
 
 import HeroSection from './Sections/HeroSection'
@@ -105,7 +106,7 @@ export default function LandingPremium({
       name: 'AAN OPEN (Generative AI)',
       description:
         'Your gateway to the AI ecosystem. Access our curated directory of AI foundations and professional tools to kickstart your journey.',
-      badgeText: '',
+      badgeText: 'Free',
       badgeColor: 'bg-amber-500', // orange tab
       buttonColor: 'bg-amber-50 text-amber-600 hover:bg-amber-100',
       buttonText: 'Learn more ->',
@@ -117,7 +118,7 @@ export default function LandingPremium({
       name: 'AI AUTOMATION FOR BUSINESSES',
       description:
         'Learn to leverage modern AI tools to automate complex workflows. Includes internship opportunities and laptop giveaways for eligible students.',
-      badgeText: '',
+      badgeText: 'Paid',
       badgeColor: 'bg-purple-600', // purple tab
       buttonColor: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
       buttonText: 'Learn more ->',
@@ -129,7 +130,7 @@ export default function LandingPremium({
       name: 'AI AUTOMATION FOR CONTENT CREATORS',
       description:
         'Master AI tools to supercharge your content creation workflow. Automate research, drafting, and distribution to scale your personal brand.',
-      badgeText: '',
+      badgeText: 'Paid',
       badgeColor: 'bg-pink-600', // pink tab
       buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
       buttonText: 'Learn more ->',
@@ -142,7 +143,7 @@ export default function LandingPremium({
       description:
         realFundamentals?.description ||
         'Prepare for advanced AI roles by mastering ML algorithms, data structures, and the logic of predictive modeling.',
-      badgeText: '',
+      badgeText: 'Paid',
       badgeColor: 'bg-emerald-500', // green tab
       buttonColor: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100',
       buttonText: 'Learn more ->',
@@ -330,6 +331,21 @@ export default function LandingPremium({
 
       {/* Global Footer */}
       <GlobalFooter />
+
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-full bg-gray-100 p-2 shadow-2xl shadow-slate-900/10 ring-1 ring-slate-200 backdrop-blur-sm">
+        <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
+          Need help?
+        </span>
+        <Link
+          href="https://wa.me/2349073166932"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl shadow-[#25D366]/30 ring-2 ring-white/60 transition-transform duration-300 hover:-translate-y-1 hover:bg-[#1ebe57] motion-safe:animate-bounce"
+          aria-label="Chat with support on WhatsApp"
+        >
+          <SiWhatsapp size={26} />
+        </Link>
+      </div>
     </div>
   )
 }
