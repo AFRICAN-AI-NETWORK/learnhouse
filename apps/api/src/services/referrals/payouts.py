@@ -345,7 +345,7 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
     return fallback_map.get(target_currency, 1.0)
 
 
-def decrypt_bank_data(encrypted_data: str) -> dict:
+def decrypt_bank_data(encrypted_data: str | dict | None) -> dict:
     """
     Decrypt bank account data (Production security)
 
@@ -358,6 +358,11 @@ def decrypt_bank_data(encrypted_data: str) -> dict:
     Raises:
         HTTPException: If decryption fails
     """
+    if not encrypted_data:
+        return {}
+    if isinstance(encrypted_data, dict):
+        return encrypted_data
+
     try:
         # Decode from base64
         encrypted_bytes = base64.b64decode(encrypted_data.encode("utf-8"))
@@ -387,7 +392,7 @@ def decrypt_bank_data(encrypted_data: str) -> dict:
 
 
 async def validate_payout_amount(
-    user_id: int, amount: float, db_session: Session
+    user_id: int, amount: float, db_session: Session, org_id: int = 1
 ) -> None:
     """
     Validate payout amount is within limits (DRY utility)
@@ -396,14 +401,17 @@ async def validate_payout_amount(
         user_id: User ID
         amount: Payout amount requested
         db_session: Database session
+        org_id: Organization ID
 
     Raises:
         HTTPException: If amount is invalid
     """
-    if amount < MINIMUM_PAYOUT_AMOUNT:
+    from src.services.referrals.marketers import get_minimum_payout
+    min_payout = await get_minimum_payout(user_id, org_id, db_session)
+    if amount < min_payout:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Minimum payout amount is ${MINIMUM_PAYOUT_AMOUNT}",
+            detail={"error_code": "MKTR_301", "message": f"Minimum payout amount is ${min_payout:.2f}"},
         )
 
     # Get user's eligible balance
@@ -422,7 +430,7 @@ async def validate_payout_amount(
     if amount > eligible_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Insufficient eligible balance. Available: ${eligible_amount:.2f}",
+            detail={"error_code": "MKTR_302", "message": f"Insufficient eligible balance. Available: ${eligible_amount:.2f}"},
         )
 
 
@@ -480,6 +488,8 @@ async def create_paystack_transfer_recipient(
             "POST", "/transferrecipient", recipient_data
         )
         return result
+    except httpx.RequestError:
+        raise
     except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to create Paystack transfer recipient: {e!s}")
         raise HTTPException(
@@ -530,6 +540,8 @@ async def initiate_paystack_transfer(
             "POST", "/transfer", transfer_data, headers=headers if headers else None
         )
         return result
+    except httpx.RequestError:
+        raise
     except Exception as e:  # noqa: BLE001
         logger.error(f"Failed to initiate Paystack transfer: {e!s}")
         raise HTTPException(
@@ -757,6 +769,7 @@ async def process_payout_request(
                 # Update payout status
                 payout.paystack_transfer_code = transfer_code
                 payout.status = PayoutStatus.COMPLETED
+                payout.converted_amount = amount_in_local
                 payout.completion_date = datetime.now(UTC)
                 db_session.add(payout)
 
@@ -1091,4 +1104,189 @@ async def get_active_payment_method(
         )
     )
     return db_session.exec(statement).first()
+
+
+
+def _handle_payout_failure(
+    payout: ReferrerPayoutRequest, reason: str, db_session: Session
+) -> None:
+    """
+    Graceful payout retry (DRY utility)
+
+    Transient Paystack failures are retried by the background job: the payout
+    is set back to APPROVED so the next job run (every ~5-30 min) retries it.
+    After MAX_PAYOUT_RETRIES the payout is marked FAILED permanently and the
+    marketer + admin are notified. Balance is never deducted on failure.
+    """
+    payout.retry_count = (payout.retry_count or 0) + 1
+    payout.last_retry_at = datetime.now()
+    payout.failure_reason = reason[:2000] if reason else None
+    payout.update_date = datetime.now()
+
+    if payout.retry_count >= MAX_PAYOUT_RETRIES:
+        payout.status = PayoutStatus.FAILED
+        logger.error(
+            f"Payout {payout.id} FAILED permanently after "
+            f"{payout.retry_count} attempts: {reason}"
+        )
+        user = db_session.get(User, payout.referrer_user_id)
+        if user:
+            _send_marketer_payout_email_safe(
+                payout, user, payout.currency, db_session, completed=False
+            )
+    else:
+        # Back to APPROVED — background job retries on its next run
+        payout.status = PayoutStatus.APPROVED
+        logger.warning(
+            f"Payout {payout.id} attempt {payout.retry_count}/"
+            f"{MAX_PAYOUT_RETRIES} failed, will retry: {reason}"
+        )
+
+    db_session.add(payout)
+    db_session.commit()
+
+MAX_PAYOUT_RETRIES = 3
+
+def build_masked_payment_method(
+    payment_method: MarketerPaymentMethod,
+) -> MarketerPaymentMethodRead:
+    """
+    Build the masked API representation of a payment method.
+    Full account numbers never leave the service layer — only last 4 digits.
+    """
+    details = decrypt_bank_data(payment_method.account_details)
+
+    if payment_method.payment_method_type == PaymentMethodType.MOBILE_MONEY:
+        raw_number = details.get("phone_number") or ""
+        holder = details.get("account_name")
+        bank_name = None
+        provider = details.get("provider")
+    else:
+        raw_number = details.get("account_number") or ""
+        holder = details.get("account_holder")
+        bank_name = details.get("bank_name")
+        provider = None
+
+    masked = f"****{raw_number[-4:]}" if raw_number else "****"
+
+    return MarketerPaymentMethodRead(
+        id=payment_method.id,
+        marketer_id=payment_method.marketer_id,
+        payment_method_type=payment_method.payment_method_type,
+        currency=payment_method.currency,
+        country_code=payment_method.country_code,
+        is_active=payment_method.is_active,
+        verified_at=payment_method.verified_at,
+        masked_account=masked,
+        account_holder=holder,
+        bank_name=bank_name,
+        provider=provider,
+        has_cached_recipient=payment_method.flutterwave_beneficiary_id is not None,
+        creation_date=payment_method.creation_date,
+    )
+
+def _handle_payout_failure(
+    payout: ReferrerPayoutRequest, reason: str, db_session: Session
+) -> None:
+    """
+    Graceful payout retry (DRY utility)
+
+    Transient Paystack failures are retried by the background job: the payout
+    is set back to APPROVED so the next job run (every ~5-30 min) retries it.
+    After MAX_PAYOUT_RETRIES the payout is marked FAILED permanently and the
+    marketer + admin are notified. Balance is never deducted on failure.
+    """
+    payout.retry_count = (payout.retry_count or 0) + 1
+    payout.last_retry_at = datetime.now()
+    payout.failure_reason = reason[:2000] if reason else None
+    payout.update_date = datetime.now()
+
+    if payout.retry_count >= MAX_PAYOUT_RETRIES:
+        payout.status = PayoutStatus.FAILED
+        logger.error(
+            f"Payout {payout.id} FAILED permanently after "
+            f"{payout.retry_count} attempts: {reason}"
+        )
+        user = db_session.get(User, payout.referrer_user_id)
+        if user:
+            _send_marketer_payout_email_safe(
+                payout, user, payout.currency, db_session, completed=False
+            )
+    else:
+        # Back to APPROVED — background job retries on its next run
+        payout.status = PayoutStatus.APPROVED
+        logger.warning(
+            f"Payout {payout.id} attempt {payout.retry_count}/"
+            f"{MAX_PAYOUT_RETRIES} failed, will retry: {reason}"
+        )
+
+    db_session.add(payout)
+    db_session.commit()
+
+
+COUNTRY_TO_AVAILABLE_PAYMENT_METHODS = {
+    "NG": {PaymentMethodType.BANK_TRANSFER},
+    "GH": {PaymentMethodType.BANK_TRANSFER, PaymentMethodType.MOBILE_MONEY},
+    "KE": {PaymentMethodType.MOBILE_MONEY},
+    "ZA": {PaymentMethodType.BANK_TRANSFER},
+    "RW": {PaymentMethodType.MOBILE_MONEY},
+    "TZ": {PaymentMethodType.MOBILE_MONEY},
+    "UG": {PaymentMethodType.MOBILE_MONEY},
+    "CI": {PaymentMethodType.MOBILE_MONEY},
+    "EG": {PaymentMethodType.BANK_TRANSFER},
+    "US": {PaymentMethodType.BANK_TRANSFER},
+    "GB": {PaymentMethodType.BANK_TRANSFER},
+    "EU": {PaymentMethodType.BANK_TRANSFER},
+}
+
+
+def _send_marketer_payout_email_safe(
+    payout: ReferrerPayoutRequest,
+    user: User,
+    currency: str,
+    db_session: Session,
+    completed: bool,
+) -> None:
+    """
+    Send payout lifecycle email to marketers. Never raises — email failure
+    must not affect payout state. No-op for standard (non-marketer) referrers.
+    """
+    try:
+        from src.db.referrals.marketers import Marketer, MarketerStatus
+
+        marketer = db_session.exec(
+            select(Marketer).where(
+                and_(
+                    Marketer.user_id == payout.referrer_user_id,
+                    Marketer.org_id == payout.org_id,
+                    Marketer.status == MarketerStatus.ACTIVE,
+                )
+            )
+        ).first()
+        if not marketer:
+            return
+
+        from src.services.referrals.marketer_emails import (
+            send_marketer_payout_completed_email,
+            send_marketer_payout_failed_email,
+        )
+
+        if completed:
+            send_marketer_payout_completed_email(
+                email=user.email,
+                username=user.username,
+                amount_usd=payout.total_amount,
+                converted_amount=payout.converted_amount,
+                currency=currency,
+                reference=payout.flutterwave_transfer_id,
+            )
+        else:
+            send_marketer_payout_failed_email(
+                email=user.email,
+                username=user.username,
+                amount_usd=payout.total_amount,
+                reason=payout.failure_reason,
+            )
+    except Exception as e:
+        logger.error(f"Failed to send marketer payout email: {e}")
 

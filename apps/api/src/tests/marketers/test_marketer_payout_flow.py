@@ -49,7 +49,7 @@ def mock_flutterwave(monkeypatch):
     async def fake_rate(currency):
         return 1500.0
 
-    monkeypatch.setattr(payouts_module, "make_flutterwave_request", fake_flutterwave)
+    monkeypatch.setattr(payouts_module, "make_paystack_request", fake_flutterwave)
     monkeypatch.setattr(payouts_module, "get_usd_to_currency_exchange_rate", fake_rate)
     return calls
 
@@ -153,7 +153,7 @@ async def test_full_payout_flow(test_db_session, mock_flutterwave):
     # 8. Background job processes → COMPLETED, balance decremented
     result = await process_payout_request(payout.id, test_db_session)
     assert result.status == PayoutStatus.COMPLETED
-    assert type(result.flutterwave_transfer_id) is str
+    assert type(result.paystack_transfer_code) is str
     assert result.converted_amount == pytest.approx(15.40 * 1500.0)
 
     test_db_session.refresh(user)

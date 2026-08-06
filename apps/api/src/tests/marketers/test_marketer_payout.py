@@ -134,6 +134,14 @@ async def test_process_payout_skips_requested_status(test_db_session):
 @pytest.mark.asyncio
 async def test_process_payout_processes_approved(test_db_session, monkeypatch):
     """APPROVED payouts enter processing (previously silently skipped)"""
+    import httpx
+    from src.services.referrals import payouts as payouts_module
+    
+    async def mock_network_error(*args, **kwargs):
+        raise httpx.ConnectTimeout("Mocked network timeout")
+    
+    monkeypatch.setattr(payouts_module, "make_paystack_request", mock_network_error)
+
     user = make_user(test_db_session, country="NG")
     payout = _make_payout(test_db_session, user, status=PayoutStatus.APPROVED)
 
