@@ -166,11 +166,10 @@ def _sync_refresh_marketer_counters() -> dict:
                 _safe_asyncio_run(refresh_marketer_counters(marketer_id, db_session))
                 refreshed_count += 1
             except Exception as e:
-                logger.error(
+                logger.exception(
                     "Error refreshing counters for marketer %s: %s",
                     marketer_id,
                     e,
-                    exc_info=True,
                 )
                 failed_count += 1
 
@@ -201,7 +200,7 @@ async def refresh_all_marketer_counters_job():
             result["failed_count"],
         )
     except Exception as e:
-        logger.error("Marketer counters refresh job failed: %s", e, exc_info=True)
+        logger.exception("Marketer counters refresh job failed: %s", e)
 
 
 # Schedule configuration for external scheduler (e.g., APScheduler, Celery)

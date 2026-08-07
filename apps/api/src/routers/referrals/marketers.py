@@ -209,10 +209,10 @@ async def api_get_marketer_monthly_revenue(
     db_session: Session = Depends(get_db_session),
 ):
     """Monthly revenue for a year (defaults to current year)"""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     await require_active_marketer(current_user, org_id, db_session)
-    year = year or datetime.now().year
+    year = year or datetime.now(timezone.utc).year
     months = await get_marketer_monthly_revenue(
         current_user.id, org_id, year, db_session
     )
@@ -261,7 +261,7 @@ async def api_delete_payment_method(
     db_session: Session = Depends(get_db_session),
 ):
     """Deactivate the saved method. 400 while a payout is PROCESSING."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     marketer = await require_active_marketer(current_user, org_id, db_session)
 
@@ -281,11 +281,12 @@ async def api_delete_payment_method(
         )
 
     payment_method = await get_active_payment_method(marketer.id, db_session)
+
     if not payment_method:
         raise marketer_error(404, "MKTR_304", "No payment method saved")
 
     payment_method.is_active = False
-    payment_method.update_date = datetime.now()
+    payment_method.update_date = datetime.now(timezone.utc)
     db_session.add(payment_method)
     db_session.commit()
     return {"message": "Payment method removed"}
@@ -728,7 +729,7 @@ async def api_admin_approve_marketer_payout(
     db_session: Session = Depends(get_db_session),
 ):
     """Approve a payout — the background job processes it automatically"""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     _require_admin(current_user, org_id, db_session)
 
@@ -741,7 +742,7 @@ async def api_admin_approve_marketer_payout(
         )
 
     payout.status = PayoutStatus.APPROVED
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(timezone.utc)
     db_session.add(payout)
     db_session.commit()
 
@@ -777,7 +778,7 @@ async def api_admin_reject_marketer_payout(
     db_session: Session = Depends(get_db_session),
 ):
     """Reject a payout request. MKTR_406 once it is APPROVED or beyond."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     _require_admin(current_user, org_id, db_session)
 
@@ -791,7 +792,7 @@ async def api_admin_reject_marketer_payout(
 
     payout.status = PayoutStatus.FAILED
     payout.failure_reason = body.reason
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(timezone.utc)
     db_session.add(payout)
     db_session.commit()
 

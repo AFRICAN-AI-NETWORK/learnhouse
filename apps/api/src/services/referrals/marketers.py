@@ -8,7 +8,7 @@ webhook time by get_commission_amount_for_code().
 
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, Request, status
 from redis.exceptions import RedisError
@@ -269,8 +269,8 @@ async def register_marketer(
         status=MarketerStatus.PENDING_APPROVAL,
         commission_rate_usd=MARKETER_COMMISSION_RATE_USD,
         needs_review=needs_review,
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
     )
     db_session.add(marketer)
     try:
@@ -319,8 +319,8 @@ async def approve_marketer(
 
     marketer.status = MarketerStatus.ACTIVE
     marketer.approved_by_user_id = admin_user_id
-    marketer.approved_at = datetime.now()
-    marketer.update_date = datetime.now()
+    marketer.approved_at = datetime.now(timezone.utc)
+    marketer.update_date = datetime.now(timezone.utc)
     db_session.add(marketer)
     db_session.commit()
     db_session.refresh(marketer)
@@ -361,7 +361,7 @@ async def reject_marketer(
 
     marketer.status = MarketerStatus.REJECTED
     marketer.rejection_reason = reason
-    marketer.update_date = datetime.now()
+    marketer.update_date = datetime.now(timezone.utc)
     db_session.add(marketer)
     db_session.commit()
     db_session.refresh(marketer)
@@ -401,7 +401,7 @@ async def suspend_marketer(
         )
 
     marketer.status = MarketerStatus.SUSPENDED
-    marketer.update_date = datetime.now()
+    marketer.update_date = datetime.now(timezone.utc)
     db_session.add(marketer)
 
     # Deactivate referral code — new signups cannot use it
@@ -438,7 +438,7 @@ async def reactivate_marketer(
         )
 
     marketer.status = MarketerStatus.ACTIVE
-    marketer.update_date = datetime.now()
+    marketer.update_date = datetime.now(timezone.utc)
     db_session.add(marketer)
 
     # Re-activate referral code
@@ -478,7 +478,7 @@ async def generate_referral_code_for_marketer(
     )
     if existing_code:
         marketer.referral_code_id = existing_code.id
-        marketer.update_date = datetime.now()
+        marketer.update_date = datetime.now(timezone.utc)
         db_session.add(marketer)
         db_session.commit()
         db_session.refresh(existing_code)
@@ -504,8 +504,8 @@ async def generate_referral_code_for_marketer(
         code=code,
         referral_link=build_referral_link(code),
         status=ReferralCodeStatus.ACTIVE,
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        creation_date=datetime.now(timezone.utc),
+        update_date=datetime.now(timezone.utc),
     )
     db_session.add(referral_code)
 
@@ -518,7 +518,7 @@ async def generate_referral_code_for_marketer(
     db_session.refresh(referral_code)
 
     marketer.referral_code_id = referral_code.id
-    marketer.update_date = datetime.now()
+    marketer.update_date = datetime.now(timezone.utc)
     db_session.add(marketer)
     db_session.commit()
 
@@ -671,7 +671,7 @@ async def get_marketer_dashboard(
 
     # Monthly revenue: last 12 months, single group-by query
     monthly = await get_marketer_monthly_revenue(
-        marketer_user_id, org_id, datetime.now().year, db_session
+        marketer_user_id, org_id, datetime.now(timezone.utc).year, db_session
     )
 
     # KYC + payment method state
@@ -1063,6 +1063,6 @@ async def refresh_marketer_counters(marketer_id: int, db_session: Session) -> No
     marketer.total_courses_sold = total_courses
     marketer.total_earned_usd = round(total_earned, 2)
     marketer.total_paid_usd = round(total_paid, 2)
-    marketer.update_date = datetime.now()
+    marketer.update_date = datetime.now(timezone.utc)
     db_session.add(marketer)
     db_session.commit()

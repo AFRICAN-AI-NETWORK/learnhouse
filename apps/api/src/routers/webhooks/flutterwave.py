@@ -33,9 +33,7 @@ async def _create_referral_commission_for_flutterwave(
     Referral attribution comes from the payer's PaymentsUser record (set at
     checkout) or from webhook metadata as a fallback.
     """
-    from datetime import datetime
-
-    from sqlmodel import and_
+    from datetime import datetime, timezone
 
     from src.db.payments.payments_users import PaymentsUser
     from src.db.referrals.referral_tracking import ReferralTracking
@@ -44,34 +42,35 @@ async def _create_referral_commission_for_flutterwave(
     )
 
     # Find the payment user record for this payer (most recent for this org)
-    payment_user_statement = (
+    payment_user = db_session.exec(
         select(PaymentsUser)
-        .where(PaymentsUser.user_id == user.id)
-        .order_by(PaymentsUser.creation_date.desc())
-    )
-    payment_user = db_session.exec(payment_user_statement).first()
+        .where(
+            PaymentsUser.user_id == user.id,
+            PaymentsUser.org_id == course.org_id,
+        )
+        .order_by(PaymentsUser.id.desc())
+    ).first()
 
-    referral_code_id = None
-    if payment_user and payment_user.referral_code_id:
-        referral_code_id = payment_user.referral_code_id
-    elif meta.get("referral_code_id"):
-        referral_code_id = int(meta["referral_code_id"])
-
-    if not payment_user or not referral_code_id:
+    if not payment_user:
+        logger.warning(
+            f"No payment user record found for user {user.id} in org {course.org_id}"
+        )
         return
 
-    # Find the tracking record linking this student to a referrer
+    # Lookup referral tracking for this referred student
     tracking = db_session.exec(
         select(ReferralTracking).where(
-            and_(
-                ReferralTracking.referred_user_id == user.id,
-                ReferralTracking.referral_code_id == referral_code_id,
-            )
+            ReferralTracking.referred_user_id == user.id,
         )
     ).first()
 
     if not tracking:
-        logger.warning(
+        logger.info(f"No referral tracking found for Flutterwave payment by user {user.id}")
+        return
+
+    referral_code_id = tracking.referral_code_id
+    if not referral_code_id:
+        logger.info(
             f"No referral tracking found for Flutterwave payment by user {user.id} "
             f"with referral_code_id {referral_code_id}"
         )
@@ -84,7 +83,7 @@ async def _create_referral_commission_for_flutterwave(
         payment_user_id=payment_user.id,
         course_id=course.id,
         referral_code_id=referral_code_id,
-        payment_completion_date=datetime.now(),
+        payment_completion_date=datetime.now(timezone.utc),
         db_session=db_session,
     )
     if commission:

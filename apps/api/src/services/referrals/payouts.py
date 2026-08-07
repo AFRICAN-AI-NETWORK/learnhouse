@@ -654,9 +654,9 @@ async def create_payout_request(
         currency="USD",  # Base currency
         status=PayoutStatus.REQUESTED,
         bank_account_info=encrypted_bank_info,  # Encrypted for security
-        request_date=datetime.now(),
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        request_date=datetime.now(UTC),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
 
     db_session.add(payout)
@@ -970,7 +970,7 @@ async def cache_paystack_recipient_code(
     payment_method = db_session.get(MarketerPaymentMethod, payment_method_id)
     if payment_method:
         payment_method.paystack_recipient_code = recipient_code
-        payment_method.update_date = datetime.now()
+        payment_method.update_date = datetime.now(UTC)
         db_session.add(payment_method)
         db_session.commit()
         logger.info(
@@ -991,7 +991,7 @@ async def reset_paystack_recipient_codes_for_user(
     ).all()
     for method in methods:
         method.paystack_recipient_code = None
-        method.update_date = datetime.now()
+        method.update_date = datetime.now(UTC)
         db_session.add(method)
     if methods:
         db_session.commit()
@@ -1087,7 +1087,7 @@ async def save_payment_method(
     ).all()
     for method in existing_methods:
         method.is_active = False
-        method.update_date = datetime.now()
+        method.update_date = datetime.now(UTC)
         db_session.add(method)
 
     payment_method = MarketerPaymentMethod(
@@ -1100,8 +1100,8 @@ async def save_payment_method(
         account_details=encrypted_details,
         paystack_recipient_code=None,
         is_active=True,
-        creation_date=datetime.now(),
-        update_date=datetime.now(),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
     )
     db_session.add(payment_method)
     db_session.commit()
@@ -1150,9 +1150,9 @@ def _handle_payout_failure(
     marketer + admin are notified. Balance is never deducted on failure.
     """
     payout.retry_count = (payout.retry_count or 0) + 1
-    payout.last_retry_at = datetime.now()
+    payout.last_retry_at = datetime.now(UTC)
     payout.failure_reason = reason[:2000] if reason else None
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(UTC)
 
     if payout.retry_count >= MAX_PAYOUT_RETRIES:
         payout.status = PayoutStatus.FAILED
@@ -1228,9 +1228,9 @@ def _handle_payout_failure(
     marketer + admin are notified. Balance is never deducted on failure.
     """
     payout.retry_count = (payout.retry_count or 0) + 1
-    payout.last_retry_at = datetime.now()
+    payout.last_retry_at = datetime.now(UTC)
     payout.failure_reason = reason[:2000] if reason else None
-    payout.update_date = datetime.now()
+    payout.update_date = datetime.now(UTC)
 
     if payout.retry_count >= MAX_PAYOUT_RETRIES:
         payout.status = PayoutStatus.FAILED
