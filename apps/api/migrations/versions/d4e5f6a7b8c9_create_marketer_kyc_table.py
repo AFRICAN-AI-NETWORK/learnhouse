@@ -38,71 +38,76 @@ def upgrade() -> None:
         )
     )
 
-    op.create_table(
-        "marketerkyc",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("marketer_id", sa.BigInteger(), nullable=False),
-        sa.Column("user_id", sa.BigInteger(), nullable=False),
-        sa.Column("org_id", sa.BigInteger(), nullable=False),
-        sa.Column(
-            "document_type",
-            postgresql.ENUM(
-                "NATIONAL_ID",
-                "PASSPORT",
-                "DRIVERS_LICENSE",
-                name="kycdocumenttype",
-                create_type=False,
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_tables = inspector.get_table_names()
+
+    if "marketerkyc" not in existing_tables:
+        op.create_table(
+            "marketerkyc",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("marketer_id", sa.BigInteger(), nullable=False),
+            sa.Column("user_id", sa.BigInteger(), nullable=False),
+            sa.Column("org_id", sa.BigInteger(), nullable=False),
+            sa.Column(
+                "document_type",
+                postgresql.ENUM(
+                    "NATIONAL_ID",
+                    "PASSPORT",
+                    "DRIVERS_LICENSE",
+                    name="kycdocumenttype",
+                    create_type=False,
+                ),
+                nullable=False,
             ),
-            nullable=False,
-        ),
-        sa.Column(
-            "id_number_hash",
-            sqlmodel.sql.sqltypes.AutoString(length=64),
-            nullable=False,
-        ),
-        sa.Column(
-            "document_front_url",
-            sqlmodel.sql.sqltypes.AutoString(length=500),
-            nullable=False,
-        ),
-        sa.Column(
-            "document_back_url",
-            sqlmodel.sql.sqltypes.AutoString(length=500),
-            nullable=True,
-        ),
-        sa.Column(
-            "selfie_url", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False
-        ),
-        sa.Column(
-            "status",
-            postgresql.ENUM(
-                "UNVERIFIED",
-                "PENDING_REVIEW",
-                "VERIFIED",
-                "REJECTED",
-                name="kycstatus",
-                create_type=False,
+            sa.Column(
+                "id_number_hash",
+                sqlmodel.sql.sqltypes.AutoString(length=64),
+                nullable=False,
             ),
-            nullable=False,
-            server_default="UNVERIFIED",
-        ),
-        sa.Column("rejection_reason", sa.Text(), nullable=True),
-        sa.Column("reviewed_by_user_id", sa.BigInteger(), nullable=True),
-        sa.Column("reviewed_at", sa.DateTime(), nullable=True),
-        sa.Column("submission_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("creation_date", sa.DateTime(), nullable=False),
-        sa.Column("update_date", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["marketer_id"], ["marketer.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["reviewed_by_user_id"], ["user.id"], ondelete="SET NULL"
-        ),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("id_number_hash", name="uq_kyc_id_number_hash"),
-    )
-    op.create_index("idx_kyc_marketer", "marketerkyc", ["marketer_id"])
-    op.create_index("idx_kyc_status_org", "marketerkyc", ["org_id", "status"])
+            sa.Column(
+                "document_front_url",
+                sqlmodel.sql.sqltypes.AutoString(length=500),
+                nullable=False,
+            ),
+            sa.Column(
+                "document_back_url",
+                sqlmodel.sql.sqltypes.AutoString(length=500),
+                nullable=True,
+            ),
+            sa.Column(
+                "selfie_url", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False
+            ),
+            sa.Column(
+                "status",
+                postgresql.ENUM(
+                    "UNVERIFIED",
+                    "PENDING_REVIEW",
+                    "VERIFIED",
+                    "REJECTED",
+                    name="kycstatus",
+                    create_type=False,
+                ),
+                nullable=False,
+                server_default="UNVERIFIED",
+            ),
+            sa.Column("rejection_reason", sa.Text(), nullable=True),
+            sa.Column("reviewed_by_user_id", sa.BigInteger(), nullable=True),
+            sa.Column("reviewed_at", sa.DateTime(), nullable=True),
+            sa.Column("submission_count", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column("creation_date", sa.DateTime(), nullable=False),
+            sa.Column("update_date", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["marketer_id"], ["marketer.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["reviewed_by_user_id"], ["user.id"], ondelete="SET NULL"
+            ),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("id_number_hash", name="uq_kyc_id_number_hash"),
+        )
+        op.create_index("idx_kyc_marketer", "marketerkyc", ["marketer_id"])
+        op.create_index("idx_kyc_status_org", "marketerkyc", ["org_id", "status"])
 
 
 def downgrade() -> None:

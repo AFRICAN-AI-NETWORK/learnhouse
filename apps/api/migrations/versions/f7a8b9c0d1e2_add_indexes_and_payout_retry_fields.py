@@ -22,19 +22,24 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Nightly eligibility job currently full-scans referralcommission
-    op.create_index(
-        "idx_commission_refund_expiry",
-        "referralcommission",
-        ["status", "refund_period_expiration_date"],
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
 
-    # Payout background job queries APPROVED payouts by status alone
-    op.create_index(
-        "idx_payout_status",
-        "referrerpayoutrequest",
-        ["status"],
-    )
+    rc_indexes = [idx["name"] for idx in inspector.get_indexes("referralcommission")]
+    if "idx_commission_refund_expiry" not in rc_indexes:
+        op.create_index(
+            "idx_commission_refund_expiry",
+            "referralcommission",
+            ["status", "refund_period_expiration_date"],
+        )
+
+    rpr_indexes = [idx["name"] for idx in inspector.get_indexes("referrerpayoutrequest")]
+    if "idx_payout_status" not in rpr_indexes:
+        op.create_index(
+            "idx_payout_status",
+            "referrerpayoutrequest",
+            ["status"],
+        )
 
     # Payout retry system fields & Flutterwave transfer tracking fields
     op.get_bind().execute(
