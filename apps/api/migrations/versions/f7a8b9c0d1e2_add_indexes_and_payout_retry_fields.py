@@ -36,14 +36,20 @@ def upgrade() -> None:
         ["status"],
     )
 
-    # Payout retry system fields
-    op.add_column(
-        "referrerpayoutrequest",
-        sa.Column("retry_count", sa.Integer(), nullable=False, server_default="0"),
-    )
-    op.add_column(
-        "referrerpayoutrequest",
-        sa.Column("last_retry_at", sa.DateTime(), nullable=True),
+    # Payout retry system fields & Flutterwave transfer tracking fields
+    op.get_bind().execute(
+        sa.text(
+            "DO $$ BEGIN "
+            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='referrerpayoutrequest' AND column_name='retry_count') THEN "
+            "ALTER TABLE referrerpayoutrequest ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0; END IF; "
+            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='referrerpayoutrequest' AND column_name='last_retry_at') THEN "
+            "ALTER TABLE referrerpayoutrequest ADD COLUMN last_retry_at TIMESTAMP WITHOUT TIME ZONE NULL; END IF; "
+            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='referrerpayoutrequest' AND column_name='flutterwave_beneficiary_id') THEN "
+            "ALTER TABLE referrerpayoutrequest ADD COLUMN flutterwave_beneficiary_id VARCHAR(255) NULL; END IF; "
+            "IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='referrerpayoutrequest' AND column_name='flutterwave_transfer_id') THEN "
+            "ALTER TABLE referrerpayoutrequest ADD COLUMN flutterwave_transfer_id VARCHAR(255) NULL; END IF; "
+            "END $$;"
+        )
     )
 
 

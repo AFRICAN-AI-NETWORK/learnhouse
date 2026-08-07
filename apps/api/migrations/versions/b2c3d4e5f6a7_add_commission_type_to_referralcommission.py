@@ -24,7 +24,12 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    sa.Enum("STANDARD", "MARKETER", name="commissiontype").create(op.get_bind())
+    op.get_bind().execute(
+        sa.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'commissiontype') "
+            "THEN CREATE TYPE commissiontype AS ENUM ('STANDARD', 'MARKETER'); END IF; END $$;"
+        )
+    )
 
     op.add_column(
         "referralcommission",

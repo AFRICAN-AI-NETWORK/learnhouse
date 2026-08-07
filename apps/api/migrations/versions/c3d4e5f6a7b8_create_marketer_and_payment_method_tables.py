@@ -24,11 +24,17 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    sa.Enum(
-        "PENDING_APPROVAL", "ACTIVE", "SUSPENDED", "REJECTED", name="marketerstatus"
-    ).create(op.get_bind())
-    sa.Enum("BANK_TRANSFER", "MOBILE_MONEY", name="paymentmethodtype").create(
-        op.get_bind()
+    op.get_bind().execute(
+        sa.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'marketerstatus') "
+            "THEN CREATE TYPE marketerstatus AS ENUM ('PENDING_APPROVAL', 'ACTIVE', 'SUSPENDED', 'REJECTED'); END IF; END $$;"
+        )
+    )
+    op.get_bind().execute(
+        sa.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentmethodtype') "
+            "THEN CREATE TYPE paymentmethodtype AS ENUM ('BANK_TRANSFER', 'MOBILE_MONEY'); END IF; END $$;"
+        )
     )
 
     op.create_table(
