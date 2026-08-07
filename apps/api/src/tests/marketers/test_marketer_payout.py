@@ -3,7 +3,7 @@ Marketer payout tests: minimums, saved payment methods, in-flight blocking,
 the APPROVED-guard bug fix, and the retry system.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import HTTPException
@@ -40,12 +40,12 @@ def _add_eligible_commission(db, user, amount=7.70, org_id=1):
         org_id=org_id,
         referrer_user_id=user.id,
         referred_user_id=user.id,
-        payment_user_id=int(datetime.now().timestamp() * 1000) % 10_000_000,
+        payment_user_id=int(datetime.now(UTC).timestamp() * 1000) % 10_000_000,
         referral_code_id=1,
         commission_amount=amount,
         status=CommissionStatus.ELIGIBLE,
-        payment_completion_date=datetime.now() - timedelta(days=15),
-        refund_period_expiration_date=datetime.now() - timedelta(days=1),
+        payment_completion_date=datetime.now(UTC) - timedelta(days=15),
+        refund_period_expiration_date=datetime.now(UTC) - timedelta(days=1),
     )
     db.add(commission)
     db.commit()

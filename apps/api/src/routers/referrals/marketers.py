@@ -8,6 +8,7 @@ Internal details are logged server-side only, never returned to the client.
 """
 
 import logging
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from pydantic import BaseModel
@@ -209,10 +210,10 @@ async def api_get_marketer_monthly_revenue(
     db_session: Session = Depends(get_db_session),
 ):
     """Monthly revenue for a year (defaults to current year)"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     await require_active_marketer(current_user, org_id, db_session)
-    year = year or datetime.now(timezone.utc).year
+    year = year or datetime.now(UTC).year
     months = await get_marketer_monthly_revenue(
         current_user.id, org_id, year, db_session
     )
@@ -261,7 +262,7 @@ async def api_delete_payment_method(
     db_session: Session = Depends(get_db_session),
 ):
     """Deactivate the saved method. 400 while a payout is PROCESSING."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     marketer = await require_active_marketer(current_user, org_id, db_session)
 
@@ -286,7 +287,7 @@ async def api_delete_payment_method(
         raise marketer_error(404, "MKTR_304", "No payment method saved")
 
     payment_method.is_active = False
-    payment_method.update_date = datetime.now(timezone.utc)
+    payment_method.update_date = datetime.now(UTC)
     db_session.add(payment_method)
     db_session.commit()
     return {"message": "Payment method removed"}
@@ -729,7 +730,7 @@ async def api_admin_approve_marketer_payout(
     db_session: Session = Depends(get_db_session),
 ):
     """Approve a payout — the background job processes it automatically"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     _require_admin(current_user, org_id, db_session)
 
@@ -742,7 +743,7 @@ async def api_admin_approve_marketer_payout(
         )
 
     payout.status = PayoutStatus.APPROVED
-    payout.update_date = datetime.now(timezone.utc)
+    payout.update_date = datetime.now(UTC)
     db_session.add(payout)
     db_session.commit()
 
@@ -757,7 +758,7 @@ async def api_admin_approve_marketer_payout(
             send_marketer_payout_processing_email(
                 user.email, user.username, payout.total_amount
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - intentionally swallow email errors
             logger.error(f"Failed to send payout processing email: {e}")
 
     logger.info(
@@ -778,7 +779,7 @@ async def api_admin_reject_marketer_payout(
     db_session: Session = Depends(get_db_session),
 ):
     """Reject a payout request. MKTR_406 once it is APPROVED or beyond."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     _require_admin(current_user, org_id, db_session)
 
@@ -792,7 +793,7 @@ async def api_admin_reject_marketer_payout(
 
     payout.status = PayoutStatus.FAILED
     payout.failure_reason = body.reason
-    payout.update_date = datetime.now(timezone.utc)
+    payout.update_date = datetime.now(UTC)
     db_session.add(payout)
     db_session.commit()
 

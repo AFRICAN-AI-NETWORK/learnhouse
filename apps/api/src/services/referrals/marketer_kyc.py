@@ -9,7 +9,7 @@ are stored as S3 keys and signed on demand for admin review only.
 import hashlib
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -202,7 +202,7 @@ async def submit_kyc(
         existing.status = KYCStatus.PENDING_REVIEW
         existing.rejection_reason = None
         existing.submission_count += 1
-        existing.update_date = datetime.now(timezone.utc)
+        existing.update_date = datetime.now(UTC)
         kyc = existing
     else:
         kyc = MarketerKYC(
@@ -216,8 +216,8 @@ async def submit_kyc(
             selfie_url=selfie_key,
             status=KYCStatus.PENDING_REVIEW,
             submission_count=1,
-            creation_date=datetime.now(timezone.utc),
-            update_date=datetime.now(timezone.utc),
+            creation_date=datetime.now(UTC),
+            update_date=datetime.now(UTC),
         )
 
     db_session.add(kyc)
@@ -253,9 +253,9 @@ async def approve_kyc(
 
     kyc.status = KYCStatus.VERIFIED
     kyc.reviewed_by_user_id = admin_user_id
-    kyc.reviewed_at = datetime.now(timezone.utc)
+    kyc.reviewed_at = datetime.now(UTC)
     kyc.rejection_reason = None
-    kyc.update_date = datetime.now(timezone.utc)
+    kyc.update_date = datetime.now(UTC)
     db_session.add(kyc)
     db_session.commit()
     db_session.refresh(kyc)
@@ -268,7 +268,7 @@ async def approve_kyc(
             )
 
             send_marketer_kyc_verified_email(user.email, user.username)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - intentionally swallow email errors
             logger.error(f"Failed to send KYC verified email: {e}")
 
     logger.info(f"KYC {kyc_id} approved by admin {admin_user_id}")
@@ -288,8 +288,8 @@ async def reject_kyc(
     kyc.status = KYCStatus.REJECTED
     kyc.rejection_reason = reason
     kyc.reviewed_by_user_id = admin_user_id
-    kyc.reviewed_at = datetime.now(timezone.utc)
-    kyc.update_date = datetime.now(timezone.utc)
+    kyc.reviewed_at = datetime.now(UTC)
+    kyc.update_date = datetime.now(UTC)
     db_session.add(kyc)
     db_session.commit()
     db_session.refresh(kyc)
@@ -305,7 +305,7 @@ async def reject_kyc(
             send_marketer_kyc_rejected_email(
                 user.email, user.username, reason, attempts_remaining
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - intentionally swallow email errors
             logger.error(f"Failed to send KYC rejected email: {e}")
 
     logger.info(f"KYC {kyc_id} rejected by admin {admin_user_id}: {reason}")

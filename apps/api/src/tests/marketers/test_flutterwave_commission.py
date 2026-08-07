@@ -4,7 +4,7 @@ The Flutterwave handler must create commissions like the Paystack handler,
 with idempotency guaranteed by the (payment_user_id, referral_code_id) rule.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from sqlmodel import select
@@ -35,8 +35,8 @@ def _setup_payment_flow(db, with_referral=True):
         org_id=1,
         public=True,
         open_to_contributors=False,
-        creation_date=str(datetime.now()),
-        update_date=str(datetime.now()),
+        creation_date=str(datetime.now(UTC)),
+        update_date=str(datetime.now(UTC)),
     )
     db.add(course)
     db.commit()

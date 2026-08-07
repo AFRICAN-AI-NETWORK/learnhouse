@@ -888,7 +888,7 @@ async def process_payout_request(
             is_transient_network_error = isinstance(
                 e, (httpx.RequestError, httpx.TimeoutException, httpx.HTTPStatusError)
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             is_transient_network_error = False
 
         if is_transient_network_error:
@@ -1318,6 +1318,6 @@ def _send_marketer_payout_email_safe(
                 amount_usd=payout.total_amount,
                 reason=payout.failure_reason,
             )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - intentionally swallow email errors
         logger.error(f"Failed to send marketer payout email: {e}")
 

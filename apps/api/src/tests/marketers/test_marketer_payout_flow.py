@@ -5,7 +5,7 @@ commission → eligible → KYC verified → payment method saved → payout req
 balance decremented → recipient code cached for reuse
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -70,8 +70,8 @@ async def test_full_payout_flow(test_db_session, mock_flutterwave):
             referral_code_id=code.id,
             commission_amount=7.70,
             status=CommissionStatus.PENDING,
-            payment_completion_date=datetime.now() - timedelta(days=15),
-            refund_period_expiration_date=datetime.now() - timedelta(days=1),
+            payment_completion_date=datetime.now(UTC) - timedelta(days=15),
+            refund_period_expiration_date=datetime.now(UTC) - timedelta(days=1),
         )
         test_db_session.add(commission)
     test_db_session.commit()
@@ -193,8 +193,8 @@ async def test_eligibility_job_chunked_processing(test_db_session, monkeypatch):
             referral_code_id=1,
             commission_amount=4.00,
             status=CommissionStatus.PENDING,
-            payment_completion_date=datetime.now() - timedelta(days=15),
-            refund_period_expiration_date=datetime.now() - timedelta(days=1),
+            payment_completion_date=datetime.now(UTC) - timedelta(days=15),
+            refund_period_expiration_date=datetime.now(UTC) - timedelta(days=1),
         )
         test_db_session.add(commission)
     test_db_session.commit()

@@ -439,7 +439,7 @@ class TestGetCommissionBalance:
 
     @staticmethod
     def _add_commission(db_session, user_id, amount, status, payment_user_id):
-        now = datetime.now()
+        now = datetime.now(UTC)
         commission = ReferralCommission(
             org_id=100,
             referrer_user_id=user_id,

@@ -3,7 +3,7 @@ Commission amount resolution tests
 Active marketer → $7.70 / MARKETER; everyone else → $4.00 / STANDARD
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -128,7 +128,7 @@ async def test_create_commission_uses_marketer_amount(test_db_session):
         payment_user_id=1,
         course_id=None,
         referral_code_id=code.id,
-        payment_completion_date=datetime.now(timezone.utc),
+        payment_completion_date=datetime.now(UTC),
         db_session=test_db_session,
     )
 
@@ -144,7 +144,7 @@ async def test_create_commission_uses_marketer_amount(test_db_session):
         payment_user_id=1,
         course_id=None,
         referral_code_id=code.id,
-        payment_completion_date=datetime.now(timezone.utc),
+        payment_completion_date=datetime.now(UTC),
         db_session=test_db_session,
     )
     assert duplicate is None
@@ -172,7 +172,7 @@ async def test_create_commission_standard_referrer(test_db_session):
         payment_user_id=2,
         course_id=None,
         referral_code_id=code.id,
-        payment_completion_date=datetime.now(timezone.utc),
+        payment_completion_date=datetime.now(UTC),
         db_session=test_db_session,
     )
 

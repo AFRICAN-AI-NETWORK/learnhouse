@@ -1,5 +1,6 @@
 
 import logging
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session, select
@@ -33,7 +34,7 @@ async def _create_referral_commission_for_flutterwave(
     Referral attribution comes from the payer's PaymentsUser record (set at
     checkout) or from webhook metadata as a fallback.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from src.db.payments.payments_users import PaymentsUser
     from src.db.referrals.referral_tracking import ReferralTracking
@@ -83,7 +84,7 @@ async def _create_referral_commission_for_flutterwave(
         payment_user_id=payment_user.id,
         course_id=course.id,
         referral_code_id=referral_code_id,
-        payment_completion_date=datetime.now(timezone.utc),
+        payment_completion_date=datetime.now(UTC),
         db_session=db_session,
     )
     if commission:

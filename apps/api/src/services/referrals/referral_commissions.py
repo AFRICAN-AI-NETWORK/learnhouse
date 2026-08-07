@@ -102,7 +102,7 @@ async def create_commission_for_payment(
         commission_amount, commission_type = await get_commission_amount_for_code(
             referral_code_id, db_session
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - fallback calculation protection
         logger.error(
             f"MKTR_103: Commission amount calculation failed for referral code "
             f"{referral_code_id}: {e}. Falling back to standard ${COMMISSION_AMOUNT_USD}"
@@ -318,9 +318,9 @@ def _send_marketer_eligible_digests(digest_totals: dict, db_session: Session) ->
                 send_marketer_commission_eligible_email(
                     user.email, user.username, round(digest_totals[user.id], 2)
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - intentionally swallow email errors
                 logger.error(f"Failed to send eligible digest to user {user.id}: {e}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - digest step protection
         logger.error(f"Marketer eligible digest step failed: {e}")
 
 

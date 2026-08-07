@@ -3,7 +3,7 @@ Integration test: full marketer registration flow
 register → pending → approve → code generated → $7.70 commission on payment
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -48,7 +48,7 @@ async def test_full_registration_to_commission_flow(test_db_session):
         payment_user_id=777,
         course_id=None,
         referral_code_id=code.id,
-        payment_completion_date=datetime.now(),
+        payment_completion_date=datetime.now(UTC),
         db_session=test_db_session,
     )
 
