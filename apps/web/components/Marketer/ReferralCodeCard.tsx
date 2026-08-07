@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import { Copy, Check, Sparkles, Link2 } from 'lucide-react'
+import { Copy, Check, TrendingUp, Link2 } from 'lucide-react'
 
 interface ReferralCodeCardProps {
   code?: string
@@ -67,7 +67,7 @@ export function ReferralCodeCard({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
-            <Sparkles size={18} />
+            <TrendingUp size={18} />
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">

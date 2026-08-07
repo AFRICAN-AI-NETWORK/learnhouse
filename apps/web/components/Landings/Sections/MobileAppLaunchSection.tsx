@@ -30,7 +30,7 @@ export default function MobileAppLaunchSection() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
             <div className="px-8 py-4 bg-[#0a0f1e] text-white rounded-xl font-bold text-[15px] shadow-2xl flex items-center justify-center gap-2 w-full sm:w-auto">
-              Launching July 30th <ArrowRight size={18} />
+              Launching 31st August <ArrowRight size={18} />
             </div>
           </div>
         </div>

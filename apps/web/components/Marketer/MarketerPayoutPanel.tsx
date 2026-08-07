@@ -62,7 +62,7 @@ export function MarketerPayoutPanel({
       if (onSuccess) onSuccess()
     } else if (res.error) {
       if (res.error.error_code === 'MKTR_303') {
-        setError('A payout is already in progress — please wait for it to complete.')
+        setError('A payout is already in progress, please wait for it to complete.')
       } else if (res.error.error_code === 'MKTR_301') {
         setError(`Minimum payout amount is $${minPayout.toFixed(2)} USD.`)
       } else if (res.error.error_code === 'MKTR_302') {
