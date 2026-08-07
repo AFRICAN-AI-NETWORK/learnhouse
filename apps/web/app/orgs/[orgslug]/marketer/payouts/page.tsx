@@ -160,7 +160,7 @@ export default function MarketerPayoutsPage() {
                       <td className="py-3 px-3 font-mono text-gray-600 dark:text-gray-300">
                         {item.converted_amount
                           ? `${parseFloat(item.converted_amount).toFixed(2)} ${item.currency || ''}`
-                          : '—'}
+                          : 'N/A'}
                       </td>
                       <td className="py-3 px-3">
                         <span
@@ -181,7 +181,7 @@ export default function MarketerPayoutsPage() {
                         </span>
                       </td>
                       <td className="py-3 px-3 font-mono text-gray-500 text-[11px]">
-                        {item.paystack_transfer_code || item.flutterwave_transfer_id || '—'}
+                        {item.paystack_transfer_code || item.flutterwave_transfer_id || 'N/A'}
                       </td>
                     </tr>
                   )

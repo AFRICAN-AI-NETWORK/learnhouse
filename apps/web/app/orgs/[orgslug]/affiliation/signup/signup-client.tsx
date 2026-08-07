@@ -1,8 +1,9 @@
 'use client'
-import africanAiLogo from 'public/african_ai_horizontal.png'
+import ainaLogo from 'public/aina_logo.png'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
+import { getOrgLogoMediaDirectory } from '@services/media/media'
 import React from 'react'
 import { Handshake } from 'lucide-react'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
@@ -21,9 +22,17 @@ function AffiliationSignUpClient(props: SignUpClientProps) {
             <Image
               quality={100}
               width={160}
-              src={africanAiLogo}
-              alt="African AI Network"
-              className="w-auto h-8 hover:opacity-80 transition-opacity"
+              height={56}
+              src={
+                props.org?.logo_image
+                  ? getOrgLogoMediaDirectory(
+                      props.org.org_uuid,
+                      props.org.logo_image
+                    )
+                  : ainaLogo
+              }
+              alt={props.org?.name || 'African AI Network'}
+              className="w-auto h-14 hover:opacity-80 transition-opacity"
             />
           </Link>
           <LanguageSwitcher />

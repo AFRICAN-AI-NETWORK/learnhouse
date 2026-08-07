@@ -129,7 +129,7 @@ export function AdminKYCReviewPanel({
                 />
               ) : (
                 <div className="h-28 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-400">
-                  Image expired — reopen panel to refresh
+                  Image expired, reopen panel to refresh
                 </div>
               )}
             </div>
@@ -157,7 +157,7 @@ export function AdminKYCReviewPanel({
                 />
               ) : (
                 <div className="h-28 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-400">
-                  Image expired — reopen panel to refresh
+                  Image expired, reopen panel to refresh
                 </div>
               )}
             </div>

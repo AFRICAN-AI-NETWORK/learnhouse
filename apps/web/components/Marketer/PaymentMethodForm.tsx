@@ -213,7 +213,7 @@ export function PaymentMethodForm({ orgSlug, onSaved }: PaymentMethodFormProps) 
       if (onSaved) onSaved()
     } else if (res.error) {
       if (res.error.error_code === 'MKTR_354') {
-        setError('We could not verify these account details — please check and try again.')
+        setError('We could not verify these account details, please check and try again.')
       } else {
         setError(res.error.message)
       }

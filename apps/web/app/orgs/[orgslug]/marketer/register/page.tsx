@@ -2,7 +2,11 @@
 
 import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Sparkles, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import ainaLogo from 'public/aina_logo.png'
+import { getUriWithOrg } from '@services/config/config'
+import { TrendingUp, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react'
 import { registerAsMarketer, MarketerError } from '@services/referral/marketer.service'
 
 const SUPPORTED_COUNTRIES = [
@@ -105,22 +109,42 @@ export default function MarketerRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold mb-4">
-          <Sparkles size={14} />
+    <div className="relative min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Blended Marketing Background Image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-luminosity scale-105 transform transition-transform duration-1000"
+        style={{ backgroundImage: "url('/marketer-bg.png')" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/90 to-slate-950" />
+
+      <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <div className="mb-6 flex justify-center">
+          <Link href={getUriWithOrg(orgSlug, '/')} className="hover:opacity-80 transition-opacity inline-block">
+            <Image
+              quality={100}
+              width={160}
+              height={56}
+              src={ainaLogo}
+              alt="LearnHouse"
+              className="w-auto h-14 mx-auto"
+            />
+          </Link>
+        </div>
+
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-full text-xs font-semibold mb-4 backdrop-blur-md">
+          <TrendingUp size={14} className="text-indigo-400" />
           LearnHouse Partner Program
         </div>
-        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">
           Become an Official Marketer
         </h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
-          Earn <strong className="text-indigo-600 dark:text-indigo-400">$7.70 USD</strong> for every student you refer who pays for a course — paid directly to your bank or mobile money account.
+        <p className="mt-2 text-sm text-gray-300 max-w-sm mx-auto leading-relaxed">
+          Earn <strong className="text-indigo-400 font-semibold">$7.70 USD</strong> for every student you refer who pays for a course, paid directly to your bank or mobile money account.
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm rounded-xl border border-gray-100 dark:border-gray-800">
+      <div className="relative z-10 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-slate-900/90 backdrop-blur-xl py-8 px-6 shadow-2xl rounded-2xl border border-slate-800/80">
           {error && (
             <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 flex items-start gap-3">
               <AlertCircle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
