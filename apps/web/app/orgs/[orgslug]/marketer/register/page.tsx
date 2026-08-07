@@ -109,13 +109,13 @@ export default function MarketerRegisterPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden">
-      {/* Soft Blended Marketing Background Image */}
+    <div className="relative min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Visible Marketing Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-multiply scale-105 transform transition-transform duration-1000"
+        className="absolute inset-0 bg-cover bg-center opacity-45 filter contrast-105 saturate-110 scale-105 transform transition-transform duration-1000"
         style={{ backgroundImage: "url('/marketer-bg.png')" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-50/90 via-white/95 to-slate-50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-slate-50/50 to-white/75 backdrop-blur-[1px]" />
 
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="mb-6 flex justify-center">
