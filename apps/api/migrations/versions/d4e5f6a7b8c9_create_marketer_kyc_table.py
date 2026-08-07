@@ -25,12 +25,18 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    sa.Enum(
-        "UNVERIFIED", "PENDING_REVIEW", "VERIFIED", "REJECTED", name="kycstatus"
-    ).create(op.get_bind())
-    sa.Enum(
-        "NATIONAL_ID", "PASSPORT", "DRIVERS_LICENSE", name="kycdocumenttype"
-    ).create(op.get_bind())
+    op.get_bind().execute(
+        sa.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'kycstatus') "
+            "THEN CREATE TYPE kycstatus AS ENUM ('UNVERIFIED', 'PENDING_REVIEW', 'VERIFIED', 'REJECTED'); END IF; END $$;"
+        )
+    )
+    op.get_bind().execute(
+        sa.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'kycdocumenttype') "
+            "THEN CREATE TYPE kycdocumenttype AS ENUM ('NATIONAL_ID', 'PASSPORT', 'DRIVERS_LICENSE'); END IF; END $$;"
+        )
+    )
 
     op.create_table(
         "marketerkyc",
