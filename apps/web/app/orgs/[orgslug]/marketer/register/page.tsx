@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Sparkles, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react'
 import { registerAsMarketer, MarketerError } from '@services/referral/marketer.service'

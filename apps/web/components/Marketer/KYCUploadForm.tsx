@@ -2,9 +2,6 @@
 
 import React, { useState } from 'react'
 import {
-  FileText,
-  Upload,
-  CheckCircle2,
   AlertCircle,
   Clock,
   ShieldCheck,
@@ -15,7 +12,6 @@ import {
 } from 'lucide-react'
 import {
   uploadKYCDocuments,
-  MarketerError,
 } from '@services/referral/marketer.service'
 
 interface KYCUploadFormProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, CheckCircle2, XCircle, FileText, Camera, ShieldCheck, AlertCircle } from 'lucide-react'
+import { X, CheckCircle2, XCircle, ShieldCheck } from 'lucide-react'
 import {
   adminApproveKYC,
   adminRejectKYC,

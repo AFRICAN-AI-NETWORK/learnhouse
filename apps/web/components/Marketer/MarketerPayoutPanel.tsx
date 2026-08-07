@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { Wallet, AlertCircle, ArrowUpRight, CheckCircle2, Lock } from 'lucide-react'
 import {
   requestMarketerPayout,
-  MarketerError,
 } from '@services/referral/marketer.service'
 
 interface MarketerPayoutPanelProps {

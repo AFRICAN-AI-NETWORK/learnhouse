@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ChevronDown, ChevronUp, UserCheck, BookOpen, Clock, CheckCircle2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, UserCheck, BookOpen } from 'lucide-react'
 
 export interface StudentCourseBreakdown {
   course_id: number

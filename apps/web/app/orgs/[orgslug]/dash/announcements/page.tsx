@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import { Bell, Send, History, AlertCircle, Loader2 } from 'lucide-react'
+import { Bell, Send, History, AlertCircle } from 'lucide-react'
 import {
   createAnnouncement,
   fetchAnnouncements,

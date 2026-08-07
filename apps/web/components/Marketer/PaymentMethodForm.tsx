@@ -4,39 +4,127 @@ import React, { useState, useEffect } from 'react'
 import {
   Building2,
   Smartphone,
-  Check,
   AlertCircle,
   Edit2,
   Trash2,
-  ShieldCheck,
-  Info,
 } from 'lucide-react'
 import {
   savePaymentMethod,
   deletePaymentMethod,
   getPaymentMethod,
   MarketerPaymentMethod,
-  MarketerError,
 } from '@services/referral/marketer.service'
 
 const COUNTRY_CONFIG: Record<
   string,
   {
     currency: string
+    banks: { code: string; name: string }[]
+    mobileProviders: string[]
     allowBank: boolean
     allowMobile: boolean
-    mobileProviders: string[]
   }
 > = {
-  NG: { currency: 'NGN', allowBank: true, allowMobile: false, mobileProviders: [] },
-  GH: { currency: 'GHS', allowBank: true, allowMobile: true, mobileProviders: ['MTN MoMo', 'Vodafone Cash', 'AirtelTigo Money'] },
-  KE: { currency: 'KES', allowBank: false, allowMobile: true, mobileProviders: ['M-Pesa', 'Airtel Money'] },
-  ZA: { currency: 'ZAR', allowBank: true, allowMobile: false, mobileProviders: [] },
-  RW: { currency: 'RWF', allowBank: true, allowMobile: true, mobileProviders: ['MTN MoMo', 'Airtel Money'] },
-  TZ: { currency: 'TZS', allowBank: true, allowMobile: true, mobileProviders: ['Vodacom M-Pesa', 'Tigo Pesa', 'Airtel Money'] },
-  UG: { currency: 'UGX', allowBank: true, allowMobile: true, mobileProviders: ['MTN MoMo', 'Airtel Money'] },
-  CI: { currency: 'XOF', allowBank: true, allowMobile: true, mobileProviders: ['Orange Money', 'MTN MoMo', 'Wave'] },
-  EG: { currency: 'EGP', allowBank: true, allowMobile: false, mobileProviders: [] },
+  NG: {
+    currency: 'NGN',
+    allowBank: true,
+    allowMobile: false,
+    banks: [
+      { code: '044', name: 'Access Bank' },
+      { code: '011', name: 'First Bank of Nigeria' },
+      { code: '058', name: 'Guaranty Trust Bank (GTB)' },
+      { code: '033', name: 'United Bank for Africa (UBA)' },
+      { code: '057', name: 'Zenith Bank' },
+      { code: '50211', name: 'Kuda Bank' },
+      { code: '999992', name: 'OPay' },
+      { code: '999991', name: 'PalmPay' },
+    ],
+    mobileProviders: [],
+  },
+  GH: {
+    currency: 'GHS',
+    allowBank: true,
+    allowMobile: true,
+    banks: [
+      { code: 'GCB', name: 'GCB Bank' },
+      { code: 'ECO', name: 'Ecobank Ghana' },
+      { code: 'STAN', name: 'Stanbic Bank' },
+    ],
+    mobileProviders: ['MTN Mobile Money', 'Vodafone Cash', 'AirtelTigo Money'],
+  },
+  KE: {
+    currency: 'KES',
+    allowBank: true,
+    allowMobile: true,
+    banks: [
+      { code: 'KCB', name: 'KCB Bank' },
+      { code: 'EQTY', name: 'Equity Bank' },
+      { code: 'NCBA', name: 'NCBA Bank' },
+    ],
+    mobileProviders: ['M-PESA', 'Airtel Money'],
+  },
+  ZA: {
+    currency: 'ZAR',
+    allowBank: true,
+    allowMobile: false,
+    banks: [
+      { code: 'FNB', name: 'First National Bank (FNB)' },
+      { code: 'ABSA', name: 'Absa Bank' },
+      { code: 'STANDARD', name: 'Standard Bank' },
+      { code: 'CAPITEC', name: 'Capitec Bank' },
+    ],
+    mobileProviders: [],
+  },
+  RW: {
+    currency: 'RWF',
+    allowBank: true,
+    allowMobile: true,
+    banks: [
+      { code: 'BK', name: 'Bank of Kigali' },
+      { code: 'IM', name: 'I&M Bank Rwanda' },
+    ],
+    mobileProviders: ['MTN MoMo', 'Airtel Money'],
+  },
+  TZ: {
+    currency: 'TZS',
+    allowBank: true,
+    allowMobile: true,
+    banks: [
+      { code: 'CRDB', name: 'CRDB Bank' },
+      { code: 'NMB', name: 'NMB Bank' },
+    ],
+    mobileProviders: ['Vodacom M-Pesa', 'Tigo Pesa', 'Airtel Money'],
+  },
+  UG: {
+    currency: 'UGX',
+    allowBank: true,
+    allowMobile: true,
+    banks: [
+      { code: 'STAN', name: 'Stanbic Bank Uganda' },
+      { code: 'CENT', name: 'Centenary Bank' },
+    ],
+    mobileProviders: ['MTN MoMo', 'Airtel Money'],
+  },
+  CI: {
+    currency: 'XOF',
+    allowBank: true,
+    allowMobile: true,
+    banks: [
+      { code: 'NSIA', name: 'NSIA Banque' },
+      { code: 'SGBCI', name: 'Societe Generale CI' },
+    ],
+    mobileProviders: ['Orange Money', 'MTN MoMo', 'Wave'],
+  },
+  EG: {
+    currency: 'EGP',
+    allowBank: true,
+    allowMobile: false,
+    banks: [
+      { code: 'CIB', name: 'Commercial International Bank' },
+      { code: 'NBE', name: 'National Bank of Egypt' },
+    ],
+    mobileProviders: [],
+  },
 }
 
 interface PaymentMethodFormProps {
@@ -70,14 +158,15 @@ export function PaymentMethodForm({ orgSlug, onSaved }: PaymentMethodFormProps) 
 
   const config = COUNTRY_CONFIG[countryCode] || COUNTRY_CONFIG['NG']
 
-  // Auto-switch method type if country doesn't support the current selection
-  useEffect(() => {
-    if (!config.allowBank && methodType === 'BANK_TRANSFER') {
+  const handleCountryChange = (c: string) => {
+    setCountryCode(c)
+    const newConfig = COUNTRY_CONFIG[c] || COUNTRY_CONFIG['NG']
+    if (!newConfig.allowBank) {
       setMethodType('MOBILE_MONEY')
-    } else if (!config.allowMobile && methodType === 'MOBILE_MONEY') {
+    } else if (!newConfig.allowMobile) {
       setMethodType('BANK_TRANSFER')
     }
-  }, [countryCode, config])
+  }
 
   // Load existing saved method
   useEffect(() => {
@@ -264,7 +353,7 @@ export function PaymentMethodForm({ orgSlug, onSaved }: PaymentMethodFormProps) 
           </label>
           <select
             value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
+            onChange={(e) => handleCountryChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
           >
             <option value="NG">Nigeria (NGN)</option>

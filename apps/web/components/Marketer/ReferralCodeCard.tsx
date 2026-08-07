@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import { Copy, Check, Share2, Sparkles, Link2 } from 'lucide-react'
+import { Copy, Check, Sparkles, Link2 } from 'lucide-react'
 
 interface ReferralCodeCardProps {
   code?: string

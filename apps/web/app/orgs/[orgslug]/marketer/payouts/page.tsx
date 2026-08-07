@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, History, CheckCircle2, XCircle } from 'lucide-react'
@@ -23,9 +23,8 @@ export default function MarketerPayoutsPage() {
   const [history, setHistory] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const reloadData = async () => {
+  const fetchAllData = useCallback(async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
-    setIsLoading(true)
 
     const [dashRes, kycRes, historyRes] = await Promise.all([
       getMarketerDashboard(token, orgSlug),
@@ -33,6 +32,11 @@ export default function MarketerPayoutsPage() {
       getMarketerPayoutHistory(token, orgSlug),
     ])
 
+    return { dashRes, kycRes, historyRes }
+  }, [orgSlug])
+
+  const reloadData = useCallback(async () => {
+    const { dashRes, kycRes, historyRes } = await fetchAllData()
     setIsLoading(false)
 
     if (dashRes.success && dashRes.data) {
@@ -44,11 +48,27 @@ export default function MarketerPayoutsPage() {
     if (historyRes.success && historyRes.data) {
       setHistory(Array.isArray(historyRes.data) ? historyRes.data : [])
     }
-  }
+  }, [fetchAllData])
 
   useEffect(() => {
-    reloadData()
-  }, [orgSlug])
+    let ignore = false
+    fetchAllData().then(({ dashRes, kycRes, historyRes }) => {
+      if (ignore) return
+      setIsLoading(false)
+      if (dashRes.success && dashRes.data) {
+        setDashboardData(dashRes.data)
+      }
+      if (kycRes.success && kycRes.data) {
+        setKycData(kycRes.data)
+      }
+      if (historyRes.success && historyRes.data) {
+        setHistory(Array.isArray(historyRes.data) ? historyRes.data : [])
+      }
+    })
+    return () => {
+      ignore = true
+    }
+  }, [fetchAllData])
 
   const eligibleBalance = dashboardData?.summary?.eligible_for_payout_usd ?? 0.0
   const hasPaymentMethod = Boolean(dashboardData?.completeness_flags?.payment_method_saved)

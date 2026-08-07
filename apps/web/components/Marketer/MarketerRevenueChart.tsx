@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { MonthlyRevenueRecord } from '@services/referral/marketer.service'
-import { TrendingUp, Calendar } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 
 interface MarketerRevenueChartProps {
   data?: MonthlyRevenueRecord[]

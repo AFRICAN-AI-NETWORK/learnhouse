@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   ChevronRight,
   ShieldAlert,
-  ArrowRight,
   Users,
   DollarSign,
 } from 'lucide-react'
