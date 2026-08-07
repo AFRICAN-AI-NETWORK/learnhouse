@@ -4,7 +4,6 @@ from src.db.users import User
 from src.db.courses.courses import Course
 import logging
 from fastapi import APIRouter, Depends, Request
-from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
 from src.services.payments.webhooks.payments_flutterwave_webhooks import (

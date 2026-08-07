@@ -22,7 +22,6 @@ from src.services.referrals.marketer_kyc import approve_kyc, submit_kyc
 from src.services.referrals.marketers import refresh_marketer_counters
 from src.services.referrals.payouts import (
     create_payout_request,
-    get_active_payment_method,
     process_payout_request,
     save_payment_method,
 )

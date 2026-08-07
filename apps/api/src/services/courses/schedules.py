@@ -651,7 +651,7 @@ def _get_entry_for_period(
             CourseRegisterEntry.timetable_event_uuid == timetable_event_uuid
         )
     else:
-        statement = statement.where(CourseRegisterEntry.timetable_event_uuid == None)
+        statement = statement.where(CourseRegisterEntry.timetable_event_uuid.is_(None))
 
     return db_session.exec(statement).first()
 

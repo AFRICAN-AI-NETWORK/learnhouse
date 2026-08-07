@@ -16,8 +16,6 @@ from src.db.referrals.referral_commissions import (
 )
 from src.db.referrals.referral_tracking import ReferralTracking
 from src.db.referrals.referral_codes import ReferralCode
-from src.db.referrals.referral_commissions import CommissionStatus, ReferralCommission
-from src.db.referrals.referral_tracking import ReferralTracking
 from src.db.users import PublicUser, User
 
 logger = logging.getLogger(__name__)
