@@ -1,11 +1,11 @@
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
 from openai import BaseModel
 from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, SQLModel
 
 
-class PaymentStatusEnum(str, Enum):
+class PaymentStatusEnum(StrEnum):
     PENDING = "pending"
     COMPLETED = "completed"
     ACTIVE = "active"

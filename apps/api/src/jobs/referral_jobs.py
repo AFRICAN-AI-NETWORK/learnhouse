@@ -149,6 +149,60 @@ async def process_payout_requests_job():
         logger.exception("Payout processing job failed: %s", e)
 
 
+def _sync_refresh_marketer_counters() -> dict:
+    """Refresh denormalized marketer counters on a worker thread."""
+    from src.db.referrals.marketers import Marketer
+    from src.services.referrals.marketers import refresh_marketer_counters
+
+    start = time.monotonic()
+    refreshed_count = 0
+    failed_count = 0
+
+    with Session(engine) as db_session:
+        marketer_ids = db_session.exec(select(Marketer.id)).all()
+
+        for marketer_id in marketer_ids:
+            try:
+                _safe_asyncio_run(refresh_marketer_counters(marketer_id, db_session))
+                refreshed_count += 1
+            except Exception as e:
+                logger.exception(
+                    "Error refreshing counters for marketer %s: %s",
+                    marketer_id,
+                    e,
+                )
+                failed_count += 1
+
+    elapsed = time.monotonic() - start
+    return {
+        "refreshed_count": refreshed_count,
+        "failed_count": failed_count,
+        "elapsed_s": round(elapsed, 2),
+    }
+
+
+async def refresh_all_marketer_counters_job():
+    """
+    Daily job (01:00 UTC) to refresh denormalized Marketer counters
+    (total_students_referred, total_courses_sold, total_earned_usd,
+    total_paid_usd) that back the admin leaderboard.
+    """
+    logger.info("Marketer counters refresh job started")
+    try:
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            _job_executor, _sync_refresh_marketer_counters
+        )
+        logger.info(
+            "Marketer counters refresh completed in %.2fs — refreshed: %d, failed: %d",
+            result["elapsed_s"],
+            result["refreshed_count"],
+            result["failed_count"],
+        )
+    except Exception as e:
+        logger.exception("Marketer counters refresh job failed: %s", e)
+
+
 # Schedule configuration for external scheduler (e.g., APScheduler, Celery)
 SCHEDULED_JOBS = {
     "commission_eligibility": {
@@ -162,5 +216,11 @@ SCHEDULED_JOBS = {
         "schedule": "interval",  # Run at intervals
         "minutes": 5,  # Every 5 minutes
         "description": "Process pending payout requests with Paystack",
+    },
+    "marketer_counters": {
+        "function": refresh_all_marketer_counters_job,
+        "schedule": "daily",
+        "time": "01:00",  # 01:00 UTC
+        "description": "Refresh denormalized marketer leaderboard counters",
     },
 }

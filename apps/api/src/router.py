@@ -38,6 +38,7 @@ from src.routers.courses import (
                          schedules,
 )
 from src.routers.courses.activities import activities, blocks
+from src.routers.referrals.marketers import router as marketers_router
 from src.routers.utils import router as utils_router
 from src.routers.webhooks.flutterwave import router as flutterwave_webhook_router
 from src.services.dev.dev import isDevModeEnabledOrRaise
@@ -83,6 +84,7 @@ v1_router.include_router(
     communications.router, prefix="/communications", tags=["communications"]
 )
 v1_router.include_router(referrals.router, prefix="/referrals", tags=["referrals"])
+v1_router.include_router(marketers_router, prefix="/marketers", tags=["marketers"])
 v1_router.include_router(contact_router, prefix="/contact", tags=["contact"])
 v1_router.include_router(
     flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"]

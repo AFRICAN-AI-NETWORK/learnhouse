@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, TypeDecorator
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
@@ -7,7 +7,7 @@ from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
 
 # PaymentsConfig
-class PaymentProviderEnum(str, Enum):
+class PaymentProviderEnum(StrEnum):
     FLUTTERWAVE = "flutterwave"
 
 

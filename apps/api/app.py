@@ -111,6 +111,7 @@ try:
     from src.jobs.referral_jobs import (
         process_commission_eligibility_job,
         process_payout_requests_job,
+        refresh_all_marketer_counters_job,
     )
     from src.jobs.waitlist_processor import (
         run_retry_failed_emails_job,
@@ -225,6 +226,17 @@ async def start_scheduler():
             coalesce=True,
             jitter=10,
             misfire_grace_time=120,
+        )
+        scheduler.add_job(
+            refresh_all_marketer_counters_job,
+            trigger=CronTrigger(hour=1, minute=0, timezone="UTC"),
+            id="marketer_counters_refresh",
+            name="Refresh Marketer Leaderboard Counters",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            jitter=15,
+            misfire_grace_time=300,
         )
 
     # ── Notification jobs ──────────────────────────────────────────

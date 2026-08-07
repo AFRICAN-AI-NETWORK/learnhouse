@@ -4,12 +4,12 @@ Stores disposable and legitimate email domains dynamically
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import Field, SQLModel
 
 
-class DomainListType(str, Enum):
+class DomainListType(StrEnum):
     """Type of domain list"""
 
     DISPOSABLE = "disposable"  # Known disposable/temporary email providers

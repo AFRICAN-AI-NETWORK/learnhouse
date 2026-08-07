@@ -84,15 +84,23 @@ async def make_paystack_request(
     endpoint: str,
     data: dict | None = None,
     secret_key: str | None = None,
+    headers: dict | None = None,
 ) -> dict:
-    """Make a request to Paystack API"""
+    """Make a request to Paystack API
+
+    Args:
+        headers: Optional extra headers merged into the request
+            (e.g. Idempotency-Key for transfer retries)
+    """
     if secret_key is None:
         secret_key = await get_paystack_secret_key()
 
     url = f"{PAYSTACK_API_BASE_URL}{endpoint}"
+    extra_headers = headers or {}
     headers = {
         "Authorization": f"Bearer {secret_key}",
         "Content-Type": "application/json",
+        **extra_headers,
     }
 
     async with httpx.AsyncClient() as client:

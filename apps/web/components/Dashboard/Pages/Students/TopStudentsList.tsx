@@ -24,11 +24,11 @@ function TopStudentsList() {
   const access_token = session?.data?.tokens?.access_token
 
   const [daysFilter, setDaysFilter] = useState<number | undefined>(undefined)
-  const [limit, setLimit] = useState<number>(5)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [limit, setLimit] = useState(5)
 
   const { data, isLoading } = useSWR(
-    org ? [`top_students_all_${org.id}`, daysFilter, limit] : null,
+    org ? [`top_students_${org.id}`, limit, daysFilter] : null,
     () => getTopStudents(org.id, access_token, limit, daysFilter)
   )
 
@@ -192,7 +192,6 @@ function TopStudentsList() {
           </Link>
         ))}
       </div>
-
       {sortedStudents.length >= 5 && (
         <div className="mt-6 flex justify-center">
           {limit === 5 ? (

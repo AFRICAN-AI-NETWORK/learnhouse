@@ -511,7 +511,7 @@ async def api_get_all_partners(
 
     results = []
     for code in codes:
-        user = db_session.get(User, code.user_id)
+        user = db_session.get(User, code.referrer_user_id)
 
         # Count referrals for this partner
         count_stmt = (
@@ -523,7 +523,7 @@ async def api_get_all_partners(
 
         results.append(
             {
-                "user_id": code.user_id,
+                "user_id": code.referrer_user_id,
                 "username": user.username if user else "unknown",
                 "email": user.email if user else "unknown",
                 "referral_code": code.code,

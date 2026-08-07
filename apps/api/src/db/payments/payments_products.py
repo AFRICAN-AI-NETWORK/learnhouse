@@ -1,20 +1,20 @@
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel, String
 
 
-class PaymentProductTypeEnum(str, Enum):
+class PaymentProductTypeEnum(StrEnum):
     SUBSCRIPTION = "subscription"
     ONE_TIME = "one_time"
 
 
-class PaymentPriceTypeEnum(str, Enum):
+class PaymentPriceTypeEnum(StrEnum):
     CUSTOMER_CHOICE = "customer_choice"
     FIXED_PRICE = "fixed_price"
 
 
-class PaymentIntervalEnum(str, Enum):
+class PaymentIntervalEnum(StrEnum):
     MONTHLY = "monthly"
     YEARLY = "yearly"
     WEEKLY = "weekly"

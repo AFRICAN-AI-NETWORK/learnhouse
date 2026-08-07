@@ -12,6 +12,7 @@ import {
   User as UserIcon,
   ChevronDown,
   Link2,
+  Sparkles,
 } from 'lucide-react'
 import UserAvatar from '@components/Objects/UserAvatar'
 import useAdminStatus from '@components/Hooks/useAdminStatus'
@@ -405,6 +406,15 @@ export const HeaderProfileBox = () => {
                   >
                     <Link2 size={16} />
                     <span>Referrals</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/marketer"
+                    className="flex items-center space-x-2"
+                  >
+                    <Sparkles size={16} />
+                    <span>Marketer Portal</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

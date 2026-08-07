@@ -4,12 +4,12 @@ Manages payout requests from referrers with Paystack integration
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, Index, SQLModel, Text
 
 
-class PayoutStatus(str, Enum):
+class PayoutStatus(StrEnum):
     """Status of payout request"""
 
     REQUESTED = "requested"  # User submits payout request
@@ -26,6 +26,10 @@ class ReferrerPayoutRequestBase(SQLModel):
     currency: str = Field(default="USD", max_length=3)
     converted_amount: float | None = None
     status: PayoutStatus = Field(default=PayoutStatus.REQUESTED)
+    flutterwave_beneficiary_id: str | None = Field(
+        default=None, max_length=255
+    )
+    flutterwave_transfer_id: str | None = Field(default=None, max_length=255)
     paystack_transfer_recipient_code: str | None = Field(
         default=None, max_length=255
     )
@@ -36,6 +40,8 @@ class ReferrerPayoutRequestBase(SQLModel):
     request_date: datetime = Field(default_factory=datetime.now)
     completion_date: datetime | None = None
     failure_reason: str | None = Field(default=None, sa_column=Column(Text))
+    retry_count: int = Field(default=0)
+    last_retry_at: datetime | None = None
 
 
 class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
@@ -45,6 +51,7 @@ class ReferrerPayoutRequest(ReferrerPayoutRequestBase, table=True):
     __table_args__ = (
         Index("idx_payoutrequest_referrer_status", "referrer_user_id", "status"),
         Index("idx_payoutrequest_org", "org_id"),
+        Index("idx_payout_status", "status"),
     )
 
     id: int | None = Field(default=None, primary_key=True)
@@ -89,11 +96,15 @@ class ReferrerPayoutRequestUpdate(SQLModel):
     """Model for updating payout request"""
 
     status: PayoutStatus | None = None
+    flutterwave_beneficiary_id: str | None = None
+    flutterwave_transfer_id: str | None = None
     paystack_transfer_recipient_code: str | None = None
     paystack_transfer_code: str | None = None
     converted_amount: float | None = None
     completion_date: datetime | None = None
     failure_reason: str | None = None
+    retry_count: int | None = None
+    last_retry_at: datetime | None = None
 
 
 class BankDetails(SQLModel):

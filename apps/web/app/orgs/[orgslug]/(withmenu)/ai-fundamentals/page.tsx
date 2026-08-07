@@ -40,7 +40,7 @@ export default function AIFundamentalsPage() {
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
   const [isSubscription, setIsSubscription] = useState(false)
 
-  const courseId = '3ef9cfef-c271-448f-be18-703ac4f17f05'
+  const courseId = 'ee0078f4-58b9-417d-b3bd-e182430d98d4'
 
   const { data: products, isLoading } = useSWR(
     org ? [`/payments/${org.id}/courses/${courseId}/products`] : null,

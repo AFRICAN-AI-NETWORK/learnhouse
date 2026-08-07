@@ -185,7 +185,7 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
 
         # Queue the log asynchronously only if it's an enterprise org
         if is_enterprise:
-            asyncio.create_task(
+            asyncio.create_task(  # noqa: RUF006
                 queue_audit_log(
                     user_id=user_id,
                     org_id=org_id,

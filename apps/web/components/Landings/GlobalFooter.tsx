@@ -135,6 +135,14 @@ export default function GlobalFooter() {
                   Privacy Policy
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={getUriWithOrg(orgSlug, '/marketer/register')}
+                  className="text-gray-400 hover:text-white text-sm transition-colors font-medium text-amber-400 hover:text-amber-300"
+                >
+                  Become a Marketer & Earn
+                </Link>
+              </li>
             </ul>
           </div>
 

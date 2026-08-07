@@ -40,11 +40,25 @@ import {
   ShieldAlert,
   Trophy,
   Users as UsersIcon,
+  Sparkles,
   XCircle,
 } from 'lucide-react'
 import PartnerStudentModal from '@components/Referrals/PartnerStudentModal'
+import { AdminMarketerStats } from '@components/Marketer/AdminMarketerStats'
+import { AdminKYCReviewPanel } from '@components/Marketer/AdminKYCReviewPanel'
+import {
+  adminGetMarketers,
+  adminGetMarketerStats,
+  adminApproveMarketer,
+  adminRejectMarketer,
+  adminSuspendMarketer,
+  adminReactivateMarketer,
+  adminGetKYCQueue,
+  adminGetMarketerPayouts,
+  adminApproveMarketerPayout,
+} from '@services/referral/marketer.service'
 
-type AdminTab = 'leaderboard' | 'partners' | 'payouts' | 'fraud'
+type AdminTab = 'leaderboard' | 'partners' | 'payouts' | 'fraud' | 'marketers'
 
 function ReferralsPage() {
   const session = useLHSession() as any
@@ -181,6 +195,26 @@ function ReferralsPage() {
     ([, token, org]) => getAdminPartners(token as string, org as string)
   )
 
+  // ─── Marketers Admin State ───
+  const [marketerSubTab, setMarketerSubTab] = useState<'applications' | 'kyc' | 'payouts'>('applications')
+  const [marketerStatusFilter, setMarketerStatusFilter] = useState<string>('pending_approval')
+  const [selectedKycRecord, setSelectedKycRecord] = useState<any | null>(null)
+
+  const mStatsKey = isStrictAdmin && access_token ? ['admin-mktr-stats', access_token, org_id] : null
+  const mListKey = isStrictAdmin && access_token ? ['admin-mktr-list', access_token, org_id, marketerStatusFilter] : null
+  const mKycKey = isStrictAdmin && access_token ? ['admin-mktr-kyc', access_token, org_id] : null
+  const mPayoutsKey = isStrictAdmin && access_token ? ['admin-mktr-payouts', access_token, org_id] : null
+
+  const { data: mStatsData, mutate: mutateMStats } = useSWR(mStatsKey, ([, t, o]) => adminGetMarketerStats(t, o))
+  const { data: mListData, mutate: mutateMList } = useSWR(mListKey, ([, t, o, s]) => adminGetMarketers(t, o, s))
+  const { data: mKycData, mutate: mutateMKyc } = useSWR(mKycKey, ([, t, o]) => adminGetKYCQueue(t, o))
+  const { data: mPayoutsData, mutate: mutateMPayouts } = useSWR(mPayoutsKey, ([, t, o]) => adminGetMarketerPayouts(t, o))
+
+  const mktrStats = mStatsData?.data
+  const mktrList = mListData?.data?.items || (Array.isArray(mListData?.data) ? mListData.data : [])
+  const kycQueue = mKycData?.data?.items || (Array.isArray(mKycData?.data) ? mKycData.data : [])
+  const mktrPayouts = mPayoutsData?.data?.items || (Array.isArray(mPayoutsData?.data) ? mPayoutsData.data : [])
+
   const stats = statsData?.data
   const flagged = flaggedData?.data
   const pendingPayouts = pendingPayoutsData?.data
@@ -239,6 +273,11 @@ function ReferralsPage() {
       key: 'fraud',
       label: 'Fraud Review',
       icon: <ShieldAlert size={16} />,
+    },
+    {
+      key: 'marketers',
+      label: 'Marketers Hub',
+      icon: <Sparkles size={16} />,
     },
   ]
 
@@ -688,9 +727,276 @@ function ReferralsPage() {
                   )}
                 </div>
               )}
+              {/* ── Marketers Hub ── */}
+              {activeAdminTab === 'marketers' && (
+                <div className="space-y-6">
+                  {/* Summary Bar */}
+                  <AdminMarketerStats
+                    stats={mktrStats}
+                    selectedStatus={marketerStatusFilter}
+                    onSelectStatus={(status) => {
+                      setMarketerStatusFilter(status)
+                      setMarketerSubTab('applications')
+                    }}
+                  />
+
+                  {/* Sub-tabs */}
+                  <div className="flex border-b border-gray-100 text-xs font-medium gap-4">
+                    <button
+                      onClick={() => setMarketerSubTab('applications')}
+                      className={`pb-2 border-b-2 transition-colors ${
+                        marketerSubTab === 'applications'
+                          ? 'border-black text-black font-bold'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Applications ({mktrList.length})
+                    </button>
+                    <button
+                      onClick={() => setMarketerSubTab('kyc')}
+                      className={`pb-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+                        marketerSubTab === 'kyc'
+                          ? 'border-black text-black font-bold'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      KYC Queue
+                      {kycQueue.length > 0 && (
+                        <span className="px-1.5 py-0.5 bg-amber-500 text-white rounded-full text-[10px] font-bold">
+                          {kycQueue.length}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setMarketerSubTab('payouts')}
+                      className={`pb-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+                        marketerSubTab === 'payouts'
+                          ? 'border-black text-black font-bold'
+                          : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Marketer Payouts
+                      {mktrPayouts.length > 0 && (
+                        <span className="px-1.5 py-0.5 bg-indigo-600 text-white rounded-full text-[10px] font-bold">
+                          {mktrPayouts.length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Sub-tab 1: Applications */}
+                  {marketerSubTab === 'applications' && (
+                    <div className="overflow-x-auto">
+                      {mktrList.length === 0 ? (
+                        <p className="text-center text-gray-400 py-8 text-xs">No marketers matching filter ({marketerStatusFilter}).</p>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-gray-400">
+                              <th className="py-2.5 px-3 text-left">Marketer</th>
+                              <th className="py-2.5 px-3 text-left">Phone</th>
+                              <th className="py-2.5 px-3 text-left">Code</th>
+                              <th className="py-2.5 px-3 text-left">Status</th>
+                              <th className="py-2.5 px-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {mktrList.map((m: any) => {
+                              const st = (m.status || '').toUpperCase()
+                              return (
+                                <tr key={m.id} className="hover:bg-gray-50/50">
+                                  <td className="py-3 px-3">
+                                    <div className="font-semibold text-gray-800">{m.user_name || m.user_id}</div>
+                                    <div className="text-gray-400 text-[11px] font-mono">{m.user_email}</div>
+                                  </td>
+                                  <td className="py-3 px-3 font-mono text-gray-600">{m.phone_number || 'N/A'}</td>
+                                  <td className="py-3 px-3 font-mono font-bold text-gray-700">{m.referral_code || '—'}</td>
+                                  <td className="py-3 px-3">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                        st === 'ACTIVE'
+                                          ? 'bg-emerald-100 text-emerald-800'
+                                          : st === 'PENDING_APPROVAL'
+                                          ? 'bg-amber-100 text-amber-800'
+                                          : 'bg-red-100 text-red-800'
+                                      }`}
+                                    >
+                                      {st}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-3 text-right space-x-2">
+                                    {st === 'PENDING_APPROVAL' && (
+                                      <>
+                                        <button
+                                          onClick={async () => {
+                                            if (confirm(`Approve marketer ${m.user_name || m.id}?`)) {
+                                              await adminApproveMarketer(access_token, org_id, m.id)
+                                              mutateMList()
+                                              mutateMStats()
+                                              toast.success('Marketer approved!')
+                                            }
+                                          }}
+                                          className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[11px] font-medium"
+                                        >
+                                          Approve
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            const reason = prompt('Enter rejection reason:')
+                                            if (reason) {
+                                              await adminRejectMarketer(access_token, org_id, m.id, reason)
+                                              mutateMList()
+                                              mutateMStats()
+                                              toast.success('Marketer rejected')
+                                            }
+                                          }}
+                                          className="px-2.5 py-1 bg-red-600 text-white rounded text-[11px] font-medium"
+                                        >
+                                          Reject
+                                        </button>
+                                      </>
+                                    )}
+                                    {st === 'ACTIVE' && (
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm(`Suspend marketer ${m.user_name || m.id}?`)) {
+                                            await adminSuspendMarketer(access_token, org_id, m.id)
+                                            mutateMList()
+                                            mutateMStats()
+                                            toast.success('Marketer suspended')
+                                          }
+                                        }}
+                                        className="px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded text-[11px] font-medium"
+                                      >
+                                        Suspend
+                                      </button>
+                                    )}
+                                    {st === 'SUSPENDED' && (
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm(`Reactivate marketer ${m.user_name || m.id}?`)) {
+                                            await adminReactivateMarketer(access_token, org_id, m.id)
+                                            mutateMList()
+                                            mutateMStats()
+                                            toast.success('Marketer reactivated')
+                                          }
+                                        }}
+                                        className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-[11px] font-medium"
+                                      >
+                                        Reactivate
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sub-tab 2: KYC Queue */}
+                  {marketerSubTab === 'kyc' && (
+                    <div className="overflow-x-auto">
+                      {kycQueue.length === 0 ? (
+                        <p className="text-center text-gray-400 py-8 text-xs">No pending KYC document submissions.</p>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-gray-400">
+                              <th className="py-2.5 px-3 text-left">Marketer</th>
+                              <th className="py-2.5 px-3 text-left">Document Type</th>
+                              <th className="py-2.5 px-3 text-left">ID Number</th>
+                              <th className="py-2.5 px-3 text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {kycQueue.map((k: any) => (
+                              <tr key={k.id} className="hover:bg-gray-50/50">
+                                <td className="py-3 px-3">
+                                  <div className="font-semibold text-gray-800">{k.marketer_name || k.user_id}</div>
+                                  <div className="text-gray-400 text-[11px] font-mono">{k.marketer_email}</div>
+                                </td>
+                                <td className="py-3 px-3 font-medium text-gray-700">{k.document_type}</td>
+                                <td className="py-3 px-3 font-mono text-gray-600">{k.id_number || 'Provided'}</td>
+                                <td className="py-3 px-3 text-right">
+                                  <button
+                                    onClick={() => setSelectedKycRecord(k)}
+                                    className="px-3 py-1 bg-black text-white rounded text-[11px] font-medium hover:bg-gray-800"
+                                  >
+                                    Review Document
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sub-tab 3: Marketer Payouts */}
+                  {marketerSubTab === 'payouts' && (
+                    <div className="overflow-x-auto">
+                      {mktrPayouts.length === 0 ? (
+                        <p className="text-center text-gray-400 py-8 text-xs">No requested marketer payouts pending approval.</p>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-gray-400">
+                              <th className="py-2.5 px-3 text-left">Marketer</th>
+                              <th className="py-2.5 px-3 text-left">Amount (USD)</th>
+                              <th className="py-2.5 px-3 text-left">Currency</th>
+                              <th className="py-2.5 px-3 text-left">Status</th>
+                              <th className="py-2.5 px-3 text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {mktrPayouts.map((p: any) => (
+                              <tr key={p.id} className="hover:bg-gray-50/50">
+                                <td className="py-3 px-3 font-semibold text-gray-800">{p.marketer_name || p.referrer_user_id}</td>
+                                <td className="py-3 px-3 font-bold font-mono text-gray-900">${parseFloat(p.total_amount || 0).toFixed(2)}</td>
+                                <td className="py-3 px-3 font-mono text-gray-600">{p.currency || 'USD'}</td>
+                                <td className="py-3 px-3 font-mono text-amber-600 font-semibold">{p.status}</td>
+                                <td className="py-3 px-3 text-right">
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm(`Approve marketer payout of $${p.total_amount}?`)) {
+                                        await adminApproveMarketerPayout(access_token, org_id, p.id)
+                                        mutateMPayouts()
+                                        toast.success('Payout approved for automatic processing!')
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-emerald-600 text-white rounded text-[11px] font-medium hover:bg-emerald-700"
+                                  >
+                                    Approve Payout
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {selectedKycRecord && (
+        <AdminKYCReviewPanel
+          orgSlug={org.orgslug || 'default'}
+          kycRecord={selectedKycRecord}
+          onClose={() => setSelectedKycRecord(null)}
+          onActionComplete={() => {
+            mutateMKyc()
+            mutateMStats()
+          }}
+        />
       )}
 
       <PartnerStudentModal

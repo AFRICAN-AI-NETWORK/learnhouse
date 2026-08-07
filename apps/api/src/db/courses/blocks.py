@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
 
-class BlockTypeEnum(str, Enum):
+class BlockTypeEnum(StrEnum):
     BLOCK_QUIZ = "BLOCK_QUIZ"
     BLOCK_VIDEO = "BLOCK_VIDEO"
     BLOCK_DOCUMENT_PDF = "BLOCK_DOCUMENT_PDF"

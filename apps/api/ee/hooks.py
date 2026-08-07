@@ -67,5 +67,5 @@ def on_startup(app: FastAPI):
             except Exception as e:  # noqa: BLE001
                 logger.error(f"EE Audit log flusher error: {e}")
 
-    asyncio.create_task(audit_log_flusher())
+    asyncio.create_task(audit_log_flusher())  # noqa: RUF006
     logger.info("EE Startup tasks initiated")
