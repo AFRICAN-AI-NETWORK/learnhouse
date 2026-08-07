@@ -11,19 +11,18 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 from uuid import uuid4
 
 from fastapi import UploadFile, status
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, and_, select
 
 from config.config import get_learnhouse_config
 from src.db.referrals.marketer_kyc import (
-    MarketerKYC,
-    KYCStatus,
-    KYCDocumentType,
     MAX_KYC_SUBMISSIONS,
+    KYCDocumentType,
+    KYCStatus,
+    MarketerKYC,
 )
 from src.db.users import User
 from src.services.referrals.marketers import (
@@ -137,7 +136,7 @@ async def submit_kyc(
     front_key: str,
     selfie_key: str,
     db_session: Session,
-    back_key: Optional[str] = None,
+    back_key: str | None = None,
 ) -> MarketerKYC:
     """
     Submit (or resubmit) KYC documents. Sets status PENDING_REVIEW.

@@ -1,17 +1,17 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 
-class ResourceAuthorshipEnum(str, Enum):
+class ResourceAuthorshipEnum(StrEnum):
     CREATOR = "CREATOR"
     CONTRIBUTOR = "CONTRIBUTOR"
     MAINTAINER = "MAINTAINER"
     REPORTER = "REPORTER"
 
 
-class ResourceAuthorshipStatusEnum(str, Enum):
+class ResourceAuthorshipStatusEnum(StrEnum):
     ACTIVE = "ACTIVE"
     PENDING = "PENDING"
     INACTIVE = "INACTIVE"

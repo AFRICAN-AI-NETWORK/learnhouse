@@ -10,12 +10,12 @@ from fastapi import HTTPException
 
 from src.db.referrals.marketer_payment_methods import PaymentMethodType
 from src.db.referrals.payout_requests import (
-    ReferrerPayoutRequest,
     PayoutStatus,
+    ReferrerPayoutRequest,
 )
 from src.db.referrals.referral_commissions import (
-    ReferralCommission,
     CommissionStatus,
+    ReferralCommission,
 )
 from src.services.referrals.payouts import (
     MAX_PAYOUT_RETRIES,
@@ -28,7 +28,7 @@ from src.services.referrals.payouts import (
     save_payment_method,
     validate_payout_amount,
 )
-from src.tests.marketers.conftest import make_user, make_marketer
+from src.tests.marketers.conftest import make_marketer, make_user
 
 
 def _error_code(exc: HTTPException) -> str:
@@ -135,6 +135,7 @@ async def test_process_payout_skips_requested_status(test_db_session):
 async def test_process_payout_processes_approved(test_db_session, monkeypatch):
     """APPROVED payouts enter processing (previously silently skipped)"""
     import httpx
+
     from src.services.referrals import payouts as payouts_module
     
     async def mock_network_error(*args, **kwargs):

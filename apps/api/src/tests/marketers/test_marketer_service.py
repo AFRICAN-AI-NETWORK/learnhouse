@@ -14,7 +14,7 @@ from src.services.referrals.marketers import (
     reject_marketer,
     suspend_marketer,
 )
-from src.tests.marketers.conftest import make_user, make_marketer
+from src.tests.marketers.conftest import make_marketer, make_user
 
 
 def _error_code(exc: HTTPException) -> str:

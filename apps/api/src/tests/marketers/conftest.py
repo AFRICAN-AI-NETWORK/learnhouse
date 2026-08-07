@@ -14,21 +14,21 @@ if not os.environ.get("BANK_DATA_ENCRYPTION_KEY"):
     os.environ["BANK_DATA_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 
 import pytest
-from sqlmodel import create_engine, Session, SQLModel
 from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
+
+import src.db.courses.courses
+import src.db.organizations
+import src.db.payments.payments
+import src.db.payments.payments_products
+import src.db.payments.payments_users
+import src.db.referrals
 
 # Import all models so SQLModel.metadata knows every table
 import src.db.users  # noqa: F401
-import src.db.organizations  # noqa: F401
-import src.db.courses.courses  # noqa: F401
-import src.db.payments.payments  # noqa: F401
-import src.db.payments.payments_products  # noqa: F401
-import src.db.payments.payments_users  # noqa: F401
-import src.db.referrals  # noqa: F401
-
-from src.db.users import User
 from src.db.referrals.marketers import Marketer, MarketerStatus
 from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
+from src.db.users import User
 
 
 @pytest.fixture(name="test_db_session")

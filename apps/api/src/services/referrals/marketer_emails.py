@@ -7,7 +7,6 @@ failures never affect business state.
 """
 
 import os
-from typing import Optional
 
 from src.services.email.utils import send_email
 
@@ -151,9 +150,9 @@ def send_marketer_payout_completed_email(
     email: str,
     username: str,
     amount_usd: float,
-    converted_amount: Optional[float],
+    converted_amount: float | None,
     currency: str,
-    reference: Optional[str],
+    reference: str | None,
 ):
     """Sent on COMPLETED — amount, local equivalent, Paystack reference"""
     local_line = (
@@ -188,7 +187,7 @@ def send_marketer_payout_completed_email(
 
 
 def send_marketer_payout_failed_email(
-    email: str, username: str, amount_usd: float, reason: Optional[str]
+    email: str, username: str, amount_usd: float, reason: str | None
 ):
     """Sent on FAILED after all retries — balance has been restored"""
     reason_block = (

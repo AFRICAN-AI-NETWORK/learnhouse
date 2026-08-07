@@ -8,14 +8,15 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request
-from sqlmodel import Session, select, and_, func
+from sqlmodel import Session, and_, func, select
+
+from src.db.referrals.referral_codes import ReferralCode
 from src.db.referrals.referral_commissions import (
-    ReferralCommission,
     CommissionStatus,
     CommissionType,
+    ReferralCommission,
 )
 from src.db.referrals.referral_tracking import ReferralTracking
-from src.db.referrals.referral_codes import ReferralCode
 from src.db.users import PublicUser, User
 
 logger = logging.getLogger(__name__)

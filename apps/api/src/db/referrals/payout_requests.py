@@ -4,12 +4,12 @@ Manages payout requests from referrers with Paystack integration
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, Index, SQLModel, Text
 
 
-class PayoutStatus(str, Enum):
+class PayoutStatus(StrEnum):
     """Status of payout request"""
 
     REQUESTED = "requested"  # User submits payout request

@@ -10,12 +10,12 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.db.referrals.marketer_payment_methods import PaymentMethodType
 from src.db.referrals.marketer_kyc import KYCDocumentType
+from src.db.referrals.marketer_payment_methods import PaymentMethodType
 from src.db.referrals.payout_requests import PayoutStatus
 from src.db.referrals.referral_commissions import (
-    ReferralCommission,
     CommissionStatus,
+    ReferralCommission,
 )
 from src.services.referrals import payouts as payouts_module
 from src.services.referrals.marketer_kyc import approve_kyc, submit_kyc
@@ -28,7 +28,7 @@ from src.services.referrals.payouts import (
 from src.services.referrals.referral_commissions import (
     update_pending_commissions_to_eligible,
 )
-from src.tests.marketers.conftest import make_user, make_marketer
+from src.tests.marketers.conftest import make_marketer, make_user
 
 
 @pytest.fixture

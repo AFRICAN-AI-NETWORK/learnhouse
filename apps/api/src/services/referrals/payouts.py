@@ -3,6 +3,7 @@ from src.db.referrals.marketer_payment_methods import (
     MarketerPaymentMethodRead,
     PaymentMethodType,
 )
+
 """
 Payout Service - Manages referrer payout requests with Paystack integration
 Implements safe two-phase commit pattern to prevent balance loss
@@ -10,7 +11,6 @@ Implements safe two-phase commit pattern to prevent balance loss
 
 import base64
 import json
-from typing import Optional
 import logging
 import os
 from datetime import UTC, datetime
@@ -555,7 +555,7 @@ async def create_payout_request(
     request: Request,
     org_id: int,
     amount: float,
-    bank_details: Optional[BankDetails],
+    bank_details: BankDetails | None,
     current_user: PublicUser,
     db_session: Session,
     use_saved_method: bool = False,
@@ -586,7 +586,7 @@ async def create_payout_request(
     """
     # Note: No RBAC check - all authenticated users can request payouts
 
-    payout_details: Optional[dict] = None
+    payout_details: dict | None = None
 
     if use_saved_method:
         # Marketer flow: KYC + saved payment method prerequisites
@@ -1081,7 +1081,7 @@ async def save_payment_method(
         select(MarketerPaymentMethod).where(
             and_(
                 MarketerPaymentMethod.marketer_id == marketer_id,
-                MarketerPaymentMethod.is_active == True,  # noqa: E712
+                MarketerPaymentMethod.is_active == True,
             )
         )
     ).all()
@@ -1117,7 +1117,7 @@ async def save_payment_method(
 
 async def get_active_payment_method(
     marketer_id: int, db_session: Session
-) -> Optional[MarketerPaymentMethod]:
+) -> MarketerPaymentMethod | None:
     """
     Get the marketer's active saved payment method (DRY utility)
 
@@ -1131,7 +1131,7 @@ async def get_active_payment_method(
     statement = select(MarketerPaymentMethod).where(
         and_(
             MarketerPaymentMethod.marketer_id == marketer_id,
-            MarketerPaymentMethod.is_active == True,  # noqa: E712
+            MarketerPaymentMethod.is_active == True,
         )
     )
     return db_session.exec(statement).first()

@@ -8,29 +8,35 @@ Internal details are logged server-side only, never returned to the client.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from pydantic import BaseModel
-from sqlmodel import Session, select, and_
+from sqlmodel import Session, and_, select
 
 from src.core.events.database import get_db_session
-from src.db.users import PublicUser, User
-from src.db.referrals.marketers import (
-    Marketer,
-    MarketerStatus,
-    MarketerCreate,
-    MarketerRead,
-    MarketerPublicRead,
-)
 from src.db.referrals.marketer_kyc import KYCDocumentType, KYCStatus, MarketerKYC
 from src.db.referrals.marketer_payment_methods import MarketerPaymentMethodCreate
+from src.db.referrals.marketers import (
+    Marketer,
+    MarketerCreate,
+    MarketerPublicRead,
+    MarketerRead,
+    MarketerStatus,
+)
 from src.db.referrals.payout_requests import (
+    PayoutStatus,
     ReferrerPayoutRequest,
     ReferrerPayoutRequestRead,
-    PayoutStatus,
 )
+from src.db.users import PublicUser, User
 from src.security.auth import get_current_user
+from src.services.referrals.marketer_kyc import (
+    approve_kyc,
+    generate_kyc_document_url,
+    reject_kyc,
+    submit_kyc,
+    upload_kyc_document,
+)
 from src.services.referrals.marketers import (
     approve_marketer,
     get_admin_marketer_stats,
@@ -45,13 +51,6 @@ from src.services.referrals.marketers import (
     register_marketer,
     reject_marketer,
     suspend_marketer,
-)
-from src.services.referrals.marketer_kyc import (
-    approve_kyc,
-    generate_kyc_document_url,
-    reject_kyc,
-    submit_kyc,
-    upload_kyc_document,
 )
 from src.services.referrals.payouts import (
     build_masked_payment_method,
@@ -83,6 +82,7 @@ class PayoutRequestBody(BaseModel):
 def _require_admin(current_user, org_id: int, db_session: Session) -> None:
     """Admin or Maintainer role required (role_id 1 or 2)"""
     from fastapi import HTTPException
+
     from src.db.user_organizations import UserOrganization
 
     if not current_user or not current_user.id:
@@ -204,7 +204,7 @@ async def api_get_marketer_students(
 @router.get("/{org_id}/monthly-revenue")
 async def api_get_marketer_monthly_revenue(
     org_id: int,
-    year: Optional[int] = None,
+    year: int | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -298,7 +298,7 @@ async def api_upload_kyc(
     id_number: str = Form(...),
     front_file: UploadFile = File(...),
     selfie_file: UploadFile = File(...),
-    back_file: Optional[UploadFile] = File(None),
+    back_file: UploadFile | None = File(None),
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -392,7 +392,7 @@ async def api_get_marketer_payout_history(
 @router.get("/{org_id}/admin/all")
 async def api_admin_list_marketers(
     org_id: int,
-    status: Optional[MarketerStatus] = None,
+    status: MarketerStatus | None = None,
     page: int = 1,
     limit: int = 50,
     current_user: PublicUser = Depends(get_current_user),
@@ -633,7 +633,7 @@ async def api_admin_reject_kyc(
 @router.get("/{org_id}/admin/payouts")
 async def api_admin_marketer_payouts(
     org_id: int,
-    status: Optional[PayoutStatus] = None,
+    status: PayoutStatus | None = None,
     page: int = 1,
     limit: int = 50,
     current_user: PublicUser = Depends(get_current_user),
@@ -641,6 +641,7 @@ async def api_admin_marketer_payouts(
 ):
     """Payout requests from marketers only (joins Marketer to filter)"""
     from sqlmodel import func
+
     from src.db.referrals.referral_codes import ReferralCode
 
     _require_admin(current_user, org_id, db_session)

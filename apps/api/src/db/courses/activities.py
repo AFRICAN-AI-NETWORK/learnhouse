@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 
-class ActivityTypeEnum(str, Enum):
+class ActivityTypeEnum(StrEnum):
     TYPE_VIDEO = "TYPE_VIDEO"
     TYPE_DOCUMENT = "TYPE_DOCUMENT"
     TYPE_DYNAMIC = "TYPE_DYNAMIC"
@@ -15,7 +15,7 @@ class ActivityTypeEnum(str, Enum):
     TYPE_ATTENDANCE = "TYPE_ATTENDANCE"
 
 
-class ActivitySubTypeEnum(str, Enum):
+class ActivitySubTypeEnum(StrEnum):
     # Dynamic
     SUBTYPE_DYNAMIC_PAGE = "SUBTYPE_DYNAMIC_PAGE"
     # Video

@@ -9,11 +9,11 @@ import pytest
 
 from src.db.referrals.marketers import MarketerStatus
 from src.db.referrals.referral_codes import ReferralCode
-from src.db.referrals.referral_commissions import CommissionType, CommissionStatus
+from src.db.referrals.referral_commissions import CommissionStatus, CommissionType
 from src.services.referrals.marketers import (
     approve_marketer,
-    register_marketer,
     is_active_marketer,
+    register_marketer,
 )
 from src.services.referrals.referral_commissions import (
     create_commission_for_payment,

@@ -10,22 +10,22 @@ import pytest
 from sqlmodel import select
 
 from src.db.courses.courses import Course
-from src.db.payments.payments_users import PaymentsUser, PaymentStatusEnum
+from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.referrals.referral_commissions import (
-    ReferralCommission,
     CommissionType,
+    ReferralCommission,
 )
 from src.db.referrals.referral_tracking import ReferralTracking
 from src.routers.webhooks.flutterwave import (
     _create_referral_commission_for_flutterwave,
 )
-from src.tests.marketers.conftest import make_user, make_marketer
+from src.tests.marketers.conftest import make_marketer, make_user
 
 
 def _setup_payment_flow(db, with_referral=True):
     """Marketer + student + course + payment record (+ tracking)"""
     marketer_user = make_user(db)
-    marketer, code = make_marketer(db, marketer_user)
+    _marketer, code = make_marketer(db, marketer_user)
     student = make_user(db)
 
     course = Course(
@@ -68,7 +68,7 @@ def _setup_payment_flow(db, with_referral=True):
 
 @pytest.mark.asyncio
 async def test_flutterwave_creates_marketer_commission(test_db_session):
-    marketer_user, code, student, course, payment_user = _setup_payment_flow(
+    marketer_user, _code, student, course, payment_user = _setup_payment_flow(
         test_db_session
     )
 
@@ -91,7 +91,7 @@ async def test_flutterwave_creates_marketer_commission(test_db_session):
 
 @pytest.mark.asyncio
 async def test_flutterwave_no_referral_code_no_commission(test_db_session):
-    _, _, student, course, payment_user = _setup_payment_flow(
+    _, _, student, course, _payment_user = _setup_payment_flow(
         test_db_session, with_referral=False
     )
 

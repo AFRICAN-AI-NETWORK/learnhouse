@@ -1,17 +1,17 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 
-class CampaignTargetType(str, Enum):
+class CampaignTargetType(StrEnum):
     ALL = "ALL"
     WAITLIST = "WAITLIST"
     COURSE = "COURSE"
     ROLES = "ROLES"
 
 
-class CampaignStatus(str, Enum):
+class CampaignStatus(StrEnum):
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     SENT = "SENT"

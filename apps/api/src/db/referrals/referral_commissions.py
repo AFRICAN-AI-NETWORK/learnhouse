@@ -4,12 +4,12 @@ Tracks commission earned from successful referrals
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import BigInteger, Column, Field, ForeignKey, Index, SQLModel
 
 
-class CommissionStatus(str, Enum):
+class CommissionStatus(StrEnum):
     """Status of referral commission"""
 
     PENDING = "pending"  # Payment confirmed, refund period active (14 days)
@@ -19,7 +19,7 @@ class CommissionStatus(str, Enum):
     PENDING_REVIEW = "pending_review"  # Flagged for fraud review
 
 
-class CommissionType(str, Enum):
+class CommissionType(StrEnum):
     """Origin of the commission rate — lets analytics separate marketer
     earnings from standard referrer earnings without joining Marketer"""
 

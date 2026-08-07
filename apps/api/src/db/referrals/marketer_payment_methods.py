@@ -6,12 +6,12 @@ Account details are Fernet-encrypted; only masked summaries leave the API.
 """
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional
-from sqlmodel import Field, SQLModel, Column, BigInteger, ForeignKey, Index, Text
+from enum import StrEnum
+
+from sqlmodel import BigInteger, Column, Field, ForeignKey, Index, SQLModel, Text
 
 
-class PaymentMethodType(str, Enum):
+class PaymentMethodType(StrEnum):
     """Supported payout destination types"""
 
     BANK_TRANSFER = "bank_transfer"
@@ -25,7 +25,7 @@ class MarketerPaymentMethodBase(SQLModel):
     currency: str = Field(max_length=3)
     country_code: str = Field(max_length=2)
     is_active: bool = Field(default=True)
-    verified_at: Optional[datetime] = None
+    verified_at: datetime | None = None
 
 
 class MarketerPaymentMethod(MarketerPaymentMethodBase, table=True):
@@ -37,7 +37,7 @@ class MarketerPaymentMethod(MarketerPaymentMethodBase, table=True):
         Index("idx_payment_method_user", "user_id"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     marketer_id: int = Field(
         sa_column=Column(
             BigInteger, ForeignKey("marketer.id", ondelete="CASCADE"), nullable=False
@@ -57,7 +57,7 @@ class MarketerPaymentMethod(MarketerPaymentMethodBase, table=True):
     )
 
     account_details: str = Field(sa_column=Column(Text, nullable=False))
-    flutterwave_beneficiary_id: Optional[str] = Field(default=None, max_length=255)
+    flutterwave_beneficiary_id: str | None = Field(default=None, max_length=255)
     creation_date: datetime = Field(default_factory=datetime.now)
     update_date: datetime = Field(default_factory=datetime.now)
 
@@ -77,8 +77,8 @@ class MarketerPaymentMethodRead(MarketerPaymentMethodBase):
     marketer_id: int
     # Masked summary, e.g. "****1234" (bank) or "****5678" (mobile money)
     masked_account: str
-    account_holder: Optional[str] = None
-    bank_name: Optional[str] = None
-    provider: Optional[str] = None
+    account_holder: str | None = None
+    bank_name: str | None = None
+    provider: str | None = None
     has_cached_recipient: bool = False
     creation_date: datetime

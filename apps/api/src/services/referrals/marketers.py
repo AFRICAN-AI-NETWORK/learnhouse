@@ -9,36 +9,35 @@ webhook time by get_commission_amount_for_code().
 import hashlib
 import logging
 from datetime import datetime
-from typing import Optional, Tuple
 
 from fastapi import HTTPException, Request, status
 from redis.exceptions import RedisError
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select, and_, func
+from sqlmodel import Session, and_, func, select
 
+from src.db.referrals.marketer_kyc import KYCStatus, MarketerKYC
 from src.db.referrals.marketers import (
+    MARKETER_COMMISSION_RATE_USD,
     Marketer,
     MarketerStatus,
-    MARKETER_COMMISSION_RATE_USD,
 )
 from src.db.referrals.referral_codes import (
     ReferralCode,
     ReferralCodeStatus,
 )
 from src.db.referrals.referral_commissions import (
-    ReferralCommission,
     CommissionStatus,
     CommissionType,
+    ReferralCommission,
 )
 from src.db.referrals.referral_tracking import ReferralTracking
-from src.db.referrals.marketer_kyc import MarketerKYC, KYCStatus
 from src.db.users import User
 from src.services.referrals.redis_cache import get_redis_client
 from src.services.referrals.referral_codes import (
-    generate_unique_code,
     build_referral_link,
-    get_referral_code_by_user,
+    generate_unique_code,
     get_referral_code_by_code,
+    get_referral_code_by_user,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,7 +59,7 @@ REGISTRATION_NETWORK_LIMIT_30D = 3  # accounts per IP in 30 days → MKTR_005
 
 
 def marketer_error(
-    status_code: int, error_code: str, message: str, field: Optional[str] = None
+    status_code: int, error_code: str, message: str, field: str | None = None
 ) -> HTTPException:
     """Build the standard marketer error response shape (DRY utility)"""
     detail = {"error_code": error_code, "message": message}
@@ -83,7 +82,7 @@ def invalidate_marketer_cache(user_id: int, org_id: int) -> None:
             logger.warning(f"Failed to invalidate marketer cache: {e}")
 
 
-def compute_device_fingerprint(request: Optional[Request]) -> Optional[str]:
+def compute_device_fingerprint(request: Request | None) -> str | None:
     """
     SHA-256 of User-Agent + Accept-Language + /24 IP range.
     Used to flag (not reject) registrations from devices already linked to an
@@ -111,7 +110,7 @@ def _get_client_ip(request: Request) -> str:
     return request.client.host if request.client else ""
 
 
-def _check_registration_rate_limits(request: Optional[Request]) -> None:
+def _check_registration_rate_limits(request: Request | None) -> None:
     """
     Redis-backed registration rate limits:
     - 3 registrations per IP per hour → MKTR_004
@@ -158,7 +157,7 @@ def _check_registration_rate_limits(request: Optional[Request]) -> None:
 
 async def get_marketer_by_user(
     user_id: int, org_id: int, db_session: Session
-) -> Optional[Marketer]:
+) -> Marketer | None:
     """Get marketer row by user + org (DRY utility)"""
     statement = select(Marketer).where(
         and_(Marketer.user_id == user_id, Marketer.org_id == org_id)
@@ -186,7 +185,7 @@ async def register_marketer(
     org_id: int,
     phone_number: str,
     db_session: Session,
-    request: Optional[Request] = None,
+    request: Request | None = None,
 ) -> Marketer:
     """
     Register a new marketer (status PENDING_APPROVAL, awaiting admin review).
@@ -570,7 +569,7 @@ async def is_active_marketer(user_id: int, org_id: int, db_session: Session) -> 
 
 async def get_commission_amount_for_code(
     referral_code_id: int, db_session: Session
-) -> Tuple[float, CommissionType]:
+) -> tuple[float, CommissionType]:
     """
     Resolve the commission amount for a referral code (single source of truth).
 
@@ -681,11 +680,11 @@ async def get_marketer_dashboard(
     ).first()
     kyc_status = kyc.status if kyc else KYCStatus.UNVERIFIED
 
+    from src.db.referrals.payout_requests import PayoutStatus, ReferrerPayoutRequest
     from src.services.referrals.payouts import (
-        get_active_payment_method,
         build_masked_payment_method,
+        get_active_payment_method,
     )
-    from src.db.referrals.payout_requests import ReferrerPayoutRequest, PayoutStatus
 
     payment_method = await get_active_payment_method(marketer.id, db_session)
     payment_method_summary = (

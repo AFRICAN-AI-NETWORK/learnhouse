@@ -14,7 +14,7 @@ from src.services.referrals.marketer_kyc import (
     submit_kyc,
     validate_payout_prerequisites,
 )
-from src.tests.marketers.conftest import make_user, make_marketer
+from src.tests.marketers.conftest import make_marketer, make_user
 
 
 def _error_code(exc: HTTPException) -> str:
@@ -120,7 +120,7 @@ async def test_reject_kyc_stores_reason(test_db_session):
 @pytest.mark.asyncio
 async def test_prerequisites_country_first(test_db_session):
     user = make_user(test_db_session)  # no country
-    marketer, _ = make_marketer(test_db_session, user)
+    _marketer, _ = make_marketer(test_db_session, user)
 
     with pytest.raises(HTTPException) as exc:
         await validate_payout_prerequisites(user.id, 1, test_db_session)
@@ -130,7 +130,7 @@ async def test_prerequisites_country_first(test_db_session):
 @pytest.mark.asyncio
 async def test_prerequisites_kyc_unverified(test_db_session):
     user = make_user(test_db_session, country="NG")
-    marketer, _ = make_marketer(test_db_session, user)
+    _marketer, _ = make_marketer(test_db_session, user)
 
     with pytest.raises(HTTPException) as exc:
         await validate_payout_prerequisites(user.id, 1, test_db_session)

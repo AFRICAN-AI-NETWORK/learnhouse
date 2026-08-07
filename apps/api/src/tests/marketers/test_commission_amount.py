@@ -12,19 +12,19 @@ from src.db.referrals.referral_codes import ReferralCode, ReferralCodeStatus
 from src.db.referrals.referral_commissions import CommissionType
 from src.services.referrals.marketers import (
     get_commission_amount_for_code,
-    is_active_marketer,
     get_minimum_payout,
+    is_active_marketer,
 )
 from src.services.referrals.referral_commissions import (
     create_commission_for_payment,
 )
-from src.tests.marketers.conftest import make_user, make_marketer
+from src.tests.marketers.conftest import make_marketer, make_user
 
 
 @pytest.mark.asyncio
 async def test_active_marketer_gets_marketer_rate(test_db_session):
     user = make_user(test_db_session)
-    marketer, code = make_marketer(test_db_session, user)
+    _marketer, code = make_marketer(test_db_session, user)
 
     amount, ctype = await get_commission_amount_for_code(code.id, test_db_session)
 
@@ -55,7 +55,7 @@ async def test_non_marketer_gets_standard_rate(test_db_session):
 @pytest.mark.asyncio
 async def test_suspended_marketer_gets_standard_rate(test_db_session):
     user = make_user(test_db_session)
-    marketer, code = make_marketer(
+    _marketer, code = make_marketer(
         test_db_session, user, status=MarketerStatus.SUSPENDED
     )
 
@@ -68,7 +68,7 @@ async def test_suspended_marketer_gets_standard_rate(test_db_session):
 @pytest.mark.asyncio
 async def test_marketer_with_custom_rate(test_db_session):
     user = make_user(test_db_session)
-    marketer, code = make_marketer(test_db_session, user, commission_rate=10.50)
+    _marketer, code = make_marketer(test_db_session, user, commission_rate=10.50)
 
     amount, ctype = await get_commission_amount_for_code(code.id, test_db_session)
 
@@ -119,7 +119,7 @@ async def test_minimum_payout_marketer_vs_standard(test_db_session):
 async def test_create_commission_uses_marketer_amount(test_db_session):
     user = make_user(test_db_session)
     student = make_user(test_db_session)
-    marketer, code = make_marketer(test_db_session, user)
+    _marketer, code = make_marketer(test_db_session, user)
 
     commission = await create_commission_for_payment(
         org_id=1,

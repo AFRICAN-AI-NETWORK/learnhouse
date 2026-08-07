@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
@@ -9,7 +9,7 @@ from src.db.trails import TrailRead
 from src.db.users import UserRead
 
 
-class ThumbnailType(str, Enum):
+class ThumbnailType(StrEnum):
     IMAGE = "image"
     VIDEO = "video"
     BOTH = "both"

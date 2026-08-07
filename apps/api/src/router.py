@@ -25,7 +25,6 @@ from src.routers.chat import conversations as chat_conversations
 from src.routers.chat import messages as chat_messages
 from src.routers.chat import websocket as chat_websocket
 from src.routers.code import router as code_router
-from src.routers.referrals.marketers import router as marketers_router
 from src.routers.contact import router as contact_router
 from src.routers.courses import (
                          assignments,
@@ -39,6 +38,7 @@ from src.routers.courses import (
                          schedules,
 )
 from src.routers.courses.activities import activities, blocks
+from src.routers.referrals.marketers import router as marketers_router
 from src.routers.utils import router as utils_router
 from src.routers.webhooks.flutterwave import router as flutterwave_webhook_router
 from src.services.dev.dev import isDevModeEnabledOrRaise

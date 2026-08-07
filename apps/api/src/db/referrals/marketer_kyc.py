@@ -7,15 +7,15 @@ Document files are stored as S3 keys (never public URLs).
 """
 
 from datetime import datetime
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
+
 from sqlmodel import (
-    Field,
-    SQLModel,
-    Column,
     BigInteger,
+    Column,
+    Field,
     ForeignKey,
     Index,
+    SQLModel,
     Text,
     UniqueConstraint,
 )
@@ -23,7 +23,7 @@ from sqlmodel import (
 MAX_KYC_SUBMISSIONS = 3
 
 
-class KYCStatus(str, Enum):
+class KYCStatus(StrEnum):
     """KYC verification status"""
 
     UNVERIFIED = "unverified"
@@ -32,7 +32,7 @@ class KYCStatus(str, Enum):
     REJECTED = "rejected"
 
 
-class KYCDocumentType(str, Enum):
+class KYCDocumentType(StrEnum):
     """Accepted government ID document types"""
 
     NATIONAL_ID = "national_id"
@@ -46,7 +46,7 @@ class MarketerKYCBase(SQLModel):
     document_type: KYCDocumentType
     status: KYCStatus = Field(default=KYCStatus.UNVERIFIED)
     submission_count: int = Field(default=0)
-    reviewed_at: Optional[datetime] = None
+    reviewed_at: datetime | None = None
 
 
 class MarketerKYC(MarketerKYCBase, table=True):
@@ -60,7 +60,7 @@ class MarketerKYC(MarketerKYCBase, table=True):
         Index("idx_kyc_status_org", "org_id", "status"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     marketer_id: int = Field(
         sa_column=Column(
             BigInteger, ForeignKey("marketer.id", ondelete="CASCADE"), nullable=False
@@ -82,10 +82,10 @@ class MarketerKYC(MarketerKYCBase, table=True):
     id_number_hash: str = Field(max_length=64)
     # S3 keys, not public URLs — signed on demand for admin review only
     document_front_url: str = Field(max_length=500)
-    document_back_url: Optional[str] = Field(default=None, max_length=500)
+    document_back_url: str | None = Field(default=None, max_length=500)
     selfie_url: str = Field(max_length=500)
-    rejection_reason: Optional[str] = Field(default=None, sa_column=Column(Text))
-    reviewed_by_user_id: Optional[int] = Field(
+    rejection_reason: str | None = Field(default=None, sa_column=Column(Text))
+    reviewed_by_user_id: int | None = Field(
         default=None,
         sa_column=Column(BigInteger, ForeignKey("user.id", ondelete="SET NULL")),
     )
@@ -98,7 +98,7 @@ class MarketerKYCRead(MarketerKYCBase):
 
     id: int
     marketer_id: int
-    rejection_reason: Optional[str]
+    rejection_reason: str | None
     creation_date: datetime
     update_date: datetime
 
@@ -108,4 +108,4 @@ class MarketerKYCAdminRead(MarketerKYCRead):
 
     user_id: int
     org_id: int
-    reviewed_by_user_id: Optional[int]
+    reviewed_by_user_id: int | None

@@ -1,11 +1,12 @@
 
-from sqlmodel import Session, select
-from src.db.users import User
-from src.db.courses.courses import Course
 import logging
+
 from fastapi import APIRouter, Depends, Request
+from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
+from src.db.courses.courses import Course
+from src.db.users import User
 from src.services.payments.webhooks.payments_flutterwave_webhooks import (
     handle_flutterwave_webhook,
 )
@@ -33,12 +34,14 @@ async def _create_referral_commission_for_flutterwave(
     checkout) or from webhook metadata as a fallback.
     """
     from datetime import datetime
+
+    from sqlmodel import and_
+
     from src.db.payments.payments_users import PaymentsUser
     from src.db.referrals.referral_tracking import ReferralTracking
     from src.services.referrals.referral_commissions import (
         create_commission_for_payment,
     )
-    from sqlmodel import and_
 
     # Find the payment user record for this payer (most recent for this org)
     payment_user_statement = (

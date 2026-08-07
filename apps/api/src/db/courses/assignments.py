@@ -1,11 +1,11 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
 
 ## Assignment ##
-class GradingTypeEnum(str, Enum):
+class GradingTypeEnum(StrEnum):
     ALPHABET = "ALPHABET"
     NUMERIC = "NUMERIC"
     PERCENTAGE = "PERCENTAGE"
@@ -88,7 +88,7 @@ class Assignment(AssignmentBase, table=True):
 ## AssignmentTask ##
 
 
-class AssignmentTaskTypeEnum(str, Enum):
+class AssignmentTaskTypeEnum(StrEnum):
     FILE_SUBMISSION = "FILE_SUBMISSION"
     QUIZ = "QUIZ"
     FORM = "FORM"
@@ -245,7 +245,7 @@ class AssignmentTaskSubmission(AssignmentTaskSubmissionBase, table=True):
 ## AssignmentUserSubmission ##
 
 
-class AssignmentUserSubmissionStatus(str, Enum):
+class AssignmentUserSubmissionStatus(StrEnum):
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
     GRADED = "GRADED"

@@ -1,41 +1,41 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
-class TimetableRecurrenceEnum(str, Enum):
+class TimetableRecurrenceEnum(StrEnum):
     none = "none"
     weekly = "weekly"
     biweekly = "biweekly"
     monthly = "monthly"
 
 
-class TimetableVisibilityEnum(str, Enum):
+class TimetableVisibilityEnum(StrEnum):
     draft = "draft"
     published = "published"
 
 
-class TimetableStatusEnum(str, Enum):
+class TimetableStatusEnum(StrEnum):
     scheduled = "scheduled"
     cancelled = "cancelled"
 
 
-class RegisterFrequencyEnum(str, Enum):
+class RegisterFrequencyEnum(StrEnum):
     weekly = "weekly"
     per_session = "per_session"
     daily = "daily"
     manual = "manual"
 
 
-class RegisterEntryStatusEnum(str, Enum):
+class RegisterEntryStatusEnum(StrEnum):
     marked = "marked"
     late = "late"
     missed = "missed"
     excused = "excused"
 
 
-class RegisterEntryMethodEnum(str, Enum):
+class RegisterEntryMethodEnum(StrEnum):
     student_self_mark = "student_self_mark"
     instructor_override = "instructor_override"
 

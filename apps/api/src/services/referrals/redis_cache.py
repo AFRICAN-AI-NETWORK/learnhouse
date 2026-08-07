@@ -7,16 +7,16 @@ when Redis is unavailable so callers can fall back to DB queries.
 
 import logging
 import os
-from typing import Optional
 
 import redis
-from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
 
 from config.config import get_learnhouse_config
 
 logger = logging.getLogger(__name__)
 
-_redis_client: Optional[redis.Redis] = None
+_redis_client: redis.Redis | None = None
 _initialized = False
 
 
@@ -24,7 +24,7 @@ def _redis_enabled() -> bool:
     return os.getenv("REDIS_ENABLED", "true").lower() in ("true", "1", "yes")
 
 
-def get_redis_client() -> Optional[redis.Redis]:
+def get_redis_client() -> redis.Redis | None:
     """
     Return the shared Redis client, or None if Redis is disabled/unreachable.
     Lazily initialized once per process; callers must handle None.
