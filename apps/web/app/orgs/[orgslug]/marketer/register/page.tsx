@@ -2,6 +2,10 @@
 
 import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import ainaLogo from 'public/aina_logo.png'
+import { getUriWithOrg } from '@services/config/config'
 import { TrendingUp, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react'
 import { registerAsMarketer, MarketerError } from '@services/referral/marketer.service'
 
@@ -114,6 +118,19 @@ export default function MarketerRegisterPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/90 to-slate-950" />
 
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <div className="mb-6 flex justify-center">
+          <Link href={getUriWithOrg(orgSlug, '/')} className="hover:opacity-80 transition-opacity inline-block">
+            <Image
+              quality={100}
+              width={160}
+              height={56}
+              src={ainaLogo}
+              alt="LearnHouse"
+              className="w-auto h-14 mx-auto"
+            />
+          </Link>
+        </div>
+
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-full text-xs font-semibold mb-4 backdrop-blur-md">
           <TrendingUp size={14} className="text-indigo-400" />
           LearnHouse Partner Program
