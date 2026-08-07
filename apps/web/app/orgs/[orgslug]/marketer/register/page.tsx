@@ -109,13 +109,13 @@ export default function MarketerRegisterPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden">
-      {/* Blended Marketing Background Image */}
+    <div className="relative min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Soft Blended Marketing Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-luminosity scale-105 transform transition-transform duration-1000"
+        className="absolute inset-0 bg-cover bg-center opacity-10 mix-blend-multiply scale-105 transform transition-transform duration-1000"
         style={{ backgroundImage: "url('/marketer-bg.png')" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/90 to-slate-950" />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-50/90 via-white/95 to-slate-50" />
 
       <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="mb-6 flex justify-center">
@@ -131,25 +131,25 @@ export default function MarketerRegisterPage() {
           </Link>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-full text-xs font-semibold mb-4 backdrop-blur-md">
-          <TrendingUp size={14} className="text-indigo-400" />
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-full text-xs font-semibold mb-4 shadow-sm">
+          <TrendingUp size={14} className="text-indigo-600" />
           LearnHouse Partner Program
         </div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
           Become an Official Marketer
         </h1>
-        <p className="mt-2 text-sm text-gray-300 max-w-sm mx-auto leading-relaxed">
-          Earn <strong className="text-indigo-400 font-semibold">$7.70 USD</strong> for every student you refer who pays for a course, paid directly to your bank or mobile money account.
+        <p className="mt-2 text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+          Earn <strong className="text-indigo-600 font-semibold">$7.70 USD</strong> for every student you refer who pays for a course, paid directly to your bank or mobile money account.
         </p>
       </div>
 
       <div className="relative z-10 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-slate-900/90 backdrop-blur-xl py-8 px-6 shadow-2xl rounded-2xl border border-slate-800/80">
+        <div className="bg-white/95 backdrop-blur-xl py-8 px-6 shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100">
           {error && (
-            <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 flex items-start gap-3">
-              <AlertCircle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-              <div className="text-xs text-red-700 dark:text-red-300">
-                <span className="font-semibold block">Registration Error</span>
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3">
+              <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-red-800">
+                <span className="font-semibold block mb-0.5">Registration Error</span>
                 {error.error_code === 'MKTR_006'
                   ? 'This phone number is already registered to another marketer account.'
                   : error.error_code === 'MKTR_001'
@@ -162,7 +162,7 @@ export default function MarketerRegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   First Name
                 </label>
                 <input
@@ -172,11 +172,11 @@ export default function MarketerRegisterPage() {
                   value={formData.first_name}
                   onChange={handleChange}
                   placeholder="Jane"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-black dark:focus:ring-white outline-none"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Last Name
                 </label>
                 <input
@@ -186,13 +186,13 @@ export default function MarketerRegisterPage() {
                   value={formData.last_name}
                   onChange={handleChange}
                   placeholder="Doe"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-black dark:focus:ring-white outline-none"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 Phone Number
               </label>
               <input
@@ -202,19 +202,19 @@ export default function MarketerRegisterPage() {
                 value={formData.phone_number}
                 onChange={handleChange}
                 placeholder="+234 801 234 5678"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-black dark:focus:ring-white outline-none"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 Country of Residence
               </label>
               <select
                 name="country_code"
                 value={formData.country_code}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-black dark:focus:ring-white outline-none"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl bg-white text-slate-900 text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all shadow-sm"
               >
                 {SUPPORTED_COUNTRIES.map((country) => (
                   <option key={country.code} value={country.code}>
@@ -223,7 +223,7 @@ export default function MarketerRegisterPage() {
                 ))}
               </select>
               {selectedCountry && (
-                <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+                <p className="mt-1.5 text-xs font-medium text-indigo-600">
                   You will receive your payouts converted to <strong>{selectedCountry.currency}</strong>.
                 </p>
               )}
@@ -233,15 +233,15 @@ export default function MarketerRegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 px-4 py-3 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                className="w-full flex justify-center items-center gap-2 px-4 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.99] disabled:opacity-50"
               >
                 {isLoading ? 'Submitting Application...' : 'Apply for Marketer Account'}
               </button>
             </div>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-center gap-2 text-xs text-gray-500">
-            <ShieldCheck size={16} className="text-emerald-500" />
+          <div className="mt-6 pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
+            <ShieldCheck size={16} className="text-emerald-600" />
             Instant approval notifications via email.
           </div>
         </div>
