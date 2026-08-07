@@ -24,30 +24,37 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.get_bind().execute(
+    bind = op.get_bind()
+    bind.execute(
         sa.text(
             "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'commissiontype') "
             "THEN CREATE TYPE commissiontype AS ENUM ('STANDARD', 'MARKETER'); END IF; END $$;"
         )
     )
 
-    op.add_column(
-        "referralcommission",
-        sa.Column(
-            "commission_type",
-            postgresql.ENUM(
-                "STANDARD", "MARKETER", name="commissiontype", create_type=False
-            ),
-            nullable=False,
-            server_default="STANDARD",
-        ),
-    )
+    inspector = sa.inspect(bind)
+    columns = [c["name"] for c in inspector.get_columns("referralcommission")]
 
-    op.create_index(
-        "idx_commission_type_referrer",
-        "referralcommission",
-        ["referrer_user_id", "commission_type", "status"],
-    )
+    if "commission_type" not in columns:
+        op.add_column(
+            "referralcommission",
+            sa.Column(
+                "commission_type",
+                postgresql.ENUM(
+                    "STANDARD", "MARKETER", name="commissiontype", create_type=False
+                ),
+                nullable=False,
+                server_default="STANDARD",
+            ),
+        )
+
+    indexes = [idx["name"] for idx in inspector.get_indexes("referralcommission")]
+    if "idx_commission_type_referrer" not in indexes:
+        op.create_index(
+            "idx_commission_type_referrer",
+            "referralcommission",
+            ["referrer_user_id", "commission_type", "status"],
+        )
 
 
 def downgrade() -> None:
