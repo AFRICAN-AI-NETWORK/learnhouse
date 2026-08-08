@@ -7,7 +7,7 @@ export async function submitQuizBlock(
   access_token: string
 ) {
   const result: any = await fetch(
-    `${getAPIUrl()}blocks/quiz/${activity_id}"`,
+    `${getAPIUrl()}blocks/quiz/${activity_id}`,
     RequestBodyWithAuthHeader('POST', data, null, access_token)
   )
     .then((result) => result.json())
