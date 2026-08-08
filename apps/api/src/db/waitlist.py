@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 
-class UserStatusEnum(str, Enum):
+class UserStatusEnum(StrEnum):
     """User account status enumeration"""
 
     ACTIVE = "ACTIVE"
@@ -14,7 +14,7 @@ class UserStatusEnum(str, Enum):
     PENDING_VERIFICATION = "PENDING_VERIFICATION"
 
 
-class WaitlistStatusEnum(str, Enum):
+class WaitlistStatusEnum(StrEnum):
     """Waitlist campaign status enumeration"""
 
     ACTIVE = "ACTIVE"

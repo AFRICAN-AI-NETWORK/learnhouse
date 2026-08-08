@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, func, select
@@ -8,7 +8,7 @@ from src.db.user_organizations import UserOrganization
 from src.db.users import User
 
 
-class ChatRole(str, Enum):
+class ChatRole(StrEnum):
     """Chat role definitions to avoid hardcoded strings."""
 
     STUDENT = "student"

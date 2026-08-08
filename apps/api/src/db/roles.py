@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 from sqlalchemy import JSON, Column, ForeignKey, Integer
@@ -68,7 +68,7 @@ class Rights(BaseModel):
 # Database Models
 
 
-class RoleTypeEnum(str, Enum):
+class RoleTypeEnum(StrEnum):
     TYPE_ORGANIZATION = "TYPE_ORGANIZATION"  # Organization roles are associated with an organization, they are used to define the rights of a user in an organization
     # Organization API Token roles are associated with an organization, they are used to define the rights of an API Token in an organization.
     TYPE_ORGANIZATION_API_TOKEN = "TYPE_ORGANIZATION_API_TOKEN"  # nosec B105

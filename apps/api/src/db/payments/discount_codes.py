@@ -1,10 +1,10 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import BigInteger, Column, Field, ForeignKey, SQLModel
 
 
-class DiscountTypeEnum(str, Enum):
+class DiscountTypeEnum(StrEnum):
     PERCENTAGE = "percentage"
     FIXED = "fixed"
 

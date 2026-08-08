@@ -18,6 +18,7 @@ import {
   Megaphone,
   Bell,
   GraduationCap,
+  Sparkles,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
@@ -207,6 +208,12 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
+          <MenuLink
+            href="/marketer"
+            icon={<Sparkles size={18} />}
+            label="Marketer Portal"
+            isCollapsed={isCollapsed}
+          />
           {!isPartnerOnly && isPartner && !isAdmin && (
             <MenuLink
               href="/dash/affiliation"

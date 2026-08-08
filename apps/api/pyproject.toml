@@ -54,7 +54,8 @@ dependencies = [
 ]
 
 [tool.ruff]
-lint.ignore = ["E501", "E712", "E402", "F403", "B008", "EXE001", "PLR1704", "SIM102", "S110", "SIM103", "PLW0602", "C408", "RUF013", "FURB162", "ASYNC230", "ASYNC251", "TRY002", "PLW0127", "PLW0128", "D419", "UP045", "PLR0913", "PLR2004", "TRY401", "PLW1510", "B018", "G202", "PERF402"]
+lint.select = ["E", "F", "I", "UP", "DTZ", "BLE", "G", "RUF"]
+lint.ignore = ["E501", "E712", "E402", "F403", "B008", "EXE001", "PLR1704", "SIM102", "S110", "SIM103", "PLW0602", "C408", "RUF013", "FURB162", "ASYNC230", "ASYNC251", "TRY002", "PLW0127", "PLW0128", "D419", "UP045", "PLR0913", "PLR2004", "TRY401", "PLW1510", "B018", "G202", "PERF402", "G004", "RUF002", "RUF003", "RUF059"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

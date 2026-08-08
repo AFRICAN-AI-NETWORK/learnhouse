@@ -67,8 +67,15 @@ class InternalFlutterwaveConfig(BaseModel):
     flutterwave_webhook_secret: str | None
 
 
+class InternalPaystackConfig(BaseModel):
+    paystack_secret_key: str | None = None
+    paystack_public_key: str | None = None
+    paystack_webhook_secret: str | None = None
+
+
 class InternalPaymentsConfig(BaseModel):
     flutterwave: InternalFlutterwaveConfig
+    paystack: InternalPaystackConfig | None = None
 
 
 class LearnHouseConfig(BaseModel):
@@ -92,7 +99,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
     yaml_path = os.path.join(os.path.dirname(__file__), "config.yaml")
 
     # Load the YAML file
-    with open(yaml_path, "r") as f:
+    with open(yaml_path) as f:
         yaml_config = yaml.safe_load(f)
 
     # Ensure yaml_config is not None (defensive programming)
@@ -244,7 +251,7 @@ def get_learnhouse_config() -> LearnHouseConfig:
         "mailing_config", {}
     ).get("system_email_address")
 
-    # Payments config - Flutterwave
+    # Payments config - Flutterwave & Paystack
     env_flutterwave_secret_key = os.environ.get(
         "LEARNHOUSE_FLUTTERWAVE_SECRET_KEY"
     ) or os.environ.get("FLUTTERWAVE_SECRET_KEY")
@@ -255,10 +262,19 @@ def get_learnhouse_config() -> LearnHouseConfig:
         "LEARNHOUSE_FLUTTERWAVE_WEBHOOK_SECRET"
     ) or os.environ.get("FLUTTERWAVE_WEBHOOK_SECRET")
 
+    env_paystack_secret_key = os.environ.get("LEARNHOUSE_PAYSTACK_SECRET_KEY") or os.environ.get("PAYSTACK_SECRET_KEY")
+    env_paystack_public_key = os.environ.get("LEARNHOUSE_PAYSTACK_PUBLIC_KEY") or os.environ.get("PAYSTACK_PUBLIC_KEY")
+    env_paystack_webhook_secret = os.environ.get("LEARNHOUSE_PAYSTACK_WEBHOOK_SECRET") or os.environ.get("PAYSTACK_WEBHOOK_SECRET")
+
     # Safely get Flutterwave config from YAML
     payments_config = yaml_config.get("payments_config", {}) if yaml_config else {}
     flutterwave_config = (
         payments_config.get("flutterwave", {})
+        if isinstance(payments_config, dict)
+        else {}
+    )
+    paystack_config = (
+        payments_config.get("paystack", {})
         if isinstance(payments_config, dict)
         else {}
     )
@@ -273,6 +289,10 @@ def get_learnhouse_config() -> LearnHouseConfig:
         env_flutterwave_webhook_secret
         or flutterwave_config.get("flutterwave_webhook_secret")
     )
+
+    paystack_secret_key = env_paystack_secret_key or paystack_config.get("paystack_secret_key")
+    paystack_public_key = env_paystack_public_key or paystack_config.get("paystack_public_key")
+    paystack_webhook_secret = env_paystack_webhook_secret or paystack_config.get("paystack_webhook_secret")
 
     # Create HostingConfig and DatabaseConfig objects
     hosting_config = HostingConfig(
@@ -320,6 +340,11 @@ def get_learnhouse_config() -> LearnHouseConfig:
                 flutterwave_secret_key=flutterwave_secret_key,
                 flutterwave_public_key=flutterwave_public_key,
                 flutterwave_webhook_secret=flutterwave_webhook_secret,
+            ),
+            paystack=InternalPaystackConfig(
+                paystack_secret_key=paystack_secret_key,
+                paystack_public_key=paystack_public_key,
+                paystack_webhook_secret=paystack_webhook_secret,
             )
         ),
     )

@@ -12,7 +12,7 @@ export default function TopMarqueeBanner() {
           <div key={i} className="flex items-center space-x-3 mx-8">
             <Rocket size={16} className="text-[#0057ff]" />
             <span className="text-sm font-bold tracking-wide">
-              BIG NEWS: Our Mobile App is launching on July 30th!
+              BIG NEWS: Our Mobile App is launching on 31st August!
             </span>
             <span className="text-sm text-white/60">
               Get ready for a truly mobile-first learning experience.

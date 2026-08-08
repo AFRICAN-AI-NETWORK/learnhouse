@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel
 
 
-class CohortStatusEnum(str, Enum):
+class CohortStatusEnum(StrEnum):
     UPCOMING = "upcoming"
     ACTIVE = "active"
     COMPLETED = "completed"

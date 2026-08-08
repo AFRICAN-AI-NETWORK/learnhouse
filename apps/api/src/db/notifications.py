@@ -1,11 +1,11 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import JSON, Column, Field, SQLModel
 
 
-class NotificationType(str, Enum):
+class NotificationType(StrEnum):
     ASSIGNMENT_REVIEWED = "assignment_reviewed"
     RETAKE_REQUESTED = "retake_requested"
     CHAPTER_ADDED = "chapter_added"
@@ -13,7 +13,7 @@ class NotificationType(str, Enum):
     APP_UPDATE = "app_update"
 
 
-class EmailStatus(str, Enum):
+class EmailStatus(StrEnum):
     NOT_REQUIRED = "not_required"
     PENDING = "pending"
     SENT = "sent"
