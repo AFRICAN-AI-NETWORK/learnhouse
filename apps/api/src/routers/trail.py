@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 
 from src.core.events.database import get_db_session
+from src.core.idempotency import IdempotencyContext, idempotency
 from src.db.trails import TrailCreate, TrailRead
 from src.security.auth import get_current_user
 from src.services.trail.tracking import ActivityHeartbeat, record_activity_heartbeat
@@ -103,11 +104,26 @@ async def api_add_activity_to_trail(
     activity_uuid: str,
     user=Depends(get_current_user),
     db_session=Depends(get_db_session),
+    idem: IdempotencyContext = Depends(idempotency),
 ) -> TrailRead:
     """
     Add Course to trail
+
+    Idempotent when the caller supplies `X-Idempotency-Key`. The offline outbox
+    sends one, so replaying a completion whose response was lost in transit returns
+    the original result instead of applying the write twice. Requests without the
+    header behave exactly as before.
     """
-    return await add_activity_to_trail(request, user, activity_uuid, db_session)
+    cached = idem.cached_response()
+    if cached is not None:
+        return TrailRead.model_validate(cached)
+
+    result = await add_activity_to_trail(request, user, activity_uuid, db_session)
+
+    if idem.enabled:
+        idem.store(TrailRead.model_validate(result).model_dump(mode="json"))
+
+    return result
 
 
 @router.delete("/remove_activity/{activity_uuid}")
