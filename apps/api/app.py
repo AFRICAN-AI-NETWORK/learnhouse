@@ -15,6 +15,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from config.config import LearnHouseConfig, get_learnhouse_config
 from src.core.ee_hooks import register_ee_middlewares
 from src.core.events.events import shutdown_app, startup_app
+from src.core.middleware.cache_control import CacheControlMiddleware
+from src.core.middleware.etag import ETagMiddleware
 from src.core.middleware.sentry_context import SentryContextMiddleware
 from src.core.sentry import init_sentry
 from src.router import v1_router
@@ -91,6 +93,15 @@ if learnhouse_config.general_config.logfire_enabled:
     from src.core.events.database import engine
 
     logfire.instrument_sqlalchemy(engine=engine)
+
+# Offline-support middlewares.
+#
+# ORDERING NOTE: Starlette runs middlewares outermost-last-added, so these are
+# registered BEFORE GZip on purpose. That keeps GZip on the outside (it compresses
+# the final bytes) while ETag runs inside it and therefore hashes the uncompressed
+# body — a stable validator that does not change with Accept-Encoding.
+app.add_middleware(CacheControlMiddleware)
+app.add_middleware(ETagMiddleware)
 
 # Gzip Middleware (will add brotli later)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
