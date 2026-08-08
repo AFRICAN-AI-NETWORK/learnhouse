@@ -4,6 +4,8 @@ import '@/styles/globals.css'
 import StyledComponentsRegistry from '@components/Utils/libs/styled-registry'
 import { SessionProvider } from 'next-auth/react'
 import LHSessionProvider from '@components/Contexts/LHSessionContext'
+import SyncEngineProvider from '@components/Offline/SyncEngineProvider'
+import OfflineBanner from '@components/Offline/OfflineBanner'
 import { isDevEnv } from '@/app/auth/options'
 import Script from 'next/script'
 import '@/lib/i18n'
@@ -81,12 +83,19 @@ export default function RootLayout({
 
         <SessionProvider key="session-provider" refetchInterval={60000}>
           <LHSessionProvider>
-            <I18nProvider>
-              <StyledComponentsRegistry>
-                <main className="flex-grow">{children}</main>
-                <Footer />
-              </StyledComponentsRegistry>
-            </I18nProvider>
+            {/* Installs the offline read seam (global SWRConfig) and the
+                connectivity/outbox wiring. Inert until the offline flags are on. */}
+            <SyncEngineProvider>
+              <I18nProvider>
+                <StyledComponentsRegistry>
+                  {/* Renders nothing while online, so the normal experience
+                      is untouched. */}
+                  <OfflineBanner />
+                  <main className="flex-grow">{children}</main>
+                  <Footer />
+                </StyledComponentsRegistry>
+              </I18nProvider>
+            </SyncEngineProvider>
           </LHSessionProvider>
         </SessionProvider>
       </body>

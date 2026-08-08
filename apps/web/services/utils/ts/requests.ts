@@ -87,26 +87,65 @@ export const RequestBodyFormWithAuthHeader = (
   return options
 }
 
+/**
+ * Optional read interceptor, installed at runtime by the offline subsystem.
+ *
+ * WHY DEPENDENCY INJECTION: `swrFetcher` is the real choke point for client reads
+ * — almost every `useSWR` call site passes its own inline fetcher that delegates
+ * here, so a global `SWRConfig` fetcher alone would miss them. Intercepting here
+ * gives complete coverage from one place (DRY), while injection keeps this module
+ * free of any import edge into `lib/offline` (no cycle, and no offline code in the
+ * bundle for consumers that never enable it).
+ *
+ * When nothing is registered, behaviour is byte-for-byte what it was before.
+ */
+type SwrReadInterceptor = (
+  url: string,
+  token: string | undefined,
+  network: () => Promise<any>
+) => Promise<any>
+
+let swrReadInterceptor: SwrReadInterceptor | null = null
+
+export const setSwrReadInterceptor = (
+  interceptor: SwrReadInterceptor | null
+) => {
+  swrReadInterceptor = interceptor
+}
+
 export const swrFetcher = async (url: string, token?: string) => {
-  // Create the request options
-  let HeadersConfig = new Headers(
-    token
-      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-      : { 'Content-Type': 'application/json' }
-  )
-  let options: any = {
-    method: 'GET',
-    headers: HeadersConfig,
-    redirect: 'follow',
-    credentials: 'include',
+  // The unmodified network read. Kept as a closure so an interceptor can decide
+  // whether, and when, to invoke it.
+  const network = async () => {
+    // Create the request options
+    let HeadersConfig = new Headers(
+      token
+        ? {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          }
+        : { 'Content-Type': 'application/json' }
+    )
+    let options: any = {
+      method: 'GET',
+      headers: HeadersConfig,
+      redirect: 'follow',
+      credentials: 'include',
+    }
+
+    // Fetch the data
+    const request = await fetch(url, options)
+    const res = await errorHandling(request)
+
+    // Return the data
+    return res
   }
 
-  // Fetch the data
-  const request = await fetch(url, options)
-  const res = await errorHandling(request)
+  if (swrReadInterceptor) {
+    return swrReadInterceptor(url, token, network)
+  }
 
-  // Return the data
-  return res
+  return network()
 }
 
 export const errorHandling = async (res: any) => {

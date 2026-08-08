@@ -4,8 +4,24 @@
   "description": "Expert-led courses designed to take you from curious to confident in Artificial Intelligence. Join the largest educational AI network in Africa.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#ffffff",
   "theme_color": "#000000",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "My Courses",
+      "short_name": "Courses",
+      "url": "/courses",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Trail",
+      "short_name": "Trail",
+      "url": "/trail",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-48x48.png",

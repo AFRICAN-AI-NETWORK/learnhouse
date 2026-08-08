@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { getBackendUrl } from '@services/config/config'
+import { getConnectionStatus, subscribe } from '@/lib/offline/connection'
+import { CONNECTION_STATUS } from '@/lib/offline/constants'
 
 interface WebSocketMessage {
   type: string
@@ -74,6 +76,13 @@ const useWebSocket = (
   const attemptReconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
+    }
+
+    // Stop the backoff loop entirely while offline — a WebSocket handshake cannot
+    // succeed without a network, and retrying burns battery and floods logs. The
+    // `online` subscription below resumes it (plan Layer 5B.14).
+    if (getConnectionStatus() === CONNECTION_STATUS.OFFLINE) {
+      return
     }
 
     const baseDelay = 1000
@@ -223,6 +232,19 @@ const useWebSocket = (
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, orgId, options.autoConnect]) // intentionally omitting connect/disconnect to avoid re-running on every render
+
+  // Resume connecting as soon as connectivity returns, since `attemptReconnect`
+  // deliberately stops scheduling retries while offline.
+  useEffect(() => {
+    if (!accessToken || !orgId || !options.autoConnect) return
+
+    return subscribe((status) => {
+      if (status === CONNECTION_STATUS.ONLINE && !wsRef.current) {
+        reconnectAttemptRef.current = 0
+        void connectRef.current()
+      }
+    })
+  }, [accessToken, orgId, options.autoConnect])
 
   // Periodic ping to keep connection alive
   useEffect(() => {

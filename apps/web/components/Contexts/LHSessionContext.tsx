@@ -2,6 +2,8 @@
 import PageLoading from '@components/Objects/Loaders/PageLoading'
 import { useSession, signOut } from 'next-auth/react'
 import React, { useContext, createContext, useEffect } from 'react'
+import { getConnectionStatus } from '@/lib/offline/connection'
+import { CONNECTION_STATUS } from '@/lib/offline/constants'
 
 export const SessionContext = createContext({}) as any
 
@@ -47,7 +49,12 @@ function LHSessionProvider({ children }: { children: React.ReactNode }) {
           ).some((media: any) => !media.paused && !media.ended)
           const isIframeFocused = document.activeElement?.tagName === 'IFRAME'
 
-          if (isMediaPlaying || isIframeFocused) {
+          // Suspend inactivity logout while offline: the user cannot
+          // re-authenticate without a network, so signing them out would strand
+          // them mid-course for no security gain.
+          const isOffline = getConnectionStatus() === CONNECTION_STATUS.OFFLINE
+
+          if (isMediaPlaying || isIframeFocused || isOffline) {
             updateActivity()
           } else if (now - lastActive >= INACTIVITY_TIMEOUT) {
             signOut({ callbackUrl: '/' })
