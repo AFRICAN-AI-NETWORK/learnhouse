@@ -26,13 +26,9 @@ class ReferrerPayoutRequestBase(SQLModel):
     currency: str = Field(default="USD", max_length=3)
     converted_amount: float | None = None
     status: PayoutStatus = Field(default=PayoutStatus.REQUESTED)
-    flutterwave_beneficiary_id: str | None = Field(
-        default=None, max_length=255
-    )
+    flutterwave_beneficiary_id: str | None = Field(default=None, max_length=255)
     flutterwave_transfer_id: str | None = Field(default=None, max_length=255)
-    paystack_transfer_recipient_code: str | None = Field(
-        default=None, max_length=255
-    )
+    paystack_transfer_recipient_code: str | None = Field(default=None, max_length=255)
     paystack_transfer_code: str | None = Field(default=None, max_length=255)
     bank_account_info: dict = Field(
         default={}, sa_column=Column(JSON)
@@ -114,6 +110,4 @@ class BankDetails(SQLModel):
     account_number: str
     account_holder: str
     account_type: str  # "savings" or "current"
-    bank_code: str | None = (
-        None  # Bank code for Paystack (e.g., "044" for Access Bank)
-    )
+    bank_code: str | None = None  # Bank code for Paystack (e.g., "044" for Access Bank)

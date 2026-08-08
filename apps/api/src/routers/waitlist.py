@@ -1,6 +1,5 @@
 """Waitlist API Router - All waitlist-related endpoints"""
 
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, validator
 from sqlmodel import Session, select

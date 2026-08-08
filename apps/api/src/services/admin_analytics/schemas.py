@@ -5,7 +5,6 @@ recomputation. They are derived from existing trail / course / user data plus
 the lightweight time-tracking table.
 """
 
-
 from pydantic import BaseModel
 
 

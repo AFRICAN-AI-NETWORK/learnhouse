@@ -244,7 +244,9 @@ async def get_courses_orgslug(
             .where(
                 or_(
                     Course.public == True,
-                    UserGroupResource.resource_uuid.is_(None),  # Courses not in any UserGroup
+                    UserGroupResource.resource_uuid.is_(
+                        None
+                    ),  # Courses not in any UserGroup
                     UserGroupUser.user_id
                     == current_user.id,  # Courses in UserGroups where user is a member
                     ResourceAuthor.user_id
@@ -382,7 +384,9 @@ async def search_courses(
             .where(
                 or_(
                     Course.public == True,
-                    UserGroupResource.resource_uuid.is_(None),  # Courses not in any UserGroup
+                    UserGroupResource.resource_uuid.is_(
+                        None
+                    ),  # Courses not in any UserGroup
                     UserGroupUser.user_id
                     == current_user.id,  # Courses in UserGroups where user is a member
                     ResourceAuthor.user_id
@@ -714,8 +718,7 @@ async def update_course(
                 (resource_author.authorship == ResourceAuthorshipEnum.CREATOR)
                 or (resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER)
             )
-            and resource_author.authorship_status
-            == ResourceAuthorshipStatusEnum.ACTIVE
+            and resource_author.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE
         ):
             is_course_owner = True
 

@@ -1,4 +1,3 @@
-
 from sqlalchemy import BigInteger, Column, ForeignKey
 from sqlmodel import Field, SQLModel
 
@@ -22,7 +21,6 @@ class Collection(CollectionBase, table=True):
 class CollectionCreate(CollectionBase):
     courses: list[int]
     org_id: int = Field(default=None, foreign_key="organization.id")
-
 
 
 class CollectionUpdate(CollectionBase):

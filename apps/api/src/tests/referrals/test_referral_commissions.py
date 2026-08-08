@@ -316,9 +316,7 @@ class TestUpdatePendingCommissionsToEligible:
         mock_session = Mock()
 
         # Create mock expired commissions
-        expired_date = datetime.now(UTC) - timedelta(
-            days=REFUND_PERIOD_DAYS + 1
-        )
+        expired_date = datetime.now(UTC) - timedelta(days=REFUND_PERIOD_DAYS + 1)
 
         mock_comm1 = Mock(spec=ReferralCommission)
         mock_comm1.id = 1
@@ -352,9 +350,7 @@ class TestUpdatePendingCommissionsToEligible:
         """CRITICAL: Test that balances are updated in bulk (not N+1)"""
         mock_session = Mock()
 
-        expired_date = datetime.now(UTC) - timedelta(
-            days=REFUND_PERIOD_DAYS + 1
-        )
+        expired_date = datetime.now(UTC) - timedelta(days=REFUND_PERIOD_DAYS + 1)
 
         # 3 commissions for same user
         commissions = []
@@ -395,9 +391,7 @@ class TestUpdatePendingCommissionsToEligible:
         """CRITICAL: Test that update uses SELECT FOR UPDATE"""
         mock_session = Mock()
 
-        expired_date = datetime.now(UTC) - timedelta(
-            days=REFUND_PERIOD_DAYS + 1
-        )
+        expired_date = datetime.now(UTC) - timedelta(days=REFUND_PERIOD_DAYS + 1)
 
         mock_comm = Mock(spec=ReferralCommission)
         mock_comm.id = 1

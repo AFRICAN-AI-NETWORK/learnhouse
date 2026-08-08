@@ -332,10 +332,13 @@ class TestValidateAndTrackReferral:
             update_date=datetime.now(UTC),
         )
 
-        with patch(
-            "src.services.referrals.referral_tracking.validate_referral_code_exists",
-            return_value=mock_code,
-        ), pytest.raises(HTTPException) as exc_info:
+        with (
+            patch(
+                "src.services.referrals.referral_tracking.validate_referral_code_exists",
+                return_value=mock_code,
+            ),
+            pytest.raises(HTTPException) as exc_info,
+        ):
             await validate_and_track_referral(
                 mock_request,
                 referred_user_id=500,  # Same as referrer_user_id

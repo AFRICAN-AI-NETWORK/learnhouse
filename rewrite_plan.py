@@ -29,7 +29,7 @@ content = re.sub(
 
 **Root cause:** The function previously hard-coded Paystack-specific recipient types like `"type": "NIGERIAN_BANK"`. Flutterwave `/transfers` API directly accepts `account_bank` and `account_number` without needing a recipient type prefix. For mobile money, the `account_bank` is just the mobile network operator code (e.g., `MTN`, `MPS`).
 
-**Fix:** Map `currency` and `payment_method_type` directly to the expected Flutterwave `account_bank` codes instead of Paystack types. 
+**Fix:** Map `currency` and `payment_method_type` directly to the expected Flutterwave `account_bank` codes instead of Paystack types.
 ''',
     content,
     flags=re.DOTALL
@@ -40,7 +40,7 @@ explanation = '''# Flutterwave Currency Conversion Explanation
 
 > [!NOTE]
 > **Question:** Will Flutterwave convert the $37 checkout amount to Naira for Nigerian buyers?
-> 
+>
 > **Answer:** Yes! When you pass a USD amount to the Flutterwave checkout, Flutterwave detects the user's local card (or the user can select their local payment method) and automatically applies Dynamic Currency Conversion (DCC). The buyer will see and be charged the equivalent amount in Naira (NGN) at Flutterwave's daily exchange rate. Your merchant account will still correctly register the transaction, and depending on your settlement settings, you can choose to settle the funds in USD or NGN. The $37 pricing remains standard globally, but local buyers pay seamlessly in their local currency.
 
 '''

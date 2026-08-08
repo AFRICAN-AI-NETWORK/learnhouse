@@ -408,11 +408,15 @@ async def validate_payout_amount(
         HTTPException: If amount is invalid
     """
     from src.services.referrals.marketers import get_minimum_payout
+
     min_payout = await get_minimum_payout(user_id, org_id, db_session)
     if amount < min_payout:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error_code": "MKTR_301", "message": f"Minimum payout amount is ${min_payout:.2f}"},
+            detail={
+                "error_code": "MKTR_301",
+                "message": f"Minimum payout amount is ${min_payout:.2f}",
+            },
         )
 
     # Get user's eligible balance
@@ -431,7 +435,10 @@ async def validate_payout_amount(
     if amount > eligible_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error_code": "MKTR_302", "message": f"Insufficient eligible balance. Available: ${eligible_amount:.2f}"},
+            detail={
+                "error_code": "MKTR_302",
+                "message": f"Insufficient eligible balance. Available: ${eligible_amount:.2f}",
+            },
         )
 
 
@@ -746,7 +753,9 @@ async def process_payout_request(
         )
 
         # Initiate transfer with idempotency key to prevent double-charging on retries
-        transfer_reference = f"ref_payout_{payout.id}_{int(datetime.now(UTC).timestamp())}"
+        transfer_reference = (
+            f"ref_payout_{payout.id}_{int(datetime.now(UTC).timestamp())}"
+        )
         idempotency_key = (
             f"payout_{payout.id}_{payout.request_date.strftime('%Y%m%d%H%M%S')}"
         )
@@ -952,9 +961,7 @@ def _handle_payout_failure(
         )
     else:
         payout.status = PayoutStatus.FAILED
-        payout.failure_reason = (
-            f"Failed after {MAX_PAYOUT_RETRIES} attempts: {reason}"
-        )
+        payout.failure_reason = f"Failed after {MAX_PAYOUT_RETRIES} attempts: {reason}"
     payout.update_date = datetime.now(UTC)
     db_session.add(payout)
     db_session.commit()
@@ -978,7 +985,6 @@ async def cache_paystack_recipient_code(
         )
 
 
-
 async def reset_paystack_recipient_codes_for_user(
     user_id: int, db_session: Session
 ) -> None:
@@ -999,7 +1005,6 @@ async def reset_paystack_recipient_codes_for_user(
             f"Reset Paystack recipient codes on {len(methods)} payment methods "
             f"for user {user_id} (country change)"
         )
-
 
 
 async def save_payment_method(
@@ -1114,7 +1119,6 @@ async def save_payment_method(
     return payment_method
 
 
-
 async def get_active_payment_method(
     marketer_id: int, db_session: Session
 ) -> MarketerPaymentMethod | None:
@@ -1135,7 +1139,6 @@ async def get_active_payment_method(
         )
     )
     return db_session.exec(statement).first()
-
 
 
 def _handle_payout_failure(
@@ -1176,7 +1179,9 @@ def _handle_payout_failure(
     db_session.add(payout)
     db_session.commit()
 
+
 MAX_PAYOUT_RETRIES = 3
+
 
 def build_masked_payment_method(
     payment_method: MarketerPaymentMethod,
@@ -1215,6 +1220,7 @@ def build_masked_payment_method(
         has_cached_recipient=payment_method.flutterwave_beneficiary_id is not None,
         creation_date=payment_method.creation_date,
     )
+
 
 def _handle_payout_failure(
     payout: ReferrerPayoutRequest, reason: str, db_session: Session
@@ -1320,4 +1326,3 @@ def _send_marketer_payout_email_safe(
             )
     except Exception as e:  # noqa: BLE001 - intentionally swallow email errors
         logger.error(f"Failed to send marketer payout email: {e}")
-

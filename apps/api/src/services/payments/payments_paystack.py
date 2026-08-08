@@ -150,8 +150,7 @@ async def make_paystack_request(
                 status_code=500, detail=f"Error connecting to Paystack: {e!s}"
             )
         except Exception as e:  # noqa: BLE001
-            logger.error(
-                f"Unexpected error making Paystack request: {e!s}")
+            logger.error(f"Unexpected error making Paystack request: {e!s}")
             raise HTTPException(
                 status_code=500, detail=f"Error making Paystack request: {e!s}"
             )
@@ -380,9 +379,7 @@ async def initialize_transaction(
             )
         except DiscountValidationError as e:
             logger.warning(f"Discount code validation failed: {e!s}")
-            raise HTTPException(
-                status_code=400, detail=f"Discount code error: {e!s}"
-            )
+            raise HTTPException(status_code=400, detail=f"Discount code error: {e!s}")
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error validating discount code: {e!s}")
             raise HTTPException(

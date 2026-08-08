@@ -1,4 +1,3 @@
-
 from openai import OpenAI
 
 from config.config import get_learnhouse_config

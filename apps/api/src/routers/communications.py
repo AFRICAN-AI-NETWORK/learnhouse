@@ -23,7 +23,9 @@ from src.services.utils.upload_content import upload_file
 router = APIRouter()
 
 
-def _resolve_org_id(db_session: Session, user_id: int, org_slug: str | None = None) -> int:
+def _resolve_org_id(
+    db_session: Session, user_id: int, org_slug: str | None = None
+) -> int:
     """Resolve org_id from the user's organization membership and optional slug."""
     if org_slug:
         statement = (

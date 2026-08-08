@@ -1,4 +1,3 @@
-
 import logging
 from datetime import UTC
 
@@ -66,7 +65,9 @@ async def _create_referral_commission_for_flutterwave(
     ).first()
 
     if not tracking:
-        logger.info(f"No referral tracking found for Flutterwave payment by user {user.id}")
+        logger.info(
+            f"No referral tracking found for Flutterwave payment by user {user.id}"
+        )
         return
 
     referral_code_id = tracking.referral_code_id

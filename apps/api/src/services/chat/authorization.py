@@ -173,9 +173,7 @@ async def verify_chat_permission(
     return True
 
 
-async def get_user_role_in_org(
-    db: Session, user_id: int, org_id: int
-) -> Role | None:
+async def get_user_role_in_org(db: Session, user_id: int, org_id: int) -> Role | None:
     """Get user's role in specific organization."""
     statement = (
         select(Role)

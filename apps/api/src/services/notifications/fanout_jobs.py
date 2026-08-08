@@ -58,10 +58,8 @@ async def fanout_chapter_added(chapter_id: int, db_session: Session) -> int:
             sent += 1
         except Exception as e:
             logger.exception(
-                "Failed to notify user %s of new chapter %s: %s",
-                user_id,
-                chapter_id,
-                e)
+                "Failed to notify user %s of new chapter %s: %s", user_id, chapter_id, e
+            )
     return sent
 
 
@@ -105,7 +103,8 @@ async def fanout_activity_added(activity_id: int, db_session: Session) -> int:
                 "Failed to notify user %s of new activity %s: %s",
                 user_id,
                 activity_id,
-                e)
+                e,
+            )
     return sent
 
 
@@ -163,7 +162,8 @@ async def fanout_app_update(
                 "Failed to push announcement %s to user %s: %s",
                 announcement_id,
                 user_id,
-                e)
+                e,
+            )
     return sent
 
 

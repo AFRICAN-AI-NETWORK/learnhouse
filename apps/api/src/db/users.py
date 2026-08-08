@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, EmailStr, validator
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel

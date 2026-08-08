@@ -1,4 +1,3 @@
-
 from fastapi import HTTPException, Request
 from sqlalchemy import String, cast, func, literal
 from sqlmodel import Session, select

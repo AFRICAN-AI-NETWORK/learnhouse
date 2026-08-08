@@ -323,9 +323,7 @@ async def initialize_transaction(
                 check_usage=True,
             )
         except Exception as e:  # noqa: BLE001
-            raise HTTPException(
-                status_code=400, detail=f"Discount code error: {e!s}"
-            )
+            raise HTTPException(status_code=400, detail=f"Discount code error: {e!s}")
 
     referral_code_id = None
     try:

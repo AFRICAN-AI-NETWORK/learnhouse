@@ -23,9 +23,7 @@ class ConversationService:
     """Service for managing conversations."""
 
     @staticmethod
-    def _resolve_user_role_name(
-        db: Session, user_id: int, org_id: int
-    ) -> str | None:
+    def _resolve_user_role_name(db: Session, user_id: int, org_id: int) -> str | None:
         """Resolve the role name for a user within an organization."""
         user_org = db.exec(
             select(UserOrganization)

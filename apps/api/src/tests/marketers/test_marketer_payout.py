@@ -137,10 +137,10 @@ async def test_process_payout_processes_approved(test_db_session, monkeypatch):
     import httpx
 
     from src.services.referrals import payouts as payouts_module
-    
+
     async def mock_network_error(*args, **kwargs):
         raise httpx.ConnectTimeout("Mocked network timeout")
-    
+
     monkeypatch.setattr(payouts_module, "make_paystack_request", mock_network_error)
 
     user = make_user(test_db_session, country="NG")
@@ -362,9 +362,6 @@ async def test_masked_mobile_money_method(test_db_session):
 # ==================== Recipient type mapping ====================
 
 
-
-
-
 def test_country_to_currency_expanded():
     from src.services.referrals.payouts import COUNTRY_TO_CURRENCY
 
@@ -376,5 +373,3 @@ def test_country_to_currency_expanded():
         ("EG", "EGP"),
     ]:
         assert COUNTRY_TO_CURRENCY[country] == currency
-
-
