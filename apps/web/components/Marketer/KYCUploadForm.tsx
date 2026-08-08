@@ -10,9 +10,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from 'lucide-react'
-import {
-  uploadKYCDocuments,
-} from '@services/referral/marketer.service'
+import { uploadKYCDocuments } from '@services/referral/marketer.service'
 
 interface KYCUploadFormProps {
   orgSlug: string
@@ -28,8 +26,10 @@ export function KYCUploadForm({
   onSubmitted,
 }: KYCUploadFormProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [docType, setDocType] = useState<'NATIONAL_ID' | 'PASSPORT' | 'DRIVERS_LICENSE'>('NATIONAL_ID')
-  
+  const [docType, setDocType] = useState<
+    'NATIONAL_ID' | 'PASSPORT' | 'DRIVERS_LICENSE'
+  >('NATIONAL_ID')
+
   const [frontImage, setFrontImage] = useState<File | null>(null)
   const [backImage, setBackImage] = useState<File | null>(null)
   const [selfieImage, setSelfieImage] = useState<File | null>(null)
@@ -44,13 +44,17 @@ export function KYCUploadForm({
   if (kycStatus === 'VERIFIED') {
     return (
       <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-xl p-5 flex items-center gap-3">
-        <ShieldCheck size={24} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <ShieldCheck
+          size={24}
+          className="text-emerald-600 dark:text-emerald-400 shrink-0"
+        />
         <div>
           <h4 className="font-semibold text-emerald-900 dark:text-emerald-200 text-sm">
             Identity Verified
           </h4>
           <p className="text-xs text-emerald-700 dark:text-emerald-400">
-            Your KYC document has been approved by admins. You are eligible for automated payouts.
+            Your KYC document has been approved by admins. You are eligible for
+            automated payouts.
           </p>
         </div>
       </div>
@@ -60,13 +64,17 @@ export function KYCUploadForm({
   if (kycStatus === 'PENDING_REVIEW' || isSuccess) {
     return (
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl p-5 flex items-center gap-3">
-        <Clock size={24} className="text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" />
+        <Clock
+          size={24}
+          className="text-amber-600 dark:text-amber-400 shrink-0 animate-pulse"
+        />
         <div>
           <h4 className="font-semibold text-amber-900 dark:text-amber-200 text-sm">
             Verification in Progress
           </h4>
           <p className="text-xs text-amber-700 dark:text-amber-400">
-            Your identity documents have been submitted and are under review. You'll receive an email update once verified.
+            Your identity documents have been submitted and are under review.
+            You'll receive an email update once verified.
           </p>
         </div>
       </div>
@@ -104,7 +112,8 @@ export function KYCUploadForm({
     }
     formData.append('selfie_image', selfieImage)
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
     const res = await uploadKYCDocuments(token, orgSlug, formData)
     setIsLoading(false)
 
@@ -113,9 +122,13 @@ export function KYCUploadForm({
       if (onSubmitted) onSubmitted()
     } else if (res.error) {
       if (res.error.error_code === 'MKTR_201') {
-        setError('This ID number is already registered to another marketer account.')
+        setError(
+          'This ID number is already registered to another marketer account.'
+        )
       } else if (res.error.error_code === 'MKTR_202') {
-        setError('You have reached the maximum submission attempts. Please contact support.')
+        setError(
+          'You have reached the maximum submission attempts. Please contact support.'
+        )
       } else {
         setError(res.error.message)
       }
@@ -140,15 +153,37 @@ export function KYCUploadForm({
         </div>
 
         <div className="flex items-center gap-1 text-xs text-gray-400">
-          <span className={step >= 1 ? 'font-bold text-gray-900 dark:text-white' : ''}>1</span> /
-          <span className={step >= 2 ? 'font-bold text-gray-900 dark:text-white' : ''}>2</span> /
-          <span className={step >= 3 ? 'font-bold text-gray-900 dark:text-white' : ''}>3</span>
+          <span
+            className={
+              step >= 1 ? 'font-bold text-gray-900 dark:text-white' : ''
+            }
+          >
+            1
+          </span>{' '}
+          /
+          <span
+            className={
+              step >= 2 ? 'font-bold text-gray-900 dark:text-white' : ''
+            }
+          >
+            2
+          </span>{' '}
+          /
+          <span
+            className={
+              step >= 3 ? 'font-bold text-gray-900 dark:text-white' : ''
+            }
+          >
+            3
+          </span>
         </div>
       </div>
 
       {kycStatus === 'REJECTED' && rejectionReason && (
         <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-700 dark:text-red-300">
-          <strong className="block font-semibold">Previous Submission Rejected:</strong>
+          <strong className="block font-semibold">
+            Previous Submission Rejected:
+          </strong>
           {rejectionReason}
         </div>
       )}
@@ -189,7 +224,11 @@ export function KYCUploadForm({
                 onChange={(e) => handleFileChange(e, setFrontImage)}
                 className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
               />
-              {frontImage && <p className="mt-1 text-xs text-emerald-600 font-medium">Selected: {frontImage.name}</p>}
+              {frontImage && (
+                <p className="mt-1 text-xs text-emerald-600 font-medium">
+                  Selected: {frontImage.name}
+                </p>
+              )}
             </div>
 
             {docType !== 'PASSPORT' && (
@@ -203,7 +242,11 @@ export function KYCUploadForm({
                   onChange={(e) => handleFileChange(e, setBackImage)}
                   className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
                 />
-                {backImage && <p className="mt-1 text-xs text-emerald-600 font-medium">Selected: {backImage.name}</p>}
+                {backImage && (
+                  <p className="mt-1 text-xs text-emerald-600 font-medium">
+                    Selected: {backImage.name}
+                  </p>
+                )}
               </div>
             )}
 
@@ -227,7 +270,10 @@ export function KYCUploadForm({
                 <Camera size={14} />
                 Selfie Verification Instruction:
               </span>
-              <p>Hold your document next to your face and take a clear photo. Ensure face and ID details are clearly visible.</p>
+              <p>
+                Hold your document next to your face and take a clear photo.
+                Ensure face and ID details are clearly visible.
+              </p>
             </div>
 
             <div>
@@ -240,7 +286,11 @@ export function KYCUploadForm({
                 onChange={(e) => handleFileChange(e, setSelfieImage)}
                 className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
               />
-              {selfieImage && <p className="mt-1 text-xs text-emerald-600 font-medium">Selected: {selfieImage.name}</p>}
+              {selfieImage && (
+                <p className="mt-1 text-xs text-emerald-600 font-medium">
+                  Selected: {selfieImage.name}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -283,7 +333,9 @@ export function KYCUploadForm({
             </div>
 
             <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg text-xs space-y-1">
-              <span className="font-semibold text-gray-800 dark:text-gray-200 block">Submission Summary:</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200 block">
+                Submission Summary:
+              </span>
               <p className="text-gray-500">Document Type: {docType}</p>
               <p className="text-gray-500">Front Image: {frontImage?.name}</p>
               <p className="text-gray-500">Selfie Photo: {selfieImage?.name}</p>
@@ -297,7 +349,8 @@ export function KYCUploadForm({
                 className="rounded border-gray-300 text-black focus:ring-black"
               />
               <span className="text-xs text-gray-600 dark:text-gray-300">
-                I confirm that all uploaded documents are authentic and belong to me.
+                I confirm that all uploaded documents are authentic and belong
+                to me.
               </span>
             </label>
 
@@ -315,7 +368,9 @@ export function KYCUploadForm({
                 disabled={isLoading || !idNumber || !confirmed}
                 className="flex-1 py-2.5 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
               >
-                {isLoading ? 'Submitting KYC Documents...' : 'Submit Verification Documents'}
+                {isLoading
+                  ? 'Submitting KYC Documents...'
+                  : 'Submit Verification Documents'}
               </button>
             </div>
           </div>
