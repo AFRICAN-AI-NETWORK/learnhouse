@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { sendActivityHeartbeat } from '../services/dashboard/students'
+import { getConnectionStatus } from '@/lib/offline/connection'
+import { CONNECTION_STATUS } from '@/lib/offline/constants'
 
 export function useActivityHeartbeat(
   activityUuid: string | undefined,
@@ -23,6 +25,13 @@ export function useActivityHeartbeat(
     if (!activityUuid || !accessToken) return
 
     const tick = () => {
+      // Suspend while offline rather than firing a request every 30s that is
+      // guaranteed to fail. Heartbeats are analytics-grade: losing some offline is
+      // acceptable, hammering a dead connection is not (plan Layer 5.30).
+      if (getConnectionStatus() === CONNECTION_STATUS.OFFLINE) {
+        return
+      }
+
       if (isVisible.current) {
         // Send 30 seconds for each interval
         sendActivityHeartbeat(activityUuid, 30, accessToken).catch((err) => {
