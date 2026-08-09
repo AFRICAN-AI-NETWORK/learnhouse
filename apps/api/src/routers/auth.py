@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from config.config import get_learnhouse_config
 from src.core.events.database import get_db_session
+from src.core.rate_limit import refresh_rate_limit
 from src.db.organizations import Organization, OrganizationRead
 from src.db.users import AnonymousUser, User, UserRead
 from src.security.auth import AuthJWT, authenticate_user, get_current_user
@@ -28,12 +29,20 @@ class ResendVerificationRequest(BaseModel):
 
 
 @router.get("/refresh")
-def refresh(response: Response, Authorize: AuthJWT = Depends()):
+def refresh(
+    response: Response,
+    Authorize: AuthJWT = Depends(),
+    _rate_limit: None = Depends(refresh_rate_limit),
+):
     """
     The jwt_refresh_token_required() function insures a valid refresh
     token is present in the request before running any code below that function.
     we can use the get_jwt_subject() function to get the subject of the refresh
     token, and use the create_access_token() function again to make a new access token
+
+    Rate limited to 60 refreshes per caller per hour. Normal usage refreshes about
+    once an hour per session, so this only bites on a runaway retry loop or a
+    deliberate token-grinding attempt. The limiter fails open if Redis is down.
     """
     Authorize.jwt_refresh_token_required()
 
