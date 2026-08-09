@@ -47,6 +47,7 @@ import {
   enforceSessionOwner,
   saveOfflineSession,
   getOfflineSession,
+  clearOfflineSession,
 } from '@/lib/offline/session-store'
 import { syncEngine, type SyncContext } from '@/lib/offline/sync-engine'
 import { getCounts, type OutboxCounts } from '@/lib/offline/outbox'
@@ -255,9 +256,48 @@ export default function SyncEngineProvider({
     refreshOutbox,
   ])
 
+  // ── Wipe local data when the user signs out ───────────────────────────────
+  //
+  // Handled here rather than at each `signOut()` call site: there are seven of
+  // them, and this also covers session expiry and server-side revocation, which
+  // no call site would catch.
+  //
+  // The online guard is essential. A failed session poll while offline can flip
+  // NextAuth to `unauthenticated`, and wiping then would destroy the cached
+  // content and queued writes at exactly the moment the user depends on them.
+  // Only a sign-out observed while genuinely online is treated as real.
+  const previousStatusRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!enabled) return
+
+    const previous = previousStatusRef.current
+    const current = session?.status ?? null
+    previousStatusRef.current = current
+
+    const signedOut =
+      previous === 'authenticated' && current === 'unauthenticated'
+    if (!signedOut) return
+    if (connectionStatus === CONNECTION_STATUS.OFFLINE) return
+
+    void clearOfflineSession().then(() => {
+      setIsOfflineGrace(false)
+      setOutbox(EMPTY_COUNTS)
+    })
+  }, [enabled, session?.status, connectionStatus])
+
   // ── Grace-window detection ────────────────────────────────────────────────
   useEffect(() => {
     if (!enabled) return
+
+    // Session messaging is meaningless to a signed-out visitor. Without this
+    // guard a stale local row surfaced "Your session has expired" on the login
+    // page itself.
+    if (session?.status !== 'authenticated') {
+      setIsOfflineGrace(false)
+      return
+    }
+
     let cancelled = false
 
     async function checkGrace() {
@@ -269,7 +309,7 @@ export default function SyncEngineProvider({
     return () => {
       cancelled = true
     }
-  }, [enabled, connectionStatus])
+  }, [enabled, connectionStatus, session?.status])
 
   const value = useMemo<OfflineContextValue>(
     () => ({
@@ -288,9 +328,14 @@ export default function SyncEngineProvider({
       <SWRConfig
         value={{
           fetcher: offlineFetcher,
-          // Keeps the last good data on screen while revalidating, so a flaky
-          // connection never blanks the UI.
-          keepPreviousData: true,
+          // `keepPreviousData` is deliberately NOT enabled here.
+          //
+          // It sounds right for offline (hold the last good data while
+          // revalidating) but it is wrong for keys that include credentials.
+          // When a token arrives the key changes, and keepPreviousData would
+          // serve the previous *anonymous* answer during revalidation, which is
+          // exactly how a signed-in user gets told they belong to no
+          // organisation. Correctness beats a brief loading state.
           revalidateOnReconnect: true,
         }}
       >
