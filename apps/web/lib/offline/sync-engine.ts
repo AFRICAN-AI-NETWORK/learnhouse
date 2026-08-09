@@ -113,10 +113,14 @@ export class SyncEngine {
       if (courses) await this.persistCourses(courses, org?.id ?? 0)
 
       this.emit({ phase: 'trail', completed: 3, total: 4 })
-      await this.fetchAndCache(
-        `${api}trail/org_slug/${context.orgSlug}`,
-        context.accessToken
-      )
+      // The trail endpoint is keyed by org ID, not slug, so it can only run once
+      // the org has been resolved above.
+      if (org?.id) {
+        await this.fetchAndCache(
+          `${api}trail/org/${org.id}/trail`,
+          context.accessToken
+        )
+      }
 
       await this.setSyncedAt('initial')
       this.emit({ phase: 'done', completed: 4, total: 4 })
@@ -244,13 +248,32 @@ export class SyncEngine {
         `${api}courses/org_slug/${context.orgSlug}/page/1/limit/100`,
         context.accessToken
       )
-      await this.fetchAndCache(
-        `${api}trail/org_slug/${context.orgSlug}`,
-        context.accessToken
-      )
+
+      // Trail is addressed by org ID. Reuse the org already stored by the initial
+      // sync rather than re-fetching it on every tick.
+      const orgId = await this.getCachedOrgId(context.orgSlug)
+      if (orgId !== null) {
+        await this.fetchAndCache(
+          `${api}trail/org/${orgId}/trail`,
+          context.accessToken
+        )
+      }
+
       await this.setSyncedAt('incremental')
     } catch (error) {
       reportOfflineError('incremental_sync_failed', error)
+    }
+  }
+
+  /** Org ID for a slug, from the locally stored org record. Null if not synced yet. */
+  private async getCachedOrgId(orgSlug: string): Promise<number | null> {
+    const db = await openDb()
+    if (!db) return null
+    try {
+      const row = await db.orgs.where('slug').equals(orgSlug).first()
+      return row?.id ?? null
+    } catch {
+      return null
     }
   }
 
