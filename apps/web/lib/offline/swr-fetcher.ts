@@ -84,6 +84,14 @@ async function writeToCache(
 ): Promise<void> {
   if (isSensitiveUrl(url) || !canPersistRead(url)) return
 
+  // Never persist a response we cannot attribute to a user.
+  //
+  // Rows are keyed by URL, so an unattributed row is readable by whoever comes
+  // next. Worse, a read that races ahead of the session returns the *anonymous*
+  // shape of a resource (an empty org list, for instance) and caching that would
+  // hand it to the authenticated user moments later.
+  if (userId === null) return
+
   const db = await openDb()
   if (!db) return
 
