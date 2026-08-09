@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
 
 from src.core.events.database import get_db_session
+from src.core.idempotency import IdempotencyContext, idempotency
 from src.db.courses.assignments import (
     AssignmentCreate,
     AssignmentGradeCreate,
@@ -259,17 +261,32 @@ async def api_handle_assignment_task_submissions(
     assignment_task_uuid: str,
     current_user: PublicUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
+    idem: IdempotencyContext = Depends(idempotency),
 ):
     """
     Create new task submissions for an assignment
+
+    Idempotent when the caller supplies `X-Idempotency-Key`. The offline outbox
+    sends one, so replaying a submission whose response was lost in transit returns
+    the original result rather than recording the answer twice. Requests without
+    the header behave exactly as before.
     """
-    return await handle_assignment_task_submission(
+    cached = idem.cached_response()
+    if cached is not None:
+        return cached
+
+    result = await handle_assignment_task_submission(
         request,
         assignment_task_uuid,
         assignment_task_submission_object,
         current_user,
         db_session,
     )
+
+    if idem.enabled:
+        idem.store(jsonable_encoder(result))
+
+    return result
 
 
 @router.get(
