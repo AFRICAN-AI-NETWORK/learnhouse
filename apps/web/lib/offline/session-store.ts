@@ -80,15 +80,21 @@ function writeLastUserId(userId: number | null): void {
  * @returns true when a wipe was performed.
  */
 export async function enforceSessionOwner(userId: number): Promise<boolean> {
+  // Normalise before comparing. The session payload is untyped at runtime and an
+  // id arriving as "5" rather than 5 would never match the stored number, so every
+  // render would look like a user switch and wipe the cache in a loop.
+  const currentUserId = Number(userId)
+  if (!Number.isFinite(currentUserId)) return false
+
   const previousUserId = readLastUserId()
 
-  if (previousUserId !== null && previousUserId === userId) {
+  if (previousUserId !== null && previousUserId === currentUserId) {
     return false
   }
 
-  if (previousUserId !== null && previousUserId !== userId) {
+  if (previousUserId !== null && previousUserId !== currentUserId) {
     await wipeAllOfflineData()
-    writeLastUserId(userId)
+    writeLastUserId(currentUserId)
     return true
   }
 
@@ -98,10 +104,12 @@ export async function enforceSessionOwner(userId: number): Promise<boolean> {
     const db = await openDb()
     if (db) {
       const existing = await db.sessions.toArray()
-      const foreign = existing.some((row) => row.user_id !== userId)
+      const foreign = existing.some(
+        (row) => Number(row.user_id) !== currentUserId
+      )
       if (foreign) {
         await wipeAllOfflineData()
-        writeLastUserId(userId)
+        writeLastUserId(currentUserId)
         return true
       }
     }
@@ -109,7 +117,7 @@ export async function enforceSessionOwner(userId: number): Promise<boolean> {
     reportOfflineError('session_owner_check_failed', error)
   }
 
-  writeLastUserId(userId)
+  writeLastUserId(currentUserId)
   return false
 }
 
@@ -167,7 +175,16 @@ export async function getOfflineSession(): Promise<OfflineSessionState> {
 
     const session = rows[0]
     const now = Date.now()
-    const valid = session.token_expiry > now
+
+    // A missing expiry is not an expired one.
+    //
+    // The NextAuth JWT callback only stamps `tokens.expiry` after its FIRST
+    // refresh, so a freshly logged-in session legitimately has no expiry at all.
+    // Treating that absence as "expired" put every new login straight into the
+    // grace state and showed "Your session has expired" to users who had just
+    // signed in. Absence of evidence is not evidence of expiry.
+    const expiryKnown = session.token_expiry > 0
+    const valid = !expiryKnown || session.token_expiry > now
     const grace = !valid && session.grace_until > now
 
     return { session, valid, grace }

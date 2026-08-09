@@ -1,22 +1,20 @@
 import { getAPIUrl } from '@services/config/config'
-import {
-  RequestBody,
-  getResponseMetadata,
-} from '@services/utils/ts/requests'
+import { getResponseMetadata } from '@services/utils/ts/requests'
 
 export async function checkHealth() {
   try {
-    const result = await fetch(
-      `${getAPIUrl()}health`,
-      RequestBody('GET', null, null)
-    )
+    const result = await fetch(`${getAPIUrl()}health`, {
+      method: 'GET',
+      redirect: 'follow',
+      credentials: 'include',
+    })
 
     if (!result.ok) {
       return {
         success: false,
         status: result.status,
         HTTPmessage: result.statusText,
-        data: null
+        data: null,
       }
     }
 
@@ -27,7 +25,7 @@ export async function checkHealth() {
       success: false,
       status: 503,
       HTTPmessage: 'Service unavailable',
-      data: null
+      data: null,
     }
   }
 }
