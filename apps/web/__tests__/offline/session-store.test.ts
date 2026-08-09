@@ -62,6 +62,26 @@ describe('saveOfflineSession / getOfflineSession', () => {
     expect(await isOfflineAuthValid()).toBe(true)
   })
 
+  /**
+   * Regression: the NextAuth JWT callback only stamps `tokens.expiry` after its
+   * first refresh, so a freshly logged-in session has none. Treating that as
+   * "expired" showed "Your session has expired" to users who had just signed in.
+   */
+  it('treats an unknown expiry as valid, not expired', async () => {
+    await saveOfflineSession({
+      userId: 1,
+      username: 'user1',
+      userMetadata: { id: 1 },
+      roles: [],
+      tokenExpiry: 0, // what the provider reads before the first refresh
+    })
+
+    const state = await getOfflineSession()
+
+    expect(state.valid).toBe(true)
+    expect(state.grace).toBe(false)
+  })
+
   it('rejects a session past the grace window', async () => {
     // Grace defaults to 72h and is anchored to token expiry, so an expiry far in
     // the past puts grace_until in the past too.
