@@ -5,7 +5,8 @@
  * which assets get evicted when the budget is exceeded.
  */
 
-import { openDb, reportOfflineError } from './db'
+import { openDb } from './db'
+import { reportOfflineError, trackStorageEvicted } from './telemetry'
 import { CACHE_NAMES, OFFLINE_DEFAULTS, STORAGE_KEYS } from './constants'
 import { capabilities, getCacheMaxMb } from './config'
 
@@ -179,6 +180,12 @@ export async function evictLRUMedia(): Promise<number> {
     }
   } catch (error) {
     reportOfflineError('media_eviction_failed', error)
+  }
+
+  // Eviction means a learner is at their storage ceiling; visible in aggregate
+  // this tells us whether the default budget is too small (plan 11.4).
+  if (evicted > 0) {
+    trackStorageEvicted(evicted)
   }
 
   return evicted

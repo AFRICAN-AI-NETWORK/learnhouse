@@ -20,9 +20,13 @@ import {
   pruneSynced,
 } from './outbox'
 import type { OutboxRecord } from './db'
-import { reportOfflineError } from './db'
 import { OUTBOX_STATUS } from './constants'
 import { resolveConflict } from './conflict-resolver'
+import {
+  reportOfflineError,
+  reportOutboxFailure,
+  trackSyncCompleted,
+} from './telemetry'
 
 export interface DrainResult {
   synced: number
@@ -59,6 +63,7 @@ export async function drainOutbox(): Promise<DrainResult> {
   }
 
   draining = true
+  const startedAt = Date.now()
   let synced = 0
   let failed = 0
 
@@ -80,6 +85,16 @@ export async function drainOutbox(): Promise<DrainResult> {
 
     // Keep the table bounded; synced rows are only kept for the status UI.
     await pruneSynced()
+
+    // Only report a drain that actually did something — an empty drain on every
+    // reconnect would bury the signal in noise.
+    if (synced > 0 || failed > 0) {
+      trackSyncCompleted({
+        synced,
+        failed,
+        durationMs: Date.now() - startedAt,
+      })
+    }
 
     return { synced, failed, remaining: remainingRows.length, skipped: false }
   } catch (error) {
@@ -147,11 +162,29 @@ async function replayRow(row: OutboxRecord): Promise<ReplayOutcome> {
 
     if (isPermanentFailure(response.status)) {
       await markFailed(row.id as number, `${response.status}: ${detail}`)
+      reportOutboxFailure({
+        operationType: row.type,
+        entityType: row.entity_type,
+        httpStatus: response.status,
+        errorMessage: detail,
+        retryCount: row.retry_count,
+      })
       return 'failed'
     }
 
     const status = await markRetry(row, `${response.status}: ${detail}`)
-    return status === OUTBOX_STATUS.FAILED ? 'failed' : 'retry'
+    if (status === OUTBOX_STATUS.FAILED) {
+      // Retries exhausted — this is the alertable case (plan 11.2).
+      reportOutboxFailure({
+        operationType: row.type,
+        entityType: row.entity_type,
+        httpStatus: response.status,
+        errorMessage: detail,
+        retryCount: row.retry_count + 1,
+      })
+      return 'failed'
+    }
+    return 'retry'
   } catch (error) {
     // Network error: still offline, or the request died in flight. Retriable.
     const message = error instanceof Error ? error.message : 'Network error'
