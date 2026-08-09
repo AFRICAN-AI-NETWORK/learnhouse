@@ -21,10 +21,17 @@ export const config = {
      * 7. /svg (inside /public)
      * 8. /activities_types (inside /public)
      * 9. /onboarding (inside /public)
-     * 10. Static files (sw.js, manifest.json, workbox, favicon, images)
-     * 11. all root files inside /public (e.g. /favicon.ico)
+     * 10. /assets (inside /public)
+     * 11. /offline (the PWA offline fallback page — must not be org-scoped)
+     * 12. Static files (sw.js, manifest.json, workbox, favicon, images)
+     * 13. all root files inside /public (e.g. /favicon.ico)
+     *
+     * NOTE: any new subdirectory of /public — and any non-org-scoped route —
+     * MUST be added here. Anything omitted is swallowed by org-slug rewriting and
+     * 404s. Both `assets` and `offline` were missing, which made
+     * `/assets/illustrations/*.png` and the offline fallback page unreachable.
      */
-    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|data|landing|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
+    '/((?!api|_next|fonts|umami|examples|icons|svg|activities_types|onboarding|data|landing|assets|offline|manifest\\.json|sw\\.js|workbox-.*\\.js|runtime-config\\.js|[\\w-]+\\.\\w+).*)',
     '/sitemap.xml',
     '/payments/stripe/connect/oauth',
   ],
