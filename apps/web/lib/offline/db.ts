@@ -12,6 +12,7 @@
 
 import Dexie, { type Table } from 'dexie'
 import { DB_NAME, TABLES, type OutboxStatus } from './constants'
+import { reportOfflineError } from './telemetry'
 
 // ─── Row types ───────────────────────────────────────────────────────────────
 
@@ -341,20 +342,8 @@ export async function clearAllTables(): Promise<void> {
 }
 
 /**
- * Tags offline failures for Sentry so they can be alerted on separately from
- * regular application errors (plan Layer 11.1), without importing Sentry here.
+ * Re-exported so the modules that already import it from here keep working, while
+ * the implementation lives in exactly one place (`telemetry.ts`).
+ * New code should import from `./telemetry` directly.
  */
-export function reportOfflineError(context: string, error: unknown): void {
-  if (typeof window === 'undefined') return
-  const sentry = (window as any).Sentry
-  if (sentry && typeof sentry.captureException === 'function') {
-    sentry.captureException(error, {
-      tags: { offline: true, offline_context: context },
-    })
-    return
-  }
-  if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
-    console.warn(`[offline:${context}]`, error)
-  }
-}
+export { reportOfflineError }
