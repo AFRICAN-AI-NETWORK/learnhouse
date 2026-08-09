@@ -16,6 +16,7 @@ import {
   type ConnectionStatus,
 } from './constants'
 import { checkHealth } from '@services/utils/health'
+import { markOfflineStart, markOfflineEnd } from './telemetry'
 
 type Listener = (status: ConnectionStatus) => void
 
@@ -49,6 +50,14 @@ export function subscribe(listener: Listener): () => void {
 
 function setStatus(next: ConnectionStatus): void {
   if (next === status) return
+
+  // Bracket the offline period so its duration can be measured (plan 11.4).
+  if (next === CONNECTION_STATUS.OFFLINE) {
+    markOfflineStart()
+  } else if (status === CONNECTION_STATUS.OFFLINE) {
+    markOfflineEnd()
+  }
+
   status = next
   // Copy before iterating so a listener may unsubscribe during notification.
   const current = Array.from(listeners)
