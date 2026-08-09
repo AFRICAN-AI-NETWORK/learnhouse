@@ -15,7 +15,7 @@ import base64
 import binascii
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -90,9 +90,7 @@ def _accessible_org_ids(user, db_session: Session) -> list[int]:
 
 def _serialise(row) -> dict:
     """SQLModel row → JSON-safe dict, matching the shape the client already caches."""
-    return json.loads(
-        json.dumps(row.model_dump(), default=lambda value: str(value))
-    )
+    return json.loads(json.dumps(row.model_dump(), default=lambda value: str(value)))
 
 
 def _to_update_date_string(value: datetime) -> str:
@@ -108,9 +106,7 @@ def _to_update_date_string(value: datetime) -> str:
     safe; normalising to UTC first is what keeps it consistent.
     """
     normalised = (
-        value.astimezone(timezone.utc)
-        if value.tzinfo is not None
-        else value.replace(tzinfo=timezone.utc)
+        value.astimezone(UTC) if value.tzinfo is not None else value.replace(tzinfo=UTC)
     )
     return str(normalised)
 
@@ -136,9 +132,7 @@ async def get_delta(
     """
     Returns entities modified since `since`, scoped to the caller's permissions.
     """
-    requested = {
-        item.strip() for item in entity_types.split(",") if item.strip()
-    }
+    requested = {item.strip() for item in entity_types.split(",") if item.strip()}
     unsupported = requested - _SUPPORTED_ENTITIES
     if unsupported:
         raise HTTPException(
@@ -155,7 +149,7 @@ async def get_delta(
             since=since,
             entities={entity: [] for entity in requested},
             next_cursor=None,
-            server_time=datetime.now(timezone.utc),
+            server_time=datetime.now(UTC),
         )
 
     active_cursor = _decode_cursor(cursor) if cursor else None
@@ -226,9 +220,41 @@ async def get_delta(
     for entity in requested:
         entities.setdefault(entity, [])
 
+    # Tracing (plan Layer 11.3). `instrument_fastapi` already spans the request;
+    # these attributes add the detail that matters when many clients reconnect at
+    # once after a maintenance window — row counts and whether paging kicked in.
+    _record_sync_metrics(
+        org_count=len(org_ids),
+        row_counts={name: len(rows) for name, rows in entities.items()},
+        paginated=next_cursor is not None,
+    )
+
     return DeltaResponse(
         since=since,
         entities=entities,
         next_cursor=next_cursor,
-        server_time=datetime.now(timezone.utc),
+        server_time=datetime.now(UTC),
     )
+
+
+def _record_sync_metrics(
+    org_count: int, row_counts: dict[str, int], paginated: bool
+) -> None:
+    """
+    Attaches delta-sync detail to the active trace.
+
+    Best-effort: observability must never be able to fail a sync response, and
+    logfire may not be configured in every environment.
+    """
+    try:
+        import logfire
+
+        logfire.info(
+            "sync.delta",
+            org_count=org_count,
+            row_counts=row_counts,
+            total_rows=sum(row_counts.values()),
+            paginated=paginated,
+        )
+    except Exception:  # noqa: BLE001 - telemetry is never load-bearing
+        logger.debug("Sync metrics not recorded", exc_info=True)
