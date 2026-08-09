@@ -237,6 +237,38 @@ function drainOutbox() {
     })
 }
 
+/**
+ * Origin lock.
+ *
+ * Defence in depth. HTTPS already guarantees a worker cannot be swapped by a
+ * network attacker, and the browser refuses to register a worker from another
+ * origin — but asserting it here means a misconfigured proxy or an unexpected
+ * scope fails loudly at activation instead of quietly serving traffic.
+ */
+function assertSameOrigin() {
+  try {
+    const scopeOrigin = new URL(self.registration.scope).origin
+    if (scopeOrigin !== self.location.origin) {
+      throw new Error(
+        'Service worker scope origin ' +
+          scopeOrigin +
+          ' does not match worker origin ' +
+          self.location.origin
+      )
+    }
+  } catch (error) {
+    // Unregister rather than operate from an unverified origin.
+    return self.registration.unregister().then(function () {
+      throw error
+    })
+  }
+  return Promise.resolve()
+}
+
+self.addEventListener('activate', function (event) {
+  event.waitUntil(assertSameOrigin())
+})
+
 // ─── Background Sync ─────────────────────────────────────────────────────────
 self.addEventListener('sync', function (event) {
   if (event.tag !== SYNC_TAG) return
