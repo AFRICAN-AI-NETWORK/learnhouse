@@ -9,7 +9,13 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix ."
+    "lint:fix": "eslint --fix .",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "verify:pwa": "node scripts/verify-pwa-build.mjs",
+    "verify:bundle": "node scripts/check-bundle-size.mjs"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
@@ -111,6 +117,7 @@
   },
   "devDependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.1.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
