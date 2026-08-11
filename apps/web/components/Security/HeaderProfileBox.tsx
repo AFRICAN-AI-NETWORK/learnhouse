@@ -410,8 +410,7 @@ export const HeaderProfileBox = () => {
                 </DropdownMenuItem>
                 {(userRoleInfo?.name === 'ADMIN' ||
                   userRoleInfo?.name === 'MAINTAINER' ||
-                  userRoleInfo?.name === 'MARKETER' ||
-                  userRoleInfo?.name === 'PARTNER') && (
+                  userRoleInfo?.name === 'MARKETER') && (
                   <DropdownMenuItem asChild>
                     <Link
                       href="/marketer"
