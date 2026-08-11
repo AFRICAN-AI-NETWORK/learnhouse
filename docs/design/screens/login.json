@@ -1,0 +1,257 @@
+{
+  "screen": {
+    "id": "login",
+    "name": "Sign In",
+    "type": "mobile_authentication",
+    "purpose": "Allow existing AINA students to securely sign in and provide clear paths to registration and partner roles.",
+    "reference": "uploaded Login reference image"
+  },
+  "design_direction": {
+    "style": "clean, trustworthy, premium educational authentication",
+    "primary_color": "#2563EB",
+    "background": "#FFFFFF",
+    "background_pattern": {
+      "enabled": true,
+      "style": "very subtle AINA education and technology doodles",
+      "opacity": "very low",
+      "must_not_compete_with_content": true
+    },
+    "consistency": "Use shared AINA design tokens, typography, input treatment, button style, icons, and authentication visual language.",
+    "avoid": [
+      "heavy illustrations",
+      "strong shadows",
+      "unnecessary gradients",
+      "generic decorative AI styling",
+      "excessive animation"
+    ]
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical_when_needed",
+    "safe_area_aware": true,
+    "keyboard_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true,
+    "content_alignment": "centered"
+  },
+  "branding": {
+    "logo": "AINA primary logo",
+    "logo_source": "existing_project_asset",
+    "tagline": "African AI Network Academy",
+    "reuse_existing_logo": true
+  },
+  "hero": {
+    "type": "authentication_intro",
+    "title": "Welcome Back 👋",
+    "subtitle": "Sign in to access your AINA courses & dashboard"
+  },
+  "login_form": {
+    "type": "authentication_form",
+    "fields": [
+      {
+        "id": "email",
+        "type": "email",
+        "label": "Email Address",
+        "placeholder": "student@example.com",
+        "required": true,
+        "keyboard": "email",
+        "autocomplete": "email",
+        "icon": "mail",
+        "validation": {
+          "required": "Enter your email address.",
+          "invalid": "Enter a valid email address."
+        }
+      },
+      {
+        "id": "password",
+        "type": "password",
+        "label": "Password",
+        "placeholder": "••••••••",
+        "required": true,
+        "icon": "lock",
+        "trailing_action": {
+          "type": "toggle_visibility",
+          "icons": ["eye", "eye_off"],
+          "accessibility_label": "Show or hide password"
+        },
+        "validation": {
+          "required": "Enter your password."
+        }
+      }
+    ],
+    "options": {
+      "remember_me": {
+        "enabled": true,
+        "default": false,
+        "label": "Remember me"
+      },
+      "forgot_password": {
+        "enabled": true,
+        "label": "Forgot Password?",
+        "action": "open_forgot_password"
+      }
+    },
+    "submit": {
+      "label": "Sign In",
+      "icon": "arrow_right",
+      "action": "authenticate_student",
+      "style": "primary"
+    }
+  },
+  "authentication_states": {
+    "idle": "normal_form",
+    "validating": "show_inline_validation",
+    "submitting": {
+      "disable_submit": true,
+      "show_loading_indicator": true,
+      "prevent_duplicate_submission": true
+    },
+    "invalid_credentials": {
+      "style": "clear_inline_or_form_error",
+      "message": "The email or password is incorrect. Please try again."
+    },
+    "network_error": {
+      "style": "clear_non_destructive_error",
+      "allow_retry": true
+    },
+    "success": {
+      "action": "navigate_to_authenticated_student_area"
+    }
+  },
+  "alternative_actions": {
+    "divider": {
+      "label": "OR",
+      "style": "subtle"
+    },
+    "actions": [
+      {
+        "id": "register_student",
+        "label": "Register Student",
+        "icon": "user",
+        "action": "open_student_registration",
+        "accent": "#2563EB"
+      },
+      {
+        "id": "apply_marketer",
+        "label": "Apply as Marketer",
+        "icon": "trending_up",
+        "action": "open_marketer_application",
+        "accent": "#059669"
+      },
+      {
+        "id": "apply_partner",
+        "label": "Apply as Partner",
+        "icon": "handshake",
+        "action": "open_partner_application",
+        "accent": "#F59E0B"
+      }
+    ],
+    "style": "secondary_outline_actions"
+  },
+  "legal": {
+    "text": "By signing in, you agree to our",
+    "links": [
+      {
+        "label": "Terms of Service",
+        "action": "open_terms"
+      },
+      {
+        "label": "Privacy Policy",
+        "action": "open_privacy_policy"
+      }
+    ]
+  },
+  "interactions": {
+    "sign_in": "authenticate_student",
+    "forgot_password": "open_forgot_password",
+    "register_student": "open_student_registration",
+    "apply_marketer": "open_marketer_application",
+    "apply_partner": "open_partner_application",
+    "terms": "open_terms",
+    "privacy": "open_privacy_policy"
+  },
+  "transitions": {
+    "authentication_success": {
+      "style": "auth_to_app",
+      "duration": "short"
+    },
+    "forward_auth_screen": {
+      "style": "subtle_forward",
+      "direction": "forward",
+      "duration": "short"
+    },
+    "back": {
+      "style": "native_back",
+      "direction": "back",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "inputs": {
+      "style": "soft_neutral_surface_with_subtle_border",
+      "focus_color": "#2563EB",
+      "error_color": "#DC2626",
+      "labels_above_inputs": true,
+      "icons_inside_inputs": true,
+      "consistent_height": true
+    },
+    "primary_button": {
+      "background": "#2563EB",
+      "text": "#FFFFFF",
+      "reserve_for_submit_action": true,
+      "full_width_within_form": true
+    },
+    "alternative_actions": {
+      "use_secondary_outline_treatment": true,
+      "do_not_make_all_three_primary_filled_buttons": true
+    },
+    "logo": {
+      "use_existing_asset": true,
+      "do_not_redraw_logo": true
+    }
+  },
+  "data_rules": {
+    "authentication": "use_existing_authentication_service",
+    "do_not_hardcode_credentials": true,
+    "remember_me": "use_existing_session_persistence_logic",
+    "preserve_existing_authentication_logic": true
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_authentication_logic": true,
+    "reuse_existing_assets": true,
+    "preserve_existing_navigation": true,
+    "preserve_existing_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Allow vertical scrolling when the viewport or keyboard requires it.",
+    "Keep focused inputs visible above the keyboard.",
+    "Respect safe-area insets.",
+    "Keep legal links readable and tappable.",
+    "Prevent validation messages from breaking the layout."
+  ],
+  "accessibility": {
+    "inputs_have_labels": true,
+    "interactive_icons_have_accessibility_labels": true,
+    "buttons_have_clear_accessible_names": true,
+    "maintain_readable_contrast": true
+  },
+  "acceptance_criteria": [
+    "The screen follows the supplied Login reference image.",
+    "The existing AINA logo and subtle doodle background are reused.",
+    "The sign-in form is the primary focus.",
+    "Email and password fields have clear labels, icons, validation, and appropriate keyboard behavior.",
+    "Remember me and Forgot Password are easy to discover.",
+    "Sign In is the dominant action.",
+    "Registration, marketer application, and partner application remain clearly available as secondary actions.",
+    "Authentication errors are clear and actionable.",
+    "The screen works correctly with the mobile keyboard.",
+    "Existing authentication and navigation logic remains intact.",
+    "The visual language matches the other AINA mobile screens."
+  ]
+}

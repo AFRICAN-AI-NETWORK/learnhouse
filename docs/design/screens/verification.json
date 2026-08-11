@@ -1,0 +1,250 @@
+{
+  "screen": {
+    "id": "email_verification",
+    "name": "Verify Your Email",
+    "type": "mobile_authentication_verification",
+    "purpose": "Allow a newly registered user to enter the 6-digit email verification code sent by AINA and continue account setup.",
+    "reference": "uploaded Email Verification reference image"
+  },
+  "design_direction": {
+    "style": "clean, trustworthy, polished educational authentication experience",
+    "primary_color": "#2563EB",
+    "success_color": "#059669",
+    "background": "#FFFFFF",
+    "background_pattern": {
+      "enabled": true,
+      "style": "very subtle AINA education and technology doodle pattern",
+      "opacity": "very low",
+      "must_not_compete_with_content": true
+    },
+    "consistency": "Use the same AINA authentication visual language as Login, Student Registration, Marketer Application, and Partner Application.",
+    "avoid": [
+      "heavy decorative elements",
+      "strong shadows",
+      "unnecessary gradients",
+      "generic AI-generated styling",
+      "excessive animation"
+    ]
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical_when_needed",
+    "safe_area_aware": true,
+    "keyboard_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true,
+    "content_alignment": "centered"
+  },
+  "branding": {
+    "logo": {
+      "source": "existing_project_asset",
+      "reuse_existing_logo": true
+    }
+  },
+  "header": {
+    "type": "verification_intro",
+    "icon": {
+      "type": "email_verification",
+      "icon": "mail_check",
+      "style": "primary_blue_icon_in_soft_blue_circle"
+    },
+    "title": "Verify Your Email",
+    "subtitle": "We sent a 6-digit verification code to",
+    "email": {
+      "source": "registration_email",
+      "display_as": "dynamic_target_email",
+      "emphasis": "strong"
+    }
+  },
+  "verification_form": {
+    "type": "otp_verification",
+    "label": "ENTER 6-DIGIT CODE",
+    "otp": {
+      "length": 6,
+      "input_mode": "numeric",
+      "auto_focus": true,
+      "auto_advance": true,
+      "backspace_moves_to_previous": true,
+      "paste_support": true,
+      "one_time_code_autofill": true,
+      "states": {
+        "empty": "neutral_border",
+        "focused": "primary_blue_border",
+        "filled": "primary_blue_border_or_neutral_filled_state",
+        "error": "red_error_border"
+      }
+    },
+    "submit": {
+      "label": "Verify & Proceed",
+      "icon": "arrow_right",
+      "action": "verify_email_code",
+      "style": "primary",
+      "background": "#2563EB",
+      "disabled_until_complete": true
+    }
+  },
+  "resend": {
+    "prompt": "Didn't receive the code?",
+    "action_label": "Resend Code",
+    "icon": "refresh",
+    "action": "resend_verification_code",
+    "cooldown": {
+      "enabled": true,
+      "duration_source": "existing_authentication_configuration",
+      "show_remaining_time": true,
+      "disable_during_cooldown": true
+    },
+    "success_feedback": "Verification code sent again."
+  },
+  "security_notice": {
+    "type": "informational_security_card",
+    "icon": "shield_check",
+    "title": "Didn't request this?",
+    "body": "If you didn't create an account with AINA, you can safely ignore this email.",
+    "accent": "#2563EB",
+    "background": "#EFF6FF"
+  },
+  "back_action": {
+    "label": "Back to Sign In",
+    "icon": "arrow_left",
+    "action": "go_back_to_sign_in"
+  },
+  "states": {
+    "idle": "awaiting_code",
+    "input": "otp_entry_active",
+    "verifying": {
+      "disable_submit": true,
+      "disable_otp_editing": true,
+      "show_loading_indicator": true,
+      "prevent_duplicate_submission": true
+    },
+    "invalid_code": {
+      "style": "clear_inline_error",
+      "message": "The verification code is incorrect. Please check the code and try again.",
+      "allow_retry": true
+    },
+    "expired_code": {
+      "style": "clear_inline_error",
+      "message": "This verification code has expired. Request a new code to continue.",
+      "allow_resend": true
+    },
+    "too_many_attempts": {
+      "style": "clear_error",
+      "message": "Too many verification attempts. Please request a new code.",
+      "allow_resend": true
+    },
+    "network_error": {
+      "style": "non_destructive_error",
+      "message": "Unable to verify the code. Check your connection and try again.",
+      "allow_retry": true
+    },
+    "success": {
+      "action": "continue_to_authenticated_student_area_or_next_registration_step"
+    }
+  },
+  "interactions": {
+    "otp_input": {
+      "auto_focus": true,
+      "auto_advance": true,
+      "paste_six_digit_code": true
+    },
+    "verify": "validate_then_verify_code",
+    "resend": "request_new_verification_code",
+    "back_to_sign_in": "go_back_to_sign_in"
+  },
+  "transitions": {
+    "verification_success": {
+      "style": "subtle_forward",
+      "direction": "forward",
+      "duration": "short"
+    },
+    "resend": {
+      "style": "no_navigation",
+      "feedback": "inline_success"
+    },
+    "back_to_sign_in": {
+      "style": "native_back",
+      "direction": "back",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "verification_card": {
+      "style": "white_surface_with_subtle_border_and_soft_elevation",
+      "avoid_nested_cards": true
+    },
+    "otp_inputs": {
+      "use_separate_visual_cells": true,
+      "equal_width": true,
+      "equal_height": true,
+      "equal_spacing": true,
+      "focus_color": "#2563EB",
+      "error_color": "#DC2626",
+      "do_not_use_heavy_shadows": true
+    },
+    "primary_button": {
+      "background": "#2563EB",
+      "text": "#FFFFFF",
+      "reserve_for_verification_action": true,
+      "full_width_within_card": true
+    },
+    "resend": {
+      "use_primary_blue_text": true,
+      "do_not_make_it_look_like_primary_button": true
+    },
+    "security_notice": {
+      "keep_subtle": true,
+      "do_not_compete_with_verify_action": true
+    }
+  },
+  "data_rules": {
+    "source_of_truth": "existing_email_verification_logic",
+    "email": "use_email_address_from_registration_or_authentication_state",
+    "do_not_hardcode_email": true,
+    "do_not_store_otp_in_client_persistently": true,
+    "preserve_existing_verification_logic": true
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_authentication_and_verification_logic": true,
+    "reuse_existing_assets": true,
+    "preserve_existing_navigation": true,
+    "preserve_existing_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Keep all six OTP cells visible on supported mobile widths.",
+    "Allow vertical scrolling when the keyboard or small viewport requires it.",
+    "Keep the OTP input and verification button visible when the numeric keyboard opens.",
+    "Respect safe-area insets.",
+    "Prevent the dynamic email address from overflowing the layout.",
+    "Keep resend and back actions comfortably tappable."
+  ],
+  "accessibility": {
+    "otp_has_clear_accessible_label": true,
+    "verify_button_has_clear_accessible_name": true,
+    "resend_has_clear_accessible_name": true,
+    "back_action_has_clear_accessible_name": true,
+    "maintain_readable_contrast": true
+  },
+  "acceptance_criteria": [
+    "The screen follows the supplied Email Verification reference image.",
+    "The AINA logo uses the existing project asset.",
+    "The verification icon clearly communicates email verification.",
+    "The recipient email is dynamic and visually emphasized.",
+    "Exactly six OTP cells are presented.",
+    "OTP entry supports auto-advance, backspace navigation, paste, and native one-time-code autofill where available.",
+    "Verify & Proceed is the dominant action and remains disabled until a complete code is entered.",
+    "Invalid, expired, and network error states are clear and actionable.",
+    "Resend Code uses the existing cooldown configuration.",
+    "The security notice is visible but secondary.",
+    "Back to Sign In is clearly available.",
+    "The screen works correctly with the mobile keyboard.",
+    "Existing email verification and authentication logic remains intact.",
+    "The visual language matches the AINA authentication screens."
+  ]
+}

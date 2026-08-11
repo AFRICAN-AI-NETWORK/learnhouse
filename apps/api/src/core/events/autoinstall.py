@@ -21,7 +21,7 @@ def auto_install():
     orgs = db_session.exec(select(Organization)).all()
 
     if len(orgs) == 0:
-        print("No organizations found. Starting auto-installation 🏗️")
+        print("No organizations found. Starting auto-installation...")
         install(short=True)
 
     if orgs:

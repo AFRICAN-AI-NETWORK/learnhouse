@@ -1,0 +1,118 @@
+{
+  "version": "1.0.0",
+  "brand": {
+    "name": "AINA",
+    "primary": "#2563EB",
+    "background": "#FFFFFF"
+  },
+  "colors": {
+    "primary": "#2563EB",
+    "primaryDark": "#1D4ED8",
+    "primaryLight": "#EFF6FF",
+    "text": "#0F172A",
+    "textSecondary": "#64748B",
+    "textMuted": "#94A3B8",
+    "background": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "surfaceMuted": "#F8FAFC",
+    "border": "#E2E8F0",
+    "borderStrong": "#CBD5E1",
+    "success": "#059669",
+    "successLight": "#ECFDF5",
+    "warning": "#F59E0B",
+    "warningLight": "#FFFBEB",
+    "danger": "#DC2626",
+    "dangerLight": "#FEF2F2",
+    "purple": "#7C3AED",
+    "purpleLight": "#F5F3FF",
+    "orange": "#F97316",
+    "orangeLight": "#FFF7ED"
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "Use the existing application font; do not introduce a new font without justification."
+    },
+    "weights": {
+      "regular": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700"
+    },
+    "roles": {
+      "screenTitle": {
+        "weight": "700",
+        "lineHeightRole": "tight"
+      },
+      "sectionTitle": {
+        "weight": "700",
+        "lineHeightRole": "tight"
+      },
+      "cardTitle": {
+        "weight": "600",
+        "lineHeightRole": "normal"
+      },
+      "body": {
+        "weight": "400",
+        "lineHeightRole": "comfortable"
+      },
+      "bodyStrong": {
+        "weight": "600",
+        "lineHeightRole": "comfortable"
+      },
+      "label": {
+        "weight": "600",
+        "lineHeightRole": "tight"
+      },
+      "caption": {
+        "weight": "400",
+        "lineHeightRole": "comfortable"
+      }
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "xxl": 40,
+    "section": 32
+  },
+  "radius": {
+    "small": 8,
+    "medium": 12,
+    "large": 16,
+    "xlarge": 20,
+    "pill": 999
+  },
+  "borders": {
+    "thin": 1,
+    "standard": 1
+  },
+  "elevation": {
+    "none": "none",
+    "subtle": "Use a very soft shadow only where elevation improves hierarchy.",
+    "card": "Use restrained elevation; avoid floating-card overload."
+  },
+  "icons": {
+    "family": "Use one consistent icon family already present in the project.",
+    "primary": "#2563EB",
+    "secondary": "#64748B",
+    "success": "#059669",
+    "warning": "#F59E0B"
+  },
+  "interaction": {
+    "primaryActionColor": "#2563EB",
+    "activeNavigationColor": "#2563EB",
+    "inactiveNavigationColor": "#64748B"
+  },
+  "motion": {
+    "principle": "Fast, subtle, purposeful",
+    "avoid": [
+      "large decorative animations",
+      "bouncy transitions",
+      "unnecessary parallax",
+      "animations that delay navigation"
+    ]
+  }
+}

@@ -1,0 +1,291 @@
+{
+  "screen": {
+    "id": "profile",
+    "name": "Profile",
+    "type": "mobile_profile_settings",
+    "purpose": "Manage the student's account, organization, preferences, support, and sign-out.",
+    "reference": "uploaded Profile reference image"
+  },
+  "design_direction": {
+    "style": "clean, professional, calm account-management experience",
+    "primary_color": "#2563EB",
+    "background": "#FFFFFF",
+    "consistency": "Use the same typography, spacing, borders, radii, icon style, buttons, and bottom navigation as Home, Courses, and Earn $4.",
+    "avoid": [
+      "excessive decoration",
+      "nested cards",
+      "heavy shadows",
+      "unnecessary gradients"
+    ]
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical",
+    "bottom_navigation": "fixed",
+    "safe_area_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true
+  },
+  "header": {
+    "title": "Profile",
+    "subtitle": "Manage your account and app settings",
+    "notification": {
+      "visible": true,
+      "action": "open_notifications"
+    }
+  },
+  "profile_summary": {
+    "type": "profile_summary_card",
+    "source": "current_student_profile",
+    "content": {
+      "avatar": "student_profile_photo",
+      "name": "current_student_name",
+      "email": "current_student_email",
+      "organization": "current_student_organization"
+    },
+    "action": "open_personal_information",
+    "show_chevron": true
+  },
+  "sections": [
+    {
+      "id": "account",
+      "title": "ACCOUNT",
+      "type": "settings_group",
+      "items": [
+        {
+          "id": "personal_information",
+          "icon": "user",
+          "title": "Personal Information",
+          "description": "Update your name, email and profile photo",
+          "action": "open_personal_information",
+          "show_chevron": true
+        },
+        {
+          "id": "organization",
+          "icon": "organization",
+          "title": "Organization",
+          "description": "View and manage your organization",
+          "action": "open_organization",
+          "show_chevron": true
+        },
+        {
+          "id": "payment_methods",
+          "icon": "card",
+          "title": "Payment Methods",
+          "description": "Manage your saved cards and billing",
+          "action": "open_payment_methods",
+          "show_chevron": true
+        }
+      ]
+    },
+    {
+      "id": "preferences",
+      "title": "PREFERENCES",
+      "type": "settings_group",
+      "items": [
+        {
+          "id": "notifications",
+          "icon": "bell",
+          "title": "Notifications",
+          "description": "Manage push and email notifications",
+          "action": "open_notification_settings",
+          "status": "dynamic",
+          "show_chevron": true
+        },
+        {
+          "id": "downloads",
+          "icon": "download",
+          "title": "Downloads",
+          "description": "Manage downloaded courses and resources",
+          "action": "open_downloads",
+          "show_chevron": true
+        },
+        {
+          "id": "appearance",
+          "icon": "moon",
+          "title": "Appearance",
+          "description": "Choose your preferred theme",
+          "action": "open_appearance_settings",
+          "status": "dynamic",
+          "possible_values": ["System", "Light", "Dark"],
+          "show_chevron": true
+        }
+      ]
+    },
+    {
+      "id": "support_about",
+      "title": "SUPPORT & ABOUT",
+      "type": "settings_group",
+      "items": [
+        {
+          "id": "help_support",
+          "icon": "help_circle",
+          "title": "Help & Support",
+          "description": "Get help and contact support",
+          "action": "open_help_support",
+          "show_chevron": true
+        },
+        {
+          "id": "about_aina",
+          "icon": "info",
+          "title": "About AINA",
+          "description": "Learn more about AINA and our mission",
+          "action": "open_about_aina",
+          "show_chevron": true
+        },
+        {
+          "id": "app_version",
+          "icon": "phone",
+          "title": "App Version",
+          "description": "You're using the latest version",
+          "status": "current_app_version",
+          "show_chevron": false
+        }
+      ]
+    }
+  ],
+  "sign_out": {
+    "type": "destructive_action",
+    "label": "Sign Out",
+    "icon": "logout",
+    "action": "confirm_sign_out",
+    "confirmation_required": true,
+    "style": {
+      "background": "#FEF2F2",
+      "border": "#FECACA",
+      "text": "#DC2626"
+    }
+  },
+  "bottom_navigation": {
+    "type": "tab_bar",
+    "active_color": "#2563EB",
+    "inactive_color": "#64748B",
+    "items": [
+      {
+        "id": "home",
+        "label": "Home",
+        "icon": "home",
+        "active": false
+      },
+      {
+        "id": "courses",
+        "label": "Courses",
+        "icon": "book",
+        "active": false
+      },
+      {
+        "id": "earn",
+        "label": "Earn $4",
+        "icon": "gift",
+        "active": false
+      },
+      {
+        "id": "profile",
+        "label": "Profile",
+        "icon": "user",
+        "active": true
+      }
+    ]
+  },
+  "interactions": {
+    "profile_summary": "open_personal_information",
+    "settings_item": "open_corresponding_settings_screen",
+    "notification": "open_notifications",
+    "sign_out": "show_confirmation_then_sign_out"
+  },
+  "transitions": {
+    "tab_switch": {
+      "style": "immediate_or_subtle_fade",
+      "duration": "short",
+      "direction": "none"
+    },
+    "settings_detail": {
+      "style": "native_forward",
+      "duration": "short",
+      "direction": "forward"
+    },
+    "back": {
+      "style": "native_back",
+      "duration": "short",
+      "direction": "back"
+    },
+    "confirmation": {
+      "style": "subtle_modal",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "profile_summary": {
+      "avatar_is_primary_visual": true,
+      "name_is_primary": true,
+      "email_is_secondary": true,
+      "organization_is_supporting_information": true
+    },
+    "settings_groups": {
+      "use_grouped_rows": true,
+      "use_dividers_between_rows": true,
+      "avoid_nested_cards": true,
+      "keep_each_row_tappable": true
+    },
+    "icons": {
+      "use_one_consistent_icon_family": true,
+      "primary_color": "#2563EB",
+      "do_not_mix_icon_styles": true
+    },
+    "sign_out": {
+      "visually_separate": true,
+      "use_destructive_red": true,
+      "require_confirmation": true
+    }
+  },
+  "data_rules": {
+    "source_of_truth": "existing_student_profile_and_app_settings",
+    "do_not_hardcode_production_values": true,
+    "preserve": [
+      "student name",
+      "student email",
+      "profile photo",
+      "organization",
+      "notification state",
+      "appearance preference",
+      "app version"
+    ]
+  },
+  "loading_and_error_states": {
+    "profile_loading": "use_profile_skeleton",
+    "settings_loading": "use_lightweight_row_skeletons",
+    "error": "use_concise_inline_error_with_retry",
+    "avoid": "large isolated spinner on an otherwise empty screen"
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_profile_logic": true,
+    "reuse_existing_settings_logic": true,
+    "reuse_existing_navigation": true,
+    "preserve_existing_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Use flexible widths and content-driven layout.",
+    "Keep setting descriptions readable on narrow screens.",
+    "Prevent long email, organization, and version values from breaking the layout.",
+    "Ensure fixed bottom navigation never covers content.",
+    "Respect safe-area insets.",
+    "Keep setting rows comfortable to tap."
+  ],
+  "acceptance_criteria": [
+    "The screen follows the supplied Profile reference.",
+    "The profile summary is immediately understandable.",
+    "Account, Preferences, and Support & About are clearly separated.",
+    "Settings rows are easy to scan and tap.",
+    "Dynamic values come from existing application state.",
+    "Sign Out is clearly destructive and requires confirmation.",
+    "The screen uses the same AINA design language as Home, Courses, and Earn $4.",
+    "The layout works across supported mobile device sizes.",
+    "Existing profile, settings, authentication, and navigation functionality remains intact."
+  ]
+}

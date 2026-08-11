@@ -1,0 +1,88 @@
+export const lightColors = {
+  primary: "#2563EB",
+  primaryHover: "#1D4ED8",
+  background: "#f8fafc",
+  surface: "#ffffff",
+  surfaceBorder: "#e2e8f0",
+  card: "#ffffff",
+  text: "#0f172a",
+  textMuted: "#475569",
+  textDim: "#64748b",
+  border: "#e2e8f0",
+  accent: "#0284c7",
+  success: "#059669",
+  successBackground: "rgba(5, 150, 105, 0.08)",
+  warning: "#d97706",
+  danger: "#dc2626",
+  dangerBackground: "rgba(220, 38, 38, 0.08)",
+  inputBackground: "#f1f5f9",
+  inputBorder: "#cbd5e1",
+};
+
+export const darkColors = {
+  primary: "#3b82f6",
+  primaryHover: "#60a5fa",
+  background: "#0f172a",
+  surface: "#1e293b",
+  surfaceBorder: "#334155",
+  card: "#1e293b",
+  text: "#f8fafc",
+  textMuted: "#94a3b8",
+  textDim: "#64748b",
+  border: "#334155",
+  accent: "#38bdf8",
+  success: "#10b981",
+  successBackground: "rgba(16, 185, 129, 0.15)",
+  warning: "#f59e0b",
+  danger: "#ef4444",
+  dangerBackground: "rgba(239, 68, 68, 0.15)",
+  inputBackground: "#0f172a",
+  inputBorder: "#334155",
+};
+
+export const Theme = {
+  colors: lightColors, // Fallback for statically imported components
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 48,
+  },
+  borderRadius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    full: 9999,
+  },
+  fonts: {
+    regular: "System",
+    medium: "System",
+    bold: "System",
+  },
+  shadows: {
+    sm: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    md: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    lg: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 5,
+    },
+  },
+};

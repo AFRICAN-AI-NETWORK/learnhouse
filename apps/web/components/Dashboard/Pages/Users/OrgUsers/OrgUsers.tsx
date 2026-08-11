@@ -9,7 +9,7 @@ import Toast from '@components/Objects/StyledElements/Toast/Toast'
 import { getAPIUrl } from '@services/config/config'
 import { deleteUser } from '@services/users/users'
 import { swrFetcher } from '@services/utils/ts/requests'
-import { KeyRound, LogOut, Search } from 'lucide-react'
+import { KeyRound, LogOut, Search, TrendingUp } from 'lucide-react'
 import React from 'react'
 import toast from 'react-hot-toast'
 import useSWR, { mutate } from 'swr'
@@ -42,8 +42,7 @@ function OrgUsers() {
       const username = user.user.username?.toLowerCase() || ''
 
       return (
-        fullName.includes(normalizedQuery) ||
-        username.includes(normalizedQuery)
+        fullName.includes(normalizedQuery) || username.includes(normalizedQuery)
       )
     })
   }, [orgUsers, searchQuery])
@@ -67,6 +66,34 @@ function OrgUsers() {
       toast.error(t('dashboard.users.active_users.actions.remove_error'), {
         id: toastId,
       })
+    }
+  }
+
+  const handlePromoteToMarketer = async (user_id: any) => {
+    const toastId = toast.loading('Promoting user to Marketer...')
+    try {
+      const response = await fetch(
+        `${getAPIUrl()}referrals/marketers/${org.id}/admin/${user_id}/grant`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      if (response.ok) {
+        toast.success('User has been successfully promoted to Marketer.', {
+          id: toastId,
+        })
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.detail?.message || 'Failed to promote user.', {
+          id: toastId,
+        })
+      }
+    } catch (error) {
+      toast.error('An error occurred while promoting user.', { id: toastId })
     }
   }
 
@@ -194,6 +221,22 @@ function OrgUsers() {
                             handleRemoveUser(user.user.id)
                           }}
                           status="warning"
+                        ></ConfirmationModal>
+
+                        <ConfirmationModal
+                          confirmationButtonText="Promote"
+                          confirmationMessage="Are you sure you want to grant Marketer status to this user? They will receive a $7.70 commission rate on referrals."
+                          dialogTitle={`Promote ${user.user.username} to Marketer`}
+                          dialogTrigger={
+                            <button className="mr-2 mt-2 flex space-x-2 hover:cursor-pointer p-1 px-3 bg-green-700 rounded-md font-bold items-center text-sm text-green-100">
+                              <TrendingUp className="w-4 h-4" />
+                              <span>Promote to Marketer</span>
+                            </button>
+                          }
+                          functionToExecute={() => {
+                            handlePromoteToMarketer(user.user.id)
+                          }}
+                          status="info"
                         ></ConfirmationModal>
                       </td>
                     </tr>

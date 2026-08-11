@@ -1,0 +1,224 @@
+{
+  "screen": {
+    "id": "courses",
+    "name": "Courses",
+    "type": "mobile_course_catalog",
+    "purpose": "Help students discover, filter, and start relevant technology courses.",
+    "reference_priority": [
+      "Approved Courses design reference",
+      "Existing AINA mobile Courses implementation"
+    ]
+  },
+  "design_direction": {
+    "style": "clean, premium educational platform",
+    "primary_color": "#2563EB",
+    "background": "#FFFFFF",
+    "relationship_to_home": "Use the same typography, spacing, controls, borders, radii, icons, and navigation language as Home.",
+    "relationship_to_web": "Retain the strong course-content hierarchy and real course information from the existing web experience, adapted intentionally for mobile."
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical",
+    "bottom_navigation": "fixed",
+    "safe_area_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true
+  },
+  "header": {
+    "title": "Courses",
+    "subtitle": "Explore and enroll in interactive learning paths",
+    "search": {
+      "type": "icon_button",
+      "action": "open_course_search",
+      "accessibility_label": "Search courses"
+    }
+  },
+  "filters": {
+    "type": "horizontal_scroll",
+    "options": [
+      "All",
+      "AI & Data",
+      "Mobile",
+      "Web Dev",
+      "Programming",
+      "Design"
+    ],
+    "default": "All",
+    "active": {
+      "background": "#2563EB",
+      "text": "#FFFFFF"
+    },
+    "inactive": {
+      "background": "#FFFFFF",
+      "text": "#64748B",
+      "border": "#E2E8F0"
+    },
+    "single_selection": true,
+    "must_not_wrap_unpredictably": true
+  },
+  "discovery_banner": {
+    "type": "learning_promotion",
+    "title": "Invest in your future",
+    "description": "Learn in-demand skills and build real-world projects.",
+    "visual": "existing_education_illustration_or_asset",
+    "rules": [
+      "Keep it lighter than the course catalog.",
+      "Do not let decoration overpower course discovery.",
+      "Reuse existing AINA assets where available."
+    ]
+  },
+  "popular_courses": {
+    "title": "Popular Courses",
+    "show_view_all": true,
+    "layout": "vertical_list",
+    "card": {
+      "type": "horizontal_course_card",
+      "structure": {
+        "thumbnail": "left",
+        "content": "right",
+        "bookmark": "top_right",
+        "category": "above_title",
+        "title": "primary",
+        "description": "secondary",
+        "metadata": ["duration", "difficulty", "rating"],
+        "price": "bottom_right"
+      },
+      "visual_priority": "high"
+    }
+  },
+  "continue_learning": {
+    "title": "Continue Learning",
+    "show_view_all": true,
+    "source": "student_enrolled_courses_with_progress",
+    "layout": "horizontal_or_compact_progress_list"
+  },
+  "course_data": {
+    "source_of_truth": "existing_course_data_and_api",
+    "do_not_hardcode_production_data": true,
+    "preserve": [
+      "course identifiers",
+      "pricing",
+      "enrollment status",
+      "progress",
+      "ratings",
+      "lesson counts",
+      "duration"
+    ],
+    "truncate_long_titles": true,
+    "truncate_long_descriptions": true
+  },
+  "loading": {
+    "preferred": "skeleton_course_cards",
+    "avoid": "isolated_spinner_on_large_empty_screen"
+  },
+  "empty_state": {
+    "title": "No courses found",
+    "description": "Try another category or search term.",
+    "style": "quiet_and_informative",
+    "avoid_large_illustrations": true
+  },
+  "bottom_navigation": {
+    "type": "tab_bar",
+    "active_color": "#2563EB",
+    "inactive_color": "#64748B",
+    "items": [
+      {
+        "id": "home",
+        "label": "Home",
+        "icon": "home",
+        "active": false
+      },
+      {
+        "id": "courses",
+        "label": "Courses",
+        "icon": "book",
+        "active": true
+      },
+      {
+        "id": "earn",
+        "label": "Earn $4",
+        "icon": "gift",
+        "active": false
+      },
+      {
+        "id": "profile",
+        "label": "Profile",
+        "icon": "user",
+        "active": false
+      }
+    ]
+  },
+  "interactions": {
+    "course_card": "open_course_details",
+    "bookmark": "toggle_course_saved_state",
+    "search": "open_course_search",
+    "view_all": "open_full_course_catalog",
+    "filter": "filter_course_catalog"
+  },
+  "transitions": {
+    "tab_switch": {
+      "style": "immediate_or_subtle_fade",
+      "duration": "short",
+      "direction": "none"
+    },
+    "course_details": {
+      "style": "native_forward",
+      "duration": "short"
+    },
+    "search": {
+      "style": "subtle_forward",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "cards": {
+      "avoid_nested_cards": true,
+      "avoid_excessive_rounding": true,
+      "use_consistent_border_and_elevation": true
+    },
+    "course_cards": {
+      "reusable": true,
+      "share_visual_language_with_home": true,
+      "thumbnail_prominent": true,
+      "metadata_scannable": true,
+      "price_clear": true,
+      "bookmark_secondary": true
+    },
+    "buttons": {
+      "primary_color": "#2563EB",
+      "do_not_make_every_action_a_primary_button": true
+    }
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_course_data": true,
+    "reuse_existing_assets": true,
+    "preserve_navigation": true,
+    "preserve_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Use flexible widths and content-driven layout.",
+    "Prevent unintended horizontal overflow.",
+    "Allow horizontal scrolling only for intentionally horizontal sections such as filters.",
+    "Ensure the fixed bottom navigation never covers content.",
+    "Respect safe-area insets.",
+    "Keep long titles and descriptions from breaking the layout."
+  ],
+  "acceptance_criteria": [
+    "The screen follows the approved Courses reference.",
+    "The current AINA course data remains intact.",
+    "Course cards feel intentional and premium rather than generic.",
+    "Thumbnails, metadata, pricing, ratings, and bookmark actions are easy to scan.",
+    "The catalog works well on small screens.",
+    "The visual language matches the approved Home screen.",
+    "The web application's course information hierarchy is retained where appropriate.",
+    "Loading and empty states look intentional.",
+    "Bottom navigation matches the other mobile tabs.",
+    "Existing navigation and course functionality remain intact."
+  ]
+}

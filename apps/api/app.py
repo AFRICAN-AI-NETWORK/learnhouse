@@ -359,3 +359,5 @@ if __name__ == "__main__":
         port=learnhouse_config.hosting_config.port,
         reload=learnhouse_config.general_config.development_mode,
     )
+
+# Force reload

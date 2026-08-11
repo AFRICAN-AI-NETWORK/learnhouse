@@ -39,6 +39,7 @@ from src.services.referrals.marketer_kyc import (
     upload_kyc_document,
 )
 from src.services.referrals.marketers import (
+    admin_grant_marketer,
     approve_marketer,
     get_admin_marketer_stats,
     get_marketer_by_user,
@@ -497,6 +498,18 @@ async def api_admin_reject_marketer(
     return await reject_marketer(
         marketer_id, org_id, body.reason, current_user.id, db_session
     )
+
+
+@router.post("/{org_id}/admin/{user_id}/grant", response_model=MarketerRead)
+async def api_admin_grant_marketer(
+    org_id: int,
+    user_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """Instantly grant marketer status to a user (Admin only)"""
+    _require_admin(current_user, org_id, db_session)
+    return await admin_grant_marketer(user_id, org_id, current_user.id, db_session)
 
 
 @router.post("/{org_id}/admin/{marketer_id}/suspend", response_model=MarketerRead)

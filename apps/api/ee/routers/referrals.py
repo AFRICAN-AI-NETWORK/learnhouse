@@ -31,30 +31,10 @@ router = APIRouter()
 
 
 def _require_referral_access(current_user, org_id, db_session):
-    """Allow referral self-service only to admins, maintainers, and partners."""
-    from src.db.roles import Role
-    from src.db.user_organizations import UserOrganization
-
+    """Allow referral self-service to all authenticated organization members."""
     if not current_user or not current_user.id:
         raise HTTPException(status_code=401, detail="Authentication required")
-
-    statement = (
-        select(Role)
-        .join(UserOrganization, UserOrganization.role_id == Role.id)
-        .where(
-            UserOrganization.user_id == current_user.id,
-            UserOrganization.org_id == org_id,
-        )
-    )
-    roles = db_session.exec(statement).all()
-    for role in roles:
-        if role.id in (1, 2, 4) or role.role_uuid == "partner_role":
-            return
-
-    raise HTTPException(
-        status_code=403,
-        detail="Partner role required to access referrals",
-    )
+    return
 
 
 @router.post("/{org_id}/generate-code", response_model=ReferralCodeRead)

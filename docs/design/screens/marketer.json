@@ -1,0 +1,296 @@
+{
+  "screen": {
+    "id": "marketer_application",
+    "name": "Marketer Application",
+    "type": "mobile_application_form",
+    "purpose": "Allow applicants to apply as an official AINA affiliate marketer and provide payout account information for referral commissions.",
+    "reference": "uploaded Marketer Application reference image"
+  },
+  "design_direction": {
+    "style": "clean, trustworthy, professional AINA application experience",
+    "primary_color": "#2563EB",
+    "background": "#FFFFFF",
+    "background_pattern": {
+      "enabled": true,
+      "style": "very subtle AINA education and technology doodle pattern",
+      "opacity": "very low",
+      "must_not_compete_with_form": true
+    },
+    "consistency": "Use the same AINA authentication and application-screen design language as Login, Registration, and Partner Application.",
+    "avoid": [
+      "heavy decorative elements",
+      "strong shadows",
+      "unnecessary gradients",
+      "nested cards",
+      "generic AI-generated styling"
+    ]
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical",
+    "safe_area_aware": true,
+    "keyboard_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true,
+    "content_alignment": "centered"
+  },
+  "header": {
+    "back_navigation": {
+      "label": "Back to Sign In",
+      "action": "go_back_to_sign_in",
+      "icon": "arrow_left"
+    },
+    "logo": {
+      "source": "existing_project_asset",
+      "reuse_existing_logo": true
+    },
+    "badge": {
+      "text": "Earn $7.70 USD / Paid Referral",
+      "icon": "trending_up",
+      "accent": "#059669",
+      "style": "success_outline_badge"
+    },
+    "title": "Marketer Application",
+    "subtitle": "Apply as an official AINA affiliate partner"
+  },
+  "form": {
+    "type": "affiliate_marketer_application",
+    "sections": [
+      {
+        "id": "personal_details",
+        "title": null,
+        "fields": [
+          {
+            "id": "full_name",
+            "type": "text",
+            "label": "FULL NAME",
+            "placeholder": "Jane Doe",
+            "required": true,
+            "icon": "user",
+            "autocomplete": "name",
+            "validation": {
+              "required": "Enter your full name."
+            }
+          },
+          {
+            "id": "email",
+            "type": "email",
+            "label": "EMAIL ADDRESS",
+            "placeholder": "marketer@example.com",
+            "required": true,
+            "icon": "mail",
+            "keyboard": "email",
+            "autocomplete": "email",
+            "validation": {
+              "required": "Enter your email address.",
+              "invalid": "Enter a valid email address."
+            }
+          },
+          {
+            "id": "phone",
+            "type": "phone",
+            "label": "PHONE NUMBER",
+            "placeholder": "+234 800 000 0000",
+            "required": true,
+            "icon": "phone",
+            "keyboard": "phone",
+            "validation": {
+              "required": "Enter your phone number."
+            }
+          }
+        ]
+      },
+      {
+        "id": "payout_account",
+        "title": "PAYOUT ACCOUNT DETAILS",
+        "fields": [
+          {
+            "id": "bank_name",
+            "type": "text",
+            "label": "BANK / INSTITUTION NAME",
+            "placeholder": "First Bank / Kuda / GTBank",
+            "required": true,
+            "icon": "bank",
+            "validation": {
+              "required": "Enter your bank or institution name."
+            }
+          },
+          {
+            "id": "account_number",
+            "type": "account_number",
+            "label": "ACCOUNT NUMBER",
+            "placeholder": "0123456789",
+            "required": true,
+            "icon": "card",
+            "keyboard": "numeric",
+            "validation": {
+              "required": "Enter your account number."
+            }
+          },
+          {
+            "id": "account_holder_name",
+            "type": "text",
+            "label": "ACCOUNT HOLDER NAME",
+            "placeholder": "Jane Doe",
+            "required": true,
+            "icon": "user",
+            "validation": {
+              "required": "Enter the account holder name."
+            }
+          }
+        ]
+      }
+    ],
+    "verification_notice": {
+      "type": "info_success_notice",
+      "icon": "shield_check",
+      "text": "A 6-digit OTP code will be sent to your email for verification.",
+      "accent": "#059669",
+      "background": "#ECFDF5"
+    },
+    "submit": {
+      "label": "Submit Marketer Application",
+      "icon": "arrow_right",
+      "action": "submit_marketer_application",
+      "style": "primary",
+      "background": "#2563EB"
+    }
+  },
+  "security_notice": {
+    "icon": "lock",
+    "text": "Your information is secure with AINA.",
+    "accent": "#2563EB"
+  },
+  "states": {
+    "idle": "normal_form",
+    "validating": "show_inline_field_validation",
+    "submitting": {
+      "disable_submit": true,
+      "show_loading_indicator": true,
+      "prevent_duplicate_submission": true
+    },
+    "success": {
+      "action": "send_otp_and_open_email_verification"
+    },
+    "error": {
+      "style": "clear_inline_or_form_error",
+      "allow_retry": true
+    }
+  },
+  "interactions": {
+    "back": "go_back_to_sign_in",
+    "submit": "validate_then_submit_marketer_application",
+    "field_focus": "use_primary_blue_focus_state",
+    "keyboard": "scroll_focused_field_into_view"
+  },
+  "transitions": {
+    "back_to_sign_in": {
+      "style": "native_back",
+      "direction": "back",
+      "duration": "short"
+    },
+    "submit_success": {
+      "style": "subtle_forward",
+      "direction": "forward",
+      "destination": "email_verification",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "form_card": {
+      "style": "white_surface_with_subtle_border_and_soft_elevation",
+      "avoid_nested_cards": true
+    },
+    "inputs": {
+      "style": "soft_neutral_surface_with_subtle_border",
+      "focus_color": "#2563EB",
+      "error_color": "#DC2626",
+      "labels_above_inputs": true,
+      "icons_inside_inputs": true,
+      "consistent_height": true
+    },
+    "section_heading": {
+      "uppercase": true,
+      "strong_weight": true,
+      "color": "#0F172A"
+    },
+    "primary_button": {
+      "background": "#2563EB",
+      "text": "#FFFFFF",
+      "reserve_for_submit_action": true,
+      "full_width_within_form": true
+    },
+    "badge": {
+      "use_green_for_affiliate_reward_information": true,
+      "do_not_make_badge_look_like_primary_button": true
+    },
+    "security_notice": {
+      "keep_subtle": true,
+      "do_not_compete_with_submit_action": true
+    }
+  },
+  "data_rules": {
+    "source_of_truth": "existing_marketer_application_logic",
+    "do_not_hardcode_production_values": true,
+    "preserve": [
+      "applicant information",
+      "payout account information",
+      "affiliate reward configuration",
+      "email verification flow"
+    ],
+    "reward_badge": {
+      "source": "existing_affiliate_reward_configuration",
+      "do_not_hardcode_displayed_reward": true
+    }
+  },
+  "validation_rules": {
+    "full_name": "required_non_empty",
+    "email": "required_valid_email",
+    "phone": "required_valid_phone",
+    "bank_name": "required_non_empty",
+    "account_number": "required_valid_account_number",
+    "account_holder_name": "required_non_empty"
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_application_logic": true,
+    "reuse_existing_authentication_and_verification_logic": true,
+    "reuse_existing_assets": true,
+    "preserve_existing_navigation": true,
+    "preserve_existing_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Allow vertical scrolling on smaller devices.",
+    "Keep focused fields visible above the keyboard.",
+    "Respect safe-area insets.",
+    "Keep input labels and validation messages readable.",
+    "Prevent long bank names and account holder names from breaking the layout.",
+    "Keep the submit button fully accessible without being covered by the keyboard."
+  ],
+  "accessibility": {
+    "all_fields_have_labels": true,
+    "interactive_icons_have_accessibility_labels": true,
+    "submit_button_has_clear_accessible_name": true,
+    "back_action_has_clear_accessible_name": true,
+    "maintain_readable_contrast": true
+  },
+  "acceptance_criteria": [
+    "The screen follows the supplied Marketer Application reference image.",
+    "Back to Sign In is clearly available at the top.",
+    "The AINA logo uses the existing project asset.",
+    "The affiliate reward badge is clearly visible but secondary to the application title.",
+    "Personal details and payout account details are clearly grouped.",
+    "Every field has a clear label, appropriate icon, input type, and validation.",
+    "The OTP verification notice is clearly visible before submission.",
+    "Submit Marketer Application is the dominant action.",
+    "The security notice appears below the form without competing with the submit button.",
+    "The screen works correctly with the mobile keyboard.",
+    "Existing marketer application and email verification logic remains intact.",
+    "The visual language matches the AINA Login, Registration, Partner Application, and other mobile screens."
+  ]
+}
