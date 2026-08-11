@@ -20,7 +20,7 @@ function DashboardHome() {
   const org = useOrg() as any
   const { isAdmin, rights, userRoles } = useAdminStatus() as any
 
-  const canSeeCourses = isAdmin || rights?.courses?.action_read
+  const canSeeCourses = isAdmin || rights?.courses?.action_update
   const canSeeOrg = isAdmin || rights?.organizations?.action_read
   const canSeeUsers = isAdmin || rights?.users?.action_read
   const canSeeCommunications = isAdmin || rights?.communications?.action_read

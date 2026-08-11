@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, UTC
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
@@ -20,6 +20,10 @@ router = APIRouter()
 # Email verification models
 class EmailVerificationRequest(BaseModel):
     token: str
+
+class OTPVerificationRequest(BaseModel):
+    email: EmailStr
+    otp: str
 
 
 class ResendVerificationRequest(BaseModel):
@@ -180,6 +184,46 @@ async def verify_email_endpoint(
         "already_verified": result.get("already_verified", False),
     }
 
+@router.post("/verify-otp")
+async def verify_otp_endpoint(
+    request: Request,
+    verification_data: OTPVerificationRequest,
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Verify user's email address using a 6-digit OTP code (Mobile App flow).
+    """
+    statement = select(User).where(User.email == verification_data.email)
+    user = db_session.exec(statement).first()
+    
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+        
+    if user.email_verified:
+        return {"success": True, "message": "Email already verified", "already_verified": True}
+        
+    if not user.verification_otp or user.verification_otp != verification_data.otp:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+        
+    if user.verification_otp_expiry and datetime.fromisoformat(user.verification_otp_expiry) < datetime.now(UTC):
+        raise HTTPException(status_code=400, detail="Verification code expired")
+        
+    # Mark verified
+    user.email_verified = True
+    user.verification_otp = None
+    user.verification_otp_expiry = None
+    user.update_date = str(datetime.now(UTC))
+    
+    db_session.add(user)
+    db_session.commit()
+    
+    return {
+        "success": True,
+        "message": "Email verified successfully via OTP",
+        "already_verified": False,
+    }
+
+
 
 # NEW: Resend verification email endpoint
 @router.post("/resend-verification")
@@ -219,10 +263,15 @@ async def resend_verification_email(
     if not org:
         raise HTTPException(status_code=400, detail="Organization not found")
 
-    # Generate new verification token
+    # Generate new verification token and OTP
+    import random
     verification_token = generate_verification_token(
         user_email=user.email, user_id=user.id, org_slug=org.slug
     )
+    user.verification_otp = str(random.randint(100000, 999999))
+    user.verification_otp_expiry = str(datetime.now(UTC) + timedelta(minutes=30))
+    db_session.add(user)
+    db_session.commit()
 
     # Resend email
     send_account_creation_email(
@@ -230,6 +279,7 @@ async def resend_verification_email(
         email=user.email,
         organization=OrganizationRead.model_validate(org),
         verification_token=verification_token,
+        otp_code=user.verification_otp,
     )
 
     return {

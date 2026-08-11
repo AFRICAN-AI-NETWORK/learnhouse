@@ -111,3 +111,5 @@ class User(UserBase, table=True):
     has_referral_code: bool = Field(default=False)
     creation_date: str = ""
     update_date: str = ""
+    verification_otp: str | None = None
+    verification_otp_expiry: str | None = None

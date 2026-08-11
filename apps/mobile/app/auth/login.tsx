@@ -59,22 +59,25 @@ export default function LoginScreen() {
       if (res.success && res.user) {
         const u = res.user;
         const isGlobalAdmin = u.is_admin || u.role === "admin";
-        let isOrgAdminOrInstructor = false;
+        // Restrict mobile app access to only Students (USER) and Partners
+        let hasValidMobileRole = false;
+
         if (u.orgs && Array.isArray(u.orgs)) {
-          isOrgAdminOrInstructor = u.orgs.some(
-            (org: any) =>
-              org.role === "admin" ||
-              org.role === "instructor" ||
-              org.is_admin ||
-              org.is_instructor ||
-              org.permissions?.includes("admin") ||
-              org.permissions?.includes("instructor"),
-          );
+          hasValidMobileRole = u.orgs.some((org: any) => {
+            const roleName = org.role?.toLowerCase() || "";
+            return (
+              roleName === "user" ||
+              roleName === "student" ||
+              roleName === "partner" ||
+              roleName === "partner_role"
+            );
+          });
         }
 
-        if (isGlobalAdmin || isOrgAdminOrInstructor) {
+        // If they don't have a valid mobile role, or they are explicitly an admin
+        if (!hasValidMobileRole || isGlobalAdmin) {
           setErrorMessage(
-            "Please use the AINA Web Dashboard to manage courses and administrative tasks.",
+            "Please use the AINA Web Dashboard to access your account.",
           );
           await logout();
           return;

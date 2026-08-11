@@ -16,12 +16,45 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAppTheme } from "../../context/ThemeContext";
 import {
-  MailCheck,
   ArrowRight,
   ShieldCheck,
   RefreshCw,
   AlertCircle,
 } from "lucide-react-native";
+import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import { apiRequest } from "../../services/api";
+
+const GradientDotsIcon = ({ size = 60 }) => (
+  <View
+    style={{
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: "rgba(37, 99, 235, 0.08)",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <Svg width={28} height={28} viewBox="0 0 24 24">
+      <Defs>
+        <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#3b82f6" stopOpacity="1" />
+          <Stop offset="1" stopColor="#1d4ed8" stopOpacity="1" />
+        </LinearGradient>
+      </Defs>
+      <Circle cx="5" cy="5" r="2.5" fill="url(#grad)" />
+      <Circle cx="12" cy="5" r="2.5" fill="url(#grad)" />
+      <Circle cx="19" cy="5" r="2.5" fill="url(#grad)" />
+      <Circle cx="5" cy="12" r="2.5" fill="url(#grad)" />
+      <Circle cx="12" cy="12" r="2.5" fill="url(#grad)" />
+      <Circle cx="19" cy="12" r="2.5" fill="url(#grad)" />
+      <Circle cx="5" cy="19" r="2.5" fill="url(#grad)" />
+      <Circle cx="12" cy="19" r="2.5" fill="url(#grad)" />
+      <Circle cx="19" cy="19" r="2.5" fill="url(#grad)" />
+    </Svg>
+  </View>
+);
 
 export default function VerifyEmailScreen() {
   const { Theme } = useAppTheme();
@@ -62,22 +95,46 @@ export default function VerifyEmailScreen() {
     setErrorMessage("");
     setIsSubmitting(true);
 
-    // Simulate/Call API verification
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (role === "marketer" || role === "partner") {
-        router.replace("/(tabs)/marketer");
+    try {
+      const res = await apiRequest("/api/v1/auth/verify-otp", {
+        method: "POST",
+        body: { email, otp: fullCode },
+      });
+
+      if (res.error) {
+        setErrorMessage(res.error);
       } else {
-        router.replace("/(tabs)");
+        if (role === "marketer" || role === "partner") {
+          router.replace("/(tabs)/marketer");
+        } else {
+          router.replace("/(tabs)");
+        }
       }
-    }, 1200);
+    } catch (err: any) {
+      setErrorMessage("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (resendTimer > 0) return;
-    setSuccessMessage("A new 6-digit code has been sent to your email.");
-    setResendTimer(45);
-    setTimeout(() => setSuccessMessage(""), 4000);
+
+    try {
+      const res = await apiRequest("/api/v1/auth/resend-verification", {
+        method: "POST",
+        body: { email, org_slug: "default" },
+      });
+      if (res.error) {
+        setErrorMessage(res.error);
+        return;
+      }
+      setSuccessMessage("A new 6-digit code has been sent to your email.");
+      setResendTimer(45);
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch {
+      setErrorMessage("Failed to resend code.");
+    }
   };
 
   return (
@@ -103,9 +160,7 @@ export default function VerifyEmailScreen() {
                 style={styles.brandLogo}
                 resizeMode="contain"
               />
-              <View style={styles.iconBadge}>
-                <MailCheck size={28} color={Theme.colors.primary} />
-              </View>
+              <GradientDotsIcon />
               <Text style={styles.headerTitle}>Verify Your Email</Text>
               <Text style={styles.headerSubtitle}>
                 We sent a 6-digit verification code to {"\n"}
@@ -228,15 +283,6 @@ const makeStyles = (Theme: any) =>
       width: 180,
       height: 56,
       marginBottom: Theme.spacing.md,
-    },
-    iconBadge: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: "rgba(0, 87, 255, 0.1)",
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: Theme.spacing.sm,
     },
     headerTitle: {
       fontSize: 24,
