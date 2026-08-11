@@ -8,7 +8,7 @@ from datetime import UTC
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
 from src.db.referrals.payout_requests import BankDetails, ReferrerPayoutRequestRead
