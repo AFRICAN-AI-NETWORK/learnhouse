@@ -10,6 +10,7 @@ def send_account_creation_email(
     email: EmailStr,
     organization: OrganizationRead = None,
     verification_token: str | None = None,
+    otp_code: str | None = None,
 ):
     """
     Send welcome email to new users with optional email verification
@@ -26,6 +27,10 @@ def send_account_creation_email(
                style="display: inline-block; padding: 14px 32px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
                 Verify Email Address
             </a>
+        </div>
+        <div style="margin: 30px 0; padding: 20px; background-color: #f3f4f6; border-radius: 8px; text-align: center;">
+            <p style="margin-bottom: 10px; font-size: 14px; color: #4b5563;">Or enter this 6-digit verification code in the app:</p>
+            <h2 style="margin: 0; font-size: 32px; letter-spacing: 4px; color: #111827;">{otp_code or "------"}</h2>
         </div>
         <p style="margin-top: 20px; font-size: 13px; color: #666;">
             Or copy and paste this link in your browser:<br>

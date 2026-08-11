@@ -137,11 +137,14 @@ async def create_user(
     await rbac_check(request, current_user, "create", "user_x", db_session)
 
     # Complete the user object
+    import random
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
     user.creation_date = str(datetime.now(UTC))
     user.update_date = str(datetime.now(UTC))
+    user.verification_otp = str(random.randint(100000, 999999))
+    user.verification_otp_expiry = str(datetime.now(UTC) + timedelta(minutes=30))
 
     # Verifications
 
@@ -270,12 +273,13 @@ async def create_user(
         user_email=user.email, user_id=user.id, org_slug=org.slug
     )
 
-    # Send Account creation email with verification token
+    # Send Account creation email with verification token and OTP
     send_account_creation_email(
         user=user,
         email=user.email,
         organization=OrganizationRead.model_validate(org),
         verification_token=verification_token,
+        otp_code=user.verification_otp,
     )
 
     return user

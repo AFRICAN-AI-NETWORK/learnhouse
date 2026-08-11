@@ -408,15 +408,19 @@ export const HeaderProfileBox = () => {
                     <span>Referrals</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link
-                    href="/marketer"
-                    className="flex items-center space-x-2"
-                  >
-                    <Sparkles size={16} />
-                    <span>Marketer Portal</span>
-                  </Link>
-                </DropdownMenuItem>
+                {(userRoleInfo?.name === 'ADMIN' ||
+                  userRoleInfo?.name === 'MAINTAINER' ||
+                  userRoleInfo?.name === 'MARKETER') && (
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/marketer"
+                      className="flex items-center space-x-2"
+                    >
+                      <Sparkles size={16} />
+                      <span>Marketer Portal</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 {/* ================= DESKTOP LANGUAGE ================= */}
                 <div className="hidden md:block">

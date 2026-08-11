@@ -95,16 +95,6 @@ export default function RegisterStudentScreen() {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Top Back Navigation & Logo */}
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-            >
-              <ArrowLeft size={20} color={Theme.colors.text} />
-              <Text style={styles.backBtnText}>Back to Sign In</Text>
-            </TouchableOpacity>
-
             <View style={styles.headerContainer}>
               <Image
                 source={require("../../assets/aina_logo.png")}
