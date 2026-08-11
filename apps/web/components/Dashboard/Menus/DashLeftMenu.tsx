@@ -88,13 +88,6 @@ function DashLeftMenu() {
     }
   }
 
-  const canSeeCourses = isAdmin || rights?.courses?.action_read
-  const canSeeAssignments = isAdmin || rights?.coursechapters?.action_read
-  const canSeeUsers = isAdmin || rights?.users?.action_read
-  const canSeeOrg = isAdmin || rights?.organizations?.action_read
-  const canSeeCommunications = isAdmin || rights?.communications?.action_read
-  const canSeeHandbook = isAdmin || rights?.handbook?.action_read
-  const isPartner = isAdmin || rights?.affiliation?.action_read
   const hasStrictAdminRole = (session?.data?.roles || []).some(
     (role: any) =>
       role.org?.id === org?.id && (role.role?.id === 1 || role.role?.id === 2)
@@ -103,9 +96,31 @@ function DashLeftMenu() {
     (role: any) =>
       role.org?.id === org?.id && role.role?.role_uuid === 'partner_role'
   )
+  const hasMarketerRole =
+    (session?.data?.roles || []).some(
+      (role: any) =>
+        role.org?.id === org?.id && role.role?.role_uuid === 'marketer_role'
+    ) || session?.data?.user?.is_marketer
+
+  const canSeeCourses =
+    isAdmin || (hasStrictAdminRole && rights?.courses?.action_read)
+  const canSeeAssignments =
+    isAdmin || (hasStrictAdminRole && rights?.coursechapters?.action_read)
+  const canSeeUsers =
+    isAdmin || (hasStrictAdminRole && rights?.users?.action_read)
+  const canSeeOrg =
+    isAdmin || (hasStrictAdminRole && rights?.organizations?.action_read)
+  const canSeeCommunications =
+    isAdmin || (hasStrictAdminRole && rights?.communications?.action_read)
+  const canSeeHandbook =
+    isAdmin || (hasStrictAdminRole && rights?.handbook?.action_read)
+  const isPartner = isAdmin || rights?.affiliation?.action_read
   const isPartnerOnly = hasPartnerRole && !hasStrictAdminRole
   const canSeeStudents =
-    isAdmin || (rights?.dashboard?.action_access && rights?.users?.action_read)
+    isAdmin ||
+    (hasStrictAdminRole &&
+      rights?.dashboard?.action_access &&
+      rights?.users?.action_read)
 
   if (!org || !session || loading) return null
 
@@ -200,20 +215,20 @@ function DashLeftMenu() {
               isCollapsed={isCollapsed}
             />
           )}
-          {(isAdmin || isPartnerOnly) && (
+          <MenuLink
+            href="/dash/referrals"
+            icon={<Link2 size={18} />}
+            label="Referrals"
+            isCollapsed={isCollapsed}
+          />
+          {(isAdmin || hasMarketerRole) && (
             <MenuLink
-              href="/dash/referrals"
-              icon={<Link2 size={18} />}
-              label="Referrals"
+              href="/marketer"
+              icon={<Sparkles size={18} />}
+              label="Marketer Portal"
               isCollapsed={isCollapsed}
             />
           )}
-          <MenuLink
-            href="/marketer"
-            icon={<Sparkles size={18} />}
-            label="Marketer Portal"
-            isCollapsed={isCollapsed}
-          />
           {!isPartnerOnly && isPartner && !isAdmin && (
             <MenuLink
               href="/dash/affiliation"

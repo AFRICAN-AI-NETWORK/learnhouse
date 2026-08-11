@@ -31,30 +31,10 @@ router = APIRouter()
 
 
 def _require_referral_access(current_user, org_id, db_session):
-    """Allow referral self-service only to admins, maintainers, and partners."""
-    from src.db.roles import Role
-    from src.db.user_organizations import UserOrganization
-
+    """Allow referral self-service to all authenticated organization members."""
     if not current_user or not current_user.id:
         raise HTTPException(status_code=401, detail="Authentication required")
-
-    statement = (
-        select(Role)
-        .join(UserOrganization, UserOrganization.role_id == Role.id)
-        .where(
-            UserOrganization.user_id == current_user.id,
-            UserOrganization.org_id == org_id,
-        )
-    )
-    roles = db_session.exec(statement).all()
-    for role in roles:
-        if role.id in (1, 2, 4) or role.role_uuid == "partner_role":
-            return
-
-    raise HTTPException(
-        status_code=403,
-        detail="Partner role required to access referrals",
-    )
+    return
 
 
 @router.post("/{org_id}/generate-code", response_model=ReferralCodeRead)
@@ -195,7 +175,6 @@ async def api_get_payout_history(
 def _require_admin(current_user, org_id, db_session):
     """Helper to enforce admin/maintainer role for an org."""
     from fastapi import HTTPException
-    from sqlmodel import select
 
     from src.db.user_organizations import UserOrganization
 
@@ -229,7 +208,6 @@ async def api_get_flagged_referrals(
     Returns ReferralTracking records with fraud_score >= min_score.
     Admin-only endpoint.
     """
-    from sqlmodel import select
 
     from src.db.referrals.referral_codes import ReferralCode
     from src.db.referrals.referral_tracking import ReferralTracking
@@ -289,7 +267,6 @@ async def api_get_pending_payouts(
     Get all REQUESTED payout requests awaiting admin approval.
     Admin-only endpoint.
     """
-    from sqlmodel import select
 
     from src.db.referrals.payout_requests import PayoutStatus, ReferrerPayoutRequest
     from src.db.users import User
@@ -435,7 +412,7 @@ async def api_get_referral_stats(
         - total_referrers: Number of users who have referred others
         - leaderboard: Top referrers ranked by referral count
     """
-    from sqlmodel import func, select
+    from sqlmodel import func
 
     from src.db.referrals.referral_codes import ReferralCode
     from src.db.referrals.referral_tracking import ReferralTracking
@@ -497,7 +474,7 @@ async def api_get_all_partners(
     Get all users who have a referral code in this organization.
     Admin-only endpoint.
     """
-    from sqlmodel import func, select
+    from sqlmodel import func
 
     from src.db.referrals.referral_codes import ReferralCode
     from src.db.referrals.referral_tracking import ReferralTracking

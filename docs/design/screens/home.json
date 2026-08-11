@@ -1,0 +1,221 @@
+{
+  "screen": {
+    "id": "home",
+    "name": "Home",
+    "type": "mobile_dashboard",
+    "purpose": "Give the student a clear overview of learning progress and make the next learning action immediately obvious.",
+    "design_reference": "home.png",
+    "brand": {
+      "primary": "#2563EB",
+      "background": "#FFFFFF"
+    }
+  },
+  "visual_direction": {
+    "style": "clean, professional educational platform",
+    "inspiration": ["Coursera"],
+    "principles": [
+      "Use the existing AINA visual identity.",
+      "Prioritize course content and learning progress over decorative UI.",
+      "Use whitespace to separate sections.",
+      "Avoid unnecessary nested cards.",
+      "Avoid excessive rounded containers.",
+      "Course thumbnails should carry strong visual identity.",
+      "Use blue primarily for actions, active states, progress and links.",
+      "Keep secondary information neutral.",
+      "Use subtle borders and elevation rather than heavy shadows."
+    ]
+  },
+  "layout": {
+    "behavior": "responsive",
+    "strategy": "Use flex layouts and responsive constraints. Do not reproduce fixed pixel coordinates from the reference image.",
+    "content": "vertically scrollable",
+    "bottom_navigation": "fixed",
+    "horizontal_sections": ["featured_courses"]
+  },
+  "sections": [
+    {
+      "id": "header",
+      "type": "app_header",
+      "content": {
+        "logo": "AINA",
+        "notification": true,
+        "profile": true
+      }
+    },
+    {
+      "id": "greeting",
+      "type": "greeting",
+      "content": {
+        "title": "Welcome back, {firstName} 👋",
+        "subtitle": "Let's continue your learning journey.",
+        "badges": ["AINA Student", "Earn $4 / Referral"]
+      }
+    },
+    {
+      "id": "continue_learning",
+      "type": "course_progress_card",
+      "priority": "primary",
+      "content": {
+        "source": "current_in_progress_course",
+        "course_title": "Generative AI",
+        "show_thumbnail": true,
+        "show_progress_percentage": true,
+        "show_lessons_completed": true,
+        "primary_action": "Resume",
+        "overflow_menu": true
+      }
+    },
+    {
+      "id": "learning_stats",
+      "type": "stat_grid",
+      "items": [
+        {
+          "id": "courses_enrolled",
+          "label": "Courses",
+          "secondary_label": "Enrolled",
+          "icon": "book",
+          "accent": "primary"
+        },
+        {
+          "id": "certificates",
+          "label": "Certificates",
+          "secondary_label": "Earned",
+          "icon": "certificate",
+          "accent": "success"
+        },
+        {
+          "id": "time_spent",
+          "label": "Time Spent",
+          "secondary_label": "Learning",
+          "icon": "clock",
+          "accent": "purple"
+        },
+        {
+          "id": "average_progress",
+          "label": "Average Progress",
+          "secondary_label": "",
+          "icon": "activity",
+          "accent": "orange"
+        }
+      ]
+    },
+    {
+      "id": "featured_courses",
+      "type": "horizontal_course_carousel",
+      "title": "Featured Courses",
+      "show_view_all": true,
+      "course_card": {
+        "show_thumbnail": true,
+        "show_badge": true,
+        "show_category": true,
+        "show_title": true,
+        "show_description": true,
+        "show_lesson_count": true,
+        "show_duration": true,
+        "primary_action": "Start learning"
+      }
+    },
+    {
+      "id": "upcoming_deadlines",
+      "type": "empty_state_section",
+      "title": "Upcoming Deadlines",
+      "empty_state": {
+        "icon": "calendar",
+        "title": "No upcoming deadlines",
+        "description": "You're all caught up for now!"
+      }
+    },
+    {
+      "id": "recent_activity",
+      "type": "empty_state_section",
+      "title": "Recent Activity",
+      "empty_state": {
+        "icon": "activity",
+        "title": "No recent activity",
+        "description": "Start a course to see recent activity here."
+      }
+    }
+  ],
+  "bottom_navigation": {
+    "type": "tab_bar",
+    "items": [
+      {
+        "id": "home",
+        "label": "Home",
+        "icon": "home",
+        "active": true
+      },
+      {
+        "id": "courses",
+        "label": "Courses",
+        "icon": "book",
+        "active": false
+      },
+      {
+        "id": "earn",
+        "label": "Earn $4",
+        "icon": "gift",
+        "active": false
+      },
+      {
+        "id": "profile",
+        "label": "Profile",
+        "icon": "user",
+        "active": false
+      }
+    ]
+  },
+  "component_rules": {
+    "cards": {
+      "avoid_nested_cards": true,
+      "use_for": ["continue learning", "statistics", "course items"],
+      "do_not_wrap_every_section": true
+    },
+    "course_cards": {
+      "visual_priority": "high",
+      "thumbnail_is_primary_visual": true,
+      "text_should_not_overflow": true,
+      "truncate_long_titles": true,
+      "truncate_long_descriptions": true
+    },
+    "empty_states": {
+      "style": "quiet and informative",
+      "avoid_large_illustrations": true
+    },
+    "buttons": {
+      "primary_color": "#2563EB",
+      "use_primary_button_only_for_primary_actions": true
+    }
+  },
+  "responsive_rules": [
+    "Inspect the actual device width from the existing React Native implementation.",
+    "Do not hardcode screen coordinates.",
+    "Do not use absolute positioning for normal content layout.",
+    "Preserve safe-area handling.",
+    "Ensure horizontal course cards remain intentionally clipped/scrollable rather than accidentally overflowing.",
+    "Ensure the fixed bottom tab bar does not cover scrollable content.",
+    "Keep text readable without requiring zoom.",
+    "Reuse existing AINA assets, course data and navigation logic."
+  ],
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "preserve_existing_functionality": true,
+    "preserve_existing_data": true,
+    "preserve_existing_navigation": true,
+    "avoid_unnecessary_dependencies": true,
+    "avoid_duplicate_components": true,
+    "inspect_existing_components_before_creating_new_ones": true
+  },
+  "acceptance_criteria": [
+    "The Home screen visually follows home.png.",
+    "The interface feels like a professional learning platform rather than an AI-generated dashboard.",
+    "Featured course cards are visually strong and consistent with the web application's course-card treatment.",
+    "Cards are not unnecessarily nested.",
+    "The four learning statistics form a clean, balanced grid.",
+    "Continue Learning is the strongest learning-action section.",
+    "Empty states look intentional rather than broken or unfinished.",
+    "Bottom navigation remains consistent with the other mobile tabs.",
+    "The layout adapts to the actual device dimensions.",
+    "Existing functionality and data remain intact."
+  ]
+}

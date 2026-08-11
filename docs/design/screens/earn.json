@@ -1,0 +1,235 @@
+{
+  "screen": {
+    "id": "earn",
+    "name": "Earn $4",
+    "type": "mobile_referral_rewards",
+    "purpose": "Help students understand the AINA referral reward program, share referral details, track earnings, and understand payout eligibility.",
+    "reference": "uploaded Earn $4 reference image"
+  },
+  "design_direction": {
+    "style": "clean, premium, trustworthy rewards experience",
+    "primary_color": "#2563EB",
+    "background": "#FFFFFF",
+    "relationship_to_other_tabs": "Use the same typography, spacing, cards, icons, buttons, borders, radii, bottom navigation, and interaction language as Home and Courses.",
+    "avoid": [
+      "excessive decorative elements",
+      "nested cards",
+      "heavy shadows",
+      "unnecessary gradients",
+      "generic gamification"
+    ]
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical",
+    "bottom_navigation": "fixed",
+    "safe_area_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true
+  },
+  "header": {
+    "badge": {
+      "text": "Student Rewards",
+      "icon": "gift",
+      "color": "#2563EB"
+    },
+    "title": "Referrals",
+    "description": [
+      "Earn commissions by referring new users to the platform.",
+      "Earn $4 USD for every friend who joins!"
+    ]
+  },
+  "referral_code": {
+    "type": "primary_action_card",
+    "title": "Your Referral Code",
+    "description": "Share your code and earn commissions on every successful referral.",
+    "code": {
+      "source": "current_student_referral_code",
+      "prominent": true,
+      "show_referral_count": true
+    },
+    "actions": [
+      {
+        "id": "copy_code",
+        "label": "Copy",
+        "action": "copy_referral_code",
+        "priority": "primary"
+      },
+      {
+        "id": "copy_link",
+        "label": "Copy Link",
+        "action": "copy_referral_link",
+        "priority": "secondary"
+      }
+    ],
+    "link": {
+      "source": "generated_student_referral_link",
+      "truncate_on_small_width": true
+    }
+  },
+  "commission_balance": {
+    "type": "balance_card",
+    "title": "Commission Balance",
+    "description": "Track your earnings and request payouts when eligible.",
+    "metrics": [
+      {
+        "id": "total_earned",
+        "label": "Total Earned",
+        "source": "total_earned",
+        "icon": "currency",
+        "accent": "primary"
+      },
+      {
+        "id": "eligible_balance",
+        "label": "Eligible Balance",
+        "source": "eligible_balance",
+        "icon": "check_circle",
+        "accent": "primary",
+        "emphasis": "high"
+      },
+      {
+        "id": "pending",
+        "label": "Pending",
+        "source": "pending_balance",
+        "icon": "clock",
+        "accent": "primary"
+      }
+    ],
+    "payout": {
+      "action": "request_payout",
+      "label": "Request Payout (minimum $1.00 required)",
+      "minimum_amount": 1.0,
+      "currency": "USD",
+      "disabled_when_below_minimum": true
+    }
+  },
+  "commission_history": {
+    "type": "history_card",
+    "title": "Commission History",
+    "description": "All commissions earned through your referrals.",
+    "source": "referral_commission_history",
+    "empty_state": {
+      "icon": "clock",
+      "title": "No commissions yet.",
+      "description": "Share your referral code to get started!"
+    },
+    "populated_state": {
+      "layout": "chronological_list",
+      "fields": ["referral", "date", "commission_amount", "status"]
+    }
+  },
+  "bottom_navigation": {
+    "type": "tab_bar",
+    "active_color": "#2563EB",
+    "inactive_color": "#64748B",
+    "items": [
+      {
+        "id": "home",
+        "label": "Home",
+        "icon": "home",
+        "active": false
+      },
+      {
+        "id": "courses",
+        "label": "Courses",
+        "icon": "book",
+        "active": false
+      },
+      {
+        "id": "earn",
+        "label": "Earn $4",
+        "icon": "gift",
+        "active": true
+      },
+      {
+        "id": "profile",
+        "label": "Profile",
+        "icon": "user",
+        "active": false
+      }
+    ]
+  },
+  "interactions": {
+    "copy_code": "copy_referral_code_with_brief_success_feedback",
+    "copy_link": "copy_referral_link_with_brief_success_feedback",
+    "request_payout_when_eligible": "open_payout_flow",
+    "request_payout_when_ineligible": "remain_disabled_and_explain_minimum"
+  },
+  "transitions": {
+    "tab_switch": {
+      "style": "immediate_or_subtle_fade",
+      "duration": "short",
+      "direction": "none"
+    },
+    "payout_flow": {
+      "style": "native_forward_or_modal",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "cards": {
+      "avoid_nested_cards": true,
+      "consistent_border_and_elevation": true,
+      "avoid_heavy_shadows": true
+    },
+    "balance_metrics": {
+      "eligible_balance_is_primary": true,
+      "keep_grouping_clear": true,
+      "do_not_overuse_color": true
+    },
+    "primary_actions": {
+      "color": "#2563EB",
+      "reserve_for_high_priority_actions": true
+    }
+  },
+  "data_rules": {
+    "source_of_truth": "existing_referral_and_commission_data",
+    "do_not_hardcode_production_values": true,
+    "preserve": [
+      "student referral code",
+      "referral count",
+      "referral link",
+      "total earned",
+      "eligible balance",
+      "pending balance",
+      "commission history",
+      "payout eligibility"
+    ]
+  },
+  "loading_and_empty_states": {
+    "loading": "use skeletons for data-heavy sections where appropriate",
+    "empty_history": "use the supplied empty-state composition",
+    "avoid": "large isolated loading spinner on an otherwise empty page"
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_referral_logic": true,
+    "reuse_existing_navigation": true,
+    "preserve_existing_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Keep referral code and copy controls usable on narrow screens.",
+    "Prevent referral links from breaking the layout.",
+    "Keep balance metrics readable.",
+    "Ensure the fixed bottom navigation never covers commission history.",
+    "Respect safe-area insets.",
+    "Use flexible widths and content-driven layout."
+  ],
+  "acceptance_criteria": [
+    "The screen follows the supplied reference design.",
+    "Referral code and sharing actions are the clearest primary action.",
+    "Commission balance is easy to understand at a glance.",
+    "Eligible balance has clear emphasis without visual noise.",
+    "Payout eligibility is obvious.",
+    "Commission history supports both empty and populated states.",
+    "The screen uses the same AINA design language as Home and Courses.",
+    "Existing referral and commission functionality remains intact.",
+    "The layout works across supported mobile device sizes.",
+    "Bottom navigation remains consistent with the rest of the app."
+  ]
+}

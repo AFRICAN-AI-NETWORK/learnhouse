@@ -1,0 +1,134 @@
+{
+  "version": "1.0.0",
+  "root": {
+    "type": "student_app",
+    "initialRoute": "Home"
+  },
+  "tabs": [
+    {
+      "id": "home",
+      "label": "Home",
+      "route": "Home",
+      "icon": "home",
+      "activeColor": "#2563EB"
+    },
+    {
+      "id": "courses",
+      "label": "Courses",
+      "route": "Courses",
+      "icon": "book",
+      "activeColor": "#2563EB"
+    },
+    {
+      "id": "earn",
+      "label": "Earn $4",
+      "route": "Earn",
+      "icon": "gift",
+      "activeColor": "#2563EB"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "route": "Profile",
+      "icon": "user",
+      "activeColor": "#2563EB"
+    }
+  ],
+  "screens": {
+    "Home": {
+      "type": "tab",
+      "parent": "StudentTabs",
+      "transition": "tab"
+    },
+    "Courses": {
+      "type": "tab",
+      "parent": "StudentTabs",
+      "transition": "tab",
+      "children": ["CourseDetails"]
+    },
+    "Earn": {
+      "type": "tab",
+      "parent": "StudentTabs",
+      "transition": "tab"
+    },
+    "Profile": {
+      "type": "tab",
+      "parent": "StudentTabs",
+      "transition": "tab",
+      "children": ["Settings", "PrivacySecurity"]
+    },
+    "CourseDetails": {
+      "type": "stack",
+      "parent": "Courses",
+      "transition": "push"
+    },
+    "Settings": {
+      "type": "stack",
+      "parent": "Profile",
+      "transition": "push"
+    },
+    "PrivacySecurity": {
+      "type": "stack",
+      "parent": "Profile",
+      "transition": "push"
+    },
+    "Login": {
+      "type": "auth",
+      "transition": "auth"
+    },
+    "Registration": {
+      "type": "auth",
+      "transition": "auth"
+    },
+    "EmailVerification": {
+      "type": "auth",
+      "transition": "auth"
+    },
+    "MarketerApplication": {
+      "type": "auth",
+      "transition": "auth"
+    },
+    "PartnerApplication": {
+      "type": "auth",
+      "transition": "auth"
+    }
+  },
+  "transitions": {
+    "tab": {
+      "style": "immediate_or_subtle_fade",
+      "duration": "short",
+      "direction": "none",
+      "preserveTabState": true
+    },
+    "push": {
+      "style": "native_forward",
+      "direction": "forward",
+      "duration": "short"
+    },
+    "auth": {
+      "style": "subtle_forward",
+      "direction": "forward",
+      "duration": "short"
+    },
+    "back": {
+      "style": "native_back",
+      "direction": "back",
+      "duration": "short"
+    },
+    "modal": {
+      "style": "bottom_sheet",
+      "direction": "up",
+      "duration": "short"
+    }
+  },
+  "rules": [
+    "Do not recreate the navigation architecture if an existing navigation system already works.",
+    "Preserve deep links and existing route behavior.",
+    "Main tabs should not feel like separate applications.",
+    "Do not use dramatic slide animations between bottom tabs.",
+    "Keep transitions fast enough that navigation never feels delayed.",
+    "Preserve scroll position when switching tabs when the existing navigation architecture supports it.",
+    "Use native-feeling transitions for pushed screens.",
+    "Authentication screens should share a coherent transition language."
+  ]
+}

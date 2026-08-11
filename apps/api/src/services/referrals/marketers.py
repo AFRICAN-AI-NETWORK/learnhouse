@@ -349,6 +349,54 @@ async def approve_marketer(
     return marketer
 
 
+async def admin_grant_marketer(
+    user_id: int, org_id: int, admin_user_id: int, db_session: Session
+) -> Marketer:
+    """Instantly grant ACTIVE marketer status, bypassing application."""
+    user = db_session.get(User, user_id)
+    if not user:
+        raise marketer_error(
+            status.HTTP_404_NOT_FOUND, "MKTR_002", "User account not found"
+        )
+        
+    existing = await get_marketer_by_user(user_id, org_id, db_session)
+    if existing:
+        if existing.status == MarketerStatus.ACTIVE:
+            return existing
+        if existing.status == MarketerStatus.SUSPENDED:
+            return await reactivate_marketer(existing.id, org_id, admin_user_id, db_session)
+            
+        existing.status = MarketerStatus.ACTIVE
+        existing.approved_by_user_id = admin_user_id
+        existing.approved_at = datetime.now(UTC)
+        existing.update_date = datetime.now(UTC)
+        db_session.add(existing)
+        db_session.commit()
+        db_session.refresh(existing)
+        if not existing.referral_code_id:
+            await generate_referral_code_for_marketer(existing.id, db_session)
+        invalidate_marketer_cache(user_id, org_id)
+        return existing
+
+    marketer = Marketer(
+        user_id=user_id,
+        org_id=org_id,
+        status=MarketerStatus.ACTIVE,
+        commission_rate_usd=MARKETER_COMMISSION_RATE_USD,
+        approved_by_user_id=admin_user_id,
+        approved_at=datetime.now(UTC),
+        creation_date=datetime.now(UTC),
+        update_date=datetime.now(UTC),
+    )
+    db_session.add(marketer)
+    db_session.commit()
+    db_session.refresh(marketer)
+    
+    await generate_referral_code_for_marketer(marketer.id, db_session)
+    logger.info(f"Marketer granted directly for user {user_id} by admin {admin_user_id}")
+    return marketer
+
+
 async def reject_marketer(
     marketer_id: int,
     org_id: int,

@@ -1,0 +1,271 @@
+{
+  "screen": {
+    "id": "student_registration",
+    "name": "Student Registration",
+    "type": "mobile_authentication_form",
+    "purpose": "Allow new students to create an AINA learning account and receive a 6-digit email verification code.",
+    "reference": "uploaded Student Registration reference image"
+  },
+  "design_direction": {
+    "style": "clean, trustworthy, professional educational onboarding",
+    "primary_color": "#2563EB",
+    "success_color": "#059669",
+    "background": "#FFFFFF",
+    "background_pattern": {
+      "enabled": true,
+      "style": "very subtle AINA education and technology doodle pattern",
+      "opacity": "very low",
+      "must_not_compete_with_form": true
+    },
+    "consistency": "Use the same AINA authentication and application-screen design language as Login, Marketer Application, and Partner Application.",
+    "avoid": [
+      "heavy decorative elements",
+      "strong shadows",
+      "unnecessary gradients",
+      "nested cards",
+      "generic AI-generated styling"
+    ]
+  },
+  "layout": {
+    "responsive": true,
+    "scroll": "vertical",
+    "safe_area_aware": true,
+    "keyboard_aware": true,
+    "avoid_fixed_coordinates": true,
+    "avoid_absolute_positioning_for_normal_layout": true,
+    "content_alignment": "centered"
+  },
+  "header": {
+    "back_navigation": {
+      "label": "Back to Sign In",
+      "action": "go_back_to_sign_in",
+      "icon": "arrow_left"
+    },
+    "logo": {
+      "source": "existing_project_asset",
+      "reuse_existing_logo": true
+    },
+    "title": "Student Registration",
+    "subtitle": "Create your account to start learning on AINA"
+  },
+  "form": {
+    "type": "student_registration",
+    "fields": [
+      {
+        "id": "first_name",
+        "type": "text",
+        "label": "FIRST NAME",
+        "placeholder": "Jane",
+        "required": true,
+        "icon": "user",
+        "autocomplete": "given-name",
+        "validation": {
+          "required": "Enter your first name."
+        }
+      },
+      {
+        "id": "last_name",
+        "type": "text",
+        "label": "LAST NAME",
+        "placeholder": "Doe",
+        "required": true,
+        "icon": "user",
+        "autocomplete": "family-name",
+        "validation": {
+          "required": "Enter your last name."
+        }
+      },
+      {
+        "id": "email",
+        "type": "email",
+        "label": "EMAIL ADDRESS",
+        "placeholder": "student@example.com",
+        "required": true,
+        "icon": "mail",
+        "keyboard": "email",
+        "autocomplete": "email",
+        "validation": {
+          "required": "Enter your email address.",
+          "invalid": "Enter a valid email address."
+        }
+      },
+      {
+        "id": "password",
+        "type": "password",
+        "label": "PASSWORD",
+        "placeholder": "••••••••",
+        "required": true,
+        "icon": "lock",
+        "trailing_action": {
+          "type": "toggle_visibility",
+          "icons": ["eye", "eye_off"],
+          "accessibility_label": "Show or hide password"
+        },
+        "validation": {
+          "required": "Create a password.",
+          "minimum_length": "Password must meet the required minimum length."
+        }
+      }
+    ],
+    "field_layout": {
+      "first_name_and_last_name": "two_column_on_supported_widths",
+      "email": "full_width",
+      "password": "full_width"
+    },
+    "verification_notice": {
+      "type": "info_success_notice",
+      "icon": "shield_check",
+      "text": "A 6-digit OTP code will be sent to your email for verification.",
+      "accent": "#059669",
+      "background": "#ECFDF5"
+    },
+    "submit": {
+      "label": "Register & Send Verification Code",
+      "icon": "arrow_right",
+      "action": "register_student_and_send_otp",
+      "style": "primary",
+      "background": "#2563EB"
+    }
+  },
+  "security_notice": {
+    "icon": "lock",
+    "text": "Your information is secure with AINA.",
+    "accent": "#2563EB"
+  },
+  "existing_account": {
+    "text": "Already have an account?",
+    "action_label": "Sign In",
+    "action": "go_back_to_sign_in"
+  },
+  "states": {
+    "idle": "normal_form",
+    "validating": "show_inline_field_validation",
+    "submitting": {
+      "disable_submit": true,
+      "show_loading_indicator": true,
+      "prevent_duplicate_submission": true
+    },
+    "email_exists": {
+      "style": "clear_inline_or_form_error",
+      "message": "An account with this email already exists. Try signing in instead."
+    },
+    "error": {
+      "style": "clear_inline_or_form_error",
+      "allow_retry": true
+    },
+    "success": {
+      "action": "send_otp_and_open_email_verification"
+    }
+  },
+  "interactions": {
+    "back": "go_back_to_sign_in",
+    "submit": "validate_then_register_student",
+    "password_visibility": "toggle_password_visibility",
+    "field_focus": "use_primary_blue_focus_state",
+    "keyboard": "scroll_focused_field_into_view",
+    "sign_in": "go_back_to_sign_in"
+  },
+  "transitions": {
+    "back_to_sign_in": {
+      "style": "native_back",
+      "direction": "back",
+      "duration": "short"
+    },
+    "registration_success": {
+      "style": "subtle_forward",
+      "direction": "forward",
+      "destination": "email_verification",
+      "duration": "short"
+    }
+  },
+  "component_rules": {
+    "form_card": {
+      "style": "white_surface_with_subtle_border_and_soft_elevation",
+      "avoid_nested_cards": true
+    },
+    "inputs": {
+      "style": "soft_neutral_surface_with_subtle_border",
+      "focus_color": "#2563EB",
+      "error_color": "#DC2626",
+      "labels_above_inputs": true,
+      "icons_inside_inputs": true,
+      "consistent_height": true
+    },
+    "primary_button": {
+      "background": "#2563EB",
+      "text": "#FFFFFF",
+      "reserve_for_submit_action": true,
+      "full_width_within_form": true
+    },
+    "verification_notice": {
+      "use_green_success_accent": true,
+      "keep_subtle": true,
+      "do_not_compete_with_submit_action": true
+    },
+    "security_notice": {
+      "keep_subtle": true,
+      "do_not_compete_with_submit_action": true
+    }
+  },
+  "data_rules": {
+    "source_of_truth": "existing_student_registration_logic",
+    "do_not_hardcode_production_values": true,
+    "preserve": [
+      "student registration data",
+      "password handling",
+      "email verification flow",
+      "existing authentication state"
+    ]
+  },
+  "validation_rules": {
+    "first_name": "required_non_empty",
+    "last_name": "required_non_empty",
+    "email": "required_valid_email",
+    "password": "required_meets_existing_password_policy"
+  },
+  "implementation_constraints": {
+    "framework": "React Native / Expo",
+    "inspect_existing_code_first": true,
+    "reuse_existing_components": true,
+    "reuse_existing_registration_logic": true,
+    "reuse_existing_authentication_and_verification_logic": true,
+    "reuse_existing_assets": true,
+    "preserve_existing_navigation": true,
+    "preserve_existing_functionality": true,
+    "avoid_unnecessary_dependencies": true,
+    "do_not_rewrite_working_business_logic": true
+  },
+  "responsive_rules": [
+    "Use actual device dimensions rather than reference-image coordinates.",
+    "Use a two-column first-name/last-name layout only where the available width supports comfortable inputs.",
+    "Stack first and last name fields on very narrow screens if required.",
+    "Allow vertical scrolling on smaller devices.",
+    "Keep focused fields visible above the keyboard.",
+    "Respect safe-area insets.",
+    "Keep validation messages readable.",
+    "Keep the submit button fully accessible without being covered by the keyboard."
+  ],
+  "accessibility": {
+    "all_fields_have_labels": true,
+    "interactive_icons_have_accessibility_labels": true,
+    "password_visibility_toggle_has_accessibility_label": true,
+    "submit_button_has_clear_accessible_name": true,
+    "back_action_has_clear_accessible_name": true,
+    "maintain_readable_contrast": true
+  },
+  "acceptance_criteria": [
+    "The screen follows the supplied Student Registration reference image.",
+    "Back to Sign In is clearly available at the top.",
+    "The AINA logo uses the existing project asset.",
+    "First name and last name are presented efficiently in a two-column layout when space permits.",
+    "Email and password fields are full width.",
+    "Every field has a clear label, appropriate icon, input type, and validation.",
+    "The OTP verification notice is clearly visible before submission.",
+    "Register & Send Verification Code is the dominant action.",
+    "The security notice is visible below the form without competing with the submit button.",
+    "Existing account users have a clear Sign In path.",
+    "The screen works correctly with the mobile keyboard.",
+    "Existing student registration and email verification logic remains intact.",
+    "The visual language matches the AINA Login, Marketer Application, Partner Application, and other mobile screens."
+  ]
+}

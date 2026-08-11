@@ -23,13 +23,6 @@ function DashMobileMenu() {
   const org = useOrg() as any
   const { isAdmin, loading, rights } = useAdminStatus() as any
 
-  const canSeeCourses = isAdmin || rights?.courses?.action_read
-  const canSeeAssignments = isAdmin || rights?.coursechapters?.action_read
-  const canSeeUsers = isAdmin || rights?.users?.action_read
-  const canSeeOrg = isAdmin || rights?.organizations?.action_read
-  const canSeeCommunications = isAdmin || rights?.communications?.action_read
-  const canSeeStudents =
-    isAdmin || (rights?.dashboard?.action_access && rights?.users?.action_read)
   const hasStrictAdminRole = (session?.data?.roles || []).some(
     (role: any) =>
       role.org?.id === org?.id && (role.role?.id === 1 || role.role?.id === 2)
@@ -39,6 +32,22 @@ function DashMobileMenu() {
       role.org?.id === org?.id && role.role?.role_uuid === 'partner_role'
   )
   const isPartnerOnly = hasPartnerRole && !hasStrictAdminRole
+
+  const canSeeCourses =
+    isAdmin || (hasStrictAdminRole && rights?.courses?.action_read)
+  const canSeeAssignments =
+    isAdmin || (hasStrictAdminRole && rights?.coursechapters?.action_read)
+  const canSeeUsers =
+    isAdmin || (hasStrictAdminRole && rights?.users?.action_read)
+  const canSeeOrg =
+    isAdmin || (hasStrictAdminRole && rights?.organizations?.action_read)
+  const canSeeCommunications =
+    isAdmin || (hasStrictAdminRole && rights?.communications?.action_read)
+  const canSeeStudents =
+    isAdmin ||
+    (hasStrictAdminRole &&
+      rights?.dashboard?.action_access &&
+      rights?.users?.action_read)
 
   if (loading) return null
 
@@ -57,7 +66,7 @@ function DashMobileMenu() {
             </Link>
           </ToolTip>
         )}
-        {isPartnerOnly && (
+        {!isPartnerOnly && (
           <ToolTip content={'Referrals'} slateBlack sideOffset={8} side="top">
             <Link
               href={`/dash/referrals`}
