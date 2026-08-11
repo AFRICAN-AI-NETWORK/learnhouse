@@ -58,10 +58,21 @@ export default function ActiveProgramsSection({
             >
               {/* Top Image Half */}
               <div className="relative h-56 w-full flex items-center justify-center overflow-hidden bg-gray-100">
+                <span
+                  className={`absolute top-4 left-4 z-10 inline-flex items-center rounded-full px-4 py-2 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-black/10 ${
+                    program.badgeText === 'Free'
+                      ? 'bg-emerald-500'
+                      : program.badgeText === 'Paid'
+                        ? 'bg-blue-600'
+                        : program.badgeColor || 'bg-black/70'
+                  }`}
+                >
+                  {program.badgeText}
+                </span>
                 <img
                   src={program.imageUrl}
                   alt={program.name}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105 z-0"
                 />
 
                 {/* Bottom Right Colored Tab */}

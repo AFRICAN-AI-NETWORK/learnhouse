@@ -2,6 +2,17 @@
 
 import React from 'react'
 
+const partners = [
+  {
+    src: '/landing/trellissoft.png',
+    alt: 'Trellissoft Partner',
+  },
+  {
+    src: '/landing/calabar.png',
+    alt: 'University of calabar',
+  },
+]
+
 export default function PartnersSection() {
   return (
     <section className="py-12 bg-white border-y border-gray-100 flex justify-center items-center">
@@ -10,11 +21,14 @@ export default function PartnersSection() {
           <p className="text-sm font-bold text-gray-400 uppercase tracking-widest text-center">
             In Partnership With
           </p>
-          <img
-            src="/landing/trellissoft.png"
-            alt="Trellissoft Partner"
-            className="h-12 md:h-16 object-contain"
-          />
+          {partners.map((partner) => (
+            <img
+              key={partner.src}
+              src={partner.src}
+              alt={partner.alt}
+              className="h-12 md:h-18 object-contain"
+            />
+          ))}
         </div>
       </div>
     </section>
