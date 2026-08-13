@@ -21,29 +21,50 @@ import {
   Phone,
   User,
   Building2,
-  CreditCard,
+  Lock,
   ArrowRight,
   ArrowLeft,
   AlertCircle,
   Handshake,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react-native";
 
 export default function RegisterPartnerScreen() {
   const { Theme } = useAppTheme();
   const styles = React.useMemo(() => makeStyles(Theme), [Theme]);
-  const [orgName, setOrgName] = useState("");
-  const [contactName, setContactName] = useState("");
+
+  const [step, setStep] = useState(1);
+
+  // Step 1 Fields
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Step 2 Fields
+  const [orgName, setOrgName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
-  const [payoutDetails, setPayoutDetails] = useState("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const router = useRouter();
 
+  const handleNextStep = () => {
+    if (!email || !password) {
+      setErrorMessage("Please fill in email and password.");
+      return;
+    }
+    setErrorMessage("");
+    setStep(2);
+  };
+
   const handleRegister = async () => {
-    if (!orgName || !contactName || !email || !phone) {
+    if (!orgName || !firstName || !lastName || !username || !phone) {
       setErrorMessage("Please fill in all required fields.");
       return;
     }
@@ -52,14 +73,18 @@ export default function RegisterPartnerScreen() {
     setIsSubmitting(true);
 
     try {
-      const res = await apiRequest("/api/v1/affiliation/signup", {
+      // Changed to the standard auth signup endpoint to align with web
+      const res = await apiRequest("/api/v1/auth/signup", {
         method: "POST",
         body: {
-          org_name: orgName.trim(),
-          contact_name: contactName.trim(),
           email: email.trim(),
+          password,
+          organization_name: orgName.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          username: username.trim(),
           phone_number: phone.trim(),
-          payout_details: payoutDetails.trim(),
+          signup_type: "partner",
         },
       });
 
@@ -86,7 +111,6 @@ export default function RegisterPartnerScreen() {
       <ImageBackground
         source={require("../../assets/aina_doodle_bg.png")}
         style={styles.backgroundImage}
-        imageStyle={{ opacity: 0.06 }}
         resizeMode="repeat"
       >
         <KeyboardAvoidingView
@@ -100,11 +124,13 @@ export default function RegisterPartnerScreen() {
             {/* Back Button */}
             <TouchableOpacity
               style={styles.backBtn}
-              onPress={() => router.back()}
+              onPress={() => (step === 1 ? router.back() : setStep(1))}
               activeOpacity={0.7}
             >
               <ArrowLeft size={20} color={Theme.colors.text} />
-              <Text style={styles.backBtnText}>Back to Sign In</Text>
+              <Text style={styles.backBtnText}>
+                {step === 1 ? "Back to Sign In" : "Back to Account"}
+              </Text>
             </TouchableOpacity>
 
             {/* Header */}
@@ -122,7 +148,9 @@ export default function RegisterPartnerScreen() {
               </View>
               <Text style={styles.headerTitle}>Partner Application</Text>
               <Text style={styles.headerSubtitle}>
-                Join AINA as an institutional or corporate partner
+                {step === 1
+                  ? "Step 1: Account Credentials"
+                  : "Step 2: Partner Details"}
               </Text>
             </View>
 
@@ -135,133 +163,205 @@ export default function RegisterPartnerScreen() {
                 </View>
               ) : null}
 
-              {/* Organization Name */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Organization / Company Name</Text>
-                <View style={styles.inputWrapper}>
-                  <Building2
-                    size={18}
-                    color={Theme.colors.textMuted}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Tech Innovations Ltd"
-                    placeholderTextColor={Theme.colors.textDim}
-                    value={orgName}
-                    onChangeText={setOrgName}
-                  />
-                </View>
-              </View>
+              {step === 1 && (
+                <>
+                  {/* Email Address */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Official Email Address</Text>
+                    <View style={styles.inputWrapper}>
+                      <Mail
+                        size={18}
+                        color={Theme.colors.textMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="partner@company.com"
+                        placeholderTextColor={Theme.colors.textDim}
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </View>
 
-              {/* Contact Person Name */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Contact Person Name</Text>
-                <View style={styles.inputWrapper}>
-                  <User
-                    size={18}
-                    color={Theme.colors.textMuted}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Jane Doe"
-                    placeholderTextColor={Theme.colors.textDim}
-                    value={contactName}
-                    onChangeText={setContactName}
-                  />
-                </View>
-              </View>
+                  {/* Password */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Password</Text>
+                    <View style={styles.inputWrapper}>
+                      <Lock
+                        size={18}
+                        color={Theme.colors.textMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="8+ characters"
+                        placeholderTextColor={Theme.colors.textDim}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        style={styles.eyeBtn}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} color={Theme.colors.textMuted} />
+                        ) : (
+                          <Eye size={18} color={Theme.colors.textMuted} />
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
 
-              {/* Email Address */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Official Email Address</Text>
-                <View style={styles.inputWrapper}>
-                  <Mail
-                    size={18}
-                    color={Theme.colors.textMuted}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="partner@company.com"
-                    placeholderTextColor={Theme.colors.textDim}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-
-              {/* Phone Number */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number</Text>
-                <View style={styles.inputWrapper}>
-                  <Phone
-                    size={18}
-                    color={Theme.colors.textMuted}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="+234 800 000 0000"
-                    placeholderTextColor={Theme.colors.textDim}
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </View>
-
-              {/* Payout Details */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Payout / Settlement Account Info
-                </Text>
-                <View style={styles.inputWrapper}>
-                  <CreditCard
-                    size={18}
-                    color={Theme.colors.textMuted}
-                    style={styles.inputIcon}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Bank Name, Account Number, SWIFT / Sort Code"
-                    placeholderTextColor={Theme.colors.textDim}
-                    value={payoutDetails}
-                    onChangeText={setPayoutDetails}
-                  />
-                </View>
-              </View>
-
-              {/* Security Hint */}
-              <View style={styles.hintRow}>
-                <ShieldCheck size={16} color={Theme.colors.success} />
-                <Text style={styles.hintText}>
-                  A 6-digit OTP code will be sent to your email for
-                  verification.
-                </Text>
-              </View>
-
-              {/* Submit Button */}
-              <TouchableOpacity
-                style={[styles.button, isSubmitting && styles.buttonDisabled]}
-                onPress={handleRegister}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.buttonText}>
-                      Submit Partner Application
-                    </Text>
+                  {/* Next Step Button */}
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleNextStep}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.buttonText}>Continue</Text>
                     <ArrowRight size={18} color="#ffffff" />
-                  </>
-                )}
-              </TouchableOpacity>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  {/* Organization Name */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Organization / Company Name
+                    </Text>
+                    <View style={styles.inputWrapper}>
+                      <Building2
+                        size={18}
+                        color={Theme.colors.textMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Tech Innovations Ltd"
+                        placeholderTextColor={Theme.colors.textDim}
+                        value={orgName}
+                        onChangeText={setOrgName}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Name Row */}
+                  <View style={styles.nameRow}>
+                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                      <Text style={styles.label}>First Name</Text>
+                      <View style={styles.inputWrapper}>
+                        <User
+                          size={18}
+                          color={Theme.colors.textMuted}
+                          style={styles.inputIcon}
+                        />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Jane"
+                          placeholderTextColor={Theme.colors.textDim}
+                          value={firstName}
+                          onChangeText={setFirstName}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                      <Text style={styles.label}>Last Name</Text>
+                      <View style={styles.inputWrapper}>
+                        <User
+                          size={18}
+                          color={Theme.colors.textMuted}
+                          style={styles.inputIcon}
+                        />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Doe"
+                          placeholderTextColor={Theme.colors.textDim}
+                          value={lastName}
+                          onChangeText={setLastName}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Username */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Username</Text>
+                    <View style={styles.inputWrapper}>
+                      <User
+                        size={18}
+                        color={Theme.colors.textMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="janedoe123"
+                        placeholderTextColor={Theme.colors.textDim}
+                        value={username}
+                        onChangeText={setUsername}
+                        autoCapitalize="none"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Phone Number */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Phone Number</Text>
+                    <View style={styles.inputWrapper}>
+                      <Phone
+                        size={18}
+                        color={Theme.colors.textMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="+234 800 000 0000"
+                        placeholderTextColor={Theme.colors.textDim}
+                        value={phone}
+                        onChangeText={setPhone}
+                        keyboardType="phone-pad"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Security Hint */}
+                  <View style={styles.hintRow}>
+                    <ShieldCheck size={16} color={Theme.colors.success} />
+                    <Text style={styles.hintText}>
+                      A 6-digit OTP code will be sent to your email for
+                      verification.
+                    </Text>
+                  </View>
+
+                  {/* Submit Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.button,
+                      isSubmitting && styles.buttonDisabled,
+                    ]}
+                    onPress={handleRegister}
+                    disabled={isSubmitting}
+                    activeOpacity={0.8}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>
+                          Join Partner Program
+                        </Text>
+                        <ArrowRight size={18} color="#ffffff" />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -366,6 +466,10 @@ const makeStyles = (Theme: any) =>
       fontSize: 13,
       color: Theme.colors.danger,
     },
+    nameRow: {
+      flexDirection: "row",
+      gap: Theme.spacing.md,
+    },
     inputGroup: {
       marginBottom: Theme.spacing.md,
     },
@@ -399,6 +503,9 @@ const makeStyles = (Theme: any) =>
         ? { outlineStyle: "none", outlineWidth: 0 }
         : {}),
     } as any,
+    eyeBtn: {
+      padding: 4,
+    },
     hintRow: {
       flexDirection: "row",
       alignItems: "center",

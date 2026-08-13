@@ -84,7 +84,6 @@ export default function RegisterStudentScreen() {
       <ImageBackground
         source={require("../../assets/aina_doodle_bg.png")}
         style={styles.backgroundImage}
-        imageStyle={{ opacity: 0.06 }}
         resizeMode="repeat"
       >
         <KeyboardAvoidingView

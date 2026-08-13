@@ -67,7 +67,6 @@ export default function ForgotPasswordScreen() {
       <ImageBackground
         source={require("../../assets/aina_doodle_bg.png")}
         style={styles.backgroundImage}
-        imageStyle={{ opacity: 0.06 }}
         resizeMode="repeat"
       >
         <KeyboardAvoidingView

@@ -66,4 +66,11 @@
 ## Role-Based Access Control (RBAC) & Security
 
 - **Admin/Instructor App Block**: Mobile app login securely intercepts users holding `admin` or `instructor` roles across any organization and strictly redirects them to the web dashboard, blocking mobile session creation to prevent accidental heavy administration inside the app.
+- **Strict Mobile Roles**: Actively fetches the user's `/api/v1/users/session` during login to populate organizational roles. Strictly permits only `user` (Student) and `partner` roles into the mobile experience.
 - **Marketer Clean-Up**: Removed the unauthenticated public Marketer Application form (`register-marketer.tsx`) from the mobile welcome flow to secure the role strictly for internal staff via backend administration. The active Marketer dashboard tab functionality within the logged-in app remains intact for authorized accounts.
+
+## Partner Program & Aesthetic Fixes
+
+- **2-Step Partner Wizard**: Completely rewrote the mobile `register-partner.tsx` into a 2-step wizard matching web parity. Added the new `organization_name` field explicitly to both the Web App form and Mobile App form, submitting natively to the `/api/v1/auth/signup` backend endpoints.
+- **Backend Sync**: Executed an Alembic database migration to permanently add `organization_name` to the core `user` table.
+- **Doodle Backgrounds**: Stripped out manual opacity overrides across all authentication screens (`login`, `register`, `verify-email`, `reset-password`, `forgot-password`) to let the new doodle background image reflect at its full natural brightness without washing out.

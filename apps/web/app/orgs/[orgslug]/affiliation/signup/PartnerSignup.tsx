@@ -24,6 +24,7 @@ import {
   Mail,
   User,
   Handshake,
+  Building2,
 } from 'lucide-react'
 import { signup } from '@services/auth/auth'
 import { useOrg } from '@components/Contexts/OrgContext'
@@ -34,39 +35,42 @@ import {
   validatePhoneFields,
 } from '@/lib/phone-number'
 
-const getValidationSchema = (t: any) => Yup.object().shape({
-  email: Yup.string()
-    .required(t('validation.required'))
-    .email(t('validation.invalid_email')),
-  password: Yup.string()
-    .required(t('validation.required'))
-    .min(8, t('validation.password_min_length')),
-  username: Yup.string()
-    .required(t('validation.required'))
-    .min(4, t('validation.username_min_length')),
-  first_name: Yup.string().required(t('validation.required')),
-  last_name: Yup.string().required(t('validation.required')),
-  country_code: Yup.string().required(t('validation.required')),
-  phone_number: Yup.string()
-    .required(t('validation.required'))
-    .test(
-      'is-valid-phone',
-      t('validation.invalid_phone_with_country_code') || 'Invalid phone number',
-      function (value) {
-        if (!value) return true
-        const { parent } = this
-        const phoneErrors = validatePhoneFields({
-          country_code: parent.country_code,
-          phone_number: value,
-        })
-        return !(phoneErrors.phone_number || phoneErrors.country_code)
-      }
-    ),
-  org_slug: Yup.string().nullable(),
-  org_id: Yup.string().nullable(),
-  bio: Yup.string().nullable(),
-  signup_type: Yup.string().nullable(),
-})
+const getValidationSchema = (t: any) =>
+  Yup.object().shape({
+    email: Yup.string()
+      .required(t('validation.required'))
+      .email(t('validation.invalid_email')),
+    password: Yup.string()
+      .required(t('validation.required'))
+      .min(8, t('validation.password_min_length')),
+    username: Yup.string()
+      .required(t('validation.required'))
+      .min(4, t('validation.username_min_length')),
+    first_name: Yup.string().required(t('validation.required')),
+    last_name: Yup.string().required(t('validation.required')),
+    country_code: Yup.string().required(t('validation.required')),
+    phone_number: Yup.string()
+      .required(t('validation.required'))
+      .test(
+        'is-valid-phone',
+        t('validation.invalid_phone_with_country_code') ||
+          'Invalid phone number',
+        function (value) {
+          if (!value) return true
+          const { parent } = this
+          const phoneErrors = validatePhoneFields({
+            country_code: parent.country_code,
+            phone_number: value,
+          })
+          return !(phoneErrors.phone_number || phoneErrors.country_code)
+        }
+      ),
+    organization_name: Yup.string().required(t('validation.required')),
+    org_slug: Yup.string().nullable(),
+    org_id: Yup.string().nullable(),
+    bio: Yup.string().nullable(),
+    signup_type: Yup.string().nullable(),
+  })
 
 function PartnerSignUpComponent() {
   const { t } = useTranslation()
@@ -88,6 +92,7 @@ function PartnerSignUpComponent() {
     bio: 'African AI Partner',
     country_code: DEFAULT_COUNTRY_CODE,
     phone_number: '',
+    organization_name: '',
     first_name: searchParams.get('first_name') || '',
     last_name: searchParams.get('last_name') || '',
     signup_type: 'partner', // Critical for role assignment
@@ -119,6 +124,7 @@ function PartnerSignUpComponent() {
       password: values.password,
       username: values.username,
       bio: values.bio,
+      organization_name: values.organization_name,
       phone_number: formatE164(values.country_code, values.phone_number),
       first_name: values.first_name,
       last_name: values.last_name,
@@ -241,7 +247,9 @@ function PartnerSignUpComponent() {
                 </Form.Control>
               </div>
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email.message as string}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.email.message as string}
+                </p>
               )}
             </FormField>
 
@@ -267,7 +275,9 @@ function PartnerSignUpComponent() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password.message as string}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.password.message as string}
+                </p>
               )}
             </FormField>
 
@@ -284,6 +294,26 @@ function PartnerSignUpComponent() {
 
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+            <FormField name="organization_name">
+              <FormLabelAndMessage label="Organization / Company Name" />
+              <div className="relative">
+                <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Form.Control asChild>
+                  <Input
+                    className="pl-10 h-12"
+                    {...register('organization_name')}
+                    placeholder="Tech Innovations Ltd"
+                    required
+                  />
+                </Form.Control>
+              </div>
+              {errors.organization_name && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.organization_name.message as string}
+                </p>
+              )}
+            </FormField>
+
             <div className="grid grid-cols-2 gap-4">
               <FormField name="first_name">
                 <FormLabelAndMessage label="First Name" />
@@ -295,20 +325,20 @@ function PartnerSignUpComponent() {
                   />
                 </Form.Control>
                 {errors.first_name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.first_name.message as string}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.first_name.message as string}
+                  </p>
                 )}
               </FormField>
               <FormField name="last_name">
                 <FormLabelAndMessage label="Last Name" />
                 <Form.Control asChild>
-                  <Input
-                    className="h-12"
-                    {...register('last_name')}
-                    required
-                  />
+                  <Input className="h-12" {...register('last_name')} required />
                 </Form.Control>
                 {errors.last_name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.last_name.message as string}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.last_name.message as string}
+                  </p>
                 )}
               </FormField>
             </div>
@@ -326,11 +356,19 @@ function PartnerSignUpComponent() {
                 </Form.Control>
               </div>
               {errors.username && (
-                <p className="text-red-500 text-sm mt-1">{errors.username.message as string}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.username.message as string}
+                </p>
               )}
             </FormField>
 
-            <PhoneNumberFieldsRHF register={register} setValue={setValue} watch={watch} errors={errors} phoneNumberLabel="Phone number" />
+            <PhoneNumberFieldsRHF
+              register={register}
+              setValue={setValue}
+              watch={watch}
+              errors={errors}
+              phoneNumberLabel="Phone number"
+            />
 
             <div className="flex gap-3 pt-4">
               <button

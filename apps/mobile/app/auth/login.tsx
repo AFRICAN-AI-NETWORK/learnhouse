@@ -65,12 +65,7 @@ export default function LoginScreen() {
         if (u.orgs && Array.isArray(u.orgs)) {
           hasValidMobileRole = u.orgs.some((org: any) => {
             const roleName = org.role?.toLowerCase() || "";
-            return (
-              roleName === "user" ||
-              roleName === "student" ||
-              roleName === "partner" ||
-              roleName === "partner_role"
-            );
+            return roleName === "user" || roleName === "partner";
           });
         }
 
@@ -101,7 +96,6 @@ export default function LoginScreen() {
       <ImageBackground
         source={require("../../assets/aina_doodle_bg.png")}
         style={styles.backgroundImage}
-        imageStyle={{ opacity: 0.06 }}
         resizeMode="repeat"
       >
         <KeyboardAvoidingView

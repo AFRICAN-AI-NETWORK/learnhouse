@@ -15,6 +15,7 @@ class UserBase(SQLModel):
     phone_number: str | None = None
     avatar_image: str | None = ""
     bio: str | None = ""
+    organization_name: str | None = None
     details: dict | None = Field(default={}, sa_column=Column(JSON))
     profile: dict | None = Field(default={}, sa_column=Column(JSON))
 
