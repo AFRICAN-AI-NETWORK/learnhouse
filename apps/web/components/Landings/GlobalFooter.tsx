@@ -143,6 +143,14 @@ export default function GlobalFooter() {
                   Become a Marketer & Earn
                 </Link>
               </li>
+              <li>
+                <Link
+                  href={getUriWithOrg(orgSlug, '/affiliation/signup')}
+                  className="text-gray-400 hover:text-white text-sm transition-colors"
+                >
+                  Partners
+                </Link>
+              </li>
             </ul>
           </div>
 

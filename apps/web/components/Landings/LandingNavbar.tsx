@@ -35,10 +35,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
   const navLinks = [
     { name: 'Programs', href: '/#available' },
     { name: 'Roadmap', href: '/#roadmap' },
-    {
-      name: 'Partners',
-      href: isAuthenticated ? '/dash/affiliation' : '/affiliation/signup',
-    },
+
     { name: 'Specializations', href: '/#specializations' },
     { name: 'Privacy Policy', href: '/policy' },
   ]
@@ -95,12 +92,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
               { name: 'Benefits', href: '/#impact' },
               { name: 'Methodology', href: '/#methodology' },
               { name: 'Specializations', href: '/#specializations' },
-              {
-                name: 'Partners',
-                href: isAuthenticated
-                  ? '/dash/affiliation'
-                  : '/affiliation/signup',
-              },
+
               { name: 'FAQ', href: '/#faq' },
             ].map((link) => (
               <a
@@ -131,10 +123,10 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                   Login
                 </Link>
                 <Link
-                  href="/#programs"
+                  href="/auth/signup"
                   className={`px-6 py-3 rounded-xl font-bold text-[13px] uppercase tracking-wider transition-all hover:scale-105 bg-transparent text-[#0a0f1e] border border-[#0a0f1e]/20 hover:bg-[#0a0f1e]/5`}
                 >
-                  Apply Now
+                  Sign Up
                 </Link>
               </>
             )}
@@ -172,16 +164,34 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                 Login
               </Link>
               <Link
-                href="/#programs"
+                href="/auth/signup"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full px-12 py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest"
               >
-                Apply Now
+                Sign Up
               </Link>
             </div>
           </div>
         )}
       </nav>
+
+      {/* Sticky Bottom Action Bar (Mobile Only) */}
+      {!isAuthenticated && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] p-4 bg-white/90 backdrop-blur-md border-t border-gray-200 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:bg-[#13131a]/90 dark:border-white/10">
+          <Link
+            href="/auth/signin"
+            className="flex-1 text-center py-3.5 bg-gray-100 text-[#0a0f1e] rounded-xl font-bold text-[13px] uppercase tracking-wider dark:bg-white/10 dark:text-white active:scale-95 transition-all"
+          >
+            Login
+          </Link>
+          <Link
+            href="/auth/signup"
+            className="flex-1 text-center py-3.5 bg-[#0057ff] text-white rounded-xl font-bold text-[13px] uppercase tracking-wider shadow-md shadow-[#0057ff]/20 active:scale-95 transition-all"
+          >
+            Sign Up
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
