@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getActivityWithAuthHeader } from '@services/courses/activities'
 import { getCourseMetadata } from '@services/courses/courses'
 import ActivityClient from './activity'

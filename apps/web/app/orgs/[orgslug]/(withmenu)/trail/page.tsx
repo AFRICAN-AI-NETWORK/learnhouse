@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import React from 'react'
 import { Metadata } from 'next'
 import { getOrganizationContextInfo } from '@services/organizations/orgs'
@@ -10,15 +12,21 @@ type MetadataProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export async function generateMetadata(props: MetadataProps): Promise<Metadata> {
-  const params = await props.params;
+export async function generateMetadata(
+  props: MetadataProps
+): Promise<Metadata> {
+  const params = await props.params
   const session = await getServerSession(nextAuthOptions)
   const access_token = session?.tokens?.access_token
   // Get Org context information
-  const org = await getOrganizationContextInfo(params.orgslug, {
-    revalidate: 1800,
-    tags: ['organizations'],
-  }, access_token)
+  const org = await getOrganizationContextInfo(
+    params.orgslug,
+    {
+      revalidate: 1800,
+      tags: ['organizations'],
+    },
+    access_token
+  )
   return {
     title: 'Trail — ' + org.name,
     description:
