@@ -6,6 +6,7 @@ import { getCourseMetadata } from '@services/courses/courses'
 import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { Metadata } from 'next'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
+import { notFound } from 'next/navigation'
 import { nextAuthOptions } from 'app/auth/options'
 import { getServerSession } from 'next-auth'
 
@@ -22,50 +23,55 @@ export async function generateMetadata(
   const access_token = session?.tokens?.access_token
 
   // Get Org context information
-  const org = await getOrganizationContextInfo(params.orgslug, {
-    revalidate: 1800,
-    tags: ['organizations'],
-  })
-  const course_meta = await getCourseMetadata(
-    params.courseuuid,
-    { revalidate: 60, tags: ['courses'] },
-    access_token ? access_token : null
-  )
+  try {
+    const org = await getOrganizationContextInfo(params.orgslug, {
+      revalidate: 1800,
+      tags: ['organizations'],
+    })
+    const course_meta = await getCourseMetadata(
+      params.courseuuid,
+      { revalidate: 60, tags: ['courses'] },
+      access_token ? access_token : null
+    )
 
-  // SEO
-  return {
-    title: course_meta.name + ` — ${org.name}`,
-    description: course_meta.description,
-    keywords: course_meta.learnings,
-    robots: {
-      index: true,
-      follow: true,
-      nocache: true,
-      googleBot: {
+    // SEO
+    return {
+      title: course_meta.name + ` — ${org.name}`,
+      description: course_meta.description,
+      keywords: course_meta.learnings,
+      robots: {
         index: true,
         follow: true,
-        'max-image-preview': 'large',
-      },
-    },
-    openGraph: {
-      title: course_meta.name + ` — ${org.name}`,
-      description: course_meta.description ? course_meta.description : '',
-      images: [
-        {
-          url: getCourseThumbnailMediaDirectory(
-            org?.org_uuid,
-            course_meta?.course_uuid,
-            course_meta?.thumbnail_image
-          ),
-          width: 800,
-          height: 600,
-          alt: course_meta.name,
+        nocache: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-image-preview': 'large',
         },
-      ],
-      type: 'article',
-      publishedTime: course_meta.creation_date ? course_meta.creation_date : '',
-      tags: course_meta.learnings ? course_meta.learnings : [],
-    },
+      },
+      openGraph: {
+        title: course_meta.name + ` — ${org.name}`,
+        description: course_meta.description ? course_meta.description : '',
+        images: [
+          {
+            url: getCourseThumbnailMediaDirectory(
+              org?.org_uuid,
+              course_meta?.course_uuid,
+              course_meta?.thumbnail_image
+            ),
+            width: 800,
+            height: 600,
+          },
+        ],
+        type: 'article',
+        publishedTime: course_meta.creation_date,
+        tags: course_meta.learnings,
+      },
+    }
+  } catch (error) {
+    return {
+      title: 'Course',
+    }
   }
 }
 
@@ -77,11 +83,17 @@ const CoursePage = async (params: any) => {
   const { courseuuid, orgslug } = await params.params
 
   // Fetch course metadata once
-  const course_meta = await getCourseMetadata(
-    courseuuid,
-    { revalidate: 0, tags: ['courses'] },
-    access_token ? access_token : null
-  )
+  let course_meta
+
+  try {
+    course_meta = await getCourseMetadata(
+      courseuuid,
+      { revalidate: 0, tags: ['courses'] },
+      access_token ? access_token : null
+    )
+  } catch (error) {
+    notFound()
+  }
 
   return (
     <CourseClient
