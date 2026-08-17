@@ -1,10 +1,10 @@
+import asyncio
 from collections.abc import Sequence
 from typing import Literal
 
 from fastapi import HTTPException, Request, status
 from sqlalchemy import null
 from sqlmodel import Session, select
-import asyncio
 
 from src.db.collections import Collection
 from src.db.courses.courses import Course

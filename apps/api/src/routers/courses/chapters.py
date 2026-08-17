@@ -8,6 +8,7 @@ from src.db.courses.chapters import (
     ChapterUpdate,
     ChapterUpdateOrder,
 )
+from src.db.users import AnonymousUser, PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.chapters import (
     DEPRECEATED_get_course_chapters,
@@ -18,7 +19,6 @@ from src.services.courses.chapters import (
     reorder_chapters_and_activities,
     update_chapter,
 )
-from src.db.users import AnonymousUser, PublicUser
 
 router = APIRouter()
 

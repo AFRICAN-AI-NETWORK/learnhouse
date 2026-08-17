@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Request
 
 from src.core.events.database import get_db_session
 from src.db.collections import CollectionCreate, CollectionRead, CollectionUpdate
+from src.db.users import AnonymousUser, PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.collections import (
     create_collection,
@@ -11,7 +12,6 @@ from src.services.courses.collections import (
     get_collections,
     update_collection,
 )
-from src.db.users import AnonymousUser, PublicUser
 
 router = APIRouter()
 

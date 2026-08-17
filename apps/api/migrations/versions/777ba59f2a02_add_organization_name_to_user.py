@@ -5,18 +5,16 @@ Revises: 344680c73fd1
 Create Date: 2026-08-17 15:42:36.700243
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
-import sqlalchemy as sa # noqa: F401
-import sqlmodel # noqa: F401
-
+import sqlalchemy as sa  # noqa: F401
+import sqlmodel  # noqa: F401
 
 # revision identifiers, used by Alembic.
 revision: str = '777ba59f2a02'
-down_revision: Union[str, None] = '344680c73fd1'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = '344680c73fd1'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
