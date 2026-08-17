@@ -156,20 +156,23 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
                 path_query_data["certification_id"] = res_id
 
         # Try to resolve org_id BEFORE the action (essential for DELETE)
-        org_id = None
-        is_enterprise = False
-        with Session(engine) as session:
-            # 1. Try from captured payload
-            if isinstance(payload, dict):
-                org_id = resolve_org_id(session, payload)
+        def _get_org_data():
+            with Session(engine) as session:
+                _org_id = None
+                _is_enterprise = False
+                # 1. Try from captured payload
+                if isinstance(payload, dict):
+                    _org_id = resolve_org_id(session, payload)
+                # 2. Try from path/query data collected
+                if _org_id is None:
+                    _org_id = resolve_org_id(session, path_query_data)
+                # Check if this organization is on the enterprise plan
+                if _org_id:
+                    _is_enterprise = is_enterprise_plan(session, _org_id)
+                return _org_id, _is_enterprise
 
-            # 2. Try from path/query data collected
-            if org_id is None:
-                org_id = resolve_org_id(session, path_query_data)
-
-            # Check if this organization is on the enterprise plan
-            if org_id:
-                is_enterprise = is_enterprise_plan(session, org_id)
+        loop = asyncio.get_running_loop()
+        org_id, is_enterprise = await loop.run_in_executor(None, _get_org_data)
 
         # Proceed with the request
         response: Response = await call_next(request)

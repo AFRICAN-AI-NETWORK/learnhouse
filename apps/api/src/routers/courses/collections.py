@@ -11,7 +11,7 @@ from src.services.courses.collections import (
     get_collections,
     update_collection,
 )
-from src.services.users.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 
 router = APIRouter()
 
@@ -33,7 +33,7 @@ async def api_create_collection(
 async def api_get_collection(
     request: Request,
     collection_uuid: str,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> CollectionRead:
     """
@@ -48,7 +48,7 @@ async def api_get_collections_by(
     page: int,
     limit: int,
     org_id: str,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> list[CollectionRead]:
     """

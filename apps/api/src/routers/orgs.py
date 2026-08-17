@@ -11,7 +11,7 @@ from src.db.organizations import (
     OrganizationUpdate,
     OrganizationUser,
 )
-from src.db.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 from src.security.auth import get_current_user
 from src.services.orgs.invites import (
     create_invite_code,
@@ -290,7 +290,7 @@ async def api_delete_org_users_invites(
 async def api_get_org_by_slug(
     request: Request,
     org_slug: str,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> OrganizationRead:
     """

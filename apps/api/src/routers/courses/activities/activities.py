@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Form, Request, UploadFile
 
 from src.core.events.database import get_db_session
 from src.db.courses.activities import ActivityCreate, ActivityRead, ActivityUpdate
-from src.db.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.activities.activities import (
     create_activity,
@@ -41,7 +41,7 @@ async def api_create_activity(
 async def api_get_activity(
     request: Request,
     activity_uuid: str,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> ActivityRead:
     """
@@ -56,7 +56,7 @@ async def api_get_activity(
 async def api_get_activityby_id(
     request: Request,
     activity_id: str,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> ActivityRead:
     """
@@ -71,7 +71,7 @@ async def api_get_activityby_id(
 async def api_get_chapter_activities(
     request: Request,
     chapter_id: int,
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
     db_session=Depends(get_db_session),
 ) -> list[ActivityRead]:
     """

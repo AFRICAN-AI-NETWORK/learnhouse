@@ -16,7 +16,7 @@ from src.db.courses.courses import (
     ThumbnailType,
 )
 from src.db.resource_authors import ResourceAuthorshipEnum, ResourceAuthorshipStatusEnum
-from src.db.users import PublicUser
+from src.db.users import AnonymousUser, PublicUser
 from src.security.auth import get_current_user
 from src.services.courses.contributors import (
     add_bulk_course_contributors,
@@ -105,7 +105,7 @@ async def api_get_course(
     request: Request,
     course_uuid: str,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
 ) -> CourseRead:
     """
     Get single Course by course_uuid
@@ -120,7 +120,7 @@ async def api_get_course_by_id(
     request: Request,
     course_id: str,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
 ) -> CourseRead:
     """
     Get single Course by id
@@ -136,7 +136,7 @@ async def api_get_course_meta(
     course_uuid: str,
     with_unpublished_activities: bool = False,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
 ) -> FullCourseRead:
     """
     Get single Course Metadata (chapters, activities) by course_uuid
@@ -157,7 +157,7 @@ async def api_get_course_by_orgslug(
     limit: int,
     org_slug: str,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
 ) -> list[CourseRead]:
     """
     Get courses by page and limit
@@ -175,7 +175,7 @@ async def api_search_courses(
     page: int = 1,
     limit: int = 10,
     db_session: Session = Depends(get_db_session),
-    current_user: PublicUser = Depends(get_current_user),
+    current_user: PublicUser | AnonymousUser = Depends(get_current_user),
 ) -> list[CourseRead]:
     """
     Search courses by title and description

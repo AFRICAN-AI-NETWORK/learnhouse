@@ -74,3 +74,7 @@
 - **2-Step Partner Wizard**: Completely rewrote the mobile `register-partner.tsx` into a 2-step wizard matching web parity. Added the new `organization_name` field explicitly to both the Web App form and Mobile App form, submitting natively to the `/api/v1/auth/signup` backend endpoints.
 - **Backend Sync**: Executed an Alembic database migration to permanently add `organization_name` to the core `user` table.
 - **Doodle Backgrounds**: Stripped out manual opacity overrides across all authentication screens (`login`, `register`, `verify-email`, `reset-password`, `forgot-password`) to let the new doodle background image reflect at its full natural brightness without washing out.
+
+## Backend Optimizations & Stability
+
+- **Connection Pool Exhaustion Fix**: Handed off blocking synchronous DB operations inside FastAPI `async def` routes to thread pools via `asyncio.get_running_loop().run_in_executor()`. This optimization was applied to both the Role-Based Access Control (`rbac.py`) layer and the Enterprise Audit Middleware (`audit.py`), significantly eliminating event loop starvation and preventing the 30-second database timeout errors when Instructors access their dashboard.

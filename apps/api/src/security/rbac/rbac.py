@@ -4,6 +4,7 @@ from typing import Literal
 from fastapi import HTTPException, Request, status
 from sqlalchemy import null
 from sqlmodel import Session, select
+import asyncio
 
 from src.db.collections import Collection
 from src.db.courses.courses import Course
@@ -72,7 +73,10 @@ async def authorization_verify_if_element_is_public(
             statement = select(Course).where(
                 Course.public == True, Course.course_uuid == element_uuid
             )
-            course = db_session.exec(statement).first()
+            loop = asyncio.get_running_loop()
+            course = await loop.run_in_executor(
+                None, lambda: db_session.exec(statement).first()
+            )
             if course:
                 return True
             else:
@@ -85,7 +89,10 @@ async def authorization_verify_if_element_is_public(
         statement = select(Collection).where(
             Collection.public == True, Collection.collection_uuid == element_uuid
         )
-        collection = db_session.exec(statement).first()
+        loop = asyncio.get_running_loop()
+        collection = await loop.run_in_executor(
+            None, lambda: db_session.exec(statement).first()
+        )
         if collection:
             return True
         else:
@@ -119,7 +126,10 @@ async def authorization_verify_if_user_is_author(
             ResourceAuthor.user_id == int(user_id),
             ResourceAuthor.authorship_status == ResourceAuthorshipStatusEnum.ACTIVE,
         )
-        resource_author = db_session.exec(statement).first()
+        loop = asyncio.get_running_loop()
+        resource_author = await loop.run_in_executor(
+            None, lambda: db_session.exec(statement).first()
+        )
 
         if resource_author:
             # Defense in depth: Verify user_id matches (fixes unit test edge cases)
@@ -166,7 +176,10 @@ async def authorization_verify_based_on_roles(
         .where(UserOrganization.user_id == user_id)
     )
 
-    user_roles_in_organization_and_standard_roles = db_session.exec(statement).all()
+    loop = asyncio.get_running_loop()
+    user_roles_in_organization_and_standard_roles = await loop.run_in_executor(
+        None, lambda: db_session.exec(statement).all()
+    )
 
     # Check if user is the author of the resource for "own" permissions
     is_author = False
@@ -221,9 +234,10 @@ async def authorization_verify_based_on_org_admin_status(
 ):
     await check_element_type(element_uuid)
 
-    user_roles_in_organization_and_standard_roles = db_session.exec(
-        _select_user_roles(user_id)
-    ).all()
+    loop = asyncio.get_running_loop()
+    user_roles_in_organization_and_standard_roles = await loop.run_in_executor(
+        None, lambda: db_session.exec(_select_user_roles(user_id)).all()
+    )
 
     # Check if user has an admin role in any organization
     for role in user_roles_in_organization_and_standard_roles:
@@ -248,7 +262,10 @@ async def authorization_verify_has_rights(
     manager, student coordinator, project manager, ...) be granted access purely
     through its rights, with no code change per role.
     """
-    roles = db_session.exec(_select_user_roles(user_id)).all()
+    loop = asyncio.get_running_loop()
+    roles = await loop.run_in_executor(
+        None, lambda: db_session.exec(_select_user_roles(user_id)).all()
+    )
 
     for role in roles:
         role = Role.model_validate(role)
