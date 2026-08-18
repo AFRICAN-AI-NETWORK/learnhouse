@@ -29,6 +29,7 @@ import {
   HelpCircle,
   Info,
   Shield,
+  Award,
 } from "lucide-react-native";
 
 export default function ProfileScreen() {
@@ -139,13 +140,36 @@ export default function ProfileScreen() {
             <ChevronRight size={18} color={Theme.colors.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/user-account/certificates")}
+          >
+            <View style={styles.settingLeft}>
+              <Award size={18} color={Theme.colors.primary} />
+              <View>
+                <Text style={styles.settingLabel}>My Certificates</Text>
+                <Text style={styles.settingDescription}>
+                  View and verify your earned certificates
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={Theme.colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/user-account/billing")}
+          >
             <View style={styles.settingLeft}>
               <CreditCard size={18} color={Theme.colors.primary} />
               <View>
-                <Text style={styles.settingLabel}>Payment Methods</Text>
+                <Text style={styles.settingLabel}>
+                  Billing & Transaction History
+                </Text>
                 <Text style={styles.settingDescription}>
-                  Manage your saved cards and billing
+                  View payment history and manage subscriptions
                 </Text>
               </View>
             </View>
@@ -174,25 +198,21 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>PREFERENCES</Text>
 
-          <TouchableOpacity style={styles.settingRow} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.settingRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/user-account/notifications")}
+          >
             <View style={styles.settingLeft}>
               <Bell size={18} color={Theme.colors.primary} />
               <View>
                 <Text style={styles.settingLabel}>Notifications</Text>
                 <Text style={styles.settingDescription}>
-                  Manage push and email notifications
+                  View your alerts and messages
                 </Text>
               </View>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text
-                style={[
-                  styles.settingValue,
-                  { color: Theme.colors.success, fontWeight: "600" },
-                ]}
-              >
-                Enabled
-              </Text>
               <ChevronRight
                 size={18}
                 color={Theme.colors.textMuted}

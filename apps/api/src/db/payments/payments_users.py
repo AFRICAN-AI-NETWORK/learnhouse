@@ -56,3 +56,17 @@ class PaymentsUser(PaymentsUserBase, table=True):
     )
     creation_date: datetime = Field(default=datetime.now(UTC))
     update_date: datetime = Field(default=datetime.now(UTC))
+
+
+from src.db.payments.payments_products import PaymentsProductRead
+
+class PaymentsUserRead(PaymentsUserBase):
+    id: int
+    user_id: int
+    org_id: int
+    payment_product_id: int
+    creation_date: datetime
+    update_date: datetime
+
+class PaymentsUserWithProductRead(PaymentsUserRead):
+    product: PaymentsProductRead | None = None

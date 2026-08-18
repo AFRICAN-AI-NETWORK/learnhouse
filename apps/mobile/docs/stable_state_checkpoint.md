@@ -48,6 +48,14 @@
 ## Referral / Earn Tab Revamp
 
 - **Design System Alignment**: Aligned `referral.tsx` with the updated JSON design specs, migrating action buttons and balance highlights from absolute black (`#000000`) to the designated primary blue (`Theme.colors.primary`).
+
+## Assignment & Progress Fixes
+
+- **Quiz Submissions**: Quizzes now properly fetch and grade. Fixed logic to verify `hasSubmitted` state to prevent confusing UI when the user has never submitted an assignment.
+- **Drawer Curriculum Tick-marks**: Completed activities now render a `CheckCircle` correctly in the Course Viewer Drawer.
+- **Course Resume Logic**: The resume pointer maps `s.activity_id` to `act.id` mathematically to strictly stop at the first uncompleted step.
+- **PDF Viewer Toolbar**: Injected JS natively into the WebView to hide Mozilla PDF.js UI toolbars and scrollbars, delivering a clean full-screen reading experience.
+- **Continue Learning Widgets**: Polished the UI across `index.tsx` and `courses.tsx` to include functioning "Resume" buttons, properly calculate percentage tracking, and resolve hardcoded tags (now fetching `course.category`).
 - **Global Typography Softening**: Reduced the visual weight of main titles across all tabs (Home, Courses, Earn) by dropping `fontWeight: '800'` to `'700'` and `'700'` to `'600'`. Absolute black text (`#111827`, `#000000`) was softened to a modern dark grey (`Theme.colors.text` / `#0f172a`) to ensure a refined, premium feel without compromising legibility or existing functionality.
 
 ## Profile Tab Revamp & State Management
@@ -74,3 +82,12 @@
 - **2-Step Partner Wizard**: Completely rewrote the mobile `register-partner.tsx` into a 2-step wizard matching web parity. Added the new `organization_name` field explicitly to both the Web App form and Mobile App form, submitting natively to the `/api/v1/auth/signup` backend endpoints.
 - **Backend Sync**: Executed an Alembic database migration to permanently add `organization_name` to the core `user` table.
 - **Doodle Backgrounds**: Stripped out manual opacity overrides across all authentication screens (`login`, `register`, `verify-email`, `reset-password`, `forgot-password`) to let the new doodle background image reflect at its full natural brightness without washing out.
+
+## Native Course Viewer & Certificates
+
+- **Expo Video**: Installed `expo-video` to power the native playback experience inside the app.
+- **Dynamic Course Screen**: Built a dynamic `course/[course_uuid].tsx` screen with a sticky video player at the top and a scrollable curriculum list underneath it.
+- **Strict Authentication**: Added a strict authentication check that immediately forces unauthenticated users to log in if they try to access the course viewer.
+- **Course Paywall Strategy**: Added an interceptor so that if a user tries to access a paid course they haven't purchased, they receive an alert directing them to the web app to purchase it.
+- **Native Routing Updates**: Replaced all external `Linking.openURL` redirects across the Dashboard and Courses screens so users natively stay inside the app.
+- **My Certificates**: Added a "My Certificates" button under the ACCOUNT section in the profile screen, which opens a `certificates.tsx` screen that hits `/api/v1/certifications/user/all` and allows users to tap and verify certificates natively in the app using `expo-web-browser`.

@@ -23,6 +23,7 @@ import {
   ArrowRight,
   ArrowLeft,
   AlertCircle,
+  Phone,
   ShieldCheck,
   Eye,
   EyeOff,
@@ -34,6 +35,7 @@ export default function RegisterStudentScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +44,7 @@ export default function RegisterStudentScreen() {
   const router = useRouter();
 
   const handleRegister = async () => {
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !phone || !password) {
       setErrorMessage("Please fill in all required fields.");
       return;
     }
@@ -51,12 +53,14 @@ export default function RegisterStudentScreen() {
     setIsSubmitting(true);
 
     try {
-      const res = await apiRequest("/api/v1/auth/signup", {
+      const res = await apiRequest("/api/v1/users/1", {
         method: "POST",
         body: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           email: email.trim(),
+          phone_number: phone.trim(),
+          signup_type: "student",
           password,
         },
       });
@@ -93,6 +97,7 @@ export default function RegisterStudentScreen() {
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <View style={styles.headerContainer}>
               <Image
@@ -171,6 +176,26 @@ export default function RegisterStudentScreen() {
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
+                  />
+                </View>
+              </View>
+
+              {/* Phone Number */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone Number</Text>
+                <View style={styles.inputWrapper}>
+                  <Phone
+                    size={18}
+                    color={Theme.colors.textMuted}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="+1234567890"
+                    placeholderTextColor={Theme.colors.textDim}
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
                   />
                 </View>
               </View>

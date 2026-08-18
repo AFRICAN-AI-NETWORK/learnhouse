@@ -360,6 +360,23 @@ async def initialize_transaction(
 
     amount_to_charge = final_amount if discount_code_obj else product.amount
 
+    if product.currency.upper() != selected_currency.upper():
+        from src.services.referrals.payouts import get_usd_to_currency_exchange_rate
+        
+        amount_in_usd = amount_to_charge
+        if product.currency.upper() != "USD":
+            base_rate = await get_usd_to_currency_exchange_rate(product.currency.upper())
+            amount_in_usd = amount_to_charge / base_rate if base_rate else amount_to_charge
+            
+        if selected_currency.upper() != "USD":
+            target_rate = await get_usd_to_currency_exchange_rate(selected_currency.upper())
+            amount_to_charge = amount_in_usd * target_rate if target_rate else amount_in_usd
+        else:
+            amount_to_charge = amount_in_usd
+            
+        amount_to_charge = round(amount_to_charge, 2)
+
+
     if amount_to_charge <= 0:
         payment_user = await create_payment_user(
             request=request,

@@ -27,7 +27,9 @@ import {
   Flame,
   Star,
   X,
+  CloudOff,
 } from "lucide-react-native";
+import { useNetwork } from "../../context/NetworkContext";
 import {
   getCourseThumbnailMediaDirectory,
   getUserAvatarMediaDirectory,
@@ -40,6 +42,7 @@ export default function HomeScreen() {
     [Theme, isDark],
   );
   const { session } = useAuth();
+  const { isConnected } = useNetwork();
   const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
   const [trailRuns, setTrailRuns] = useState<any[]>([]);
@@ -128,10 +131,11 @@ export default function HomeScreen() {
           setStats({ enrolled: runs.length, completed });
         }
 
-        // Fetch metadata non-blocking (moved after trails so it doesn't bottleneck the queue)
+        // Fetch metadata sequentially to prevent connection pool exhaustion (which causes infinite loading when navigating)
         if (coursesList.length > 0) {
-          Promise.all(
-            coursesList.map(async (course: any) => {
+          const fetchSequentialMeta = async () => {
+            const metaMap: Record<string, any> = {};
+            for (const course of coursesList) {
               try {
                 const [metaRes, productsRes] = await Promise.all([
                   apiRequest(`/api/v1/courses/${course.course_uuid}/meta`, {
@@ -154,19 +158,17 @@ export default function HomeScreen() {
                 } else {
                   data.priceStr = course.is_paid ? "Paid" : "Free";
                 }
-                return { uuid: course.course_uuid, data };
+                metaMap[course.course_uuid] = data;
+
+                // Progressively update the UI to avoid blank data while waiting for all
+                setCourseMetadata((prev) => ({ ...prev, ...metaMap }));
               } catch (e) {
                 // Ignore silent background fail
               }
-              return null;
-            }),
-          ).then((results) => {
-            const metaMap: Record<string, any> = {};
-            results.forEach((res) => {
-              if (res) metaMap[res.uuid] = res.data;
-            });
-            setCourseMetadata(metaMap);
-          });
+            }
+          };
+
+          fetchSequentialMeta();
         }
 
         if (trailRes) {
@@ -285,6 +287,49 @@ export default function HomeScreen() {
 
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
+  if (!isConnected && courses.length === 0) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: Theme.colors.background,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <CloudOff
+          size={64}
+          color={Theme.colors.textMuted}
+          style={{ marginBottom: 24 }}
+        />
+        <Text
+          style={{
+            color: Theme.colors.text,
+            fontSize: 24,
+            fontWeight: "700",
+            marginBottom: 12,
+          }}
+        >
+          You are offline
+        </Text>
+        <Text
+          style={{
+            color: Theme.colors.textMuted,
+            textAlign: "center",
+            paddingHorizontal: 40,
+            fontSize: 16,
+            lineHeight: 24,
+          }}
+        >
+          Please check your internet connection to load courses and continue
+          learning.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -302,7 +347,7 @@ export default function HomeScreen() {
           <View style={styles.topNavRight}>
             <TouchableOpacity
               style={styles.bellIcon}
-              onPress={() => setShowNotificationModal(true)}
+              onPress={() => router.push("/user-account/notifications")}
             >
               <Bell size={24} color={Theme.colors.text} />
               <View style={styles.notificationDot} />
@@ -410,9 +455,7 @@ export default function HomeScreen() {
                             "course_",
                             "",
                           );
-                        Linking.openURL(
-                          `https://lms.africanainetwork.com/course/${cleanUuid}`,
-                        );
+                        router.push(`/course/${cleanUuid}`);
                       }
                     }}
                   >
@@ -640,9 +683,7 @@ export default function HomeScreen() {
                               "course_",
                               "",
                             );
-                            Linking.openURL(
-                              `https://lms.africanainetwork.com/course/${cleanUuid}`,
-                            );
+                            router.push(`/course/${cleanUuid}`);
                           }
                         }}
                       >
@@ -728,37 +769,6 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
-
-      {/* Notifications Coming Soon Modal */}
-      {showNotificationModal && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Notifications</Text>
-              <TouchableOpacity onPress={() => setShowNotificationModal(false)}>
-                <X size={24} color={Theme.colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>
-              <Bell
-                size={48}
-                color={Theme.colors.primary}
-                style={{ opacity: 0.2, marginBottom: 16 }}
-              />
-              <Text style={styles.modalBodyTitle}>You're all caught up!</Text>
-              <Text style={styles.modalBodyText}>
-                New notifications and announcements will appear here soon.
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setShowNotificationModal(false)}
-            >
-              <Text style={styles.modalButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

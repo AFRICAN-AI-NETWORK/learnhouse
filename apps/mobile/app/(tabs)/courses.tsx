@@ -385,6 +385,15 @@ export default function CoursesScreen() {
                   key={course.id || course.course_uuid || idx}
                   style={styles.courseCardHorizontal}
                   activeOpacity={0.8}
+                  onPress={() => {
+                    if (course.course_uuid) {
+                      const cleanUuid = course.course_uuid.replace(
+                        "course_",
+                        "",
+                      );
+                      router.push(`/course/${cleanUuid}`);
+                    }
+                  }}
                 >
                   <View style={styles.courseCardLeft}>
                     {!hasError ? (
@@ -409,7 +418,7 @@ export default function CoursesScreen() {
                     <View style={styles.cardHeaderRow}>
                       <View style={styles.cardCategoryPill}>
                         <Text style={styles.cardCategoryText}>
-                          {cardCategory}
+                          {course.category || course.category_name || "Course"}
                         </Text>
                       </View>
                       <View style={styles.pricePill}>
@@ -453,9 +462,6 @@ export default function CoursesScreen() {
             <View style={styles.continueSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>Continue Learning</Text>
-                <TouchableOpacity>
-                  <Text style={styles.viewAllText}>View all</Text>
-                </TouchableOpacity>
               </View>
 
               <View style={styles.courseCardHorizontal}>
@@ -500,6 +506,35 @@ export default function CoursesScreen() {
                         ]}
                       />
                     </View>
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#007AFF",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 6,
+                        marginLeft: 10,
+                      }}
+                      onPress={() => {
+                        if (inProgressCourse?.course?.course_uuid) {
+                          const cleanUuid =
+                            inProgressCourse.course.course_uuid.replace(
+                              "course_",
+                              "",
+                            );
+                          router.push(`/course/${cleanUuid}`);
+                        }
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "#FFF",
+                          fontSize: 12,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Resume
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               </View>
@@ -778,10 +813,11 @@ const makeStyles = (Theme: any, isDark: boolean) =>
     },
     continueCardFooter: {
       marginTop: 8,
-      paddingRight: Theme.spacing.md,
+      flexDirection: "row",
+      alignItems: "center",
     },
     progressBarBg: {
-      width: "100%",
+      flex: 1,
       height: 6,
       backgroundColor: Theme.colors.surfaceBorder,
       borderRadius: 3,

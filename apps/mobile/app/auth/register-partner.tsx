@@ -73,8 +73,8 @@ export default function RegisterPartnerScreen() {
     setIsSubmitting(true);
 
     try {
-      // Changed to the standard auth signup endpoint to align with web
-      const res = await apiRequest("/api/v1/auth/signup", {
+      // Changed to the standard users endpoint to align with backend
+      const res = await apiRequest("/api/v1/users/1", {
         method: "POST",
         body: {
           email: email.trim(),
