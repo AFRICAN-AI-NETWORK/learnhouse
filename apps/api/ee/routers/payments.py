@@ -641,3 +641,27 @@ async def api_validate_discount_code(
         }
     except DiscountValidationError as e:
         return {"valid": False, "error": str(e)}
+
+
+@router.get("/{org_id}/payments/me")
+async def api_get_my_payments(
+    request: Request,
+    org_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    from src.services.payments.payments_users import get_my_payments
+    return await get_my_payments(request, org_id, current_user, db_session)
+
+
+@router.post("/{org_id}/payments/{payment_user_id}/cancel")
+async def api_cancel_subscription(
+    request: Request,
+    org_id: int,
+    payment_user_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    from src.services.payments.payments_users import cancel_subscription
+    return await cancel_subscription(request, org_id, payment_user_id, current_user, db_session)
+

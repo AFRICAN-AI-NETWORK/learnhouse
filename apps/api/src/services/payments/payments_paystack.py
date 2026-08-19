@@ -426,8 +426,24 @@ async def initialize_transaction(
         if course_id:
             metadata_dict["course_id"] = str(course_id)
 
-    # Calculate amount in subunit
     amount_to_charge = final_amount if discount_code_obj else product.amount
+
+    if product.currency.upper() != selected_currency.upper():
+        from src.services.referrals.payouts import get_usd_to_currency_exchange_rate
+
+        amount_in_usd = amount_to_charge
+        if product.currency.upper() != "USD":
+            base_rate = await get_usd_to_currency_exchange_rate(product.currency.upper())
+            amount_in_usd = amount_to_charge / base_rate if base_rate else amount_to_charge
+
+        if selected_currency.upper() != "USD":
+            target_rate = await get_usd_to_currency_exchange_rate(selected_currency.upper())
+            amount_to_charge = amount_in_usd * target_rate if target_rate else amount_in_usd
+        else:
+            amount_to_charge = amount_in_usd
+
+        amount_to_charge = round(amount_to_charge, 2)
+
     amount_in_subunit = int(amount_to_charge * 100)
 
     # CRITICAL: Bypassing Paystack for Free Products ($0)

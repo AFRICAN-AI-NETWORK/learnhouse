@@ -357,3 +357,74 @@ async def get_owned_courses(
         course_reads.append(course_read)
 
     return course_reads
+
+
+async def get_my_payments(
+    request: Request,
+    org_id: int,
+    current_user: PublicUser,
+    db_session: Session,
+) -> list[dict]:
+    # Check if organization exists
+    statement = select(Organization).where(Organization.id == org_id)
+    org = db_session.exec(statement).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Get all payment users for the current user
+    statement = (
+        select(PaymentsUser, PaymentsProduct)
+        .join(PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id)
+        .where(PaymentsUser.user_id == current_user.id, PaymentsUser.org_id == org_id)
+        .order_by(PaymentsUser.id.desc())
+    )
+    
+    results = db_session.exec(statement).all()
+    
+    payment_users = []
+    for payment_user, product in results:
+        # Convert models to dictionaries
+        pu_dict = payment_user.model_dump()
+        product_dict = product.model_dump()
+        pu_dict["product"] = product_dict
+        payment_users.append(pu_dict)
+        
+    return payment_users
+
+
+async def cancel_subscription(
+    request: Request,
+    org_id: int,
+    payment_user_id: int,
+    current_user: PublicUser,
+    db_session: Session,
+) -> dict:
+    # Get payment user
+    statement = select(PaymentsUser).where(
+        PaymentsUser.id == payment_user_id,
+        PaymentsUser.user_id == current_user.id,
+        PaymentsUser.org_id == org_id
+    )
+    payment_user = db_session.exec(statement).first()
+    
+    if not payment_user:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    # Get the product to verify it's a subscription
+    product = db_session.exec(select(PaymentsProduct).where(PaymentsProduct.id == payment_user.payment_product_id)).first()
+    
+    if not product or product.product_type != "subscription":
+        raise HTTPException(status_code=400, detail="Can only cancel subscriptions")
+        
+    if payment_user.status == PaymentStatusEnum.CANCELLED:
+        raise HTTPException(status_code=400, detail="Subscription is already cancelled")
+        
+    # Update status to CANCELLED
+    payment_user.status = PaymentStatusEnum.CANCELLED
+    payment_user.update_date = datetime.now(UTC)
+    
+    db_session.add(payment_user)
+    db_session.commit()
+    db_session.refresh(payment_user)
+    
+    return payment_user.model_dump()

@@ -4,6 +4,8 @@ import { Stack, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider, useAppTheme } from "../context/ThemeContext";
+import { NetworkProvider } from "../context/NetworkContext";
+import { CurrencyProvider } from "../context/CurrencyContext";
 import { Text, TextInput } from "react-native";
 import {
   useFonts,
@@ -63,21 +65,25 @@ function AppNavigator() {
 
   return (
     <AuthProvider>
-      <StatusBar style={isDark ? "light" : "dark"} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: Theme.colors.background },
-          animation: "fade",
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen
-          name="auth/login"
-          options={{ animation: "slide_from_bottom" }}
-        />
-        <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
-      </Stack>
+      <NetworkProvider>
+        <CurrencyProvider>
+          <StatusBar style={isDark ? "light" : "dark"} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: Theme.colors.background },
+              animation: "fade",
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen
+              name="auth/login"
+              options={{ animation: "slide_from_bottom" }}
+            />
+            <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+          </Stack>
+        </CurrencyProvider>
+      </NetworkProvider>
     </AuthProvider>
   );
 }
