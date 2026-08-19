@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { Metadata } from 'next'
 import React from 'react'

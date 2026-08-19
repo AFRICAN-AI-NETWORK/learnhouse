@@ -1,6 +1,9 @@
+export const dynamic = 'force-dynamic'
+
 import { getActivityWithAuthHeader } from '@services/courses/activities'
 import { getCourseMetadata } from '@services/courses/courses'
 import ActivityClient from './activity'
+import { notFound } from 'next/navigation'
 import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
@@ -35,46 +38,54 @@ export async function generateMetadata(
   const params = await props.params
   const session = (await getServerSession(nextAuthOptions as any)) as Session
   const access_token = session?.tokens?.access_token || null
+  try {
+    // Get Org context information
+    await getOrganizationContextInfo(params.orgslug, {
+      revalidate: 1800,
+      tags: ['organizations'],
+    })
+    const course_meta = await fetchCourseMetadata(
+      params.courseuuid,
+      access_token
+    )
+    const activity = await getActivityWithAuthHeader(
+      params.activityid,
+      { revalidate: 0, tags: ['activities'] },
+      access_token || null
+    )
 
-  // Get Org context information
-  await getOrganizationContextInfo(params.orgslug, {
-    revalidate: 1800,
-    tags: ['organizations'],
-  })
-  const course_meta = await fetchCourseMetadata(params.courseuuid, access_token)
-  const activity = await getActivityWithAuthHeader(
-    params.activityid,
-    { revalidate: 0, tags: ['activities'] },
-    access_token || null
-  )
+    // Check if this is the course end page
+    const isCourseEnd = params.activityid === 'end'
+    const pageTitle = isCourseEnd
+      ? `Congratulations — ${course_meta.name} Course`
+      : activity.name + ` — ${course_meta.name} Course`
 
-  // Check if this is the course end page
-  const isCourseEnd = params.activityid === 'end'
-  const pageTitle = isCourseEnd
-    ? `Congratulations — ${course_meta.name} Course`
-    : activity.name + ` — ${course_meta.name} Course`
-
-  // SEO
-  return {
-    title: pageTitle,
-    description: course_meta.description,
-    keywords: course_meta.learnings,
-    robots: {
-      index: true,
-      follow: true,
-      nocache: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-image-preview': 'large',
-      },
-    },
-    openGraph: {
+    // SEO
+    return {
       title: pageTitle,
       description: course_meta.description,
-      publishedTime: course_meta.creation_date,
-      tags: course_meta.learnings,
-    },
+      keywords: course_meta.learnings,
+      robots: {
+        index: true,
+        follow: true,
+        nocache: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-image-preview': 'large',
+        },
+      },
+      openGraph: {
+        title: pageTitle,
+        description: course_meta.description,
+        publishedTime: course_meta.creation_date,
+        tags: course_meta.learnings,
+      },
+    }
+  } catch (error) {
+    return {
+      title: 'Course Activity',
+    }
   }
 }
 
@@ -85,14 +96,22 @@ const ActivityPage = async (params: any) => {
   const courseuuid = (await params.params).courseuuid
   const orgslug = (await params.params).orgslug
 
-  const [course_meta, activity] = await Promise.all([
-    fetchCourseMetadata(courseuuid, access_token),
-    getActivityWithAuthHeader(
-      activityid,
-      { revalidate: 0, tags: ['activities'] },
-      access_token || null
-    ),
-  ])
+  let course_meta
+  let activity
+  try {
+    const [fetched_course_meta, fetched_activity] = await Promise.all([
+      fetchCourseMetadata(courseuuid, access_token),
+      getActivityWithAuthHeader(
+        activityid,
+        { revalidate: 0, tags: ['activities'] },
+        access_token || null
+      ),
+    ])
+    course_meta = fetched_course_meta
+    activity = fetched_activity
+  } catch (error) {
+    notFound()
+  }
 
   return (
     <ActivityClient

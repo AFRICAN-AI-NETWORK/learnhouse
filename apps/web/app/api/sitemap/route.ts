@@ -4,6 +4,8 @@ import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { getOrgCollections } from '@services/courses/collections'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const orgSlug = request.headers.get('X-Sitemap-Orgslug')
 

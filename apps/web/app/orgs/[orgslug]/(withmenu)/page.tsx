@@ -26,42 +26,48 @@ export async function generateMetadata(
   props: MetadataProps
 ): Promise<Metadata> {
   const params = await props.params
-  // Get Org context information
-  const org = await getOrganizationContextInfo(params.orgslug, {
-    revalidate: 0,
-    tags: ['organizations'],
-  })
+  try {
+    // Get Org context information
+    const org = await getOrganizationContextInfo(params.orgslug, {
+      revalidate: 0,
+      tags: ['organizations'],
+    })
 
-  // SEO
-  return {
-    title: `Home — ${org.name}`,
-    description: org.description,
-    robots: {
-      index: true,
-      follow: true,
-      nocache: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-image-preview': 'large',
-      },
-    },
-    openGraph: {
+    // SEO
+    return {
       title: `Home — ${org.name}`,
       description: org.description,
-      type: 'website',
-      images: [
-        {
-          url: getOrgThumbnailMediaDirectory(
-            org?.org_uuid,
-            org?.thumbnail_image
-          ),
-          width: 800,
-          height: 600,
-          alt: org.name,
+      robots: {
+        index: true,
+        follow: true,
+        nocache: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-image-preview': 'large',
         },
-      ],
-    },
+      },
+      openGraph: {
+        title: `Home — ${org.name}`,
+        description: org.description,
+        type: 'website',
+        images: [
+          {
+            url: getOrgThumbnailMediaDirectory(
+              org?.org_uuid,
+              org?.thumbnail_image
+            ),
+            width: 800,
+            height: 600,
+            alt: org.name,
+          },
+        ],
+      },
+    }
+  } catch (error) {
+    return {
+      title: 'Home',
+    }
   }
 }
 

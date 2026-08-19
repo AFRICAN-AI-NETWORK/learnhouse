@@ -91,3 +91,6 @@
 - **Course Paywall Strategy**: Added an interceptor so that if a user tries to access a paid course they haven't purchased, they receive an alert directing them to the web app to purchase it.
 - **Native Routing Updates**: Replaced all external `Linking.openURL` redirects across the Dashboard and Courses screens so users natively stay inside the app.
 - **My Certificates**: Added a "My Certificates" button under the ACCOUNT section in the profile screen, which opens a `certificates.tsx` screen that hits `/api/v1/certifications/user/all` and allows users to tap and verify certificates natively in the app using `expo-web-browser`.
+## Backend Optimizations & Stability
+
+- **Connection Pool Exhaustion Fix**: Handed off blocking synchronous DB operations inside FastAPI `async def` routes to thread pools via `asyncio.get_running_loop().run_in_executor()`. This optimization was applied to both the Role-Based Access Control (`rbac.py`) layer and the Enterprise Audit Middleware (`audit.py`), significantly eliminating event loop starvation and preventing the 30-second database timeout errors when Instructors access their dashboard.
