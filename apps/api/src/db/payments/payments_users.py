@@ -60,6 +60,7 @@ class PaymentsUser(PaymentsUserBase, table=True):
 
 from src.db.payments.payments_products import PaymentsProductRead
 
+
 class PaymentsUserRead(PaymentsUserBase):
     id: int
     user_id: int
