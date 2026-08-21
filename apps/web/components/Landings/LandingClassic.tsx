@@ -147,15 +147,22 @@ function LandingClassic({
     if (!firstCourse) return
     const storageKey = `seen-modal-${firstCourse.course_uuid}`
     if (!localStorage.getItem(storageKey)) {
+      const hasStartedCourse =
+        trail?.runs?.some(
+          (run: any) =>
+            cleanCourseUuid(run.course?.course_uuid) ===
+            cleanCourseUuid(firstCourse.course_uuid)
+        )
+
       if (
         session?.data?.user?.user_status === 'WAITLIST' ||
-        firstCourse.whatsapp_group_link
+        (firstCourse.whatsapp_group_link && hasStartedCourse)
       ) {
         setTimeout(() => setIsWaitlistModalOpen(true), 10)
         localStorage.setItem(storageKey, 'true')
       }
     }
-  }, [firstCourse, session?.data?.user?.user_status])
+  }, [firstCourse, session?.data?.user?.user_status, trail])
 
   const trailRuns = useMemo(() => trail?.runs || [], [trail])
   const continueRun = trailRuns[0]
