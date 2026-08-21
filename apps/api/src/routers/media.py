@@ -1,6 +1,6 @@
-import os
 from pathlib import Path
-from fastapi import APIRouter, Query, HTTPException, Response
+
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from PIL import Image
 
@@ -57,6 +57,6 @@ async def get_optimized_media(
             img.save(cache_path, "WEBP", quality=q)
             
         return FileResponse(cache_path, media_type="image/webp")
-    except Exception as e:
+    except Exception:  # noqa: BLE001
         # Fallback to original on processing error
         return FileResponse(original_path)

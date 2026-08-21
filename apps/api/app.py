@@ -18,6 +18,7 @@ from src.core.events.events import shutdown_app, startup_app
 from src.core.middleware.sentry_context import SentryContextMiddleware
 from src.core.sentry import init_sentry
 from src.router import v1_router
+from src.routers.media import router as media_router
 
 ########################
 # Pre-Alpha Version 0.1.0
@@ -343,7 +344,6 @@ class CORSStaticFiles(StaticFiles):
 app.mount("/content", CORSStaticFiles(directory="content"), name="content")
 
 # Media Route (Image Resizing)
-from src.routers.media import router as media_router
 app.include_router(media_router, prefix="/media", tags=["media"])
 
 # Global Routes
