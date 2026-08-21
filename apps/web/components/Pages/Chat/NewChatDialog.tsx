@@ -12,6 +12,7 @@ import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getAPIUrl } from '@services/config/config'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
+import NextImage from 'next/image'
 
 const PINNED_CHAT_ROLE_NAMES = new Set([
   'students success coordinator',
@@ -318,7 +319,7 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all duration-150 disabled:opacity-40 group text-left"
                   >
                     <div className="relative shrink-0">
-                      <img
+                      <NextImage
                         src={
                           user.avatar_image
                             ? getUserAvatarMediaDirectory(
@@ -329,6 +330,8 @@ const NewChatDialog: React.FC<NewChatDialogProps> = ({
                         }
                         alt={user.username}
                         className="w-10 h-10 rounded-full ring-2 ring-white/6 object-cover"
+                        width={800}
+                        height={800}
                       />
                     </div>
                     <div className="flex-1 min-w-0">

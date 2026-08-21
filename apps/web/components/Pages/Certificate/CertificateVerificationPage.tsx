@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { getUriWithOrg } from '@services/config/config'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
+import NextImage from 'next/image'
 
 interface CertificateVerificationPageProps {
   certificateUuid: string
@@ -260,7 +261,7 @@ const CertificateVerificationPage: React.FC<
                 <div className="shrink-0">
                   <div className="w-20 h-12 bg-gray-100 rounded-lg overflow-hidden ring-1 ring-inset ring-black/10">
                     {certificateData.course.thumbnail_image ? (
-                      <img
+                      <NextImage
                         src={getCourseThumbnailMediaDirectory(
                           org?.org_uuid,
                           certificateData.course.course_uuid,
@@ -268,6 +269,8 @@ const CertificateVerificationPage: React.FC<
                         )}
                         alt={`${certificateData.course.name} thumbnail`}
                         className="w-full h-full object-cover"
+                        width={800}
+                        height={800}
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-200 flex items-center justify-center">

@@ -342,6 +342,10 @@ class CORSStaticFiles(StaticFiles):
 
 app.mount("/content", CORSStaticFiles(directory="content"), name="content")
 
+# Media Route (Image Resizing)
+from src.routers.media import router as media_router
+app.include_router(media_router, prefix="/media", tags=["media"])
+
 # Global Routes
 app.include_router(v1_router)
 

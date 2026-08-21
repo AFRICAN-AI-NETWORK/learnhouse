@@ -3,6 +3,7 @@ import { Award, CheckCircle, QrCode, Building, User, Hash } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
+import NextImage from 'next/image'
 
 interface CertificatePreviewProps {
   certificationName: string
@@ -755,10 +756,12 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 className={`w-24 h-24 border-2 ${theme.secondary.replace('text-', 'border-')} rounded-md bg-white/90 backdrop-blur-sm p-1`}
               >
                 {qrCodeUrl ? (
-                  <img
+                  <NextImage
                     src={qrCodeUrl}
                     alt="Certificate QR Code"
                     className="w-full h-full object-contain"
+                    width={800}
+                    height={800}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -1028,7 +1031,7 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                 <div className="flex flex-col items-center space-y-1 w-1/3">
                   <div className={`w-32 h-32 flex items-center justify-center`}>
                     {displayOrgLogoUrl ? (
-                      <img
+                      <NextImage
                         src={displayOrgLogoUrl}
                         alt="Organization Logo"
                         style={{
@@ -1039,6 +1042,8 @@ const CertificatePreview: React.FC<CertificatePreviewProps> = ({
                           maxHeight: '100%',
                           objectFit: 'contain',
                         }}
+                        width={800}
+                        height={800}
                       />
                     ) : (
                       <div

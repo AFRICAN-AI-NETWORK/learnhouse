@@ -8,6 +8,7 @@ import { getBackendUrl } from '@services/config/config'
 import { useGlobalChat } from '@components/Contexts/GlobalChatContext'
 import NewChatDialog from './NewChatDialog'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
+import NextImage from 'next/image'
 
 interface Participant {
   id: number
@@ -300,7 +301,7 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                 >
                   {/* Avatar */}
                   <div className="relative shrink-0">
-                    <img
+                    <NextImage
                       src={
                         conversation.other_participant.avatar_image
                           ? getUserAvatarMediaDirectory(
@@ -311,6 +312,8 @@ const ConversationsList: React.FC<ConversationsListProps> = ({
                       }
                       alt={conversation.other_participant.username}
                       className="w-11 h-11 rounded-full ring-2 ring-white/6 object-cover"
+                      width={800}
+                      height={800}
                     />
                     <span
                       className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-white/20'} border-2 border-[#13131a]`}

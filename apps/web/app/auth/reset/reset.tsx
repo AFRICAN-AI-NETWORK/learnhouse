@@ -20,19 +20,19 @@ import * as Yup from 'yup'
 import { resetPassword } from '@services/auth/auth'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
+import NextImage from 'next/image'
 
-const getValidationSchema = (t: any) => Yup.object().shape({
-  email: Yup.string()
-    .required(t('validation.required'))
-    .email(t('validation.invalid_email')),
-  new_password: Yup.string()
-    .required(t('validation.required')),
-  confirm_password: Yup.string()
-    .required(t('validation.required'))
-    .oneOf([Yup.ref('new_password')], t('auth.passwords_do_not_match')),
-  reset_code: Yup.string()
-    .required(t('validation.required')),
-})
+const getValidationSchema = (t: any) =>
+  Yup.object().shape({
+    email: Yup.string()
+      .required(t('validation.required'))
+      .email(t('validation.invalid_email')),
+    new_password: Yup.string().required(t('validation.required')),
+    confirm_password: Yup.string()
+      .required(t('validation.required'))
+      .oneOf([Yup.ref('new_password')], t('auth.passwords_do_not_match')),
+    reset_code: Yup.string().required(t('validation.required')),
+  })
 
 function ResetPasswordClient() {
   const { t } = useTranslation()
@@ -109,7 +109,7 @@ function ResetPasswordClient() {
           <div className="m-auto flex space-x-4 items-center flex-wrap">
             <div className="shadow-[0px_4px_16px_rgba(0,0,0,0.02)]">
               {org?.logo_image ? (
-                <img
+                <NextImage
                   src={`${getOrgLogoMediaDirectory(
                     org?.org_uuid,
                     org?.logo_image
@@ -117,6 +117,8 @@ function ResetPasswordClient() {
                   alt="Learnhouse"
                   style={{ width: 'auto', height: 70 }}
                   className="rounded-xl shadow-xl inset-0 ring-1 ring-inset ring-black/10 bg-white"
+                  width={800}
+                  height={800}
                 />
               ) : (
                 <Image
@@ -166,10 +168,7 @@ function ResetPasswordClient() {
                 message={errors.email?.message as string}
               />
               <Form.Control asChild>
-                <Input
-                  {...register('email')}
-                  type="email"
-                />
+                <Input {...register('email')} type="email" />
               </Form.Control>
             </FormField>
 
@@ -179,10 +178,7 @@ function ResetPasswordClient() {
                 message={errors.reset_code?.message as string}
               />
               <Form.Control asChild>
-                <Input
-                  {...register('reset_code')}
-                  type="text"
-                />
+                <Input {...register('reset_code')} type="text" />
               </Form.Control>
             </FormField>
 

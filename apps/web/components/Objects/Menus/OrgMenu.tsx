@@ -11,6 +11,7 @@ import { SearchBar } from '@components/Objects/Search/SearchBar'
 import { usePathname } from 'next/navigation'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { NotificationBell } from '@components/Objects/Notifications/NotificationBell'
+import NextImage from 'next/image'
 
 type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -143,11 +144,13 @@ export const OrgMenu = (props: any) => {
               <Link href={getUriWithOrg(orgslug, '/?landing=premium')}>
                 <div className="flex w-auto h-12 rounded-md items-center m-auto py-1 justify-center">
                   {org?.logo_image ? (
-                    <img
+                    <NextImage
                       src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
                       alt="Learnhouse"
                       style={{ width: 'auto', height: '100%' }}
                       className="rounded-md"
+                      width={800}
+                      height={800}
                     />
                   ) : (
                     <LearnHouseLogo />

@@ -3,6 +3,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import NextImage from 'next/image'
 
 interface ActiveProgram {
   id: string
@@ -69,10 +70,12 @@ export default function ActiveProgramsSection({
                 >
                   {program.badgeText}
                 </span>
-                <img
+                <NextImage
                   src={program.imageUrl}
                   alt={program.name}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 hover:scale-105 z-0"
+                  width={800}
+                  height={800}
                 />
 
                 {/* Bottom Right Colored Tab */}

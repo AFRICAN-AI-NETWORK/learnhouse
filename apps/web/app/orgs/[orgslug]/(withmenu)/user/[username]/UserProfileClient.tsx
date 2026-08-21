@@ -22,6 +22,7 @@ import { getCoursesByUser } from '@services/users/users'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import CourseThumbnailLanding from '@components/Objects/Thumbnails/CourseThumbnailLanding'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 interface UserProfileClientProps {
   userData: any
@@ -57,10 +58,12 @@ const ImageModal: React.FC<{
         >
           <X className="w-6 h-6" />
         </button>
-        <img
+        <NextImage
           src={image.url}
           alt={image.caption || ''}
           className="w-full h-auto rounded-lg"
+          width={800}
+          height={800}
         />
         {image.caption && (
           <p className="mt-4 text-white text-center text-lg">{image.caption}</p>
@@ -150,11 +153,13 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                       key={index}
                       className="bg-white rounded-lg p-2 shadow-lg border-2 border-white"
                     >
-                      <img
+                      <NextImage
                         src={affiliation.logoUrl}
                         alt={affiliation.name}
                         className="w-16 h-16 object-contain"
                         title={affiliation.name}
+                        width={800}
+                        height={800}
                       />
                     </div>
                   )
@@ -222,10 +227,12 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                                 className="relative group cursor-pointer"
                                 onClick={() => setSelectedImage(image)}
                               >
-                                <img
+                                <NextImage
                                   src={image.url}
                                   alt={image.caption || ''}
                                   className="w-full h-48 object-cover rounded-lg"
+                                  width={800}
+                                  height={800}
                                 />
                                 {image.caption && (
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center p-4">
@@ -349,10 +356,12 @@ function UserProfileClient({ userData, profile }: UserProfileClientProps) {
                               >
                                 <div className="flex items-start gap-4">
                                   {affiliation.logoUrl && (
-                                    <img
+                                    <NextImage
                                       src={affiliation.logoUrl}
                                       alt={affiliation.name}
                                       className="w-12 h-12 object-contain"
+                                      width={800}
+                                      height={800}
                                     />
                                   )}
                                   <div>

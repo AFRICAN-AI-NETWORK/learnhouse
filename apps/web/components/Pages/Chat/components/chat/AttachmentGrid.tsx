@@ -7,6 +7,7 @@ import React from 'react'
 import { Download, Play } from 'lucide-react'
 import { Attachment } from '../../../../../types/chatTypes'
 import { formatFileSize } from '../../../../Utils/chatUtils'
+import NextImage from 'next/image'
 
 interface AttachmentGridProps {
   attachments: Attachment[]
@@ -41,10 +42,12 @@ export const AttachmentGrid: React.FC<AttachmentGridProps> = ({
               onClick={() => window.open(att.file_url, '_blank')}
               className="relative group rounded-lg overflow-hidden bg-white/5 border border-white/8 hover:border-white/12 transition-colors"
             >
-              <img
+              <NextImage
                 src={att.thumbnail_url || att.file_url}
                 alt={att.file_name}
                 className="w-full h-[200px] object-cover group-hover:opacity-80 transition-opacity"
+                width={800}
+                height={800}
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Download size={20} className="text-white" />
@@ -64,10 +67,12 @@ export const AttachmentGrid: React.FC<AttachmentGridProps> = ({
               className="w-full relative group rounded-lg overflow-hidden bg-white/5 border border-white/8 hover:border-white/12 transition-colors"
             >
               {att.thumbnail_url && (
-                <img
+                <NextImage
                   src={att.thumbnail_url}
                   alt={att.file_name}
                   className="w-full h-[150px] object-cover group-hover:opacity-80 transition-opacity"
+                  width={800}
+                  height={800}
                 />
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

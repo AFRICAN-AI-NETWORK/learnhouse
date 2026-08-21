@@ -28,6 +28,7 @@ import { UploadCloud, Image as ImageIcon } from 'lucide-react'
 import UnsplashImagePicker from '@components/Dashboard/Pages/Course/EditCourseGeneral/UnsplashImagePicker'
 import FormTagInput from '@components/Objects/StyledElements/Form/TagInput'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 const validationSchema = Yup.object().shape({
   name: Yup.string()
@@ -162,11 +163,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
           message={errors.name?.message}
         />
         <Form.Control asChild>
-          <Input
-            {...register('name')}
-            type="text"
-            required
-          />
+          <Input {...register('name')} type="text" required />
         </Form.Control>
       </FormField>
 
@@ -176,9 +173,7 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
           message={errors.description?.message}
         />
         <Form.Control asChild>
-          <Textarea
-            {...register('description')}
-          />
+          <Textarea {...register('description')} />
         </Form.Control>
       </FormField>
 
@@ -191,16 +186,20 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
           <div className="flex flex-col justify-center items-center h-full">
             <div className="flex flex-col justify-center items-center">
               {thumbnail ? (
-                <img
+                <NextImage
                   src={URL.createObjectURL(thumbnail)}
                   alt="Course thumbnail preview"
                   className={`${isUploading ? 'animate-pulse' : ''} shadow-sm w-[200px] h-[100px] rounded-md`}
+                  width={800}
+                  height={800}
                 />
               ) : (
-                <img
+                <NextImage
                   src="/empty_thumbnail.png"
                   alt="Empty thumbnail placeholder"
                   className="shadow-sm w-[200px] h-[100px] rounded-md bg-gray-200"
+                  width={800}
+                  height={800}
                 />
               )}
               <div className="flex justify-center items-center space-x-2">
@@ -241,7 +240,9 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
         <FormTagInput
           placeholder={t('courses.enter_to_add')}
           value={watch('learnings')}
-          onChange={(value) => setValue('learnings', value, { shouldValidate: true })}
+          onChange={(value) =>
+            setValue('learnings', value, { shouldValidate: true })
+          }
           error={errors.learnings?.message}
         />
       </FormField>
@@ -254,7 +255,9 @@ function CreateCourseModal({ closeModal, orgslug }: any) {
         <FormTagInput
           placeholder={t('courses.enter_to_add')}
           value={watch('tags')}
-          onChange={(value) => setValue('tags', value, { shouldValidate: true })}
+          onChange={(value) =>
+            setValue('tags', value, { shouldValidate: true })
+          }
           error={errors.tags?.message}
         />
       </FormField>

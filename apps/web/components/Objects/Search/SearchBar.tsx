@@ -23,6 +23,7 @@ import { getUriWithOrg } from '@services/config/config'
 import { removeCoursePrefix } from '../Thumbnails/CourseThumbnail'
 import UserAvatar from '../UserAvatar'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 interface User {
   username: string
@@ -299,7 +300,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               >
                 <div className="relative">
                   {course.thumbnail_image ? (
-                    <img
+                    <NextImage
                       src={getCourseThumbnailMediaDirectory(
                         org?.org_uuid,
                         course.course_uuid,
@@ -307,6 +308,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                       )}
                       alt={course.name}
                       className="w-10 h-10 object-cover rounded-lg"
+                      width={800}
+                      height={800}
                     />
                   ) : (
                     <div className="w-10 h-10 bg-black/5 rounded-lg flex items-center justify-center">

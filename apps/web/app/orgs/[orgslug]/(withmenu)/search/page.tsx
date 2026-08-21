@@ -15,6 +15,7 @@ import { getUriWithOrg } from '@services/config/config'
 import { removeCoursePrefix } from '@components/Objects/Thumbnails/CourseThumbnail'
 import UserAvatar from '@components/Objects/UserAvatar'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 // Types from SearchBar component
 interface User {
@@ -440,7 +441,7 @@ function SearchPage() {
                         >
                           <div className="relative h-48">
                             {course.thumbnail_image ? (
-                              <img
+                              <NextImage
                                 src={getCourseThumbnailMediaDirectory(
                                   org?.org_uuid,
                                   course.course_uuid,
@@ -448,6 +449,8 @@ function SearchPage() {
                                 )}
                                 alt={course.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                width={800}
+                                height={800}
                               />
                             ) : (
                               <div className="w-full h-full bg-black/5 flex items-center justify-center">

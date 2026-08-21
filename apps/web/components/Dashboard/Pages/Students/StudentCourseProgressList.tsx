@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Clock, Award, ChevronDown, ChevronUp } from 'lucide-react'
 import StudentCourseDetail from './StudentCourseDetail'
+import NextImage from 'next/image'
 
 interface StudentCourseProgressListProps {
   courses: any[]
@@ -51,10 +52,12 @@ function StudentCourseProgressList({
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 dark:bg-white/10">
                   {course.thumbnail_image ? (
-                    <img
+                    <NextImage
                       src={course.thumbnail_image}
                       alt={course.course_name}
                       className="w-full h-full object-cover"
+                      width={800}
+                      height={800}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold">

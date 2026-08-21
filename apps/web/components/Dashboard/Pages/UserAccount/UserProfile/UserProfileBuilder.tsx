@@ -31,6 +31,7 @@ import { getUser } from '@services/users/users'
 import { toast } from 'react-hot-toast'
 
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 // Define section types and their configurations
 const SECTION_TYPES = {
@@ -711,10 +712,12 @@ const ImageGalleryEditor: React.FC<{
                 </div>
                 {image.url && (
                   <div className="col-span-3">
-                    <img
+                    <NextImage
                       src={image.url}
                       alt={image.caption || ''}
                       className="mt-2 max-h-32 rounded-lg object-cover"
+                      width={800}
+                      height={800}
                     />
                   </div>
                 )}

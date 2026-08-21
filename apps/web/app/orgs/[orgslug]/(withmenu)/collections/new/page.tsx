@@ -12,6 +12,7 @@ import { Loader2, Image as ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 function NewCollection(props: any) {
   const { t } = useTranslation()
@@ -202,7 +203,7 @@ function NewCollection(props: any) {
                         />
                         <div className="relative w-24 h-16 rounded-md overflow-hidden bg-gray-100 shrink-0">
                           {course.thumbnail_image ? (
-                            <img
+                            <NextImage
                               src={getCourseThumbnailMediaDirectory(
                                 org.org_uuid,
                                 course.course_uuid,
@@ -210,6 +211,8 @@ function NewCollection(props: any) {
                               )}
                               alt={course.name}
                               className="object-cover"
+                              width={800}
+                              height={800}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

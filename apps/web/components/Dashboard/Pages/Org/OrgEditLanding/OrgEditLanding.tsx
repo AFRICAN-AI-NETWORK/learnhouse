@@ -56,6 +56,7 @@ import toast from 'react-hot-toast'
 import useSWR from 'swr'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@components/ui/tabs'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 // This will be created inside the component to access translations
 const getSectionTypes = (t: any) =>
@@ -1220,10 +1221,12 @@ const HeroSectionEditor: React.FC<{
                   </div>
                   {section.background.image && (
                     <div className="mt-4">
-                      <img
+                      <NextImage
                         src={section.background.image}
                         alt="Background preview"
                         className="max-h-40 rounded-lg object-cover"
+                        width={800}
+                        height={800}
                       />
                     </div>
                   )}
@@ -1435,10 +1438,12 @@ const HeroSectionEditor: React.FC<{
                   )}
                 />
                 {section.illustration?.image.url && (
-                  <img
+                  <NextImage
                     src={section.illustration?.image.url}
                     alt={section.illustration?.image.alt}
                     className="h-12 object-contain"
+                    width={800}
+                    height={800}
                   />
                 )}
               </div>
@@ -1776,10 +1781,12 @@ const TextAndImageSectionEditor: React.FC<{
           </div>
           {section.image.url && (
             <div className="mt-4">
-              <img
+              <NextImage
                 src={section.image.url}
                 alt={section.image.alt}
                 className="max-h-40 rounded-lg object-cover"
+                width={800}
+                height={800}
               />
             </div>
           )}
@@ -1860,10 +1867,12 @@ const LogosSectionEditor: React.FC<{
                   )}
                 />
                 {logo.url && (
-                  <img
+                  <NextImage
                     src={logo.url}
                     alt={logo.alt}
                     className="h-10 object-contain"
+                    width={800}
+                    height={800}
                   />
                 )}
               </div>
@@ -2012,10 +2021,12 @@ const PeopleSectionEditor: React.FC<{
                       )}
                     />
                     {person.image_url && (
-                      <img
+                      <NextImage
                         src={person.image_url}
                         alt={person.name}
                         className="w-12 h-12 rounded-full object-cover"
+                        width={800}
+                        height={800}
                       />
                     )}
                   </div>
@@ -2142,10 +2153,12 @@ const FeaturedCoursesEditor: React.FC<{
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden">
                         {course.course_thumbnail && (
-                          <img
+                          <NextImage
                             src={course.course_thumbnail}
                             alt={course.name}
                             className="w-full h-full object-cover"
+                            width={800}
+                            height={800}
                           />
                         )}
                       </div>

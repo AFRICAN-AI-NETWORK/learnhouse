@@ -7,6 +7,7 @@ import { getUriWithOrg } from '@services/config/config'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import africanAiLogo from 'public/african_ai_horizontal.png'
 import TopMarqueeBanner from './Sections/TopMarqueeBanner'
+import NextImage from 'next/image'
 
 interface LandingNavbarProps {
   org: any
@@ -60,7 +61,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           <Link href={getUriWithOrg(orgslug, '/')} className="relative z-10">
             <div className="flex items-center h-12">
               {org?.logo_image ? (
-                <img
+                <NextImage
                   src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
                   alt="Learnhouse"
                   style={{ width: 'auto', height: '100%' }}
@@ -69,9 +70,11 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                       ? 'rounded-md'
                       : 'h-full w-auto object-contain'
                   }`}
+                  width={800}
+                  height={800}
                 />
               ) : (
-                <img
+                <NextImage
                   src={africanAiLogo.src}
                   alt="African AI Network"
                   style={{ width: 'auto', height: '100%' }}
@@ -80,6 +83,8 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                       ? 'rounded-md'
                       : 'h-full w-auto object-contain'
                   }`}
+                  width={800}
+                  height={800}
                 />
               )}
             </div>
