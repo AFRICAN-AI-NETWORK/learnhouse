@@ -6,6 +6,7 @@
 import React from 'react'
 import { X } from 'lucide-react'
 import { getFileIcon, formatFileSize } from '../../../../Utils/chatUtils'
+import NextImage from 'next/image'
 
 interface FilePreviewProps {
   files: File[]
@@ -28,10 +29,12 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           <div key={index} className="relative group max-w-[200px]">
             {isImage ? (
               <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white/5 border border-white/8">
-                <img
+                <NextImage
                   src={URL.createObjectURL(file)}
                   alt={file.name}
                   className="w-full h-full object-cover"
+                  width={800}
+                  height={800}
                 />
                 <button
                   type="button"

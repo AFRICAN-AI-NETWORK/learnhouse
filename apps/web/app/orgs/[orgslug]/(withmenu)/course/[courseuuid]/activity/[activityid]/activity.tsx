@@ -64,6 +64,7 @@ import MiniInfoTooltip from '@components/Objects/MiniInfoTooltip'
 import { useTranslation } from 'react-i18next'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import { useActivityHeartbeat } from '../../../../../../../../hooks/useActivityHeartbeat'
+import NextImage from 'next/image'
 
 // Lazy load heavy components
 const Canva = lazy(
@@ -1023,7 +1024,7 @@ function ActivityClient(props: ActivityClientProps) {
                                           `/course/${courseuuid}`
                                         }
                                       >
-                                        <img
+                                        <NextImage
                                           className="w-[60px] h-[34px] rounded-md drop-shadow-md"
                                           src={`${getCourseThumbnailMediaDirectory(
                                             org?.org_uuid,
@@ -1031,6 +1032,8 @@ function ActivityClient(props: ActivityClientProps) {
                                             course.thumbnail_image
                                           )}`}
                                           alt=""
+                                          width={800}
+                                          height={800}
                                         />
                                       </Link>
                                     </div>
@@ -1633,10 +1636,12 @@ function ActivityPageNavbar({
               href={getUriWithOrg(orgslug, '') + `/course/${cleanCourseUuid}`}
               className="hidden shrink-0 bg-white p-1 shadow-xs dark:bg-transparent sm:block"
             >
-              <img
+              <NextImage
                 className="h-9 w-auto max-w-32 object-contain"
                 src={`${getOrgLogoMediaDirectory(org.org_uuid, org?.logo_image)}`}
                 alt=""
+                width={800}
+                height={800}
               />
             </Link>
             <div className="min-w-0 flex-1">

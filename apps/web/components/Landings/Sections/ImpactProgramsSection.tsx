@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle2 } from 'lucide-react'
+import NextImage from 'next/image'
 
 export default function ImpactProgramsSection() {
   return (
@@ -22,10 +23,12 @@ export default function ImpactProgramsSection() {
           {/* Internship Card */}
           <div className="bg-[#f9fafb] border border-gray-100 rounded-[32px] overflow-hidden flex flex-col group shadow-lg hover:shadow-xl transition-shadow relative">
             <div className="h-64 relative overflow-hidden bg-gray-100">
-              <img
+              <NextImage
                 src="/landing/internship_office.png"
                 alt="Internship Programme"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                width={800}
+                height={800}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#f9fafb] to-transparent" />
             </div>
@@ -61,10 +64,12 @@ export default function ImpactProgramsSection() {
           {/* Laptop Card */}
           <div className="bg-[#f9fafb] border border-gray-100 rounded-[32px] overflow-hidden flex flex-col group shadow-lg hover:shadow-xl transition-shadow relative">
             <div className="h-64 relative overflow-hidden bg-gray-100">
-              <img
+              <NextImage
                 src="/landing/laptop_giveaway.png"
                 alt="Laptop Giveaway"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                width={800}
+                height={800}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#f9fafb] to-transparent" />
             </div>

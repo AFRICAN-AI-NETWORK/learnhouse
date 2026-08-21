@@ -18,6 +18,7 @@ import ReferAndEarnSection from './Sections/ReferAndEarnSection'
 import ImpactProgramsSection from './Sections/ImpactProgramsSection'
 import MobileAppLaunchSection from './Sections/MobileAppLaunchSection'
 import GlobalFooter from './GlobalFooter'
+import NextImage from 'next/image'
 
 interface LandingPremiumProps {
   org: any
@@ -215,10 +216,12 @@ export default function LandingPremium({
                         </p>
                         <div className="flex items-center gap-4">
                           {t.image_url && (
-                            <img
+                            <NextImage
                               src={t.image_url}
                               alt={t.author}
                               className="w-12 h-12 rounded-full object-cover"
+                              width={800}
+                              height={800}
                             />
                           )}
                           <div>

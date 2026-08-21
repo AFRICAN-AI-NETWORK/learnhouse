@@ -6,6 +6,7 @@ import {
   adminApproveKYC,
   adminRejectKYC,
 } from '@services/referral/marketer.service'
+import NextImage from 'next/image'
 
 interface AdminKYCReviewPanelProps {
   orgSlug: string
@@ -28,10 +29,12 @@ export function AdminKYCReviewPanel({
   if (!kycRecord) return null
 
   const handleApprove = async () => {
-    if (!confirm(`Approve KYC verification for ${kycRecord.marketer_name}?`)) return
+    if (!confirm(`Approve KYC verification for ${kycRecord.marketer_name}?`))
+      return
     setIsSubmitting(true)
     setError(null)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
     const res = await adminApproveKYC(token, orgSlug, kycRecord.id)
     setIsSubmitting(false)
 
@@ -49,7 +52,8 @@ export function AdminKYCReviewPanel({
 
     setIsSubmitting(true)
     setError(null)
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
     const res = await adminRejectKYC(token, orgSlug, kycRecord.id, rejectReason)
     setIsSubmitting(false)
 
@@ -94,20 +98,28 @@ export function AdminKYCReviewPanel({
           <div className="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-xl space-y-2 text-xs">
             <div className="flex justify-between">
               <span className="text-gray-500">Marketer Email:</span>
-              <span className="font-medium font-mono text-gray-900 dark:text-white">{kycRecord.marketer_email}</span>
+              <span className="font-medium font-mono text-gray-900 dark:text-white">
+                {kycRecord.marketer_email}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Document Type:</span>
-              <span className="font-semibold text-gray-900 dark:text-white">{kycRecord.document_type}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {kycRecord.document_type}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">ID Number:</span>
-              <span className="font-mono text-gray-900 dark:text-white">{kycRecord.id_number || 'Provided'}</span>
+              <span className="font-mono text-gray-900 dark:text-white">
+                {kycRecord.id_number || 'Provided'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Submitted Date:</span>
               <span className="font-mono text-gray-900 dark:text-white">
-                {kycRecord.creation_date ? new Date(kycRecord.creation_date).toLocaleString() : 'N/A'}
+                {kycRecord.creation_date
+                  ? new Date(kycRecord.creation_date).toLocaleString()
+                  : 'N/A'}
               </span>
             </div>
           </div>
@@ -120,12 +132,16 @@ export function AdminKYCReviewPanel({
 
             {/* Front Image */}
             <div className="space-y-1">
-              <span className="text-xs font-medium text-gray-500 block">Front Image</span>
+              <span className="text-xs font-medium text-gray-500 block">
+                Front Image
+              </span>
               {kycRecord.front_image_url ? (
-                <img
+                <NextImage
                   src={kycRecord.front_image_url}
                   alt="Front Document"
                   className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100"
+                  width={800}
+                  height={800}
                 />
               ) : (
                 <div className="h-28 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-400">
@@ -137,23 +153,31 @@ export function AdminKYCReviewPanel({
             {/* Back Image (if present) */}
             {kycRecord.back_image_url && (
               <div className="space-y-1">
-                <span className="text-xs font-medium text-gray-500 block">Back Image</span>
-                <img
+                <span className="text-xs font-medium text-gray-500 block">
+                  Back Image
+                </span>
+                <NextImage
                   src={kycRecord.back_image_url}
                   alt="Back Document"
                   className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100"
+                  width={800}
+                  height={800}
                 />
               </div>
             )}
 
             {/* Selfie Image */}
             <div className="space-y-1">
-              <span className="text-xs font-medium text-gray-500 block">Selfie with Document</span>
+              <span className="text-xs font-medium text-gray-500 block">
+                Selfie with Document
+              </span>
               {kycRecord.selfie_image_url ? (
-                <img
+                <NextImage
                   src={kycRecord.selfie_image_url}
                   alt="Selfie"
                   className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100"
+                  width={800}
+                  height={800}
                 />
               ) : (
                 <div className="h-28 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-400">

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import NextImage from 'next/image'
 
 const partners = [
   {
@@ -22,11 +23,13 @@ export default function PartnersSection() {
             In Partnership With
           </p>
           {partners.map((partner) => (
-            <img
+            <NextImage
               key={partner.src}
               src={partner.src}
               alt={partner.alt}
               className="h-12 md:h-18 object-contain"
+              width={800}
+              height={800}
             />
           ))}
         </div>

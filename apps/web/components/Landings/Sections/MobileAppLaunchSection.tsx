@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { ArrowRight, Smartphone } from 'lucide-react'
+import NextImage from 'next/image'
 
 export default function MobileAppLaunchSection() {
   return (
@@ -40,10 +41,12 @@ export default function MobileAppLaunchSection() {
           {/* Decorative Background Elements */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-br from-blue-50 to-purple-50 rounded-full blur-3xl -z-10 opacity-70" />
 
-          <img
+          <NextImage
             src="/landing/aina_mobile_mockup.png"
             alt="Learnhouse Mobile App Mockup"
             className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform transition-transform hover:scale-[1.02] duration-700"
+            width={800}
+            height={800}
           />
         </div>
       </div>

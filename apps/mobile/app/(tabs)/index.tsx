@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
-  Image,
   Platform,
   Linking,
 } from "react-native";
+import { Image } from "expo-image";
 import { useAuth } from "../../context/AuthContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { apiRequest } from "../../services/api";
@@ -341,7 +341,7 @@ export default function HomeScreen() {
             <Image
               source={require("../../assets/aina_logo.png")}
               style={[styles.headerLogo, isDark && { tintColor: "#ffffff" }]}
-              resizeMode="contain"
+              contentFit="contain"
             />
           </View>
           <View style={styles.topNavRight}>
@@ -357,6 +357,8 @@ export default function HomeScreen() {
                 <Image
                   source={{ uri: profileImage }}
                   style={styles.avatarImage}
+                  contentFit="cover"
+                  transition={300}
                 />
               ) : (
                 <View style={styles.avatarFallback}>
@@ -402,7 +404,9 @@ export default function HomeScreen() {
                   <Image
                     source={{ uri: continueThumbnail }}
                     style={styles.continueThumbnail}
-                    onError={(e) => {
+                    contentFit="cover"
+                    transition={300}
+                    onError={() => {
                       console.warn(
                         "Continue image load error:",
                         continueThumbnail,
@@ -586,8 +590,9 @@ export default function HomeScreen() {
                       <Image
                         source={{ uri: thumbnailUrl }}
                         style={styles.horizontalImage}
-                        resizeMode="cover"
-                        onError={(e) => {
+                        contentFit="cover"
+                        transition={300}
+                        onError={() => {
                           console.warn(
                             "Featured image load error:",
                             thumbnailUrl,

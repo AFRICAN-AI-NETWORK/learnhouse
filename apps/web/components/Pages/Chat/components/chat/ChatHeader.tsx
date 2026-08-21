@@ -7,6 +7,7 @@ import React from 'react'
 import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { ParticipantUser } from '../../../../../types/chatTypes'
 import { getDisplayName } from '../../../../Utils/chatUtils'
+import NextImage from 'next/image'
 
 interface ChatHeaderProps {
   participant: ParticipantUser
@@ -47,7 +48,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </button>
         )}
         <div className="relative">
-          <img
+          <NextImage
             src={
               participant.avatar_image
                 ? getUserAvatarMediaDirectory(
@@ -58,6 +59,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             }
             alt={participant.username}
             className="w-9 h-9 rounded-full ring-2 ring-white/6 object-cover"
+            width={800}
+            height={800}
           />
           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
         </div>

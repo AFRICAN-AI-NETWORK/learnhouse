@@ -1,16 +1,29 @@
 import { NodeViewWrapper } from '@tiptap/react'
 import React, { useEffect } from 'react'
 import { Resizable } from 're-resizable'
-import { AlertTriangle, Image, Download, AlignLeft, AlignCenter, AlignRight, Expand } from 'lucide-react'
+import {
+  AlertTriangle,
+  Image,
+  Download,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Expand,
+} from 'lucide-react'
 import { uploadNewImageFile } from '../../../../../services/blocks/Image/images'
 import { getActivityBlockMediaDirectory } from '@services/media/media'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useCourse } from '@components/Contexts/CourseContext'
 import { useEditorProvider } from '@components/Contexts/Editor/EditorContext'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
-import { FileUploadBlock, FileUploadBlockButton, FileUploadBlockInput } from '../../FileUploadBlock'
-import { constructAcceptValue } from '@/lib/constants';
+import {
+  FileUploadBlock,
+  FileUploadBlockButton,
+  FileUploadBlockInput,
+} from '../../FileUploadBlock'
+import { constructAcceptValue } from '@/lib/constants'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
+import NextImage from 'next/image'
 
 const SUPPORTED_FILES = constructAcceptValue(['jpg', 'png', 'webp', 'gif'])
 
@@ -19,7 +32,7 @@ function ImageBlockComponent(props: any) {
   const course = useCourse() as any
   const editorState = useEditorProvider() as any
   const session = useLHSession() as any
-  const access_token = session?.data?.tokens?.access_token;
+  const access_token = session?.data?.tokens?.access_token
 
   const isEditable = editorState.isEditable
   const [image, setImage] = React.useState(null)
@@ -30,7 +43,9 @@ function ImageBlockComponent(props: any) {
   const [imageSize, setImageSize] = React.useState({
     width: props.node.attrs.size ? props.node.attrs.size.width : 300,
   })
-  const [alignment, setAlignment] = React.useState(props.node.attrs.alignment || 'center')
+  const [alignment, setAlignment] = React.useState(
+    props.node.attrs.alignment || 'center'
+  )
   const [isModalOpen, setIsModalOpen] = React.useState(false)
 
   const fileId = blockObject
@@ -46,7 +61,8 @@ function ImageBlockComponent(props: any) {
     setIsLoading(true)
     let object = await uploadNewImageFile(
       image,
-      props.extension.options.activity.activity_uuid,access_token
+      props.extension.options.activity.activity_uuid,
+      access_token
     )
     setIsLoading(false)
     setblockObject(object)
@@ -58,67 +74,79 @@ function ImageBlockComponent(props: any) {
   }
 
   const handleDownload = () => {
-    if (!fileId) return;
+    if (!fileId) return
 
     const imageUrl = getActivityBlockMediaDirectory(
       org?.org_uuid,
       course?.courseStructure.course_uuid,
-      blockObject.content.activity_uuid || props.extension.options.activity.activity_uuid,
+      blockObject.content.activity_uuid ||
+        props.extension.options.activity.activity_uuid,
       blockObject.block_uuid,
       fileId,
       'imageBlock'
-    );
+    )
 
-    const link = document.createElement('a');
-    link.href = imageUrl || '';
-    link.download = `image-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'jpg'}`;
-    link.setAttribute('download', '');
-    link.setAttribute('target', '_blank');
-    link.setAttribute('rel', 'noopener noreferrer');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const link = document.createElement('a')
+    link.href = imageUrl || ''
+    link.download = `image-${blockObject?.block_uuid || 'download'}.${blockObject?.content.file_format || 'jpg'}`
+    link.setAttribute('download', '')
+    link.setAttribute('target', '_blank')
+    link.setAttribute('rel', 'noopener noreferrer')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const handleExpand = () => {
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(true)
+  }
 
   const handleAlignmentChange = (newAlignment: string) => {
-    setAlignment(newAlignment);
+    setAlignment(newAlignment)
     props.updateAttributes({
       alignment: newAlignment,
-    });
-  };
+    })
+  }
 
-  const imageUrl = blockObject ? getActivityBlockMediaDirectory(
-    org?.org_uuid,
-    course?.courseStructure.course_uuid,
-    blockObject.content.activity_uuid || props.extension.options.activity.activity_uuid,
-    blockObject.block_uuid,
-    fileId || '',
-    'imageBlock'
-  ) : null;
+  const imageUrl = blockObject
+    ? getActivityBlockMediaDirectory(
+        org?.org_uuid,
+        course?.courseStructure.course_uuid,
+        blockObject.content.activity_uuid ||
+          props.extension.options.activity.activity_uuid,
+        blockObject.block_uuid,
+        fileId || '',
+        'imageBlock'
+      )
+    : null
 
   useEffect(() => {}, [course, org])
 
   const getAlignmentClass = () => {
     switch (alignment) {
       case 'left':
-        return 'justify-start';
+        return 'justify-start'
       case 'right':
-        return 'justify-end';
+        return 'justify-end'
       default:
-        return 'justify-center';
+        return 'justify-center'
     }
-  };
+  }
 
   return (
     <>
       <NodeViewWrapper className="block-image w-full">
-       <FileUploadBlock isEditable={isEditable} isLoading={isLoading} isEmpty={!blockObject} Icon={Image}>
-          <FileUploadBlockInput onChange={handleImageChange} accept={SUPPORTED_FILES} />
-          <FileUploadBlockButton onClick={handleSubmit} disabled={!image}/>
+        <FileUploadBlock
+          isEditable={isEditable}
+          isLoading={isLoading}
+          isEmpty={!blockObject}
+          Icon={Image}
+        >
+          <FileUploadBlockInput
+            onChange={handleImageChange}
+            accept={SUPPORTED_FILES}
+          />
+          <FileUploadBlockButton onClick={handleSubmit} disabled={!image} />
         </FileUploadBlock>
 
         {blockObject && isEditable && (
@@ -149,7 +177,10 @@ function ImageBlockComponent(props: any) {
               minWidth={200}
               enable={{ right: true }}
               onResizeStop={(e, direction, ref, d) => {
-                const newWidth = Math.min(imageSize.width + d.width, ref.parentElement?.clientWidth || 1000);
+                const newWidth = Math.min(
+                  imageSize.width + d.width,
+                  ref.parentElement?.clientWidth || 1000
+                )
                 props.updateAttributes({
                   size: {
                     width: newWidth,
@@ -161,11 +192,13 @@ function ImageBlockComponent(props: any) {
               }}
             >
               <div className="relative">
-                <img
+                <NextImage
                   src={imageUrl || ''}
                   alt=""
                   className="rounded-lg shadow-sm max-w-full h-auto"
                   style={{ width: '100%' }}
+                  width={800}
+                  height={800}
                 />
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-white bg-opacity-90 backdrop-blur-xs rounded-lg p-1 shadow-xs transition-opacity opacity-70 hover:opacity-100">
                   <button
@@ -206,11 +239,13 @@ function ImageBlockComponent(props: any) {
         {blockObject && !isEditable && (
           <div className={`w-full flex ${getAlignmentClass()}`}>
             <div className="relative">
-              <img
+              <NextImage
                 src={imageUrl || ''}
                 alt=""
                 className="rounded-lg shadow-sm max-w-full h-auto"
                 style={{ width: imageSize.width, maxWidth: '100%' }}
+                width={800}
+                height={800}
               />
               <div className="absolute top-2 right-2 flex gap-1">
                 <button
@@ -248,10 +283,12 @@ function ImageBlockComponent(props: any) {
           minHeight="lg"
           dialogContent={
             <div className="w-full flex items-center justify-center">
-              <img
+              <NextImage
                 src={imageUrl}
                 alt=""
                 className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-lg"
+                width={800}
+                height={800}
               />
             </div>
           }

@@ -26,6 +26,7 @@ import { createRoot } from 'react-dom/client'
 import QRCode from 'qrcode'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 interface CourseEndViewProps {
   courseName: string
@@ -466,7 +467,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         <div className="bg-card rounded-lg sm:rounded-2xl p-4 sm:p-8 nice-shadow max-w-4xl w-full space-y-4 sm:space-y-6 relative z-10">
           <div className="flex flex-col items-center space-y-4 sm:space-y-6">
             {thumbnailImage && (
-              <img
+              <NextImage
                 className="w-[150px] h-[86px] sm:w-[200px] sm:h-[114px] rounded-lg shadow-md object-cover"
                 src={`${getCourseThumbnailMediaDirectory(
                   org?.org_uuid,
@@ -474,6 +475,8 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                   thumbnailImage
                 )}`}
                 alt={courseName}
+                width={800}
+                height={800}
               />
             )}
 
@@ -616,7 +619,7 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
         <div className="bg-card rounded-lg sm:rounded-2xl p-4 sm:p-8 nice-shadow max-w-2xl w-full space-y-4 sm:space-y-6">
           <div className="flex flex-col items-center space-y-4 sm:space-y-6">
             {thumbnailImage && (
-              <img
+              <NextImage
                 className="w-[150px] h-[86px] sm:w-[200px] sm:h-[114px] rounded-lg shadow-md object-cover"
                 src={`${getCourseThumbnailMediaDirectory(
                   org?.org_uuid,
@@ -624,6 +627,8 @@ const CourseEndView: React.FC<CourseEndViewProps> = ({
                   thumbnailImage
                 )}`}
                 alt={courseName}
+                width={800}
+                height={800}
               />
             )}
 

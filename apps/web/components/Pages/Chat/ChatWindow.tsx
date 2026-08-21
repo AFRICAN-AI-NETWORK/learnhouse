@@ -43,6 +43,7 @@ import {
 } from '../../Hooks/chatHooks'
 import { MessageActions } from './components/chat/MessageActions'
 import { TypingIndicator } from './components/chat/TypingIndicator'
+import NextImage from 'next/image'
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
   conversationId,
@@ -1260,7 +1261,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </button>
           )}
           <div className="relative shrink-0">
-            <img
+            <NextImage
               src={
                 otherParticipant.avatar_image
                   ? getUserAvatarMediaDirectory(
@@ -1271,6 +1272,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               }
               alt={otherParticipant.username}
               className="w-9 h-9 rounded-full ring-2 ring-white/6 object-cover"
+              width={800}
+              height={800}
             />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#13131a]" />
           </div>
@@ -1334,7 +1337,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   className={`group flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 mb-4`}
                 >
                   {!isMine && (
-                    <img
+                    <NextImage
                       src={
                         otherParticipant.avatar_image
                           ? getUserAvatarMediaDirectory(
@@ -1345,6 +1348,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                       }
                       alt={otherParticipant.username}
                       className="w-7 h-7 rounded-full self-end shrink-0 ring-1 ring-white/6"
+                      width={800}
+                      height={800}
                     />
                   )}
                   <div
@@ -1433,10 +1438,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                                               className="block cursor-pointer p-0 border-0 bg-transparent"
                                               title={`Open ${attachment.file_name}`}
                                             >
-                                              <img
+                                              <NextImage
                                                 src={absoluteThumbUrl}
                                                 alt={attachment.file_name}
                                                 className="max-w-[200px] max-h-[200px] rounded-md object-cover group-hover:opacity-80 transition-opacity"
+                                                width={800}
+                                                height={800}
                                               />
                                             </button>
                                             <button

@@ -8,8 +8,8 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TextInput,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -319,7 +319,7 @@ export default function CoursesScreen() {
               <Image
                 source={require("../../assets/learning_hero.png")}
                 style={styles.heroBannerImage}
-                resizeMode="contain"
+                contentFit="contain"
               />
             </View>
           </View>
@@ -400,6 +400,8 @@ export default function CoursesScreen() {
                       <Image
                         source={{ uri: thumbnailUri || "" }}
                         style={styles.courseCardImage}
+                        contentFit="cover"
+                        transition={300}
                         onError={() =>
                           setImageErrors((prev) => ({
                             ...prev,
@@ -470,6 +472,8 @@ export default function CoursesScreen() {
                     <Image
                       source={{ uri: continueThumbnail }}
                       style={styles.courseCardImage}
+                      contentFit="cover"
+                      transition={300}
                       onError={() =>
                         setImageErrors((prev) => ({ ...prev, continue: true }))
                       }
@@ -710,7 +714,8 @@ const makeStyles = (Theme: any, isDark: boolean) =>
       ...Theme.shadows.sm,
     },
     courseCardLeft: {
-      width: 140,
+      width: 130,
+      height: 120,
       borderRadius: Theme.borderRadius.lg,
       overflow: "hidden",
       backgroundColor: "#0a192f",
@@ -718,6 +723,7 @@ const makeStyles = (Theme: any, isDark: boolean) =>
     courseCardImage: {
       width: "100%",
       height: "100%",
+      resizeMode: "cover",
     },
     courseCardImageFallback: {
       flex: 1,

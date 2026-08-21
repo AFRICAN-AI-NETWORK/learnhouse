@@ -2,6 +2,8 @@ export function getCourseThumbnailMediaDirectory(
   orgUUID: string,
   courseUUID: string,
   fileId: string,
+  width?: number,
+  quality?: number,
 ) {
   if (!fileId) return null;
 
@@ -11,14 +13,25 @@ export function getCourseThumbnailMediaDirectory(
   // Make sure baseUrl ends with a slash
   const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 
-  return `${cleanBaseUrl}content/orgs/${orgUUID}/courses/${courseUUID}/thumbnails/${fileId}`;
+  let url = `${cleanBaseUrl}media/orgs/${orgUUID}/courses/${courseUUID}/thumbnails/${fileId}`;
+  if (width) url += `?w=${width}`;
+  if (quality) url += `${width ? "&" : "?"}q=${quality}`;
+  return url;
 }
 
-export function getUserAvatarMediaDirectory(userUUID: string, fileId: string) {
+export function getUserAvatarMediaDirectory(
+  userUUID: string,
+  fileId: string,
+  width?: number,
+  quality?: number,
+) {
   if (!fileId || !userUUID) return null;
 
   const baseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
   const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 
-  return `${cleanBaseUrl}content/users/${userUUID}/avatars/${fileId}`;
+  let url = `${cleanBaseUrl}media/users/${userUUID}/avatars/${fileId}`;
+  if (width) url += `?w=${width}`;
+  if (quality) url += `${width ? "&" : "?"}q=${quality}`;
+  return url;
 }

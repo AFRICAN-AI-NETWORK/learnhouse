@@ -12,6 +12,7 @@ import Image from 'next/image'
 import EmptyThumbnailImage from '../../../public/empty_thumbnail.png'
 import { BookOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import NextImage from 'next/image'
 
 export function CourseOverviewTop({
   params,
@@ -36,7 +37,7 @@ export function CourseOverviewTop({
             href={getUriWithOrg(org?.slug, '') + `/course/${params.courseuuid}`}
           >
             {course?.courseStructure?.thumbnail_image ? (
-              <img
+              <NextImage
                 className="w-[100px] h-[57px] rounded-md drop-shadow-md"
                 src={`${getCourseThumbnailMediaDirectory(
                   org?.org_uuid,
@@ -44,6 +45,8 @@ export function CourseOverviewTop({
                   course.courseStructure.thumbnail_image
                 )}`}
                 alt=""
+                width={800}
+                height={800}
               />
             ) : (
               <Image

@@ -4,6 +4,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import NextImage from 'next/image'
 
 interface PersonalizedPathSectionProps {
   orgslug: string
@@ -84,10 +85,12 @@ export default function PersonalizedPathSection({
 
           {/* Main Image Wrapper */}
           <div className="relative z-10 aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-            <img
+            <NextImage
               src="/landing/student_studying_library.png"
               alt="Personalized Learning Platform"
               className="w-full h-full object-cover"
+              width={800}
+              height={800}
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-[#0057ff]/10 to-transparent mix-blend-overlay" />
           </div>

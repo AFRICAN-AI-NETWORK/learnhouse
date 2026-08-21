@@ -5,6 +5,7 @@ import { getUserAvatarMediaDirectory } from '@services/media/media'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import UserProfilePopup from './UserProfilePopup'
 import { getUserByUsername, getUser } from '@services/users/users'
+import NextImage from 'next/image'
 
 type UserAvatarProps = {
   width?: number
@@ -118,7 +119,7 @@ function UserAvatar(props: UserAvatarProps) {
   }
 
   const avatarImage = (
-    <img
+    <NextImage
       alt="User Avatar"
       width={props.width ?? 50}
       height={props.width ?? 50}

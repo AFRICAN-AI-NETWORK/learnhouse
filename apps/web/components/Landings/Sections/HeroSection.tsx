@@ -3,7 +3,15 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Sparkles, ArrowRight, Cpu, CheckCircle2, Users, Laptop } from 'lucide-react'
+import {
+  Sparkles,
+  ArrowRight,
+  Cpu,
+  CheckCircle2,
+  Users,
+  Laptop,
+} from 'lucide-react'
+import NextImage from 'next/image'
 
 interface HeroSectionProps {
   org: any
@@ -40,7 +48,10 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
           </h1>
 
           <p className="text-lg md:text-xl text-gray-500 max-w-xl font-medium leading-relaxed">
-            AINA (African AI Network Academy) is the premier gateway to practical AI education. Build neural networks, code multi-agent loops, earn cryptographic credentials, and secure high-paying global tech internships.
+            AINA (African AI Network Academy) is the premier gateway to
+            practical AI education. Build neural networks, code multi-agent
+            loops, earn cryptographic credentials, and secure high-paying global
+            tech internships.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
@@ -112,10 +123,12 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
               transition={{ duration: 0.8 }}
               className="relative z-10 w-full flex items-end justify-center origin-bottom"
             >
-              <img
+              <NextImage
                 src="/landing/hero_person.png"
                 alt="Tech Professional"
                 className="relative z-10 w-auto h-auto min-h-[600px] lg:min-h-[700px] max-h-[85vh] object-cover object-bottom scale-[1.05]"
+                width={800}
+                height={800}
               />
             </motion.div>
 
@@ -173,7 +186,12 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
               animate={{ opacity: 1, y: [0, 10, 0], x: 0 }}
               transition={{
                 opacity: { duration: 0.6, delay: 0.4 },
-                y: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 },
+                y: {
+                  duration: 4.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 0.5,
+                },
               }}
               className="absolute top-16 left-[-1rem] lg:left-[-3rem] z-20 bg-white/90 backdrop-blur-xl border border-gray-100 p-3 lg:p-4 rounded-2xl shadow-xl flex items-center gap-3 lg:gap-4"
             >
@@ -196,17 +214,42 @@ export default function HeroSection({ org, orgslug }: HeroSectionProps) {
               animate={{ opacity: 1, y: [0, -10, 0], x: 0 }}
               transition={{
                 opacity: { duration: 0.6, delay: 0.6 },
-                y: { duration: 5.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 },
+                y: {
+                  duration: 5.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 1.5,
+                },
               }}
               className="absolute bottom-20 right-[-1rem] lg:right-[-3rem] z-20 bg-white/90 backdrop-blur-xl border border-gray-100 p-3 lg:p-4 rounded-2xl shadow-xl flex items-center gap-3 lg:gap-4"
             >
               <div className="flex -space-x-3 lg:-space-x-4">
-                <img className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=11" alt="Avatar" />
-                <img className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=5" alt="Avatar" />
-                <img className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=12" alt="Avatar" />
+                <NextImage
+                  className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover"
+                  src="https://i.pravatar.cc/100?img=11"
+                  alt="Avatar"
+                  width={800}
+                  height={800}
+                />
+                <NextImage
+                  className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover"
+                  src="https://i.pravatar.cc/100?img=5"
+                  alt="Avatar"
+                  width={800}
+                  height={800}
+                />
+                <NextImage
+                  className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover"
+                  src="https://i.pravatar.cc/100?img=12"
+                  alt="Avatar"
+                  width={800}
+                  height={800}
+                />
               </div>
               <div>
-                <p className="text-[#0a0f1e] font-black text-sm lg:text-base leading-tight">88% hired remote</p>
+                <p className="text-[#0a0f1e] font-black text-sm lg:text-base leading-tight">
+                  88% hired remote
+                </p>
                 <p className="text-gray-500 text-[10px] lg:text-xs font-medium">
                   average $35k base
                 </p>

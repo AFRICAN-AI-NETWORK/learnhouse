@@ -22,23 +22,24 @@ import {
   formatE164,
   validatePhoneFields,
 } from '@/lib/phone-number'
+import NextImage from 'next/image'
 
-const getValidationSchema = (t: any) => Yup.object().shape({
-  email: Yup.string()
-    .required(t('validation.required'))
-    .email(t('validation.invalid_email')),
-  password: Yup.string()
-    .required(t('validation.required'))
-    .min(8, t('validation.password_min_length')),
-  username: Yup.string()
-    .required(t('validation.required'))
-    .min(4, t('validation.username_min_length')),
-  bio: Yup.string().required(t('validation.required')),
-  first_name: Yup.string().required(t('validation.required')),
-  last_name: Yup.string().required(t('validation.required')),
-  country_code: Yup.string().required(t('validation.required')),
-  phone_number: Yup.string()
-    .test(
+const getValidationSchema = (t: any) =>
+  Yup.object().shape({
+    email: Yup.string()
+      .required(t('validation.required'))
+      .email(t('validation.invalid_email')),
+    password: Yup.string()
+      .required(t('validation.required'))
+      .min(8, t('validation.password_min_length')),
+    username: Yup.string()
+      .required(t('validation.required'))
+      .min(4, t('validation.username_min_length')),
+    bio: Yup.string().required(t('validation.required')),
+    first_name: Yup.string().required(t('validation.required')),
+    last_name: Yup.string().required(t('validation.required')),
+    country_code: Yup.string().required(t('validation.required')),
+    phone_number: Yup.string().test(
       'is-valid-phone',
       t('validation.invalid_phone') || 'Invalid phone number',
       function (value) {
@@ -51,7 +52,7 @@ const getValidationSchema = (t: any) => Yup.object().shape({
         return !(phoneErrors.phone_number || phoneErrors.country_code)
       }
     ),
-})
+  })
 
 interface InviteOnlySignUpProps {
   inviteCode: string
@@ -91,47 +92,47 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
     setError('')
     setMessage('')
     setIsSubmitting(true)
-      // Only send required fields, and format phone_number
-      const payload = {
-        org_slug: values.org_slug,
-        org_id: values.org_id,
-        email: values.email,
-        password: values.password,
-        username: values.username,
-        bio: values.bio,
-        phone_number: formatE164(values.country_code, values.phone_number),
-        first_name: values.first_name,
-        last_name: values.last_name,
-      }
-      let res = await signUpWithInviteCode(payload, props.inviteCode)
-      let message = await res.json()
-      if (res.status == 200) {
-        setMessage(t('auth.account_created_success'))
-        setTimeout(() => {
-          const orgSlug = org?.slug || 'default'
-          router.push(`/login?orgslug=${orgSlug}`)
-        }, 2000)
-        setIsSubmitting(false)
-      } else if (
-        res.status == 401 ||
-        res.status == 400 ||
-        res.status == 404 ||
-        res.status == 409
-      ) {
-        const detail = message.detail
-        const errorMessage = Array.isArray(detail)
-          ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
-          : typeof detail === 'string'
-            ? detail
-            : detail?.msg ||
-              JSON.stringify(detail) ||
-              t('common.something_went_wrong')
-        setError(errorMessage)
-        setIsSubmitting(false)
-      } else {
-        setError(t('common.something_went_wrong'))
-        setIsSubmitting(false)
-      }
+    // Only send required fields, and format phone_number
+    const payload = {
+      org_slug: values.org_slug,
+      org_id: values.org_id,
+      email: values.email,
+      password: values.password,
+      username: values.username,
+      bio: values.bio,
+      phone_number: formatE164(values.country_code, values.phone_number),
+      first_name: values.first_name,
+      last_name: values.last_name,
+    }
+    let res = await signUpWithInviteCode(payload, props.inviteCode)
+    let message = await res.json()
+    if (res.status == 200) {
+      setMessage(t('auth.account_created_success'))
+      setTimeout(() => {
+        const orgSlug = org?.slug || 'default'
+        router.push(`/login?orgslug=${orgSlug}`)
+      }, 2000)
+      setIsSubmitting(false)
+    } else if (
+      res.status == 401 ||
+      res.status == 400 ||
+      res.status == 404 ||
+      res.status == 409
+    ) {
+      const detail = message.detail
+      const errorMessage = Array.isArray(detail)
+        ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+        : typeof detail === 'string'
+          ? detail
+          : detail?.msg ||
+            JSON.stringify(detail) ||
+            t('common.something_went_wrong')
+      setError(errorMessage)
+      setIsSubmitting(false)
+    } else {
+      setError(t('common.something_went_wrong'))
+      setIsSubmitting(false)
+    }
   }
 
   useEffect(() => {}, [org])
@@ -166,11 +167,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
             message={formErrors.email?.message as string}
           />
           <Form.Control asChild>
-            <Input
-              {...register('email')}
-              type="email"
-              required
-            />
+            <Input {...register('email')} type="email" required />
           </Form.Control>
         </FormField>
         <PhoneNumberFieldsRHF
@@ -187,11 +184,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
               message={formErrors.first_name?.message as string}
             />
             <Form.Control asChild>
-              <Input
-                {...register('first_name')}
-                type="text"
-                required
-              />
+              <Input {...register('first_name')} type="text" required />
             </Form.Control>
           </FormField>
           <FormField name="last_name">
@@ -200,11 +193,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
               message={formErrors.last_name?.message as string}
             />
             <Form.Control asChild>
-              <Input
-                {...register('last_name')}
-                type="text"
-                required
-              />
+              <Input {...register('last_name')} type="text" required />
             </Form.Control>
           </FormField>
         </div>
@@ -232,11 +221,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
           />
 
           <Form.Control asChild>
-            <Input
-              {...register('username')}
-              type="text"
-              required
-            />
+            <Input {...register('username')} type="text" required />
           </Form.Control>
         </FormField>
 
@@ -248,10 +233,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
           />
 
           <Form.Control asChild>
-            <Textarea
-              {...register('bio')}
-              required
-            />
+            <Textarea {...register('bio')} required />
           </Form.Control>
         </FormField>
 
@@ -268,7 +250,7 @@ function InviteOnlySignUpComponent(props: InviteOnlySignUpProps) {
       {/* <div>
         <div className='flex h-0.5 rounded-2xl bg-slate-100 mt-5 mb-5 mx-10'></div>
         <button onClick={() => signIn('google')} className="flex justify-center py-3 text-md w-full bg-white text-slate-600 space-x-3 font-semibold text-center p-2 rounded-md shadow-sm hover:cursor-pointer">
-          <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="" />
+          <NextImage src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt=""  width={800} height={800} />
           <span>{t('auth.sign_in_with_google')}</span>
         </button>
       </div> */}
