@@ -131,23 +131,18 @@ export default function BundleUpsellBanner({
             Upgrade to the {bestBundle.name}
           </h3>
           <p className="text-slate-600 text-sm">
-            This module costs{' '}
-            <strong>
-              {standaloneProduct.amount === 0
-                ? 'Free'
-                : `${standaloneProduct.currency} ${standaloneProduct.amount}`}
-            </strong>{' '}
-            by itself. Unlock this course <strong>AND</strong> the rest of the
-            ecosystem with the full bundle for only{' '}
-            <strong>
-              {bestBundle.currency} {bestBundle.amount}
-            </strong>
-            .
+            Choose a plan that works best for you. You can either pay monthly or make a one-time payment to get full lifetime access.
           </p>
         </div>
 
         <Link
-          href={getUriWithOrg(orgslug, `/pricing`)}
+          href={(() => {
+            const name = (course?.name || '').toLowerCase()
+            if (name.includes('content creator')) return getUriWithOrg(orgslug, '/ai-automation-content-creators')
+            if (name.includes('business')) return getUriWithOrg(orgslug, '/ai-automation')
+            if (name.includes('data science') || name.includes('fundamentals')) return getUriWithOrg(orgslug, '/ai-fundamentals')
+            return getUriWithOrg(orgslug, '/pricing')
+          })()}
           className="shrink-0 flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-sm hover:shadow active:scale-95"
         >
           View Packages
