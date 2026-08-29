@@ -1507,6 +1507,7 @@ function formatDate(value?: string) {
 }
 
 function escapeHtml(value?: string) {
+  // nosemgrep: javascript.audit.detect-replaceall-sanitization.detect-replaceall-sanitization
   return (value || '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')

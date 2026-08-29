@@ -1,6 +1,7 @@
 import logging
 from datetime import UTC, datetime
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from src.db.communications import (
@@ -107,12 +108,12 @@ async def process_campaign_dispatch_job(db_session: Session):
             
             if not pending_count:
                 # Roll up campaign status
-                failed_count = len(db_session.exec(
-                    select(CampaignRecipient).where(
+                failed_count = db_session.exec(
+                    select(func.count(CampaignRecipient.id)).where(
                         CampaignRecipient.campaign_id == campaign.id,
                         CampaignRecipient.status == CampaignRecipientStatus.FAILED_PERMANENT
                     )
-                ).all())
+                ).one()
                 
                 campaign.failed_count = failed_count
                 campaign.completed_at = datetime.now(UTC)
