@@ -57,7 +57,11 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
     unsubscribe_url: Pre-generated unique unsubscribe URL for this user
     """
     try:
-        content = CampaignContent(**campaign.get("content_json", {}))
+        import json
+        content_data = campaign.get("content_json") or {}
+        if isinstance(content_data, str):
+            content_data = json.loads(content_data)
+        content = CampaignContent(**content_data)
     except Exception as e:
         raise ValueError(f"Invalid content JSON: {e}")
 

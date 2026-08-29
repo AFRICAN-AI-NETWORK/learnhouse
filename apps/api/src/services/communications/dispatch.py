@@ -21,57 +21,59 @@ logger = logging.getLogger(__name__)
 COMMUNICATIONS_EMAIL_BATCH_SIZE = 50
 COMMUNICATIONS_MAX_EMAIL_ATTEMPTS = 3
 
-async def queue_campaign_recipients(db_session: Session, campaign_id: int):
+async def queue_campaign_recipients(campaign_id: int):
     """Resolve targets and create CampaignRecipient rows."""
-    campaign = db_session.get(Campaign, campaign_id)
-    if not campaign or campaign.status not in [CampaignStatus.DRAFT, CampaignStatus.QUEUED]:
-        return
+    from src.core.events.database import engine
+    with Session(engine) as db_session:
+        campaign = db_session.get(Campaign, campaign_id)
+        if not campaign or campaign.status not in [CampaignStatus.DRAFT, CampaignStatus.QUEUED]:
+            return
 
-    # Update status to processing recipients
-    campaign.status = CampaignStatus.PROCESSING
-    db_session.commit()
+        # Update status to processing recipients
+        campaign.status = CampaignStatus.PROCESSING
+        db_session.commit()
 
-    try:
-        # Resolve target emails
-        target_emails = await resolve_campaign_targets(
-            db_session, 
-            campaign.org_id, 
-            campaign.target_type, 
-            campaign.target_metadata
-        )
-
-        # Filter unsubscribes (unless CUSTOM_EMAILS and explicitly bypassing - but for now we filter all marketing)
-        if campaign.campaign_type == "COURSE_MARKETING":
-            unsubscribed = await get_unsubscribed_emails(db_session, campaign.org_id, UnsubscribeScope.MARKETING)
-            target_emails = target_emails - unsubscribed
-
-        # Insert recipient rows
-        recipients = []
-        now_str = datetime.now(timezone.utc).isoformat()
-        for email in target_emails:
-            recipients.append(
-                CampaignRecipient(
-                    campaign_id=campaign.id,
-                    org_id=campaign.org_id,
-                    email=email,
-                    status=CampaignRecipientStatus.PENDING,
-                    creation_date=now_str,
-                    update_date=now_str
-                )
+        try:
+            # Resolve target emails
+            target_emails = await resolve_campaign_targets(
+                db_session, 
+                campaign.org_id, 
+                campaign.target_type, 
+                campaign.target_metadata
             )
 
-        if recipients:
-            db_session.add_all(recipients)
-            
-        campaign.total_targets = len(recipients)
-        campaign.status = CampaignStatus.QUEUED
-        db_session.commit()
+            # Filter unsubscribes (unless CUSTOM_EMAILS and explicitly bypassing - but for now we filter all marketing)
+            if campaign.campaign_type == "COURSE_MARKETING":
+                unsubscribed = await get_unsubscribed_emails(db_session, campaign.org_id, UnsubscribeScope.MARKETING)
+                target_emails = target_emails - unsubscribed
 
-    except Exception as e:
-        logger.error(f"Failed to queue recipients for campaign {campaign_id}: {e}")
-        campaign.status = CampaignStatus.FAILED
-        campaign.error_log = str(e)
-        db_session.commit()
+            # Insert recipient rows
+            recipients = []
+            now_str = datetime.now(timezone.utc).isoformat()
+            for email in target_emails:
+                recipients.append(
+                    CampaignRecipient(
+                        campaign_id=campaign.id,
+                        org_id=campaign.org_id,
+                        email=email,
+                        status=CampaignRecipientStatus.PENDING,
+                        creation_date=now_str,
+                        update_date=now_str
+                    )
+                )
+
+            if recipients:
+                db_session.add_all(recipients)
+                
+            campaign.total_targets = len(recipients)
+            campaign.status = CampaignStatus.QUEUED
+            db_session.commit()
+
+        except Exception as e:
+            logger.error(f"Failed to queue recipients for campaign {campaign_id}: {e}")
+            campaign.status = CampaignStatus.FAILED
+            campaign.error_log = str(e)
+            db_session.commit()
 
 
 async def process_campaign_dispatch_job(db_session: Session):
@@ -138,10 +140,20 @@ async def process_campaign_dispatch_job(db_session: Session):
                 # Generate unique unsubscribe link (mocked logic)
                 unsubscribe_url = f"https://app.learnhouse.com/unsubscribe?token=mock&email={recipient.email}"
                 
+                campaign_data = {
+                    "subject": campaign.subject,
+                    "preheader": campaign.preheader,
+                    "sender_name": campaign.sender_name,
+                    "content_json": campaign.content_json,
+                }
+                recipient_data = {
+                    "email": recipient.email
+                }
+                
                 # Render email
                 html_body, text_body = render_campaign_email(
-                    campaign.dict(), 
-                    recipient.dict(), 
+                    campaign_data, 
+                    recipient_data, 
                     unsubscribe_url
                 )
                 

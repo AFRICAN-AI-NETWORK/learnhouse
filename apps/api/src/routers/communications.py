@@ -108,7 +108,7 @@ async def api_send_campaign(
     if not campaign or campaign.org_id != org_id:
         raise HTTPException(status_code=404, detail="Campaign not found")
         
-    background_tasks.add_task(queue_campaign_recipients, db_session, campaign_id)
+    background_tasks.add_task(queue_campaign_recipients, campaign_id)
     return CampaignRead.model_validate(campaign)
 
 

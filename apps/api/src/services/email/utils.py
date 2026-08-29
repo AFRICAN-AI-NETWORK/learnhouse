@@ -79,7 +79,7 @@ def send_email(to: EmailStr, subject: str, body: str):
 
     except Exception as e:  # noqa: BLE001
         error_msg = f"Email sending error: {e!s}"
-        print(f"❌ {error_msg}")
+        print(f"[ERROR] {error_msg}")
         raise Exception(f"Failed to send email: {e!s}")
 
 
@@ -87,12 +87,12 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, schedul
     """
     Send email using the Resend API with native scheduling support.
     """
-    resend.api_key = os.getenv("RESEND_API_KEY")
+    resend.api_key = os.getenv("RESEND_API_KEY") or os.getenv("EMAIL_PASSWORD")
     if not resend.api_key:
-        raise ValueError("RESEND_API_KEY must be set in environment variables")
+        raise ValueError("RESEND_API_KEY or EMAIL_PASSWORD must be set in environment variables")
         
     sender_name = os.getenv("EMAIL_SENDER_NAME", "AFRICAN AI NETWORK LMS")
-    sender_address = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev") # Fallback to resend default
+    sender_address = os.getenv("RESEND_FROM_EMAIL") or os.getenv("EMAIL_ADDRESS") or "onboarding@resend.dev"
     
     from_email = f"{sender_name} <{sender_address}>"
     
@@ -112,10 +112,10 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, schedul
         
     try:
         response = resend.Emails.send(params)
-        print(f"✅ Resend Email queued successfully for {to}")
+        print(f"[SUCCESS] Resend Email queued successfully for {to}")
         return response
     except Exception as e:
         error_msg = f"Resend sending error: {e!s}"
-        print(f"❌ {error_msg}")
+        print(f"[ERROR] {error_msg}")
         raise Exception(f"Failed to send email via Resend: {e!s}")
 
