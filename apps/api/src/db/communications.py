@@ -1,7 +1,16 @@
 from enum import StrEnum
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Index, UniqueConstraint
+from pydantic import validator
+from sqlalchemy import (
+    JSON,
+    Column,
+    ForeignKey,
+    Integer,
+    String,
+    Index,
+    UniqueConstraint,
+)
 from sqlmodel import Field, SQLModel
 
 
@@ -48,22 +57,28 @@ class CampaignBase(SQLModel):
     subject: str
     body: str | None = None
     target_type: CampaignTargetType
-    target_metadata: dict = Field(default={}, sa_column=Column(JSON))
+    target_metadata: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     send_via_email: bool = True
     send_via_chat: bool = False
-    
+
     # New broadcast fields
     campaign_type: CampaignType = CampaignType.COURSE_MARKETING
     preheader: str | None = None
     sender_name: str | None = None
     reply_to_email: str | None = None
-    content_json: dict = Field(default={}, sa_column=Column(JSON))
+    content_json: dict | None = Field(default_factory=dict, sa_column=Column(JSON))
     scheduled_at: datetime | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
     failed_count: int = 0
     skipped_count: int = 0
     retry_count: int = 0
+
+    @validator("target_metadata", "content_json", pre=True, always=True)
+    def normalize_nullable_json(cls, value):
+        if value is None:
+            return {}
+        return value
 
 
 class Campaign(CampaignBase, table=True):
@@ -87,7 +102,9 @@ class CampaignRecipient(SQLModel, table=True):
     __table_args__ = (
         Index("ix_campaign_recipient_campaign_id_status", "campaign_id", "status"),
         Index("ix_campaign_recipient_org_id_email", "org_id", "email"),
-        Index("ix_campaign_recipient_status_last_attempt_at", "status", "last_attempt_at"),
+        Index(
+            "ix_campaign_recipient_status_last_attempt_at", "status", "last_attempt_at"
+        ),
     )
 
     id: int | None = Field(default=None, primary_key=True)
@@ -99,7 +116,7 @@ class CampaignRecipient(SQLModel, table=True):
     )
     user_id: int | None = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
     email: str
     status: CampaignRecipientStatus = CampaignRecipientStatus.PENDING
@@ -123,7 +140,7 @@ class EmailUnsubscribe(SQLModel, table=True):
     )
     user_id: int | None = Field(
         default=None,
-        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL"))
+        sa_column=Column(Integer, ForeignKey("user.id", ondelete="SET NULL")),
     )
     email: str = Field(index=True)
     scope: UnsubscribeScope = UnsubscribeScope.MARKETING

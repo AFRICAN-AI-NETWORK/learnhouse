@@ -115,8 +115,8 @@ function DashboardHome() {
           <DashboardCard
             href="/dash/communications"
             icon={<Megaphone className="mx-auto text-gray-500" size={50} />}
-            title="Communications"
-            description="Send batch emails and announcements to students"
+            title="Marketing Emails"
+            description="Compose and send course broadcasts to selected audiences"
           />
         )}
         {canSeeHandbook && (

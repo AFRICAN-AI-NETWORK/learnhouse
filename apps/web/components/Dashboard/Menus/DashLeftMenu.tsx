@@ -249,7 +249,7 @@ function DashLeftMenu() {
             <MenuLink
               href="/dash/communications"
               icon={<Megaphone size={18} />}
-              label="Communication Hub"
+              label="Marketing Emails"
               isCollapsed={isCollapsed}
             />
           )}
