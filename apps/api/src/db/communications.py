@@ -1,14 +1,13 @@
-from enum import StrEnum
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import validator
 from sqlalchemy import (
     JSON,
     Column,
     ForeignKey,
-    Integer,
-    String,
     Index,
+    Integer,
     UniqueConstraint,
 )
 from sqlmodel import Field, SQLModel

@@ -3,8 +3,8 @@ import smtplib
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import resend
 
+import resend
 from pydantic import EmailStr
 
 
@@ -114,7 +114,7 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, schedul
         response = resend.Emails.send(params)
         print(f"[SUCCESS] Resend Email queued successfully for {to}")
         return response
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         error_msg = f"Resend sending error: {e!s}"
         print(f"[ERROR] {error_msg}")
         raise Exception(f"Failed to send email via Resend: {e!s}")

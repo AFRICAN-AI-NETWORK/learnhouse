@@ -1,5 +1,6 @@
-from pydantic import BaseModel, HttpUrl, Field
-from typing import List, Literal, Optional
+from typing import Literal, Optional
+
+from pydantic import BaseModel, Field, HttpUrl
 
 # --- Validation Schemas ---
 
@@ -39,7 +40,7 @@ class FooterSection(BaseModel):
     community_link: Optional[HttpUrl] = None
 
 class CampaignContent(BaseModel):
-    sections: List[
+    sections: list[
         HeaderSection | TextSection | CourseSection | ImageSection | ButtonSection | FooterSection
     ]
 
@@ -62,7 +63,7 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
         if isinstance(content_data, str):
             content_data = json.loads(content_data)
         content = CampaignContent(**content_data)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise ValueError(f"Invalid content JSON: {e}")
 
     # Start HTML template

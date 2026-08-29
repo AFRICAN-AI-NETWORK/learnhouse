@@ -1,8 +1,9 @@
 import hashlib
 import hmac
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Optional
+
 from sqlmodel import Session, select
 
 from src.db.communications import EmailUnsubscribe, UnsubscribeScope
@@ -13,7 +14,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key").encode("utf-8")
 
 def generate_unsubscribe_token(org_id: int, email: str, scope: UnsubscribeScope) -> str:
     """Generate a secure HMAC-based unsubscribe token."""
-    message = f"{org_id}:{email}:{scope.value}".encode("utf-8")
+    message = f"{org_id}:{email}:{scope.value}".encode()
     return hmac.new(SECRET_KEY, message, hashlib.sha256).hexdigest()
 
 
@@ -50,8 +51,8 @@ async def unsubscribe_user(
         email=email,
         scope=scope,
         token_hash=token,
-        unsubscribed_at=datetime.now(timezone.utc),
-        creation_date=datetime.now(timezone.utc).isoformat()
+        unsubscribed_at=datetime.now(UTC),
+        creation_date=datetime.now(UTC).isoformat()
     )
     db_session.add(unsub)
     db_session.commit()

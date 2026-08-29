@@ -1,19 +1,20 @@
-import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlmodel import Session, select
-from typing import List, Dict
 
 from src.db.communications import (
-    Campaign, 
-    CampaignRecipient, 
-    CampaignStatus, 
+    Campaign,
+    CampaignRecipient,
     CampaignRecipientStatus,
-    CampaignTargetType
+    CampaignStatus,
 )
-from src.services.communications.targets import resolve_campaign_targets
 from src.services.communications.rendering import render_campaign_email
-from src.services.communications.unsubscribe import get_unsubscribed_emails, UnsubscribeScope
+from src.services.communications.targets import resolve_campaign_targets
+from src.services.communications.unsubscribe import (
+    UnsubscribeScope,
+    get_unsubscribed_emails,
+)
 from src.services.email.utils import send_resend_email
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ async def queue_campaign_recipients(campaign_id: int):
 
             # Insert recipient rows
             recipients = []
-            now_str = datetime.now(timezone.utc).isoformat()
+            now_str = datetime.now(UTC).isoformat()
             for email in target_emails:
                 recipients.append(
                     CampaignRecipient(
@@ -69,7 +70,7 @@ async def queue_campaign_recipients(campaign_id: int):
             campaign.status = CampaignStatus.QUEUED
             db_session.commit()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to queue recipients for campaign {campaign_id}: {e}")
             campaign.status = CampaignStatus.FAILED
             campaign.error_log = str(e)
@@ -114,7 +115,7 @@ async def process_campaign_dispatch_job(db_session: Session):
                 ).all())
                 
                 campaign.failed_count = failed_count
-                campaign.completed_at = datetime.now(timezone.utc)
+                campaign.completed_at = datetime.now(UTC)
                 if failed_count > 0:
                     campaign.status = CampaignStatus.PARTIALLY_FAILED
                 else:
@@ -126,14 +127,14 @@ async def process_campaign_dispatch_job(db_session: Session):
         # Process batch
         campaign.status = CampaignStatus.PROCESSING
         if not campaign.started_at:
-            campaign.started_at = datetime.now(timezone.utc)
+            campaign.started_at = datetime.now(UTC)
         db_session.commit()
 
         # In a real setup, we'd use gather or a worker pool.
         for recipient in recipients:
             recipient.status = CampaignRecipientStatus.SENDING
             recipient.attempt_count += 1
-            recipient.last_attempt_at = datetime.now(timezone.utc)
+            recipient.last_attempt_at = datetime.now(UTC)
             db_session.commit()
             
             try:
@@ -166,15 +167,15 @@ async def process_campaign_dispatch_job(db_session: Session):
                 )
                 
                 recipient.status = CampaignRecipientStatus.SENT
-                recipient.sent_at = datetime.now(timezone.utc)
+                recipient.sent_at = datetime.now(UTC)
                 campaign.sent_count += 1
                 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 recipient.last_error = str(e)
                 if recipient.attempt_count >= COMMUNICATIONS_MAX_EMAIL_ATTEMPTS:
                     recipient.status = CampaignRecipientStatus.FAILED_PERMANENT
                 else:
                     recipient.status = CampaignRecipientStatus.FAILED_RETRYABLE
                     
-            recipient.update_date = datetime.now(timezone.utc).isoformat()
+            recipient.update_date = datetime.now(UTC).isoformat()
             db_session.commit()

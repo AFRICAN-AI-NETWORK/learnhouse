@@ -1,3 +1,4 @@
+
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -7,10 +8,14 @@ from fastapi import (
     UploadFile,
 )
 from sqlmodel import Session, select
-from typing import List
 
 from src.core.events.database import get_db_session
-from src.db.communications import Campaign, CampaignCreate, CampaignRead, CampaignRecipient, CampaignRecipientStatus
+from src.db.communications import (
+    CampaignCreate,
+    CampaignRead,
+    CampaignRecipient,
+    CampaignRecipientStatus,
+)
 from src.db.courses.activities import Activity, ActivityTypeEnum
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
@@ -19,11 +24,11 @@ from src.db.user_organizations import UserOrganization
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
 from src.services.communications.campaigns import (
+    cancel_campaign,
     create_campaign_draft,
-    update_campaign,
     get_campaign,
     list_org_campaigns,
-    cancel_campaign
+    update_campaign,
 )
 from src.services.communications.dispatch import queue_campaign_recipients
 from src.services.utils.upload_content import upload_file

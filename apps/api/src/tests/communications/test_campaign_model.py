@@ -1,5 +1,3 @@
-import pytest
-from pydantic import ValidationError
 
 from src.db.communications import CampaignRead
 
