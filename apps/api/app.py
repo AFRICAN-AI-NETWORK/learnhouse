@@ -158,10 +158,15 @@ async def start_scheduler():
         os.getenv("NOTIFICATION_PROCESSOR_ENABLED", "true").lower() == "true"
     )
 
+    COMMUNICATIONS_PROCESSOR_ENABLED = (
+        os.getenv("COMMUNICATIONS_PROCESSOR_ENABLED", "true").lower() == "true"
+    )
+
     if not (
         WAITLIST_PROCESSOR_ENABLED
         or REFERRAL_PROCESSOR_ENABLED
         or NOTIFICATION_PROCESSOR_ENABLED
+        or COMMUNICATIONS_PROCESSOR_ENABLED
     ):
         print("  [X] Background jobs disabled by environment config")
         return
@@ -252,6 +257,22 @@ async def start_scheduler():
             coalesce=True,
             jitter=10,
             misfire_grace_time=120,
+        )
+
+    # ── Communications jobs ──────────────────────────────────────────
+    if COMMUNICATIONS_PROCESSOR_ENABLED:
+        from src.jobs.communications_jobs import sync_run_communications_dispatch_job
+
+        scheduler.add_job(
+            sync_run_communications_dispatch_job,
+            trigger=CronTrigger.from_crontab("*/1 * * * *"),
+            id="communications_dispatch",
+            name="Dispatch Pending Communication Campaigns",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            jitter=5,
+            misfire_grace_time=30,
         )
 
     # Heartbeat listener for health monitoring
