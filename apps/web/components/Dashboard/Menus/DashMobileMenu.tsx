@@ -104,7 +104,7 @@ function DashMobileMenu() {
         )}
         {!isPartnerOnly && canSeeCommunications && (
           <ToolTip
-            content={'Communications'}
+            content={'Marketing Emails'}
             slateBlack
             sideOffset={8}
             side="top"
@@ -112,10 +112,10 @@ function DashMobileMenu() {
             <Link
               href={`/dash/communications`}
               className="flex flex-col items-center p-2"
-              aria-label="Communication Hub"
+              aria-label="Marketing Emails"
             >
               <Megaphone size={20} />
-              <span className="text-xs mt-1">Comms</span>
+              <span className="text-xs mt-1">Emails</span>
             </Link>
           </ToolTip>
         )}

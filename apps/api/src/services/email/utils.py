@@ -1,8 +1,10 @@
 import os
 import smtplib
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import resend
 from pydantic import EmailStr
 
 
@@ -77,5 +79,43 @@ def send_email(to: EmailStr, subject: str, body: str):
 
     except Exception as e:  # noqa: BLE001
         error_msg = f"Email sending error: {e!s}"
-        print(f"❌ {error_msg}")
+        print(f"[ERROR] {error_msg}")
         raise Exception(f"Failed to send email: {e!s}")
+
+
+def send_resend_email(to: str | list[str], subject: str, html_body: str, scheduled_at: datetime | None = None):
+    """
+    Send email using the Resend API with native scheduling support.
+    """
+    resend.api_key = os.getenv("RESEND_API_KEY") or os.getenv("EMAIL_PASSWORD")
+    if not resend.api_key:
+        raise ValueError("RESEND_API_KEY or EMAIL_PASSWORD must be set in environment variables")
+        
+    sender_name = os.getenv("EMAIL_SENDER_NAME", "AFRICAN AI NETWORK LMS")
+    sender_address = os.getenv("RESEND_FROM_EMAIL") or os.getenv("EMAIL_ADDRESS") or "onboarding@resend.dev"
+    
+    from_email = f"{sender_name} <{sender_address}>"
+    
+    # Resend accepts a list or a string for "to"
+    to_emails = [to] if isinstance(to, str) else to
+
+    params = {
+        "from": from_email,
+        "to": to_emails,
+        "subject": subject,
+        "html": html_body,
+    }
+    
+    if scheduled_at:
+        # Resend expects ISO 8601 format or specific timestamps
+        params["scheduled_at"] = scheduled_at.isoformat()
+        
+    try:
+        response = resend.Emails.send(params)
+        print(f"[SUCCESS] Resend Email queued successfully for {to}")
+        return response
+    except Exception as e:  # noqa: BLE001
+        error_msg = f"Resend sending error: {e!s}"
+        print(f"[ERROR] {error_msg}")
+        raise Exception(f"Failed to send email via Resend: {e!s}")
+
