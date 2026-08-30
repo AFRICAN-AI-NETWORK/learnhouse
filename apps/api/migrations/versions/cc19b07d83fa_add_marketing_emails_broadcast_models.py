@@ -64,7 +64,7 @@ def upgrade() -> None:
     op.create_index('ix_campaign_recipient_org_id_email', 'campaignrecipient', ['org_id', 'email'], unique=False)
     op.create_index('ix_campaign_recipient_status_last_attempt_at', 'campaignrecipient', ['status', 'last_attempt_at'], unique=False)
     op.drop_table('auditlog')
-    op.add_column('campaign', sa.Column('campaign_type', postgresql.ENUM('GENERAL', 'COURSE_MARKETING', name='campaigntype', create_type=False), nullable=False))
+    op.add_column('campaign', sa.Column('campaign_type', postgresql.ENUM('GENERAL', 'COURSE_MARKETING', name='campaigntype', create_type=False), nullable=False, server_default='GENERAL'))
     op.add_column('campaign', sa.Column('preheader', sqlmodel.sql.sqltypes.AutoString(), nullable=True))
     op.add_column('campaign', sa.Column('sender_name', sqlmodel.sql.sqltypes.AutoString(), nullable=True))
     op.add_column('campaign', sa.Column('reply_to_email', sqlmodel.sql.sqltypes.AutoString(), nullable=True))
@@ -72,10 +72,10 @@ def upgrade() -> None:
     op.add_column('campaign', sa.Column('scheduled_at', sa.DateTime(), nullable=True))
     op.add_column('campaign', sa.Column('started_at', sa.DateTime(), nullable=True))
     op.add_column('campaign', sa.Column('completed_at', sa.DateTime(), nullable=True))
-    op.add_column('campaign', sa.Column('failed_count', sa.Integer(), nullable=False))
-    op.add_column('campaign', sa.Column('skipped_count', sa.Integer(), nullable=False))
-    op.add_column('campaign', sa.Column('retry_count', sa.Integer(), nullable=False))
-    op.add_column('campaign', sa.Column('campaign_uuid', sqlmodel.sql.sqltypes.AutoString(), nullable=False))
+    op.add_column('campaign', sa.Column('failed_count', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('campaign', sa.Column('skipped_count', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('campaign', sa.Column('retry_count', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('campaign', sa.Column('campaign_uuid', sqlmodel.sql.sqltypes.AutoString(), nullable=False, server_default='legacy-uuid'))
     op.alter_column('campaign', 'body',
                existing_type=sa.VARCHAR(),
                nullable=True)
