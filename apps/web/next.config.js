@@ -38,10 +38,6 @@ const nextConfig = {
       ],
     },
   },
-  // Ensure consistent build IDs across multiple pods in Kubernetes
-  generateBuildId: async () => {
-    return process.env.BUILD_ID || 'learnhouse-production'
-  },
 
   images: {
     // In development, localhost resolves to private IPs (::1, 127.0.0.1) which

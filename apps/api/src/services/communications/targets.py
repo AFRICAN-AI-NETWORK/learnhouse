@@ -68,6 +68,9 @@ async def resolve_campaign_targets(
     elif target_type == CampaignTargetType.CUSTOM_EMAILS:
         # Manually pasted emails
         custom_emails = target_metadata.get("emails", [])
+        if isinstance(custom_emails, str):
+            custom_emails = [e.strip() for e in custom_emails.split(",") if e.strip()]
+            
         if isinstance(custom_emails, list):
             # Basic validation
             email_pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
