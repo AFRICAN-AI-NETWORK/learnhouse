@@ -1212,7 +1212,7 @@ function PreviewPanel({
   buildPayload: () => CampaignPayload
 }) {
   return (
-    <section className="sticky top-6 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#13131a]">
+    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#13131a]">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-400 dark:text-white/40">
           <Eye size={16} /> Preview
