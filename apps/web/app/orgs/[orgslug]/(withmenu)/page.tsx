@@ -34,9 +34,16 @@ export async function generateMetadata(
     })
 
     // SEO
+    const fallbackDescription =
+      'African AI Network Academy (AINA) is a learning management system offering 12-week certification courses in AI Automation and Generative AI for African professionals.'
+    const seoDescription =
+      org.description && org.description.length > 20
+        ? org.description
+        : fallbackDescription
+
     return {
       title: `Home — ${org.name}`,
-      description: org.description,
+      description: seoDescription,
       robots: {
         index: true,
         follow: true,
@@ -49,7 +56,7 @@ export async function generateMetadata(
       },
       openGraph: {
         title: `Home — ${org.name}`,
-        description: org.description,
+        description: seoDescription,
         type: 'website',
         images: [
           {

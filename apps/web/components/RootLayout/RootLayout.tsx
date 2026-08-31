@@ -24,8 +24,10 @@ const themeInitScript = `
 
 export default function RootLayout({
   children,
+  session,
 }: {
   children: React.ReactNode
+  session?: any
 }) {
   const variants = {
     hidden: { opacity: 0, x: 0, y: 0 },
@@ -79,7 +81,7 @@ export default function RootLayout({
           />
         )}
 
-        <SessionProvider key="session-provider" refetchInterval={60000}>
+        <SessionProvider session={session} key="session-provider" refetchInterval={60000}>
           <LHSessionProvider>
             <I18nProvider>
               <StyledComponentsRegistry>

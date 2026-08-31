@@ -84,6 +84,7 @@ const CoursePage = async (params: any) => {
 
   // Fetch course metadata once
   let course_meta
+  let org
 
   try {
     course_meta = await getCourseMetadata(
@@ -91,17 +92,41 @@ const CoursePage = async (params: any) => {
       { revalidate: 0, tags: ['courses'] },
       access_token ? access_token : null
     )
+    org = await getOrganizationContextInfo(orgslug, {
+      revalidate: 1800,
+      tags: ['organizations'],
+    })
   } catch (error) {
     notFound()
   }
 
   return (
-    <CourseClient
-      courseuuid={courseuuid}
-      orgslug={orgslug}
-      course={course_meta}
-      access_token={access_token}
-    />
+    <>
+      {course_meta && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Course',
+              name: course_meta.name,
+              description: course_meta.description,
+              provider: {
+                '@type': 'EducationalOrganization',
+                name: org?.name || 'African AI Network Academy',
+                url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
+              },
+            }),
+          }}
+        />
+      )}
+      <CourseClient
+        courseuuid={courseuuid}
+        orgslug={orgslug}
+        course={course_meta}
+        access_token={access_token}
+      />
+    </>
   )
 }
 

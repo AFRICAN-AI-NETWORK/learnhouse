@@ -1,5 +1,5 @@
 'use client'
-import React, { use } from 'react'
+import React, { use, Suspense } from 'react'
 import '@styles/globals.css'
 import { SessionProvider } from 'next-auth/react'
 import { OrgMenu } from '@components/Objects/Menus/OrgMenu'
@@ -14,15 +14,13 @@ import UnverifiedBanner from '@components/Objects/UnverifiedBanner'
 
 import { CurrencyProvider } from '@components/Contexts/CurrencyContext'
 
-export default function RootLayout(props: {
+function LayoutInner(props: {
   children: React.ReactNode
-  params: Promise<any>
+  params: any
+  org: any
+  session: any
 }) {
-  const params = use(props.params)
-  const org = useOrg()
-  const session = useLHSession() as any
-
-  const { children } = props
+  const { children, params, org, session } = props
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isLandingPage =
@@ -85,5 +83,22 @@ export default function RootLayout(props: {
         </SessionProvider>
       </CurrencyProvider>
     </div>
+  )
+}
+
+export default function RootLayout(props: {
+  children: React.ReactNode
+  params: Promise<any>
+}) {
+  const params = use(props.params)
+  const org = useOrg()
+  const session = useLHSession() as any
+
+  return (
+    <Suspense fallback={<div className="h-screen w-screen bg-background" />}>
+      <LayoutInner params={params} org={org} session={session}>
+        {props.children}
+      </LayoutInner>
+    </Suspense>
   )
 }

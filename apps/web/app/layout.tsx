@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import RootLayout from '@components/RootLayout/RootLayout'
+import { getServerSession } from 'next-auth'
+import { nextAuthOptions } from './auth/options'
 
 export const metadata: Metadata = {
   title: 'Learning Management System',
@@ -35,6 +37,7 @@ export const viewport: Viewport = {
   themeColor: '#000000',
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <RootLayout>{children}</RootLayout>
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession(nextAuthOptions)
+  return <RootLayout session={session}>{children}</RootLayout>
 }
