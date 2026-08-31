@@ -1,0 +1,26 @@
+# African AI Network Academy (AINA)
+
+African AI Network Academy (AINA) is a leading educational platform and learning management system (LMS) dedicated to teaching Artificial Intelligence to African professionals.
+
+## Core Offerings
+
+AINA offers highly specialized, 12-week certification courses designed to bridge the gap between theoretical knowledge and practical execution in the AI space.
+
+### 1. AAN OPEN (Generative AI)
+Free tier program acting as a gateway to the AI ecosystem. Covers AI foundations and professional tools to kickstart a tech journey.
+
+### 2. AI Automation for Businesses
+Paid 12-week certification course teaching how to leverage modern AI tools to automate complex workflows. Eligible students may receive internship opportunities and laptop giveaways.
+
+### 3. AI Automation for Content Creators
+Paid 12-week certification course designed to master AI tools that supercharge the content creation workflow, automating research, drafting, and distribution to scale personal brands.
+
+### 4. AAN Fundamentals (Applied Data Science)
+Paid 12-week certification course preparing students for advanced AI roles by mastering Machine Learning (ML) algorithms, data structures, and the logic of predictive modeling.
+
+## Mission
+Our mission is to empower 5,400+ African learners by focusing on real skills, real projects, and real outcomes rather than just certificates. We equip the next generation of African talent with the tools necessary to compete in the global AI landscape.
+
+## Contact & Links
+- Website: https://lms.africanainetwork.com
+- Support: https://wa.me/2349073166932
