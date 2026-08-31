@@ -1168,32 +1168,58 @@ function ImageUrlField({
   uploading: boolean
 }) {
   return (
-    <Field label="Image URL">
-      <div className="flex gap-2">
-        <input
-          value={section.image_url || ''}
-          onChange={(e) =>
-            onChange({
-              ...section,
-              image_url: e.target.value,
-            } as CampaignSection)
-          }
-          type="url"
-          className={inputClass}
-        />
+    <Field label="Image">
+      {section.image_url ? (
+        <div className="relative overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-white/10 dark:bg-black">
+          <img
+            src={section.image_url}
+            alt="Section header"
+            className="aspect-[2/1] w-full object-cover"
+          />
+          <button
+            type="button"
+            onClick={() =>
+              onChange({ ...section, image_url: '' } as CampaignSection)
+            }
+            className="absolute right-2 top-2 rounded-md bg-black/50 p-1.5 text-white backdrop-blur-sm transition hover:bg-red-500"
+            aria-label="Remove image"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
           onClick={onUpload}
-          className="inline-flex w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition hover:border-zinc-400 dark:border-white/10 dark:text-white/55"
-          aria-label="Upload image"
+          className="group relative flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-200 bg-zinc-50 py-8 transition hover:border-zinc-400 hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
         >
           {uploading ? (
-            <Loader2 size={17} className="animate-spin" />
+            <>
+              <Loader2
+                size={24}
+                className="animate-spin text-zinc-400 dark:text-white/40"
+              />
+              <span className="text-xs font-semibold text-zinc-500 dark:text-white/50">
+                Uploading...
+              </span>
+            </>
           ) : (
-            <Upload size={17} />
+            <>
+              <div className="rounded-full bg-zinc-100 p-3 text-zinc-500 transition group-hover:bg-white group-hover:text-zinc-700 dark:bg-white/10 dark:text-white/50 dark:group-hover:bg-white/20 dark:group-hover:text-white">
+                <Upload size={20} />
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-bold text-zinc-700 dark:text-white">
+                  Click to upload image
+                </span>
+                <span className="text-xs font-medium text-zinc-400 dark:text-white/40">
+                  PNG, JPG or WEBP up to 5MB
+                </span>
+              </div>
+            </>
           )}
         </button>
-      </div>
+      )}
     </Field>
   )
 }
