@@ -103,9 +103,9 @@ const CoursePage = async (params: any) => {
   return (
     <>
       {course_meta && (
+        /* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */
         <script
           type="application/ld+json"
-          /* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
