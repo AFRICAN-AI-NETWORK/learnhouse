@@ -23,7 +23,7 @@ async def resolve_campaign_targets(
         users = db_session.exec(
             select(User.email)
             .join(UserOrganization, UserOrganization.user_id == User.id)
-            .where(UserOrganization.organization_id == org_id, User.email.is_not(None))
+            .where(UserOrganization.org_id == org_id, User.email.is_not(None))
         ).all()
         emails.update(u.lower() for u in users if u)
 
@@ -61,7 +61,7 @@ async def resolve_campaign_targets(
                 select(User.email)
                 .join(UserOrganization, UserOrganization.user_id == User.id)
                 .join(Role, Role.id == UserOrganization.role_id)
-                .where(UserOrganization.organization_id == org_id, Role.name.in_(role_names), User.email.is_not(None))
+                .where(UserOrganization.org_id == org_id, Role.name.in_(role_names), User.email.is_not(None))
             ).all()
             emails.update(u.lower() for u in users if u)
 
