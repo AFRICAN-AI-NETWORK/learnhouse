@@ -81,9 +81,12 @@ async def queue_campaign_recipients(campaign_id: int):
 async def process_campaign_dispatch_job(db_session: Session):
     """Background job that runs periodically to dispatch pending/retryable emails."""
     
-    # Get active campaigns
+    now = datetime.now(UTC)
     active_campaigns = db_session.exec(
-        select(Campaign).where(Campaign.status.in_([CampaignStatus.QUEUED, CampaignStatus.PROCESSING]))
+        select(Campaign).where(
+            Campaign.status.in_([CampaignStatus.QUEUED, CampaignStatus.PROCESSING]),
+            (Campaign.scheduled_at == None) | (Campaign.scheduled_at <= now)
+        )
     ).all()
     
     for campaign in active_campaigns:
