@@ -103,22 +103,25 @@ const CoursePage = async (params: any) => {
   return (
     <>
       {course_meta && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Course',
-              name: course_meta.name,
-              description: course_meta.description,
-              provider: {
-                '@type': 'EducationalOrganization',
-                name: org?.name || 'African AI Network Academy',
-                url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
-              },
-            }),
-          }}
-        />
+        <>
+          {/* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Course',
+                name: course_meta.name,
+                description: course_meta.description,
+                provider: {
+                  '@type': 'EducationalOrganization',
+                  name: org?.name || 'African AI Network Academy',
+                  url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
+                },
+              }).replace(/</g, '\\u003c'),
+            }}
+          />
+        </>
       )}
       <CourseClient
         courseuuid={courseuuid}
