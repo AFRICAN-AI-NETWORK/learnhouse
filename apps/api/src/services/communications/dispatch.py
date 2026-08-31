@@ -85,7 +85,7 @@ async def process_campaign_dispatch_job(db_session: Session):
     active_campaigns = db_session.exec(
         select(Campaign).where(
             Campaign.status.in_([CampaignStatus.QUEUED, CampaignStatus.PROCESSING]),
-            (Campaign.scheduled_at == None) | (Campaign.scheduled_at <= now)
+            (Campaign.scheduled_at.is_(None)) | (Campaign.scheduled_at <= now)
         )
     ).all()
     

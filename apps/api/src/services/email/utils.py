@@ -109,8 +109,8 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, schedul
     if scheduled_at:
         # Resend expects ISO 8601 format or specific timestamps
         # Only include if it's strictly in the future
-        from datetime import timezone
-        now = datetime.now(timezone.utc) if scheduled_at.tzinfo else datetime.now()
+        from datetime import UTC
+        now = datetime.now(UTC) if scheduled_at.tzinfo else datetime.now(UTC).replace(tzinfo=None)
         if scheduled_at > now:
             params["scheduled_at"] = scheduled_at.isoformat()
         
