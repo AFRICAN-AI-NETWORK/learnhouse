@@ -261,7 +261,7 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
                 html += f'<img src="{abs_img}" alt="{escape_html(section.title)}" />'
             html += f'<h3>{escape_html(section.title)}</h3>'
             html += f'<p>{escape_html(section.description)}</p>'
-            html += f'<div class="btn-wrapper"><a href="{section.cta_url}" class="btn">{escape_html(section.cta_label)}</a></div>'
+            html += f'<div class="btn-wrapper"><a href="{section.cta_url}" class="btn" style="color: #ffffff; text-decoration: none;">{escape_html(section.cta_label)}</a></div>'
             html += '</div>'
             
             text_fallback.append(f"\nCourse: {section.title}\n{section.description}\n{section.cta_label}: {section.cta_url}")
@@ -271,7 +271,7 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
             html += f'<img src="{abs_img}" alt="{escape_html(section.alt_text)}" />'
 
         elif section.type == "button":
-            html += f'<div class="btn-wrapper"><a href="{section.url}" class="btn">{escape_html(section.label)}</a></div>'
+            html += f'<div class="btn-wrapper"><a href="{section.url}" class="btn" style="color: #ffffff; text-decoration: none;">{escape_html(section.label)}</a></div>'
             text_fallback.append(f"\n[{section.label}]({section.url})")
 
         elif section.type == "footer":
