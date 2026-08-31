@@ -10,6 +10,7 @@ from src.db.communications import (
     CampaignRecipientStatus,
     CampaignStatus,
 )
+from src.db.organizations import Organization
 from src.services.communications.rendering import render_campaign_email
 from src.services.communications.targets import resolve_campaign_targets
 from src.services.communications.unsubscribe import (
@@ -145,11 +146,13 @@ async def process_campaign_dispatch_job(db_session: Session):
                 # Generate unique unsubscribe link (mocked logic)
                 unsubscribe_url = f"https://app.learnhouse.com/unsubscribe?token=mock&email={recipient.email}"
                 
+                org = db_session.get(Organization, campaign.org_id)
                 campaign_data = {
                     "subject": campaign.subject,
                     "preheader": campaign.preheader,
                     "sender_name": campaign.sender_name,
                     "content_json": campaign.content_json,
+                    "org_name": org.name if org else "African AI Network Academy",
                 }
                 recipient_data = {
                     "email": recipient.email
@@ -167,6 +170,7 @@ async def process_campaign_dispatch_job(db_session: Session):
                     to=recipient.email,
                     subject=campaign.subject,
                     html_body=html_body,
+                    text_body=text_body,
                     scheduled_at=campaign.scheduled_at
                 )
                 

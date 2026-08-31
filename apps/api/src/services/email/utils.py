@@ -8,7 +8,7 @@ import resend
 from pydantic import EmailStr
 
 
-def send_email(to: EmailStr, subject: str, body: str):
+def send_email(to: EmailStr, subject: str, body: str, text_body: str | None = None):
     """
     Send email using SMTP instead of Resend
     Maintains the same function signature for compatibility
@@ -41,6 +41,11 @@ def send_email(to: EmailStr, subject: str, body: str):
         # Add HTML content
         html_part = MIMEText(body, "html", "utf-8")
         msg.attach(html_part)
+        
+        # Add Plain text fallback
+        if text_body:
+            text_part = MIMEText(text_body, "plain", "utf-8")
+            msg.attach(text_part)
 
         # Send email based on security settings
         if smtp_secure and smtp_port == 465:
@@ -83,7 +88,7 @@ def send_email(to: EmailStr, subject: str, body: str):
         raise Exception(f"Failed to send email: {e!s}")
 
 
-def send_resend_email(to: str | list[str], subject: str, html_body: str, scheduled_at: datetime | None = None):
+def send_resend_email(to: str | list[str], subject: str, html_body: str, text_body: str | None = None, scheduled_at: datetime | None = None):
     """
     Send email using the Resend API with native scheduling support.
     """
@@ -105,6 +110,9 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, schedul
         "subject": subject,
         "html": html_body,
     }
+    
+    if text_body:
+        params["text"] = text_body
     
     if scheduled_at:
         # Resend expects ISO 8601 format or specific timestamps

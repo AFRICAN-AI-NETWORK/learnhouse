@@ -100,25 +100,29 @@ const CoursePage = async (params: any) => {
     notFound()
   }
 
+  // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
+  const jsonLdHtml = course_meta
+    ? {
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Course',
+          name: course_meta.name,
+          description: course_meta.description,
+          provider: {
+            '@type': 'EducationalOrganization',
+            name: org?.name || 'African AI Network Academy',
+            url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
+          },
+        }).replace(/</g, '\\u003c'),
+      }
+    : { __html: '' }
+
   return (
     <>
       {course_meta && (
-        /* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Course',
-              name: course_meta.name,
-              description: course_meta.description,
-              provider: {
-                '@type': 'EducationalOrganization',
-                name: org?.name || 'African AI Network Academy',
-                url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
-              },
-            }).replace(/</g, '\\u003c'),
-          }}
+          dangerouslySetInnerHTML={jsonLdHtml}
         />
       )}
       <CourseClient

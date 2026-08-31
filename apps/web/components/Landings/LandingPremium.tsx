@@ -154,34 +154,33 @@ export default function LandingPremium({
     },
   ]
 
+  // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
+  const jsonLdHtml = {
+    __html: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'EducationalOrganization',
+      name: org?.name || 'African AI Network Academy',
+      url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
+      description:
+        org?.description ||
+        'A learning management system offering 12-week certification courses in AI Automation and Generative AI for African professionals.',
+      sameAs: [
+        'https://web.facebook.com/africanaistudies/',
+        'https://www.youtube.com/@AfricanAINetwork',
+      ],
+      offers: {
+        '@type': 'Offer',
+        category: 'Educational Courses',
+      },
+    }).replace(/</g, '\\u003c'),
+  }
+
   return (
     <div
       className="min-h-screen bg-white text-[#0a0f1e] selection:bg-[#0057ff]/20"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      {/* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'EducationalOrganization',
-            name: org?.name || 'African AI Network Academy',
-            url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
-            description:
-              org?.description ||
-              'A learning management system offering 12-week certification courses in AI Automation and Generative AI for African professionals.',
-            sameAs: [
-              'https://web.facebook.com/africanaistudies/',
-              'https://www.youtube.com/@AfricanAINetwork',
-            ],
-            offers: {
-              '@type': 'Offer',
-              category: 'Educational Courses',
-            },
-          }).replace(/</g, '\\u003c'),
-        }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml} />
       <HeroSection org={org} orgslug={orgslug} />
 
       {/* 1. Trust & Social Proof */}

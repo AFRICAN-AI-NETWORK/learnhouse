@@ -57,6 +57,18 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
     recipient: Recipient dict (e.g., user name, email)
     unsubscribe_url: Pre-generated unique unsubscribe URL for this user
     """
+    import os
+    backend_url = os.getenv("BACKEND_URL", "https://api.lms.africanainetwork.com").rstrip("/")
+    
+    def make_absolute(url: str | None) -> str:
+        if not url:
+            return ""
+        if url.startswith("http://") or url.startswith("https://"):
+            return url
+        if url.startswith("/"):
+            return f"{backend_url}{url}"
+        return f"{backend_url}/{url}"
+
     try:
         import json
         content_data = campaign.get("content_json") or {}
@@ -106,7 +118,8 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
             html += f"<p>{escape_html(section.body)}</p>"
             text_fallback.append(f"# {section.headline}\n{section.body}")
             if section.image_url:
-                html += f'<img src="{section.image_url}" alt="Header image" style="margin-bottom: 20px; border-radius: 8px;" />'
+                abs_img = make_absolute(section.image_url)
+                html += f'<img src="{abs_img}" alt="Header image" style="margin-bottom: 20px; border-radius: 8px;" />'
 
         elif section.type == "text":
             if section.heading:
@@ -118,7 +131,8 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
         elif section.type == "course":
             html += '<div style="border: 1px solid #eaeaea; border-radius: 8px; padding: 16px; margin-bottom: 20px;">'
             if section.image_url:
-                html += f'<img src="{section.image_url}" alt="{escape_html(section.title)}" style="margin-bottom: 16px; border-radius: 6px;" />'
+                abs_img = make_absolute(section.image_url)
+                html += f'<img src="{abs_img}" alt="{escape_html(section.title)}" style="margin-bottom: 16px; border-radius: 6px;" />'
             html += f'<h3 style="margin-top: 0;">{escape_html(section.title)}</h3>'
             html += f'<p>{escape_html(section.description)}</p>'
             html += f'<a href="{section.cta_url}" class="btn">{escape_html(section.cta_label)}</a>'
@@ -127,7 +141,8 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
             text_fallback.append(f"\nCourse: {section.title}\n{section.description}\n{section.cta_label}: {section.cta_url}")
 
         elif section.type == "image":
-            html += f'<img src="{section.image_url}" alt="{escape_html(section.alt_text)}" style="margin-bottom: 20px; border-radius: 8px;" />'
+            abs_img = make_absolute(section.image_url)
+            html += f'<img src="{abs_img}" alt="{escape_html(section.alt_text)}" style="margin-bottom: 20px; border-radius: 8px;" />'
 
         elif section.type == "button":
             html += f'<div style="text-align: center; margin: 30px 0;"><a href="{section.url}" class="btn">{escape_html(section.label)}</a></div>'
