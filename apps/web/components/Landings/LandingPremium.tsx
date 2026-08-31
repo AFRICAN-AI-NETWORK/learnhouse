@@ -119,8 +119,8 @@ export default function LandingPremium({
       id: 'ai-automation-businesses',
       name: 'AI AUTOMATION FOR BUSINESSES',
       description:
-        'Learn to leverage modern AI tools to automate complex workflows. Includes internship opportunities and laptop giveaways for eligible students.',
-      badgeText: 'Paid',
+        'Learn to leverage modern AI tools to automate complex workflows. Pricing is a $60 one-time fee for the 12 weeks, or $20 per month. Includes internship opportunities and laptop giveaways for eligible students.',
+      badgeText: 'Paid ($20/mo)',
       badgeColor: 'bg-purple-600', // purple tab
       buttonColor: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
       buttonText: 'Learn more ->',
@@ -131,8 +131,8 @@ export default function LandingPremium({
       id: 'ai-automation-content-creators',
       name: 'AI AUTOMATION FOR CONTENT CREATORS',
       description:
-        'Master AI tools to supercharge your content creation workflow. Automate research, drafting, and distribution to scale your personal brand.',
-      badgeText: 'Paid',
+        'Master AI tools to supercharge your content creation workflow. Pricing is a $60 one-time fee for the 12 weeks, or $20 per month. Automate research, drafting, and distribution to scale your personal brand.',
+      badgeText: 'Paid ($20/mo)',
       badgeColor: 'bg-pink-600', // pink tab
       buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
       buttonText: 'Learn more ->',
@@ -144,8 +144,8 @@ export default function LandingPremium({
       name: 'AAN Fundamentals (Applied Data Science)',
       description:
         realFundamentals?.description ||
-        'Prepare for advanced AI roles by mastering ML algorithms, data structures, and the logic of predictive modeling.',
-      badgeText: 'Paid',
+        'Prepare for advanced AI roles by mastering ML algorithms, data structures, and the logic of predictive modeling. Pricing is a $90 one-time fee for the 12 weeks, or $30 per month.',
+      badgeText: 'Paid ($30/mo)',
       badgeColor: 'bg-emerald-500', // green tab
       buttonColor: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100',
       buttonText: 'Learn more ->',
@@ -159,11 +159,12 @@ export default function LandingPremium({
     __html: JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'EducationalOrganization',
-      name: org?.name || 'African AI Network Academy',
+      name: 'African AI Network Academy (AINA)',
+      alternateName: 'AINA',
       url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
       description:
         org?.description ||
-        'A learning management system offering 12-week certification courses in AI Automation and Generative AI for African professionals.',
+        'African AI Network Academy (AINA) is a learning management system offering 12-week certification courses in AI Automation and Generative AI for African professionals.',
       sameAs: [
         'https://web.facebook.com/africanaistudies/',
         'https://www.youtube.com/@AfricanAINetwork',
@@ -182,6 +183,15 @@ export default function LandingPremium({
     >
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml} />
       <HeroSection org={org} orgslug={orgslug} />
+
+      {/* Fact Density for AI Extractability */}
+      <section className="bg-white py-12 px-6 border-b border-gray-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-[#555555] text-lg md:text-xl font-medium leading-relaxed">
+            <strong className="text-[#0a0f1e]">African AI Network Academy (AINA)</strong> is an online tech platform providing 12-week certification courses in Generative AI, AI Automation, and Data Science for African professionals.
+          </p>
+        </div>
+      </section>
 
       {/* 1. Trust & Social Proof */}
       <PartnersSection />

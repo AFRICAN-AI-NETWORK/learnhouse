@@ -110,7 +110,7 @@ const CoursePage = async (params: any) => {
           description: course_meta.description,
           provider: {
             '@type': 'EducationalOrganization',
-            name: org?.name || 'African AI Network Academy',
+            name: 'African AI Network Academy (AINA)',
             url: `https://lms.africanainetwork.com/orgs/${orgslug}`,
           },
         }).replace(/</g, '\\u003c'),
