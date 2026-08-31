@@ -159,9 +159,9 @@ export default function LandingPremium({
       className="min-h-screen bg-white text-[#0a0f1e] selection:bg-[#0057ff]/20"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      {/* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */}
       <script
         type="application/ld+json"
+        /* nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml */
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
