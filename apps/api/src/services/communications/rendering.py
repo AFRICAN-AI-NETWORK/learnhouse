@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 # --- Validation Schemas ---
 
@@ -8,7 +8,7 @@ class HeaderSection(BaseModel):
     type: Literal["header"]
     headline: str
     body: str
-    image_url: Optional[HttpUrl] = None
+    image_url: Optional[str] = None
 
 class TextSection(BaseModel):
     type: Literal["text"]
@@ -20,24 +20,24 @@ class CourseSection(BaseModel):
     course_uuid: str
     title: str
     description: str
-    image_url: Optional[HttpUrl] = None
+    image_url: Optional[str] = None
     cta_label: str = Field(default="View course", max_length=60)
-    cta_url: HttpUrl
+    cta_url: str
 
 class ImageSection(BaseModel):
     type: Literal["image"]
-    image_url: HttpUrl
+    image_url: str
     alt_text: str
 
 class ButtonSection(BaseModel):
     type: Literal["button"]
     label: str = Field(max_length=60)
-    url: HttpUrl
+    url: str
 
 class FooterSection(BaseModel):
     type: Literal["footer"]
     closing_text: str
-    community_link: Optional[HttpUrl] = None
+    community_link: Optional[str] = None
 
 class CampaignContent(BaseModel):
     sections: list[
