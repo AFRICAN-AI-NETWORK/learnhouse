@@ -1,14 +1,15 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlmodel import Session, select
 
-from src.db.courses.courses import Course, ThumbnailType
-from src.db.courses.chapters import Chapter
-from src.db.courses.activities import Activity, ActivityTypeEnum, ActivitySubTypeEnum
+from src.db.courses.activities import Activity, ActivitySubTypeEnum, ActivityTypeEnum
 from src.db.courses.chapter_activities import ChapterActivity
+from src.db.courses.chapters import Chapter
+from src.db.courses.courses import Course, ThumbnailType
 from src.db.organizations import Organization
 
 # Load environment variables
@@ -190,7 +191,7 @@ curriculums = [
 ]
 
 def generate_date():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 def seed():
     with Session(engine) as session:

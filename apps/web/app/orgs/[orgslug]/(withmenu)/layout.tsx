@@ -32,6 +32,10 @@ function LayoutInner(props: {
     pathname?.endsWith('/ai-automation') ||
     pathname?.endsWith('/ai-fundamentals') ||
     pathname?.endsWith('/ai-automation-content-creators') ||
+    pathname?.endsWith('/ai-engineering') ||
+    pathname?.endsWith('/frontend-dev') ||
+    pathname?.endsWith('/laravel-backend') ||
+    pathname?.endsWith('/nodejs-backend') ||
     pathname?.endsWith('/contact') ||
     pathname?.endsWith('/about')
   const isGuest = !session?.data?.user
