@@ -9,7 +9,7 @@ import { getUriWithOrg } from '@services/config/config'
 import HeroSection from './Sections/HeroSection'
 import PartnersSection from './Sections/PartnersSection'
 import ActiveProgramsSection from './Sections/ActiveProgramsSection'
-import TechSpecializationsSection from './Sections/TechSpecializationsSection'
+
 import HowYouWillLearnSection from './Sections/HowYouWillLearnSection'
 import PersonalizedPathSection from './Sections/PersonalizedPathSection'
 import LearnerTestimonials from './Sections/LearnerTestimonials'
@@ -27,66 +27,136 @@ interface LandingPremiumProps {
   orgslug: string
 }
 
-const techSpecializations = [
+const upcomingSpecializations = [
   {
-    name: 'Full Stack Development',
-    description:
-      'Master both front-end and back-end modern development practices.',
-    image: '',
-  },
-  {
-    name: 'Mobile App Development',
-    description:
-      'Build responsive native and cross-platform mobile applications.',
-    image: '',
-  },
-  {
-    name: 'Cloud Computing',
-    description:
-      'Architect and deploy scalable infrastructure on modern cloud providers.',
-    image: '',
-  },
-  {
-    name: 'Cyber Security',
-    description:
-      'Protect and secure digital ecosystems and sensitive infrastructure.',
-    image: '',
-  },
-  {
-    name: 'UI/UX Design',
-    description:
-      'Design beautiful, intuitive, and user-centric digital experiences.',
-    image: '',
-  },
-  {
-    name: 'Graphic Design',
-    description:
-      'Create stunning visual concepts that inspire, inform, and captivate consumers.',
-    image: '',
-  },
-  {
-    name: 'Video Production & Editing',
+    id: 'video-production',
+    name: 'VIDEO PRODUCTION & EDITING',
     description:
       'Produce and edit high-quality video content for modern media platforms.',
-    image: '',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-red-500',
+    buttonColor: 'bg-red-50 text-red-600 hover:bg-red-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_video_animation.png',
+    status: 'Upcoming' as const,
   },
   {
-    name: 'Digital Marketing',
+    id: 'fullstack-dev',
+    name: 'FULL STACK DEVELOPMENT',
+    description:
+      'Master both front-end and back-end modern development practices.',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-slate-700',
+    buttonColor: 'bg-slate-50 text-slate-700 hover:bg-slate-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_fullstack.png',
+    status: 'Upcoming' as const,
+  },
+  {
+    id: 'mobile-app',
+    name: 'MOBILE APP DEVELOPMENT',
+    description:
+      'Build responsive native and cross-platform mobile applications.',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-sky-500',
+    buttonColor: 'bg-sky-50 text-sky-600 hover:bg-sky-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_mobile.png',
+    status: 'Upcoming' as const,
+  },
+  {
+    id: 'cloud-computing',
+    name: 'CLOUD COMPUTING',
+    description:
+      'Architect and deploy scalable infrastructure on modern cloud providers.',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-orange-500',
+    buttonColor: 'bg-orange-50 text-orange-600 hover:bg-orange-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_cloud.png',
+    status: 'Upcoming' as const,
+  },
+  {
+    id: 'cyber-security',
+    name: 'CYBER SECURITY',
+    description:
+      'Protect and secure digital ecosystems and sensitive infrastructure.',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-zinc-800',
+    buttonColor: 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_security.png',
+    status: 'Upcoming' as const,
+  },
+  {
+    id: 'ui-ux-design',
+    name: 'UI/UX DESIGN',
+    description:
+      'Design beautiful, intuitive, and user-centric digital experiences.',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-fuchsia-500',
+    buttonColor: 'bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_uiux.png',
+    status: 'Upcoming' as const,
+  },
+  {
+    id: 'graphic-design',
+    name: 'GRAPHIC DESIGN',
+    description:
+      'Create stunning visual concepts that inspire, inform, and captivate consumers.',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-pink-500',
+    buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_graphic.png',
+    status: 'Upcoming' as const,
+  },
+  {
+    id: 'digital-marketing',
+    name: 'DIGITAL MARKETING',
     description:
       'Drive growth through strategic online marketing, SEO, and social media campaigns.',
-    image: '',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-blue-400',
+    buttonColor: 'bg-blue-50 text-blue-500 hover:bg-blue-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_marketing.png',
+    status: 'Upcoming' as const,
   },
   {
-    name: 'Product Management',
+    id: 'product-management',
+    name: 'PRODUCT MANAGEMENT',
     description:
       'Lead cross-functional teams to build products that deliver immense value.',
-    image: '',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-yellow-500',
+    buttonColor: 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_product_mgmt.png',
+    status: 'Upcoming' as const,
   },
   {
-    name: 'Project Management',
+    id: 'project-management',
+    name: 'PROJECT MANAGEMENT',
     description:
       'Master agile methodologies to deliver complex projects on time and within scope.',
-    image: '',
+    badgeText: 'Upcoming',
+    badgeColor: 'bg-lime-600',
+    buttonColor: 'bg-lime-50 text-lime-700 hover:bg-lime-100',
+    buttonText: 'Join Waitlist ->',
+    href: '#',
+    imageUrl: '/landing/program_project_mgmt.png',
+    status: 'Upcoming' as const,
   },
 ]
 
@@ -114,6 +184,7 @@ export default function LandingPremium({
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/aan-open'),
       imageUrl: '/landing/program_genai_v2.png',
+      status: 'Live' as const,
     },
     {
       id: 'ai-automation-businesses',
@@ -126,6 +197,7 @@ export default function LandingPremium({
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-automation'),
       imageUrl: '/landing/program_automation_v3.png',
+      status: 'Live' as const,
     },
     {
       id: 'ai-automation-content-creators',
@@ -138,6 +210,7 @@ export default function LandingPremium({
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-automation-content-creators'),
       imageUrl: '/landing/program_content_creators.png',
+      status: 'Live' as const,
     },
     {
       id: 'aan-fundamentals',
@@ -151,7 +224,61 @@ export default function LandingPremium({
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-fundamentals'),
       imageUrl: '/landing/program_ml_v2.png',
+      status: 'Live' as const,
     },
+    {
+      id: 'ai-engineering',
+      name: 'AI ENGINEERING',
+      description:
+        'A comprehensive 6-month journey into advanced AI engineering. Learn to build, fine-tune, and deploy large language models and intelligent systems.',
+      badgeText: 'Paid ($20/mo)',
+      badgeColor: 'bg-blue-600',
+      buttonColor: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/ai-engineering'),
+      imageUrl: '/landing/program_ai_engineering.png',
+      status: 'Live' as const,
+    },
+    {
+      id: 'frontend-dev',
+      name: 'FRONTEND DEVELOPMENT',
+      description:
+        'A structured 3-month program from complete beginner to job-ready frontend developer. Master HTML, CSS, JavaScript, React, and Tailwind CSS.',
+      badgeText: 'Paid ($20/mo)',
+      badgeColor: 'bg-teal-600',
+      buttonColor: 'bg-teal-50 text-teal-600 hover:bg-teal-100',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/frontend-dev'),
+      imageUrl: '/landing/program_frontend.png',
+      status: 'Live' as const,
+    },
+    {
+      id: 'nodejs-backend',
+      name: 'BACKEND DEVELOPMENT (NODE.JS)',
+      description:
+        'Master scalable server-side development in this 3-month track. Build robust RESTful APIs, manage databases, and deploy production-ready Node.js applications.',
+      badgeText: 'Paid ($20/mo)',
+      badgeColor: 'bg-indigo-600',
+      buttonColor: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/nodejs-backend'),
+      imageUrl: '/landing/program_backend_node.png',
+      status: 'Live' as const,
+    },
+    {
+      id: 'laravel-backend',
+      name: 'BACKEND DEVELOPMENT (LARAVEL)',
+      description:
+        'Become a highly sought-after PHP developer in 3 months. Learn Laravel, relational database design, authentication, and API development.',
+      badgeText: 'Paid ($20/mo)',
+      badgeColor: 'bg-rose-600',
+      buttonColor: 'bg-rose-50 text-rose-600 hover:bg-rose-100',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/laravel-backend'),
+      imageUrl: '/landing/program_backend_laravel.png',
+      status: 'Live' as const,
+    },
+    ...upcomingSpecializations,
   ]
 
   // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
@@ -188,7 +315,12 @@ export default function LandingPremium({
       <section className="bg-white py-12 px-6 border-b border-gray-100">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-[#555555] text-lg md:text-xl font-medium leading-relaxed">
-            <strong className="text-[#0a0f1e]">African AI Network Academy (AINA)</strong> is an online tech platform providing 12-week certification courses in Generative AI, AI Automation, and Data Science for African professionals.
+            <strong className="text-[#0a0f1e]">
+              African AI Network Academy (AINA)
+            </strong>{' '}
+            is an online tech platform providing 12-week certification courses
+            in Generative AI, AI Automation, and Data Science for African
+            professionals.
           </p>
         </div>
       </section>
@@ -207,13 +339,6 @@ export default function LandingPremium({
 
       {/* 5. Career Journey */}
       <PersonalizedPathSection orgslug={orgslug} />
-
-      {/* 6. Specific Skills */}
-      <TechSpecializationsSection
-        specializations={techSpecializations}
-        orgslug={orgslug}
-        bgColor="bg-white"
-      />
 
       {/* 7. Learner Testimonials */}
       <LearnerTestimonials />
