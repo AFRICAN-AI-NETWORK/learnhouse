@@ -38,7 +38,7 @@ const upcomingSpecializations = [
     buttonColor: 'bg-red-50 text-red-600 hover:bg-red-100',
     buttonText: 'Join Waitlist ->',
     href: '#',
-    imageUrl: '/landing/program_video_animation.png',
+    imageUrl: '/landing/aina_video_production.jpg',
     status: 'Upcoming' as const,
   },
   {
@@ -51,7 +51,7 @@ const upcomingSpecializations = [
     buttonColor: 'bg-slate-50 text-slate-700 hover:bg-slate-100',
     buttonText: 'Join Waitlist ->',
     href: '#',
-    imageUrl: '/landing/program_fullstack.png',
+    imageUrl: '/landing/aina_fullstack.jpg',
     status: 'Upcoming' as const,
   },
   {
@@ -64,7 +64,7 @@ const upcomingSpecializations = [
     buttonColor: 'bg-sky-50 text-sky-600 hover:bg-sky-100',
     buttonText: 'Join Waitlist ->',
     href: '#',
-    imageUrl: '/landing/program_mobile.png',
+    imageUrl: '/landing/aina_mobile_app.jpg',
     status: 'Upcoming' as const,
   },
   {
@@ -77,7 +77,7 @@ const upcomingSpecializations = [
     buttonColor: 'bg-orange-50 text-orange-600 hover:bg-orange-100',
     buttonText: 'Join Waitlist ->',
     href: '#',
-    imageUrl: '/landing/program_cloud.png',
+    imageUrl: '/landing/aina_cloud_computing.jpg',
     status: 'Upcoming' as const,
   },
   {
@@ -90,7 +90,7 @@ const upcomingSpecializations = [
     buttonColor: 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200',
     buttonText: 'Join Waitlist ->',
     href: '#',
-    imageUrl: '/landing/program_security.png',
+    imageUrl: '/landing/aina_security.jpg',
     status: 'Upcoming' as const,
   },
   {
@@ -183,7 +183,7 @@ export default function LandingPremium({
       buttonColor: 'bg-amber-50 text-amber-600 hover:bg-amber-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/aan-open'),
-      imageUrl: '/landing/program_genai_v2.png',
+      imageUrl: '/landing/aina_genai.jpg',
       status: 'Live' as const,
     },
     {
@@ -196,7 +196,7 @@ export default function LandingPremium({
       buttonColor: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-automation'),
-      imageUrl: '/landing/program_automation_v3.png',
+      imageUrl: '/landing/aina_ai_automation.jpg',
       status: 'Live' as const,
     },
     {
@@ -209,7 +209,7 @@ export default function LandingPremium({
       buttonColor: 'bg-pink-50 text-pink-600 hover:bg-pink-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-automation-content-creators'),
-      imageUrl: '/landing/program_content_creators.png',
+      imageUrl: '/landing/aina_content_creators.jpg',
       status: 'Live' as const,
     },
     {
@@ -223,7 +223,7 @@ export default function LandingPremium({
       buttonColor: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-fundamentals'),
-      imageUrl: '/landing/program_ml_v2.png',
+      imageUrl: '/landing/aina_data_science.jpg',
       status: 'Live' as const,
     },
     {
@@ -236,7 +236,7 @@ export default function LandingPremium({
       buttonColor: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/ai-engineering'),
-      imageUrl: '/landing/program_ai_engineering.png',
+      imageUrl: '/landing/aina_ai_engineering.jpg',
       status: 'Live' as const,
     },
     {
@@ -249,7 +249,7 @@ export default function LandingPremium({
       buttonColor: 'bg-teal-50 text-teal-600 hover:bg-teal-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/frontend-dev'),
-      imageUrl: '/landing/program_frontend.png',
+      imageUrl: '/landing/aina_frontend.jpg',
       status: 'Live' as const,
     },
     {
@@ -262,7 +262,7 @@ export default function LandingPremium({
       buttonColor: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/nodejs-backend'),
-      imageUrl: '/landing/program_backend_node.png',
+      imageUrl: '/landing/aina_backend_node.jpg',
       status: 'Live' as const,
     },
     {
@@ -275,7 +275,7 @@ export default function LandingPremium({
       buttonColor: 'bg-rose-50 text-rose-600 hover:bg-rose-100',
       buttonText: 'Learn more ->',
       href: getUriWithOrg(orgslug, '/laravel-backend'),
-      imageUrl: '/landing/program_backend_laravel.png',
+      imageUrl: '/landing/aina_backend_laravel.jpg',
       status: 'Live' as const,
     },
     ...upcomingSpecializations,
