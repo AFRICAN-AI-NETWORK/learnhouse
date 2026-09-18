@@ -6,6 +6,127 @@ This plan transforms LearnHouse from a fully server-dependent LMS into an offlin
 
 ---
 
+## IMPLEMENTATION STATUS
+
+**Layers 1–5 are implemented** (foundation, service worker, auth/seams, sync engine, service integration). Both flags default to **OFF**, so the app currently behaves exactly as before; offline behaviour activates only when they are set.
+
+| Layer                   | Status                  | Notes                                                                                                                                                |
+| ----------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 — Decisions / env     | ✅ Done                 | `dexie` installed; `NEXT_PUBLIC_OFFLINE_*` documented in `.env.example`                                                                              |
+| 1 — Storage foundation  | ✅ Done                 | `constants/config/policy/db/storage-policy/session-store`                                                                                            |
+| 2 — Service worker      | ✅ Done                 | `workboxOptions.runtimeCaching` + `customWorkerDir`; `sw.js` + `worker-*.js` verified generated                                                      |
+| 3 — Auth / seams        | ✅ Done                 | Seam A via `swrFetcher` interceptor; Seam B `offlineWrite()`; connection monitor; inactivity suspended offline                                       |
+| 4 — Sync engine         | ✅ Done                 | `sync-engine`, `conflict-resolver`, `drain`; backend ETag + Cache-Control middleware, idempotency, `/api/v1/sync/delta`                              |
+| 5 — Service integration | ✅ Done (policy-driven) | Central policy registry replaces per-file edits; targeted fixes applied (see below)                                                                  |
+| 6 — UI components       | ✅ Done                 | `OfflineBanner` (wired into RootLayout), `SyncStatusIndicator`, `SyncStatusPanel`, `DownloadCourseButton`, `OfflineStorageSettings`, `/offline` page |
+| 7 — Backend hardening   | ✅ Done                 | Redis rate limit on the **existing** `GET /auth/refresh`; idempotency on trail completion **and** assignment submission                              |
+| 8 — Security            | ✅ Done                 | CSP authored from scratch (`worker-src`, `object-src`, `frame-ancestors`) + security headers; SW origin lock; threat model documented                |
+| 9 — Tests               | ✅ Done                 | Jest configured; **85 frontend + 28 backend tests passing**; Playwright config + offline spec (browsers install on demand)                           |
+| 10 — CI/CD              | ✅ Done                 | `web-offline.yaml`; `verify-pwa-build.mjs` + `check-bundle-size.mjs` gates; Redis already present in API CI                                          |
+| 11 — Monitoring         | ✅ Done                 | `telemetry.ts` — Sentry `offline:true` tagging, outbox-failure alerting, Umami events, sync tracing                                                  |
+| 12 — Documentation      | ✅ Done                 | [`apps/web/docs/offline-architecture.md`](apps/web/docs/offline-architecture.md) — decisions, threat model, ops runbook, rollback                    |
+
+**Verification performed:** project-wide `tsc --noEmit` clean; API imports + route registration confirmed (`/api/v1/sync/delta`); 21/21 SW cache-pattern cases pass; 31/31 policy invariant cases pass (S1 no sensitive caching, S5 no queued destructive/financial writes); read-seam runtime behaviour verified (flag off ⇒ passthrough; offline+uncached ⇒ 0 network calls + typed error); service worker generated with all four `lh-*` caches and the custom background-sync worker.
+
+**Targeted per-file fixes applied in Layer 5** (the rest is handled centrally by the policy registry): re-homed activity completion to a client path (`lib/offline/trail-complete.client.ts`); fixed the malformed `quiz.ts` URL; made `denyAccessToUser` ignore offline network errors; suspended `useActivityHeartbeat` offline; stopped the `useWebSocket` reconnect storm and made it resume on reconnect; added offline fallback to `search.ts`.
+
+---
+
+## Layer −1 — Architecture Reality (VERIFIED AGAINST THE CODEBASE — READ BEFORE ANYTHING ELSE)
+
+> This section was added after a file-by-file audit of the current codebase. The layers below were originally written against an assumed architecture that differs from reality in several load-bearing ways. **Where any later layer contradicts this section, this section wins.** Ignoring these points will send a developer down a path that cannot produce a working offline app.
+
+### R1 — How data actually flows today (this determines the entire offline strategy)
+
+1. **Client reads use SWR directly, not the `services/` GET functions.** `apps/web/services/courses/courses.ts:9-12` states verbatim: _"This file includes only POST, PUT, DELETE requests. GET requests are called from the frontend using SWR."_ `useSWR(url, swrFetcher)` is used **175 times across 65 component files**. The `swrFetcher` lives in `apps/web/services/utils/ts/requests.ts:90` and calls `fetch()` itself. **There is no global `SWRConfig` provider** — every component wires SWR locally.
+
+   - **Consequence:** Offline reads must be implemented at the **SWR layer**, via a NEW global `SWRConfig` (added in `RootLayout.tsx`) that supplies an **offline-aware fetcher** and a **persisted cache provider** backed by IndexedDB — _not_ by wrapping the `services/*` GET functions. Wrapping the service GETs (as Layers 3.4 and 5 originally propose) would both miss the real read path and force edits to 65 files (unmaintainable, high technical debt).
+
+2. **`services/utils/ts/requests.ts` is NOT a request executor / choke point.** It only builds `fetch` option objects (`RequestBody`, `RequestBodyWithAuthHeader`, `RequestBodyForm*`) plus helpers (`swrFetcher`, `errorHandling`, `getResponseMetadata`). Actual `fetch()` calls are scattered inside each service file and inside SWR hooks. **Layer 3.4's premise ("all API calls ultimately go through this utility") is false.** The plan must introduce two NEW seams instead: (a) the offline-aware SWR fetcher (reads), and (b) a small `offlineWrite()` helper that write-path service functions opt into (writes).
+
+3. **The most important write path is a Next.js Server Action, which cannot run offline.** Activity completion is `markActivityAsComplete()` in `apps/web/services/courses/activity.ts` — a `'use server'` file — hitting `POST /trail/add_activity/{activity_uuid}`. Server Actions execute on the Next.js server; when the device is offline the browser cannot reach that server, so they fail before any client code runs. The following service files are `'use server'` and are therefore **inert offline**: `courses/activity.ts`, `payments/products.ts`, `payments/payments.ts`, `payments/discounts.ts`.
+
+   - **Consequence:** To queue completion offline, the progress-write must be invoked from a **client-side** path (a client function that `fetch`es the backend directly and can detect offline → write to the outbox). Payments/products/discounts are already "block offline," so their being server actions is fine — but the plan must stop describing `markActivityComplete` as a wrappable client function. (Note: the correct symbol is `markActivityAsComplete` in `activity.ts`, and the endpoints are `trail/add_activity/{uuid}` [POST] and `trail/remove_activity/{uuid}` [DELETE] — not anything in `activities.ts`.)
+
+4. **Auth is NextAuth (JWT strategy) and runs server-side.** `apps/web/app/auth/options.ts` `jwt`/`session` callbacks execute on the Next.js server; `useSession()` polls `GET /api/auth/session` (Next server) every 60s (`RootLayout.tsx:82`), and the `session` callback additionally calls the backend `GET /users/session`. **All of this is unreachable offline.** Therefore the offline-grace logic proposed for the NextAuth callbacks (Layers 3.1/3.2) will not execute offline and is largely moot. **Offline auth must be handled entirely client-side** via the IndexedDB session store (Layer 1.4) plus a client "offline session" gate that the UI consults when `useSession()` cannot resolve. Keep the NextAuth changes only for the _online→about-to-expire_ refresh case; do not rely on them for the offline path.
+
+### R2 — Corrected facts about specific files/paths the later layers get wrong
+
+- **PWA library is `@ducanh2912/next-pwa@^10`** (devDependency in `apps/web/package.json`), a fork whose API differs from `next-pwa`:
+  - Runtime caching goes under **`workboxOptions.runtimeCaching`**, not a top-level `runtimeCaching` key (fixes Layer 2.1).
+  - The custom-worker option is **`customWorkerDir`** (default `'worker'`), not `customWorkerSrc` (fixes Layer 2.2).
+  - `apps/web/next.config.js` already sets `dest`, `register`, `skipWaiting`, `disable: DISABLE_PWA==='true'`, `publicExcludes`, `buildExcludes`. Extend that same call — do not replace it. The production build uses `next build --webpack` (Workbox needs webpack; dev uses turbopack and PWA should stay disabled in dev).
+- **The service worker cannot read runtime config.** Client env/config is injected at runtime via `/runtime-config.js` + `runtime-config.json` (generated by `server-wrapper.js`/`docker-entrypoint.sh`) and read through `services/config/config.ts` `getConfig()`. The SW has none of this. **SW runtime-caching URL patterns must be PATH-based** (e.g. match `/api/v1/…` and `/content/…` regardless of origin), not "injected at build time from an env var." (fixes Layer 2.1 Entries 1–2).
+- **API entry point is `apps/api/app.py`**, not `apps/api/main.py` (fixes Layers 7.3, 10.x). Register any new middleware there.
+- **CORS already exposes custom headers.** `app.py:59` and `:78` set `Access-Control-Expose-Headers: *`, so the browser can already read `ETag`/`Server-Timing` cross-origin. No CORS change needed for conditional GETs. `GZipMiddleware` is active (`app.py:96`) — compute ETag from the _serialized body before_ the response is compressed (i.e. in the route/handler), which is what the plan already implies.
+- **Router paths are single files, not directories:** it's `apps/api/src/routers/orgs.py` (not `routers/organizations/`) and `apps/api/src/routers/trail.py` (not `routers/trail/`). Schedules and grade are mounted under the `/courses` prefix (`router.py:75-76`). The trail prefix is `/trail` (`router.py:77`). (fixes Layers 4.3, 7.4.)
+- **A refresh endpoint already exists:** `GET /api/v1/auth/refresh` (`auth.py:30`, fastapi-jwt-auth refresh cookie), already consumed by the frontend. Layer 7.1 should **reuse and rate-limit the existing endpoint**, not add a duplicate `POST /auth/refresh`.
+- **Redis is already in the stack** (used by referrals, password reset, invites, chat) — reuse the existing client (`apps/api/src/services/referrals/redis_cache.py` pattern) for idempotency keys and refresh rate-limiting rather than introducing a new dependency.
+- **Media delivery:** `content_delivery.type` is `filesystem` (default → served same-origin at `<backend>/content/**` via a `StaticFiles` mount, `app.py:343`) or `s3api` (endpoint `LEARNHOUSE_S3_API_ENDPOINT_URL` — **backend-only, not exposed to the client**). The SW media rule (Layer 2.1 Entry 2) must therefore match `/content/**` by path for filesystem mode; to cache S3-hosted media you must add a **new `NEXT_PUBLIC_` variable** for the S3 host (or match by file extension), because the current S3 endpoint is not visible to the browser or SW.
+- **The Dockerfile already copies `public/` wholesale** (`apps/web/Dockerfile:52` `COPY --from=builder /app/public ./public`), and next-pwa writes `sw.js`/`workbox-*.js` into `public/` during the build stage. So the generated worker is already shipped; Layer 10.3's "standalone output omits `public/`" is largely incorrect. Verify the copy, but explicit per-file `COPY` lines are unnecessary. (Note both `Dockerfile` and `Dockerfile.frontend` exist — confirm which the deploy uses.)
+
+### R3 — Client-consumed settings must be `NEXT_PUBLIC_`-prefixed AND injected into runtime config
+
+Every `OFFLINE_*` setting in Layer 0.2 is consumed in the browser and/or must be compiled into the service worker. In this codebase:
+
+- Browser-readable env vars **must** be prefixed `NEXT_PUBLIC_` and flow through the runtime-config mechanism (`window.__RUNTIME_CONFIG__` / `runtime-config.json`), read via `getConfig()`. Rename them accordingly (e.g. `NEXT_PUBLIC_OFFLINE_CACHE_MAX_MB`).
+- Values the **service worker** needs (cache budgets, retry max, video-cache flag) cannot be read at SW runtime; inject them at build time via the Next.js `env`/`define` mechanism or a generated `worker/offline-config.js` constant. Document both hops.
+
+### R4 — Net effect on scope
+
+The originally-estimated "wrap every `services/*` file" effort (Layers 3.4, 5) is **replaced** by a smaller, cleaner surface:
+
+1. One global `SWRConfig` + offline-aware fetcher + IndexedDB cache provider (covers all 65 read sites at once).
+2. One `offlineWrite()` helper adopted only by the genuinely client-side write functions; server-action writes stay online-only or are re-homed to client calls where offline queueing is required (only activity-completion needs re-homing).
+3. The per-file Layer 5 list below is retained as a **behavior policy matrix** (what each domain does offline: cache / queue / block), not as "add a wrapper to this GET." Read it that way.
+
+### R5 — Behavior-Preservation Contract (NON-NEGOTIABLE: "no functionality altered")
+
+Every change in this plan must satisfy all of the following. A PR that violates any of these is rejected.
+
+1. **Online behavior is identical.** When `connectionStatus === ONLINE` and the network succeeds, every code path must behave exactly as today — same request, same response shape, same side effects, same error handling. Offline logic lives strictly in the `else`/`catch` branch and must be unreachable while online.
+2. **Additive & flag-gated.** All offline behavior sits behind `NEXT_PUBLIC_OFFLINE_READ_ENABLED` / `NEXT_PUBLIC_OFFLINE_WRITE_ENABLED` (Phase flags). With the flags off, the app is byte-for-byte the current app. Ship each phase dark, enable by flag.
+3. **No signature breaks.** Do not change existing exported function signatures; only add **optional** parameters/return fields. The offline fetcher must return the _same shape_ `swrFetcher` returns so no component rendering changes.
+4. **SSR/Server Actions untouched except one.** Do not convert server components or server actions to client, except the single re-homed activity-completion trigger (5.3) — and even there, the existing server action stays for the online path.
+5. **Response contracts unchanged on the backend.** ETag/304, `Cache-Control`, idempotency, and the delta endpoint are **additive**. Existing endpoints keep identical 200 bodies; 304 is only returned when the client explicitly sends `If-None-Match`; idempotency replay returns the _same_ body the original did.
+6. **Offline never fabricates writes.** Queued mutations must produce the identical server effect they would have online (same endpoint, body, permissions) — the outbox replays the real request; it does not synthesize a different one.
+7. **Reversibility.** Every phase is independently revertible (flag off + SW kill-switch via `DISABLE_PWA`) with no data loss and no schema lock-in.
+
+### R6 — Exhaustive service classification (result of the full file-by-file pass)
+
+Verified across every file in `apps/web/services/`. Offline policy per domain (**cache** = served read-only from IndexedDB/SW; **queue** = client write via `offlineWrite()` → outbox; **block** = online-only, clear error; **never-cache** = excluded from all persistence for security):
+
+| Domain / file                                                                    | Kind                        | Offline policy                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| courses/courses.ts, chapters.ts, collections.ts, updates.ts                      | client (writes) + SWR reads | reads **cache**; create/update **queue**; **delete block**                                                                                                                                                                                                                                         |
+| courses/activity.ts (`'use server'`)                                             | server action               | completion **re-homed to client + queue** (5.3); start/remove course **queue** via client                                                                                                                                                                                                          |
+| courses/activities.ts                                                            | client + SSR                | reads **cache**; create/**file** create **block**; delete **block**                                                                                                                                                                                                                                |
+| courses/assignments.ts                                                           | client                      | text submission (`handleAssignmentTaskSubmission`, `submitAssignmentForGrading`) **queue**; **file** submission (`updateSubFile`/`updateReferenceFile`) **block**; grading/revision/delete **block**; **`executeCode` block** (needs live sandbox — new domain surprise, not in original plan)     |
+| courses/certifications.ts                                                        | client                      | user/issued certs **cache**; `getCertificateByUuid` is **public** → cache for verify page; create/update/delete **block**                                                                                                                                                                          |
+| courses/live_sessions.ts                                                         | client + SWR                | **block** all (time-bound)                                                                                                                                                                                                                                                                         |
+| courses/schedule.ts                                                              | client + SWR                | reads **cache**; writes **queue**                                                                                                                                                                                                                                                                  |
+| blocks/Quiz/quiz.ts                                                              | client                      | quiz answer submit **queue**. ⚠️ **Pre-existing bug: `quiz.ts:10` URL has a stray trailing `"`** — fix before queueing or the outbox replays a malformed request                                                                                                                                   |
+| blocks/Image, Pdf, Video                                                         | client (FormData uploads)   | block **data cache**; **uploads block** (binary); YouTube never cached; hosted video cache only if flag                                                                                                                                                                                            |
+| ai/ai.ts                                                                         | client                      | **block** all                                                                                                                                                                                                                                                                                      |
+| payments/\* (payments, products, discounts are `'use server'`)                   | server action + client      | **block + never-cache** (financial)                                                                                                                                                                                                                                                                |
+| referral/referral.service.ts, referral/marketer.service.ts                       | client                      | read summaries **cache but never-persist-sensitive**; `requestPayout`, KYC upload, payment-method, all admin approve/reject/suspend **block** (financial/PII/destructive). ⚠️ **DRY: marketer.service.ts uses inline `fetch(headers)` instead of `RequestBodyWithAuthHeader`** — unify on adoption |
+| ee/audit_logs.ts                                                                 | client + SWR                | **block + never-cache** (admin)                                                                                                                                                                                                                                                                    |
+| dashboard/students.ts                                                            | client                      | **block + never-cache** (admin/aggregation)                                                                                                                                                                                                                                                        |
+| organizations/orgs.ts (FormData), invites.ts                                     | client                      | org read **cache**; add member **queue**; **remove member block**; **invites block** (time-sensitive tokens); logo/image upload **block** (binary)                                                                                                                                                 |
+| users/users.ts (FormData avatar)                                                 | client + SWR                | own profile **cache**; profile update **queue**; **avatar upload block**                                                                                                                                                                                                                           |
+| settings/profile.ts, password.ts, org.ts (FormData)                              | client                      | profile **queue**; **password block**; org image upload **block**                                                                                                                                                                                                                                  |
+| communications.ts (FormData), notifications/notificationAPI.ts, announcements.ts | client                      | first page **cache**; marks/read-receipts **queue**; attachment send **block**                                                                                                                                                                                                                     |
+| roles/roles.ts, usergroups/usergroups.ts                                         | client                      | defs **cache** (short TTL); writes **queue**; **role/usergroup deletes block**                                                                                                                                                                                                                     |
+| waitlist/waitlist.ts, contact/contact.service.ts                                 | client                      | waitlist **block**; contact form **queue**                                                                                                                                                                                                                                                         |
+| search/search.ts                                                                 | client + SWR                | fall back to **client-side IndexedDB search**                                                                                                                                                                                                                                                      |
+| config/config.ts                                                                 | client                      | cache runtime config in `localStorage`                                                                                                                                                                                                                                                             |
+| utils/health.ts                                                                  | client                      | connectivity probe — **never cache**                                                                                                                                                                                                                                                               |
+| utils/react/middlewares/views.ts                                                 | client                      | view events **queue** (analytics-grade)                                                                                                                                                                                                                                                            |
+
+**Domain surprises not in the original plan:** (a) `executeCode` code-execution activity → must block offline; (b) `quiz.ts` malformed-URL bug; (c) `marketer.service.ts` DRY divergence (inline fetch); (d) **`dash/user-account/*` lives under `/dash` but is the user's own account area** — a blanket dash offline-block (5B.11) would wrongly disable it _and_ the storage-management UI from 6.6/6.7 — see the corrected 5B.11.
+
+---
+
 ## Guiding Principles
 
 **What will work offline:** Course browsing, chapter navigation, activity reading (text, PDFs, images, hosted video previously cached), trail progress, assignment draft writing, user profile viewing.
@@ -34,17 +155,18 @@ Before any code changes, make these four architectural decisions and document th
 
 ### 0.2 Environment Variable Additions
 
-Add the following to `apps/web/.env.example` and document them in the deployment guide:
+Add the following to `apps/web/.env.example` and document them in the deployment guide. **These are consumed in the browser, so they MUST be `NEXT_PUBLIC_`-prefixed and flow through the runtime-config mechanism** (`window.__RUNTIME_CONFIG__` / `runtime-config.json`, read via `services/config/config.ts` `getConfig()`) — a bare `OFFLINE_*` name is invisible to the browser in this codebase. See Layer −1 · R3. Values the service worker itself needs must additionally be injected at build time (the SW cannot read runtime config).
 
-- `OFFLINE_CACHE_MAX_MB` — maximum storage budget in megabytes (default 200)
-- `OFFLINE_GRACE_PERIOD_HOURS` — how long a cached JWT is honoured offline (default 72)
-- `OFFLINE_ENABLE_VIDEO_CACHE` — boolean, whether hosted video files are eligible for caching (default false, because video is large)
-- `OFFLINE_SYNC_RETRY_MAX` — maximum Background Sync retry attempts before surfacing a permanent failure error (default 5)
-- `DISABLE_PWA` — already exists, ensure it is honoured in all new worker config
+- `NEXT_PUBLIC_OFFLINE_CACHE_MAX_MB` — maximum storage budget in megabytes (default 200)
+- `NEXT_PUBLIC_OFFLINE_GRACE_PERIOD_HOURS` — how long a cached session is honoured offline (default 72)
+- `NEXT_PUBLIC_OFFLINE_ENABLE_VIDEO_CACHE` — boolean, whether hosted video files are eligible for caching (default false, because video is large)
+- `NEXT_PUBLIC_OFFLINE_SYNC_RETRY_MAX` — maximum Background Sync retry attempts before surfacing a permanent failure error (default 5)
+- (optional) `NEXT_PUBLIC_OFFLINE_S3_MEDIA_HOST` — S3/endpoint host to match for media caching when `content_delivery.type = s3api` (the backend's `LEARNHOUSE_S3_API_ENDPOINT_URL` is not exposed to the client; see Layer −1 · R2). Unset for `filesystem` mode, where media is same-origin under `/content/`.
+- `DISABLE_PWA` — already exists (`next.config.js:9`), ensure it is honoured in all new worker config
 
 ### 0.3 turbo.json and pnpm Workspace Changes
 
-Add `dexie` and `workbox-background-sync` to `apps/web/package.json`. Confirm `turbo.json` pipeline does not cache the `public/sw.js` output across builds — the service worker must always be regenerated fresh because its precache manifest is build-ID-stamped. Add `"public/sw.js"` and `"public/workbox-*.js"` to the `outputs` array of the `build` pipeline entry in `turbo.json` so Turborepo tracks them for invalidation.
+Add `dexie` and `workbox-background-sync` to `apps/web/package.json` **dependencies** (note: `@ducanh2912/next-pwa@^10` is already present and bundles Workbox — do not add `next-pwa`). `turbo.json` currently uses the v1 `pipeline` key with `build.outputs = [".next/**", "!.next/cache/**"]`. next-pwa writes `sw.js`/`workbox-*.js` into `public/` (a git-tracked source dir, not a turbo output) during `next build`; because the precache manifest is build-ID-stamped, ensure the generated worker is not stale-cached — the simplest correct approach is to keep `generateBuildId` tied to the commit SHA (see Layer 10.2, already wired in `next.config.js:42`) so a new build always yields a fresh manifest. If you want Turborepo to track the generated worker, add `"public/sw.js"` and `"public/workbox-*.js"` to `build.outputs`, but this is optional given the build-ID strategy.
 
 ---
 
@@ -138,13 +260,13 @@ The existing `next-pwa`/Workbox service worker only handles static asset precach
 
 ### 2.1 `apps/web/next.config.js` — Extend `withPWA` Configuration
 
-The `withPWA()` call must be extended with a `runtimeCaching` array. Each entry defines a URL pattern, a strategy, and options. Do not touch the existing `publicExcludes` or `buildExcludes` entries.
+> **Corrected for `@ducanh2912/next-pwa` (see Layer −1 · R2).** Runtime caching goes under **`workboxOptions.runtimeCaching`**, NOT a top-level `runtimeCaching` key. Extend the existing `withPWA({...})` call in `next.config.js` (keep `dest`, `register`, `skipWaiting`, `disable`, `publicExcludes`, `buildExcludes`). Because the SW cannot read runtime config, **all `urlPattern`s must be path/extension based, matched on any origin** — do not try to inject the API/S3 host at build time. Each entry is a `{urlPattern, handler, options}` object (ducanh's schema).
 
 **Entry 1 — API GET routes (course, chapter, activity data):**
-Pattern: `/api/v1/(courses|chapters|activities|blocks|trails|trail_steps|collections|orgs|users|certifications|assignments|schedule)`. Strategy: `NetworkFirst` with a cache name `lh-api-data-v1`, network timeout of 4 seconds, and `CacheableResponsePlugin` accepting only HTTP 200. The 4-second timeout means a slow connection still returns network data, but an offline or very slow connection falls back to cache within 4 seconds without making the user wait indefinitely. Expiry: 24 hours, max 500 entries.
+Match by pathname on any origin: `urlPattern: ({url}) => /\/api\/v1\/(courses|chapters|activities|blocks|trail|collections|orgs|users|certifications|assignments|roles|usergroups|communications|announcements|notifications|search)(\/|$)/.test(url.pathname)`. (Corrected endpoint names — actual router prefixes are `/trail` not `trails`/`trail_steps`, and `schedules`/`grade` live under `/courses`; see `router.py`.) Handler: `NetworkFirst`, cache name `lh-api-data-v1`, `networkTimeoutSeconds: 4`, `cacheableResponse: { statuses: [200] }`, expiry `maxAgeSeconds: 24h`, `maxEntries: 500`. **Do NOT cache authenticated user-specific mutation responses here** — this NetworkFirst rule is for GET reads only; scope the regex so it never matches write responses (Workbox only applies runtime caching to GET by default, but be explicit).
 
-**Entry 2 — S3 and filesystem media assets (images, PDFs):**
-Pattern: matches the configured S3 bucket URL or the local filesystem content URL, pattern must be injected at build time from environment variable. Strategy: `CacheFirst` with a cache name `lh-media-v1`. `CacheableResponsePlugin` accepting 200 only. Expiry: 7 days, max 200 entries. This means once a learner has viewed an image or PDF, it is available offline for 7 days.
+**Entry 2 — Media assets (images, PDFs) — filesystem and S3:**
+For `filesystem` delivery (default) media is same-origin under `/content/`: `urlPattern: ({url}) => url.pathname.startsWith('/content/')`. For `s3api` delivery, add a second entry matching the host from `NEXT_PUBLIC_OFFLINE_S3_MEDIA_HOST` (compiled in at build) or match by extension: `urlPattern: ({url}) => /\.(png|jpe?g|gif|webp|svg|pdf)$/i.test(url.pathname)`. Handler: `CacheFirst`, cache name `lh-media-v1`, `cacheableResponse: { statuses: [200] }`, expiry `maxAgeSeconds: 7d`, `maxEntries: 200`. This means once a learner has viewed an image or PDF, it is available offline for 7 days.
 
 **Entry 3 — Next.js image optimisation endpoint (`/_next/image`):**
 Strategy: `CacheFirst`, cache name `lh-images-v1`. Expiry: 3 days, max 300 entries.
@@ -155,9 +277,9 @@ Strategy: `CacheFirst`, cache name `lh-images-v1`. Expiry: 3 days, max 300 entri
 
 **Entry 6 — Umami analytics proxy routes:** Explicitly exclude from caching with a `NetworkOnly` entry so analytics events are never replayed from cache.
 
-### 2.2 Custom Service Worker Additions via `customWorkerSrc`
+### 2.2 Custom Service Worker Additions via `customWorkerDir`
 
-`next-pwa` supports a `customWorkerSrc` directory that gets merged into the generated worker. Create `apps/web/worker/` directory and configure `customWorkerSrc: 'worker'` in the `withPWA` call.
+> **Corrected (see Layer −1 · R2):** `@ducanh2912/next-pwa` uses **`customWorkerDir`** (default `'worker'`), not `customWorkerSrc`. Create `apps/web/worker/` and either rely on the default or set `customWorkerDir: 'worker'` explicitly in the `withPWA` call. The fork concatenates/imports modules from this directory into the generated worker. Verify the exact merge semantics against the installed `@ducanh2912/next-pwa@^10` docs before writing `background-sync.js`/`offline-fallback.js`, and confirm compatibility with Next.js 16 (`next@16.2.11`) during Phase 2 — pin/upgrade the fork if the generated worker fails to build.
 
 ### 2.3 `apps/web/worker/background-sync.js`
 
@@ -198,6 +320,8 @@ Add the following fields that are currently absent:
 
 ## Layer 3 — Authentication Hardening for Offline
 
+> **Read Layer −1 · R1.4 first.** NextAuth's `jwt`/`session` callbacks run on the Next.js **server** and `useSession()` polls `/api/auth/session` (also the server). None of that is reachable when the device is offline. Sections 3.1–3.2 therefore only help the _online, token-about-to-expire_ case; they do **not** provide offline auth. **Offline auth is delivered client-side** by the IndexedDB session store (Layer 1.4) plus a client gate (3.3) that the UI consults when `useSession()` returns `unauthenticated`/`loading` due to being offline. Also note: the current `jwt` callback (`options.ts:118-138`) has **no try/catch** around `getNewAccessTokenUsingRefreshTokenServer`, so a failed refresh currently throws — wrap it as part of 3.1.
+
 ### 3.1 `apps/web/app/auth/options.ts` — JWT Callback Extension
 
 The existing JWT callback refreshes the token when it has less than 1 minute of life. This must be extended:
@@ -226,15 +350,45 @@ The inactivity logout logic must be **suspended** when `connectionStatus === OFF
 
 Register `window.addEventListener('online', ...)` and `window.addEventListener('offline', ...)` listeners in this context to update `connectionStatus` immediately on network change. On going back online, trigger a sync via `navigator.serviceWorker.ready.then(sw => sw.sync.register('lh-outbox-sync'))`.
 
-### 3.4 `apps/web/services/utils/ts/requests.ts` — Request Interceptor Layer
+### 3.4 The two request seams (CORRECTED — replaces the "single interceptor" model)
 
-All API calls in the `services/` tree ultimately go through this utility (or they should — audit and ensure they all do). Add an `offlineAwareRequest()` wrapper function that:
+> **`requests.ts` is not a request executor** (Layer −1 · R1.2): it only builds `fetch` option objects. There is no single point every call flows through. Reads happen via SWR; writes happen via scattered `fetch()` in service files (some of them Server Actions). So instead of one `offlineAwareRequest()` wrapper, introduce **two** narrow seams:
 
-1. Checks `connectionStatus` from a singleton store (not React context, because services are not React components).
-2. If offline: immediately returns the structured offline response `{ offline: true, data: null }` for GET requests without attempting a network call. For write requests (POST, PUT, DELETE, PATCH): writes to the outbox table and returns `{ queued: true, id: outboxId }`.
-3. If online: performs the request normally. On network failure mid-request, falls back to the offline path.
+**Seam A — Offline-aware SWR fetcher (covers ALL reads at once).** Create `apps/web/lib/offline/swr-fetcher.ts` exporting `offlineFetcher(url, token?)` that:
 
-Every function in every file under `apps/web/services/` must be updated to use `offlineAwareRequest()` instead of calling `fetch()` directly. This is the most labour-intensive change in the entire plan but it is non-negotiable for consistent offline behaviour.
+1. If `connectionStatus === ONLINE`: performs the normal `swrFetcher` request; on success, **writes the response into the IndexedDB cache** (keyed by the SWR key/URL) before returning it.
+2. If offline (or the fetch throws a network error): **reads the last-good value from IndexedDB** and returns it; if nothing is cached, throws a typed `OfflineUnavailableError` the UI renders as "not downloaded yet."
+
+Wire this fetcher and a persisted cache **once**, via a global `<SWRConfig value={{ fetcher: offlineFetcher, keepPreviousData: true, revalidateOnReconnect: true }}>` added in `apps/web/components/RootLayout/RootLayout.tsx` (there is currently no global `SWRConfig`). This replaces the "edit 65 components" work implied elsewhere.
+
+> ⚠️ **CRITICAL CORRECTION — measured during implementation (do not skip).**
+> A global `SWRConfig` fetcher is **necessary but nowhere near sufficient**. A count of the real call sites found **102 of 103 `useSWR` calls pass their own inline fetcher** — the dominant idiom is:
+>
+> ```ts
+> useSWR(`${getAPIUrl()}trail/org/${org?.id}/trail`, (url) =>
+>   swrFetcher(url, access_token),
+> );
+> ```
+>
+> A per-hook `fetcher` **overrides** the one from `SWRConfig`, so the global fetcher would have covered exactly **one** read in the entire app.
+>
+> **The actual choke point is `swrFetcher` itself**, in `apps/web/services/utils/ts/requests.ts` — nearly every inline fetcher delegates to it. So Seam A is installed there via a **runtime interceptor injected by dependency injection**:
+>
+> - `requests.ts` gains `setSwrReadInterceptor(fn)` and wraps its existing body in a `network()` closure. With no interceptor registered, behaviour is byte-for-byte unchanged.
+> - `lib/offline/swr-fetcher.ts` exports `installReadInterceptor()`, called once by `SyncEngineProvider`. One `readThroughCache()` implementation backs **both** the interceptor and the global `offlineFetcher`, so the caching logic exists exactly once (DRY).
+> - Injection (rather than importing the offline layer into `requests.ts`) avoids a module cycle and keeps offline code out of the bundle for anything that never enables it.
+>
+> This is the difference between offline reads working everywhere and working on one page. Verified behaviour: flag off ⇒ passthrough + 1 network call; online ⇒ passthrough + 1 network call; offline with no cache ⇒ **0 network calls** + typed `OfflineUnavailableError`.
+
+**Seam B — `offlineWrite()` helper (opt-in for client-side write functions).** Create `apps/web/lib/offline/offline-write.ts` exporting `offlineWrite({url, method, body, headers, entityType, idempotencyKey})` that:
+
+1. Reads `connectionStatus` from a **singleton store** (not React context — services aren't components).
+2. If offline: for queueable mutations, writes an `outbox` row (with an `idempotency_key`) and returns `{ queued: true, id }`; for non-queueable mutations (deletes, payments, live sessions), returns `{ blocked: true }` so the caller can surface a clear error.
+3. If online: performs the `fetch` normally; on mid-flight network failure, falls back to the offline path.
+
+Only the **client-side** write functions listed in Layer 5 adopt Seam B. `'use server'` write functions (`courses/activity.ts`, `payments/*`) cannot use it while remaining Server Actions — for the one that must work offline (activity completion), re-home it to a client function per Layer −1 · R1.3; the payments actions stay online-only.
+
+`connectionStatus` singleton: create `apps/web/lib/offline/connection.ts` holding the current status, updated by the `online`/`offline` window events and the health probe (3.3), readable from both React (via context in 3.3) and non-React code (Seam B).
 
 ---
 
@@ -280,14 +434,16 @@ Every `GET` response for a list resource (courses, chapters, activities) must in
 
 Every `GET` route handler must check for an `If-None-Match` header. If the header's ETag matches the computed ETag, return HTTP 304 with no body. This single change eliminates redundant data transfer for unchanged content.
 
-Do this for the following routes in priority order:
+> **No CORS change needed** for this: `app.py` already sets `Access-Control-Expose-Headers: *` (lines 59 and 78), so the browser can read `ETag`/`Server-Timing`. Because `GZipMiddleware` is active (`app.py:96`), compute the ETag from the serialized body **inside the route handler** (before compression), not from the wire bytes.
+
+Do this for the following routes in priority order (**corrected paths** — see Layer −1 · R2):
 
 - `apps/api/src/routers/courses/courses.py` — all GET routes
 - `apps/api/src/routers/courses/activities/activities.py` — all GET routes
 - `apps/api/src/routers/courses/chapters.py` — all GET routes
 - `apps/api/src/routers/courses/collections.py` — GET list routes
-- `apps/api/src/routers/organizations/` — GET org and member routes
-- `apps/api/src/routers/trail/` — GET trail and step routes
+- `apps/api/src/routers/orgs.py` — GET org and member routes _(single file, not `routers/organizations/`)_
+- `apps/api/src/routers/trail.py` — GET trail and step routes _(single file, not `routers/trail/`)_
 - `apps/api/src/routers/courses/assignments.py` — GET routes only
 
 Add a `Cache-Control: no-store` header to all **write** endpoints (POST, PUT, DELETE, PATCH) and to all **auth** endpoints to prevent any caching of sensitive mutation responses.
@@ -306,15 +462,21 @@ Add `apps/api/src/routers/sync.py` as the route file and register it in `apps/ap
 
 ## Layer 5 — Service-by-Service Frontend Integration
 
-Every file in `apps/web/services/` must be updated. This section goes file by file.
+> **How to read this layer (see Layer −1 · R4).** Because reads flow through SWR (Seam A) and only writes are per-file, this list is a **behavior-policy matrix** — for each domain it states what happens offline: **cache** (served by the SWR offline fetcher / IndexedDB), **queue** (client write via `offlineWrite()` → outbox), or **block** (return a clear online-only error). It is _not_ an instruction to add a wrapper to each GET; the GETs are largely SWR keys handled centrally. Apply Seam B (`offlineWrite()`) only to the **client-side** write functions named below.
+>
+> **Complete file inventory** (the original list omitted four files that exist): the service tree also includes `apps/web/services/announcements.ts`, `apps/web/services/dashboard/students.ts`, `apps/web/services/notifications/notificationAPI.ts`, and `apps/web/services/referral/marketer.service.ts`. Policy: announcements → cache first page, queue writes; dashboard/students → block (admin, live aggregation); notifications → cache first page, queue read-receipts/marks; marketer.service → cache read-only summaries, block payout/KYC writes. `'use server'` files (`courses/activity.ts`, `payments/products.ts`, `payments/payments.ts`, `payments/discounts.ts`) cannot queue while remaining Server Actions — treat as online-only except activity-completion, which is re-homed (5.3).
+
+This section goes file by file.
+
+> **Terminology bridge:** the subsections below were written with a single `offlineAwareRequest()` wrapper in mind. Read every such mention as follows: **for GET functions**, "wrap in `offlineAwareRequest()`" → _this read is served by the global offline SWR fetcher (Seam A); the service GET itself only needs changes if it is used outside SWR (e.g. SSR)_. **For write functions (POST/PUT/PATCH/DELETE)**, "wrap in `offlineAwareRequest()`" → _route the client-side write through `offlineWrite()` (Seam B)_; server-action writes stay online-only unless re-homed (5.3). All bare `OFFLINE_*` env names below are the `NEXT_PUBLIC_OFFLINE_*` variables from Layer −1 · R3.
 
 ### 5.1 `apps/web/services/auth/auth.ts`
 
-`loginAndGetToken`: on success, call `saveOfflineSession()` from `session-store.ts` immediately after receiving the token. Also call `SyncEngine.initialSync()` in the background without awaiting it — do not block the login flow on sync completion.
+> **Placement note:** `loginAndGetToken`/`getUserSession` are invoked from the **NextAuth `authorize`/`session` callbacks, which run server-side** (`options.ts`) — IndexedDB is not available there. So `saveOfflineSession()` (IndexedDB, Web Crypto) must run **client-side**: call it from a `useEffect` in the session context (3.3) that fires when `useSession()` transitions to `authenticated` (persist `session.tokens`, `session.user`, `session.roles`). Do the same to trigger `SyncEngine.initialSync()` in the background (do not await).
 
-`getUserSession`: check `getOfflineSession()` first. If offline and valid, return the cached session. If online, proceed normally and update the cached session on success.
+`getOfflineSession()` gate: consumed client-side by 3.3 / login page (5B.13) when `useSession()` cannot resolve because the device is offline. If offline and within grace, treat as authenticated (read-only).
 
-Logout function (wherever it lives): must call `clearOfflineSession()` and clear all IndexedDB tables. Do not leave cached data accessible after logout. This is a critical security requirement — shared device scenarios.
+Logout (`logout()` in `auth.ts` + NextAuth `signOut`): the client logout handler must also call `clearOfflineSession()` and wipe all IndexedDB tables + the app's Cache Storage buckets. Do not leave cached data accessible after logout — critical for shared-device scenarios (threat T6).
 
 ### 5.2 `apps/web/services/courses/courses.ts`
 
@@ -332,13 +494,15 @@ Logout function (wherever it lives): must call `clearOfflineSession()` and clear
 
 ### 5.3 `apps/web/services/courses/activities.ts` and `apps/web/services/courses/activity.ts`
 
-`getActivity`: wrap in `offlineAwareRequest()`. On offline, call `SyncEngine.getCachedActivity(activityId)`. Return the cached version. If not cached, return a structured error that the page component renders as "This activity hasn't been downloaded yet."
+> **Corrected (Layer −1 · R1.3).** There is **no `markActivityComplete` in `activities.ts`.** Activity completion is `markActivityAsComplete()` in `apps/web/services/courses/activity.ts`, which is a **`'use server'` Server Action** hitting `POST /trail/add_activity/{activity_uuid}` (and `unmarkActivityAsComplete` → `DELETE /trail/remove_activity/{activity_uuid}`). Server Actions cannot run offline.
 
-`getActivityBlocks`: same pattern using `blocks` table.
+`getActivity` / `getActivityByID` / `getActivityWithAuthHeader` (in `activities.ts`): these are used for **server-side** rendering and are inert offline. The offline read path for activities is the SWR key that the activity page uses (Seam A) plus the `activities`/`blocks` IndexedDB tables. If not cached, surface the typed `OfflineUnavailableError` → "This activity hasn't been downloaded yet."
 
-`markActivityComplete`: this is the most critical write path. Write to `user_progress` table and `outbox` atomically. Immediately return success to the UI (optimistic update). The background sync will replay the actual API call.
+`getActivityBlocks`: served from the `blocks` table via Seam A.
 
-`getActivityPrerequisites`: read from `activities` table — prerequisite data is part of the cached activity object.
+**Activity completion (the most critical write path) — must be re-homed to a client path.** Create a client function (e.g. `markActivityCompleteClient(activityUuid, accessToken)` in a **client** module, not `activity.ts`) that calls `POST /trail/add_activity/{uuid}` directly via `fetch` and routes through `offlineWrite()` (Seam B). When offline: write `user_progress` and the `outbox` row in a single Dexie transaction (atomic; roll back both on failure), optimistically update the UI, and let Background Sync replay. Keep the existing Server Action for the online SSR/refresh path if desired, but the offline-capable trigger must be the client function. Send an `X-Idempotency-Key` so replays are safe (Layer 7.4).
+
+`getActivityPrerequisites`: read from the cached activity object (`activities` table) — prerequisite data is part of it.
 
 ### 5.4 `apps/web/services/courses/assignments.ts`
 
@@ -468,9 +632,12 @@ Queue contact form submissions to outbox. They are simple POST requests with no 
 
 This is the health ping endpoint. Do not cache it. Use it as the connectivity probe in `LHSessionContext`.
 
-### 5.30 `apps/web/services/utils/react/middlewares/views.ts`
+### 5.30 `apps/web/services/utils/react/middlewares/views.ts` + `apps/web/hooks/useActivityHeartbeat.ts`
 
-Activity view tracking: queue view events to outbox. Views recorded offline will sync later. This is acceptable — view counts are analytics data, not user-critical state.
+> **Corrected (exhaustive pass):** `views.ts` is **not** view tracking — it is `denyAccessToUser(error, router)`, which redirects to `/login` on HTTP 401/403. Actual activity view/heartbeat tracking lives in **`hooks/useActivityHeartbeat.ts`**. Two changes:
+
+- **`views.ts` (`denyAccessToUser`) must be offline-aware:** do **not** redirect to `/login` on a _network_ error while offline (a failed fetch offline is not a 401/403). Only redirect on genuine 401/403 responses. Otherwise offline users get bounced to login — a functionality regression. It only acts on `error.status`, so ensure offline network failures never surface as a 401/403-shaped error.
+- **`useActivityHeartbeat.ts`:** while offline, **suspend** the heartbeat (do not spin failing requests); optionally queue a single view/heartbeat event to the outbox on completion. View counts are analytics-grade, not user-critical — losing some offline is acceptable; hammering the network is not.
 
 ### 5.31 `apps/web/services/blocks/Image/images.ts`
 
@@ -496,9 +663,16 @@ Block all discount operations on offline. Discount validation is server-side onl
 
 ## Layer 5B — Page and Component Changes
 
-### 5B.1 `apps/web/app/layout.tsx`
+### 5B.1 `apps/web/components/RootLayout/RootLayout.tsx` (NOT `app/layout.tsx`)
 
-Add the `SyncEngineProvider` context wrapper here so the sync engine is initialised at the root level. On mount: call `requestPersistentStorage()`, initialise the Dexie database, and register the `online`/`offline` event listeners.
+> **Corrected:** `app/layout.tsx` is a thin server component that just renders `<RootLayout>`. The actual client provider stack lives in `apps/web/components/RootLayout/RootLayout.tsx` (`'use client'`), currently `SessionProvider → LHSessionProvider → I18nProvider → StyledComponentsRegistry`. Make the additions there.
+
+Add two things inside that provider stack:
+
+1. A global **`<SWRConfig>`** (there is none today) supplying the offline-aware fetcher and IndexedDB cache provider from Seam A (Layer 3.4): `value={{ fetcher: offlineFetcher, provider: indexedDbCacheProvider, keepPreviousData: true, revalidateOnReconnect: true }}`. This is what makes all 65 SWR read sites offline-capable at once.
+2. A **`SyncEngineProvider`** that on mount calls `requestPersistentStorage()`, initialises the Dexie database, seeds the `connectionStatus` singleton, and registers `online`/`offline` listeners. Place it so it can read the session (inside `LHSessionProvider`) to trigger `saveOfflineSession()` + `initialSync()` on `authenticated` (Layer 5.1).
+
+Note `SessionProvider` currently sets `refetchInterval={60000}`; while offline this poll fails every minute — gate/relax it via the connection status so it doesn't thrash (see 3.3).
 
 ### 5B.2 `apps/web/app/home/home.tsx`
 
@@ -522,7 +696,9 @@ For `DYNAMIC` (text/rich content) activity types: fully functional offline.
 
 For `DOCUMENT_PDF`: functional offline only if the PDF was previously cached by the media prefetch. Show a download prompt if not cached.
 
-For `VIDEO` (YouTube): never available offline (YouTube's terms prohibit caching). For hosted video: available offline only if the user has explicitly downloaded the course and `OFFLINE_ENABLE_VIDEO_CACHE=true`.
+For `VIDEO` (YouTube): never available offline (YouTube's terms prohibit caching). For hosted video: available offline only if the user has explicitly downloaded the course and `NEXT_PUBLIC_OFFLINE_ENABLE_VIDEO_CACHE=true`.
+
+> Verify the exact activity-type identifiers against the backend enum before coding the switch (do not assume the strings `DYNAMIC`/`DOCUMENT_PDF`/`VIDEO`/`LIVE_SESSION`/`ASSIGNMENT` — confirm in `apps/api/src/db/courses/activities.py`). The client component here is `activity.tsx` (uses `useSWR` 7×); its sibling `page.tsx` is the server wrapper.
 
 ### 5B.6 `apps/web/app/orgs/[orgslug]/(withmenu)/trail/page.tsx`
 
@@ -550,9 +726,15 @@ Cache and serve from `collections` table.
 
 Show cached schedule events. Display a "Calendar may not reflect the latest updates" notice when offline.
 
-### 5B.11 `apps/web/app/orgs/[orgslug]/dash/layout.tsx`
+### 5B.11 `apps/web/app/orgs/[orgslug]/dash/ClientAdminLayout.tsx` (route-scoped guard — NOT a blanket block)
 
-Apply a blanket `requiresOnline` guard at the dash layout level. If offline, redirect to a `/offline-admin` page that explains the limitation. Do not attempt to serve cached admin analytics.
+> **Corrected (domain surprise from the exhaustive pass, see Layer −1 · R6).** `dash/layout.tsx` just renders `ClientAdminLayout`, which already gates children with `<AdminAuthorization authorizationMode="page">`. **Do not blanket-block all of `/dash` offline** — `dash/user-account/settings/*` and `dash/user-account/owned` live under `/dash` but are the _user's own_ pages, and 6.6/6.7 explicitly require the storage-management UI (which lives in `dash/user-account/settings/`) to work offline.
+
+Implement the guard **route-scoped**, ideally inside/next to `AdminAuthorization`:
+
+- **Allowed offline (read/queue):** `dash/user-account/**` (own settings, owned courses, offline-storage management).
+- **Blocked offline (redirect to `/offline-admin`):** everything else under `/dash` — analytics, students, payments, referrals, users, org settings, communications, courses admin, assignments admin. These are admin/live-aggregation/financial and are `never-cache` per S1.
+- Do not attempt to serve cached admin analytics. Drive the allow/block decision from the shared policy registry (8.7), not a hardcoded list in two places.
 
 ### 5B.12 `apps/web/app/editor/course/[courseid]/activity/[activityuuid]/edit/page.tsx`
 
@@ -628,9 +810,9 @@ Add a storage usage display to the user account settings page (`apps/web/app/org
 
 ## Layer 7 — Backend API Hardening
 
-### 7.1 `apps/api/src/routers/auth.py` — Explicit Token Refresh Endpoint
+### 7.1 `apps/api/src/routers/auth.py` — Rate-limit the EXISTING refresh endpoint
 
-Add a `POST /api/v1/auth/refresh` endpoint separate from the existing login flow. This endpoint accepts a valid (not-expired) refresh token and returns a new access token. It is specifically designed for the Next.js JWT callback's token refresh cycle. Add Redis-based rate limiting: max 60 refreshes per user per hour.
+> **Corrected (Layer −1 · R2):** a refresh endpoint already exists — `GET /api/v1/auth/refresh` (`auth.py:30`), built on fastapi-jwt-auth's refresh cookie and already consumed by the frontend (`getNewAccessTokenUsingRefreshToken` / `...Server`). **Do not add a duplicate `POST /auth/refresh`.** Instead, add **Redis-based rate limiting (max 60 refreshes/user/hour)** to the existing handler, reusing the Redis client already in the codebase (`apps/api/src/services/referrals/redis_cache.py` pattern). Keep the existing GET contract so the NextAuth JWT callback and client code keep working unchanged.
 
 ### 7.2 `apps/api/src/routers/sync.py` — Delta Sync Endpoint
 
@@ -642,7 +824,7 @@ Register in `apps/api/src/router.py`.
 
 Add a FastAPI middleware that applies `Cache-Control` headers based on request path and method, as described in 4.3. This centralises the logic rather than decorating every route handler individually.
 
-Register this middleware in `apps/api/main.py`.
+Register this middleware in **`apps/api/app.py`** (there is no `apps/api/main.py`; the FastAPI app is created in `app.py`). Mind middleware ordering: Starlette runs middlewares in reverse registration order, and `GZipMiddleware` + the two CORS middlewares are already registered (`app.py:66-96`). Add the cache-control middleware so it runs on the response path without clobbering the existing CORS/expose-headers behaviour; verify with a smoke test that `Access-Control-Expose-Headers` and `ETag` both survive.
 
 ### 7.4 Idempotency Key Support in Write Endpoints
 
@@ -652,11 +834,13 @@ The outbox entry must include an `idempotency_key` field — a UUID generated at
 
 Backend routes must check this header. If a record with the same idempotency key already exists, return the original response (HTTP 200 with the original result). Store idempotency keys in Redis with a 24-hour TTL.
 
-Add idempotency key checking to:
+Add idempotency key checking to (**corrected paths** — see Layer −1 · R2):
 
-- `apps/api/src/routers/courses/activities/activities.py` — mark complete endpoint
+- `apps/api/src/routers/trail.py` — `POST /trail/add_activity/{activity_uuid}` (activity completion — this is the "mark complete" endpoint, in `trail.py`, **not** `activities.py`)
 - `apps/api/src/routers/courses/assignments.py` — create submission endpoint
-- `apps/api/src/routers/trail/` — step completion endpoint
+- Any other queueable mutations you enable in Layer 5 (e.g. quiz submission, contact form) — add on demand as those write paths gain outbox support.
+
+Reuse the existing Redis client for the 24h idempotency store (`apps/api/src/services/referrals/redis_cache.py` pattern).
 
 ### 7.5 Permission Revocation on Reconnect
 
@@ -682,12 +866,14 @@ Define and document these threats in `apps/web/docs/offline-architecture.md`:
 
 **T6 — Cross-User Data Leakage on Shared Device:** User A logs out; User B logs in. Mitigation: `clearOfflineSession()` on logout wipes all IndexedDB tables. All queries are scoped to `user_id`.
 
-### 8.2 Content Security Policy Updates
+### 8.2 Content Security Policy
 
-Update CSP headers to ensure:
+> **Corrected:** there is currently **no CSP** anywhere in `apps/web` (no header in `next.config.js`, middleware, or proxy). So this is "author a CSP," not "update" one — and it must be done carefully because `RootLayout.tsx` relies on an inline theme `<script dangerouslySetInnerHTML>` and a synchronous `<script src="/runtime-config.js">`. Introduce the CSP as its own scoped task (ideally after Phase 2) so it doesn't break existing inline scripts:
 
-- `worker-src 'self'` is set to allow the service worker scope.
-- `script-src` does not include `'unsafe-eval'` in production (Workbox uses eval in development mode).
+- Add the header via `next.config.js` `async headers()` (or the reverse proxy).
+- `worker-src 'self'` to allow the service worker scope.
+- Avoid `'unsafe-eval'` in production (Workbox only uses eval in dev builds).
+- Because of the inline theme script, either use a nonce/hash or keep `'unsafe-inline'` scoped narrowly — validate the app still boots (theme flash, runtime config, Umami) before shipping.
 
 ### 8.3 Service Worker Origin Lock
 
@@ -701,17 +887,48 @@ The service worker, `Cache Storage`, `navigator.storage.persist()`, and Backgrou
 
 Confirm the following are never written to IndexedDB or Cache Storage:
 
-- Raw JWT strings (use encrypted storage via `session-store.ts`)
+- Raw JWT strings (see 8.6 — prefer _not storing the access token at all_)
 - Payment card data or payment intent secrets
 - Password reset tokens
 - OAuth state parameters
 - Admin analytics aggregation results
+
+### 8.6 Offline Security Requirements (MANDATORY — "100% security-proof")
+
+> These close the attack surface that offline caching introduces. Each is testable (Layer 9) and each maps to a threat in 8.1.
+
+**S1 — Sensitive-endpoint denylist (single source of truth).** Neither Seam A (SWR→IndexedDB) nor the SW `NetworkFirst` API cache may persist responses from sensitive/admin/financial endpoints. Maintain ONE denylist in `apps/web/lib/offline/policy.ts` (see 8.7) matching: `payments/**`, `referrals/**`, `marketers/**`, `ee/**`, `admin/**`, `admin/analytics/**`, `dashboard/**`, `users/session`, `auth/**`, `chat/ws/**`, `code/execute`. The SW runtime-cache regex (Layer 2.1 Entry 1) must be the _allowlist_ complement of this — it already excludes these; keep the two in sync via the shared registry, never hand-maintained in two places.
+
+**S2 — Wipe on user-switch, not just logout (fixes T6 fully).** On every successful authentication, compare the authenticating `user_id` with the `sessions` row already in IndexedDB. **If they differ (or any stale session exists from a user who never logged out), wipe ALL IndexedDB tables and delete every `lh-*` Cache Storage bucket _before_ seeding the new session.** Relying only on `clearOfflineSession()` at logout (original plan) leaves User A's data exposed if A merely closed the tab. This check runs client-side in the post-login effect (5.1).
+
+**S3 — Never store bearer tokens in the outbox.** Outbox rows store only `{method, url, body, entityType, idempotency_key, created_at, status, retry_count}` — **no `Authorization` header, no cookies.** At replay time (SW Background Sync or `drainOutbox()`), inject the _current_ valid access token. This prevents token-at-rest in a replayable structure (fixes T4) and guarantees a revoked token can't be replayed with stale credentials. (Overrides Layer 1.2's `outbox.headers` field — drop `headers` or store only non-auth headers like `X-Idempotency-Key`.)
+
+**S4 — Cache Storage lifecycle.** All app caches are named `lh-*`. On logout/user-switch delete them all; on SW `activate`, delete `lh-*` caches from prior _app_ versions per Risk 4's rules (but preserve `lh-api-data-v1` only if the same user — combined with S2 this is safe). Never leave an authenticated response in a cache that outlives the session.
+
+**S5 — Destructive & financial actions are NEVER queued.** `offlineWrite()` must hard-block (return `{blocked:true}`, never enqueue) for: all `payments/**` and `referrals|marketers` payout/KYC/approve/reject/suspend, member/role/usergroup **removal**, all **DELETE**s, assignment **grading**, `code/execute`, live-session control, invites, waitlist. A queued destructive/financial op that replays after the user changed their mind (or after permissions changed) is a data-integrity and financial-safety hazard. Encode this in the policy registry (8.7), not per-call.
+
+**S6 — Token-at-rest: be honest and minimal.** The backend sets the access-token cookie with `httponly=False` (`auth.py:79`), so the access token is _already_ readable by any script on the origin — IndexedDB encryption of it (original Layer 1.4) is weak defense-in-depth, not a real control. **Preferred design: do not store the access token in IndexedDB at all.** Persist only non-secret session metadata (user id, roles snapshot, `grace_until`, org permissions) needed to gate the offline UI; obtain the actual token for replay from the existing cookie/NextAuth session in memory when online. This removes a secret-at-rest entirely and is simpler (DRY with the existing auth model). If a token must be cached for cold-start replay, encrypt via Web Crypto as originally described and document the residual risk explicitly.
+
+**S7 — Permission snapshot gating + reconnect revocation.** Offline UI gates (admin vs learner, course access) read the roles/permissions snapshot captured at last online sync. On reconnect, fetch `user_organizations` + `roles` FIRST (Layer 7.5) and, if changed, immediately evict now-forbidden `courses/activities/blocks` from IndexedDB and their SW cache entries before rendering. Never let a stale snapshot unlock content the server would now deny (fixes T1/T2).
+
+### 8.7 DRY Mandates (single-source-of-truth, no duplicated offline logic)
+
+> "Follow DRY consistently." Offline concerns must not be copy-pasted across 40 service files or split across client/SW. Enforce these:
+
+1. **One policy registry — `apps/web/lib/offline/policy.ts`.** A single declarative map from endpoint pattern → `{ read: 'cache'|'never', write: 'queue'|'block', sensitive: boolean, ttl? }`. Consumed by (a) the SWR offline fetcher (Seam A) to decide whether to persist a read, (b) `offlineWrite()` (Seam B) to decide queue vs block, and (c) the SW allowlist/denylist generation (S1). The Layer 5 matrix and the R6 table are the _human_ view of this one machine-readable registry — do not encode policy a second time in each service function.
+2. **One read seam, one write seam.** All reads go through `offlineFetcher` (global `SWRConfig`); all client writes go through `offlineWrite()`. No bespoke `if (offline)` branches inside individual service functions.
+3. **One conflict resolver** (`conflict-resolver.ts`) — already centralized; keep business rules only there.
+4. **Backend: one ETag/304 mechanism and one Cache-Control mechanism.** Implement conditional GET as a **single reusable FastAPI dependency or middleware** (not `If-None-Match` handling copy-pasted into each of the ~7 route files), and `Cache-Control` as the single middleware in 7.3. This also guarantees consistent behavior and satisfies "no functionality altered" (one tested code path).
+5. **One idempotency helper** on the backend (a dependency wrapping the Redis check), applied via `Depends(...)` to the write routes in 7.4 — not re-implemented per route.
+6. **Unify divergent client code during adoption.** `marketer.service.ts` (and any file using inline `fetch(headers)`) must adopt the shared request builders (`RequestBodyWithAuthHeader`) / seams so there is exactly one auth-header construction path.
 
 ---
 
 ## Layer 9 — Testing Strategy
 
 ### 9.1 Unit Tests — `apps/web/__tests__/offline/`
+
+> **New tooling required (none of this is installed today).** `apps/web` currently has **only** Jest + Testing Library (`package.json` devDeps). Add as devDependencies and scaffold config before writing these tests: `fake-indexeddb`, `msw`, `@playwright/test` (+ a `playwright.config.ts` — there is none), `@lhci/cli` (Layer 10.8), and a bundle-size checker (Layer 10.7). The current test scripts are `lint`/`build` only — add `test`, `test:e2e`, and CI wiring. Jest uses `jest-environment-jsdom` already.
 
 Write Jest tests for:
 
@@ -748,6 +965,12 @@ Add an offline test suite to the Playwright configuration:
 - **Test 8:** Go offline for longer than `OFFLINE_GRACE_PERIOD_HOURS`, reconnect, assert the user is redirected to login.
 - **Test 9:** Go offline, open an activity that was never cached, assert the "Not Available Offline" placeholder is shown.
 - **Test 10:** Use the DownloadCourseButton, go offline, verify all activities in that course render correctly.
+- **Test 11 (S2 user-switch):** Log in as User A (cache data), **close tab without logging out**, reopen and log in as User B → assert IndexedDB and all `lh-*` caches were wiped and none of A's data is present.
+- **Test 12 (S5 financial block):** Go offline, attempt a payout/payment/KYC action → assert it is **blocked with a clear message and NOT enqueued** (outbox length unchanged).
+- **Test 13 (S3 token hygiene):** Queue a write offline → inspect the outbox row and assert it contains **no `Authorization` header / token**; go online, assert replay succeeds with a freshly injected token.
+- **Test 14 (S1 denylist):** Go online, load an admin/referrals/payments page, then inspect IndexedDB + Cache Storage → assert **no sensitive-endpoint responses were persisted**.
+- **Test 15 (S7 revocation):** Cache a course offline, have the server revoke access, reconnect → assert the course/activities are evicted and no longer render.
+- **Test 16 (user-account offline):** Go offline, open `dash/user-account/settings` storage page → assert it **renders** (not blocked) and shows offline storage usage (guards against the 5B.11 over-block regression).
 
 Playwright has native support for `page.context().setOffline(true)` which sets the Chromium network stack to offline mode at the browser level — this tests the service worker fallback in a real browser environment.
 
@@ -759,7 +982,7 @@ Add tests for:
 - `test_idempotency.py`: duplicate outbox-replayed requests return the original response without creating duplicate records.
 - `test_sync_delta.py`: delta endpoint returns only records modified after the `since` timestamp, scoped to user's permissions.
 - `test_cache_control.py`: write endpoints return `Cache-Control: no-store`; read endpoints return correct values.
-- `test_refresh_rate_limit.py`: `/api/v1/auth/refresh` enforces Redis rate limiting at 60 requests/hour/user.
+- `test_refresh_rate_limit.py`: `GET /api/v1/auth/refresh` (the existing endpoint) enforces Redis rate limiting at 60 requests/hour/user. (The API test suite already exists under `apps/api/src/tests/` and uses pytest; Redis is available — see Layer 10.5.)
 
 ---
 
@@ -781,17 +1004,14 @@ Ensure `BUILD_ID` environment variable is set in CI/CD and is consistent across 
 
 An inconsistent build ID means different pods serve different service worker manifests, causing users to get stuck in a broken cache state when load-balanced to different pods.
 
-### 10.3 `apps/web/Dockerfile` Changes
+### 10.3 `apps/web/Dockerfile` — verify (mostly already handled)
 
-The standalone Next.js output (`output: 'standalone'`) does not include `public/` by default. The Dockerfile must explicitly copy:
+> **Corrected:** `apps/web/Dockerfile:52` already does `COPY --from=builder /app/public ./public`, and `@ducanh2912/next-pwa` writes `sw.js`/`workbox-*.js` into `public/` during the `builder` stage's `pnpm run build`. So the generated worker, `manifest.json`, and `icons/` are already shipped — the "standalone omits `public/`" claim does not apply here. Action items:
 
-- `public/sw.js`
-- `public/workbox-*.js`
-- `public/manifest.json`
-- `public/offline-placeholder.svg`
-- `public/icons/`
-
-into the standalone output directory. Verify and add explicit `COPY` instructions if missing.
+- **Verify** the generated `public/sw.js` and `public/workbox-*.js` are present in the builder stage before the copy (they are build outputs, likely git-ignored — that's fine, they're generated pre-copy).
+- Add `public/offline-placeholder.svg` (a source asset from Layer 6.6) — it ships automatically via the existing `public/` copy once committed.
+- No new per-file `COPY` lines are required. Just confirm `DISABLE_PWA` is not set in the production build stage (otherwise no worker is generated).
+- Note there are **two** Dockerfiles (`Dockerfile` and `Dockerfile.frontend`) — confirm which the deployment actually uses and apply the check there.
 
 ### 10.4 Docker Compose / Kubernetes Health Checks
 
@@ -891,6 +1111,13 @@ apps/web/lib/offline/storage-policy.ts
 apps/web/lib/offline/session-store.ts
 apps/web/lib/offline/sync-engine.ts
 apps/web/lib/offline/conflict-resolver.ts
+apps/web/lib/offline/connection.ts            # connectionStatus singleton (Seam, 3.4)
+apps/web/lib/offline/policy.ts                # SINGLE offline policy registry: endpoint→cache/queue/block + sensitive denylist (8.7 DRY, S1/S5)
+apps/web/lib/offline/swr-fetcher.ts           # offline-aware SWR fetcher + IndexedDB cache provider (Seam A, 3.4/5B.1)
+apps/web/lib/offline/offline-write.ts         # offlineWrite() outbox helper (Seam B, 3.4) — injects token at replay (S3)
+apps/web/lib/offline/trail-complete.client.ts # client-side markActivityCompleteClient (re-homed from the 'use server' activity.ts, 5.3/R1.3)
+apps/web/components/Offline/SyncEngineProvider.tsx  # root provider (5B.1)
+playwright.config.ts                          # no Playwright config exists today (Layer 9)
 apps/web/worker/background-sync.js
 apps/web/worker/offline-fallback.js
 apps/web/components/Offline/OfflineBanner.tsx
@@ -902,6 +1129,8 @@ apps/web/public/offline-placeholder.svg
 apps/web/docs/offline-architecture.md
 apps/api/src/routers/sync.py
 apps/api/src/core/middleware/cache_control.py
+apps/api/src/core/dependencies/conditional_get.py  # ONE reusable ETag/If-None-Match/304 dependency (8.7 DRY, 4.3)
+apps/api/src/core/dependencies/idempotency.py      # ONE Redis idempotency Depends() for write routes (8.7 DRY, 7.4)
 apps/api/src/tests/test_etag_support.py
 apps/api/src/tests/test_idempotency.py
 apps/api/src/tests/test_sync_delta.py
@@ -919,9 +1148,9 @@ apps/web/e2e/offline.spec.ts
 
 ```
 apps/web/next.config.js
-apps/web/package.json
+apps/web/package.json                          # +dexie, +workbox-background-sync, +fake-indexeddb, +msw, +@playwright/test, +@lhci/cli, +bundle-size checker; +test scripts
 apps/web/public/manifest.json
-apps/web/app/layout.tsx
+apps/web/components/RootLayout/RootLayout.tsx  # REAL provider stack (add SWRConfig + SyncEngineProvider) — app/layout.tsx only renders <RootLayout>
 apps/web/app/auth/options.ts
 apps/web/app/auth/login/login.tsx
 apps/web/app/home/home.tsx
@@ -938,7 +1167,8 @@ apps/web/app/orgs/[orgslug]/(withmenu)/collections/CollectionsClient.tsx
 apps/web/app/orgs/[orgslug]/(withmenu)/collection/[collectionid]/page.tsx
 apps/web/app/orgs/[orgslug]/(withmenu)/certificates/[uuid]/verify/page.tsx
 apps/web/app/orgs/[orgslug]/(withmenu)/user/[username]/UserProfileClient.tsx
-apps/web/app/orgs/[orgslug]/dash/layout.tsx
+apps/web/app/orgs/[orgslug]/dash/ClientAdminLayout.tsx   # route-scoped offline guard (5B.11) — NOT a blanket dash block
+apps/web/app/orgs/[orgslug]/dash/user-account/settings/[subpage]/page.tsx  # storage-management UI must work offline (6.7)
 apps/web/app/editor/course/[courseid]/activity/[activityuuid]/edit/page.tsx
 apps/web/app/orgs/[orgslug]/(withmenu)/course/[courseuuid]/error.tsx
 apps/web/app/orgs/[orgslug]/(withmenu)/courses/error.tsx
@@ -951,6 +1181,7 @@ apps/web/app/orgs/[orgslug]/(withmenu)/loading.tsx
 apps/web/app/editor/course/[courseid]/activity/[activityuuid]/edit/loading.tsx
 apps/web/components/Contexts/LHSessionContext.tsx
 apps/web/hooks/useWebSocket.ts
+apps/web/hooks/useActivityHeartbeat.ts          # suspend heartbeat offline (5.30)
 apps/web/services/utils/ts/requests.ts
 apps/web/services/auth/auth.ts
 apps/web/services/courses/courses.ts
@@ -990,18 +1221,25 @@ apps/web/services/blocks/Image/images.ts
 apps/web/services/blocks/Pdf/pdf.ts
 apps/web/services/blocks/Quiz/quiz.ts
 apps/web/services/blocks/Video/video.ts
-apps/api/src/routers/auth.py
+apps/web/services/announcements.ts             # ADDED — was omitted from Layer 5
+apps/web/services/dashboard/students.ts        # ADDED — block offline (admin/live aggregation)
+apps/web/services/notifications/notificationAPI.ts  # ADDED — cache first page, queue marks
+apps/web/services/referral/marketer.service.ts # ADDED — cache read-only, block payout/KYC
+apps/web/app/orgs/[orgslug]/(withmenu)/chat/page.tsx  # ADDED — chat index page
+apps/api/src/routers/auth.py                    # rate-limit EXISTING GET /auth/refresh (7.1)
 apps/api/src/routers/courses/courses.py
 apps/api/src/routers/courses/activities/activities.py
 apps/api/src/routers/courses/chapters.py
 apps/api/src/routers/courses/collections.py
 apps/api/src/routers/courses/assignments.py
 apps/api/src/routers/courses/certifications.py
+apps/api/src/routers/orgs.py                     # was mislisted as routers/organizations/
+apps/api/src/routers/trail.py                    # activity-completion + idempotency (7.4)
 apps/api/src/router.py
-apps/api/main.py
+apps/api/app.py                                  # was mislisted as apps/api/main.py — register cache_control middleware here (7.3)
 turbo.json
 apps/web/.env.example
-apps/web/Dockerfile
+apps/web/Dockerfile                              # verify only — public/ already copied (10.3)
 ```
 
 ---
