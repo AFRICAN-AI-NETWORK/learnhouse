@@ -8,22 +8,16 @@ Layers covered:
   * Intake cohort service baseline and the authorization on its router.
 """
 
-from datetime import UTC, datetime
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import select
 
 from src.db.cohorts import CohortCreate, CohortEnrollment, CohortStatusEnum
-from src.db.courses.courses import Course  # noqa: F401
-from src.db.organizations import Organization
-from src.db.payments.payments_users import PaymentsUser  # noqa: F401
 from src.db.roles import Rights, Role
-from src.db.user_organizations import UserOrganization
-from src.db.users import AnonymousUser, User
+from src.db.users import AnonymousUser
 from src.routers.cohorts import api_create_cohort, api_unlock_cohort
 from src.security import calendar_security
 from src.security.calendar_security import (
@@ -44,119 +38,12 @@ from src.services.utils.datetimes import (
     parse_instant_utc,
     resolve_zone,
 )
-
-_NOW = str(datetime.now(UTC))
-_ORG_ID = 1
-
-_MANAGE = {
-    "action_create": True,
-    "action_read": True,
-    "action_update": True,
-    "action_delete": True,
-}
-# Rights payload as stored before the academic_calendar resource existed.
-_LEGACY_RIGHTS = {
-    "courses": {
-        "action_create": False,
-        "action_read": True,
-        "action_read_own": True,
-        "action_update": False,
-        "action_update_own": False,
-        "action_delete": False,
-        "action_delete_own": False,
-    },
-    **{
-        resource: {
-            "action_create": False,
-            "action_read": True,
-            "action_update": False,
-            "action_delete": False,
-        }
-        for resource in (
-            "users",
-            "usergroups",
-            "collections",
-            "organizations",
-            "coursechapters",
-            "activities",
-            "roles",
-            "communications",
-        )
-    },
-    "dashboard": {"action_access": False},
-}
-
-
-# ─────────────────────────── Fixtures ──────────────────────────────
-
-
-@pytest.fixture(name="db")
-def db_fixture():
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        session.add(
-            Organization(
-                id=_ORG_ID,
-                name="Org",
-                description="",
-                about="",
-                logo_image="",
-                thumbnail_image="",
-                label="",
-                slug="org",
-                email="org@example.com",
-            )
-        )
-        session.commit()
-        yield session
-    SQLModel.metadata.drop_all(engine)
-
-
-def _add_user_with_role(db: Session, user_id: int, role_id: int, rights: dict) -> User:
-    """Create a user holding a single role with the given rights payload."""
-    if not db.get(Role, role_id):
-        role = Role(id=role_id, name=f"role-{role_id}", description="")
-        # Assigned after construction so the JSON column stores a plain dict.
-        role.rights = rights
-        db.add(role)
-    user = User(
-        id=user_id,
-        username=f"user{user_id}",
-        first_name="Test",
-        last_name="User",
-        email=f"user{user_id}@example.com",
-    )
-    db.add(user)
-    db.add(
-        UserOrganization(
-            user_id=user_id,
-            org_id=_ORG_ID,
-            role_id=role_id,
-            creation_date=_NOW,
-            update_date=_NOW,
-        )
-    )
-    db.commit()
-    return user
-
-
-@pytest.fixture
-def staff(db):
-    """A non-admin role that has been granted the calendar right."""
-    return _add_user_with_role(
-        db, 10, 3, {**_LEGACY_RIGHTS, "academic_calendar": _MANAGE}
-    )
-
-
-@pytest.fixture
-def learner(db):
-    return _add_user_with_role(db, 11, 4, _LEGACY_RIGHTS)
-
+from src.tests.academic_calendar.conftest import (
+    LEGACY_RIGHTS,
+    MANAGE_RIGHTS,
+    ORG_ID,
+    add_user_with_role,
+)
 
 # ─────────────────────────── Date helpers ──────────────────────────
 
@@ -206,7 +93,7 @@ class TestDatetimes:
 
 class TestRightsModel:
     def test_legacy_rights_default_to_read_only_calendar(self):
-        rights = Rights(**_LEGACY_RIGHTS)
+        rights = Rights(**LEGACY_RIGHTS)
         assert rights.academic_calendar.action_read is True
         assert rights.academic_calendar.action_create is False
         assert rights.academic_calendar.action_update is False
@@ -221,7 +108,7 @@ class TestRequireCalendarRight:
         await require_calendar_right(staff, "create", db)
 
     async def test_admin_role_passes_without_the_key(self, db):
-        admin = _add_user_with_role(db, 12, 1, _LEGACY_RIGHTS)
+        admin = add_user_with_role(db, 12, 1, LEGACY_RIGHTS)
         await require_calendar_right(admin, "delete", db)
 
     async def test_role_without_the_right_is_forbidden(self, db, learner):
@@ -230,13 +117,13 @@ class TestRequireCalendarRight:
         assert exc.value.status_code == 403
 
     async def test_action_must_be_granted_individually(self, db):
-        reader = _add_user_with_role(
+        reader = add_user_with_role(
             db,
             13,
             5,
             {
-                **_LEGACY_RIGHTS,
-                "academic_calendar": {**_MANAGE, "action_delete": False},
+                **LEGACY_RIGHTS,
+                "academic_calendar": {**MANAGE_RIGHTS, "action_delete": False},
             },
         )
         await require_calendar_right(reader, "update", db)
@@ -296,7 +183,7 @@ def _cohort_payload(**overrides) -> CohortCreate:
         "name": "",
         "cohort_number": 0,
         "start_date": "2026-11-01T00:00:00Z",
-        "org_id": _ORG_ID,
+        "org_id": ORG_ID,
     }
     return CohortCreate(**{**data, **overrides})
 
@@ -312,18 +199,18 @@ class TestCohortServiceBaseline:
         done = await create_cohort(
             _cohort_payload(status=CohortStatusEnum.COMPLETED), db
         )
-        assert (await get_current_cohort(_ORG_ID, db)).id == done.id
+        assert (await get_current_cohort(ORG_ID, db)).id == done.id
 
         upcoming = await create_cohort(_cohort_payload(), db)
-        assert (await get_current_cohort(_ORG_ID, db)).id == upcoming.id
+        assert (await get_current_cohort(ORG_ID, db)).id == upcoming.id
 
     async def test_enrollment_is_locked_until_the_cohort_is_unlocked(self, db):
         cohort = await create_cohort(_cohort_payload(), db)
-        enrollment = await enroll_user_in_cohort(7, _ORG_ID, 100, db)
+        enrollment = await enroll_user_in_cohort(7, ORG_ID, 100, db)
         assert enrollment.is_locked is True
         assert enrollment.enrollment_type == "free"
 
-        again = await enroll_user_in_cohort(7, _ORG_ID, 100, db)
+        again = await enroll_user_in_cohort(7, ORG_ID, 100, db)
         assert again.id == enrollment.id
 
         unlocked = await unlock_cohort(cohort.id, db)
@@ -332,7 +219,7 @@ class TestCohortServiceBaseline:
 
     async def test_enrolling_without_any_cohort_fails(self, db):
         with pytest.raises(HTTPException) as exc:
-            await enroll_user_in_cohort(7, _ORG_ID, 100, db)
+            await enroll_user_in_cohort(7, ORG_ID, 100, db)
         assert exc.value.status_code == 400
 
 
@@ -352,7 +239,7 @@ class TestCohortRouterAuthorization:
         with pytest.raises(HTTPException) as exc:
             await api_unlock_cohort(cohort.id, db, learner)
         assert exc.value.status_code == 403
-        current = await get_current_cohort(_ORG_ID, db)
+        current = await get_current_cohort(ORG_ID, db)
         assert current.status == CohortStatusEnum.UPCOMING
 
     async def test_anonymous_cannot_create(self, db):
@@ -409,7 +296,7 @@ class TestDefaultRoleSeeds:
         ],
     )
     def test_calendar_roles_can_manage(self, seeded_rights, role_uuid):
-        assert seeded_rights[role_uuid]["academic_calendar"] == _MANAGE
+        assert seeded_rights[role_uuid]["academic_calendar"] == MANAGE_RIGHTS
 
     @pytest.mark.parametrize(
         "role_uuid",
