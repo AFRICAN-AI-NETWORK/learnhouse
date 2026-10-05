@@ -200,14 +200,14 @@ Uniqueness, enforced in the migration with partial unique indexes: one row where
 ### 5.3 API (`src/routers/courses/calendar.py`)
 
 ```
-GET    /api/v1/courses/weekly-schedule                    default; authenticated
-PUT    /api/v1/courses/weekly-schedule                    calendar:update
+GET    /api/v1/courses/weekly-schedule/default            default; authenticated
+PUT    /api/v1/courses/weekly-schedule/default            calendar:update
 GET    /api/v1/courses/{course_uuid}/weekly-schedule      resolved; course read
 PUT    /api/v1/courses/{course_uuid}/weekly-schedule      course calendar access
 DELETE /api/v1/courses/{course_uuid}/weekly-schedule      course calendar access
 ```
 
-The two static paths are registered before the `/{course_uuid}` routes, as `/timetable/me` already is in the schedules router.
+The default uses a two-segment path because the courses router already owns `GET` and `PUT /courses/{course_uuid}`, which would otherwise capture `weekly-schedule` as a course id.
 
 ---
 
