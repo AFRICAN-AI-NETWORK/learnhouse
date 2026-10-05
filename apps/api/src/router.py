@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from ee.routers import referrals
 from src.core.ee_hooks import register_ee_routers
 from src.routers import (
+    academic_calendar,
     admin_analytics,
     announcements,
     auth,
@@ -92,6 +93,16 @@ v1_router.include_router(
     flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"]
 )
 v1_router.include_router(cohorts.router, prefix="/cohorts", tags=["cohorts"])
+v1_router.include_router(
+    academic_calendar.years_router,
+    prefix="/academic-years",
+    tags=["academic-calendar"],
+)
+v1_router.include_router(
+    academic_calendar.cohorts_router,
+    prefix="/academic-cohorts",
+    tags=["academic-calendar"],
+)
 v1_router.include_router(
     announcements.router, prefix="/announcements", tags=["announcements"]
 )
