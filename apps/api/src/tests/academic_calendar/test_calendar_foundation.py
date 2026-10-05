@@ -92,9 +92,9 @@ class TestDatetimes:
 
 
 class TestRightsModel:
-    def test_legacy_rights_default_to_read_only_calendar(self):
+    def test_legacy_rights_default_to_no_calendar_access(self):
         rights = Rights(**LEGACY_RIGHTS)
-        assert rights.academic_calendar.action_read is True
+        assert rights.academic_calendar.action_read is False
         assert rights.academic_calendar.action_create is False
         assert rights.academic_calendar.action_update is False
         assert rights.academic_calendar.action_delete is False
@@ -165,6 +165,14 @@ class TestRequireCourseCalendarAccess:
         assert ownership_calls == [
             ("course_1", "update", {"require_course_ownership": True})
         ]
+
+    async def test_staff_only_read_is_checked_as_ownership(
+        self, db, learner, ownership_calls
+    ):
+        with pytest.raises(HTTPException) as exc:
+            await require_course_calendar_access(None, "course_1", learner, "read", db)
+        assert exc.value.status_code == 403
+        assert ownership_calls[0][1] == "update"
 
     async def test_anonymous_is_unauthorized(self, db, ownership_calls):
         with pytest.raises(HTTPException) as exc:
@@ -307,9 +315,5 @@ class TestDefaultRoleSeeds:
             "role_global_student_success_coordinator",
         ],
     )
-    def test_other_roles_stay_read_only(self, seeded_rights, role_uuid):
-        calendar = seeded_rights[role_uuid]["academic_calendar"]
-        assert calendar["action_read"] is True
-        assert not any(
-            calendar[f"action_{action}"] for action in ("create", "update", "delete")
-        )
+    def test_other_roles_get_no_calendar_access(self, seeded_rights, role_uuid):
+        assert not any(seeded_rights[role_uuid]["academic_calendar"].values())

@@ -17,6 +17,7 @@ from src.db.academic_calendar import (
     CourseAcademicCohortsUpdate,
 )
 from src.db.courses.courses import Course
+from src.db.courses.programme_weeks import ProgrammeWeek
 from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
 from src.security.calendar_security import (
@@ -230,9 +231,14 @@ async def set_course_cohorts(
         link.academic_cohort_id: link for link in _get_course_links(course, db_session)
     }
     wanted_ids = {cohort.id for cohort in wanted}
-    for cohort_id, link in links.items():
-        if cohort_id not in wanted_ids:
-            db_session.delete(link)
+    removed = [link for cohort_id, link in links.items() if cohort_id not in wanted_ids]
+    if _has_programme_weeks(removed, db_session):
+        raise HTTPException(
+            status_code=409,
+            detail="A cohort that still has programme weeks cannot be unlinked",
+        )
+    for link in removed:
+        db_session.delete(link)
     for cohort_id in wanted_ids - links.keys():
         db_session.add(
             CourseAcademicCohort(
@@ -325,6 +331,19 @@ def _get_course_links(
             )
         ).all()
     )
+
+
+def _has_programme_weeks(
+    links: list[CourseAcademicCohort], db_session: Session
+) -> bool:
+    week = db_session.exec(
+        select(ProgrammeWeek.id).where(
+            col(ProgrammeWeek.course_academic_cohort_id).in_(
+                [link.id for link in links]
+            )
+        )
+    ).first()
+    return week is not None
 
 
 def _course_cohorts(course: Course, db_session: Session) -> list[AcademicCohortRead]:

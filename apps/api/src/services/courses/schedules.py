@@ -24,9 +24,18 @@ from src.db.courses.schedules import (
     StudentTimetableEventRead,
     TimetableVisibilityEnum,
 )
+from src.db.courses.weekly_schedule import LearningPhaseEnum
 from src.db.users import AnonymousUser, PublicUser
+from src.security.calendar_security import require_course_calendar_access
 from src.security.courses_security import courses_rbac_check
-from src.services.utils.datetimes import parse_instant_utc
+from src.services.courses.programme_weeks import get_course_programme_week
+from src.services.courses.weekly_schedule import get_schedule_days, resolve_schedule
+from src.services.utils.datetimes import (
+    local_date,
+    parse_instant,
+    parse_instant_utc,
+    resolve_zone,
+)
 
 
 async def get_timetable_events(
@@ -100,19 +109,15 @@ async def create_timetable_event(
     db_session: Session,
 ) -> CourseTimetableEventRead:
     course = await _get_course_or_404(course_uuid, db_session)
-    await courses_rbac_check(
-        request,
-        course_uuid,
-        current_user,
-        "update",
-        db_session,
-        require_course_ownership=True,
+    await require_course_calendar_access(
+        request, course_uuid, current_user, "create", db_session
     )
     _validate_timetable_event(event_object)
+    calendar_fields = _resolve_calendar_fields(course, event_object, None, db_session)
 
     now = str(datetime.now(UTC))
     event = CourseTimetableEvent(
-        **event_object.model_dump(),
+        **{**event_object.model_dump(), **calendar_fields},
         event_uuid=f"timetable_event_{uuid4()}",
         course_uuid=course.course_uuid,
         course_id=course.id,
@@ -135,19 +140,17 @@ async def update_timetable_event(
     current_user: PublicUser | AnonymousUser,
     db_session: Session,
 ) -> CourseTimetableEventRead:
-    await _get_course_or_404(course_uuid, db_session)
-    await courses_rbac_check(
-        request,
-        course_uuid,
-        current_user,
-        "update",
-        db_session,
-        require_course_ownership=True,
+    course = await _get_course_or_404(course_uuid, db_session)
+    await require_course_calendar_access(
+        request, course_uuid, current_user, "update", db_session
     )
     _validate_timetable_event(event_object)
 
     event = _get_event_or_404(course_uuid, event_uuid, db_session)
-    for key, value in event_object.model_dump().items():
+    calendar_fields = _resolve_calendar_fields(
+        course, event_object, event.weekly_schedule_phase, db_session
+    )
+    for key, value in {**event_object.model_dump(), **calendar_fields}.items():
         setattr(event, key, value)
     event.update_date = str(datetime.now(UTC))
 
@@ -165,13 +168,8 @@ async def delete_timetable_event(
     db_session: Session,
 ):
     await _get_course_or_404(course_uuid, db_session)
-    await courses_rbac_check(
-        request,
-        course_uuid,
-        current_user,
-        "delete",
-        db_session,
-        require_course_ownership=True,
+    await require_course_calendar_access(
+        request, course_uuid, current_user, "delete", db_session
     )
 
     event = _get_event_or_404(course_uuid, event_uuid, db_session)
@@ -422,13 +420,8 @@ async def _can_manage_schedule(
     db_session: Session,
 ) -> bool:
     try:
-        await courses_rbac_check(
-            request,
-            course_uuid,
-            current_user,
-            "update",
-            db_session,
-            require_course_ownership=True,
+        await require_course_calendar_access(
+            request, course_uuid, current_user, "update", db_session
         )
         return True
     except HTTPException:
@@ -503,6 +496,46 @@ def _validate_timetable_event(
             status_code=422,
             detail="Timetable event start time must be before end time",
         )
+
+
+def _resolve_calendar_fields(
+    course: Course,
+    event_object: CourseTimetableEventCreate | CourseTimetableEventUpdate,
+    current_phase: LearningPhaseEnum | None,
+    db_session: Session,
+) -> dict:
+    """
+    Programme week and weekly phase to store on an event.
+
+    A phase sent by the client wins, then the phase already stored; only an
+    event that has neither takes the phase of its local weekday.
+    """
+    week_id = event_object.programme_week_id
+    if week_id is not None and not get_course_programme_week(
+        course, week_id, db_session
+    ):
+        raise HTTPException(
+            status_code=422, detail="Programme week does not belong to this course"
+        )
+
+    phase = event_object.weekly_schedule_phase or current_phase
+    if phase is None:
+        phase = _phase_for_event(course, event_object, db_session)
+    return {"programme_week_id": week_id, "weekly_schedule_phase": phase}
+
+
+def _phase_for_event(
+    course: Course,
+    event_object: CourseTimetableEventCreate | CourseTimetableEventUpdate,
+    db_session: Session,
+) -> LearningPhaseEnum | None:
+    schedule = resolve_schedule(course, db_session)
+    zone = resolve_zone(event_object.timezone) or resolve_zone(schedule.timezone) or UTC
+    weekday = local_date(parse_instant(event_object.starts_at), zone).weekday()
+    for day in get_schedule_days(schedule, db_session):
+        if day.weekday == weekday:
+            return day.phase
+    return None
 
 
 def _validate_register_policy(policy_object: CourseRegisterPolicyUpdate) -> None:
