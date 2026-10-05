@@ -70,11 +70,13 @@ async def require_course_calendar_access(
     require_authenticated(current_user)
     if await has_calendar_right(current_user, action, db_session):
         return
+    # The course check skips ownership for reads, so a staff-only read is
+    # verified as an update.
     await courses_rbac_check(
         request,
         course_uuid,
         current_user,
-        action,
+        "update" if action == "read" else action,
         db_session,
         require_course_ownership=True,
     )

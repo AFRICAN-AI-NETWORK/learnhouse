@@ -15,6 +15,7 @@ from src.routers import (
     orgs,
     roles,
     search,
+    student_journey,
     trail,
     usergroups,
     users,
@@ -78,6 +79,9 @@ v1_router.include_router(grade.router, prefix="/courses", tags=["course-grade"])
 v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
 v1_router.include_router(calendar.router, prefix="/courses", tags=["course-calendar"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
+v1_router.include_router(
+    student_journey.router, prefix="/student-journey", tags=["student-journey"]
+)
 v1_router.include_router(
     admin_analytics.router, prefix="/admin/analytics", tags=["admin-analytics"]
 )
