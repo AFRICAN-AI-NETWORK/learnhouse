@@ -50,9 +50,7 @@ async def create_waitlist_config(
 
     # Validate launch datetime is in the future
     try:
-        launch_dt = datetime.fromisoformat(
-            config_data.launch_datetime
-        )
+        launch_dt = datetime.fromisoformat(config_data.launch_datetime)
         if launch_dt <= datetime.now(launch_dt.tzinfo):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -205,9 +203,7 @@ async def update_waitlist_config(
     # Validate launch datetime if being updated
     if update_data.launch_datetime:
         try:
-            launch_dt = datetime.fromisoformat(
-                update_data.launch_datetime
-            )
+            launch_dt = datetime.fromisoformat(update_data.launch_datetime)
             if launch_dt <= datetime.now(launch_dt.tzinfo):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

@@ -10,10 +10,10 @@ from src.db.users import User
 
 
 async def resolve_campaign_targets(
-    db_session: Session, 
-    org_id: int, 
-    target_type: CampaignTargetType, 
-    target_metadata: dict
+    db_session: Session,
+    org_id: int,
+    target_type: CampaignTargetType,
+    target_metadata: dict,
 ) -> set[str]:
     """Resolves a target audience into a set of lowercase email addresses."""
     emails: set[str] = set()
@@ -32,9 +32,9 @@ async def resolve_campaign_targets(
         # Assuming WaitlistCoursePreference or Waitlist Config relates to org_id
         # Assuming WaitlistEmailLog has the emails
         from src.db.waitlist import WaitlistEmailLog
+
         logs = db_session.exec(
-            select(WaitlistEmailLog.email)
-            .where(WaitlistEmailLog.org_id == org_id)
+            select(WaitlistEmailLog.email).where(WaitlistEmailLog.org_id == org_id)
         ).all()
         emails.update(e.lower() for e in logs if e)
 
@@ -44,12 +44,17 @@ async def resolve_campaign_targets(
         if course_uuid:
             from src.db.courses.courses import Course
             from src.db.trails import Trail
+
             users = db_session.exec(
                 select(User.email)
                 .join(TrailRun, TrailRun.user_id == User.id)
                 .join(Trail, Trail.id == TrailRun.trail_id)
                 .join(Course, Course.id == TrailRun.course_id)
-                .where(Course.course_uuid == course_uuid, Course.org_id == org_id, User.email.is_not(None))
+                .where(
+                    Course.course_uuid == course_uuid,
+                    Course.org_id == org_id,
+                    User.email.is_not(None),
+                )
             ).all()
             emails.update(u.lower() for u in users if u)
 
@@ -61,7 +66,11 @@ async def resolve_campaign_targets(
                 select(User.email)
                 .join(UserOrganization, UserOrganization.user_id == User.id)
                 .join(Role, Role.id == UserOrganization.role_id)
-                .where(UserOrganization.org_id == org_id, Role.name.in_(role_names), User.email.is_not(None))
+                .where(
+                    UserOrganization.org_id == org_id,
+                    Role.name.in_(role_names),
+                    User.email.is_not(None),
+                )
             ).all()
             emails.update(u.lower() for u in users if u)
 
@@ -70,7 +79,7 @@ async def resolve_campaign_targets(
         custom_emails = target_metadata.get("emails", [])
         if isinstance(custom_emails, str):
             custom_emails = [e.strip() for e in custom_emails.split(",") if e.strip()]
-            
+
         if isinstance(custom_emails, list):
             # Basic validation
             email_pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")

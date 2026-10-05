@@ -126,9 +126,7 @@ async def handle_flutterwave_webhook(
                                         f"Failed to increment discount usage for {discount_code_id}"
                                     )
                             except Exception as e:  # noqa: BLE001
-                                logger.error(
-                                    f"Error recording discount usage: {e!s}"
-                                )
+                                logger.error(f"Error recording discount usage: {e!s}")
 
                     # Referral processing
                     payment_user = db_session.exec(
@@ -173,9 +171,7 @@ async def handle_flutterwave_webhook(
                                     db_session=db_session,
                                 )
                         except Exception as e:  # noqa: BLE001
-                            logger.error(
-                                f"Error creating referral commission: {e!s}"
-                            )
+                            logger.error(f"Error creating referral commission: {e!s}")
 
                     return {
                         "status": "success",
@@ -209,6 +205,4 @@ async def handle_flutterwave_webhook(
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
     except Exception as e:  # noqa: BLE001
         logger.error(f"Error processing Flutterwave webhook: {e!s}")
-        raise HTTPException(
-            status_code=400, detail=f"Error processing webhook: {e!s}"
-        )
+        raise HTTPException(status_code=400, detail=f"Error processing webhook: {e!s}")

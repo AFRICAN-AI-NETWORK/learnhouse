@@ -41,7 +41,7 @@ def send_email(to: EmailStr, subject: str, body: str, text_body: str | None = No
         # Add HTML content
         html_part = MIMEText(body, "html", "utf-8")
         msg.attach(html_part)
-        
+
         # Add Plain text fallback
         if text_body:
             text_part = MIMEText(text_body, "plain", "utf-8")
@@ -88,19 +88,31 @@ def send_email(to: EmailStr, subject: str, body: str, text_body: str | None = No
         raise Exception(f"Failed to send email: {e!s}")
 
 
-def send_resend_email(to: str | list[str], subject: str, html_body: str, text_body: str | None = None, scheduled_at: datetime | None = None):
+def send_resend_email(
+    to: str | list[str],
+    subject: str,
+    html_body: str,
+    text_body: str | None = None,
+    scheduled_at: datetime | None = None,
+):
     """
     Send email using the Resend API with native scheduling support.
     """
     resend.api_key = os.getenv("RESEND_API_KEY") or os.getenv("EMAIL_PASSWORD")
     if not resend.api_key:
-        raise ValueError("RESEND_API_KEY or EMAIL_PASSWORD must be set in environment variables")
-        
+        raise ValueError(
+            "RESEND_API_KEY or EMAIL_PASSWORD must be set in environment variables"
+        )
+
     sender_name = os.getenv("EMAIL_SENDER_NAME", "AFRICAN AI NETWORK LMS")
-    sender_address = os.getenv("RESEND_FROM_EMAIL") or os.getenv("EMAIL_ADDRESS") or "onboarding@resend.dev"
-    
+    sender_address = (
+        os.getenv("RESEND_FROM_EMAIL")
+        or os.getenv("EMAIL_ADDRESS")
+        or "onboarding@resend.dev"
+    )
+
     from_email = f"{sender_name} <{sender_address}>"
-    
+
     # Resend accepts a list or a string for "to"
     to_emails = [to] if isinstance(to, str) else to
 
@@ -110,18 +122,23 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, text_bo
         "subject": subject,
         "html": html_body,
     }
-    
+
     if text_body:
         params["text"] = text_body
-    
+
     if scheduled_at:
         # Resend expects ISO 8601 format or specific timestamps
         # Only include if it's strictly in the future
         from datetime import UTC
-        now = datetime.now(UTC) if scheduled_at.tzinfo else datetime.now(UTC).replace(tzinfo=None)
+
+        now = (
+            datetime.now(UTC)
+            if scheduled_at.tzinfo
+            else datetime.now(UTC).replace(tzinfo=None)
+        )
         if scheduled_at > now:
             params["scheduled_at"] = scheduled_at.isoformat()
-        
+
     try:
         response = resend.Emails.send(params)
         print(f"[SUCCESS] Resend Email queued successfully for {to}")
@@ -130,4 +147,3 @@ def send_resend_email(to: str | list[str], subject: str, html_body: str, text_bo
         error_msg = f"Resend sending error: {e!s}"
         print(f"[ERROR] {error_msg}")
         raise Exception(f"Failed to send email via Resend: {e!s}")
-

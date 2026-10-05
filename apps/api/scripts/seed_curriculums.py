@@ -31,7 +31,7 @@ curriculums = [
                     "Python & APIs: Modules, packages, project structure, REST APIs, JSON",
                     "Web Dev & Intro to AI: Database fundamentals, ML vs Deep Learning, Generative AI",
                     "Data Handling & Visualization: NumPy, Pandas, Matplotlib, Seaborn, EDA",
-                ]
+                ],
             },
             {
                 "name": "LLM Engineering & Prompt Mastery (Month 2)",
@@ -40,7 +40,7 @@ curriculums = [
                     "Evals-Driven Development: RAGAS for RAG evaluation, LLM-as-judge patterns",
                     "AI APIs & SDK Integration: OpenAI, Anthropic, HuggingFace APIs, Streaming",
                     "Structured Outputs & Validation: Pydantic validation pipelines, Instructor, Outlines",
-                ]
+                ],
             },
             {
                 "name": "RAG & Knowledge Systems (Month 3)",
@@ -49,7 +49,7 @@ curriculums = [
                     "RAG Foundations: Architecture, Context injection, citation systems",
                     "AI Observability & Tracing: LangSmith, Arize, Helicone setup, Token-level tracing",
                     "Advanced RAG: Hybrid Search, Reranking, Enterprise RAG patterns, multi-document retrieval",
-                ]
+                ],
             },
             {
                 "name": "AI Agents & Orchestration (Month 4)",
@@ -58,7 +58,7 @@ curriculums = [
                     "Browser & Workflow Agents: Browser automation, Multi-step task completion",
                     "Context Engineering & Memory: Long-term memory architecture, State management",
                     "Multi-Agent Systems: Orchestration patterns, AI Dev Team Simulator, AI QA",
-                ]
+                ],
             },
             {
                 "name": "Infrastructure, Deployment & Security (Month 5)",
@@ -67,7 +67,7 @@ curriculums = [
                     "Docker, Cloud & Caching: Docker, AWS/GCP deployment, Semantic caching (GPTCache)",
                     "CI/CD & Optimization: CI/CD pipelines, Monitoring, logging, scaling, Production AI SaaS",
                     "AI Security & Governance: Prompt injection defense, Data privacy, Guardrails AI",
-                ]
+                ],
             },
             {
                 "name": "Career Tracks & Capstone (Month 6)",
@@ -76,9 +76,9 @@ curriculums = [
                     "Capstone Sprint 1: Architecture design & tech stack setup, Core feature implementation",
                     "Capstone Sprint 2: Deployment & production hardening, Evals, performance tuning",
                     "Demo Day & Career Readiness: Final capstone polish, peer review, Demo day presentations",
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     },
     {
         "name": "Frontend Development",
@@ -92,8 +92,8 @@ curriculums = [
                     "Web & Environment Setup: How the web works, VS Code, HTML5 basics",
                     "CSS Deep Dive & Flexbox: Typography, Custom Properties, Layouts",
                     "CSS Grid & Responsive Design: Media queries, Mobile-first philosophy, Animations",
-                    "Portfolio Capstone: Wireframing, Styling, Semantic HTML, GitHub Pages Deploy"
-                ]
+                    "Portfolio Capstone: Wireframing, Styling, Semantic HTML, GitHub Pages Deploy",
+                ],
             },
             {
                 "name": "Core Dev Skills (Month 2)",
@@ -101,8 +101,8 @@ curriculums = [
                     "JavaScript Foundations: Variables, Data types, Functions, Control flow",
                     "The DOM & Events: Selection, Manipulation, Event Listeners, Forms, Local Storage",
                     "Async JavaScript & APIs: Promises, Fetch API, REST Principles, dynamic rendering",
-                    "Git, GitHub & Pro Workflow: Branching, Pull Requests, ES Modules, clean commits"
-                ]
+                    "Git, GitHub & Pro Workflow: Branching, Pull Requests, ES Modules, clean commits",
+                ],
             },
             {
                 "name": "React & Deploy (Month 3)",
@@ -110,10 +110,10 @@ curriculums = [
                     "React Fundamentals: Component model, JSX, Props, Vite setup",
                     "React Hooks & API Integration: useState, useEffect, useContext, Custom hooks",
                     "React Router & Tailwind CSS: Multi-page apps, Utility-first CSS, Forms/Validation",
-                    "Capstone Project & Career Readiness: Build, polish, deploy, and interview prep"
-                ]
-            }
-        ]
+                    "Capstone Project & Career Readiness: Build, polish, deploy, and interview prep",
+                ],
+            },
+        ],
     },
     {
         "name": "Backend Development (Node.js)",
@@ -127,8 +127,8 @@ curriculums = [
                     "Intro to Web Dev & JS Basics: Frontend vs Backend, Client-Server Architecture, HTTP/HTTPS",
                     "Advanced JavaScript: Scope, Closures, Hoisting, Promises, Async/Await",
                     "Node.js Fundamentals: Event Loop, Single Thread Model, fs, path, os, http modules",
-                    "Git/GitHub & REST APIs: Branches, Pull Requests, HTTP Methods, Status Codes, Postman"
-                ]
+                    "Git/GitHub & REST APIs: Branches, Pull Requests, HTTP Methods, Status Codes, Postman",
+                ],
             },
             {
                 "name": "Backend with Express (Month 2)",
@@ -136,8 +136,8 @@ curriculums = [
                     "Express Fundamentals & MVC: Routing, Middleware, Request/Response cycle",
                     "Databases & Schema Design: SQL vs NoSQL, ER Diagrams",
                     "PostgreSQL + Prisma ORM: Tables, relationships, migrations, models",
-                    "Authentication, JWT & RBAC: Auth vs Authorization, Password Hashing, JWT"
-                ]
+                    "Authentication, JWT & RBAC: Auth vs Authorization, Password Hashing, JWT",
+                ],
             },
             {
                 "name": "Advanced Backend (Month 3)",
@@ -145,10 +145,10 @@ curriculums = [
                     "File Uploads & Email Systems: Image handling, Cloud Storage, Email Verification",
                     "Pagination, Search & Redis Caching: Pagination, Filtering, Rate Limiting",
                     "Security & Testing: Helmet, CORS, Data Validation, SQLi, XSS, Jest, Supertest",
-                    "Deployment, CI/CD & Capstone: Docker, Env Vars, Logging, CI/CD with GitHub Actions"
-                ]
-            }
-        ]
+                    "Deployment, CI/CD & Capstone: Docker, Env Vars, Logging, CI/CD with GitHub Actions",
+                ],
+            },
+        ],
     },
     {
         "name": "Backend Development (Laravel)",
@@ -163,8 +163,8 @@ curriculums = [
                     "Modern PHP & Git workflow: Composer, VS Code, Git branching",
                     "Laravel Project Setup & MVC Architecture: Routing, Controllers, Blade templating",
                     "Eloquent ORM: Migrations, schema, models, seeders, factories, relationships",
-                    "Forms, validation & file handling: CSRF, Form Requests, Storage disks"
-                ]
+                    "Forms, validation & file handling: CSRF, Form Requests, Storage disks",
+                ],
             },
             {
                 "name": "Core Laravel (Month 2)",
@@ -173,8 +173,8 @@ curriculums = [
                     "JWT & OAuth 2.0: tymon/jwt-auth, Socialite (Google/GitHub login)",
                     "RESTful APIs: API routes, stateless controllers, API resources & Sanctum",
                     "Queues, Jobs & Events: Database/Redis queues, listeners, broadcasting",
-                    "Testing in Laravel: PHPUnit, feature tests, mocking, Pest PHP & TDD intro"
-                ]
+                    "Testing in Laravel: PHPUnit, feature tests, mocking, Pest PHP & TDD intro",
+                ],
             },
             {
                 "name": "Production Ready (Month 3)",
@@ -183,15 +183,17 @@ curriculums = [
                     "Architecture: Service & repository pattern, Dependency Injection",
                     "Performance & Security: Caching strategies (Redis), DB optimization (Telescope), XSS/SQLi defense",
                     "Deployment & DevOps: Server setup (Forge/Nginx), CI/CD with GitHub Actions, Docker basics",
-                    "Capstone & Career Prep: Build sprint, code review, live demo, portfolio building"
-                ]
-            }
-        ]
-    }
+                    "Capstone & Career Prep: Build sprint, code review, live demo, portfolio building",
+                ],
+            },
+        ],
+    },
 ]
+
 
 def generate_date():
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
 
 def seed():
     with Session(engine) as session:
@@ -222,7 +224,7 @@ def seed():
                 creation_date=generate_date(),
                 update_date=generate_date(),
                 thumbnail_type=ThumbnailType.IMAGE,
-                thumbnail_image=course_data["thumbnail_image"]
+                thumbnail_image=course_data["thumbnail_image"],
             )
             session.add(course)
             session.commit()
@@ -237,7 +239,7 @@ def seed():
                     chapter_uuid=uuid.uuid4().hex[:22],
                     creation_date=generate_date(),
                     update_date=generate_date(),
-                    published=True
+                    published=True,
                 )
                 session.add(chapter)
                 session.commit()
@@ -258,7 +260,7 @@ def seed():
                         course_id=course.id,
                         activity_uuid=uuid.uuid4().hex[:22],
                         creation_date=generate_date(),
-                        update_date=generate_date()
+                        update_date=generate_date(),
                     )
                     session.add(activity)
                     session.commit()
@@ -272,12 +274,13 @@ def seed():
                         course_id=course.id,
                         org_id=org.id,
                         creation_date=generate_date(),
-                        update_date=generate_date()
+                        update_date=generate_date(),
                     )
                     session.add(chapter_activity)
                     session.commit()
 
         print("Seeding complete.")
+
 
 if __name__ == "__main__":
     seed()

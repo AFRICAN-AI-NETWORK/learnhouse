@@ -3,7 +3,7 @@ import os
 def replace_in_file(file_path):
     if not os.path.exists(file_path):
         return
-        
+
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -17,17 +17,17 @@ def replace_in_file(file_path):
     content = content.replace('create_paystack_transfer_recipient', 'create_flutterwave_transfer')
     content = content.replace('initiate_paystack_transfer', 'create_flutterwave_transfer')
     content = content.replace('CURRENCY_TO_PAYSTACK_RECIPIENT_TYPE', 'COUNTRY_TO_CURRENCY')
-    
+
     # Process payout specific fixes
     content = content.replace('TRF_flow1', 'TRF_flow1') # keep transfer ID mock
     content = content.replace('RCP_flow1', 'RCP_flow1')
     content = content.replace('RCP_cached', 'RCP_cached')
-    
+
     # Fix the transferrecipient mock check
     content = content.replace('mock_flutterwave["transferrecipient"] == 1', 'mock_flutterwave["transfers"] == 1')
     content = content.replace('mock_flutterwave["transferrecipient"] == 0', 'mock_flutterwave["transfers"] == 1')
     content = content.replace('mock_flutterwave["transfer"] == 1', 'mock_flutterwave["transfers"] == 1')
-    
+
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(content)
 
