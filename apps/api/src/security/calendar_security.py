@@ -20,7 +20,7 @@ CALENDAR_RESOURCE = "academic_calendar"
 CalendarAction = Literal["create", "read", "update", "delete"]
 
 
-def _require_authenticated(current_user: PublicUser | AnonymousUser) -> None:
+def require_authenticated(current_user: PublicUser | AnonymousUser) -> None:
     if current_user is None or getattr(current_user, "id", 0) == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,7 +46,7 @@ async def require_calendar_right(
     db_session: Session,
 ) -> None:
     """Guard for organization-level calendar resources."""
-    _require_authenticated(current_user)
+    require_authenticated(current_user)
     if not await has_calendar_right(current_user, action, db_session):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -67,7 +67,7 @@ async def require_course_calendar_access(
     Passes for holders of the calendar right, and otherwise falls back to the
     course ownership check so course authors keep managing their own course.
     """
-    _require_authenticated(current_user)
+    require_authenticated(current_user)
     if await has_calendar_right(current_user, action, db_session):
         return
     await courses_rbac_check(

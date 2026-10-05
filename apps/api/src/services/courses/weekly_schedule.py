@@ -16,13 +16,14 @@ from src.db.courses.weekly_schedule import (
     WeeklyOperatingScheduleRead,
     WeeklyOperatingScheduleUpdate,
 )
-from src.db.organizations import Organization
 from src.db.users import AnonymousUser, PublicUser
 from src.security.calendar_security import (
+    require_authenticated,
     require_calendar_right,
     require_course_calendar_access,
 )
 from src.security.courses_security import courses_rbac_check
+from src.services.academic_calendar import get_primary_org_id
 from src.services.utils.datetimes import resolve_zone
 
 # Monday to Sunday.
@@ -43,7 +44,7 @@ DEFAULT_WEEK: tuple[tuple[LearningPhaseEnum, bool], ...] = (
 async def get_default_schedule(
     current_user: PublicUser | AnonymousUser, db_session: Session
 ) -> WeeklyOperatingScheduleRead:
-    _require_authenticated(current_user)
+    require_authenticated(current_user)
     schedule = get_or_create_default_schedule(db_session)
     return _to_read(schedule, None, db_session)
 
@@ -121,15 +122,10 @@ def get_or_create_default_schedule(db_session: Session) -> WeeklyOperatingSchedu
     if existing:
         return existing
 
-    organization = db_session.exec(
-        select(Organization).order_by(col(Organization.id).asc())
-    ).first()
-    if not organization or organization.id is None:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
+    org_id = get_primary_org_id(db_session)
     try:
         return _create_schedule(
-            organization.id,
+            org_id,
             None,
             _default_days(),
             WeeklyOperatingScheduleBase(),
@@ -163,11 +159,6 @@ def get_schedule_days(
 
 
 # ── Internals ────────────────────────────────────────────────────────────────
-
-
-def _require_authenticated(current_user: PublicUser | AnonymousUser) -> None:
-    if current_user.id == 0:
-        raise HTTPException(status_code=401, detail="Authentication is required")
 
 
 def _get_course_or_404(course_uuid: str, db_session: Session) -> Course:

@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 
 from src.core.events.database import get_db_session
+from src.db.academic_calendar import AcademicCohortRead, CourseAcademicCohortsUpdate
 from src.db.courses.weekly_schedule import (
     WeeklyOperatingScheduleRead,
     WeeklyOperatingScheduleUpdate,
 )
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
+from src.services.academic_calendar import list_course_cohorts, set_course_cohorts
 from src.services.courses.weekly_schedule import (
     delete_course_schedule,
     get_course_schedule,
@@ -83,3 +85,32 @@ async def api_delete_course_weekly_schedule(
     Remove the course override so the course follows the default schedule.
     """
     return await delete_course_schedule(request, course_uuid, current_user, db_session)
+
+
+@router.get("/{course_uuid}/academic-cohorts")
+async def api_list_course_academic_cohorts(
+    request: Request,
+    course_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[AcademicCohortRead]:
+    """
+    List the academic cohorts a course runs under.
+    """
+    return await list_course_cohorts(request, course_uuid, current_user, db_session)
+
+
+@router.put("/{course_uuid}/academic-cohorts")
+async def api_set_course_academic_cohorts(
+    request: Request,
+    course_uuid: str,
+    cohorts_object: CourseAcademicCohortsUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[AcademicCohortRead]:
+    """
+    Replace the set of academic cohorts a course runs under.
+    """
+    return await set_course_cohorts(
+        request, course_uuid, cohorts_object, current_user, db_session
+    )

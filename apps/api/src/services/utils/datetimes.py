@@ -17,6 +17,14 @@ def parse_instant_utc(value: str) -> datetime:
     return parse_instant(value).astimezone(UTC)
 
 
+def parse_calendar_date(value: str) -> date:
+    """Parse a calendar date written exactly as YYYY-MM-DD."""
+    parsed = date.fromisoformat(value)
+    if parsed.isoformat() != value:
+        raise ValueError(f"Not a YYYY-MM-DD date: {value!r}")
+    return parsed
+
+
 def resolve_zone(name: str | None) -> ZoneInfo | None:
     """Return the IANA zone for ``name``, or None when it is missing or unknown."""
     if not name or not name.strip():

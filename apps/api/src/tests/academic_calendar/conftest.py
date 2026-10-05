@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
+from src.db.academic_calendar import AcademicYear  # noqa: F401
 from src.db.cohorts import Cohort  # noqa: F401
 from src.db.courses.courses import Course
 from src.db.courses.weekly_schedule import WeeklyOperatingSchedule  # noqa: F401
