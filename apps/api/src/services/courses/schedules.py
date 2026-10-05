@@ -26,6 +26,7 @@ from src.db.courses.schedules import (
 )
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check
+from src.services.utils.datetimes import parse_instant_utc
 
 
 async def get_timetable_events(
@@ -282,8 +283,8 @@ async def mark_register(
 
     period = _resolve_current_period(course_uuid, policy, db_session)
     now = _utcnow()
-    opens_at = _parse_datetime(period.checkin_opens_at)
-    closes_at = _parse_datetime(period.checkin_closes_at)
+    opens_at = parse_instant_utc(period.checkin_opens_at)
+    closes_at = parse_instant_utc(period.checkin_closes_at)
 
     if now < opens_at:
         raise HTTPException(
@@ -495,8 +496,8 @@ def _validate_timetable_event(
     if not event_object.title or not event_object.title.strip():
         raise HTTPException(status_code=422, detail="Title is required")
 
-    starts_at = _parse_datetime(event_object.starts_at)
-    ends_at = _parse_datetime(event_object.ends_at)
+    starts_at = parse_instant_utc(event_object.starts_at)
+    ends_at = parse_instant_utc(event_object.ends_at)
     if starts_at >= ends_at:
         raise HTTPException(
             status_code=422,
@@ -539,8 +540,8 @@ def _resolve_current_period(
 
     event = _resolve_current_timetable_event(course_uuid, policy, db_session)
     if policy.frequency == RegisterFrequencyEnum.per_session and event:
-        event_start = _parse_datetime(event.starts_at)
-        event_end = _parse_datetime(event.ends_at)
+        event_start = parse_instant_utc(event.starts_at)
+        event_end = parse_instant_utc(event.ends_at)
         opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
         closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
         return _period_from_bounds(event_start, event_end, opens_at, closes_at, now)
@@ -553,8 +554,8 @@ def _resolve_current_period(
         return _period_from_bounds(now, now, closed_at, closed_at, now)
 
     if event and policy.linked_timetable_event_uuid:
-        event_start = _parse_datetime(event.starts_at)
-        event_end = _parse_datetime(event.ends_at)
+        event_start = parse_instant_utc(event.starts_at)
+        event_end = parse_instant_utc(event.ends_at)
         opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
         closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
     else:
@@ -612,8 +613,8 @@ def _resolve_current_timetable_event(
     ).all()
 
     for event in events:
-        event_start = _parse_datetime(event.starts_at)
-        event_end = _parse_datetime(event.ends_at)
+        event_start = parse_instant_utc(event.starts_at)
+        event_end = parse_instant_utc(event.ends_at)
         opens_at = event_start - timedelta(minutes=policy.checkin_opens_minutes_before)
         closes_at = event_end + timedelta(minutes=policy.checkin_closes_minutes_after)
         if opens_at <= now <= closes_at:
@@ -654,14 +655,6 @@ def _get_entry_for_period(
         statement = statement.where(CourseRegisterEntry.timetable_event_uuid.is_(None))
 
     return db_session.exec(statement).first()
-
-
-def _parse_datetime(value: str) -> datetime:
-    normalized = value.replace("Z", "+00:00")
-    parsed = datetime.fromisoformat(normalized)
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
 
 
 def _utcnow() -> datetime:

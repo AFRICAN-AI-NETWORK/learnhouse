@@ -58,6 +58,10 @@ class Rights(BaseModel):
     announcements: Permission = Permission(
         action_create=False, action_read=True, action_update=False, action_delete=False
     )
+    # Defaulted for the same reason as announcements.
+    academic_calendar: Permission = Permission(
+        action_create=False, action_read=True, action_update=False, action_delete=False
+    )
     dashboard: DashboardPermission
     affiliation: AffiliationPermission = AffiliationPermission()
 
