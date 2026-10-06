@@ -20,6 +20,7 @@ from src.services.courses.programme_weeks import (
     list_programme_weeks,
     update_programme_week,
 )
+from src.services.courses.rest_days import RestDayConflict, list_rest_day_conflicts
 from src.services.courses.weekly_schedule import (
     delete_course_schedule,
     get_course_schedule,
@@ -29,6 +30,29 @@ from src.services.courses.weekly_schedule import (
 )
 
 router = APIRouter()
+
+
+@router.get("/rest-day/conflicts")
+async def api_list_rest_day_conflicts(
+    request: Request,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[RestDayConflict]:
+    """List published timetable items and deadlines currently on rest days."""
+    return await list_rest_day_conflicts(request, current_user, db_session)
+
+
+@router.get("/{course_uuid}/rest-day/conflicts")
+async def api_list_course_rest_day_conflicts(
+    request: Request,
+    course_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[RestDayConflict]:
+    """List rest-day conflicts for one course."""
+    return await list_rest_day_conflicts(
+        request, current_user, db_session, course_uuid=course_uuid
+    )
 
 
 @router.get("/weekly-schedule/default")

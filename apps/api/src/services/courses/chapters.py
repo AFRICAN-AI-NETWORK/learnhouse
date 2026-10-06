@@ -18,6 +18,10 @@ from src.db.courses.course_chapters import CourseChapter
 from src.db.courses.courses import Course
 from src.db.users import AnonymousUser, PublicUser
 from src.security.courses_security import courses_rbac_check_for_chapters
+from src.services.courses.rest_days import (
+    assert_due_date_publishable,
+    needs_rest_day_check,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +55,8 @@ async def create_chapter(
     chapter.creation_date = str(datetime.now(UTC))
     chapter.update_date = str(datetime.now(UTC))
     chapter.org_id = course.org_id
+    if needs_rest_day_check(None, chapter):
+        assert_due_date_publishable(chapter, db_session)
 
     # Find the last chapter in the course and add it to the list
     statement = (
@@ -175,6 +181,7 @@ async def update_chapter(
     )
 
     was_published = chapter.published
+    before = chapter.model_copy()
 
     # Update only the fields that were passed in
     for var, value in vars(chapter_object).items():
@@ -196,6 +203,8 @@ async def update_chapter(
                 detail=f"Total points for activities in a module must equal 100. Current total: {total_points}",
             )
 
+    if needs_rest_day_check(before, chapter):
+        assert_due_date_publishable(chapter, db_session)
     chapter.update_date = str(datetime.now(UTC))
 
     db_session.commit()

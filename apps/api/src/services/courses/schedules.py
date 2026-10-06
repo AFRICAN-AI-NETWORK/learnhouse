@@ -29,6 +29,10 @@ from src.db.users import AnonymousUser, PublicUser
 from src.security.calendar_security import require_course_calendar_access
 from src.security.courses_security import courses_rbac_check
 from src.services.courses.programme_weeks import get_course_programme_week
+from src.services.courses.rest_days import (
+    assert_event_publishable,
+    needs_rest_day_check,
+)
 from src.services.courses.weekly_schedule import get_schedule_days, resolve_schedule
 from src.services.utils.datetimes import (
     local_date,
@@ -126,6 +130,8 @@ async def create_timetable_event(
         update_date=now,
     )
 
+    if needs_rest_day_check(None, event):
+        assert_event_publishable(event, db_session)
     db_session.add(event)
     db_session.commit()
     db_session.refresh(event)
@@ -150,10 +156,13 @@ async def update_timetable_event(
     calendar_fields = _resolve_calendar_fields(
         course, event_object, event.weekly_schedule_phase, db_session
     )
+    before = event.model_copy()
     for key, value in {**event_object.model_dump(), **calendar_fields}.items():
         setattr(event, key, value)
     event.update_date = str(datetime.now(UTC))
 
+    if needs_rest_day_check(before, event):
+        assert_event_publishable(event, db_session)
     db_session.add(event)
     db_session.commit()
     db_session.refresh(event)

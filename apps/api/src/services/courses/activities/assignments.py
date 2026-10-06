@@ -47,6 +47,10 @@ from src.services.courses.certifications import (
     check_course_completion_and_create_certificate,
 )
 from src.services.courses.grade import compute_and_store_trail_step_grade
+from src.services.courses.rest_days import (
+    assert_due_date_publishable,
+    needs_rest_day_check,
+)
 from src.services.notifications import notification_service
 from src.services.trail.trail import check_trail_presence
 
@@ -335,6 +339,8 @@ async def create_assignment(
     assignment.creation_date = str(datetime.now(UTC))
     assignment.update_date = str(datetime.now(UTC))
     assignment.org_id = course.org_id
+    if needs_rest_day_check(None, assignment):
+        assert_due_date_publishable(assignment, db_session)
 
     # Insert Assignment in DB
     db_session.add(assignment)
@@ -461,9 +467,12 @@ async def update_assignment(
     )
 
     # Update only the fields that were passed in
+    before = assignment.model_copy()
     for var, value in vars(assignment_object).items():
         if value is not None:
             setattr(assignment, var, value)
+    if needs_rest_day_check(before, assignment):
+        assert_due_date_publishable(assignment, db_session)
     assignment.update_date = str(datetime.now(UTC))
 
     # Insert Assignment in DB
