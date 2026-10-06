@@ -42,8 +42,19 @@ def needs_rest_day_check(before: Any | None, after: Any) -> bool:
         return False
     if not _is_visible(before):
         return True
-    fields = ("starts_at", "ends_at", "recurrence", "timezone", "visibility", "status", "due_date", "published")
-    return any(getattr(before, field, None) != getattr(after, field, None) for field in fields)
+    fields = (
+        "starts_at",
+        "ends_at",
+        "recurrence",
+        "timezone",
+        "visibility",
+        "status",
+        "due_date",
+        "published",
+    )
+    return any(
+        getattr(before, field, None) != getattr(after, field, None) for field in fields
+    )
 
 
 def assert_publishable(
@@ -59,7 +70,9 @@ def assert_publishable(
     if not schedule.rest_day_enforced:
         return
     rest_weekdays = {
-        day.weekday for day in get_schedule_days(schedule, db_session) if day.is_rest_day
+        day.weekday
+        for day in get_schedule_days(schedule, db_session)
+        if day.is_rest_day
     }
     conflicts = find_conflicts(spans, zone, rest_weekdays)
     if conflicts:
@@ -73,7 +86,9 @@ def assert_publishable(
 def assert_event_publishable(event: CourseTimetableEvent, db_session: Session) -> None:
     zone = resolve_zone(event.timezone)
     if zone is None:
-        raise HTTPException(status_code=422, detail="Timezone must be a valid IANA name")
+        raise HTTPException(
+            status_code=422, detail="Timezone must be a valid IANA name"
+        )
     until = _programme_week_end(event, db_session)
     assert_publishable(
         list(
@@ -97,7 +112,9 @@ def assert_due_date_publishable(item: Any, db_session: Session) -> None:
     schedule = resolve_schedule(course, db_session)
     zone = _due_timezone(item.due_date) or resolve_zone(schedule.timezone)
     if zone is None:
-        raise HTTPException(status_code=422, detail="Due date must include a valid timezone")
+        raise HTTPException(
+            status_code=422, detail="Due date must include a valid timezone"
+        )
     instant = _parse_due_instant(item.due_date, zone)
     assert_publishable(
         [(instant, instant)],
@@ -153,7 +170,9 @@ async def list_rest_day_conflicts(
                 )
             )
 
-    chapters = select(Chapter).where(Chapter.published.is_(True), Chapter.due_date.is_not(None))
+    chapters = select(Chapter).where(
+        Chapter.published.is_(True), Chapter.due_date.is_not(None)
+    )
     assignments = select(Assignment).where(
         Assignment.published.is_(True), Assignment.due_date.is_not(None)
     )
@@ -165,8 +184,7 @@ async def list_rest_day_conflicts(
         assignments = assignments.join(Course).where(Course.org_id == org_id)
 
     for item, item_type, item_uuid in [
-        (item, "chapter", item.chapter_uuid)
-        for item in db_session.exec(chapters).all()
+        (item, "chapter", item.chapter_uuid) for item in db_session.exec(chapters).all()
     ] + [
         (item, "assignment", item.assignment_uuid)
         for item in db_session.exec(assignments).all()
@@ -215,7 +233,9 @@ def _conflict_dates_for_event(
         until,
     )
     rest_weekdays = {
-        day.weekday for day in get_schedule_days(schedule, db_session) if day.is_rest_day
+        day.weekday
+        for day in get_schedule_days(schedule, db_session)
+        if day.is_rest_day
     }
     return find_conflicts(spans, zone, rest_weekdays)
 
@@ -224,12 +244,16 @@ def _conflict_dates_for_due_date(
     item: Any, schedules: dict[int, Any], db_session: Session
 ) -> list:
     course = db_session.exec(select(Course).where(Course.id == item.course_id)).one()
-    schedule = schedules.setdefault(item.course_id, resolve_schedule(course, db_session))
+    schedule = schedules.setdefault(
+        item.course_id, resolve_schedule(course, db_session)
+    )
     zone = _due_timezone(item.due_date) or resolve_zone(schedule.timezone)
     if zone is None:
         return []
     rest_weekdays = {
-        day.weekday for day in get_schedule_days(schedule, db_session) if day.is_rest_day
+        day.weekday
+        for day in get_schedule_days(schedule, db_session)
+        if day.is_rest_day
     }
     instant = _parse_due_instant(item.due_date, zone)
     return find_conflicts([(instant, instant)], zone, rest_weekdays)

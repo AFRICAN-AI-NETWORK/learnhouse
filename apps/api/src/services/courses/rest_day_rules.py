@@ -40,9 +40,7 @@ def occurrences(
         current_end = current_start + duration
 
 
-def local_dates_covered(
-    start: datetime, end: datetime, zone: ZoneInfo
-) -> set[date]:
+def local_dates_covered(start: datetime, end: datetime, zone: ZoneInfo) -> set[date]:
     local_start = start.astimezone(zone).date()
     local_end = end.astimezone(zone).date()
     return {
