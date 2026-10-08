@@ -16,6 +16,7 @@ interface ActiveProgram {
   imageUrl: string
   status?: 'Live' | 'Upcoming'
   originalPrice?: string
+  modulesCount?: number
 }
 
 interface ActiveProgramsSectionProps {
@@ -43,6 +44,7 @@ const programStyles: Record<string, string> = {
   'digital-marketing': 'bg-[#dbeafe]',
   'product-management': 'bg-[#fef3c7]',
   'project-management': 'bg-[#ecfccb]',
+  'career-accelerator': 'bg-[#ffedd5]',
 }
 
 export default function ActiveProgramsSection({
@@ -156,7 +158,7 @@ export default function ActiveProgramsSection({
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] font-medium text-gray-500 mb-6">
                       <span className="flex items-center gap-1.5">
                         <BookOpen size={14} className="text-gray-400" />{' '}
-                        {program.id === 'aan-open' ? '10' : '24'} Modules
+                        {program.modulesCount || 24} Modules
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Clock size={14} className="text-gray-400" /> Self-paced

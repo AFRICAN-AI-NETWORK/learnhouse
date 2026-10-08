@@ -114,10 +114,10 @@ export default function AANOpenPage() {
           </div>
           
           <h1 className="text-[12vw] md:text-[8vw] font-black leading-[0.85] tracking-tighter uppercase mb-12">
-            AAN Open
+            Generative
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
-              Generative AI
+              AI
             </span>
           </h1>
 

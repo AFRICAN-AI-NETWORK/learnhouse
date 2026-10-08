@@ -157,6 +157,7 @@ export default function LandingPremium({
       href: getUriWithOrg(orgslug, '/aan-open'),
       imageUrl: '/landing/aina_genai.jpg',
       status: 'Live' as const,
+      modulesCount: 10,
     },
     {
       id: 'frontend-dev',
@@ -169,6 +170,7 @@ export default function LandingPremium({
       imageUrl: '/landing/aina_frontend.jpg',
       status: 'Live' as const,
       originalPrice: '$15/mo',
+      modulesCount: 24,
     },
     {
       id: 'ai-engineering',
@@ -181,6 +183,7 @@ export default function LandingPremium({
       imageUrl: '/landing/aina_ai_engineering.jpg',
       status: 'Live' as const,
       originalPrice: '$40/mo',
+      modulesCount: 24,
     },
     {
       id: 'ai-automation-businesses',
@@ -193,6 +196,7 @@ export default function LandingPremium({
       imageUrl: '/landing/aina_ai_automation.jpg',
       status: 'Live' as const,
       originalPrice: '$37/mo',
+      modulesCount: 24,
     },
     {
       id: 'aan-fundamentals',
@@ -205,6 +209,7 @@ export default function LandingPremium({
       imageUrl: '/landing/aina_data_science.jpg',
       status: 'Live' as const,
       originalPrice: '$30/mo',
+      modulesCount: 24,
     },
     {
       id: 'nodejs-backend',
@@ -217,6 +222,7 @@ export default function LandingPremium({
       imageUrl: '/landing/aina_backend_node.jpg',
       status: 'Live' as const,
       originalPrice: '$30/mo',
+      modulesCount: 24,
     },
     {
       id: 'ai-automation-content-creators',
@@ -229,6 +235,20 @@ export default function LandingPremium({
       imageUrl: '/landing/aina_content_creators.jpg',
       status: 'Live' as const,
       originalPrice: '$37/mo',
+      modulesCount: 24,
+    },
+    {
+      id: 'career-accelerator',
+      name: 'CAREER ACCELERATOR PROGRAMME',
+      description:
+        'Turn your technical skills into a hired role. Master professional practices, build a world-class portfolio, and prepare for global placements.',
+      badgeText: 'Career',
+      buttonText: 'Learn more ->',
+      href: getUriWithOrg(orgslug, '/career-accelerator'),
+      imageUrl: '/landing/career_accelerator.jpg',
+      status: 'Live' as const,
+      originalPrice: '$20/one-time',
+      modulesCount: 6,
     },
     ...upcomingSpecializations,
   ]
