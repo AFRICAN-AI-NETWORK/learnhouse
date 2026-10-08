@@ -278,6 +278,7 @@ async def api_create_checkout_session(
     redirect_uri: str,
     currency: str | None = None,
     discount_code: str | None = None,
+    upsell_product_id: int | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -289,9 +290,10 @@ async def api_create_checkout_session(
         currency: Optional currency code (ISO 4217). Supported: NGN, USD, GHS, ZAR, KES, XOF
                  If not provided, uses the product's default currency
         discount_code: Optional discount code to apply to the purchase
+        upsell_product_id: Optional ID of a product to upsell/bump with this checkout
 
     Example:
-        POST /api/v1/payments/{org_id}/checkout/product/{product_id}?redirect_uri=https://example.com/success&currency=USD&discount_code=SCHOOL2026
+        POST /api/v1/payments/{org_id}/checkout/product/{product_id}?redirect_uri=https://example.com/success&currency=USD&discount_code=SCHOOL2026&upsell_product_id=5
     """
     return await initialize_transaction(
         request,
@@ -300,6 +302,7 @@ async def api_create_checkout_session(
         redirect_uri,
         currency,
         discount_code,
+        upsell_product_id,
         current_user,
         db_session,
     )
@@ -366,6 +369,7 @@ async def api_verify_transaction(
             "created_at": flutterwave_data.get("created_at"),
         },
         "payment_user_id": payment_user_id,
+        "upsell_payment_user_id": meta.get("upsell_payment_user_id"),
         "payment_status_updated": False,
     }
 
@@ -392,6 +396,18 @@ async def api_verify_transaction(
                     response["payment_status_updated"] = True
                     response["previous_status"] = payment_user.status.value
                     response["new_status"] = PaymentStatusEnum.COMPLETED.value
+
+                    # Activate upsell if present
+                    upsell_payment_user_id = meta.get("upsell_payment_user_id")
+                    if upsell_payment_user_id:
+                        await update_payment_user_status(
+                            request=request,
+                            org_id=org_id,
+                            payment_user_id=int(upsell_payment_user_id),
+                            status=PaymentStatusEnum.COMPLETED,
+                            current_user=InternalUser(),
+                            db_session=db_session,
+                        )
                 else:
                     response["payment_status"] = PaymentStatusEnum.COMPLETED.value
             else:

@@ -268,6 +268,7 @@ async def initialize_transaction(
     redirect_uri: str,
     currency: str | None = None,
     discount_code: str | None = None,
+    upsell_product_id: int | None = None,
     current_user: PublicUser | AnonymousUser = None,
     db_session: Session = None,
 ) -> dict:
@@ -360,6 +361,17 @@ async def initialize_transaction(
 
     amount_to_charge = final_amount if discount_code_obj else product.amount
 
+    upsell_product = None
+    if upsell_product_id:
+        upsell_statement = select(PaymentsProduct).where(
+            PaymentsProduct.id == upsell_product_id, PaymentsProduct.org_id == org_id
+        )
+        upsell_product = db_session.exec(upsell_statement).first()
+        if not upsell_product:
+            raise HTTPException(status_code=404, detail="Upsell product not found")
+        # Add the upsell amount (assumes same currency for simplicity, otherwise convert)
+        amount_to_charge += upsell_product.amount
+
     if product.currency.upper() != selected_currency.upper():
         from src.services.referrals.payouts import get_usd_to_currency_exchange_rate
         
@@ -428,6 +440,25 @@ async def initialize_transaction(
         db_session.commit()
         db_session.refresh(payment_user)
 
+    upsell_payment_user = None
+    if upsell_product:
+        upsell_payment_user = await create_payment_user(
+            request=request,
+            org_id=org_id,
+            user_id=current_user.id,
+            product_id=upsell_product_id,
+            status=PaymentStatusEnum.PENDING,
+            provider_data={
+                "flutterwave_customer": customer,
+                "customer_code": customer.get("customer_code"),
+                "is_upsell": True,
+            },
+            current_user=InternalUser(),
+            db_session=db_session,
+            referral_code_id=referral_code_id,
+        )
+        metadata_dict["upsell_payment_user_id"] = str(upsell_payment_user.id)
+
     tx_ref = f"LH_{payment_user.id}_{uuid.uuid4().hex[:8]}"
     metadata_dict["payment_user_id"] = str(payment_user.id)
 
@@ -482,6 +513,10 @@ async def initialize_transaction(
         if payment_user and payment_user.id:
             await delete_payment_user(
                 request, org_id, payment_user.id, InternalUser(), db_session
+            )
+        if upsell_payment_user and upsell_payment_user.id:
+            await delete_payment_user(
+                request, org_id, upsell_payment_user.id, InternalUser(), db_session
             )
         raise HTTPException(status_code=400, detail=str(e))
 

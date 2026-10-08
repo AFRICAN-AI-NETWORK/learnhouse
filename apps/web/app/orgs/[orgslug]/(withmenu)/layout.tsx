@@ -36,6 +36,7 @@ function LayoutInner(props: {
     pathname?.endsWith('/frontend-dev') ||
     pathname?.endsWith('/laravel-backend') ||
     pathname?.endsWith('/nodejs-backend') ||
+    pathname?.endsWith('/career-accelerator') ||
     pathname?.endsWith('/contact') ||
     pathname?.endsWith('/about')
   const isGuest = !session?.data?.user

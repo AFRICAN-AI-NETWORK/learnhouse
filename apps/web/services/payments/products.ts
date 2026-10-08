@@ -126,12 +126,17 @@ export async function getStripeProductCheckoutSession(
   productId: number,
   redirect_uri: string,
   access_token: string,
-  discountCode?: string
+  discountCode?: string,
+  upsellProductId?: number
 ) {
   let url = `${getAPIUrl()}payments/${orgId}/checkout/product/${productId}?redirect_uri=${encodeURIComponent(redirect_uri)}`
 
   if (discountCode) {
     url += `&discount_code=${encodeURIComponent(discountCode)}`
+  }
+
+  if (upsellProductId) {
+    url += `&upsell_product_id=${encodeURIComponent(upsellProductId.toString())}`
   }
 
   const result = await fetch(

@@ -40,6 +40,7 @@ export default function ClickToPayButton({
   const { currency: contextCurrency, convertAmount } = useCurrency()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isDisclaimerAccepted, setIsDisclaimerAccepted] = useState(false)
 
   // Discount State
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
@@ -401,10 +402,40 @@ export default function ClickToPayButton({
                 </div>
               )}
 
+              {courseId === 'career-accelerator' && (
+                <div className="mb-6 p-4 bg-red-50/50 rounded-xl border border-red-100 flex items-start gap-3">
+                  <div className="mt-0.5">
+                    <input
+                      type="checkbox"
+                      id="standalone-disclaimer-checkbox"
+                      checked={isDisclaimerAccepted}
+                      onChange={(e) =>
+                        setIsDisclaimerAccepted(e.target.checked)
+                      }
+                      className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                    />
+                  </div>
+                  <label
+                    htmlFor="standalone-disclaimer-checkbox"
+                    className="text-xs text-red-800 font-medium leading-relaxed cursor-pointer select-none"
+                  >
+                    <strong>Disclaimer:</strong> If you pay for this course, you
+                    will be prepared and referred for job placement. However,
+                    the entire hiring process is determined by the employer, not
+                    AINA. Even though we do our best to ensure you are fit and
+                    have a high chance of getting the job, the final decision
+                    rests solely with the employer.
+                  </label>
+                </div>
+              )}
+
               <Button
                 onClick={handleFinalCheckout}
-                disabled={isProcessing}
-                className="w-full h-12 text-[15px] font-bold rounded-xl shadow-[0_4px_14px_0_rgb(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                disabled={
+                  isProcessing ||
+                  (courseId === 'career-accelerator' && !isDisclaimerAccepted)
+                }
+                className="w-full h-12 text-[15px] font-bold rounded-xl shadow-[0_4px_14px_0_rgb(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

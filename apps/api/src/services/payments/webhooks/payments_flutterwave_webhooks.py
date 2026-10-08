@@ -89,6 +89,17 @@ async def handle_flutterwave_webhook(
                         db_session=db_session,
                     )
 
+                    upsell_payment_user_id = metadata.get("upsell_payment_user_id")
+                    if upsell_payment_user_id:
+                        await update_payment_user_status(
+                            request=request,
+                            org_id=org_id,
+                            payment_user_id=int(upsell_payment_user_id),
+                            status=PaymentStatusEnum.COMPLETED,
+                            current_user=InternalUser(),
+                            db_session=db_session,
+                        )
+
                     discount_code_id = metadata.get("discount_code_id")
                     course_id = metadata.get("course_id")
                     product_id = metadata.get("product_id")
