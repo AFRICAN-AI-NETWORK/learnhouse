@@ -91,6 +91,13 @@
 - **Course Paywall Strategy**: Added an interceptor so that if a user tries to access a paid course they haven't purchased, they receive an alert directing them to the web app to purchase it.
 - **Native Routing Updates**: Replaced all external `Linking.openURL` redirects across the Dashboard and Courses screens so users natively stay inside the app.
 - **My Certificates**: Added a "My Certificates" button under the ACCOUNT section in the profile screen, which opens a `certificates.tsx` screen that hits `/api/v1/certifications/user/all` and allows users to tap and verify certificates natively in the app using `expo-web-browser`.
+
 ## Backend Optimizations & Stability
 
 - **Connection Pool Exhaustion Fix**: Handed off blocking synchronous DB operations inside FastAPI `async def` routes to thread pools via `asyncio.get_running_loop().run_in_executor()`. This optimization was applied to both the Role-Based Access Control (`rbac.py`) layer and the Enterprise Audit Middleware (`audit.py`), significantly eliminating event loop starvation and preventing the 30-second database timeout errors when Instructors access their dashboard.
+
+## Web App - Smart Article Assignments & Global Pricing
+
+- **AINA Pro Subscription**: Transitioned all 5 core courses (rontend-dev, i-engineering, i-automation, i-fundamentals,
+  odejs-backend, i-automation-content-creators) from individual tuition options to a unified $10/mo global AINA Pro subscription pitch. Badges on the landing pages now display 'Premium' instead of standard prices.
+- **Assignment System (Smart Articles)**: Created 4 new interactive assignment block types (QUIZ, CODE_EXERCISE, CUSTOM_ANSWER, FILE_SUBMISSION). Designed distinct editor-side UI for instructors to define these blocks in SmartArticleEditor.tsx and custom learner-side blocks built out under pps/web/components/Objects/Activities/SmartArticle/Blocks/ designed to adhere to the strict Anti-Slop UI standard.

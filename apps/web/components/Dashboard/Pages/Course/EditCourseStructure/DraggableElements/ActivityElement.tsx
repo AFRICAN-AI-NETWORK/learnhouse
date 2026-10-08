@@ -405,7 +405,8 @@ const ActivityElementOptions = ({
 
   return (
     <>
-      {activity.activity_type === 'TYPE_DYNAMIC' && (
+      {(activity.activity_type === 'TYPE_DYNAMIC' ||
+        activity.activity_type === 'TYPE_SMART_ARTICLE') && (
         <>
           <Link
             href={

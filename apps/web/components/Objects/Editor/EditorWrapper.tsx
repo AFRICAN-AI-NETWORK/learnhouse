@@ -1,6 +1,7 @@
 'use client'
 import { default as React, type JSX } from 'react'
 import Editor from './Editor'
+import SmartArticleEditor from './SmartArticleEditor'
 import { updateActivity } from '@services/courses/activities'
 import { toast } from 'react-hot-toast'
 import Toast from '@components/Objects/StyledElements/Toast/Toast'
@@ -50,16 +51,25 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       <>
         <Toast></Toast>
         <OrgProvider orgslug={props.org.slug}>
-          {!session.isLoading && (
-            <Editor
-              org={props.org}
-              course={props.course}
-              activity={props.activity}
-              content={props.content}
-              setContent={setContent}
-              session={session}
-            ></Editor>
-          )}
+          {!session.isLoading &&
+            (props.activity.activity_type === 'TYPE_SMART_ARTICLE' ? (
+              <SmartArticleEditor
+                org={props.org}
+                course={props.course}
+                activity={props.activity}
+                content={props.content}
+                setContent={setContent}
+              />
+            ) : (
+              <Editor
+                org={props.org}
+                course={props.course}
+                activity={props.activity}
+                content={props.content}
+                setContent={setContent}
+                session={session}
+              ></Editor>
+            ))}
         </OrgProvider>
       </>
     )

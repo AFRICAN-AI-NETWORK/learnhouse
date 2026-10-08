@@ -36,41 +36,44 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <section
-      id="faq"
-      className="py-24 px-6 lg:px-12 bg-white border-y border-gray-100"
-    >
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0f1e] uppercase">
-            Frequently Asked Questions
+    <section id="faq" className="py-32 px-6 lg:px-12 bg-white">
+      <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16">
+        {/* Left Side: Header */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f3f4f6] text-[#555555] text-[13px] font-bold tracking-wide">
+            FAQ
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-[#111827] tracking-tight leading-[1.1]">
+            Frequently <br /> Asked Questions
           </h2>
-          <p className="text-[#555555] max-w-2xl mx-auto text-[16px]">
-            Everything you need to know about learning with us.
+          <p className="text-[#555555] text-[17px] leading-[1.7] max-w-sm">
+            Everything you need to know about learning with us. Can't find the
+            answer you're looking for? Reach out to our team.
           </p>
         </div>
 
-        <div className="space-y-4">
+        {/* Right Side: Accordions */}
+        <div className="lg:col-span-7 space-y-4">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index
             return (
               <div
                 key={index}
-                className={`border rounded-2xl overflow-hidden transition-colors duration-200 ${isOpen ? 'border-[#0057ff]/20 bg-[#0057ff]/[0.02]' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                className={`rounded-[20px] overflow-hidden transition-all duration-300 border ${isOpen ? 'border-gray-200 bg-white shadow-sm' : 'border-transparent bg-[#f9fafb] hover:bg-gray-100'}`}
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="w-full flex items-center justify-between p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057ff] focus-visible:ring-inset"
+                  className="w-full flex items-center justify-between p-6 md:p-8 text-left focus:outline-none"
                 >
                   <span
-                    className={`text-[16px] font-bold ${isOpen ? 'text-[#0057ff]' : 'text-[#0a0f1e]'}`}
+                    className={`text-[17px] font-bold pr-8 ${isOpen ? 'text-[#111827]' : 'text-[#374151]'}`}
                   >
                     {faq.question}
                   </span>
                   <div
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isOpen ? 'bg-[#0057ff] text-white' : 'bg-gray-100 text-[#0a0f1e]'}`}
+                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isOpen ? 'bg-[#111827] text-white' : 'bg-white border border-gray-200 text-[#111827]'}`}
                   >
-                    {isOpen ? <Minus size={16} /> : <Plus size={16} />}
+                    {isOpen ? <Minus size={18} /> : <Plus size={18} />}
                   </div>
                 </button>
                 <AnimatePresence initial={false}>
@@ -81,7 +84,7 @@ export default function FAQSection() {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                     >
-                      <div className="px-6 pb-6 text-[#555555] leading-relaxed">
+                      <div className="px-6 md:px-8 pb-8 text-[#555555] text-[16px] leading-[1.7]">
                         {faq.answer}
                       </div>
                     </motion.div>

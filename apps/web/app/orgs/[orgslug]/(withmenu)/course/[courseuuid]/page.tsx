@@ -6,7 +6,8 @@ import { getCourseMetadata } from '@services/courses/courses'
 import { getOrganizationContextInfo } from '@services/organizations/orgs'
 import { Metadata } from 'next'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { getUriWithOrg } from '@services/config/config'
 import { nextAuthOptions } from 'app/auth/options'
 import { getServerSession } from 'next-auth'
 
@@ -116,6 +117,24 @@ const CoursePage = async (params: any) => {
         }).replace(/</g, '\\u003c'),
       }
     : { __html: '' }
+
+  // Direct-to-Content Routing: Bypass the Syllabus page entirely
+  const firstChapter = course_meta?.chapters?.[0]
+  const firstActivity = firstChapter?.activities?.[0]
+
+  if (firstActivity) {
+    const cleanCourseUuid = courseuuid.replace('course_', '')
+    const cleanActivityUuid = firstActivity.activity_uuid.replace(
+      'activity_',
+      ''
+    )
+    redirect(
+      getUriWithOrg(
+        orgslug,
+        `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
+      )
+    )
+  }
 
   return (
     <>

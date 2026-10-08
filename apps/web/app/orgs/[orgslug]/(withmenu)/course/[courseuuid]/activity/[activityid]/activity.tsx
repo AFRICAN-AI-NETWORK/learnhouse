@@ -49,6 +49,7 @@ import { AssignmentsTaskProvider } from '@components/Contexts/Assignments/Assign
 import AssignmentSubmissionProvider, {
   useAssignmentSubmission,
 } from '@components/Contexts/Assignments/AssignmentSubmissionContext'
+import SmartLearningLayout from '@components/Pages/Courses/SmartLearningLayout'
 import toast from 'react-hot-toast'
 import { mutate } from 'swr'
 import useSWR from 'swr'
@@ -1397,21 +1398,12 @@ function ActivityClient(props: ActivityClientProps) {
                           videoWatchSatisfied={videoWatchSatisfied}
                         />
 
-                        <div className="flex min-h-[calc(100vh-73px)] flex-col lg:flex-row">
-                          <CourseContentSidebar
-                            course={course}
-                            currentActivityId={
-                              activity?.activity_uuid
-                                ? activity.activity_uuid.replace(
-                                    'activity_',
-                                    ''
-                                  )
-                                : activityid.replace('activity_', '')
-                            }
-                            orgslug={orgslug}
-                            trailData={trailData}
-                          />
-
+                        <SmartLearningLayout
+                          course={course}
+                          currentActivityUuid={activityid}
+                          orgslug={orgslug}
+                          trailData={trailData}
+                        >
                           <main className="min-w-0 flex-1">
                             <div
                               className={`py-5 sm:px-6 xl:px-8 ${
@@ -1565,7 +1557,7 @@ function ActivityClient(props: ActivityClientProps) {
                               <div className="h-12" />
                             </div>
                           </main>
-                        </div>
+                        </SmartLearningLayout>
                       </div>
                     )}
                   </div>

@@ -147,12 +147,11 @@ function LandingClassic({
     if (!firstCourse) return
     const storageKey = `seen-modal-${firstCourse.course_uuid}`
     if (!localStorage.getItem(storageKey)) {
-      const hasStartedCourse =
-        trail?.runs?.some(
-          (run: any) =>
-            cleanCourseUuid(run.course?.course_uuid) ===
-            cleanCourseUuid(firstCourse.course_uuid)
-        )
+      const hasStartedCourse = trail?.runs?.some(
+        (run: any) =>
+          cleanCourseUuid(run.course?.course_uuid) ===
+          cleanCourseUuid(firstCourse.course_uuid)
+      )
 
       if (
         session?.data?.user?.user_status === 'WAITLIST' ||
@@ -201,6 +200,37 @@ function LandingClassic({
     const totalSteps = run.course_total_steps || 0
     return totalSteps > 0 && (run.steps?.length || 0) >= totalSteps
   }).length
+
+  const getResumeUrl = (course: any) => {
+    const cleanUuid = cleanCourseUuid(course.course_uuid)
+    const run = getRunForCourse(course)
+    let targetActivity = course?.chapters?.[0]?.activities?.[0]
+
+    if (run && run.steps) {
+      let found = false
+      for (const chapter of course.chapters || []) {
+        for (const activity of chapter.activities || []) {
+          const step = run.steps.find(
+            (s: any) => s.activity_uuid === activity.activity_uuid
+          )
+          if (!step || !step.complete) {
+            targetActivity = activity
+            found = true
+            break
+          }
+        }
+        if (found) break
+      }
+    }
+
+    if (targetActivity) {
+      return getUriWithOrg(
+        orgslug,
+        `/course/${cleanUuid}/activity/${cleanCourseUuid(targetActivity.activity_uuid)}`
+      )
+    }
+    return getUriWithOrg(orgslug, `/course/${cleanUuid}`)
+  }
   const displayedCourses = courses.filter((course: any) => {
     const progress = getCourseProgress(course)
 
@@ -247,6 +277,7 @@ function LandingClassic({
               orgslug={orgslug}
               progress={getCourseProgress(continueCourse)}
               lessonCount={getCourseTotalLessons(continueCourse)}
+              resumeUrl={getResumeUrl(continueCourse)}
             />
           ) : (
             <EmptyPanel
@@ -309,6 +340,7 @@ function LandingClassic({
                   progress={getCourseProgress(course)}
                   lessonCount={getCourseTotalLessons(course)}
                   userStatus={session?.data?.user?.user_status}
+                  resumeUrl={getResumeUrl(getHydratedCourse(course))}
                   waitlistConfig={orgWaitlists?.data?.find(
                     (w: any) =>
                       cleanCourseUuid(w.interest_category) ===
@@ -445,6 +477,7 @@ const ContinueLearningCard = ({
   orgslug,
   progress,
   lessonCount,
+  resumeUrl,
 }: {
   course: any
   run?: any
@@ -452,6 +485,7 @@ const ContinueLearningCard = ({
   orgslug: string
   progress: number
   lessonCount: number
+  resumeUrl: string
 }) => {
   const totalLessons = lessonCount
   const completedLessons = run?.steps?.length || 0
@@ -472,10 +506,7 @@ const ContinueLearningCard = ({
           </span>
         </div>
         <Link
-          href={getUriWithOrg(
-            orgslug,
-            `/course/${cleanCourseUuid(course.course_uuid)}`
-          )}
+          href={resumeUrl}
           className="mt-5 inline-flex items-center gap-2 rounded-lg border border-blue-500 px-4 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-50"
         >
           <Play size={16} fill="currentColor" />
@@ -505,6 +536,7 @@ const DashboardCourseCard = ({
   progress,
   lessonCount,
   userStatus,
+  resumeUrl,
   waitlistConfig,
 }: {
   course: any
@@ -513,16 +545,12 @@ const DashboardCourseCard = ({
   progress: number
   lessonCount: number
   userStatus?: string
+  resumeUrl: string
   waitlistConfig?: any
 }) => (
   <article className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
     <AdminCourseCardActions course={course} orgslug={orgslug} />
-    <Link
-      href={getUriWithOrg(
-        orgslug,
-        `/course/${cleanCourseUuid(course.course_uuid)}`
-      )}
-    >
+    <Link href={resumeUrl}>
       <div className="relative">
         <CourseImage course={course} org={org} className="h-50" />
         <span
@@ -538,10 +566,7 @@ const DashboardCourseCard = ({
       <div className="flex items-start justify-between gap-3">
         <div>
           <Link
-            href={getUriWithOrg(
-              orgslug,
-              `/course/${cleanCourseUuid(course.course_uuid)}`
-            )}
+            href={resumeUrl}
             className="text-base font-bold text-gray-950 hover:text-blue-600"
           >
             {course.name}
@@ -577,10 +602,7 @@ const DashboardCourseCard = ({
           </div>
         ) : (
           <Link
-            href={getUriWithOrg(
-              orgslug,
-              `/course/${cleanCourseUuid(course.course_uuid)}`
-            )}
+            href={resumeUrl}
             className="text-sm font-semibold text-blue-400 hover:text-blue-700"
           >
             Start learning

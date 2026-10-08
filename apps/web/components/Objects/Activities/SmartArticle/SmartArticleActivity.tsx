@@ -4,6 +4,12 @@ import AISidebar from './AISidebar'
 import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react'
 import { getAPIUrl } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
+import {
+  QuizBlock,
+  CodeExerciseBlock,
+  CustomAnswerBlock,
+  FileSubmissionBlock,
+} from './Blocks'
 
 interface SmartArticleActivityProps {
   activity: any
@@ -107,6 +113,7 @@ function SmartArticleActivity({
     translatedSteps[currentStepIndex]?.title || steps[currentStepIndex]?.title
   const currentStepContent =
     steps[currentStepIndex]?.content || steps[currentStepIndex]?.text || ''
+  const currentType = steps[currentStepIndex]?.type || 'TEXT'
 
   return (
     <div
@@ -190,9 +197,19 @@ function SmartArticleActivity({
                     {currentTitle}
                   </h1>
                 )}
-                <div className="text-zinc-200 text-lg leading-[1.8] font-medium whitespace-pre-line selection:bg-primary/30 selection:text-white antialiased drop-shadow-sm">
-                  {currentText}
-                </div>
+                {currentType === 'QUIZ' ? (
+                  <QuizBlock step={steps[currentStepIndex]} />
+                ) : currentType === 'CODE_EXERCISE' ? (
+                  <CodeExerciseBlock step={steps[currentStepIndex]} />
+                ) : currentType === 'CUSTOM_ANSWER' ? (
+                  <CustomAnswerBlock step={steps[currentStepIndex]} />
+                ) : currentType === 'FILE_SUBMISSION' ? (
+                  <FileSubmissionBlock step={steps[currentStepIndex]} />
+                ) : (
+                  <div className="text-zinc-200 text-lg leading-[1.8] font-medium whitespace-pre-line selection:bg-primary/30 selection:text-white antialiased drop-shadow-sm">
+                    {currentText}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -203,7 +203,7 @@ function DashLeftMenu() {
             <MenuLink
               href="/dash/students"
               icon={<GraduationCap size={18} />}
-              label="Students"
+              label="Student Progress"
               isCollapsed={isCollapsed}
             />
           )}

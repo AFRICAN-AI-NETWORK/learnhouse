@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-
+import AuthenticatedClientElement from '@components/Security/AuthenticatedClientElement'
 function MenuLinks(props: {
   orgslug: string
   variant?: 'top' | 'sidebar'
@@ -65,7 +65,7 @@ function MenuLinks(props: {
           variant={variant}
           collapsed={props.collapsed}
         />
-        {/* <AuthenticatedClientElement checkMethod="authentication">
+        <AuthenticatedClientElement checkMethod="authentication">
           <LinkItem
             link="/trail"
             type="trail"
@@ -73,7 +73,7 @@ function MenuLinks(props: {
             variant={variant}
             collapsed={props.collapsed}
           />
-        </AuthenticatedClientElement> */}
+        </AuthenticatedClientElement>
       </ul>
     </div>
   )
