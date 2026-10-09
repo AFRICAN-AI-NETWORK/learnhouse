@@ -56,9 +56,6 @@ function EditCourseMilestones() {
     [courseStructure?.chapters]
   )
   const [selectedCohortUuid, setSelectedCohortUuid] = useState('')
-  const [selectedCourseCohortUuids, setSelectedCourseCohortUuids] = useState<
-    string[] | null
-  >(null)
   const [weekCount, setWeekCount] = useState(12)
   const [savingWeekUuid, setSavingWeekUuid] = useState<string | null>(null)
   const [isSavingCourseCohorts, setIsSavingCourseCohorts] = useState(false)
@@ -117,13 +114,6 @@ function EditCourseMilestones() {
   )
 
   const linkedCohortUuids = cohorts.map((cohort) => cohort.academic_cohort_uuid)
-  const courseCohortSelection = selectedCourseCohortUuids ?? linkedCohortUuids
-  const hasCourseCohortChanges =
-    selectedCourseCohortUuids !== null &&
-    (selectedCourseCohortUuids.length !== linkedCohortUuids.length ||
-      selectedCourseCohortUuids.some(
-        (cohortUuid) => !linkedCohortUuids.includes(cohortUuid)
-      ))
   const activeCohortUuid =
     (cohorts.some(
       (cohort) => cohort.academic_cohort_uuid === selectedCohortUuid
@@ -131,6 +121,8 @@ function EditCourseMilestones() {
       selectedCohortUuid) ||
     cohorts[0]?.academic_cohort_uuid ||
     ''
+  const dropdownCohortUuid = selectedCohortUuid || activeCohortUuid
+  const isDropdownCohortLinked = linkedCohortUuids.includes(dropdownCohortUuid)
 
   const {
     data: weeks = [],
@@ -194,28 +186,21 @@ function EditCourseMilestones() {
     }
   }
 
-  const toggleCourseCohort = (cohortUuid: string) => {
-    setSelectedCourseCohortUuids((current) => {
-      const selected = current ?? linkedCohortUuids
-      return selected.includes(cohortUuid)
-        ? selected.filter((uuid) => uuid !== cohortUuid)
-        : [...selected, cohortUuid]
-    })
-  }
-
-  const saveCourseCohorts = async () => {
-    if (!courseUuid || !hasCourseCohortChanges) return
+  const linkSelectedCohort = async () => {
+    if (!courseUuid || !dropdownCohortUuid || isDropdownCohortLinked) {
+      return
+    }
     setIsSavingCourseCohorts(true)
     try {
       const result = await setCourseAcademicCohorts(
         courseUuid,
-        courseCohortSelection,
+        [...linkedCohortUuids, dropdownCohortUuid],
         accessToken
       )
       if (!result.success) throw new Error(getApiErrorMessage(result))
-      setSelectedCourseCohortUuids(null)
-      mutateCohorts()
-      toast.success('Course cohorts saved')
+      setSelectedCohortUuid(dropdownCohortUuid)
+      await mutateCohorts()
+      toast.success('Course cohort linked')
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not save course cohorts'
@@ -371,109 +356,72 @@ function EditCourseMilestones() {
                 <h2 className="font-bold text-gray-950">Course run</h2>
                 <label className="mt-3 block">
                   <span className="text-xs font-bold text-gray-600">
-                    Academic cohort
+                    Choose academic cohort
                   </span>
                   <select
-                    value={activeCohortUuid}
+                    value={dropdownCohortUuid}
                     onChange={(event) =>
                       setSelectedCohortUuid(event.target.value)
                     }
                     className="mt-1 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm"
                   >
-                    <option value="" disabled>
-                      No cohort linked
-                    </option>
-                    {cohorts.map((cohort) => (
-                      <option
-                        key={cohort.academic_cohort_uuid}
-                        value={cohort.academic_cohort_uuid}
-                      >
-                        {cohort.name}
+                    {!dropdownCohortUuid && (
+                      <option value="" disabled>
+                        {isAcademicYearsLoading || isAvailableCohortsLoading
+                          ? 'Loading cohorts...'
+                          : availableAcademicCohorts.length
+                            ? 'Select a cohort'
+                            : 'No cohorts available'}
                       </option>
-                    ))}
+                    )}
+                    {academicYears.map((year) => {
+                      const yearCohorts = availableAcademicCohorts.filter(
+                        (cohort) =>
+                          cohort.academic_year_uuid === year.academic_year_uuid
+                      )
+                      if (yearCohorts.length === 0) return null
+                      return (
+                        <optgroup
+                          key={year.academic_year_uuid}
+                          label={year.name}
+                        >
+                          {yearCohorts.map((cohort) => {
+                            const isLinked = linkedCohortUuids.includes(
+                              cohort.academic_cohort_uuid
+                            )
+                            return (
+                              <option
+                                key={cohort.academic_cohort_uuid}
+                                value={cohort.academic_cohort_uuid}
+                              >
+                                {cohort.name} · {cohort.status}
+                                {isLinked ? ' · linked' : ''}
+                              </option>
+                            )
+                          })}
+                        </optgroup>
+                      )
+                    })}
                   </select>
                 </label>
-                <div className="mt-4 border-t border-gray-200 pt-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-900">
-                        Course cohorts
-                      </h3>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Choose the cohorts this course runs under.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={saveCourseCohorts}
-                      disabled={
-                        !hasCourseCohortChanges || isSavingCourseCohorts
-                      }
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Save size={14} />
-                      {isSavingCourseCohorts ? 'Saving...' : 'Save links'}
-                    </button>
-                  </div>
-                  <div className="mt-3 max-h-48 space-y-3 overflow-y-auto">
-                    {isAcademicYearsLoading || isAvailableCohortsLoading ? (
-                      <p className="text-xs text-gray-500">
-                        Loading academic cohorts...
-                      </p>
-                    ) : academicYears.length === 0 ? (
-                      <p className="text-xs text-gray-500">
-                        Create an academic year and cohorts in the academy
-                        calendar first.
-                      </p>
-                    ) : availableAcademicCohorts.length === 0 ? (
-                      <p className="text-xs text-gray-500">
-                        No academic cohorts are available to link.
-                      </p>
-                    ) : (
-                      academicYears.map((year) => {
-                        const yearCohorts = availableAcademicCohorts.filter(
-                          (cohort) =>
-                            cohort.academic_year_uuid ===
-                            year.academic_year_uuid
-                        )
-                        if (yearCohorts.length === 0) return null
-                        return (
-                          <fieldset key={year.academic_year_uuid}>
-                            <legend className="mb-1 text-xs font-bold text-gray-600">
-                              {year.name}
-                            </legend>
-                            <div className="space-y-1">
-                              {yearCohorts.map((cohort) => (
-                                <label
-                                  key={cohort.academic_cohort_uuid}
-                                  className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-white"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={courseCohortSelection.includes(
-                                      cohort.academic_cohort_uuid
-                                    )}
-                                    onChange={() =>
-                                      toggleCourseCohort(
-                                        cohort.academic_cohort_uuid
-                                      )
-                                    }
-                                  />
-                                  <span className="min-w-0 flex-1 truncate text-gray-800">
-                                    {cohort.name}
-                                  </span>
-                                  <span className="text-xs capitalize text-gray-500">
-                                    {cohort.status}
-                                  </span>
-                                </label>
-                              ))}
-                            </div>
-                          </fieldset>
-                        )
-                      })
-                    )}
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={linkSelectedCohort}
+                  disabled={
+                    !dropdownCohortUuid ||
+                    isDropdownCohortLinked ||
+                    isSavingCourseCohorts ||
+                    isAvailableCohortsLoading
+                  }
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Save size={14} />
+                  {isSavingCourseCohorts
+                    ? 'Linking...'
+                    : isDropdownCohortLinked
+                      ? 'Cohort linked'
+                      : 'Link cohort'}
+                </button>
                 <label className="mt-3 block">
                   <span className="text-xs font-bold text-gray-600">
                     Number of weeks
