@@ -15,10 +15,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.execute(
-        "ALTER TYPE paymentproviderenum "
-        "ADD VALUE IF NOT EXISTS 'flutterwave'"
-    )
+    op.execute("ALTER TYPE paymentproviderenum ADD VALUE IF NOT EXISTS 'flutterwave'")
 
 
 def downgrade() -> None:
