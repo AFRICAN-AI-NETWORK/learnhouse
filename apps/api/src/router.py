@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from ee.routers import referrals
 from src.core.ee_hooks import register_ee_routers
 from src.routers import (
+    academic_calendar,
     admin_analytics,
     announcements,
     auth,
@@ -14,6 +15,7 @@ from src.routers import (
     orgs,
     roles,
     search,
+    student_journey,
     trail,
     usergroups,
     users,
@@ -28,6 +30,7 @@ from src.routers.code import router as code_router
 from src.routers.contact import router as contact_router
 from src.routers.courses import (
     assignments,
+    calendar,
     certifications,
     chapters,
     collections,
