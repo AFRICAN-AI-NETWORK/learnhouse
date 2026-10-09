@@ -478,7 +478,7 @@ function SmartArticleActivity({
           </div>
         )
 
-      case 'EMBED':
+      case 'EMBED': {
         let embedUrl = step.url || step.content || ''
         // basic youtube conversion if it's a watch url
         if (embedUrl.includes('youtube.com/watch?v=')) {
@@ -505,6 +505,7 @@ function SmartArticleActivity({
             </div>
           </div>
         )
+      }
 
       default:
         // Fallback for basic text/unknown blocks
