@@ -1,13 +1,14 @@
 import importlib.util
 import logging
-import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
 def is_ee_available():
     """Check if the Enterprise Edition directory exists."""
-    return os.path.exists("ee")
+    api_root = Path(__file__).resolve().parents[2]
+    return (api_root / "ee").is_dir()
 
 
 def get_ee_hooks():

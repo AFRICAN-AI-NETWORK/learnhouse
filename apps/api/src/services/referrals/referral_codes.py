@@ -161,6 +161,16 @@ async def create_referral_code_for_user(
     # Check if user already has a referral code
     existing_code = await get_referral_code_by_user(user_id, org_id, db_session)
     if existing_code:
+        config = get_learnhouse_config()
+        referral_link = build_referral_link(
+            existing_code.code, config.hosting_config.app_base_url
+        )
+        if existing_code.referral_link != referral_link:
+            existing_code.referral_link = referral_link
+            existing_code.update_date = datetime.now(UTC)
+            db_session.add(existing_code)
+            db_session.commit()
+            db_session.refresh(existing_code)
         logger.info(f"User {user_id} already has referral code: {existing_code.code}")
         return existing_code
 
