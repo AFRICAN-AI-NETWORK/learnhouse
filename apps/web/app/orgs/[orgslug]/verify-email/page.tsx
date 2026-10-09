@@ -3,6 +3,7 @@
 import { use, useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { LucideLoader2 } from 'lucide-react'
+import { getAPIUrl } from '@services/config/config'
 
 function VerifyEmailContent({
   params,
@@ -29,11 +30,7 @@ function VerifyEmailContent({
     }
 
     // Call your API to verify the email
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      'https://lms-backend.africanainetwork.com/api/v1'
-
-    fetch(`${apiUrl}/auth/verify-email`, {
+    fetch(`${getAPIUrl()}auth/verify-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

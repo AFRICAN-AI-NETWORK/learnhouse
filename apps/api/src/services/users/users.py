@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
@@ -140,14 +141,12 @@ async def create_user(
     await rbac_check(request, current_user, "create", "user_x", db_session)
 
     # Complete the user object
-    import random
-
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
     user.creation_date = str(datetime.now(UTC))
     user.update_date = str(datetime.now(UTC))
-    user.verification_otp = str(random.randint(100000, 999999))
+    user.verification_otp = str(100000 + secrets.randbelow(900000))
     user.verification_otp_expiry = str(datetime.now(UTC) + timedelta(minutes=30))
 
     # Verifications

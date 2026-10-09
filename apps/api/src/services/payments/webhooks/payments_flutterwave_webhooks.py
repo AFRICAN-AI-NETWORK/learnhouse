@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import UTC
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
@@ -168,8 +168,6 @@ async def handle_flutterwave_webhook(
 
                     if payment_user and payment_user.referral_code_id:
                         try:
-                            from datetime import datetime
-
                             from sqlmodel import and_
 
                             from src.db.referrals.referral_tracking import (
