@@ -241,7 +241,15 @@ const CourseClient = (props: any) => {
                   </div>
                 )}
 
-                <CourseJourneyPanel courseUuid={props.course.course_uuid} />
+                <CourseJourneyPanel
+                  courseUuid={props.course.course_uuid}
+                  orgslug={orgslug}
+                  chapters={course.chapters || []}
+                  completedActivityIds={
+                    currentRun?.steps?.map((step: any) => step.activity_id) ||
+                    []
+                  }
+                />
 
                 <CourseSchedulePanel courseUuid={props.course.course_uuid} />
 
