@@ -85,11 +85,11 @@ bandit-report.sarif
 snyk-report.sarif
 apps/web/contabo_logs/log.md
 platform_overview.md
-a p p s / w e b / p u b l i c / s w . j s 
- a p p s / w e b / p u b l i c / s w . j s . m a p 
- a p p s / w e b / p u b l i c / w o r k b o x - * . j s 
- a p p s / w e b / p u b l i c / w o r k b o x - * . j s . m a p  
- 
+a p p s / w e b / p u b l i c / s w . j s
+ a p p s / w e b / p u b l i c / s w . j s . m a p
+ a p p s / w e b / p u b l i c / w o r k b o x - * . j s
+ a p p s / w e b / p u b l i c / w o r k b o x - * . j s . m a p
+
 
 # Root testing scripts and logs
 HEAD_payouts.py
@@ -103,7 +103,7 @@ payouts_feat.py
 conflict_blocks.txt
 diff.txt
 merge_diff.md
-splash-icon.png 
+splash-icon.png
 Marketing Emails Broadcast Implementation plan.pdf
 frontend_handoff.md
 scratch_log.txt

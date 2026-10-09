@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlmodel import Session, select
 
@@ -159,6 +158,7 @@ async def edit_message(
         )
     except Exception as e:  # noqa: BLE001
         import logging
+
         logger = logging.getLogger(__name__)
 
         logger.warning(f"Failed to send WebSocket notification: {e}")
@@ -187,6 +187,7 @@ async def delete_message(
         )
     except Exception as e:  # noqa: BLE001
         import logging
+
         logger = logging.getLogger(__name__)
 
         logger.warning(f"Failed to send WebSocket notification: {e}")
@@ -310,6 +311,7 @@ async def upload_attachment(
         await connection_manager.broadcast_to_conversation(ws_event, participant_ids)
     except Exception as e:  # noqa: BLE001
         import logging
+
         logger = logging.getLogger(__name__)
 
         logger.warning(f"Failed to send attachment websocket update: {e}")
@@ -355,7 +357,12 @@ async def send_message_with_attachment(
     from src.services.chat.attachment_service import AttachmentService
 
     # ── Normalize file parameter (handle empty file uploads and strings) ──────
-    if isinstance(file, str) or file is None or not file.filename or file.filename == "":
+    if (
+        isinstance(file, str)
+        or file is None
+        or not file.filename
+        or file.filename == ""
+    ):
         file = None
 
     # Content and file are both optional - allow sending either or both
@@ -473,6 +480,7 @@ async def send_message_with_attachment(
         )
     except Exception as e:  # noqa: BLE001
         import logging
+
         logger = logging.getLogger(__name__)
 
         logger.warning(f"Failed to send WebSocket notification: {e}")

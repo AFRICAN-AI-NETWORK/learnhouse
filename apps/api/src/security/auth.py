@@ -219,6 +219,7 @@ async def verify_websocket_token(token: str, db: Session) -> int | None:
     """
     try:
         import logging
+
         logger = logging.getLogger(__name__)
 
         from fastapi_jwt_auth import AuthJWT
@@ -244,6 +245,7 @@ async def verify_websocket_token(token: str, db: Session) -> int | None:
 
     except Exception as e:  # noqa: BLE001
         import logging
+
         logger = logging.getLogger(__name__)
 
         logger.error(f"WebSocket token verification failed: {e}")

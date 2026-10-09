@@ -50,7 +50,10 @@ def organization_fixture(session: Session):
 
 def _base_permission(**overrides) -> Permission:
     defaults = {
-        "action_create": False, "action_read": True, "action_update": False, "action_delete": False
+        "action_create": False,
+        "action_read": True,
+        "action_update": False,
+        "action_delete": False,
     }
     defaults.update(overrides)
     return Permission(**defaults)

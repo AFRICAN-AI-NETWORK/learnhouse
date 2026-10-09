@@ -33,7 +33,9 @@ def upgrade() -> None:
             ["status", "refund_period_expiration_date"],
         )
 
-    rpr_indexes = [idx["name"] for idx in inspector.get_indexes("referrerpayoutrequest")]
+    rpr_indexes = [
+        idx["name"] for idx in inspector.get_indexes("referrerpayoutrequest")
+    ]
     if "idx_payout_status" not in rpr_indexes:
         op.create_index(
             "idx_payout_status",

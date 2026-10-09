@@ -150,8 +150,7 @@ async def make_paystack_request(
                 status_code=500, detail=f"Error connecting to Paystack: {e!s}"
             )
         except Exception as e:  # noqa: BLE001
-            logger.error(
-                f"Unexpected error making Paystack request: {e!s}")
+            logger.error(f"Unexpected error making Paystack request: {e!s}")
             raise HTTPException(
                 status_code=500, detail=f"Error making Paystack request: {e!s}"
             )
@@ -380,9 +379,7 @@ async def initialize_transaction(
             )
         except DiscountValidationError as e:
             logger.warning(f"Discount code validation failed: {e!s}")
-            raise HTTPException(
-                status_code=400, detail=f"Discount code error: {e!s}"
-            )
+            raise HTTPException(status_code=400, detail=f"Discount code error: {e!s}")
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error validating discount code: {e!s}")
             raise HTTPException(
@@ -433,12 +430,20 @@ async def initialize_transaction(
 
         amount_in_usd = amount_to_charge
         if product.currency.upper() != "USD":
-            base_rate = await get_usd_to_currency_exchange_rate(product.currency.upper())
-            amount_in_usd = amount_to_charge / base_rate if base_rate else amount_to_charge
+            base_rate = await get_usd_to_currency_exchange_rate(
+                product.currency.upper()
+            )
+            amount_in_usd = (
+                amount_to_charge / base_rate if base_rate else amount_to_charge
+            )
 
         if selected_currency.upper() != "USD":
-            target_rate = await get_usd_to_currency_exchange_rate(selected_currency.upper())
-            amount_to_charge = amount_in_usd * target_rate if target_rate else amount_in_usd
+            target_rate = await get_usd_to_currency_exchange_rate(
+                selected_currency.upper()
+            )
+            amount_to_charge = (
+                amount_in_usd * target_rate if target_rate else amount_in_usd
+            )
         else:
             amount_to_charge = amount_in_usd
 

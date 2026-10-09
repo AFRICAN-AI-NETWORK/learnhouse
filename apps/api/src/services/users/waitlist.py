@@ -66,11 +66,8 @@ async def create_waitlist_user(
 
     # Verify launch datetime hasn't passed (UTC-aware comparison)
     try:
-
         # Parse launch_datetime with timezone awareness
-        launch_dt = datetime.fromisoformat(
-            waitlist.launch_datetime
-        )
+        launch_dt = datetime.fromisoformat(waitlist.launch_datetime)
         if launch_dt.tzinfo is None:
             launch_dt = launch_dt.replace(tzinfo=UTC)
         else:

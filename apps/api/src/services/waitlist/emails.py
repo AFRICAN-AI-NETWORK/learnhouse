@@ -243,9 +243,7 @@ async def process_waitlist_activations(db_session: Session):
     for wl in all_waitlists:
         try:
             # Parse launch_datetime with timezone awareness (handle Z suffix for UTC)
-            launch_dt = datetime.fromisoformat(
-                wl.launch_datetime
-            )
+            launch_dt = datetime.fromisoformat(wl.launch_datetime)
             if launch_dt.tzinfo is None:
                 launch_dt = launch_dt.replace(tzinfo=UTC)
             else:
@@ -436,9 +434,7 @@ async def retry_failed_waitlist_emails(db_session: Session):
 
         # Never retry activation before launch time.
         try:
-            launch_dt = datetime.fromisoformat(
-                waitlist.launch_datetime
-            )
+            launch_dt = datetime.fromisoformat(waitlist.launch_datetime)
             if launch_dt.tzinfo is None:
                 launch_dt = launch_dt.replace(tzinfo=UTC)
             else:

@@ -1,4 +1,3 @@
-
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -36,7 +35,9 @@ from src.services.utils.upload_content import upload_file
 router = APIRouter()
 
 
-def _resolve_org_id(db_session: Session, user_id: int, org_slug: str | None = None) -> int:
+def _resolve_org_id(
+    db_session: Session, user_id: int, org_slug: str | None = None
+) -> int:
     """Resolve org_id from the user's organization membership and optional slug."""
     if org_slug:
         statement = (
@@ -94,7 +95,7 @@ async def api_update_campaign(
     campaign = await get_campaign(db_session, campaign_id)
     if not campaign or campaign.org_id != org_id:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
+
     updated = await update_campaign(db_session, campaign_id, update_data)
     return CampaignRead.model_validate(updated)
 
@@ -112,7 +113,7 @@ async def api_send_campaign(
     campaign = await get_campaign(db_session, campaign_id)
     if not campaign or campaign.org_id != org_id:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
+
     background_tasks.add_task(queue_campaign_recipients, campaign_id)
     return CampaignRead.model_validate(campaign)
 
@@ -129,7 +130,7 @@ async def api_cancel_campaign(
     campaign = await get_campaign(db_session, campaign_id)
     if not campaign or campaign.org_id != org_id:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
+
     try:
         updated = await cancel_campaign(db_session, campaign_id)
         return CampaignRead.model_validate(updated)
@@ -177,11 +178,13 @@ async def api_get_campaign_recipients(
     campaign = await get_campaign(db_session, campaign_id)
     if not campaign or campaign.org_id != org_id:
         raise HTTPException(status_code=404, detail="Campaign not found")
-        
-    query = select(CampaignRecipient).where(CampaignRecipient.campaign_id == campaign_id)
+
+    query = select(CampaignRecipient).where(
+        CampaignRecipient.campaign_id == campaign_id
+    )
     if status:
         query = query.where(CampaignRecipient.status == status)
-        
+
     recipients = db_session.exec(query).all()
     return recipients
 

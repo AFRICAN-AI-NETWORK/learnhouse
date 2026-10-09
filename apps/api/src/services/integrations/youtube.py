@@ -113,6 +113,7 @@ class YouTubeService:
                 f"An HTTP error {e.resp.status} occurred in create_broadcast: {e.content}"
             )
             raise
+
     async def end_broadcast(self, video_id: str) -> dict[str, Any]:
         """
         Transitions a Live Broadcast to the 'complete' status.
@@ -130,6 +131,8 @@ class YouTubeService:
                 f"An HTTP error {e.resp.status} occurred while ending broadcast: {e.content}"
             )
             raise
+
+
 async def create_automated_youtube_session(
     org_credentials: str, title: str, start_time: str
 ):
