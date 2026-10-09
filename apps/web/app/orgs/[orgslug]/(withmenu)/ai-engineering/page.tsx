@@ -13,12 +13,14 @@ import {
   Briefcase,
   Brain,
 } from 'lucide-react'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 export default function AIEngineeringPage() {
   const org = useOrg() as any
+  const { currency, convertAmount } = useCurrency()
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
 
   const modules = [
@@ -167,7 +169,12 @@ export default function AIEngineeringPage() {
             </div>
             <div className="flex-shrink-0 flex flex-col items-center lg:items-end w-full lg:w-auto">
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-6xl font-black">$10</span>
+                <span className="text-6xl font-black">
+                  {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency,
+                  }).format(convertAmount(10))}
+                </span>
                 <span className="text-zinc-400 font-bold uppercase tracking-widest text-sm">
                   / month
                 </span>

@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronDown } from 'lucide-react'
 import { getUriWithOrg } from '@services/config/config'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 import africanAiLogo from 'public/african_ai_horizontal.png'
 import NextImage from 'next/image'
 
@@ -23,6 +24,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 }) => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { currency, setCurrency } = useCurrency()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -96,6 +98,25 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-4">
+            <div className="relative inline-block w-max">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="appearance-none bg-transparent text-sm font-bold text-gray-500 hover:text-gray-900 py-2 pl-3 pr-8 rounded-lg outline-none cursor-pointer transition-colors"
+              >
+                <option value="USD">USD</option>
+                <option value="NGN">NGN</option>
+                <option value="GHS">GHS</option>
+                <option value="KES">KES</option>
+                <option value="ZAR">ZAR</option>
+                <option value="UGX">UGX</option>
+                <option value="RWF">RWF</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <ChevronDown size={14} />
+              </div>
+            </div>
+
             {isAuthenticated ? (
               <Link
                 href={getUriWithOrg(orgslug, '/')}
@@ -145,6 +166,24 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                 </a>
               ))}
               <div className="h-px w-20 bg-gray-200 my-4" />
+              <div className="relative inline-block w-max">
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="appearance-none bg-gray-50 text-lg font-bold text-[#111827] py-3 pl-6 pr-12 rounded-xl outline-none border border-gray-200 focus:ring-2 focus:ring-purple-500 w-full text-center"
+                >
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="NGN">NGN - Nigerian Naira</option>
+                  <option value="GHS">GHS - Ghanaian Cedi</option>
+                  <option value="KES">KES - Kenyan Shilling</option>
+                  <option value="ZAR">ZAR - South African Rand</option>
+                  <option value="UGX">UGX - Ugandan Shilling</option>
+                  <option value="RWF">RWF - Rwandan Franc</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                  <ChevronDown size={20} />
+                </div>
+              </div>
               <Link
                 href="/auth/signin"
                 onClick={() => setIsMobileMenuOpen(false)}

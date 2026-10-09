@@ -2,6 +2,12 @@
 
 import React, { useState } from 'react'
 import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from '@hello-pangea/dnd'
+import {
   GripVertical,
   Image as ImageIcon,
   Type,
@@ -19,6 +25,13 @@ import {
   CodeExerciseEditorBlock,
   CustomAnswerEditorBlock,
   FileSubmissionEditorBlock,
+  LearningObjectivesEditorBlock,
+  ConceptEditorBlock,
+  RealWorldExamplesEditorBlock,
+  SummaryEditorBlock,
+  AnalogyEditorBlock,
+  EmbedEditorBlock,
+  ImageEditorBlock,
 } from './SmartArticleEditorBlocks'
 
 interface SmartArticleEditorProps {
@@ -63,6 +76,14 @@ export default function SmartArticleEditor({
     setContent({ ...content, steps })
   }
 
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return
+    const items = Array.from(steps)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+    setSteps(items)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
@@ -82,73 +103,145 @@ export default function SmartArticleEditor({
           </button>
         </div>
 
-        <div className="space-y-4">
-          {steps.map((step, index) => (
-            <div
-              key={step.id || index}
-              className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden group"
-            >
-              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/50 border-b border-gray-100">
-                <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded text-gray-400">
-                  <GripVertical size={16} />
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    value={step.title}
-                    onChange={(e) =>
-                      handleUpdateBlock(index, 'title', e.target.value)
-                    }
-                    className="bg-transparent font-semibold text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
-                    placeholder="Block Title"
-                  />
-                </div>
-                <button
-                  onClick={() => handleDeleteBlock(index)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 size={16} />
-                </button>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="steps">
+            {(provided) => (
+              <div
+                className="space-y-4"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {steps.map((step, index) => (
+                  <Draggable
+                    key={step.id || `step-${index}`}
+                    draggableId={step.id || `step-${index}`}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden group"
+                      >
+                        <div className="flex items-center gap-3 px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+                          <div
+                            {...provided.dragHandleProps}
+                            className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded text-gray-400"
+                          >
+                            <GripVertical size={16} />
+                          </div>
+                          <div className="flex-1 flex flex-col gap-1">
+                            {step.label && (
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                {step.label}
+                              </span>
+                            )}
+                            <input
+                              type="text"
+                              value={step.title || ''}
+                              onChange={(e) =>
+                                handleUpdateBlock(
+                                  index,
+                                  'title',
+                                  e.target.value
+                                )
+                              }
+                              className="bg-transparent font-semibold text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+                              placeholder="Block Title"
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleDeleteBlock(index)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        {step.type === 'QUIZ' ? (
+                          <QuizEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'CODE_EXERCISE' ? (
+                          <CodeExerciseEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'CUSTOM_ANSWER' ? (
+                          <CustomAnswerEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'learning_objectives' ? (
+                          <LearningObjectivesEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'concept' ? (
+                          <ConceptEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'real_world_examples' ? (
+                          <RealWorldExamplesEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'summary' ? (
+                          <SummaryEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'analogy' ? (
+                          <AnalogyEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'EMBED' ? (
+                          <EmbedEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'IMAGE' ? (
+                          <ImageEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : (
+                          <div className="p-4">
+                            <textarea
+                              value={step.content || step.text || ''}
+                              onChange={(e) =>
+                                handleUpdateBlock(
+                                  index,
+                                  'content',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full min-h-[120px] p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y font-mono text-sm"
+                              placeholder="Enter content here..."
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
               </div>
-              {step.type === 'QUIZ' ? (
-                <QuizEditorBlock
-                  step={step}
-                  index={index}
-                  handleUpdateBlock={handleUpdateBlock}
-                />
-              ) : step.type === 'CODE_EXERCISE' ? (
-                <CodeExerciseEditorBlock
-                  step={step}
-                  index={index}
-                  handleUpdateBlock={handleUpdateBlock}
-                />
-              ) : step.type === 'CUSTOM_ANSWER' ? (
-                <CustomAnswerEditorBlock
-                  step={step}
-                  index={index}
-                  handleUpdateBlock={handleUpdateBlock}
-                />
-              ) : step.type === 'FILE_SUBMISSION' ? (
-                <FileSubmissionEditorBlock
-                  step={step}
-                  index={index}
-                  handleUpdateBlock={handleUpdateBlock}
-                />
-              ) : (
-                <div className="p-4">
-                  <textarea
-                    value={step.content || step.text || ''}
-                    onChange={(e) =>
-                      handleUpdateBlock(index, 'content', e.target.value)
-                    }
-                    className="w-full min-h-[120px] p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y font-mono text-sm"
-                    placeholder="Enter content here..."
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         <div className="mt-8 border-2 border-dashed border-gray-200 rounded-xl p-8 bg-white/50">
           <div className="text-center mb-4">

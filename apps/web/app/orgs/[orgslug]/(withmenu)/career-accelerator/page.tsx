@@ -2,13 +2,24 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, ChevronDown, Lock, Target, Zap, Briefcase, Award } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Lock,
+  Target,
+  Zap,
+  Briefcase,
+  Award,
+} from 'lucide-react'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
 
 export default function CareerAcceleratorPage() {
   const org = useOrg() as any
+  const { currency, convertAmount } = useCurrency()
   const [expandedModule, setExpandedModule] = useState<number | null>(null)
 
   const modules = [
@@ -78,17 +89,20 @@ export default function CareerAcceleratorPage() {
     {
       icon: <Briefcase size={24} className="text-amber-500" />,
       label: 'Developers & AI Engineers',
-      description: 'You have the code skills. Now learn how to present them, pass the behavioral rounds, and land the high-paying remote role.'
+      description:
+        'You have the code skills. Now learn how to present them, pass the behavioral rounds, and land the high-paying remote role.',
     },
     {
       icon: <Target size={24} className="text-amber-500" />,
       label: 'Designers & Marketers',
-      description: 'Stand out in a saturated market with a world-class portfolio and outbound strategy that gets you noticed.'
+      description:
+        'Stand out in a saturated market with a world-class portfolio and outbound strategy that gets you noticed.',
     },
     {
       icon: <Zap size={24} className="text-amber-500" />,
       label: 'Virtual Assistants',
-      description: 'Elevate from basic admin to a high-value operational partner that international founders trust and rely on.'
+      description:
+        'Elevate from basic admin to a high-value operational partner that international founders trust and rely on.',
     },
   ]
 
@@ -97,13 +111,17 @@ export default function CareerAcceleratorPage() {
       {/* ── Editorial Hero Section ── */}
       <section className="pt-40 pb-24 px-6 lg:px-12 bg-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
-        
+
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="mb-6 flex items-center gap-3">
-            <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-[0.2em]">Career Track</span>
-            <span className="text-zinc-400 text-xs font-semibold uppercase tracking-widest">Intensive • Job-Ready</span>
+            <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-[0.2em]">
+              Career Track
+            </span>
+            <span className="text-zinc-400 text-xs font-semibold uppercase tracking-widest">
+              Intensive • Job-Ready
+            </span>
           </div>
-          
+
           <h1 className="text-[12vw] md:text-[8vw] font-black leading-[0.85] tracking-tighter uppercase mb-12">
             Career
             <br />
@@ -114,7 +132,9 @@ export default function CareerAcceleratorPage() {
 
           <div className="flex flex-col md:flex-row gap-12 md:items-end justify-between border-t-2 border-black pt-12">
             <p className="text-xl md:text-3xl font-medium leading-tight max-w-2xl">
-              Turn your technical skills into a hired role. Master the professional practices and intricate habits required to compete in the global market.
+              Turn your technical skills into a hired role. Master the
+              professional practices and intricate habits required to compete in
+              the global market.
             </p>
             <div className="flex-shrink-0">
               <Link
@@ -133,7 +153,7 @@ export default function CareerAcceleratorPage() {
         <div className="max-w-7xl mx-auto">
           <div className="bg-zinc-50 border border-amber-500/20 p-8 md:p-12 flex flex-col lg:flex-row items-center justify-between gap-12 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
-            
+
             <div className="flex-1 space-y-4">
               <div className="inline-flex items-center gap-2 text-amber-600 font-bold uppercase tracking-widest text-xs">
                 <CheckCircle2 size={16} /> Placement Preparation
@@ -142,21 +162,34 @@ export default function CareerAcceleratorPage() {
                 One-Time Enrolment Fee
               </h3>
               <p className="text-zinc-600 font-medium max-w-xl text-lg">
-                Get full access to the Career Accelerator curriculum and entry into the AINA Talent Pool for direct employer matching.
+                Get full access to the Career Accelerator curriculum and entry
+                into the AINA Talent Pool for direct employer matching.
               </p>
-              
+
               <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                  <strong>* Disclaimer:</strong> If you pay for this course, you will be prepared and referred for job placement. However, the entire hiring process is determined by the employer, not AINA. Even though we do our best to ensure you are fit and have a high chance of getting the job, the final decision rests solely with the employer.
+                  <strong>* Disclaimer:</strong> If you pay for this course, you
+                  will be prepared and referred for job placement. However, the
+                  entire hiring process is determined by the employer, not AINA.
+                  Even though we do our best to ensure you are fit and have a
+                  high chance of getting the job, the final decision rests
+                  solely with the employer.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex-shrink-0 flex flex-col items-center lg:items-end w-full lg:w-auto">
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-6xl font-black">$20</span>
+                <span className="text-6xl font-black">
+                  {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency,
+                  }).format(convertAmount(20))}
+                </span>
               </div>
-              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-6">One-time payment.</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-6">
+                One-time payment.
+              </p>
               <div className="w-full lg:w-64">
                 <ClickToPayButton
                   courseId="career-accelerator"
@@ -187,7 +220,9 @@ export default function CareerAcceleratorPage() {
                 <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
                   {group.icon}
                 </div>
-                <h3 className="text-xl font-bold uppercase tracking-tight">{group.label}</h3>
+                <h3 className="text-xl font-bold uppercase tracking-tight">
+                  {group.label}
+                </h3>
                 <p className="text-zinc-500 leading-relaxed font-medium">
                   {group.description}
                 </p>
@@ -206,30 +241,46 @@ export default function CareerAcceleratorPage() {
               <br /> Learn
             </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16 border-t border-amber-500/20 pt-16">
             <div className="lg:col-span-5 space-y-12">
               <div>
-                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-4">01</span>
-                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Position</h3>
+                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-4">
+                  01
+                </span>
+                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">
+                  Position
+                </h3>
                 <p className="text-zinc-400 text-lg leading-relaxed">
-                  Transform your resume and portfolio from generic lists to compelling narratives that global recruiters actually respond to.
+                  Transform your resume and portfolio from generic lists to
+                  compelling narratives that global recruiters actually respond
+                  to.
                 </p>
               </div>
               <div>
-                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-4">02</span>
-                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Perform</h3>
+                <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-4">
+                  02
+                </span>
+                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">
+                  Perform
+                </h3>
                 <p className="text-zinc-400 text-lg leading-relaxed">
-                  Master the unspoken rules of behavioral interviews, remote communication, and client negotiation.
+                  Master the unspoken rules of behavioral interviews, remote
+                  communication, and client negotiation.
                 </p>
               </div>
             </div>
-            
+
             <div className="lg:col-span-7 bg-amber-950/30 border border-amber-500/20 p-12 flex flex-col justify-end min-h-[400px]">
-              <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-4">03</span>
-              <h3 className="text-5xl font-black uppercase tracking-tight mb-6">Place</h3>
+              <span className="text-xs font-bold text-amber-500 uppercase tracking-widest block mb-4">
+                03
+              </span>
+              <h3 className="text-5xl font-black uppercase tracking-tight mb-6">
+                Place
+              </h3>
               <p className="text-zinc-300 text-xl leading-relaxed max-w-md">
-                Enter the AINA Talent Pool fully prepared. We connect you with hiring partners, but you close the deal.
+                Enter the AINA Talent Pool fully prepared. We connect you with
+                hiring partners, but you close the deal.
               </p>
             </div>
           </div>
@@ -249,7 +300,11 @@ export default function CareerAcceleratorPage() {
             {modules.map((mod) => (
               <div key={mod.num} className="border-b-2 border-black group">
                 <button
-                  onClick={() => setExpandedModule(expandedModule === mod.num ? null : mod.num)}
+                  onClick={() =>
+                    setExpandedModule(
+                      expandedModule === mod.num ? null : mod.num
+                    )
+                  }
                   className="w-full flex items-center justify-between py-8 text-left focus:outline-none"
                 >
                   <div className="flex items-center gap-8 md:gap-16">
@@ -270,7 +325,9 @@ export default function CareerAcceleratorPage() {
                     <ul className="space-y-4">
                       {mod.details.map((detail, i) => (
                         <li key={i} className="flex items-start gap-4">
-                          <span className="text-amber-500 font-black mt-1">→</span>
+                          <span className="text-amber-500 font-black mt-1">
+                            →
+                          </span>
                           <span className="text-lg font-medium text-zinc-600 leading-relaxed">
                             {detail}
                           </span>
@@ -288,10 +345,10 @@ export default function CareerAcceleratorPage() {
       {/* ── Stark CTA ── */}
       <section className="py-40 px-6 lg:px-12 bg-zinc-100 border-t border-zinc-200 relative overflow-hidden">
         <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-amber-500/5 blur-[120px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/3" />
-        
+
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center relative z-10">
           <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] mb-12">
-            Ready to <br/> <span className="text-amber-500">Accelerate?</span>
+            Ready to <br /> <span className="text-amber-500">Accelerate?</span>
           </h2>
           <Link
             href="/auth/signup"

@@ -56,8 +56,15 @@ export default function ClickToPayButton({
   const [dynamicEmail, setDynamicEmail] = useState('')
   const [dynamicName, setDynamicName] = useState('')
 
+  // Upsell State
+  const [isUpsellSelected, setIsUpsellSelected] = useState(false)
+  const [isPendingSecondPayment, setIsPendingSecondPayment] = useState(false)
+
+  // Hardcoded upsell price for Career Accelerator (always $20 base)
+  const upsellBasePrice = 20
+
   // Fix impure Date.now() call during render
-  const [txRef] = useState(() => Date.now().toString())
+  const [txRef, setTxRef] = useState(() => Date.now().toString())
 
   React.useEffect(() => {
     if (session?.status === 'authenticated' && session?.data?.user?.email) {
@@ -67,9 +74,16 @@ export default function ClickToPayButton({
   }, [session])
 
   const baseAmount = convertAmount(priceAmount)
-  const finalAmount = appliedDiscount
+  const upsellAmount = convertAmount(upsellBasePrice)
+
+  let finalAmount = appliedDiscount
     ? appliedDiscount.final_amount // the backend returns the final amount
     : baseAmount
+
+  // We only add upsell amount for display in the modal.
+  // The actual fwConfig will use different amounts depending on the phase.
+  const displayFinalAmount = finalAmount + (isUpsellSelected ? upsellAmount : 0)
+
   const finalCurrency = contextCurrency
 
   const handleApplyDiscount = async () => {
@@ -121,9 +135,10 @@ export default function ClickToPayButton({
   const fwConfig: any = {
     public_key: fwPublicKey,
     tx_ref: txRef,
-    amount: finalAmount,
+    amount: isPendingSecondPayment ? upsellAmount : finalAmount,
     currency: finalCurrency,
-    ...(planId ? { payment_plan: planId } : {}),
+    // Only pass planId for the first payment, the second payment (upsell) is a one-time charge
+    ...(planId && !isPendingSecondPayment ? { payment_plan: planId } : {}),
 
     customer: {
       email: dynamicEmail,
@@ -131,11 +146,13 @@ export default function ClickToPayButton({
       name: dynamicName,
     },
     meta: {
-      course_uuid: courseId,
+      course_uuid: isPendingSecondPayment ? 'career-accelerator' : courseId,
     },
     customizations: {
-      title: courseName,
-      description: 'Payment for course access',
+      title: isPendingSecondPayment ? 'Career Accelerator' : courseName,
+      description: isPendingSecondPayment
+        ? 'Payment for Career Accelerator'
+        : 'Payment for course access',
       logo: 'https://lms.africanainetwork.com/logo.png',
     },
   }
@@ -144,12 +161,12 @@ export default function ClickToPayButton({
   const psConfig = {
     reference: txRef,
     email: dynamicEmail,
-    amount: finalAmount * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
+    amount: (isPendingSecondPayment ? upsellAmount : finalAmount) * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
     publicKey: psPublicKey,
     currency: finalCurrency,
-    ...(planId ? { plan: planId } : {}),
+    ...(planId && !isPendingSecondPayment ? { plan: planId } : {}),
     metadata: {
-      course_uuid: courseId,
+      course_uuid: isPendingSecondPayment ? 'career-accelerator' : courseId,
       custom_fields: [],
     },
   }
@@ -158,14 +175,20 @@ export default function ClickToPayButton({
   const initializePaystackPayment = usePaystackPayment(psConfig as any)
 
   const triggerPayment = (emailToUse: string, nameToUse: string) => {
-    // If the state hasn't caught up, Flutterwave/Paystack config might use old state.
-    // However, react-paystack allows passing a config override.
-
     const onSuccess = () => {
-      toast.success('Payment successful! Verifying your enrollment...')
-      setTimeout(() => {
-        router.push(`/course/${courseId}`)
-      }, 2000)
+      if (isUpsellSelected && !isPendingSecondPayment) {
+        // First payment successful, prepare for second
+        toast.success(
+          'Subscription payment successful! Please complete your Career Accelerator purchase.'
+        )
+        setIsPendingSecondPayment(true)
+        setTxRef(Date.now().toString()) // regenerate tx_ref for second payment
+      } else {
+        toast.success('Payment successful! Verifying your enrollment...')
+        setTimeout(() => {
+          router.push(`/course/${courseId}`)
+        }, 2000)
+      }
     }
 
     const onClose = () => {
@@ -328,19 +351,37 @@ export default function ClickToPayButton({
                 {courseName}
               </Dialog.Description>
 
-              <div className="mt-4 flex items-center justify-center">
-                <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: finalCurrency,
-                  }).format(finalAmount)}
-                </span>
-                {appliedDiscount && (
-                  <span className="ml-3 text-lg text-gray-400 line-through decoration-gray-300">
+              <div className="mt-4 flex flex-col items-center justify-center">
+                <div className="flex items-center">
+                  <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
                     {new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: finalCurrency,
-                    }).format(baseAmount)}
+                    }).format(displayFinalAmount)}
+                  </span>
+                  {appliedDiscount && (
+                    <span className="ml-3 text-lg text-gray-400 line-through decoration-gray-300">
+                      {new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: finalCurrency,
+                      }).format(
+                        baseAmount + (isUpsellSelected ? upsellAmount : 0)
+                      )}
+                    </span>
+                  )}
+                </div>
+                {isUpsellSelected && (
+                  <span className="text-xs font-semibold text-gray-500 mt-1 uppercase tracking-wider">
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: finalCurrency,
+                    }).format(finalAmount)}{' '}
+                    / month +{' '}
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: finalCurrency,
+                    }).format(upsellAmount)}{' '}
+                    one-time
                   </span>
                 )}
               </div>
@@ -402,6 +443,75 @@ export default function ClickToPayButton({
                 </div>
               )}
 
+              {courseId !== 'career-accelerator' && (
+                <div className="space-y-4 mb-6">
+                  <div
+                    className={`p-4 rounded-xl border transition-colors cursor-pointer ${isUpsellSelected ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}
+                    onClick={() => {
+                      const newVal = !isUpsellSelected
+                      setIsUpsellSelected(newVal)
+                      if (!newVal) setIsDisclaimerAccepted(false)
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1">
+                        <input
+                          type="checkbox"
+                          checked={isUpsellSelected}
+                          readOnly
+                          className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-sm">
+                            Add Career Accelerator
+                          </h4>
+                          <span className="font-bold text-amber-700 ml-4">
+                            +
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: finalCurrency,
+                            }).format(upsellAmount)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 pr-4">
+                          Intensive job-ready track. Get prepared and referred
+                          to employers globally.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isUpsellSelected && (
+                    <div className="p-4 bg-red-50/50 rounded-xl border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="mt-0.5">
+                        <input
+                          type="checkbox"
+                          id="disclaimer-checkbox"
+                          checked={isDisclaimerAccepted}
+                          onChange={(e) =>
+                            setIsDisclaimerAccepted(e.target.checked)
+                          }
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                      </div>
+                      <label
+                        htmlFor="disclaimer-checkbox"
+                        className="text-xs text-red-800 font-medium leading-relaxed cursor-pointer select-none"
+                      >
+                        <strong>Disclaimer:</strong> If you pay for this course,
+                        you will be prepared and referred for job placement.
+                        However, the entire hiring process is determined by the
+                        employer, not AINA. Even though we do our best to ensure
+                        you are fit and have a high chance of getting the job,
+                        the final decision rests solely with the employer.
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {courseId === 'career-accelerator' && (
                 <div className="mb-6 p-4 bg-red-50/50 rounded-xl border border-red-100 flex items-start gap-3">
                   <div className="mt-0.5">
@@ -433,17 +543,83 @@ export default function ClickToPayButton({
                 onClick={handleFinalCheckout}
                 disabled={
                   isProcessing ||
-                  (courseId === 'career-accelerator' && !isDisclaimerAccepted)
+                  ((courseId === 'career-accelerator' || isUpsellSelected) &&
+                    !isDisclaimerAccepted)
                 }
-                className="w-full h-12 text-[15px] font-bold rounded-xl shadow-[0_4px_14px_0_rgb(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 text-[15px] font-bold rounded-xl shadow-[0_4px_14px_0_rgb(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gray-900 text-white hover:bg-black"
               >
                 {isProcessing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                 ) : (
-                  <>Proceed to Payment &rarr;</>
+                  <>
+                    {isUpsellSelected
+                      ? 'Proceed to Phase 1 Payment \u2192'
+                      : 'Proceed to Payment \u2192'}
+                  </>
                 )}
               </Button>
             </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* SECOND PAYMENT MODAL */}
+      <Dialog.Root
+        open={isPendingSecondPayment}
+        onOpenChange={(open) => {
+          if (!open && !isProcessing) {
+            // Prevent closing until they complete or cancel explicitly?
+            // We can let them close it but they won't be charged for the second part.
+            setIsPendingSecondPayment(false)
+            router.push(`/course/${courseId}`)
+          }
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-200" />
+          <Dialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-sm bg-white rounded-3xl shadow-2xl z-[110] animate-in zoom-in-95 duration-200 p-6 text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Subscription Successful! 🎉
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              You are now subscribed to the All-Access plan. Please complete the
+              one-time payment for the Career Accelerator to finalize your
+              setup.
+            </p>
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                Career Accelerator
+              </p>
+              <p className="text-3xl font-black text-gray-900">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: finalCurrency,
+                }).format(upsellAmount)}
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                setIsProcessing(true)
+                triggerPayment(dynamicEmail, dynamicName)
+              }}
+              disabled={isProcessing}
+              className="w-full h-12 text-[15px] font-bold rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-md"
+            >
+              {isProcessing ? (
+                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+              ) : (
+                'Pay Career Accelerator \u2192'
+              )}
+            </Button>
+            <button
+              onClick={() => {
+                setIsPendingSecondPayment(false)
+                router.push(`/course/${courseId}`)
+              }}
+              className="mt-4 text-xs font-bold text-gray-400 hover:text-gray-600"
+            >
+              Skip for now
+            </button>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

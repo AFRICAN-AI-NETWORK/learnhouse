@@ -12,6 +12,7 @@ class PaymentStatusEnum(StrEnum):
     CANCELLED = "cancelled"
     FAILED = "failed"
     REFUNDED = "refunded"
+    EXPIRED = "expired"
 
 
 class ProviderSpecificData(BaseModel):
@@ -39,6 +40,7 @@ class PaymentsUserBase(SQLModel):
     original_amount: float | None = None
     discount_amount: float | None = None
     final_amount: float | None = None
+    grace_period_start_date: datetime | None = Field(default=None)
 
 
 class PaymentsUser(PaymentsUserBase, table=True):

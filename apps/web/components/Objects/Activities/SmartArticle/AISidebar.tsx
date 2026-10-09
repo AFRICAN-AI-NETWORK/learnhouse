@@ -185,32 +185,32 @@ function AISidebar({
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-zinc-950/20 backdrop-blur-xl">
+    <div className="h-full w-full flex flex-col bg-transparent">
       {/* Sidebar Header: Tools */}
-      <div className="p-6 border-b border-white/10 bg-zinc-950/40 backdrop-blur-md z-10">
+      <div className="p-6 border-b border-slate-200/60 bg-white/50 backdrop-blur-md z-10">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-black flex items-center text-white text-xs uppercase tracking-[0.2em] opacity-80">
+          <h3 className="font-black flex items-center text-slate-800 text-xs uppercase tracking-[0.2em]">
             <Sparkles
               size={14}
-              className="mr-3 text-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+              className="mr-3 text-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.2)]"
             />
             {t('ai.ask_ai', 'AI Learning Companion')}
           </h3>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
             >
-              <X size={16} />
+              <X size={16} strokeWidth={2.5} />
             </button>
           )}
         </div>
 
         {/* Translation Tool */}
-        <div className="bg-white/5 p-4 rounded-2xl border border-white/10 shadow-inner">
+        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 shadow-sm">
           <div className="flex items-center mb-4">
-            <Languages size={14} className="text-primary mr-2.5 opacity-80" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+            <Languages size={14} className="text-blue-600 mr-2.5" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
               {t('common.language', 'Select Language')}
             </span>
           </div>
@@ -219,7 +219,7 @@ function AISidebar({
             <DropdownMenuTrigger asChild>
               <button
                 disabled={isTranslating}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/50 border border-white/5 rounded-xl text-sm text-zinc-200 hover:bg-zinc-800 hover:border-white/10 transition-all disabled:opacity-50 group"
+                className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50 group shadow-sm"
               >
                 <span className="font-medium">
                   {isTranslating
@@ -228,16 +228,16 @@ function AISidebar({
                 </span>
                 <Languages
                   size={14}
-                  className="text-zinc-500 group-hover:text-primary transition-colors"
+                  className="text-slate-400 group-hover:text-blue-600 transition-colors"
                 />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64 bg-zinc-900 border-white/10 text-zinc-300 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 backdrop-blur-2xl">
+            <DropdownMenuContent className="w-64 bg-white border-slate-200 text-slate-700 max-h-[400px] overflow-y-auto shadow-xl rounded-xl backdrop-blur-2xl">
               {AVAILABLE_LANGUAGES.map((lang) => (
                 <DropdownMenuItem
                   key={lang.code}
                   onClick={() => handleLanguageSelect(lang.nativeName)}
-                  className="cursor-pointer hover:bg-white/5 py-2.5 px-4 focus:bg-white/10 transition-colors"
+                  className="cursor-pointer hover:bg-slate-50 py-2.5 px-4 focus:bg-slate-100 transition-colors"
                 >
                   <span className="font-semibold">{lang.nativeName}</span>
                 </DropdownMenuItem>
@@ -248,25 +248,25 @@ function AISidebar({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {chatMessages.map((msg, idx) => (
           <div
             key={idx}
             className={`flex items-start ${msg.role === 'user' ? 'justify-end' : ''} max-w-[92%] ${msg.role === 'user' ? 'ml-auto' : ''}`}
           >
             {msg.role === 'ai' && (
-              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mr-4 mt-0.5 border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)]">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mr-4 mt-0.5 border border-blue-100 shadow-sm">
                 <Sparkles size={16} />
               </div>
             )}
             <div
-              className={`rounded-2xl px-5 py-4 text-sm leading-relaxed shadow-xl border ${
+              className={`rounded-2xl px-5 py-4 text-sm leading-relaxed border shadow-sm ${
                 msg.role === 'ai'
-                  ? 'bg-zinc-900/50 border-white/10 text-zinc-200 rounded-tl-none backdrop-blur-sm'
-                  : 'bg-primary text-white border-primary/20 rounded-tr-none shadow-primary/20'
+                  ? 'bg-white border-slate-200 text-slate-700 rounded-tl-none'
+                  : 'bg-blue-600 text-white border-blue-700 rounded-tr-none shadow-blue-600/20'
               }`}
             >
-              <p className="whitespace-pre-line overflow-hidden wrap-break-word">
+              <p className="whitespace-pre-line overflow-hidden wrap-break-word font-medium">
                 {msg.text}
               </p>
             </div>
@@ -274,12 +274,12 @@ function AISidebar({
         ))}
         {isAsking && (
           <div className="flex items-start max-w-[92%] animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mr-4 mt-0.5 border border-primary/20">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mr-4 mt-0.5 border border-blue-100">
               <Sparkles size={16} className="animate-pulse" />
             </div>
-            <div className="bg-zinc-900/50 border border-white/10 rounded-2xl rounded-tl-none px-5 py-4 text-sm text-zinc-400 backdrop-blur-sm shadow-xl">
+            <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none px-5 py-4 text-sm text-slate-500 shadow-sm">
               <div className="flex items-center space-x-3">
-                <Loader2 size={14} className="animate-spin text-primary" />
+                <Loader2 size={14} className="animate-spin text-blue-600" />
                 <span className="font-medium tracking-wide italic">
                   {dynamicLabels.thinking}
                 </span>
@@ -290,11 +290,11 @@ function AISidebar({
       </div>
 
       {/* Chat Input */}
-      <div className="p-6 bg-zinc-950/40 backdrop-blur-xl border-t border-white/10">
+      <div className="p-6 bg-slate-50/80 backdrop-blur-xl border-t border-slate-200/60">
         <div className="relative flex items-center group">
           <MessageSquare
             size={16}
-            className="absolute left-5 text-zinc-500 group-focus-within:text-primary transition-colors"
+            className="absolute left-5 text-slate-400 group-focus-within:text-blue-600 transition-colors"
           />
           <input
             type="text"
@@ -303,17 +303,17 @@ function AISidebar({
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isAsking}
-            className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-14 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all placeholder:text-zinc-600 disabled:opacity-50"
+            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-14 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-500 transition-all placeholder:text-slate-400 disabled:opacity-50 shadow-sm font-medium"
           />
           <button
-            className="absolute right-2.5 p-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
+            className="absolute right-2.5 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-md shadow-blue-600/20"
             onClick={handleAskAI}
             disabled={isAsking || !chatInput.trim()}
           >
             <Send size={16} className="ml-0.5" />
           </button>
         </div>
-        <div className="mt-4 text-[10px] text-center text-zinc-600 font-bold uppercase tracking-widest opacity-50">
+        <div className="mt-4 text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">
           Powered by African AI Engine
         </div>
       </div>

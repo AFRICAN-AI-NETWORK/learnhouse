@@ -13,6 +13,7 @@ interface SmartLearningLayoutProps {
   children: React.ReactNode
   rightProgressTracker?: React.ReactNode
   trailData?: any
+  fullWidth?: boolean
 }
 
 export default function SmartLearningLayout({
@@ -22,6 +23,7 @@ export default function SmartLearningLayout({
   children,
   rightProgressTracker,
   trailData,
+  fullWidth = false,
 }: SmartLearningLayoutProps) {
   const { t } = useTranslation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -32,7 +34,7 @@ export default function SmartLearningLayout({
     : ''
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] w-full bg-[#f8fafc]">
+    <div className="flex flex-1 min-h-0 w-full bg-[#f8fafc]">
       {/* Left Sidebar - Curriculum */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-80 transform border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out lg:static lg:block ${
@@ -127,7 +129,7 @@ export default function SmartLearningLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-w-0 flex-1 flex-col min-h-0">
         {/* Mobile Header Toggle */}
         <div className="flex items-center gap-4 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
           <button
@@ -142,9 +144,19 @@ export default function SmartLearningLayout({
         </div>
 
         {/* Center Column - Dynamic Content */}
-        <div className="flex flex-1 xl:flex-row flex-col">
-          <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-8 lg:px-12">
-            <div className="mx-auto max-w-3xl">{children}</div>
+        <div className="flex flex-1 xl:flex-row flex-col min-h-0">
+          <div
+            className={`flex-1 flex flex-col min-h-0 ${fullWidth ? 'overflow-hidden' : 'overflow-y-auto px-4 py-8 sm:px-8 lg:px-12'}`}
+          >
+            <div
+              className={
+                fullWidth
+                  ? 'w-full h-full flex flex-col flex-1 min-h-0'
+                  : 'mx-auto max-w-3xl'
+              }
+            >
+              {children}
+            </div>
           </div>
 
           {/* Right Column - Progress Tracker (Desktop only) */}

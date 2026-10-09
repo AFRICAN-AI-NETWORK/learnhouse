@@ -42,7 +42,7 @@ function LayoutInner(props: {
   const isGuest = !session?.data?.user
   const isPremiumLandingView = searchParams?.get('landing') === 'premium'
   const shouldShowLandingNavbar =
-    (isLandingPage || isProgramDetailPage) && (isGuest || isPremiumLandingView)
+    (isLandingPage && (isGuest || isPremiumLandingView)) || isProgramDetailPage
 
   return (
     <div
@@ -73,7 +73,7 @@ function LayoutInner(props: {
                 <OrgMenu orgslug={params?.orgslug}></OrgMenu>
               )}
               <main
-                className={`flex-1 w-full overflow-x-hidden ${
+                className={`flex-1 w-full flex flex-col overflow-x-hidden ${
                   isLandingPage || isProgramDetailPage
                     ? 'overflow-y-visible'
                     : 'min-h-0 overflow-y-auto scrollbar-hide'
@@ -82,7 +82,7 @@ function LayoutInner(props: {
                 {!shouldShowLandingNavbar && <UnverifiedBanner />}
                 {children}
               </main>
-              <FloatingChatWidget />
+              {!shouldShowLandingNavbar && <FloatingChatWidget />}
             </GlobalChatProvider>
           </NotificationProvider>
         </SessionProvider>

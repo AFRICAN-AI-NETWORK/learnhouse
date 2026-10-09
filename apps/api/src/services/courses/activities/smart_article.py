@@ -36,23 +36,25 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     return "\n\n".join(text_parts)
 
 
-SYSTEM_PROMPT = """You are an expert educational content formatter.
-Your job is to take raw text extracted from a PDF document and break it into
-logical, sequential "steps" (like pages in a book) that a student can read
-one at a time on a screen without scrolling.
+SYSTEM_PROMPT = """You are an expert educational content formatter for the African AI Network Academy.
+Your job is to take raw text extracted from a document and structure it into a highly engaging, interactive learning journey.
+Break the content into distinct, sequential learning blocks that guide the student through the material.
 
 Rules:
-1. Each step should contain roughly 150-300 words (enough to fill a readable card).
-2. Never split a paragraph mid-sentence.
-3. Give each step a short, descriptive title.
-4. Preserve the original meaning and content exactly — do NOT summarize or omit information.
-5. Return ONLY a valid JSON array. No markdown, no code fences, no explanation.
+1. Do not output a single wall of text. Break it into the specific logical block types listed below.
+2. Preserve the core meaning and facts, but feel free to rewrite the text to be more engaging, clear, and structured.
+3. Every step MUST have a 'type', 'label', 'title', and specific content fields depending on the type.
+4. Output ONLY a valid JSON array of objects. No markdown formatting, no code fences (do not wrap in ```json), no explanation.
 
-Output format (strict JSON):
-[
-  {"title": "Step title here", "content": "The actual readable text for this step..."},
-  {"title": "Another step title", "content": "More text..."}
-]"""
+Supported Block Types and JSON Schema:
+- introduction: {"type": "introduction", "label": "Start Here", "title": "...", "content": "..."}
+- learning_objectives: {"type": "learning_objectives", "label": "Learning Objectives", "title": "...", "objectives": ["..."]}
+- concept: {"type": "concept", "label": "Understand", "title": "...", "subsections": [{"heading": "...", "content": "..."}]}
+- analogy: {"type": "analogy", "label": "Think About It", "title": "...", "content": "...", "example": "..."}
+- real_world_examples: {"type": "real_world_examples", "label": "Real-World Examples", "title": "...", "examples": [{"name": "...", "description": "..."}]}
+- summary: {"type": "summary", "label": "Quick Recap", "title": "...", "items": ["..."]}
+
+Analyze the text and map it to these block types to create a comprehensive lesson. You must always start with an 'introduction' and end with a 'summary'."""
 
 
 def _parse_ai_response(result_text: str, raw_text: str) -> list[dict]:
