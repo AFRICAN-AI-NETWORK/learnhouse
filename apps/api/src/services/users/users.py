@@ -1,4 +1,6 @@
+import logging
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
@@ -35,6 +37,8 @@ from src.services.orgs.invites import get_invite_code
 from src.services.users.avatars import upload_avatar
 from src.services.users.emails import send_account_creation_email
 from src.services.users.usergroups import add_users_to_usergroup
+
+logger = logging.getLogger(__name__)
 
 
 # JWT Verification Token Functions
@@ -137,13 +141,12 @@ async def create_user(
     await rbac_check(request, current_user, "create", "user_x", db_session)
 
     # Complete the user object
-    import random
     user.user_uuid = f"user_{uuid4()}"
     user.password = security_hash_password(user_object.password)
     user.email_verified = False
     user.creation_date = str(datetime.now(UTC))
     user.update_date = str(datetime.now(UTC))
-    user.verification_otp = str(random.randint(100000, 999999))
+    user.verification_otp = str(100000 + secrets.randbelow(900000))
     user.verification_otp_expiry = str(datetime.now(UTC) + timedelta(minutes=30))
 
     # Verifications
@@ -221,21 +224,15 @@ async def create_user(
 
             # Log fraud score
             if fraud_score >= 75:
-                from src.services.referrals.referral_tracking import logger
-
                 logger.warning(
                     f"High fraud risk score {fraud_score} for user {user.id} "
                     f"with referral code {user_object.referral_code}"
                 )
         except HTTPException as e:
             # Log referral validation error but allow signup to continue
-            from src.services.referrals.referral_tracking import logger
-
             logger.warning(f"Referral validation failed for user {user.id}: {e.detail}")
         except Exception as e:  # noqa: BLE001
             # Log unexpected errors but don't block signup
-            from src.services.referrals.referral_tracking import logger
-
             logger.error(
                 f"Unexpected error tracking referral for user {user.id}: {e!s}"
             )
@@ -264,6 +261,7 @@ async def create_user(
     db_session.commit()
     db_session.refresh(user_organization)
 
+    verification_otp = user.verification_otp
     user = UserRead.model_validate(user)
 
     increase_feature_usage("members", org_id, db_session)
@@ -274,13 +272,19 @@ async def create_user(
     )
 
     # Send Account creation email with verification token and OTP
-    send_account_creation_email(
-        user=user,
-        email=user.email,
-        organization=OrganizationRead.model_validate(org),
-        verification_token=verification_token,
-        otp_code=user.verification_otp,
-    )
+    try:
+        send_account_creation_email(
+            user=user,
+            email=user.email,
+            organization=OrganizationRead.model_validate(org),
+            verification_token=verification_token,
+            otp_code=verification_otp,
+        )
+    except Exception:
+        logger.exception(
+            "Account creation email failed for user %s; signup completed",
+            user.id,
+        )
 
     return user
 
@@ -378,12 +382,18 @@ async def create_user_without_org(
     user = UserRead.model_validate(user)
 
     # Send Account creation email without verification (no org)
-    send_account_creation_email(
-        user=user,
-        email=user.email,
-        organization=None,
-        verification_token=None,
-    )
+    try:
+        send_account_creation_email(
+            user=user,
+            email=user.email,
+            organization=None,
+            verification_token=None,
+        )
+    except Exception:
+        logger.exception(
+            "Account creation email failed for user %s; signup completed",
+            user.id,
+        )
 
     return user
 

@@ -1,8 +1,14 @@
+import os
+
 from pydantic import EmailStr
 
 from src.db.organizations import OrganizationRead
 from src.db.users import UserRead
 from src.services.email.utils import send_email
+
+
+def _get_app_base_url() -> str:
+    return os.getenv("LEARNHOUSE_APP_BASE_URL").rstrip("/")
 
 
 def send_account_creation_email(
@@ -19,7 +25,11 @@ def send_account_creation_email(
     # Build verification link if token is provided
     verification_section = ""
     if verification_token and organization:
-        verification_link = f"https://lms.africanainetwork.com/verify-email?token={verification_token}&orgslug={organization.slug}"
+        app_base_url = _get_app_base_url()
+        verification_link = (
+            f"{app_base_url}/verify-email"
+            f"?token={verification_token}&orgslug={organization.slug}"
+        )
         verification_section = f"""
         <div style="margin: 30px 0;">
             <p style="margin-bottom: 15px;">Please verify your email address to activate your account:</p>
@@ -76,7 +86,7 @@ def send_account_creation_email(
 
                 <p style="margin-top: 30px;">Get started by exploring our courses and connecting with fellow learners.</p>
 
-                <p style="margin-top: 30px;">Need help getting started? Visit our <a href="https://lms.africanainetwork.com/org/{organization.slug if organization else "default"}/courses" style="color: #4F46E5; text-decoration: none; font-weight: 600;">Course Catalog</a></p>
+                <p style="margin-top: 30px;">Need help getting started? Visit our <a href="{_get_app_base_url()}/org/{organization.slug if organization else "default"}/courses" style="color: #4F46E5; text-decoration: none; font-weight: 600;">Course Catalog</a></p>
 
                 <p style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #E5E7EB;">
                     If you did not create this account, please ignore this email.
@@ -91,7 +101,7 @@ def send_account_creation_email(
                 <p>&copy; 2026 {org_name}. All rights reserved.</p>
                 <p style="margin-top: 10px;">
                     <a href="https://africanainetwork.com">Visit our website</a> |
-                    <a href="https://lms.africanainetwork.com">LMS Platform</a>
+                    <a href="{_get_app_base_url()}">LMS Platform</a>
                 </p>
             </div>
         </div>
@@ -107,8 +117,11 @@ def send_password_reset_email(
     organization: OrganizationRead,
     email: EmailStr,
 ):
-    # Use your actual domain
-    reset_link = f"https://lms.africanainetwork.com/reset?orgslug={organization.slug}&auth.email={email}&resetCode={generated_reset_code}"
+    reset_link = (
+        f"{_get_app_base_url()}/reset"
+        f"?orgslug={organization.slug}&auth.email={email}"
+        f"&resetCode={generated_reset_code}"
+    )
 
     # Send email
     return send_email(

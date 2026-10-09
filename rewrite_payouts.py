@@ -28,7 +28,7 @@ async def make_flutterwave_request(method: str, endpoint: str, data: dict = None
     secret_key = os.getenv("FLUTTERWAVE_SECRET_KEY")
     if not secret_key:
         raise HTTPException(status_code=500, detail="FLUTTERWAVE_SECRET_KEY not configured")
-        
+
     url = f"https://api.flutterwave.com/v3{endpoint}"
     req_headers = {
         "Authorization": f"Bearer {secret_key}",
@@ -36,7 +36,7 @@ async def make_flutterwave_request(method: str, endpoint: str, data: dict = None
     }
     if headers:
         req_headers.update(headers)
-        
+
     async with httpx.AsyncClient() as client:
         try:
             if method.upper() == "POST":
@@ -45,7 +45,7 @@ async def make_flutterwave_request(method: str, endpoint: str, data: dict = None
                 response = await client.get(url, headers=req_headers)
             else:
                 raise ValueError(f"Unsupported method {method}")
-                
+
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
@@ -67,7 +67,7 @@ async def create_flutterwave_transfer(
     Directly initiate a transfer using Flutterwave API
     """
     account_number = bank_account_info.get("account_number")
-    
+
     # For mobile money, account bank is the provider network code (MTN, MPS, etc)
     # and account number is the phone number
     if payment_method_type == PaymentMethodType.MOBILE_MONEY:
@@ -77,7 +77,7 @@ async def create_flutterwave_transfer(
             account_bank = bank_account_info.get("bank_code")
     else:
         account_bank = bank_account_info.get("bank_code")
-        
+
     transfer_data = {
         "account_bank": account_bank,
         "account_number": account_number,
@@ -87,7 +87,7 @@ async def create_flutterwave_transfer(
         "reference": reference,
         "debit_currency": currency
     }
-    
+
     result = await make_flutterwave_request("POST", "/transfers", transfer_data)
     return result
 '''

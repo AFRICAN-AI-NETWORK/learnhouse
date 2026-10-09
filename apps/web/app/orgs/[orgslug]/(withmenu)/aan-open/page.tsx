@@ -2,7 +2,17 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, ChevronDown, Sparkles, Target, Zap, Briefcase, Brain, Code } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Sparkles,
+  Target,
+  Zap,
+  Briefcase,
+  Brain,
+  Code,
+} from 'lucide-react'
 import { useOrg } from '@components/Contexts/OrgContext'
 import GlobalFooter from '@components/Landings/GlobalFooter'
 
@@ -72,32 +82,38 @@ export default function AANOpenPage() {
     {
       icon: <Briefcase size={24} className="text-blue-600" />,
       label: 'Entrepreneurs & Business Owners',
-      description: 'Streamline operations, draft proposals instantly, and multiply your output without hiring.'
+      description:
+        'Streamline operations, draft proposals instantly, and multiply your output without hiring.',
     },
     {
       icon: <Target size={24} className="text-blue-600" />,
       label: 'Content Creators & Marketers',
-      description: 'Supercharge your content calendar, generate stunning visuals, and write copy 10x faster.'
+      description:
+        'Supercharge your content calendar, generate stunning visuals, and write copy 10x faster.',
     },
     {
       icon: <Brain size={24} className="text-blue-600" />,
       label: 'Students & Recent Graduates',
-      description: 'Gain the ultimate competitive advantage in the job market before you even graduate.'
+      description:
+        'Gain the ultimate competitive advantage in the job market before you even graduate.',
     },
     {
       icon: <Zap size={24} className="text-blue-600" />,
       label: 'Working Professionals',
-      description: 'Automate mundane tasks, draft emails perfectly, and focus on high-leverage strategic work.'
+      description:
+        'Automate mundane tasks, draft emails perfectly, and focus on high-leverage strategic work.',
     },
     {
       icon: <Code size={24} className="text-blue-600" />,
       label: 'Developers Exploring AI',
-      description: 'Understand the landscape of AI tools and foundational prompt engineering before diving into code.'
+      description:
+        'Understand the landscape of AI tools and foundational prompt engineering before diving into code.',
     },
     {
       icon: <Sparkles size={24} className="text-blue-600" />,
       label: 'Anyone Curious About AI',
-      description: 'Start from absolute zero and build genuine AI literacy in a structured, hype-free environment.'
+      description:
+        'Start from absolute zero and build genuine AI literacy in a structured, hype-free environment.',
     },
   ]
 
@@ -106,13 +122,17 @@ export default function AANOpenPage() {
       {/* ── Editorial Hero Section ── */}
       <section className="pt-40 pb-24 px-6 lg:px-12 bg-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3" />
-        
+
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="mb-6 flex items-center gap-3">
-            <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-[0.2em]">Program 1</span>
-            <span className="text-zinc-400 text-xs font-semibold uppercase tracking-widest">Self-Paced • 5 Tracks • Free</span>
+            <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-[0.2em]">
+              Program 1
+            </span>
+            <span className="text-zinc-400 text-xs font-semibold uppercase tracking-widest">
+              Self-Paced • 5 Tracks • Free
+            </span>
           </div>
-          
+
           <h1 className="text-[12vw] md:text-[8vw] font-black leading-[0.85] tracking-tighter uppercase mb-12">
             Generative
             <br />
@@ -123,7 +143,9 @@ export default function AANOpenPage() {
 
           <div className="flex flex-col md:flex-row gap-12 md:items-end justify-between border-t-2 border-black pt-12">
             <p className="text-xl md:text-3xl font-medium leading-tight max-w-2xl">
-              The complete, multi-track Generative AI foundation programme covering everything a modern African professional needs to thrive in the AI era.
+              The complete, multi-track Generative AI foundation programme
+              covering everything a modern African professional needs to thrive
+              in the AI era.
             </p>
             <div className="flex-shrink-0">
               <Link
@@ -142,7 +164,7 @@ export default function AANOpenPage() {
         <div className="max-w-7xl mx-auto">
           <div className="bg-zinc-50 border border-blue-600/20 p-8 md:p-12 flex flex-col lg:flex-row items-center justify-between gap-12 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600" />
-            
+
             <div className="flex-1 space-y-4">
               <div className="inline-flex items-center gap-2 text-blue-600 font-bold uppercase tracking-widest text-xs">
                 <CheckCircle2 size={16} /> Open Access
@@ -151,15 +173,21 @@ export default function AANOpenPage() {
                 Start Your AI Journey For Free
               </h3>
               <p className="text-zinc-600 font-medium max-w-xl text-lg">
-                We believe the entry point to AI literacy in Africa should never be a financial barrier. AAN Open is the zero-cost on-ramp to a complete AI career pathway.
+                We believe the entry point to AI literacy in Africa should never
+                be a financial barrier. AAN Open is the zero-cost on-ramp to a
+                complete AI career pathway.
               </p>
             </div>
             <div className="flex-shrink-0 flex flex-col items-center lg:items-end w-full lg:w-auto">
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-6xl font-black">$0</span>
-                <span className="text-zinc-400 font-bold uppercase tracking-widest text-sm">/ forever</span>
+                <span className="text-zinc-400 font-bold uppercase tracking-widest text-sm">
+                  / forever
+                </span>
               </div>
-              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-6">No credit card required.</p>
+              <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-6">
+                No credit card required.
+              </p>
               <div className="w-full lg:w-64">
                 <Link
                   href="/auth/signup"
@@ -187,7 +215,9 @@ export default function AANOpenPage() {
                 <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
                   {group.icon}
                 </div>
-                <h3 className="text-xl font-bold uppercase tracking-tight">{group.label}</h3>
+                <h3 className="text-xl font-bold uppercase tracking-tight">
+                  {group.label}
+                </h3>
                 <p className="text-zinc-500 leading-relaxed font-medium">
                   {group.description}
                 </p>
@@ -206,30 +236,47 @@ export default function AANOpenPage() {
               <br /> Learn
             </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16 border-t border-blue-600/20 pt-16">
             <div className="lg:col-span-5 space-y-12">
               <div>
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-4">01</span>
-                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Master</h3>
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-4">
+                  01
+                </span>
+                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">
+                  Master
+                </h3>
                 <p className="text-zinc-400 text-lg leading-relaxed">
-                  The fundamentals of prompt engineering. Move beyond basic chatbots and learn how to extract highly precise, structured outputs.
+                  The fundamentals of prompt engineering. Move beyond basic
+                  chatbots and learn how to extract highly precise, structured
+                  outputs.
                 </p>
               </div>
               <div>
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-4">02</span>
-                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">Discover</h3>
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-4">
+                  02
+                </span>
+                <h3 className="text-3xl font-bold uppercase tracking-tight mb-4">
+                  Discover
+                </h3>
                 <p className="text-zinc-400 text-lg leading-relaxed">
-                  Navigate the AAN AI Tools Directory of 2,300+ tools. Find the exact AI solutions for your specific industry and daily tasks.
+                  Navigate the AAN AI Tools Directory of 2,300+ tools. Find the
+                  exact AI solutions for your specific industry and daily tasks.
                 </p>
               </div>
             </div>
-            
+
             <div className="lg:col-span-7 bg-blue-950/30 border border-blue-600/20 p-12 flex flex-col justify-end min-h-[400px]">
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-4">03</span>
-              <h3 className="text-5xl font-black uppercase tracking-tight mb-6">Apply</h3>
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-4">
+                03
+              </span>
+              <h3 className="text-5xl font-black uppercase tracking-tight mb-6">
+                Apply
+              </h3>
               <p className="text-zinc-300 text-xl leading-relaxed max-w-md">
-                Turn AI into a tangible productivity multiplier. Whether for content creation, deep research, or business automation—learn to apply AI effectively and ethically.
+                Turn AI into a tangible productivity multiplier. Whether for
+                content creation, deep research, or business automation—learn to
+                apply AI effectively and ethically.
               </p>
             </div>
           </div>
@@ -249,7 +296,11 @@ export default function AANOpenPage() {
             {tracks.map((track) => (
               <div key={track.num} className="border-b-2 border-black group">
                 <button
-                  onClick={() => setExpandedTrack(expandedTrack === track.num ? null : track.num)}
+                  onClick={() =>
+                    setExpandedTrack(
+                      expandedTrack === track.num ? null : track.num
+                    )
+                  }
                   className="w-full flex items-center justify-between py-8 text-left focus:outline-none"
                 >
                   <div className="flex items-center gap-8 md:gap-16">
@@ -270,7 +321,9 @@ export default function AANOpenPage() {
                     <ul className="space-y-4">
                       {track.details.map((detail, i) => (
                         <li key={i} className="flex items-start gap-4">
-                          <span className="text-blue-600 font-black mt-1">→</span>
+                          <span className="text-blue-600 font-black mt-1">
+                            →
+                          </span>
                           <span className="text-lg font-medium text-zinc-600 leading-relaxed">
                             {detail}
                           </span>
@@ -288,10 +341,10 @@ export default function AANOpenPage() {
       {/* ── Stark CTA ── */}
       <section className="py-40 px-6 lg:px-12 bg-zinc-100 border-t border-zinc-200 relative overflow-hidden">
         <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/3" />
-        
+
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center relative z-10">
           <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] mb-12">
-            Ready to <br/> <span className="text-blue-600">Begin?</span>
+            Ready to <br /> <span className="text-blue-600">Begin?</span>
           </h2>
           <Link
             href="/auth/signup"

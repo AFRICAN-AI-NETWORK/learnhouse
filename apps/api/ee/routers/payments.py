@@ -667,6 +667,7 @@ async def api_get_my_payments(
     db_session: Session = Depends(get_db_session),
 ):
     from src.services.payments.payments_users import get_my_payments
+
     return await get_my_payments(request, org_id, current_user, db_session)
 
 
@@ -679,5 +680,7 @@ async def api_cancel_subscription(
     db_session: Session = Depends(get_db_session),
 ):
     from src.services.payments.payments_users import cancel_subscription
-    return await cancel_subscription(request, org_id, payment_user_id, current_user, db_session)
 
+    return await cancel_subscription(
+        request, org_id, payment_user_id, current_user, db_session
+    )

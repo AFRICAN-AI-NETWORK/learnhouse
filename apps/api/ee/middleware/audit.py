@@ -22,9 +22,7 @@ class EEAuditLogMiddleware(BaseHTTPMiddleware):
 
         # Skip health checks, documentation, and static files
         path = request.url.path
-        if (
-            path.startswith(("/api/v1/health", "/docs", "/redoc", "/content"))
-        ):
+        if path.startswith(("/api/v1/health", "/docs", "/redoc", "/content")):
             return await call_next(request)
 
         # Capture request data for payload and org_id extraction

@@ -323,9 +323,7 @@ class TestMultipleWaitlistCampaigns:
 
         # Create multiple waitlists
         for i in range(3):
-            future_date = (
-                datetime.now(UTC) + timedelta(days=7 + i)
-            ).isoformat()
+            future_date = (datetime.now(UTC) + timedelta(days=7 + i)).isoformat()
             config_data = WaitlistConfigCreate(
                 org_id=sample_org.id,
                 name=f"Campaign {i + 1}",

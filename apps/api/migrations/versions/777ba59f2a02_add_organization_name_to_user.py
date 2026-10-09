@@ -5,14 +5,15 @@ Revises: 344680c73fd1
 Create Date: 2026-08-17 15:42:36.700243
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa  # noqa: F401
 import sqlmodel  # noqa: F401
 
 # revision identifiers, used by Alembic.
-revision: str = '777ba59f2a02'
-down_revision: str | None = '344680c73fd1'
+revision: str = "777ba59f2a02"
+down_revision: str | None = "344680c73fd1"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

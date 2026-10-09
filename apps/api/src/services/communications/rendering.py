@@ -4,16 +4,19 @@ from pydantic import BaseModel, Field
 
 # --- Validation Schemas ---
 
+
 class HeaderSection(BaseModel):
     type: Literal["header"]
     headline: str
     body: str
     image_url: Optional[str] = None
 
+
 class TextSection(BaseModel):
     type: Literal["text"]
     heading: Optional[str] = None
     body: str
+
 
 class CourseSection(BaseModel):
     type: Literal["course"]
@@ -24,33 +27,47 @@ class CourseSection(BaseModel):
     cta_label: str = Field(default="View course", max_length=60)
     cta_url: str
 
+
 class ImageSection(BaseModel):
     type: Literal["image"]
     image_url: str
     alt_text: str
+
 
 class ButtonSection(BaseModel):
     type: Literal["button"]
     label: str = Field(max_length=60)
     url: str
 
+
 class FooterSection(BaseModel):
     type: Literal["footer"]
     closing_text: str
     community_link: Optional[str] = None
 
+
 class CampaignContent(BaseModel):
     sections: list[
-        HeaderSection | TextSection | CourseSection | ImageSection | ButtonSection | FooterSection
+        HeaderSection
+        | TextSection
+        | CourseSection
+        | ImageSection
+        | ButtonSection
+        | FooterSection
     ]
 
+
 # --- Rendering Logic ---
+
 
 def escape_html(text: str) -> str:
     """Basic HTML escaping to prevent injection."""
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str) -> tuple[str, str]:
+
+def render_campaign_email(
+    campaign: dict, recipient: dict, unsubscribe_url: str
+) -> tuple[str, str]:
     """
     Renders HTML and plain-text versions of a campaign.
     campaign: Campaign dict including 'subject', 'preheader', 'sender_name', 'content_json', 'org_name'
@@ -58,8 +75,11 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
     unsubscribe_url: Pre-generated unique unsubscribe URL for this user
     """
     import os
-    backend_url = os.getenv("BACKEND_URL", "https://api.lms.africanainetwork.com").rstrip("/")
-    
+
+    backend_url = os.getenv(
+        "BACKEND_URL", "https://api.lms.africanainetwork.com"
+    ).rstrip("/")
+
     def make_absolute(url: str | None) -> str:
         if not url:
             return ""
@@ -71,6 +91,7 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
 
     try:
         import json
+
         content_data = campaign.get("content_json") or {}
         if isinstance(content_data, str):
             content_data = json.loads(content_data)
@@ -88,49 +109,49 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
         <title>{escape_html(campaign.get("subject", ""))}</title>
         <style>
             /* Reset & Typography */
-            body {{ 
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-                background-color: #f8fafc; 
-                margin: 0; 
-                padding: 40px 0; 
+            body {{
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background-color: #f8fafc;
+                margin: 0;
+                padding: 40px 0;
                 -webkit-font-smoothing: antialiased;
             }}
             .wrapper {{
                 width: 100%;
                 background-color: #f8fafc;
             }}
-            .container {{ 
-                max-width: 600px; 
-                margin: 0 auto; 
-                background-color: #ffffff; 
+            .container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #ffffff;
                 border-radius: 16px;
                 overflow: hidden;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             }}
-            
+
             /* Header */
             .header {{
-                background-color: #0a0f1e; 
-                padding: 32px 40px; 
+                background-color: #0a0f1e;
+                padding: 32px 40px;
                 text-align: center;
             }}
             .header-brand {{
-                color: #ffffff; 
-                font-weight: 800; 
-                font-size: 20px; 
+                color: #ffffff;
+                font-weight: 800;
+                font-size: 20px;
                 letter-spacing: 0.1em;
                 text-transform: uppercase;
                 margin: 0;
             }}
-            
+
             /* Content Area */
-            .content {{ 
-                padding: 40px; 
-                color: #334155; 
+            .content {{
+                padding: 40px;
+                color: #334155;
                 line-height: 1.6;
             }}
             .preheader {{ display: none; max-height: 0px; overflow: hidden; }}
-            
+
             /* Typography inside content */
             h1 {{
                 color: #0f172a;
@@ -154,38 +175,38 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
                 font-size: 16px;
                 color: #475569;
             }}
-            
+
             /* Media */
-            img {{ 
-                max-width: 100%; 
-                height: auto; 
-                display: block; 
+            img {{
+                max-width: 100%;
+                height: auto;
+                display: block;
                 border-radius: 12px;
                 margin-bottom: 24px;
             }}
-            
+
             /* Buttons */
             .btn-wrapper {{
                 margin: 32px 0;
             }}
-            .btn {{ 
-                display: inline-block; 
-                padding: 14px 28px; 
-                background-color: #0057ff; 
-                color: #ffffff; 
-                text-decoration: none; 
-                border-radius: 8px; 
-                font-weight: 600; 
+            .btn {{
+                display: inline-block;
+                padding: 14px 28px;
+                background-color: #0057ff;
+                color: #ffffff;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
                 font-size: 16px;
                 text-align: center;
             }}
-            
+
             /* Course Cards */
             .course-card {{
                 background-color: #f8fafc;
-                border: 1px solid #e2e8f0; 
-                border-radius: 16px; 
-                padding: 24px; 
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                padding: 24px;
                 margin-bottom: 24px;
             }}
             .course-card h3 {{
@@ -202,17 +223,17 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
             .course-card img {{
                 margin-bottom: 16px;
             }}
-            
+
             /* Footer */
-            .footer {{ 
-                background-color: #f8fafc; 
-                padding: 32px 40px; 
-                text-align: center; 
-                border-top: 1px solid #e2e8f0; 
+            .footer {{
+                background-color: #f8fafc;
+                padding: 32px 40px;
+                text-align: center;
+                border-top: 1px solid #e2e8f0;
             }}
             .footer p {{
                 font-size: 13px;
-                color: #64748b; 
+                color: #64748b;
                 margin-bottom: 12px;
             }}
             .footer a {{
@@ -259,12 +280,14 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
             if section.image_url:
                 abs_img = make_absolute(section.image_url)
                 html += f'<img src="{abs_img}" alt="{escape_html(section.title)}" />'
-            html += f'<h3>{escape_html(section.title)}</h3>'
-            html += f'<p>{escape_html(section.description)}</p>'
+            html += f"<h3>{escape_html(section.title)}</h3>"
+            html += f"<p>{escape_html(section.description)}</p>"
             html += f'<div class="btn-wrapper"><a href="{section.cta_url}" class="btn" style="color: #ffffff; text-decoration: none;">{escape_html(section.cta_label)}</a></div>'
-            html += '</div>'
-            
-            text_fallback.append(f"\nCourse: {section.title}\n{section.description}\n{section.cta_label}: {section.cta_url}")
+            html += "</div>"
+
+            text_fallback.append(
+                f"\nCourse: {section.title}\n{section.description}\n{section.cta_label}: {section.cta_url}"
+            )
 
         elif section.type == "image":
             abs_img = make_absolute(section.image_url)
@@ -281,20 +304,22 @@ def render_campaign_email(campaign: dict, recipient: dict, unsubscribe_url: str)
             if section.community_link:
                 html += f'<a href="{section.community_link}" style="color: #0057ff; font-weight: bold; text-decoration: none;">Join our community</a>'
                 text_fallback.append(f"Join our community: {section.community_link}")
-            html += '</div>'
+            html += "</div>"
 
-    html += '</div>' # End content
+    html += "</div>"  # End content
 
     # Standard Footer
     html += '<div class="footer">'
-    html += f'<p>You are receiving this email because you are part of {org_name}.</p>'
+    html += f"<p>You are receiving this email because you are part of {org_name}.</p>"
     html += f'<p><a href="{unsubscribe_url}">Unsubscribe from marketing emails</a></p>'
-    html += '</div>'
-    
-    html += '</div>' # End container
-    html += '</div>' # End wrapper
-    html += '</body></html>'
+    html += "</div>"
 
-    text_fallback.append(f"\n---\nYou are receiving this because you are part of {org_name}.\nUnsubscribe: {unsubscribe_url}")
+    html += "</div>"  # End container
+    html += "</div>"  # End wrapper
+    html += "</body></html>"
+
+    text_fallback.append(
+        f"\n---\nYou are receiving this because you are part of {org_name}.\nUnsubscribe: {unsubscribe_url}"
+    )
 
     return html, "\n".join(text_fallback)

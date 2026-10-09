@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 
 from src.core.events.database import get_db_session

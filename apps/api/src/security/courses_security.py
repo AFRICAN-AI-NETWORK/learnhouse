@@ -189,13 +189,9 @@ async def courses_rbac_check(
             if resource_author and (
                 (
                     (resource_author.authorship == ResourceAuthorshipEnum.CREATOR)
+                    or (resource_author.authorship == ResourceAuthorshipEnum.MAINTAINER)
                     or (
-                        resource_author.authorship
-                        == ResourceAuthorshipEnum.MAINTAINER
-                    )
-                    or (
-                        resource_author.authorship
-                        == ResourceAuthorshipEnum.CONTRIBUTOR
+                        resource_author.authorship == ResourceAuthorshipEnum.CONTRIBUTOR
                     )
                 )
                 and resource_author.authorship_status

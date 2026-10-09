@@ -33,8 +33,15 @@ export default function QuizBlock({ step }: QuizBlockProps) {
       const saved = localStorage.getItem(storageKey)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed.selectedOptions) setSelectedOptions(parsed.selectedOptions)
-        if (parsed.submittedStatus) setSubmittedStatus(parsed.submittedStatus)
+        // Hydrate persisted quiz state after the client storage is available.
+        if (parsed.selectedOptions) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setSelectedOptions(parsed.selectedOptions)
+        }
+        if (parsed.submittedStatus) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setSubmittedStatus(parsed.submittedStatus)
+        }
       }
     } catch (e) {
       console.error('Failed to load quiz state', e)

@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field, SQLModel

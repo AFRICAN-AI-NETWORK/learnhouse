@@ -71,5 +71,6 @@ class PaymentsUserRead(PaymentsUserBase):
     creation_date: datetime
     update_date: datetime
 
+
 class PaymentsUserWithProductRead(PaymentsUserRead):
     product: PaymentsProductRead | None = None

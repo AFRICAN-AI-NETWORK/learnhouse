@@ -30,7 +30,6 @@ class DiscountValidationError(Exception):
     """Custom exception for discount code validation errors"""
 
 
-
 def calculate_discounted_amount(
     original_amount: float, discount_type: DiscountTypeEnum, discount_value: float
 ) -> tuple[float, float]:
@@ -133,7 +132,11 @@ async def validate_discount_code(
     # Check expiry dates - code with valid_until in past must be rejected
     now = datetime.now(UTC)
 
-    valid_from_aware = discount_code.valid_from.replace(tzinfo=UTC) if discount_code.valid_from else None
+    valid_from_aware = (
+        discount_code.valid_from.replace(tzinfo=UTC)
+        if discount_code.valid_from
+        else None
+    )
     if valid_from_aware and valid_from_aware > now:
         raise DiscountValidationError(
             f"Discount code is not yet valid. Valid from: {valid_from_aware.strftime('%Y-%m-%d %H:%M:%S UTC')}"

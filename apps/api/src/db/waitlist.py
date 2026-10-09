@@ -150,7 +150,6 @@ class WaitlistCoursePreferenceBase(SQLModel):
     """Base model for course preference tracking"""
 
 
-
 class WaitlistCoursePreference(WaitlistCoursePreferenceBase, table=True):
     """Database model for storing user course preferences during waitlist registration"""
 
