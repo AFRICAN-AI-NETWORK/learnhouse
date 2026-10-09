@@ -9,6 +9,7 @@ import {
   LayoutDashboardIcon,
   CodeIcon,
   GlobeIcon,
+  CalendarDays,
 } from 'lucide-react'
 import Link from 'next/link'
 import React, { use } from 'react'
@@ -19,6 +20,7 @@ import OrgEditSocials from '@components/Dashboard/Pages/Org/OrgEditSocials/OrgEd
 import OrgEditLanding from '@components/Dashboard/Pages/Org/OrgEditLanding/OrgEditLanding'
 import OrgEditOther from '@components/Dashboard/Pages/Org/OrgEditOther/OrgEditOther'
 import OrgEditIntegrations from '@components/Dashboard/Pages/Org/OrgEditIntegrations/OrgEditIntegrations'
+import OrgAcademyCalendar from '@components/Dashboard/Pages/Org/OrgAcademyCalendar/OrgAcademyCalendar'
 import { useTranslation } from 'react-i18next'
 
 export type OrgParams = {
@@ -57,6 +59,11 @@ const getSettingTabs = (t: any): TabItem[] => [
     id: 'integrations',
     label: t('dashboard.organization.settings.tabs.integrations'),
     icon: GlobeIcon,
+  },
+  {
+    id: 'academy-calendar',
+    label: 'Academy Calendar',
+    icon: CalendarDays,
   },
   {
     id: 'other',
@@ -124,6 +131,11 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         h1: t('dashboard.organization.settings.pages.integrations.title'),
         h2: t('dashboard.organization.settings.pages.integrations.subtitle'),
       }
+    } else if (params.subpage == 'academy-calendar') {
+      return {
+        h1: 'Academy Calendar',
+        h2: 'Manage academic years, cohort windows and programme periods.',
+      }
     }
     return { h1: '', h2: '' }
   }
@@ -168,6 +180,7 @@ function OrgPage(props: { params: Promise<OrgParams> }) {
         {params.subpage == 'socials' ? <OrgEditSocials /> : ''}
         {params.subpage == 'landing' ? <OrgEditLanding /> : ''}
         {params.subpage == 'integrations' ? <OrgEditIntegrations /> : ''}
+        {params.subpage == 'academy-calendar' ? <OrgAcademyCalendar /> : ''}
         {params.subpage == 'other' ? <OrgEditOther /> : ''}
       </motion.div>
     </div>
