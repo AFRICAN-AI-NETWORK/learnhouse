@@ -181,7 +181,7 @@ async def update_chapter(
     )
 
     was_published = chapter.published
-    before = chapter.model_copy()
+    before = chapter.copy()
 
     # Update only the fields that were passed in
     for var, value in vars(chapter_object).items():

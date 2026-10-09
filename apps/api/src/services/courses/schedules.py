@@ -156,7 +156,7 @@ async def update_timetable_event(
     calendar_fields = _resolve_calendar_fields(
         course, event_object, event.weekly_schedule_phase, db_session
     )
-    before = event.model_copy()
+    before = event.copy()
     for key, value in {**event_object.model_dump(), **calendar_fields}.items():
         setattr(event, key, value)
     event.update_date = str(datetime.now(UTC))

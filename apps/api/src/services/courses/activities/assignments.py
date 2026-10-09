@@ -467,7 +467,7 @@ async def update_assignment(
     )
 
     # Update only the fields that were passed in
-    before = assignment.model_copy()
+    before = assignment.copy()
     for var, value in vars(assignment_object).items():
         if value is not None:
             setattr(assignment, var, value)
