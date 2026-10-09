@@ -10,6 +10,14 @@ export type TimetableVisibility = 'draft' | 'published'
 export type TimetableStatus = 'scheduled' | 'cancelled'
 export type RegisterFrequency = 'weekly' | 'per_session' | 'daily' | 'manual'
 export type RegisterEntryStatus = 'marked' | 'late' | 'missed' | 'excused'
+export type LearningPhase =
+  | 'learn'
+  | 'practice'
+  | 'connect'
+  | 'apply'
+  | 'build'
+  | 'support'
+  | 'rest'
 
 export type CourseTimetableEvent = {
   id?: number
@@ -27,6 +35,8 @@ export type CourseTimetableEvent = {
   visibility: TimetableVisibility
   status: TimetableStatus
   register_required: boolean
+  programme_week_id?: number | null
+  weekly_schedule_phase?: LearningPhase | null
   creation_date?: string
   update_date?: string
 }
@@ -84,7 +94,85 @@ export type CourseRegisterSummary = {
   entries: CourseRegisterEntry[]
 }
 
+export type WeeklyScheduleDay = {
+  weekday: number
+  phase: LearningPhase
+  is_rest_day: boolean
+}
+
+export type WeeklySchedule = {
+  schedule_uuid: string
+  course_uuid?: string | null
+  name: string
+  timezone: string
+  rest_day_enforced: boolean
+  is_course_override: boolean
+  days: WeeklyScheduleDay[]
+  creation_date?: string
+  update_date?: string
+}
+
+export type WeeklyScheduleUpdate = {
+  name?: string
+  timezone?: string
+  rest_day_enforced?: boolean
+  days?: WeeklyScheduleDay[]
+}
+
+export type AcademicCohort = {
+  academic_cohort_uuid: string
+  academic_year_uuid: string
+  name: string
+  start_date: string
+  end_date: string
+  enrollment_window_start?: string | null
+  enrollment_window_end?: string | null
+  status: 'upcoming' | 'active' | 'completed'
+  creation_date?: string
+  update_date?: string
+}
+
+export type ProgrammeWeek = {
+  id: number
+  programme_week_uuid: string
+  academic_cohort_uuid: string
+  week_number: number
+  starts_on: string
+  ends_on: string
+  chapter_id?: number | null
+  milestone_uuid?: string | null
+}
+
+export type RestDayConflict = {
+  item_type: 'timetable_event' | 'chapter' | 'assignment'
+  item_uuid: string
+  title: string
+  conflicting_dates: string[]
+  timezone: string
+}
+
 const api = () => getAPIUrl()
+
+export async function getRestDayConflicts(
+  access_token?: string
+): Promise<RestDayConflict[]> {
+  const result = await fetch(
+    `${api()}courses/rest-day/conflicts`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
+
+export async function getCourseRestDayConflicts(
+  course_uuid: string,
+  access_token?: string
+): Promise<RestDayConflict[]> {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/rest-day/conflicts`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
 
 export async function getCourseTimetable(
   course_uuid: string,
@@ -95,6 +183,135 @@ export async function getCourseTimetable(
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   return await errorHandling(result)
+}
+
+export async function getDefaultWeeklySchedule(
+  access_token?: string
+): Promise<WeeklySchedule> {
+  const result = await fetch(
+    `${api()}courses/weekly-schedule/default`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
+
+export async function updateDefaultWeeklySchedule(
+  body: WeeklyScheduleUpdate,
+  access_token?: string
+) {
+  const result = await fetch(
+    `${api()}courses/weekly-schedule/default`,
+    RequestBodyWithAuthHeader('PUT', body, null, access_token)
+  )
+  return await getResponseMetadata(result)
+}
+
+export async function getCourseWeeklySchedule(
+  course_uuid: string,
+  access_token?: string
+): Promise<WeeklySchedule> {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/weekly-schedule`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
+
+export async function updateCourseWeeklySchedule(
+  course_uuid: string,
+  body: WeeklyScheduleUpdate,
+  access_token?: string
+) {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/weekly-schedule`,
+    RequestBodyWithAuthHeader('PUT', body, null, access_token)
+  )
+  return await getResponseMetadata(result)
+}
+
+export async function deleteCourseWeeklySchedule(
+  course_uuid: string,
+  access_token?: string
+) {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/weekly-schedule`,
+    RequestBodyWithAuthHeader('DELETE', null, null, access_token)
+  )
+  return await getResponseMetadata(result)
+}
+
+export async function getCourseAcademicCohorts(
+  course_uuid: string,
+  access_token?: string
+): Promise<AcademicCohort[]> {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/academic-cohorts`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
+
+export async function setCourseAcademicCohorts(
+  course_uuid: string,
+  academic_cohort_uuids: string[],
+  access_token?: string
+) {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/academic-cohorts`,
+    RequestBodyWithAuthHeader(
+      'PUT',
+      { academic_cohort_uuids },
+      null,
+      access_token
+    )
+  )
+  return await getResponseMetadata(result)
+}
+
+export async function generateProgrammeWeeks(
+  course_uuid: string,
+  academic_cohort_uuid: string,
+  number_of_weeks: number,
+  access_token?: string
+) {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/programme-weeks/generate`,
+    RequestBodyWithAuthHeader(
+      'POST',
+      { academic_cohort_uuid, number_of_weeks },
+      null,
+      access_token
+    )
+  )
+  return await getResponseMetadata(result)
+}
+
+export async function getProgrammeWeeks(
+  course_uuid: string,
+  academic_cohort_uuid?: string,
+  access_token?: string
+): Promise<ProgrammeWeek[]> {
+  const query = academic_cohort_uuid
+    ? `?academic_cohort_uuid=${encodeURIComponent(academic_cohort_uuid)}`
+    : ''
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/programme-weeks${query}`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  return await errorHandling(result)
+}
+
+export async function updateProgrammeWeek(
+  course_uuid: string,
+  programme_week_uuid: string,
+  body: { chapter_id?: number | null; milestone_uuid?: string | null },
+  access_token?: string
+) {
+  const result = await fetch(
+    `${api()}courses/${course_uuid}/programme-weeks/${programme_week_uuid}`,
+    RequestBodyWithAuthHeader('PUT', body, null, access_token)
+  )
+  return await getResponseMetadata(result)
 }
 
 export async function getMyTimetable(

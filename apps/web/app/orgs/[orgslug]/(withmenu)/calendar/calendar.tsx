@@ -10,7 +10,9 @@ import {
 } from '@services/courses/schedule'
 import {
   ArrowLeft,
+  BookOpen,
   CalendarDays,
+  ClipboardList,
   Clock3,
   Copy,
   CopyCheck,
@@ -19,9 +21,11 @@ import {
   Video,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import useSWR from 'swr'
+import { getOrgCourses } from '@services/courses/courses'
+import { getAssignmentsFromACourse } from '@services/courses/assignments'
 
 const weekDays = [
   'Monday',
@@ -49,7 +53,43 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
     { shouldRetryOnError: false }
   )
 
-  const calendarEvents = events || []
+  const { data: courses = [] } = useSWR(
+    orgslug ? ['calendar-courses', orgslug] : null,
+    () => getOrgCourses(orgslug, null, accessToken),
+    { shouldRetryOnError: false }
+  )
+
+  const { data: courseAssignmentsData } = useSWR(
+    courses?.length
+      ? [
+          'calendar-assignments',
+          courses.map((course: any) => course.course_uuid).join(','),
+        ]
+      : null,
+    async () => {
+      const rows = await Promise.all(
+        courses.map(async (course: any) => {
+          const result = await getAssignmentsFromACourse(
+            course.course_uuid,
+            accessToken
+          )
+          return (result.success ? result.data : []).map((assignment: any) => ({
+            ...assignment,
+            course_uuid: course.course_uuid,
+            course_name: course.name,
+          }))
+        })
+      )
+      return rows.flat()
+    },
+    { shouldRetryOnError: false }
+  )
+
+  const calendarEvents = useMemo(() => events || [], [events])
+  const courseAssignments = useMemo(
+    () => courseAssignmentsData || [],
+    [courseAssignmentsData]
+  )
   const upcomingEvents = [...calendarEvents]
     .filter((event) => new Date(event.ends_at).getTime() >= now)
     .sort(
@@ -57,6 +97,10 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
         new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
     )
   const nextEvent = upcomingEvents[0]
+  const weekBlocks = useMemo(
+    () => buildWeekBlocks(calendarEvents, courseAssignments, orgslug),
+    [calendarEvents, courseAssignments, orgslug]
+  )
 
   return (
     <main className="min-h-screen bg-[#f8fafc]">
@@ -78,14 +122,15 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
                 <div className="min-w-0">
                   <h1 className="text-2xl font-bold text-gray-950">Calendar</h1>
                   <p className="mt-1 text-sm text-gray-500">
-                    Your published timetable sessions across all courses.
+                    Your LMS week view across calendar, modules, community and
+                    assessments.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-sm sm:grid-cols-3">
-              <Metric label="Sessions" value={calendarEvents.length} />
+              <Metric label="Blocks" value={weekBlocks.length} />
               <Metric
                 label="Courses"
                 value={
@@ -142,9 +187,10 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
           {!isLoading && !error && (
             <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="border-b border-gray-100 px-5 py-4">
-                <h2 className="font-bold text-gray-950">Weekly schedule</h2>
+                <h2 className="font-bold text-gray-950">Unified week view</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Sessions are grouped by the day they occur.
+                  Calendar sessions, LMS modules and pending assignments in one
+                  rhythm.
                 </p>
               </div>
               <div className="divide-y divide-gray-100">
@@ -152,8 +198,8 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
                   <CalendarDayRow
                     key={day}
                     day={day}
-                    events={calendarEvents.filter(
-                      (event) => eventDay(event.starts_at) === day
+                    blocks={weekBlocks.filter(
+                      (block) => eventDay(block.starts_at) === day
                     )}
                   />
                 ))}
@@ -168,12 +214,12 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
 
 function CalendarDayRow({
   day,
-  events,
+  blocks,
 }: {
   day: string
-  events: StudentTimetableEvent[]
+  blocks: CalendarBlock[]
 }) {
-  const sortedEvents = [...events].sort(
+  const sortedEvents = [...blocks].sort(
     (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
   )
 
@@ -182,17 +228,17 @@ function CalendarDayRow({
       <div className="flex items-center justify-between gap-2 lg:items-start">
         <h3 className="text-sm font-bold text-gray-800">{day}</h3>
         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
-          {events.length}
+          {blocks.length}
         </span>
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {sortedEvents.map((event) => (
-          <CalendarEventCard key={event.event_uuid} event={event} />
+          <CalendarEventCard key={event.id} event={event} />
         ))}
-        {events.length === 0 && (
+        {blocks.length === 0 && (
           <div className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400">
-            No sessions
+            No blocks
           </div>
         )}
       </div>
@@ -200,7 +246,29 @@ function CalendarDayRow({
   )
 }
 
-function CalendarEventCard({ event }: { event: StudentTimetableEvent }) {
+type CalendarBlock = {
+  id: string
+  kind: 'session' | 'assignment' | 'module'
+  title: string
+  course_name: string
+  course_uuid: string
+  starts_at: string
+  ends_at: string
+  href?: string
+  register_required?: boolean
+  recurrence?: string
+  location?: string | null
+  phase?: string | null
+}
+
+function CalendarEventCard({ event }: { event: CalendarBlock }) {
+  const Icon =
+    event.kind === 'assignment'
+      ? ClipboardList
+      : event.kind === 'module'
+        ? BookOpen
+        : CalendarDays
+
   return (
     <article className="min-w-0 rounded-lg border border-gray-200 bg-gray-50 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -212,8 +280,14 @@ function CalendarEventCard({ event }: { event: StudentTimetableEvent }) {
             {event.course_name}
           </p>
           <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-500">
-            <Clock3 size={14} />
-            {formatTimeRange(event.starts_at, event.ends_at)}
+            {event.kind === 'module' ? (
+              <Icon size={14} />
+            ) : (
+              <Clock3 size={14} />
+            )}
+            {event.kind === 'module'
+              ? phaseLabel(event.phase)
+              : formatTimeRange(event.starts_at, event.ends_at)}
           </p>
         </div>
         {event.register_required && (
@@ -223,9 +297,18 @@ function CalendarEventCard({ event }: { event: StudentTimetableEvent }) {
 
       <div className="mt-3 flex min-w-0 flex-wrap gap-2 text-xs text-gray-500">
         <CalendarEventLocation location={event.location} />
-        <span className="h-fit rounded-md bg-white px-2 py-1 capitalize">
-          {event.recurrence}
+        <span className="inline-flex h-fit items-center gap-1 rounded-md bg-white px-2 py-1 capitalize">
+          <Icon size={12} />
+          {event.kind === 'session' ? event.recurrence : event.kind}
         </span>
+        {event.href && (
+          <Link
+            href={event.href}
+            className="h-fit rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100"
+          >
+            Open
+          </Link>
+        )}
       </div>
     </article>
   )
@@ -335,6 +418,87 @@ function getLocationLink(location: string) {
 
   const url = match[0]
   return url.startsWith('http') ? url : `https://${url}`
+}
+
+function buildWeekBlocks(
+  events: StudentTimetableEvent[],
+  assignments: any[],
+  orgslug: string
+): CalendarBlock[] {
+  const blocks: CalendarBlock[] = events.map((event) => ({
+    id: event.event_uuid,
+    kind: 'session',
+    title: event.title,
+    course_name: event.course_name,
+    course_uuid: event.course_uuid,
+    starts_at: event.starts_at,
+    ends_at: event.ends_at,
+    register_required: event.register_required,
+    recurrence: event.recurrence,
+    location: event.location,
+    phase: event.weekly_schedule_phase,
+    href: getUriWithOrg(
+      orgslug,
+      `/course/${event.course_uuid.replace('course_', '')}`
+    ),
+  }))
+
+  events.forEach((event) => {
+    if (
+      !event.weekly_schedule_phase ||
+      event.weekly_schedule_phase === 'rest'
+    ) {
+      return
+    }
+    blocks.push({
+      id: `module-${event.event_uuid}`,
+      kind: 'module',
+      title: `${phaseLabel(event.weekly_schedule_phase)} block`,
+      course_name: event.course_name,
+      course_uuid: event.course_uuid,
+      starts_at: event.starts_at,
+      ends_at: event.ends_at,
+      phase: event.weekly_schedule_phase,
+      href: getUriWithOrg(
+        orgslug,
+        `/course/${event.course_uuid.replace('course_', '')}`
+      ),
+    })
+  })
+
+  assignments
+    .filter((assignment) => assignment?.due_date)
+    .forEach((assignment) => {
+      blocks.push({
+        id: assignment.assignment_uuid || `assignment-${assignment.id}`,
+        kind: 'assignment',
+        title: assignment.title || assignment.name || 'Assignment due',
+        course_name: assignment.course_name,
+        course_uuid: assignment.course_uuid,
+        starts_at: assignment.due_date,
+        ends_at: assignment.due_date,
+        href: getUriWithOrg(
+          orgslug,
+          `/course/${assignment.course_uuid.replace('course_', '')}`
+        ),
+      })
+    })
+
+  return blocks
+}
+
+function phaseLabel(value?: string | null) {
+  if (!value) return 'LMS block'
+  const labels: Record<string, string> = {
+    learn: 'New module released',
+    practice: 'Practice',
+    connect: 'Community connect',
+    apply: 'Application',
+    build: 'Project build',
+    support: 'Support',
+    rest: 'Rest',
+  }
+  return labels[value] || value.replaceAll('_', ' ')
 }
 
 export default CalendarClient
