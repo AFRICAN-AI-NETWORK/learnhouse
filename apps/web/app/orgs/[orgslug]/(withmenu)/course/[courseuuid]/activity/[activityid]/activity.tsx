@@ -49,6 +49,7 @@ import { AssignmentsTaskProvider } from '@components/Contexts/Assignments/Assign
 import AssignmentSubmissionProvider, {
   useAssignmentSubmission,
 } from '@components/Contexts/Assignments/AssignmentSubmissionContext'
+import SmartLearningLayout from '@components/Pages/Courses/SmartLearningLayout'
 import toast from 'react-hot-toast'
 import { mutate } from 'swr'
 import useSWR from 'swr'
@@ -108,8 +109,10 @@ const LoadingFallback = () => (
 
 function WatermarkedActivityContent({
   children,
+  disableWatermark = false,
 }: {
   children: React.ReactNode
+  disableWatermark?: boolean
 }) {
   const org = useOrg() as any
   const session = useLHSession() as any
@@ -124,7 +127,7 @@ function WatermarkedActivityContent({
 
   const watermarkText = [org?.name].filter(Boolean).join(' - ')
 
-  if (!watermarkEnabled || !watermarkText) {
+  if (!watermarkEnabled || !watermarkText || disableWatermark) {
     return <>{children}</>
   }
 
@@ -579,14 +582,24 @@ function ActivityClient(props: ActivityClientProps) {
     currentTrailRun
   )
 
-  // Memoize activity content
   const activityContent = useMemo(() => {
-    if (
-      !activity ||
-      !activity.published ||
-      activity.content.paid_access === false
-    ) {
+    if (!activity) {
       return null
+    }
+
+    if (activity.content?.paid_access === false) {
+      return (
+        <div className="flex h-full w-full items-center justify-center p-8">
+          <div className="max-w-md text-center rounded-xl bg-slate-50 p-8 border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">
+              Premium Content
+            </h2>
+            <p className="text-slate-500">
+              This activity requires paid access to view.
+            </p>
+          </div>
+        </div>
+      )
     }
 
     switch (activity.activity_type) {
@@ -634,26 +647,49 @@ function ActivityClient(props: ActivityClientProps) {
             <DocumentPdfActivity course={course} activity={activity} />
           </Suspense>
         )
-      case 'TYPE_SMART_ARTICLE':
+      case 'TYPE_SMART_ARTICLE': {
+        const content = (
+          <SmartArticleActivity
+            course={course}
+            activity={activity}
+            isFocusMode={false}
+            onComplete={() =>
+              handleMarkAsComplete(activity.activity_uuid, true)
+            }
+            isCompleted={
+              !!isActivityComplete(
+                activity.activity_uuid,
+                course.course_uuid,
+                trailData
+              )
+            }
+            prevActivity={prevActivity}
+            nextActivity={nextActivity}
+            currentIndex={currentIndex}
+            totalActivities={allActivities.length}
+            orgslug={orgslug}
+            assignment={assignment}
+          />
+        )
+
         return (
           <Suspense fallback={<LoadingFallback />}>
-            <SmartArticleActivity
-              course={course}
-              activity={activity}
-              isFocusMode={false}
-              onComplete={() =>
-                handleMarkAsComplete(activity.activity_uuid, true)
-              }
-              isCompleted={
-                !!isActivityComplete(
-                  activity.activity_uuid,
-                  course.course_uuid,
-                  trailData
-                )
-              }
-            />
+            {assignment && assignment.assignment_uuid ? (
+              <AssignmentProvider assignment_uuid={assignment.assignment_uuid}>
+                <AssignmentsTaskProvider>
+                  <AssignmentSubmissionProvider
+                    assignment_uuid={assignment.assignment_uuid}
+                  >
+                    {content}
+                  </AssignmentSubmissionProvider>
+                </AssignmentsTaskProvider>
+              </AssignmentProvider>
+            ) : (
+              content
+            )}
           </Suspense>
         )
+      }
       case 'TYPE_ASSIGNMENT':
         return assignment &&
           assignment?.assignment_uuid &&
@@ -1366,7 +1402,7 @@ function ActivityClient(props: ActivityClientProps) {
                     })()}
                   </AnimatePresence>
                 ) : (
-                  <div className="min-h-screen bg-[#f7f9fc] dark:bg-[#0f0f13]">
+                  <div className="flex-1 w-full h-[calc(100vh-72px)] min-h-[calc(100vh-72px)] overflow-hidden flex flex-col bg-[#f7f9fc] dark:bg-[#0f0f13]">
                     {activityid === 'end' ? (
                       <div className="mx-auto max-w-5xl px-4 py-8">
                         <CourseEndView
@@ -1379,7 +1415,7 @@ function ActivityClient(props: ActivityClientProps) {
                         />
                       </div>
                     ) : (
-                      <div className="min-h-screen">
+                      <div className="flex-1 w-full flex flex-col min-h-0">
                         <ActivityPageNavbar
                           activity={activity}
                           activityid={activityid}
@@ -1397,40 +1433,40 @@ function ActivityClient(props: ActivityClientProps) {
                           videoWatchSatisfied={videoWatchSatisfied}
                         />
 
-                        <div className="flex min-h-[calc(100vh-73px)] flex-col lg:flex-row">
-                          <CourseContentSidebar
-                            course={course}
-                            currentActivityId={
-                              activity?.activity_uuid
-                                ? activity.activity_uuid.replace(
-                                    'activity_',
-                                    ''
-                                  )
-                                : activityid.replace('activity_', '')
-                            }
-                            orgslug={orgslug}
-                            trailData={trailData}
-                          />
-
-                          <main className="min-w-0 flex-1">
+                        <SmartLearningLayout
+                          course={course}
+                          currentActivityUuid={activityid}
+                          orgslug={orgslug}
+                          trailData={trailData}
+                          fullWidth={
+                            activity?.activity_type === 'TYPE_SMART_ARTICLE'
+                          }
+                        >
+                          <main className="min-w-0 flex-1 flex flex-col h-full min-h-0">
                             <div
-                              className={`py-5 sm:px-6 xl:px-8 ${
-                                activity?.activity_type === 'TYPE_ASSIGNMENT'
-                                  ? 'px-0 pb-32 md:px-4 md:pb-5'
-                                  : 'px-4'
+                              className={`flex-1 min-h-0 flex flex-col ${
+                                activity?.activity_type === 'TYPE_SMART_ARTICLE'
+                                  ? 'p-0'
+                                  : `py-5 sm:px-6 xl:px-8 ${
+                                      activity?.activity_type ===
+                                      'TYPE_ASSIGNMENT'
+                                        ? 'px-0 pb-32 md:px-4 md:pb-5'
+                                        : 'px-4'
+                                    }`
                               }`}
                             >
-                              {activity && activity.published == false && (
-                                <div className="rounded-lg border border-slate-200 bg-slate-900 p-7 text-white shadow-sm">
-                                  <h1 className="text-2xl font-bold">
-                                    {t('activities.not_published_yet')}
+                              {activity?.detail && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 p-7 text-red-900 shadow-sm">
+                                  <h1 className="text-2xl font-bold mb-2">
+                                    Error loading activity
                                   </h1>
+                                  <p>{activity.detail}</p>
                                 </div>
                               )}
 
-                              {activity && activity.published == true && (
+                              {activity && !activity.detail && (
                                 <>
-                                  {activity.content.paid_access == false ? (
+                                  {activity.content?.paid_access === false ? (
                                     <PaidCourseActivityDisclaimer
                                       course={course}
                                     />
@@ -1449,31 +1485,37 @@ function ActivityClient(props: ActivityClientProps) {
                                     />
                                   ) : (
                                     <>
-                                      <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500 dark:text-white/40">
-                                        <Link
-                                          href={
-                                            getUriWithOrg(orgslug, '') +
-                                            `/course/${courseuuid}`
-                                          }
-                                          className="truncate hover:text-slate-900 dark:hover:text-white"
-                                        >
-                                          {course.name}
-                                        </Link>
-                                        <ChevronRight
-                                          size={14}
-                                          className="shrink-0 text-slate-300 dark:text-white/20"
-                                        />
-                                        <span className="truncate text-slate-800 dark:text-white/75">
-                                          {activity?.name}
-                                        </span>
-                                      </div>
+                                      {activity.activity_type !==
+                                        'TYPE_SMART_ARTICLE' && (
+                                        <div className="mb-4 flex min-w-0 items-center gap-2 text-[11px] font-bold uppercase text-slate-500 dark:text-white/40">
+                                          <Link
+                                            href={
+                                              getUriWithOrg(orgslug, '') +
+                                              `/course/${courseuuid}`
+                                            }
+                                            className="truncate hover:text-slate-900 dark:hover:text-white"
+                                          >
+                                            {course.name}
+                                          </Link>
+                                          <ChevronRight
+                                            size={14}
+                                            className="shrink-0 text-slate-300 dark:text-white/20"
+                                          />
+                                          <span className="truncate text-slate-800 dark:text-white/75">
+                                            {activity?.name}
+                                          </span>
+                                        </div>
+                                      )}
 
                                       <div
                                         className={`activity-info-section ${
                                           activity.activity_type ===
                                           'TYPE_ASSIGNMENT'
                                             ? 'bg-transparent shadow-none md:rounded-lg md:border md:border-slate-200 md:bg-white md:shadow-sm md:dark:border-white/8 md:dark:bg-[#13131a]'
-                                            : 'rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]'
+                                            : activity.activity_type ===
+                                                'TYPE_SMART_ARTICLE'
+                                              ? 'bg-transparent shadow-none'
+                                              : 'rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-[#13131a]'
                                         }`}
                                       >
                                         <div
@@ -1491,7 +1533,19 @@ function ActivityClient(props: ActivityClientProps) {
                                             WebkitUserSelect: 'none',
                                           }}
                                         >
-                                          <WatermarkedActivityContent>
+                                          {!activity.published && (
+                                            <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-800 text-sm font-medium">
+                                              You are previewing an unpublished
+                                              activity. Students cannot see this
+                                              yet.
+                                            </div>
+                                          )}
+                                          <WatermarkedActivityContent
+                                            disableWatermark={
+                                              activity?.activity_type ===
+                                              'TYPE_SMART_ARTICLE'
+                                            }
+                                          >
                                             {activityContent}
                                           </WatermarkedActivityContent>
                                         </div>
@@ -1521,15 +1575,18 @@ function ActivityClient(props: ActivityClientProps) {
                               )}
 
                               {activity &&
-                                activity.published == true &&
-                                activity.content.paid_access != false &&
+                                !activity.detail &&
+                                activity.content?.paid_access !== false &&
                                 !isActivityAccessBlocked && (
                                   <div
                                     className={`mt-4 gap-3 md:flex-row md:items-center md:justify-between ${
                                       activity.activity_type ===
                                       'TYPE_ASSIGNMENT'
                                         ? 'hidden md:flex'
-                                        : 'flex'
+                                        : activity.activity_type ===
+                                            'TYPE_SMART_ARTICLE'
+                                          ? 'hidden'
+                                          : 'flex'
                                     }`}
                                   >
                                     <PreviousActivityButton
@@ -1547,8 +1604,8 @@ function ActivityClient(props: ActivityClientProps) {
                                 )}
 
                               {activity &&
-                                activity.published == true &&
-                                activity.content.paid_access != false &&
+                                !activity.detail &&
+                                activity.content?.paid_access !== false &&
                                 !isActivityAccessBlocked &&
                                 activity.activity_type ===
                                   'TYPE_ASSIGNMENT' && (
@@ -1565,7 +1622,7 @@ function ActivityClient(props: ActivityClientProps) {
                               <div className="h-12" />
                             </div>
                           </main>
-                        </div>
+                        </SmartLearningLayout>
                       </div>
                     )}
                   </div>

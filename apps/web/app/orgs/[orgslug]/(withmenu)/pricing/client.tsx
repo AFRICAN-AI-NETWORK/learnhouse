@@ -49,7 +49,11 @@ export default function PricingPageClient({
     useState<PaymentsProduct | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const handleCheckout = async (productId: number, discountCode?: string) => {
+  const handleCheckout = async (
+    productId: number,
+    discountCode?: string,
+    upsellProductId?: number
+  ) => {
     if (!access_token) {
       // Redirect to login if not authenticated
       router.push(`/login?orgslug=${orgslug}&redirect=/pricing`)
@@ -65,7 +69,8 @@ export default function PricingPageClient({
         productId,
         redirectUri,
         access_token,
-        discountCode
+        discountCode,
+        upsellProductId
       )) as any
 
       if (checkoutResponse?.data?.checkout_url) {
@@ -224,11 +229,14 @@ export default function PricingPageClient({
             if (!open) setSelectedProduct(null)
           }}
           product={selectedProduct}
+          upsellProduct={initialProducts.find((p) =>
+            p.name.toLowerCase().includes('career accelerator')
+          )}
           orgId={orgId}
           orgSlug={orgslug}
-          onCheckout={(pid, code) => {
+          onCheckout={(pid, code, upsellPid) => {
             setIsModalOpen(false)
-            handleCheckout(pid, code)
+            handleCheckout(pid, code, upsellPid)
           }}
         />
       )}

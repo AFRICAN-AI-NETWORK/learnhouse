@@ -149,8 +149,15 @@ export async function getActivityWithAuthHeader(
   next: any,
   access_token: string | null | undefined
 ) {
+  let cleanUuid = activity_uuid
+  if (
+    typeof activity_uuid === 'string' &&
+    activity_uuid.startsWith('activity_')
+  ) {
+    cleanUuid = activity_uuid.replace('activity_', '')
+  }
   const result = await fetch(
-    `${getAPIUrl()}activities/activity_${activity_uuid}`,
+    `${getAPIUrl()}activities/activity_${cleanUuid}`,
     RequestBodyWithAuthHeader('GET', null, next, access_token || undefined)
   )
   const res = await result.json()

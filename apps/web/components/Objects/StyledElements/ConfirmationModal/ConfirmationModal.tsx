@@ -51,9 +51,9 @@ const ConfirmationModal = (params: ModalParams) => {
               )}
             </div>
             <div className="text pt-1 space-x-0 w-auto grow">
-              <div className="text-xl font-bold text-black">
+              <Dialog.Title className="text-xl font-bold text-black">
                 {params.dialogTitle}
-              </div>
+              </Dialog.Title>
               <div className="text-md text-gray-500 leading-tight mt-1">
                 {params.confirmationMessage}
               </div>

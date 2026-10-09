@@ -3,14 +3,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import {
-  Sparkles,
-  ArrowRight,
-  Cpu,
-  CheckCircle2,
-  Users,
-  Laptop,
-} from 'lucide-react'
 import NextImage from 'next/image'
 
 interface HeroSectionProps {
@@ -20,256 +12,324 @@ interface HeroSectionProps {
 
 export default function HeroSection({ org, orgslug }: HeroSectionProps) {
   return (
-    <section className="relative pt-24 pb-24 lg:pb-0 px-6 lg:px-12 overflow-hidden bg-white min-h-[90vh] flex items-center">
-      {/* Background Fluid Shapes (Jobspot/Modern SaaS Style) */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-pink-400/20 rounded-full blur-[100px]" />
-      </div>
+    <div className="bg-[#f8fafc] w-full relative overflow-hidden font-sans">
+      {/* Background Shape - Top Right */}
+      <div
+        className="absolute top-0 right-0 w-[30vw] h-[65%] bg-[#e6f0fa] rounded-bl-[80px] z-0 hidden lg:block"
+        aria-hidden="true"
+      />
 
-      <div className="relative max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-stretch z-10 w-full min-h-[600px]">
-        {/* Left Content Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col justify-center space-y-8 z-10 py-12 lg:py-24"
-        >
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-widest border border-blue-100">
-              <Sparkles size={14} /> The Future of Learning
-            </span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] uppercase text-[#0a0f1e]">
-            Accelerate Your Career In The{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0057ff] to-purple-600">
-              New Economy
-            </span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-gray-500 max-w-xl font-medium leading-relaxed">
-            AINA (African AI Network Academy) is the premier gateway to
-            practical AI education. Build neural networks, code multi-agent
-            loops, earn cryptographic credentials, and secure high-paying global
-            tech internships.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
-            <Link
-              href="/#programs"
-              className="w-full sm:w-auto px-8 py-4 bg-[#0057ff] text-white rounded-[12px] font-bold text-[14px] flex items-center justify-center gap-3 hover:bg-[#0046cc] hover:shadow-lg transition-all duration-200"
+      <section className="relative z-10 max-w-[1450px] mx-auto px-6 lg:px-12 pt-24 pb-20 lg:pt-32 lg:pb-32">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-8">
+          {/* Left Column: Content (approx 48%) */}
+          <div className="w-full lg:w-[48%] flex flex-col items-start space-y-7">
+            {/* Eyebrow */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-[18px] py-[10px] bg-[#f0f5ff] rounded-full text-[#0057ff] text-[14px] font-bold"
             >
-              Browse Programs
-              <ArrowRight
-                size={18}
-                className="translate-x-0 group-hover:translate-x-1 transition-transform"
-              />
-            </Link>
-            <Link
-              href="/#contact"
-              className="w-full sm:w-auto px-8 py-4 bg-white text-[#0a0f1e] border border-gray-200 rounded-[12px] font-bold text-[14px] flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+              <span className="text-xs opacity-60">*</span>
+              Get started with AINA
+              <span className="text-xs opacity-60">*</span>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-[42px] md:text-[50px] lg:text-[68px] xl:text-[76px] font-bold text-[#111111] leading-[1.05] tracking-[-2px] max-w-[650px]"
             >
-              Contact Us
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* Right Content Area: Hero Image & Floating Elements */}
-        <div className="relative hidden lg:flex items-end justify-center pt-20">
-          {/* Wrapper to keep image, blobs and floating cards together */}
-          <div className="relative w-full max-w-[650px] h-[650px] lg:h-[750px] flex items-end justify-center">
-            {/* Abstract SVG Blobs (Jobspot Style) */}
-            <div className="absolute inset-0 flex items-center justify-center z-0">
-              <svg
-                viewBox="0 0 500 500"
-                className="w-[180%] h-[180%] -translate-y-12"
-              >
-                {/* Yellow Blob */}
-                <path
-                  fill="#facc15"
-                  d="M394.5,310.5Q343,371,273.5,389.5Q204,408,131.5,372Q59,336,65,257.5Q71,179,139,134.5Q207,90,283.5,91.5Q360,93,403,171.5Q446,250,394.5,310.5Z"
-                  className="origin-center scale-90 translate-x-20 translate-y-24"
-                />
-                {/* Purple Blob */}
-                <path
-                  fill="#7e22ce"
-                  d="M428.5,301.5Q404,353,354,383Q304,413,248.5,417.5Q193,422,143,391.5Q93,361,84.5,305.5Q76,250,103,199Q130,148,181,114.5Q232,81,288.5,91Q345,101,399,140Q453,179,428.5,301.5Z"
-                  className="origin-center scale-75 translate-x-12 -translate-y-20"
-                />
-                {/* Cyan Blob */}
-                <path
-                  fill="#06b6d4"
-                  d="M380.5,315.5Q347,381,274,394.5Q201,408,131.5,364.5Q62,321,81.5,244.5Q101,168,172,130.5Q243,93,313,116.5Q383,140,403.5,195Q424,250,380.5,315.5Z"
-                  className="origin-center scale-[0.8] -translate-x-16"
-                />
-
-                {/* Thin white ring rotated */}
-                <circle
-                  cx="230"
-                  cy="250"
-                  r="160"
+              Find suitable courses from the Best{' '}
+              <span className="inline-flex items-center align-middle mx-2 bg-white rounded-full p-1.5 pr-4 border border-[#e5e7eb] shadow-sm relative -top-1">
+                <span className="flex -space-x-2">
+                  <NextImage
+                    src="https://i.pravatar.cc/100?img=11"
+                    alt="Avatar"
+                    width={36}
+                    height={36}
+                    className="w-9 h-9 rounded-full border-2 border-white object-cover"
+                  />
+                  <NextImage
+                    src="https://i.pravatar.cc/100?img=12"
+                    alt="Avatar"
+                    width={36}
+                    height={36}
+                    className="w-9 h-9 rounded-full border-2 border-white object-cover"
+                  />
+                </span>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="3"
-                  className="opacity-80"
+                  className="ml-3 text-[#111111]"
+                >
+                  <path
+                    d="M13 17L18 12L13 7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6 17L11 12L6 7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              Mentors
+            </motion.h1>
+
+            {/* Body */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-[16px] lg:text-[18px] text-[#171717] leading-[1.45] max-w-[600px]"
+            >
+              Get access to all courses for just <strong>$10/month</strong>.
+              Includes guaranteed internship and job placement for all programs
+              (excluding AAN Open). Already a professional? Join our standalone
+              Career Accelerator program.
+            </motion.p>
+
+            {/* Actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center gap-[28px] pt-4 w-full sm:w-auto"
+            >
+              <Link
+                href="/#programs"
+                className="w-full sm:w-auto px-[20px] py-[16px] bg-[#111111] text-white rounded-[8px] font-medium text-[16px] flex items-center justify-center hover:bg-black transition-colors shadow-sm"
+              >
+                Start Learning
+              </Link>
+              <Link
+                href="/#contact"
+                className="w-full sm:w-auto text-[#111111] font-medium text-[16px] flex items-center justify-center gap-3 hover:opacity-70 transition-opacity group"
+              >
+                Watch Video
+                <div className="w-[40px] h-[40px] rounded-full border border-[#111111] flex items-center justify-center group-hover:bg-[#111111] group-hover:text-white transition-all">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M5 12H19M19 12L12 5M19 12L12 19"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </Link>
+            </motion.div>
+          </div>
+
+          {/* Right Column: Visual Composition (approx 52%) */}
+          <div className="w-full lg:w-[52%] relative flex items-center justify-center lg:justify-end mt-12 lg:mt-0 min-h-[500px] lg:min-h-[600px]">
+            {/* Decorative Crosses - Top Right Anchor */}
+            <motion.div
+              animate={{ opacity: [0.3, 0.6, 0.3] }}
+              transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+              className="absolute top-10 right-4 lg:-right-4 hidden lg:block z-0 pointer-events-none opacity-40"
+            >
+              <div className="flex gap-4 mb-4 text-[#60a5fa] text-lg font-bold tracking-widest">
+                + + +
+              </div>
+              <div className="flex gap-4 mb-4 text-[#60a5fa] text-lg ml-4 font-bold tracking-widest">
+                + +
+              </div>
+              <div className="flex gap-4 text-[#60a5fa] text-lg ml-8 font-bold tracking-widest">
+                +
+              </div>
+            </motion.div>
+
+            {/* Decorative Crosses - Bottom Left Anchor */}
+            <motion.div
+              animate={{ opacity: [0.2, 0.5, 0.2] }}
+              transition={{
+                repeat: Infinity,
+                duration: 5,
+                ease: 'easeInOut',
+                delay: 1,
+              }}
+              className="absolute bottom-20 left-10 lg:-left-4 hidden lg:block z-0 pointer-events-none opacity-30"
+            >
+              <div className="flex gap-4 mb-4 text-[#60a5fa] text-lg font-bold tracking-widest">
+                + +
+              </div>
+              <div className="flex gap-4 text-[#60a5fa] text-lg ml-4 font-bold tracking-widest">
+                + +
+              </div>
+            </motion.div>
+
+            <div className="relative w-full max-w-[450px] lg:max-w-[500px] lg:mr-12">
+              {/* Decorative Shape behind Blurry Image */}
+              <div className="absolute -top-[30px] -left-[30px] lg:-top-[20px] lg:-left-[60px] w-[140px] h-[150px] lg:w-[160px] lg:h-[180px] bg-[#e0e7ff] rounded-[12px] z-10 hidden lg:block opacity-60" />
+
+              {/* Background Blurry Image - Top Left */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8 }}
+                className="absolute -top-[40px] -left-[40px] lg:-top-[40px] lg:-left-[80px] w-[140px] h-[150px] lg:w-[160px] lg:h-[180px] rounded-[12px] overflow-hidden shadow-sm z-20"
+              >
+                <NextImage
+                  src="/landing/hero_bg_blurry_generated.jpg"
+                  alt="Student working"
+                  fill
+                  className="object-cover blur-[3px] opacity-90"
                 />
-              </svg>
+              </motion.div>
+
+              {/* Main Instructor Image */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
+                className="relative z-10 w-full aspect-[4/4.5] md:aspect-[4/3.5] lg:aspect-[4/4.5] rounded-[12px] overflow-hidden bg-gray-200 shadow-[0_20px_40px_rgb(0,0,0,0.08)]"
+              >
+                <NextImage
+                  src="/landing/hero_man_laptop.jpg"
+                  alt="Instructor smiling"
+                  fill
+                  className="object-cover object-top"
+                  priority
+                />
+              </motion.div>
+
+              {/* Floating Mentor Card - Bottom Left */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="absolute -bottom-[20px] -left-[20px] lg:-bottom-[30px] lg:-left-[60px] z-20 w-[215px] bg-white rounded-[9px] p-4 shadow-[0_10px_30px_rgb(0,0,0,0.05)] border border-gray-100"
+              >
+                <p className="text-[#111111] font-bold text-[15px] mb-3">
+                  Frontend Development
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-[36px] h-[36px] rounded-full overflow-hidden shrink-0">
+                    <NextImage
+                      src="https://i.pravatar.cc/100?img=33"
+                      alt="Dennis Barrett"
+                      width={36}
+                      height={36}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-[13px] font-semibold text-[#111111]">
+                      Dennis Barrett
+                    </p>
+                    <p className="text-[11px] font-medium text-[#555555] flex items-center gap-1.5 mt-0.5">
+                      <svg
+                        width="10"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="opacity-70"
+                      >
+                        <path
+                          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></path>
+                        <polyline
+                          points="14 2 14 8 20 8"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></polyline>
+                        <line
+                          x1="16"
+                          y1="13"
+                          x2="8"
+                          y2="13"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></line>
+                        <line
+                          x1="16"
+                          y1="17"
+                          x2="8"
+                          y2="17"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></line>
+                        <polyline
+                          points="10 9 9 9 8 9"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        ></polyline>
+                      </svg>
+                      123 Courses
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Small Bottom Image - Bottom Right */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="absolute -bottom-[20px] -right-[10px] lg:-bottom-[40px] lg:-right-[40px] z-20 w-[140px] h-[170px] lg:w-[170px] lg:h-[210px] rounded-[10px] overflow-hidden shadow-[0_15px_30px_rgb(0,0,0,0.1)] border-[4px] border-white"
+              >
+                <NextImage
+                  src="https://i.pravatar.cc/300?img=11"
+                  alt="Student"
+                  fill
+                  className="object-cover"
+                />
+              </motion.div>
             </div>
-
-            {/* Main Hero Cutout Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
-              className="relative z-10 w-full flex items-end justify-center origin-bottom"
-            >
-              <NextImage
-                src="/landing/hero_person.png"
-                alt="Tech Professional"
-                className="relative z-10 w-auto h-auto min-h-[600px] lg:min-h-[700px] max-h-[85vh] object-cover object-bottom scale-[1.05]"
-                width={800}
-                height={800}
-              />
-            </motion.div>
-
-            {/* Floating UI Card 1: 5000+ Learners */}
-            <motion.div
-              initial={{ opacity: 0, y: 20, x: 20 }}
-              animate={{ opacity: 1, y: [0, -10, 0], x: 0 }}
-              transition={{
-                opacity: { duration: 0.6, delay: 0.3 },
-                y: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
-              }}
-              className="absolute top-24 right-[-2rem] lg:right-[-4rem] z-20 bg-white/80 backdrop-blur-xl border border-gray-100 p-4 rounded-2xl shadow-xl flex items-center gap-4"
-            >
-              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-500">
-                <Users size={24} />
-              </div>
-              <div>
-                <p className="text-[#0a0f1e] font-black text-lg">5,000+</p>
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">
-                  Learners Enrolled
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Floating UI Card 2: AI Automation */}
-            <motion.div
-              initial={{ opacity: 0, y: 20, x: -20 }}
-              animate={{ opacity: 1, y: [0, 10, 0], x: 0 }}
-              transition={{
-                opacity: { duration: 0.6, delay: 0.5 },
-                y: {
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: 1,
-                },
-              }}
-              className="absolute bottom-32 left-[-2rem] lg:left-[-4rem] z-20 bg-white/80 backdrop-blur-xl border border-gray-100 p-4 rounded-2xl shadow-xl flex items-center gap-4"
-            >
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                <Cpu size={24} />
-              </div>
-              <div>
-                <p className="text-[#0a0f1e] font-black text-lg">
-                  AI Automation
-                </p>
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">
-                  Top Specialization
-                </p>
-              </div>
-            </motion.div>
-            {/* Floating UI Card 3: AINA Certified */}
-            <motion.div
-              initial={{ opacity: 0, y: -20, x: -20 }}
-              animate={{ opacity: 1, y: [0, 10, 0], x: 0 }}
-              transition={{
-                opacity: { duration: 0.6, delay: 0.4 },
-                y: {
-                  duration: 4.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: 0.5,
-                },
-              }}
-              className="absolute top-16 left-[-1rem] lg:left-[-3rem] z-20 bg-white/90 backdrop-blur-xl border border-gray-100 p-3 lg:p-4 rounded-2xl shadow-xl flex items-center gap-3 lg:gap-4"
-            >
-              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-600">
-                <Laptop size={20} className="lg:w-6 lg:h-6" />
-              </div>
-              <div>
-                <p className="text-gray-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">
-                  AINA CERTIFIED
-                </p>
-                <p className="text-[#0a0f1e] font-black text-sm lg:text-base leading-tight">
-                  APPLIED DATA SCIENTIST
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Floating UI Card 4: Outcomes */}
-            <motion.div
-              initial={{ opacity: 0, y: 20, x: 20 }}
-              animate={{ opacity: 1, y: [0, -10, 0], x: 0 }}
-              transition={{
-                opacity: { duration: 0.6, delay: 0.6 },
-                y: {
-                  duration: 5.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: 1.5,
-                },
-              }}
-              className="absolute bottom-20 right-[-1rem] lg:right-[-3rem] z-20 bg-white/90 backdrop-blur-xl border border-gray-100 p-3 lg:p-4 rounded-2xl shadow-xl flex items-center gap-3 lg:gap-4"
-            >
-              <div className="flex -space-x-3 lg:-space-x-4">
-                <NextImage
-                  className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover"
-                  src="https://i.pravatar.cc/100?img=11"
-                  alt="Avatar"
-                  width={800}
-                  height={800}
-                />
-                <NextImage
-                  className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover"
-                  src="https://i.pravatar.cc/100?img=5"
-                  alt="Avatar"
-                  width={800}
-                  height={800}
-                />
-                <NextImage
-                  className="w-8 h-8 lg:w-10 lg:h-10 rounded-full border-2 border-white object-cover"
-                  src="https://i.pravatar.cc/100?img=12"
-                  alt="Avatar"
-                  width={800}
-                  height={800}
-                />
-              </div>
-              <div>
-                <p className="text-[#0a0f1e] font-black text-sm lg:text-base leading-tight">
-                  88% hired remote
-                </p>
-                <p className="text-gray-500 text-[10px] lg:text-xs font-medium">
-                  average $35k base
-                </p>
-              </div>
-            </motion.div>
-            {/* Floating UI Card 3: Success Checkmark */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: [1, 1.1, 1] }}
-              transition={{
-                opacity: { duration: 0.4, delay: 0.8 },
-                scale: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
-              }}
-              className="absolute top-1/2 left-20 z-0 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/30"
-            >
-              <CheckCircle2 size={20} />
-            </motion.div>
           </div>
         </div>
+      </section>
+
+      {/* Partners Strip (Clean layout, no border box, larger logos) */}
+      <div className="w-full relative z-10 pt-8 pb-20">
+        <div className="max-w-[1280px] mx-auto px-6 lg:px-12 flex flex-wrap items-center justify-center gap-16 lg:gap-32 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+          <NextImage
+            src="/landing/talent_partner.png"
+            alt="Talent Partner"
+            width={220}
+            height={70}
+            className="h-12 lg:h-16 w-auto object-contain"
+          />
+          <NextImage
+            src="/landing/trellissoft.png"
+            alt="Trellissoft"
+            width={200}
+            height={70}
+            className="h-12 lg:h-16 w-auto object-contain"
+          />
+          <NextImage
+            src="/landing/calabar.png"
+            alt="University of Calabar"
+            width={200}
+            height={70}
+            className="h-12 lg:h-16 w-auto object-contain"
+          />
+        </div>
       </div>
-    </section>
+    </div>
   )
 }

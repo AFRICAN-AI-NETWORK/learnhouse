@@ -23,7 +23,18 @@ type Props = {
   }
   orgId: number
   orgSlug: string
-  onCheckout: (productId: number, discountCode?: string) => void
+  upsellProduct?: {
+    id: number
+    name: string
+    amount: number
+    currency: string
+    description?: string
+  }
+  onCheckout: (
+    productId: number,
+    discountCode?: string,
+    upsellProductId?: number
+  ) => void
 }
 
 const DiscountCodeModal = ({
@@ -32,6 +43,7 @@ const DiscountCodeModal = ({
   product,
   orgId,
   orgSlug,
+  upsellProduct,
   onCheckout,
 }: Props) => {
   const { t, i18n } = useTranslation()
@@ -43,6 +55,9 @@ const DiscountCodeModal = ({
   const [isValidating, setIsValidating] = useState(false)
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [isUpsellSelected, setIsUpsellSelected] = useState(false)
+  const [isDisclaimerAccepted, setIsDisclaimerAccepted] = useState(false)
 
   const handleApply = async () => {
     if (!code.trim()) return
@@ -88,9 +103,13 @@ const DiscountCodeModal = ({
     }).format(amount)
   }
 
-  const finalAmount = appliedDiscount
+  let finalAmount = appliedDiscount
     ? appliedDiscount.final_amount
     : product.amount
+
+  if (isUpsellSelected && upsellProduct) {
+    finalAmount += upsellProduct.amount
+  }
 
   const content = (
     <div className="space-y-6 pt-4">
@@ -178,6 +197,73 @@ const DiscountCodeModal = ({
         </div>
       )}
 
+      {upsellProduct && product.id !== upsellProduct.id && (
+        <div className="space-y-4">
+          <div
+            className={`p-4 rounded-xl border transition-colors cursor-pointer ${isUpsellSelected ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}
+            onClick={() => {
+              const newVal = !isUpsellSelected
+              setIsUpsellSelected(newVal)
+              if (!newVal) setIsDisclaimerAccepted(false)
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-1">
+                <input
+                  type="checkbox"
+                  checked={isUpsellSelected}
+                  readOnly
+                  className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-gray-900 text-sm">
+                    Add {upsellProduct.name}
+                  </h4>
+                  <span className="font-bold text-amber-700 ml-4">
+                    +{formatPrice(upsellProduct.amount)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Intensive job-ready track. Get prepared and referred to
+                  employers globally.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {isUpsellSelected && (
+            <div className="p-4 bg-red-50/50 rounded-xl border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+              <div className="mt-0.5">
+                <input
+                  type="checkbox"
+                  id="disclaimer-checkbox"
+                  checked={isDisclaimerAccepted}
+                  onChange={(e) =>
+                    setIsDisclaimerAccepted(
+                      e.target.value === 'on' || e.target.checked
+                    )
+                  }
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+              </div>
+              <label
+                htmlFor="disclaimer-checkbox"
+                className="text-xs text-red-800 font-medium leading-relaxed cursor-pointer select-none"
+              >
+                <strong>Disclaimer:</strong> If you pay for this course, you
+                will be prepared and referred for job placement. However, the
+                entire hiring process is determined by the employer, not AINA.
+                Even though we do our best to ensure you are fit and have a high
+                chance of getting the job, the final decision rests solely with
+                the employer.
+              </label>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="pt-2">
         <div className="flex justify-between items-center mb-6">
           <span className="text-base font-bold text-gray-900 uppercase tracking-wide">
@@ -200,8 +286,15 @@ const DiscountCodeModal = ({
           </Button>
         ) : (
           <Button
-            className="w-full h-14 text-lg font-black bg-gray-900 hover:bg-black rounded-xl shadow-[0_4px_14px_0_rgb(0,0,0,0.25)] transition-all active:scale-[0.98]"
-            onClick={() => onCheckout(product.id, appliedDiscount?.code)}
+            disabled={isUpsellSelected && !isDisclaimerAccepted}
+            className="w-full h-14 text-lg font-black bg-gray-900 hover:bg-black rounded-xl shadow-[0_4px_14px_0_rgb(0,0,0,0.25)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() =>
+              onCheckout(
+                product.id,
+                appliedDiscount?.code,
+                isUpsellSelected ? upsellProduct?.id : undefined
+              )
+            }
           >
             <ShoppingCart className="mr-2 w-5 h-5" />
             {finalAmount === 0

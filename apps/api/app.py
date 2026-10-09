@@ -114,6 +114,7 @@ try:
         process_payout_requests_job,
         refresh_all_marketer_counters_job,
     )
+    from src.jobs.payment_jobs import process_payment_grace_periods_job
     from src.jobs.waitlist_processor import (
         run_retry_failed_emails_job,
         run_waitlist_activation_job,
@@ -258,6 +259,19 @@ async def start_scheduler():
             jitter=10,
             misfire_grace_time=120,
         )
+
+    # ── Payments jobs ──────────────────────────────────────────────
+    scheduler.add_job(
+        process_payment_grace_periods_job,
+        trigger=CronTrigger.from_crontab("0 0 * * *"),  # Run daily at midnight
+        id="payment_grace_periods",
+        name="Process Payment Grace Periods",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        jitter=60,
+        misfire_grace_time=3600,
+    )
 
     # ── Communications jobs ──────────────────────────────────────────
     if COMMUNICATIONS_PROCESSOR_ENABLED:

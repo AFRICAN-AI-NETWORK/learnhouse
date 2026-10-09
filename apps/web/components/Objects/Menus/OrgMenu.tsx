@@ -130,7 +130,7 @@ export const OrgMenu = (props: any) => {
     themeMode === 'light' ? Sun : themeMode === 'dark' ? Moon : Monitor
 
   // Only hide menu if we're in an activity page and focus mode is enabled
-  if (isActivityPage || (pathname?.includes('/activity/') && isFocusMode)) {
+  if (isActivityPage && isFocusMode) {
     return null
   }
 
