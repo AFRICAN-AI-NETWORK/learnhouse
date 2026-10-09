@@ -46,8 +46,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        # Generated lockfiles contain keys longer than the YAML 1024-character limit.
-        exclude: pnpm-lock\.yaml$
+        exclude: (^|/)pnpm-lock\.yaml$
       - id: check-json
       - id: check-toml
       - id: no-commit-to-branch

@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import UTC
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, Request
 from sqlmodel import Session, select
@@ -66,15 +66,22 @@ async def handle_flutterwave_webhook(
                 # Handle failed charges (e.g. recurring subscription charge failure)
                 if payment_user_id:
                     payment_user = db_session.exec(
-                        select(PaymentsUser).where(PaymentsUser.id == int(payment_user_id))
+                        select(PaymentsUser).where(
+                            PaymentsUser.id == int(payment_user_id)
+                        )
                     ).first()
-                    if payment_user and payment_user.status in [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]:
+                    if payment_user and payment_user.status in [
+                        PaymentStatusEnum.ACTIVE,
+                        PaymentStatusEnum.COMPLETED,
+                    ]:
                         # Start grace period if not already started
                         if not payment_user.grace_period_start_date:
                             payment_user.grace_period_start_date = datetime.now(UTC)
                             db_session.add(payment_user)
                             db_session.commit()
-                            logger.info(f"Started 7-day grace period for payment_user_id {payment_user_id}")
+                            logger.info(
+                                f"Started 7-day grace period for payment_user_id {payment_user_id}"
+                            )
                 return {"status": "ignored", "message": "Transaction not successful"}
 
             data.get("id")  # The FW transaction ID
@@ -161,8 +168,6 @@ async def handle_flutterwave_webhook(
 
                     if payment_user and payment_user.referral_code_id:
                         try:
-                            from datetime import datetime
-
                             from sqlmodel import and_
 
                             from src.db.referrals.referral_tracking import (
@@ -212,18 +217,24 @@ async def handle_flutterwave_webhook(
                     status_code=400, detail=f"Error verifying transaction: {e!s}"
                 )
 
-        elif (
-            event_type == "subscription.cancelled"
-        ):
+        elif event_type == "subscription.cancelled":
             # If a subscription is cancelled directly on Flutterwave
             # Try to extract the customer email
             customer_email = data.get("customer", {}).get("customer_email")
             if customer_email:
                 from src.db.users import User
-                user = db_session.exec(select(User).where(User.email == customer_email)).first()
+
+                user = db_session.exec(
+                    select(User).where(User.email == customer_email)
+                ).first()
                 if user:
                     payment_users = db_session.exec(
-                        select(PaymentsUser).where(PaymentsUser.user_id == user.id, PaymentsUser.status.in_([PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]))
+                        select(PaymentsUser).where(
+                            PaymentsUser.user_id == user.id,
+                            PaymentsUser.status.in_(
+                                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+                            ),
+                        )
                     ).all()
                     for pu in payment_users:
                         pu.status = PaymentStatusEnum.CANCELLED
@@ -239,17 +250,27 @@ async def handle_flutterwave_webhook(
             customer_email = data.get("customer", {}).get("customer_email")
             if customer_email:
                 from src.db.users import User
-                user = db_session.exec(select(User).where(User.email == customer_email)).first()
+
+                user = db_session.exec(
+                    select(User).where(User.email == customer_email)
+                ).first()
                 if user:
                     payment_users = db_session.exec(
-                        select(PaymentsUser).where(PaymentsUser.user_id == user.id, PaymentsUser.status.in_([PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]))
+                        select(PaymentsUser).where(
+                            PaymentsUser.user_id == user.id,
+                            PaymentsUser.status.in_(
+                                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+                            ),
+                        )
                     ).all()
                     for pu in payment_users:
                         if pu.grace_period_start_date:
                             pu.grace_period_start_date = None
                             db_session.add(pu)
                     db_session.commit()
-                    logger.info(f"Cleared grace period for renewed subscription user {customer_email}")
+                    logger.info(
+                        f"Cleared grace period for renewed subscription user {customer_email}"
+                    )
             return {"status": "ok", "message": "Subscription renewed handled"}
         else:
             return {

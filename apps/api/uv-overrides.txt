@@ -1,0 +1,2 @@
+# fastapi-jwt-auth 0.5.0 declares an obsolete PyJWT<2 constraint.
+PyJWT>=2.10.1,<3.0.0

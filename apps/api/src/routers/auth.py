@@ -1,3 +1,4 @@
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
@@ -271,12 +272,10 @@ async def resend_verification_email(
         raise HTTPException(status_code=400, detail="Organization not found")
 
     # Generate new verification token and OTP
-    import secrets
-
     verification_token = generate_verification_token(
         user_email=user.email, user_id=user.id, org_slug=org.slug
     )
-    user.verification_otp = str(secrets.randbelow(900000) + 100000)
+    user.verification_otp = str(100000 + secrets.randbelow(900000))
     user.verification_otp_expiry = str(datetime.now(UTC) + timedelta(minutes=30))
     db_session.add(user)
     db_session.commit()

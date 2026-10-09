@@ -106,6 +106,7 @@ try:
     from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
+    from src.jobs.payment_jobs import process_payment_grace_periods_job
 
     from src.jobs.cohort_jobs import sync_process_cohort_unlocks
     from src.jobs.notification_jobs import run_notification_email_job
@@ -114,7 +115,6 @@ try:
         process_payout_requests_job,
         refresh_all_marketer_counters_job,
     )
-    from src.jobs.payment_jobs import process_payment_grace_periods_job
     from src.jobs.waitlist_processor import (
         run_retry_failed_emails_job,
         run_waitlist_activation_job,

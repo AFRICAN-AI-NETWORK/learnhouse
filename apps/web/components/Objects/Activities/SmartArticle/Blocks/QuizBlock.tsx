@@ -36,8 +36,8 @@ export default function QuizBlock({ step }: QuizBlockProps) {
         const parsed = JSON.parse(saved)
         if (parsed.selectedOptions) setSelectedOptions(parsed.selectedOptions)
         if (parsed.submittedStatus) setSubmittedStatus(parsed.submittedStatus)
-      } catch {
-        return
+      } catch (error) {
+        console.error('Failed to load quiz state', error)
       }
     }, 0)
 
