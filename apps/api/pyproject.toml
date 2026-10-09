@@ -33,7 +33,6 @@ dependencies = [
     "alembic>=1.13.2",
     "alembic-postgresql-enum>=1.2.0",
     "sqlalchemy-utils>=0.41.2",
-    "python-jose>=3.3.0",
     "logfire[sqlalchemy]>=3.8.0",
     "beautifulsoup4>=4.13.4",
     "pytest-asyncio>=1.1.0",
@@ -82,7 +81,7 @@ dev = [
 
 [tool.uv]
 override-dependencies = [
-    "pyjwt>=2.13.0",
+    "PyJWT>=1.7.1,<2.0.0",
     "soupsieve>=2.8.4",
     "httplib2>=0.32.0",
 ]
