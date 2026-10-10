@@ -270,6 +270,66 @@ async def api_handle_flutterwave_webhook(
 # Payments checkout
 
 
+@router.post("/{org_id}/checkout/course_uuid/{course_uuid}")
+async def api_create_checkout_session_by_uuid(
+    request: Request,
+    org_id: int,
+    course_uuid: str,
+    redirect_uri: str,
+    currency: str | None = None,
+    discount_code: str | None = None,
+    upsell_course_uuid: str | None = None,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    from sqlmodel import select
+
+    from src.db.courses.courses import Course
+    from src.db.payments.payments_courses import PaymentsCourse
+    
+    course_stmt = select(Course).where(Course.course_uuid == course_uuid, Course.org_id == org_id)
+    main_course = db_session.exec(course_stmt).first()
+    if not main_course:
+        raise HTTPException(status_code=404, detail="Course not found")
+        
+    payment_course_stmt = select(PaymentsCourse).where(
+        PaymentsCourse.course_id == main_course.id, PaymentsCourse.org_id == org_id
+    )
+    main_payment_course = db_session.exec(payment_course_stmt).first()
+    if not main_payment_course:
+        raise HTTPException(status_code=404, detail="Payment product not found for this course")
+    
+    product_id = main_payment_course.payment_product_id
+    
+    upsell_product_id = None
+    if upsell_course_uuid:
+        upsell_stmt = select(Course).where(Course.course_uuid == upsell_course_uuid, Course.org_id == org_id)
+        upsell_course = db_session.exec(upsell_stmt).first()
+        if not upsell_course:
+            raise HTTPException(status_code=404, detail="Upsell course not found")
+            
+        upsell_payment_course_stmt = select(PaymentsCourse).where(
+            PaymentsCourse.course_id == upsell_course.id, PaymentsCourse.org_id == org_id
+        )
+        upsell_payment_course = db_session.exec(upsell_payment_course_stmt).first()
+        if not upsell_payment_course:
+            raise HTTPException(status_code=404, detail="Payment product not found for upsell course")
+            
+        upsell_product_id = upsell_payment_course.payment_product_id
+        
+    return await initialize_transaction(
+        request,
+        org_id,
+        product_id,
+        redirect_uri,
+        currency,
+        discount_code,
+        upsell_product_id,
+        current_user,
+        db_session,
+    )
+
+
 @router.post("/{org_id}/checkout/product/{product_id}")
 async def api_create_checkout_session(
     request: Request,
