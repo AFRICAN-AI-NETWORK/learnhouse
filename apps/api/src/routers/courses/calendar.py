@@ -1,0 +1,199 @@
+from fastapi import APIRouter, Depends, Request
+from sqlmodel import Session
+
+from src.core.events.database import get_db_session
+from src.db.academic_calendar import AcademicCohortRead, CourseAcademicCohortsUpdate
+from src.db.courses.programme_weeks import (
+    ProgrammeWeekRead,
+    ProgrammeWeeksGenerate,
+    ProgrammeWeekUpdate,
+)
+from src.db.courses.weekly_schedule import (
+    WeeklyOperatingScheduleRead,
+    WeeklyOperatingScheduleUpdate,
+)
+from src.db.users import PublicUser
+from src.security.auth import get_current_user
+from src.services.academic_calendar import list_course_cohorts, set_course_cohorts
+from src.services.courses.programme_weeks import (
+    generate_programme_weeks,
+    list_programme_weeks,
+    update_programme_week,
+)
+from src.services.courses.rest_days import RestDayConflict, list_rest_day_conflicts
+from src.services.courses.weekly_schedule import (
+    delete_course_schedule,
+    get_course_schedule,
+    get_default_schedule,
+    update_default_schedule,
+    upsert_course_schedule,
+)
+
+router = APIRouter()
+
+
+@router.get("/rest-day/conflicts")
+async def api_list_rest_day_conflicts(
+    request: Request,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[RestDayConflict]:
+    """List published timetable items and deadlines currently on rest days."""
+    return await list_rest_day_conflicts(request, current_user, db_session)
+
+
+@router.get("/{course_uuid}/rest-day/conflicts")
+async def api_list_course_rest_day_conflicts(
+    request: Request,
+    course_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[RestDayConflict]:
+    """List rest-day conflicts for one course."""
+    return await list_rest_day_conflicts(
+        request, current_user, db_session, course_uuid=course_uuid
+    )
+
+
+@router.get("/weekly-schedule/default")
+async def api_get_default_weekly_schedule(
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> WeeklyOperatingScheduleRead:
+    """
+    Get the organization's default weekly operating schedule.
+    """
+    return await get_default_schedule(current_user, db_session)
+
+
+@router.put("/weekly-schedule/default")
+async def api_update_default_weekly_schedule(
+    schedule_object: WeeklyOperatingScheduleUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> WeeklyOperatingScheduleRead:
+    """
+    Update the organization's default weekly operating schedule.
+    """
+    return await update_default_schedule(schedule_object, current_user, db_session)
+
+
+@router.get("/{course_uuid}/weekly-schedule")
+async def api_get_course_weekly_schedule(
+    request: Request,
+    course_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> WeeklyOperatingScheduleRead:
+    """
+    Get the weekly operating schedule in force for a course.
+    Returns the course override when one exists, otherwise the default.
+    """
+    return await get_course_schedule(request, course_uuid, current_user, db_session)
+
+
+@router.put("/{course_uuid}/weekly-schedule")
+async def api_upsert_course_weekly_schedule(
+    request: Request,
+    course_uuid: str,
+    schedule_object: WeeklyOperatingScheduleUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> WeeklyOperatingScheduleRead:
+    """
+    Create or update the weekly operating schedule override for a course.
+    """
+    return await upsert_course_schedule(
+        request, course_uuid, schedule_object, current_user, db_session
+    )
+
+
+@router.delete("/{course_uuid}/weekly-schedule")
+async def api_delete_course_weekly_schedule(
+    request: Request,
+    course_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+):
+    """
+    Remove the course override so the course follows the default schedule.
+    """
+    return await delete_course_schedule(request, course_uuid, current_user, db_session)
+
+
+@router.get("/{course_uuid}/academic-cohorts")
+async def api_list_course_academic_cohorts(
+    request: Request,
+    course_uuid: str,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[AcademicCohortRead]:
+    """
+    List the academic cohorts a course runs under.
+    """
+    return await list_course_cohorts(request, course_uuid, current_user, db_session)
+
+
+@router.put("/{course_uuid}/academic-cohorts")
+async def api_set_course_academic_cohorts(
+    request: Request,
+    course_uuid: str,
+    cohorts_object: CourseAcademicCohortsUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[AcademicCohortRead]:
+    """
+    Replace the set of academic cohorts a course runs under.
+    """
+    return await set_course_cohorts(
+        request, course_uuid, cohorts_object, current_user, db_session
+    )
+
+
+@router.post("/{course_uuid}/programme-weeks/generate")
+async def api_generate_programme_weeks(
+    request: Request,
+    course_uuid: str,
+    weeks_object: ProgrammeWeeksGenerate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[ProgrammeWeekRead]:
+    """
+    Create the programme weeks of a course run. Existing weeks are kept.
+    """
+    return await generate_programme_weeks(
+        request, course_uuid, weeks_object, current_user, db_session
+    )
+
+
+@router.get("/{course_uuid}/programme-weeks")
+async def api_list_programme_weeks(
+    request: Request,
+    course_uuid: str,
+    academic_cohort_uuid: str | None = None,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> list[ProgrammeWeekRead]:
+    """
+    List a course's programme weeks, optionally for a single academic cohort.
+    """
+    return await list_programme_weeks(
+        request, course_uuid, academic_cohort_uuid, current_user, db_session
+    )
+
+
+@router.put("/{course_uuid}/programme-weeks/{programme_week_uuid}")
+async def api_update_programme_week(
+    request: Request,
+    course_uuid: str,
+    programme_week_uuid: str,
+    week_object: ProgrammeWeekUpdate,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> ProgrammeWeekRead:
+    """
+    Map a programme week to a chapter or a milestone.
+    """
+    return await update_programme_week(
+        request, course_uuid, programme_week_uuid, week_object, current_user, db_session
+    )

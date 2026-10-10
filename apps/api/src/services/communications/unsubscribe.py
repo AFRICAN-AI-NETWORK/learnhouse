@@ -18,18 +18,20 @@ def generate_unsubscribe_token(org_id: int, email: str, scope: UnsubscribeScope)
     return hmac.new(SECRET_KEY, message, hashlib.sha256).hexdigest()
 
 
-def verify_unsubscribe_token(org_id: int, email: str, scope: UnsubscribeScope, token: str) -> bool:
+def verify_unsubscribe_token(
+    org_id: int, email: str, scope: UnsubscribeScope, token: str
+) -> bool:
     """Verify an unsubscribe token."""
     expected_token = generate_unsubscribe_token(org_id, email, scope)
     return hmac.compare_digest(expected_token, token)
 
 
 async def unsubscribe_user(
-    db_session: Session, 
-    org_id: int, 
-    email: str, 
-    scope: UnsubscribeScope, 
-    user_id: Optional[int] = None
+    db_session: Session,
+    org_id: int,
+    email: str,
+    scope: UnsubscribeScope,
+    user_id: Optional[int] = None,
 ) -> EmailUnsubscribe:
     """Opt a user out of communications for a specific scope."""
     # Check if already unsubscribed
@@ -37,13 +39,13 @@ async def unsubscribe_user(
         select(EmailUnsubscribe).where(
             EmailUnsubscribe.org_id == org_id,
             EmailUnsubscribe.email == email,
-            EmailUnsubscribe.scope == scope
+            EmailUnsubscribe.scope == scope,
         )
     ).first()
-    
+
     if existing:
         return existing
-        
+
     token = generate_unsubscribe_token(org_id, email, scope)
     unsub = EmailUnsubscribe(
         org_id=org_id,
@@ -52,7 +54,7 @@ async def unsubscribe_user(
         scope=scope,
         token_hash=token,
         unsubscribed_at=datetime.now(UTC),
-        creation_date=datetime.now(UTC).isoformat()
+        creation_date=datetime.now(UTC).isoformat(),
     )
     db_session.add(unsub)
     db_session.commit()
@@ -60,12 +62,13 @@ async def unsubscribe_user(
     return unsub
 
 
-async def get_unsubscribed_emails(db_session: Session, org_id: int, scope: UnsubscribeScope) -> set[str]:
+async def get_unsubscribed_emails(
+    db_session: Session, org_id: int, scope: UnsubscribeScope
+) -> set[str]:
     """Get all unsubscribed emails for an org and scope."""
     unsubs = db_session.exec(
         select(EmailUnsubscribe.email).where(
-            EmailUnsubscribe.org_id == org_id,
-            EmailUnsubscribe.scope == scope
+            EmailUnsubscribe.org_id == org_id, EmailUnsubscribe.scope == scope
         )
     ).all()
     return set(unsubs)

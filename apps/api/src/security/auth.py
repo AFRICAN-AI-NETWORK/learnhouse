@@ -1,9 +1,9 @@
 from datetime import UTC, datetime, timedelta
 
-import jwt as pyjwt_lib
+import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jwt import InvalidTokenError
 from pydantic import BaseModel
 from sqlmodel import Session, select  # Added 'select' here
 
@@ -15,8 +15,8 @@ from src.security.security import ALGORITHM, SECRET_KEY
 from src.services.dev.dev import isDevModeEnabled
 from src.services.users.users import security_get_user, security_verify_password
 
-if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
-    _original_encode = pyjwt_lib.encode
+if not hasattr(jwt.encode, "__wrapped_for_fastapi_jwt_auth__"):
+    _original_encode = jwt.encode
 
     class DecodableStr(str):
         def decode(self, *args, **kwargs):
@@ -29,7 +29,7 @@ if not hasattr(pyjwt_lib.encode, "__wrapped_for_fastapi_jwt_auth__"):
         return result
 
     patched_encode.__wrapped_for_fastapi_jwt_auth__ = True
-    pyjwt_lib.encode = patched_encode
+    jwt.encode = patched_encode
 
 from fastapi_jwt_auth import AuthJWT
 
@@ -168,7 +168,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
         expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return encoded_jwt.decode() if isinstance(encoded_jwt, bytes) else encoded_jwt
 
 
 async def get_current_user(
@@ -186,7 +186,7 @@ async def get_current_user(
         Authorize.jwt_optional()
         username = Authorize.get_jwt_subject() or None
         token_data = TokenData(username=username)  # type: ignore
-    except JWTError:
+    except InvalidTokenError:
         raise credentials_exception
     if username:
         user = await security_get_user(request, db_session, email=token_data.username)  # type: ignore # treated as an email
@@ -219,6 +219,7 @@ async def verify_websocket_token(token: str, db: Session) -> int | None:
     """
     try:
         import logging
+
         logger = logging.getLogger(__name__)
 
         from fastapi_jwt_auth import AuthJWT
@@ -244,6 +245,7 @@ async def verify_websocket_token(token: str, db: Session) -> int | None:
 
     except Exception as e:  # noqa: BLE001
         import logging
+
         logger = logging.getLogger(__name__)
 
         logger.error(f"WebSocket token verification failed: {e}")

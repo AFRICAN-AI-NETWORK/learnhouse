@@ -112,7 +112,8 @@ def process_pending_notification_emails(db_session: Session) -> dict:
             logger.exception(
                 "Unexpected error processing notification %s email: %s",
                 notification.notification_uuid,
-                e)
+                e,
+            )
             continue
 
         if notification.email_status == EmailStatus.SENT:

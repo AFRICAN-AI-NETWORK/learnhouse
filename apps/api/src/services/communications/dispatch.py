@@ -24,12 +24,17 @@ logger = logging.getLogger(__name__)
 COMMUNICATIONS_EMAIL_BATCH_SIZE = 50
 COMMUNICATIONS_MAX_EMAIL_ATTEMPTS = 3
 
+
 async def queue_campaign_recipients(campaign_id: int):
     """Resolve targets and create CampaignRecipient rows."""
     from src.core.events.database import engine
+
     with Session(engine) as db_session:
         campaign = db_session.get(Campaign, campaign_id)
-        if not campaign or campaign.status not in [CampaignStatus.DRAFT, CampaignStatus.QUEUED]:
+        if not campaign or campaign.status not in [
+            CampaignStatus.DRAFT,
+            CampaignStatus.QUEUED,
+        ]:
             return
 
         # Update status to processing recipients
@@ -39,15 +44,17 @@ async def queue_campaign_recipients(campaign_id: int):
         try:
             # Resolve target emails
             target_emails = await resolve_campaign_targets(
-                db_session, 
-                campaign.org_id, 
-                campaign.target_type, 
-                campaign.target_metadata
+                db_session,
+                campaign.org_id,
+                campaign.target_type,
+                campaign.target_metadata,
             )
 
             # Filter unsubscribes (unless CUSTOM_EMAILS and explicitly bypassing - but for now we filter all marketing)
             if campaign.campaign_type == "COURSE_MARKETING":
-                unsubscribed = await get_unsubscribed_emails(db_session, campaign.org_id, UnsubscribeScope.MARKETING)
+                unsubscribed = await get_unsubscribed_emails(
+                    db_session, campaign.org_id, UnsubscribeScope.MARKETING
+                )
                 target_emails = target_emails - unsubscribed
 
             # Insert recipient rows
@@ -61,13 +68,13 @@ async def queue_campaign_recipients(campaign_id: int):
                         email=email,
                         status=CampaignRecipientStatus.PENDING,
                         creation_date=now_str,
-                        update_date=now_str
+                        update_date=now_str,
                     )
                 )
 
             if recipients:
                 db_session.add_all(recipients)
-                
+
             campaign.total_targets = len(recipients)
             campaign.status = CampaignStatus.QUEUED
             db_session.commit()
@@ -81,51 +88,62 @@ async def queue_campaign_recipients(campaign_id: int):
 
 async def process_campaign_dispatch_job(db_session: Session):
     """Background job that runs periodically to dispatch pending/retryable emails."""
-    
+
     now = datetime.now(UTC)
     active_campaigns = db_session.exec(
         select(Campaign).where(
             Campaign.status.in_([CampaignStatus.QUEUED, CampaignStatus.PROCESSING]),
-            (Campaign.scheduled_at.is_(None)) | (Campaign.scheduled_at <= now)
+            (Campaign.scheduled_at.is_(None)) | (Campaign.scheduled_at <= now),
         )
     ).all()
-    
+
     for campaign in active_campaigns:
         # Fetch a batch of recipients
         recipients = db_session.exec(
             select(CampaignRecipient)
             .where(
                 CampaignRecipient.campaign_id == campaign.id,
-                CampaignRecipient.status.in_([CampaignRecipientStatus.PENDING, CampaignRecipientStatus.FAILED_RETRYABLE])
+                CampaignRecipient.status.in_(
+                    [
+                        CampaignRecipientStatus.PENDING,
+                        CampaignRecipientStatus.FAILED_RETRYABLE,
+                    ]
+                ),
             )
             .limit(COMMUNICATIONS_EMAIL_BATCH_SIZE)
         ).all()
-        
+
         if not recipients:
             # Check if all recipients for this campaign are done
             pending_count = db_session.exec(
                 select(CampaignRecipient).where(
                     CampaignRecipient.campaign_id == campaign.id,
-                    CampaignRecipient.status.in_([CampaignRecipientStatus.PENDING, CampaignRecipientStatus.FAILED_RETRYABLE])
+                    CampaignRecipient.status.in_(
+                        [
+                            CampaignRecipientStatus.PENDING,
+                            CampaignRecipientStatus.FAILED_RETRYABLE,
+                        ]
+                    ),
                 )
             ).first()
-            
+
             if not pending_count:
                 # Roll up campaign status
                 failed_count = db_session.exec(
                     select(func.count(CampaignRecipient.id)).where(
                         CampaignRecipient.campaign_id == campaign.id,
-                        CampaignRecipient.status == CampaignRecipientStatus.FAILED_PERMANENT
+                        CampaignRecipient.status
+                        == CampaignRecipientStatus.FAILED_PERMANENT,
                     )
                 ).one()
-                
+
                 campaign.failed_count = failed_count
                 campaign.completed_at = datetime.now(UTC)
                 if failed_count > 0:
                     campaign.status = CampaignStatus.PARTIALLY_FAILED
                 else:
                     campaign.status = CampaignStatus.SENT
-                    
+
                 db_session.commit()
             continue
 
@@ -141,11 +159,11 @@ async def process_campaign_dispatch_job(db_session: Session):
             recipient.attempt_count += 1
             recipient.last_attempt_at = datetime.now(UTC)
             db_session.commit()
-            
+
             try:
                 # Generate unique unsubscribe link (mocked logic)
                 unsubscribe_url = f"https://app.learnhouse.com/unsubscribe?token=mock&email={recipient.email}"
-                
+
                 org = db_session.get(Organization, campaign.org_id)
                 campaign_data = {
                     "subject": campaign.subject,
@@ -154,36 +172,32 @@ async def process_campaign_dispatch_job(db_session: Session):
                     "content_json": campaign.content_json,
                     "org_name": org.name if org else "African AI Network Academy",
                 }
-                recipient_data = {
-                    "email": recipient.email
-                }
-                
+                recipient_data = {"email": recipient.email}
+
                 # Render email
                 html_body, text_body = render_campaign_email(
-                    campaign_data, 
-                    recipient_data, 
-                    unsubscribe_url
+                    campaign_data, recipient_data, unsubscribe_url
                 )
-                
+
                 # Send email using Resend with scheduling support
                 send_resend_email(
                     to=recipient.email,
                     subject=campaign.subject,
                     html_body=html_body,
                     text_body=text_body,
-                    scheduled_at=campaign.scheduled_at
+                    scheduled_at=campaign.scheduled_at,
                 )
-                
+
                 recipient.status = CampaignRecipientStatus.SENT
                 recipient.sent_at = datetime.now(UTC)
                 campaign.sent_count += 1
-                
+
             except Exception as e:  # noqa: BLE001
                 recipient.last_error = str(e)
                 if recipient.attempt_count >= COMMUNICATIONS_MAX_EMAIL_ATTEMPTS:
                     recipient.status = CampaignRecipientStatus.FAILED_PERMANENT
                 else:
                     recipient.status = CampaignRecipientStatus.FAILED_RETRYABLE
-                    
+
             recipient.update_date = datetime.now(UTC).isoformat()
             db_session.commit()

@@ -23,6 +23,7 @@ from src.db.courses.certifications import CertificateUser, Certifications
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.courses.courses import Course
+from src.db.courses.schedules import CourseRegisterEntry
 from src.db.roles import Role
 from src.db.trail_runs import TrailRun
 from src.db.trail_sessions import TrailActivitySession
@@ -33,6 +34,7 @@ from src.security.dashboard_security import verify_student_dashboard_access
 from src.services.admin_analytics.schemas import (
     OrgAnalyticsSummary,
     StudentActivityProgress,
+    StudentAttendanceSummary,
     StudentChapterProgress,
     StudentCourseDetail,
     StudentCourseProgress,
@@ -42,6 +44,7 @@ from src.services.admin_analytics.schemas import (
     StudentSummary,
     TopStudentsResponse,
 )
+from src.services.student_journey import evaluate_progress
 
 STATUS_COMPLETED = "completed"
 STATUS_IN_PROGRESS = "in_progress"
@@ -436,6 +439,24 @@ async def get_student_detail(
     )
 
 
+def _attendance_summary(
+    user_id: int, course_id: int, db_session: Session
+) -> StudentAttendanceSummary:
+    counts = dict(
+        db_session.exec(
+            select(CourseRegisterEntry.status, func.count())
+            .where(
+                CourseRegisterEntry.user_id == user_id,
+                CourseRegisterEntry.course_id == course_id,
+            )
+            .group_by(CourseRegisterEntry.status)
+        ).all()
+    )
+    return StudentAttendanceSummary(
+        **{str(key): value for key, value in counts.items()}
+    )
+
+
 async def get_student_course_detail(
     org_id: int,
     user_id: int,
@@ -542,6 +563,8 @@ async def get_student_course_detail(
         points_earned=round(total_points, 1),
         time_spent_seconds=total_time,
         chapters=list(chapters.values()),
+        milestones=evaluate_progress(user_id, course, db_session),
+        attendance=_attendance_summary(user_id, course_id, db_session),
     )
 
 

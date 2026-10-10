@@ -358,14 +358,16 @@ async def admin_grant_marketer(
         raise marketer_error(
             status.HTTP_404_NOT_FOUND, "MKTR_002", "User account not found"
         )
-        
+
     existing = await get_marketer_by_user(user_id, org_id, db_session)
     if existing:
         if existing.status == MarketerStatus.ACTIVE:
             return existing
         if existing.status == MarketerStatus.SUSPENDED:
-            return await reactivate_marketer(existing.id, org_id, admin_user_id, db_session)
-            
+            return await reactivate_marketer(
+                existing.id, org_id, admin_user_id, db_session
+            )
+
         existing.status = MarketerStatus.ACTIVE
         existing.approved_by_user_id = admin_user_id
         existing.approved_at = datetime.now(UTC)
@@ -391,9 +393,11 @@ async def admin_grant_marketer(
     db_session.add(marketer)
     db_session.commit()
     db_session.refresh(marketer)
-    
+
     await generate_referral_code_for_marketer(marketer.id, db_session)
-    logger.info(f"Marketer granted directly for user {user_id} by admin {admin_user_id}")
+    logger.info(
+        f"Marketer granted directly for user {user_id} by admin {admin_user_id}"
+    )
     return marketer
 
 

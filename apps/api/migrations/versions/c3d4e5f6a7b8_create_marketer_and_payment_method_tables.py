@@ -68,12 +68,16 @@ def upgrade() -> None:
                 server_default="7.70",
             ),
             sa.Column(
-                "phone_number", sqlmodel.sql.sqltypes.AutoString(length=20), nullable=True
+                "phone_number",
+                sqlmodel.sql.sqltypes.AutoString(length=20),
+                nullable=True,
             ),
             sa.Column("approved_by_user_id", sa.BigInteger(), nullable=True),
             sa.Column("approved_at", sa.DateTime(), nullable=True),
             sa.Column("rejection_reason", sa.Text(), nullable=True),
-            sa.Column("needs_review", sa.Boolean(), nullable=False, server_default="false"),
+            sa.Column(
+                "needs_review", sa.Boolean(), nullable=False, server_default="false"
+            ),
             sa.Column("notes", sa.Text(), nullable=True),
             sa.Column(
                 "total_students_referred",
@@ -84,12 +88,18 @@ def upgrade() -> None:
             sa.Column(
                 "total_courses_sold", sa.Integer(), nullable=False, server_default="0"
             ),
-            sa.Column("total_earned_usd", sa.Float(), nullable=False, server_default="0.0"),
-            sa.Column("total_paid_usd", sa.Float(), nullable=False, server_default="0.0"),
+            sa.Column(
+                "total_earned_usd", sa.Float(), nullable=False, server_default="0.0"
+            ),
+            sa.Column(
+                "total_paid_usd", sa.Float(), nullable=False, server_default="0.0"
+            ),
             sa.Column("creation_date", sa.DateTime(), nullable=False),
             sa.Column("update_date", sa.DateTime(), nullable=False),
             sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
             sa.ForeignKeyConstraint(
                 ["referral_code_id"], ["referralcode.id"], ondelete="SET NULL"
             ),
@@ -124,7 +134,9 @@ def upgrade() -> None:
                 "currency", sqlmodel.sql.sqltypes.AutoString(length=3), nullable=False
             ),
             sa.Column(
-                "country_code", sqlmodel.sql.sqltypes.AutoString(length=2), nullable=False
+                "country_code",
+                sqlmodel.sql.sqltypes.AutoString(length=2),
+                nullable=False,
             ),
             sa.Column("account_details", sa.Text(), nullable=False),
             sa.Column(
@@ -136,9 +148,13 @@ def upgrade() -> None:
             sa.Column("verified_at", sa.DateTime(), nullable=True),
             sa.Column("creation_date", sa.DateTime(), nullable=False),
             sa.Column("update_date", sa.DateTime(), nullable=False),
-            sa.ForeignKeyConstraint(["marketer_id"], ["marketer.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["marketer_id"], ["marketer.id"], ondelete="CASCADE"
+            ),
             sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
             sa.PrimaryKeyConstraint("id"),
         )
         op.create_index(

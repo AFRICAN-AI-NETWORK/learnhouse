@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from dateutil import parser
 from fastapi import HTTPException, Request, status
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -27,6 +26,7 @@ from src.services.courses.grade import (
     load_activity_grade_inputs,
     normalized_assignment_score,
 )
+from src.services.utils.datetimes import parse_instant
 
 
 def get_enrolled_user_ids_for_course(course_id: int, db_session: Session) -> list[int]:
@@ -399,11 +399,8 @@ async def add_activity_to_trail(
         ).first()
         if chapter and chapter.due_date:
             try:
-                due_date = parser.isoparse(chapter.due_date)
-                # handle timezone naive or aware comparison by replacing tzinfo if needed,
-                # but simplest is just checking if current time is greater:
-                now_tz = datetime.now(due_date.tzinfo)
-                if now_tz > due_date:
+                due_date = parse_instant(chapter.due_date)
+                if datetime.now(UTC) > due_date:
                     is_late = True
             except ValueError:
                 pass

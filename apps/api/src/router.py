@@ -3,21 +3,23 @@ from fastapi import APIRouter, Depends
 from ee.routers import referrals
 from src.core.ee_hooks import register_ee_routers
 from src.routers import (
-                         admin_analytics,
-                         announcements,
-                         auth,
-                         cohorts,
-                         communications,
-                         dev,
-                         health,
-                         notifications,
-                         orgs,
-                         roles,
-                         search,
-                         trail,
-                         usergroups,
-                         users,
-                         waitlist,
+    academic_calendar,
+    admin_analytics,
+    announcements,
+    auth,
+    cohorts,
+    communications,
+    dev,
+    health,
+    notifications,
+    orgs,
+    roles,
+    search,
+    student_journey,
+    trail,
+    usergroups,
+    users,
+    waitlist,
 )
 from src.routers.ai import ai
 from src.routers.chat import admin as chat_admin
@@ -27,15 +29,16 @@ from src.routers.chat import websocket as chat_websocket
 from src.routers.code import router as code_router
 from src.routers.contact import router as contact_router
 from src.routers.courses import (
-                         assignments,
-                         certifications,
-                         chapters,
-                         collections,
-                         courses,
-                         grade,
-                         live_sessions,
-                         prerequisites,
-                         schedules,
+    assignments,
+    calendar,
+    certifications,
+    chapters,
+    collections,
+    courses,
+    grade,
+    live_sessions,
+    prerequisites,
+    schedules,
 )
 from src.routers.courses.activities import activities, blocks
 from src.routers.referrals.marketers import router as marketers_router
@@ -74,7 +77,11 @@ v1_router.include_router(
 )
 v1_router.include_router(grade.router, prefix="/courses", tags=["course-grade"])
 v1_router.include_router(schedules.router, prefix="/courses", tags=["course-schedule"])
+v1_router.include_router(calendar.router, prefix="/courses", tags=["course-calendar"])
 v1_router.include_router(trail.router, prefix="/trail", tags=["trail"])
+v1_router.include_router(
+    student_journey.router, prefix="/student-journey", tags=["student-journey"]
+)
 v1_router.include_router(
     admin_analytics.router, prefix="/admin/analytics", tags=["admin-analytics"]
 )
@@ -90,6 +97,16 @@ v1_router.include_router(
     flutterwave_webhook_router, prefix="/webhooks", tags=["webhooks"]
 )
 v1_router.include_router(cohorts.router, prefix="/cohorts", tags=["cohorts"])
+v1_router.include_router(
+    academic_calendar.years_router,
+    prefix="/academic-years",
+    tags=["academic-calendar"],
+)
+v1_router.include_router(
+    academic_calendar.cohorts_router,
+    prefix="/academic-cohorts",
+    tags=["academic-calendar"],
+)
 v1_router.include_router(
     announcements.router, prefix="/announcements", tags=["announcements"]
 )

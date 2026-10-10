@@ -1,10 +1,10 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock, patch
 
+import jwt
 import pytest
 from fastapi import HTTPException, Request
 from fastapi_jwt_auth import AuthJWT
-from jose import jwt
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.db.users import AnonymousUser, PublicUser, User
@@ -252,11 +252,11 @@ class TestAuth:
     @pytest.mark.asyncio
     async def test_get_current_user_jwt_error(self, mock_request, mock_db_session):
         """Test getting current user when JWT is invalid"""
-        from jose import JWTError
+        from jwt import InvalidTokenError
 
         # Mock AuthJWT to raise
         mock_authorize = Mock(spec=AuthJWT)
-        mock_authorize.jwt_optional.side_effect = JWTError("Invalid token")
+        mock_authorize.jwt_optional.side_effect = InvalidTokenError("Invalid token")
 
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user(

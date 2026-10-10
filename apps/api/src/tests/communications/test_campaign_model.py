@@ -1,4 +1,3 @@
-
 from src.db.communications import CampaignRead
 
 

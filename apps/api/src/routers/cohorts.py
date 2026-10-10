@@ -5,6 +5,7 @@ from src.core.events.database import get_db_session
 from src.db.cohorts import CohortCreate, CohortRead
 from src.db.users import PublicUser
 from src.security.auth import get_current_user
+from src.security.calendar_security import require_calendar_right
 from src.services.cohorts.cohorts import (
     create_cohort,
     get_current_cohort,
@@ -21,7 +22,7 @@ async def api_create_cohort(
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
 ):
-    # TODO: Add proper admin RBAC check here
+    await require_calendar_right(current_user, "create", db_session)
     return await create_cohort(cohort_data, db_session)
 
 
@@ -54,5 +55,5 @@ async def api_unlock_cohort(
     db_session: Session = Depends(get_db_session),
     current_user: PublicUser = Depends(get_current_user),
 ):
-    # TODO: Add proper admin RBAC check here
+    await require_calendar_right(current_user, "update", db_session)
     return await unlock_cohort(cohort_id, db_session)

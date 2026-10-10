@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Clock3,
   CopyCheck,
+  AlertTriangle,
   MapPin,
   Plus,
   Save,
@@ -20,15 +21,23 @@ import {
   CourseRegisterPolicy,
   CourseTimetableEvent,
   CourseTimetableEventInput,
+  LearningPhase,
   RegisterFrequency,
   TimetableRecurrence,
   TimetableVisibility,
+  RestDayConflict,
+  WeeklySchedule,
+  WeeklyScheduleDay,
   createCourseTimetableEvent,
   deleteCourseTimetableEvent,
+  deleteCourseWeeklySchedule,
+  getCourseRestDayConflicts,
+  getCourseWeeklySchedule,
   getCourseRegisterPolicy,
   getCourseTimetable,
   getMockRegisterPolicy,
   getMockTimetable,
+  updateCourseWeeklySchedule,
   updateCourseRegisterPolicy,
   updateCourseTimetableEvent,
 } from '@services/courses/schedule'
@@ -58,6 +67,16 @@ const timetableDays = [
   'Sunday',
 ]
 
+const phaseOptions: { value: LearningPhase; label: string }[] = [
+  { value: 'learn', label: 'Learn' },
+  { value: 'practice', label: 'Practice' },
+  { value: 'connect', label: 'Connect' },
+  { value: 'apply', label: 'Apply' },
+  { value: 'build', label: 'Build' },
+  { value: 'support', label: 'Support' },
+  { value: 'rest', label: 'Rest' },
+]
+
 function EditCourseSchedule() {
   const course = useCourse() as any
   const session = useLHSession() as any
@@ -85,6 +104,26 @@ function EditCourseSchedule() {
     { shouldRetryOnError: false }
   )
 
+  const {
+    data: weeklyScheduleData,
+    error: weeklyScheduleError,
+    mutate: mutateWeeklySchedule,
+  } = useSWR(
+    courseUuid ? ['course-weekly-schedule', courseUuid] : null,
+    () => getCourseWeeklySchedule(courseUuid, accessToken),
+    { shouldRetryOnError: false }
+  )
+
+  const {
+    data: restDayConflicts = [],
+    error: restDayConflictsError,
+    mutate: mutateRestDayConflicts,
+  } = useSWR(
+    courseUuid ? ['course-rest-day-conflicts', courseUuid] : null,
+    () => getCourseRestDayConflicts(courseUuid, accessToken),
+    { shouldRetryOnError: false }
+  )
+
   const initialEvents = useMemo(
     () =>
       timetableData ||
@@ -104,8 +143,12 @@ function EditCourseSchedule() {
   )
   const [draft, setDraft] = useState<CourseTimetableEventInput | null>(null)
   const [policy, setPolicy] = useState<CourseRegisterPolicy | null>(null)
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule | null>(
+    null
+  )
   const [isSavingEvent, setIsSavingEvent] = useState(false)
   const [isSavingPolicy, setIsSavingPolicy] = useState(false)
+  const [isSavingWeeklySchedule, setIsSavingWeeklySchedule] = useState(false)
 
   useEffect(() => {
     setEvents(initialEvents)
@@ -133,6 +176,12 @@ function EditCourseSchedule() {
       setPolicy(initialPolicy)
     }
   }, [initialPolicy])
+
+  useEffect(() => {
+    if (weeklyScheduleData) {
+      setWeeklySchedule(weeklyScheduleData)
+    }
+  }, [weeklyScheduleData])
 
   const selectedEvent = events.find(
     (event) => event.event_uuid === selectedEventUuid
@@ -260,6 +309,51 @@ function EditCourseSchedule() {
     }
   }
 
+  const saveWeeklySchedule = async () => {
+    if (!courseUuid || !weeklySchedule) return
+    setIsSavingWeeklySchedule(true)
+    try {
+      const result = await updateCourseWeeklySchedule(
+        courseUuid,
+        {
+          name: weeklySchedule.name,
+          timezone: weeklySchedule.timezone,
+          rest_day_enforced: weeklySchedule.rest_day_enforced,
+          days: weeklySchedule.days,
+        },
+        accessToken
+      )
+      if (!result.success) throw new Error(getApiErrorMessage(result))
+      toast.success('Weekly rhythm saved')
+      mutateWeeklySchedule()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Could not save weekly rhythm'
+      )
+    } finally {
+      setIsSavingWeeklySchedule(false)
+    }
+  }
+
+  const resetWeeklySchedule = async () => {
+    if (!courseUuid || !weeklySchedule?.is_course_override) return
+    if (
+      !window.confirm(
+        'Remove this course override and use the organization default schedule?'
+      )
+    ) {
+      return
+    }
+    const result = await deleteCourseWeeklySchedule(courseUuid, accessToken)
+    if (!result.success) {
+      toast.error(getApiErrorMessage(result))
+      return
+    }
+    toast.success('Course now uses the organization default')
+    mutateWeeklySchedule()
+    mutateRestDayConflicts()
+  }
+
   if (!courseUuid) {
     return <div className="p-10 text-sm text-gray-500">Loading schedule...</div>
   }
@@ -288,15 +382,27 @@ function EditCourseSchedule() {
           </button>
         </div>
 
-        {(timetableError || policyError) && (
+        {(timetableError || policyError || weeklyScheduleError) && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Backend schedule endpoints are not available yet, so this page is
-            showing editable preview data against the planned API contract.
+            Some schedule endpoints could not be reached with your current
+            session.
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
           <section className="space-y-4">
+            <WeeklyScheduleEditor
+              schedule={weeklySchedule}
+              setSchedule={setWeeklySchedule}
+              isSaving={isSavingWeeklySchedule}
+              onSave={saveWeeklySchedule}
+              onReset={resetWeeklySchedule}
+            />
+            <CourseRestDayConflicts
+              conflicts={restDayConflicts}
+              error={restDayConflictsError}
+            />
+
             <div className="rounded-lg border border-gray-200 bg-white">
               <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                 <div>
@@ -359,7 +465,9 @@ function EditCourseSchedule() {
                     label="Starts"
                     type="datetime-local"
                     value={toDateTimeLocal(draft.starts_at)}
-                    onChange={(value) => setDraft(updateDraftStart(draft, value))}
+                    onChange={(value) =>
+                      setDraft(updateDraftStart(draft, value))
+                    }
                   />
                   <TextField
                     label="Ends"
@@ -455,6 +563,190 @@ function EditCourseSchedule() {
         </div>
       </div>
     </div>
+  )
+}
+
+function CourseRestDayConflicts({
+  conflicts,
+  error,
+}: {
+  conflicts: RestDayConflict[]
+  error: unknown
+}) {
+  return (
+    <section className="rounded-lg border border-gray-200 bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={17} className="text-amber-600" />
+          <h2 className="font-bold text-gray-950">Rest-day conflicts</h2>
+        </div>
+        <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
+          {conflicts.length}
+        </span>
+      </div>
+      {error ? (
+        <p className="mt-2 text-sm text-amber-800">
+          Could not load rest-day conflicts with your current permissions.
+        </p>
+      ) : conflicts.length === 0 ? (
+        <p className="mt-2 text-sm text-emerald-700">No published conflicts.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-gray-100">
+          {conflicts.map((conflict) => (
+            <li
+              key={`${conflict.item_type}-${conflict.item_uuid}`}
+              className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-2 text-sm"
+            >
+              <span className="font-semibold text-gray-800">
+                {conflict.title}
+              </span>
+              <span className="capitalize text-gray-500">
+                {conflict.item_type.replaceAll('_', ' ')}
+              </span>
+              <span className="text-gray-600">
+                {conflict.conflicting_dates.join(', ')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function WeeklyScheduleEditor({
+  schedule,
+  setSchedule,
+  isSaving,
+  onSave,
+  onReset,
+}: {
+  schedule: WeeklySchedule | null
+  setSchedule: (schedule: WeeklySchedule) => void
+  isSaving: boolean
+  onSave: () => void
+  onReset: () => void
+}) {
+  if (!schedule) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
+        Loading weekly rhythm...
+      </div>
+    )
+  }
+
+  const sunday = schedule.days.find((day) => day.weekday === 6)
+  const sundayChanged =
+    sunday && (!sunday.is_rest_day || sunday.phase !== 'rest')
+
+  const updateDay = (weekday: number, changes: Partial<WeeklyScheduleDay>) => {
+    const days = schedule.days.map((day) =>
+      day.weekday === weekday ? { ...day, ...changes } : day
+    )
+    setSchedule({ ...schedule, days })
+  }
+
+  return (
+    <section className="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-bold text-gray-950">Weekly rhythm</h2>
+            <span
+              className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                schedule.is_course_override
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {schedule.is_course_override
+                ? 'Course override'
+                : 'Organization default'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500">
+            Assign the Monday-Sunday programme phases students will follow.
+          </p>
+        </div>
+        <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:flex sm:flex-wrap">
+          {schedule.is_course_override && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 sm:w-auto"
+            >
+              <Trash2 size={15} />
+              Use organization default
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60 sm:w-auto"
+          >
+            <Save size={16} />
+            {isSaving ? 'Saving...' : 'Save rhythm'}
+          </button>
+        </div>
+      </div>
+
+      {sundayChanged && (
+        <div className="mx-4 mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          Sunday normally defaults to Rest. Changing it may affect rest-day
+          enforcement for published sessions and deadlines.
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        {timetableDays.map((label, weekday) => {
+          const day = schedule.days.find((item) => item.weekday === weekday)
+          if (!day) return null
+          return (
+            <div
+              key={label}
+              className={`rounded-lg border p-3 ${
+                day.is_rest_day
+                  ? 'border-emerald-200 bg-emerald-50'
+                  : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-gray-900">{label}</p>
+                <input
+                  type="checkbox"
+                  checked={day.is_rest_day}
+                  onChange={(event) =>
+                    updateDay(weekday, {
+                      is_rest_day: event.target.checked,
+                      phase: event.target.checked ? 'rest' : day.phase,
+                    })
+                  }
+                  aria-label={`${label} rest day`}
+                />
+              </div>
+              <select
+                value={day.phase}
+                onChange={(event) =>
+                  updateDay(weekday, {
+                    phase: event.target.value as LearningPhase,
+                    is_rest_day: event.target.value === 'rest',
+                  })
+                }
+                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm"
+              >
+                {phaseOptions.map((phase) => (
+                  <option key={phase.value} value={phase.value}>
+                    {phase.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

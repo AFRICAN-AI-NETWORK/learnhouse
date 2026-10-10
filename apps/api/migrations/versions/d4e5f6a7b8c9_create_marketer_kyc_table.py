@@ -76,7 +76,9 @@ def upgrade() -> None:
                 nullable=True,
             ),
             sa.Column(
-                "selfie_url", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False
+                "selfie_url",
+                sqlmodel.sql.sqltypes.AutoString(length=500),
+                nullable=False,
             ),
             sa.Column(
                 "status",
@@ -94,12 +96,18 @@ def upgrade() -> None:
             sa.Column("rejection_reason", sa.Text(), nullable=True),
             sa.Column("reviewed_by_user_id", sa.BigInteger(), nullable=True),
             sa.Column("reviewed_at", sa.DateTime(), nullable=True),
-            sa.Column("submission_count", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column(
+                "submission_count", sa.Integer(), nullable=False, server_default="0"
+            ),
             sa.Column("creation_date", sa.DateTime(), nullable=False),
             sa.Column("update_date", sa.DateTime(), nullable=False),
-            sa.ForeignKeyConstraint(["marketer_id"], ["marketer.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["marketer_id"], ["marketer.id"], ondelete="CASCADE"
+            ),
             sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
-            sa.ForeignKeyConstraint(["org_id"], ["organization.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(
+                ["org_id"], ["organization.id"], ondelete="CASCADE"
+            ),
             sa.ForeignKeyConstraint(
                 ["reviewed_by_user_id"], ["user.id"], ondelete="SET NULL"
             ),

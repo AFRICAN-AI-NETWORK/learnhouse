@@ -3,7 +3,6 @@ import React, { use } from 'react'
 import { motion } from 'framer-motion'
 import BreadCrumbs from '@components/Dashboard/Misc/BreadCrumbs'
 import Link from 'next/link'
-import { getUriWithOrg } from '@services/config/config'
 import { Users, Gem } from 'lucide-react'
 import PaymentsConfigurationPage from '@components/Dashboard/Pages/Payments/PaymentsConfigurationPage'
 import PaymentsProductPage from '@components/Dashboard/Pages/Payments/PaymentsProductPage'
@@ -92,13 +91,13 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
         </div>
         <div className="flex flex-wrap gap-2 font-black text-sm overflow-x-auto no-scrollbar dark:text-white/80">
           <TabLink
-            href={getUriWithOrg(params.orgslug, '/dash/payments/customers')}
+            href={`/orgs/${params.orgslug}/dash/payments/customers`}
             icon={<Users size={16} />}
             label="Customers"
             isActive={subpage === 'customers'}
           />
           <TabLink
-            href={getUriWithOrg(params.orgslug, '/dash/payments/paid-products')}
+            href={`/orgs/${params.orgslug}/dash/payments/paid-products`}
             icon={<Gem size={16} />}
             label="Products & Subscriptions"
             isActive={subpage === 'paid-products'}
@@ -110,7 +109,7 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
             isActive={subpage === 'configuration'}
           /> */}
           <TabLink
-            href={getUriWithOrg(params.orgslug, '/dash/payments/discounts')}
+            href={`/orgs/${params.orgslug}/dash/payments/discounts`}
             icon={<Ticket size={16} />}
             label="Discounts"
             isActive={subpage === 'discounts'}

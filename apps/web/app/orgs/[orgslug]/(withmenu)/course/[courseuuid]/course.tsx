@@ -32,6 +32,7 @@ import CoursesActions from '@components/Objects/Courses/CourseActions/CoursesAct
 import CourseActionsMobile from '@components/Objects/Courses/CourseActions/CourseActionsMobile'
 import CourseAuthors from '@components/Objects/Courses/CourseAuthors/CourseAuthors'
 import CourseSchedulePanel from '@components/Objects/Courses/CourseSchedule/CourseSchedulePanel'
+import CourseJourneyPanel from '@components/Objects/Courses/CourseJourney/CourseJourneyPanel'
 import CourseBreadcrumbs from '@components/Pages/Courses/CourseBreadcrumbs'
 import BundleUpsellBanner from '@components/Objects/BundleUpsellBanner'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
@@ -239,6 +240,16 @@ const CourseClient = (props: any) => {
                     />
                   </div>
                 )}
+
+                <CourseJourneyPanel
+                  courseUuid={props.course.course_uuid}
+                  orgslug={orgslug}
+                  chapters={course.chapters || []}
+                  completedActivityIds={
+                    currentRun?.steps?.map((step: any) => step.activity_id) ||
+                    []
+                  }
+                />
 
                 <CourseSchedulePanel courseUuid={props.course.course_uuid} />
 

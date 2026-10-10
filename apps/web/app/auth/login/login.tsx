@@ -21,7 +21,11 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
-import { getUriWithOrg, getUriWithoutOrg } from '@services/config/config'
+import {
+  getAPIUrl,
+  getUriWithOrg,
+  getUriWithoutOrg,
+} from '@services/config/config'
 import { getOrgLogoMediaDirectory } from '@services/media/media'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '@components/Utils/LanguageSwitcher'
@@ -55,17 +59,14 @@ const LoginClient = (props: LoginClientProps) => {
   const handleResendVerification = async () => {
     setResendingEmail(true)
     try {
-      const response = await fetch(
-        'https://lms-backend.africanainetwork.com/api/v1/auth/resend-verification',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: getValues('email'),
-            org_slug: props.org.slug || 'default',
-          }),
-        }
-      )
+      const response = await fetch(`${getAPIUrl()}auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: getValues('email'),
+          org_slug: props.org.slug || 'default',
+        }),
+      })
 
       if (response.ok) {
         setError(t('auth.verification_sent'))
