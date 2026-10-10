@@ -7,29 +7,33 @@ import { useRouter } from 'next/navigation'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Loader2, CreditCard, Tag, Check } from 'lucide-react'
 import OpenSignUpComponent from '@/app/auth/signup/OpenSignup'
-import { useFlutterwave } from 'flutterwave-react-v3'
-import { usePaystackPayment } from 'react-paystack'
 import toast from 'react-hot-toast'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 import { useCurrency } from '@components/Contexts/CurrencyContext'
 import { validateDiscountCode } from '@services/payments/discounts'
+import {
+  getCheckoutSessionByCourseUuid,
+  getStripeProductCheckoutSession,
+} from '@services/payments/products'
 import { Input } from '@components/ui/input'
 import { Button } from '@components/ui/button'
 
 interface ClickToPayButtonProps {
   courseId: string
+  productId?: number
   priceAmount: number
-  currency?: string // made optional since we use context now
+  currency?: string
   courseName: string
-  planId?: string // Optional Flutterwave Plan ID for subscriptions
-  skipDiscountModal?: boolean // Optional prop to skip the discount modal
+  planId?: string
+  skipDiscountModal?: boolean
 }
 
 export default function ClickToPayButton({
   courseId,
+  productId,
   priceAmount,
-  currency, // we can ignore this now
+  currency,
   courseName,
   planId,
   skipDiscountModal,
@@ -49,41 +53,18 @@ export default function ClickToPayButton({
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
 
-  const fwPublicKey = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || ''
-  const psPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || ''
-
-  // Track email/name dynamically for guest checkout flow
-  const [dynamicEmail, setDynamicEmail] = useState('')
-  const [dynamicName, setDynamicName] = useState('')
-
   // Upsell State
   const [isUpsellSelected, setIsUpsellSelected] = useState(false)
-  const [isPendingSecondPayment, setIsPendingSecondPayment] = useState(false)
 
   // Hardcoded upsell price for Career Accelerator (always $20 base)
   const upsellBasePrice = 20
 
-  // Fix impure Date.now() call during render
-  const [txRef, setTxRef] = useState(() => Date.now().toString())
-
-  React.useEffect(() => {
-    if (session?.status === 'authenticated' && session?.data?.user?.email) {
-      setDynamicEmail(session.data.user.email)
-      setDynamicName(session.data.username || session.data.user.name || '')
-    }
-  }, [session])
-
   const baseAmount = convertAmount(priceAmount)
   const upsellAmount = convertAmount(upsellBasePrice)
 
-  let finalAmount = appliedDiscount
-    ? appliedDiscount.final_amount // the backend returns the final amount
-    : baseAmount
+  let finalAmount = appliedDiscount ? appliedDiscount.final_amount : baseAmount
 
-  // We only add upsell amount for display in the modal.
-  // The actual fwConfig will use different amounts depending on the phase.
   const displayFinalAmount = finalAmount + (isUpsellSelected ? upsellAmount : 0)
-
   const finalCurrency = contextCurrency
 
   const handleApplyDiscount = async () => {
@@ -98,7 +79,6 @@ export default function ClickToPayButton({
     setDiscountError(null)
 
     try {
-      // Validate without productId by using orgId, code, and amount
       const result = (await validateDiscountCode(
         org.id,
         discountCode,
@@ -107,12 +87,11 @@ export default function ClickToPayButton({
       )) as any
 
       if (result && result.data && result.data.valid) {
-        // Convert the backend final_amount to the selected currency
         const convertedFinalAmount = convertAmount(result.data.final_amount)
 
         setAppliedDiscount({
           ...result.data,
-          final_amount: convertedFinalAmount, // store the converted amount so flutterwave gets the right amount
+          final_amount: convertedFinalAmount,
         })
         toast.success('Discount applied successfully!')
       } else {
@@ -131,137 +110,92 @@ export default function ClickToPayButton({
     setDiscountError(null)
   }
 
-  // Flutterwave Config
-  const fwConfig: any = {
-    public_key: fwPublicKey,
-    tx_ref: txRef,
-    amount: isPendingSecondPayment ? upsellAmount : finalAmount,
-    currency: finalCurrency,
-    // Only pass planId for the first payment, the second payment (upsell) is a one-time charge
-    ...(planId && !isPendingSecondPayment ? { payment_plan: planId } : {}),
+  const triggerPayment = async () => {
+    const access_token = session?.data?.tokens?.access_token
+    if (!access_token) {
+      toast.error('Please login first')
+      setIsProcessing(false)
+      return
+    }
 
-    customer: {
-      email: dynamicEmail,
-      phone_number: '',
-      name: dynamicName,
-    },
-    meta: {
-      course_uuid: isPendingSecondPayment ? 'career-accelerator' : courseId,
-    },
-    customizations: {
-      title: isPendingSecondPayment ? 'Career Accelerator' : courseName,
-      description: isPendingSecondPayment
-        ? 'Payment for Career Accelerator'
-        : 'Payment for course access',
-      logo: 'https://lms.africanainetwork.com/logo.png',
-    },
-  }
+    try {
+      let res
+      // We will redirect back to the course page upon success
+      const currentUrl = window.location.origin + `/course/${courseId}`
+      const codeToApply = appliedDiscount ? appliedDiscount.code : undefined
 
-  // Paystack Config
-  const psConfig = {
-    reference: txRef,
-    email: dynamicEmail,
-    amount: (isPendingSecondPayment ? upsellAmount : finalAmount) * 100, // Paystack expects lowest denomination (e.g. kobo/cents)
-    publicKey: psPublicKey,
-    currency: finalCurrency,
-    ...(planId && !isPendingSecondPayment ? { plan: planId } : {}),
-    metadata: {
-      course_uuid: isPendingSecondPayment ? 'career-accelerator' : courseId,
-      custom_fields: [],
-    },
-  }
-
-  const handleFlutterwavePayment = useFlutterwave(fwConfig)
-  const initializePaystackPayment = usePaystackPayment(psConfig as any)
-
-  const triggerPayment = (emailToUse: string, nameToUse: string) => {
-    const onSuccess = () => {
-      if (isUpsellSelected && !isPendingSecondPayment) {
-        // First payment successful, prepare for second
-        toast.success(
-          'Subscription payment successful! Please complete your Career Accelerator purchase.'
+      if (productId) {
+        // If we have an exact product ID (from dashboard/CoursePaidOptions), use the standard checkout
+        res = await getStripeProductCheckoutSession(
+          org.id,
+          productId,
+          currentUrl,
+          access_token,
+          codeToApply
         )
-        setIsPendingSecondPayment(true)
-        setTxRef(Date.now().toString()) // regenerate tx_ref for second payment
       } else {
-        toast.success('Payment successful! Verifying your enrollment...')
-        setTimeout(() => {
-          router.push(`/course/${courseId}`)
-        }, 2000)
+        // Otherwise use the uuid based checkout (from landing pages)
+        const upsellUuid = isUpsellSelected ? 'career-accelerator' : undefined
+        res = await getCheckoutSessionByCourseUuid(
+          org.id,
+          courseId,
+          currentUrl,
+          access_token,
+          codeToApply,
+          upsellUuid
+        )
       }
-    }
 
-    const onClose = () => {
-      setIsProcessing(false)
-    }
-
-    if (fwPublicKey && fwPublicKey !== 'your_flutterwave_public_key_here') {
-      handleFlutterwavePayment({
-        callback: async (response) => {
-          if (response.status === 'successful') {
-            onSuccess()
-          } else {
-            toast.error('Payment failed or was cancelled.')
-            setIsProcessing(false)
-          }
-        },
-        onClose: onClose,
-      })
-    } else if (psPublicKey) {
-      ;(initializePaystackPayment as any)(onSuccess, onClose)
-    } else {
-      toast.error('No payment provider configured.')
+      if (res && res.checkout_url) {
+        window.location.href = res.checkout_url
+      } else {
+        toast.error('Failed to initialize checkout.')
+        setIsProcessing(false)
+      }
+    } catch (e: any) {
+      if (e?.status === 404) {
+        toast.error(
+          "The course you are trying to buy hasn't been created yet. Please create it in the dashboard."
+        )
+      } else {
+        toast.error('Error initiating payment')
+      }
       setIsProcessing(false)
     }
   }
 
-  const processPayment = (userEmail: string, userName: string) => {
+  const processPayment = () => {
     setIsProcessing(true)
-    setDynamicEmail(userEmail)
-    setDynamicName(userName)
-
-    // Close auth modal if open
     setIsModalOpen(false)
     setIsProcessing(false)
 
     if (skipDiscountModal) {
       setTimeout(() => {
-        triggerPayment(userEmail, userName)
+        setIsProcessing(true)
+        triggerPayment()
       }, 100)
     } else {
-      // Instead of jumping to payment immediately, open the discount modal!
       setIsDiscountModalOpen(true)
     }
   }
 
   const handleClick = () => {
     if (session.status === 'authenticated') {
-      // User is logged in, skip signup, proceed to discount modal
-      processPayment(
-        session.data.user.email,
-        session.data.username || session.data.user.name || ''
-      )
+      processPayment()
     } else {
-      // User is not logged in, show signup modal first
       setIsModalOpen(true)
     }
   }
 
   const handleSignupSuccess = async (userData: any, resData: any) => {
     setIsProcessing(true)
-    // Signup was successful! Auto-login the user
     try {
       await signIn('credentials', {
         email: userData.email,
         password: userData.password,
         redirect: false,
       })
-      // Trigger processPayment to open discount modal
-      processPayment(
-        userData.email,
-        `${userData.first_name || ''} ${userData.last_name || ''}`.trim() ||
-          userData.username
-      )
+      processPayment()
     } catch (error) {
       toast.error('Failed to log you in automatically.')
       setIsProcessing(false)
@@ -269,12 +203,11 @@ export default function ClickToPayButton({
   }
 
   const handleFinalCheckout = () => {
-    // Actually trigger Paystack/Flutterwave
     setIsProcessing(true)
     setIsDiscountModalOpen(false)
 
     setTimeout(() => {
-      triggerPayment(dynamicEmail, dynamicName)
+      triggerPayment()
     }, 100)
   }
 
@@ -553,73 +486,12 @@ export default function ClickToPayButton({
                 ) : (
                   <>
                     {isUpsellSelected
-                      ? 'Proceed to Phase 1 Payment \u2192'
+                      ? 'Proceed to Payment \u2192'
                       : 'Proceed to Payment \u2192'}
                   </>
                 )}
               </Button>
             </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      {/* SECOND PAYMENT MODAL */}
-      <Dialog.Root
-        open={isPendingSecondPayment}
-        onOpenChange={(open) => {
-          if (!open && !isProcessing) {
-            // Prevent closing until they complete or cancel explicitly?
-            // We can let them close it but they won't be charged for the second part.
-            setIsPendingSecondPayment(false)
-            router.push(`/course/${courseId}`)
-          }
-        }}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] animate-in fade-in duration-200" />
-          <Dialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-sm bg-white rounded-3xl shadow-2xl z-[110] animate-in zoom-in-95 duration-200 p-6 text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Subscription Successful! 🎉
-            </h2>
-            <p className="text-sm text-gray-600 mb-6">
-              You are now subscribed to the All-Access plan. Please complete the
-              one-time payment for the Career Accelerator to finalize your
-              setup.
-            </p>
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                Career Accelerator
-              </p>
-              <p className="text-3xl font-black text-gray-900">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: finalCurrency,
-                }).format(upsellAmount)}
-              </p>
-            </div>
-            <Button
-              onClick={() => {
-                setIsProcessing(true)
-                triggerPayment(dynamicEmail, dynamicName)
-              }}
-              disabled={isProcessing}
-              className="w-full h-12 text-[15px] font-bold rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-md"
-            >
-              {isProcessing ? (
-                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-              ) : (
-                'Pay Career Accelerator \u2192'
-              )}
-            </Button>
-            <button
-              onClick={() => {
-                setIsPendingSecondPayment(false)
-                router.push(`/course/${courseId}`)
-              }}
-              className="mt-4 text-xs font-bold text-gray-400 hover:text-gray-600"
-            >
-              Skip for now
-            </button>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

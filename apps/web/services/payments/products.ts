@@ -146,3 +146,29 @@ export async function getStripeProductCheckoutSession(
   const res = await getResponseMetadata(result)
   return res
 }
+
+export async function getCheckoutSessionByCourseUuid(
+  orgId: number,
+  courseUuid: string,
+  redirect_uri: string,
+  access_token: string,
+  discountCode?: string,
+  upsellCourseUuid?: string
+) {
+  let url = `${getAPIUrl()}payments/${orgId}/checkout/course_uuid/${courseUuid}?redirect_uri=${encodeURIComponent(redirect_uri)}`
+
+  if (discountCode) {
+    url += `&discount_code=${encodeURIComponent(discountCode)}`
+  }
+
+  if (upsellCourseUuid) {
+    url += `&upsell_course_uuid=${encodeURIComponent(upsellCourseUuid)}`
+  }
+
+  const result = await fetch(
+    url,
+    RequestBodyWithAuthHeader('POST', null, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}

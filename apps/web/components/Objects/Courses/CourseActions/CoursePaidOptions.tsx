@@ -309,6 +309,7 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
           <div className="mt-4">
             <ClickToPayButton
               courseId={course.id}
+              productId={product.id}
               priceAmount={
                 appliedDiscount ? appliedDiscount.final_amount : product.amount
               }
