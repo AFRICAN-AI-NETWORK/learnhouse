@@ -508,11 +508,14 @@ function ActivityClient(props: ActivityClientProps) {
       })
 
       if (run) {
+        const cleanAId = aId?.replace('activity_', '')
         return run.steps.find(
           (step: any) =>
             (step.activity_id === aId ||
+              step.activity_id === cleanAId ||
               step.activity_uuid === aId ||
-              step.activity_uuid === `activity_${aId}`) &&
+              step.activity_uuid === cleanAId ||
+              step.activity_uuid === `activity_${cleanAId}`) &&
             step.complete === true
         )
       }
@@ -669,6 +672,7 @@ function ActivityClient(props: ActivityClientProps) {
             totalActivities={allActivities.length}
             orgslug={orgslug}
             assignment={assignment}
+            contributorStatus={contributorStatus}
           />
         )
 
@@ -2196,7 +2200,9 @@ export function MarkStatus(props: {
         totalActivities++
         const isCompleted = run.steps.find(
           (step: any) =>
-            step.activity_uuid === activity.activity_uuid &&
+            (step.activity_uuid === activity.activity_uuid ||
+              step.activity_uuid ===
+                activity.activity_uuid?.replace('activity_', '')) &&
             step.complete === true
         )
         if (isCompleted) {
@@ -2968,7 +2974,9 @@ function ActivityStatusBadge({
   const isDone = run?.steps.find(
     (step: any) =>
       (step.activity_id === activity.id ||
-        step.activity_uuid === activity.activity_uuid) &&
+        step.activity_uuid === activity.activity_uuid ||
+        step.activity_uuid ===
+          activity.activity_uuid?.replace('activity_', '')) &&
       step.complete === true
   )
 

@@ -345,15 +345,32 @@ async def global_exception_handler(request: Request, exc: Exception):
     if learnhouse_config.general_config.sentry_enabled:
         sentry_sdk.capture_exception(exc)
 
+    import traceback
+    with open("error_log.txt", "a") as f:
+        f.write(f"Unhandled Exception: {exc}\n")
+        f.write(traceback.format_exc() + "\n")
+
     origin = request.headers.get("origin")
     headers = {}
-
     if origin in learnhouse_config.hosting_config.allowed_origins:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
 
     return JSONResponse(
         status_code=500, content={"detail": "Internal server error"}, headers=headers
+    )
+
+from fastapi.exceptions import RequestValidationError
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    import logging
+    logging.error(f"422 Validation Error: {exc.errors()} - Body: {exc.body}")
+    print(f"422 Validation Error: {exc.errors()} - Body: {exc.body}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
     )
 
 
