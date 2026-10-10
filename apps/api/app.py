@@ -109,12 +109,12 @@ try:
 
     from src.jobs.cohort_jobs import sync_process_cohort_unlocks
     from src.jobs.notification_jobs import run_notification_email_job
+    from src.jobs.payment_jobs import process_payment_grace_periods_job
     from src.jobs.referral_jobs import (
         process_commission_eligibility_job,
         process_payout_requests_job,
         refresh_all_marketer_counters_job,
     )
-    from src.jobs.payment_jobs import process_payment_grace_periods_job
     from src.jobs.waitlist_processor import (
         run_retry_failed_emails_job,
         run_waitlist_activation_job,
@@ -361,6 +361,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 from fastapi.exceptions import RequestValidationError
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     import logging
