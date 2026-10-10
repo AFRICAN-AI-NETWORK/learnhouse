@@ -12,6 +12,7 @@ import {
   Award,
   Lock,
   CalendarDays,
+  Flag,
 } from 'lucide-react'
 import EditCourseStructure from '@components/Dashboard/Pages/Course/EditCourseStructure/EditCourseStructure'
 import EditCourseGeneral from '@components/Dashboard/Pages/Course/EditCourseGeneral/EditCourseGeneral'
@@ -19,6 +20,7 @@ import EditCourseAccess from '@components/Dashboard/Pages/Course/EditCourseAcces
 import EditCourseContributors from '@components/Dashboard/Pages/Course/EditCourseContributors/EditCourseContributors'
 import EditCourseCertification from '@components/Dashboard/Pages/Course/EditCourseCertification/EditCourseCertification'
 import EditCourseSchedule from '@components/Dashboard/Pages/Course/EditCourseSchedule/EditCourseSchedule'
+import EditCourseMilestones from '@components/Dashboard/Pages/Course/EditCourseMilestones/EditCourseMilestones'
 import { useCourseRights } from '@hooks/useCourseRights'
 import { useRouter } from 'next/navigation'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
@@ -73,6 +75,13 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
       label: 'Schedule',
       icon: CalendarDays,
       href: `/dash/courses/course/${params.courseuuid}/schedule`,
+      requiredPermission: 'update_content' as const,
+    },
+    {
+      key: 'milestones',
+      label: 'Milestones',
+      icon: Flag,
+      href: `/dash/courses/course/${params.courseuuid}/milestones`,
       requiredPermission: 'update_content' as const,
     },
     {
@@ -221,9 +230,12 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
             {params.subpage == 'access' && hasPermission('manage_access') ? (
               <EditCourseAccess />
             ) : null}
-            {params.subpage == 'schedule' &&
-            hasPermission('update_content') ? (
+            {params.subpage == 'schedule' && hasPermission('update_content') ? (
               <EditCourseSchedule />
+            ) : null}
+            {params.subpage == 'milestones' &&
+            hasPermission('update_content') ? (
+              <EditCourseMilestones />
             ) : null}
             {params.subpage == 'contributors' &&
             hasPermission('manage_contributors') ? (

@@ -3,6 +3,8 @@ from enum import StrEnum
 from sqlalchemy import Column, ForeignKey, Integer, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
+from src.db.courses.weekly_schedule import LearningPhaseEnum
+
 
 class TimetableRecurrenceEnum(StrEnum):
     none = "none"
@@ -53,6 +55,9 @@ class CourseTimetableEventBase(SQLModel):
     visibility: TimetableVisibilityEnum = TimetableVisibilityEnum.draft
     status: TimetableStatusEnum = TimetableStatusEnum.scheduled
     register_required: bool = False
+    programme_week_id: int | None = None
+    # Phase the event was scheduled under; kept when the weekly rhythm changes.
+    weekly_schedule_phase: LearningPhaseEnum | None = None
 
 
 class CourseTimetableEvent(CourseTimetableEventBase, table=True):
@@ -66,6 +71,10 @@ class CourseTimetableEvent(CourseTimetableEventBase, table=True):
     )
     org_id: int = Field(
         sa_column=Column(Integer, ForeignKey("organization.id", ondelete="CASCADE"))
+    )
+    programme_week_id: int | None = Field(
+        default=None,
+        sa_column=Column(Integer, ForeignKey("programme_week.id", ondelete="SET NULL")),
     )
     creation_date: str = ""
     update_date: str = ""

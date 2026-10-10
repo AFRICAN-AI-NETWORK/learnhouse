@@ -7,6 +7,8 @@ the lightweight time-tracking table.
 
 from pydantic import BaseModel
 
+from src.db.student_journey import StudentMilestoneStatus
+
 
 class StudentCourseProgress(BaseModel):
     """A single student's progress in one course."""
@@ -117,6 +119,15 @@ class StudentChapterProgress(BaseModel):
     activities: list[StudentActivityProgress] = []
 
 
+class StudentAttendanceSummary(BaseModel):
+    """Register entries for one student in one course, counted by status."""
+
+    marked: int = 0
+    late: int = 0
+    missed: int = 0
+    excused: int = 0
+
+
 class StudentCourseDetail(BaseModel):
     """Chapter -> activity drilldown for one student in one course."""
 
@@ -130,6 +141,9 @@ class StudentCourseDetail(BaseModel):
     points_earned: float
     time_spent_seconds: int
     chapters: list[StudentChapterProgress] = []
+    # Achievement next to attendance: milestones reached versus sessions attended.
+    milestones: list[StudentMilestoneStatus] = []
+    attendance: StudentAttendanceSummary = StudentAttendanceSummary()
 
 
 class OrgAnalyticsSummary(BaseModel):

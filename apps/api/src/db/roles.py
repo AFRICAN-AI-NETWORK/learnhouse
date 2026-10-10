@@ -58,6 +58,14 @@ class Rights(BaseModel):
     announcements: Permission = Permission(
         action_create=False, action_read=True, action_update=False, action_delete=False
     )
+    # Defaulted for the same reason as announcements. Staff-only: learner-facing
+    # calendar reads do not depend on this right, so the default grants nothing.
+    academic_calendar: Permission = Permission(
+        action_create=False,
+        action_read=False,
+        action_update=False,
+        action_delete=False,
+    )
     dashboard: DashboardPermission
     affiliation: AffiliationPermission = AffiliationPermission()
 

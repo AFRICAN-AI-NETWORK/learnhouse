@@ -37,6 +37,15 @@ from src.db.user_organizations import UserOrganization
 from src.db.users import User, UserCreate, UserRead
 from src.security.security import security_hash_password
 
+_CALENDAR_MANAGE = Permission(
+    action_create=True, action_read=True, action_update=True, action_delete=True
+)
+
+
+def _with_calendar_rights(rights: Rights) -> Rights:
+    """Copy of ``rights`` that can also manage the academic calendar."""
+    return Rights(**{**rights.dict(), "academic_calendar": _CALENDAR_MANAGE.dict()})
+
 
 # Install Default roles
 def install_default_elements(db_session: Session):
@@ -131,6 +140,7 @@ def install_default_elements(db_session: Session):
                 action_update=True,
                 action_delete=True,
             ),
+            academic_calendar=_CALENDAR_MANAGE,
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -209,6 +219,7 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            academic_calendar=_CALENDAR_MANAGE,
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -287,6 +298,7 @@ def install_default_elements(db_session: Session):
                 action_update=False,
                 action_delete=False,
             ),
+            academic_calendar=_CALENDAR_MANAGE,
             dashboard=DashboardPermission(
                 action_access=True,
             ),
@@ -638,7 +650,7 @@ def install_default_elements(db_session: Session):
         id=7,
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_student_mentor",
-        rights=_read_only_rights,
+        rights=_with_calendar_rights(_read_only_rights),
         creation_date=str(datetime.now(UTC)),
         update_date=str(datetime.now(UTC)),
     )
@@ -660,7 +672,7 @@ def install_default_elements(db_session: Session):
         id=9,
         role_type=RoleTypeEnum.TYPE_GLOBAL,
         role_uuid="role_global_lead_instructor",
-        rights=_teaching_rights,
+        rights=_with_calendar_rights(_teaching_rights),
         creation_date=str(datetime.now(UTC)),
         update_date=str(datetime.now(UTC)),
     )

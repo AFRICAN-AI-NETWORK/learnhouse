@@ -29,23 +29,19 @@ export default function QuizBlock({ step }: QuizBlockProps) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    try {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) {
+    const restoreTimeout = window.setTimeout(() => {
+      try {
+        const saved = localStorage.getItem(storageKey)
+        if (!saved) return
         const parsed = JSON.parse(saved)
-        // Hydrate persisted quiz state after the client storage is available.
-        if (parsed.selectedOptions) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setSelectedOptions(parsed.selectedOptions)
-        }
-        if (parsed.submittedStatus) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setSubmittedStatus(parsed.submittedStatus)
-        }
+        if (parsed.selectedOptions) setSelectedOptions(parsed.selectedOptions)
+        if (parsed.submittedStatus) setSubmittedStatus(parsed.submittedStatus)
+      } catch (error) {
+        console.error('Failed to load quiz state', error)
       }
-    } catch (e) {
-      console.error('Failed to load quiz state', e)
-    }
+    }, 0)
+
+    return () => window.clearTimeout(restoreTimeout)
   }, [storageKey])
 
   const handleSelectOption = (qIndex: number, optIndex: number) => {
