@@ -53,8 +53,11 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
         assignmentUUID = getRes.data.assignment_uuid
       } else {
         let resolvedChapterId = activity.chapter_id
-        if (!resolvedChapterId && props.course?.courseStructure?.chapters) {
-          const chapters = props.course.courseStructure.chapters
+        if (!resolvedChapterId) {
+          const chapters =
+            props.course?.chapters ||
+            props.course?.courseStructure?.chapters ||
+            []
           for (const chap of chapters) {
             if (
               chap.activities &&
@@ -66,22 +69,32 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
               break
             }
           }
+          if (!resolvedChapterId && chapters.length > 0) {
+            resolvedChapterId = chapters[0].id
+          }
         }
 
-        const createRes = await createAssignment(
-          {
-            title: activity.name,
-            description: 'Smart Article Assignment',
-            due_date: '',
-            grading_type: 'MANUAL',
-            course_id: props.course?.id || props.course?.courseStructure?.id,
-            org_id: props.org.id,
-            chapter_id: resolvedChapterId,
-            activity_id: activity.id,
-          },
-          access_token
-        )
-        if (createRes.success) {
+        const payload = {
+          title: activity.name,
+          description: 'Smart Article Assignment',
+          due_date: '',
+          published: true,
+          grading_type: 'PERCENTAGE',
+          course_id: props.course?.id || props.course?.courseStructure?.id,
+          org_id: props.org.id,
+          chapter_id: resolvedChapterId,
+          activity_id: activity.id,
+        }
+        console.log('Create Assignment Payload:', payload)
+
+        let createRes: any = null
+        try {
+          createRes = await createAssignment(payload, access_token)
+        } catch (e: any) {
+          console.error('CREATE ASSIGNMENT FAILED', e.body || e.message)
+          toast.error('Assignment creation failed: ' + (e.body || e.message))
+        }
+        if (createRes && createRes.success) {
           assignmentUUID = createRes.data.assignment_uuid
         }
       }
@@ -95,7 +108,9 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
         RequestBodyWithAuthHeader('GET', null, null, access_token)
       )
       const tasksData = await tasksRes.json()
-      let existingTasks = tasksData.data || []
+      let existingTasks = Array.isArray(tasksData)
+        ? tasksData
+        : tasksData.data || []
 
       for (const type of [
         'QUIZ',
@@ -116,7 +131,23 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
 
           let contents = {}
           if (type === 'QUIZ') {
-            contents = { questions: block.questions || [] }
+            const mappedQuestions = (block.questions || []).map((q: any) => ({
+              questionText: q.content || q.text || q.questionText || '',
+              options: (q.options || []).map((opt: any, optIdx: number) => {
+                // Handle both array of strings (SmartArticle) and array of objects (TaskQuizObject)
+                const optText = typeof opt === 'string' ? opt : opt.text || ''
+                const isCorrect =
+                  q.correctOptionIndex !== undefined
+                    ? q.correctOptionIndex === optIdx
+                    : !!opt.assigned_right_answer
+
+                return {
+                  text: optText,
+                  assigned_right_answer: isCorrect,
+                }
+              }),
+            }))
+            contents = { questions: mappedQuestions }
           }
 
           const taskPayload = {

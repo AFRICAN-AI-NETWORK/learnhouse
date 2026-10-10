@@ -562,6 +562,8 @@ async def add_activity_to_trail(
 
     trail_read = TrailRead(
         **trail.model_dump(),
+        org_id=trail.org_id,
+        user_id=trail.user_id,
         runs=trail_runs,
     )
 

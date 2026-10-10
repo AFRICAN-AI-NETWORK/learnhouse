@@ -23,7 +23,7 @@ import {
   Circle,
   ChevronRight,
 } from 'lucide-react'
-import { getAPIUrl } from '@services/config/config'
+import { getAPIUrl, getUriWithOrg } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
 import {
   QuizBlock,
@@ -33,6 +33,9 @@ import {
 } from './Blocks'
 
 import TaskQuizObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskQuizObject'
+import TaskCodeEditorObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskCodeEditorObject'
+import TaskFormObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskFormObject'
+import TaskFileObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskFileObject'
 
 interface SmartArticleActivityProps {
   activity: any
@@ -46,6 +49,7 @@ interface SmartArticleActivityProps {
   totalActivities?: number
   orgslug?: string
   assignment?: any
+  contributorStatus?: string
 }
 
 function SmartArticleActivity({
@@ -60,6 +64,7 @@ function SmartArticleActivity({
   totalActivities = 1,
   orgslug = '',
   assignment = null,
+  contributorStatus,
 }: SmartArticleActivityProps) {
   const { t } = useTranslation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -165,6 +170,28 @@ function SmartArticleActivity({
     const type = step.type || 'text'
     const label = step.label || ''
     const title = step.title || ''
+
+    const instructorLink =
+      contributorStatus === 'ACTIVE' && assignment?.assignment_uuid ? (
+        <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex flex-col sm:flex-row items-center justify-between">
+          <div className="flex items-center space-x-2 text-emerald-800 mb-2 sm:mb-0">
+            <ShieldAlert size={16} />
+            <span className="text-sm font-semibold">Instructor View:</span>
+            <span className="text-sm text-emerald-700/80 hidden sm:inline">
+              See student submissions in the dashboard
+            </span>
+          </div>
+          <Link
+            href={getUriWithOrg(
+              orgslug,
+              `/dash/assignments/${assignment.assignment_uuid.replace('assignment_', '')}`
+            )}
+            className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-md hover:bg-emerald-700 transition-colors whitespace-nowrap"
+          >
+            View Submissions
+          </Link>
+        </div>
+      ) : null
 
     switch (type) {
       case 'introduction':
@@ -424,6 +451,7 @@ function SmartArticleActivity({
         if (matchingTask) {
           return (
             <div id={`step-${index}`} className="mb-12">
+              {instructorLink}
               <TaskQuizObject
                 view="student"
                 assignmentTaskUUID={matchingTask.assignment_task_uuid}
@@ -435,28 +463,99 @@ function SmartArticleActivity({
 
         return (
           <div id={`step-${index}`} className="mb-12">
+            {instructorLink}
             <QuizBlock step={step} />
           </div>
         )
       }
-      case 'CODE_EXERCISE':
+      case 'CODE_EXERCISE': {
+        const codeBlocks = steps.filter((s: any) => s.type === 'CODE_EXERCISE')
+        const myCodeIndex = codeBlocks.indexOf(step)
+        const codeTasks =
+          assignment?.assignment_tasks?.filter(
+            (t: any) => t.assignment_type === 'CODE_EDITOR'
+          ) || []
+        const matchingTask = codeTasks[myCodeIndex] || codeTasks[0]
+
+        if (matchingTask) {
+          return (
+            <div id={`step-${index}`} className="mb-12">
+              {instructorLink}
+              <TaskCodeEditorObject
+                view="student"
+                assignmentTaskUUID={matchingTask.assignment_task_uuid}
+                isFocusMode={isFocusMode}
+              />
+            </div>
+          )
+        }
         return (
           <div id={`step-${index}`} className="mb-12">
+            {instructorLink}
             <CodeExerciseBlock step={step} />
           </div>
         )
-      case 'CUSTOM_ANSWER':
+      }
+      case 'CUSTOM_ANSWER': {
+        const answerBlocks = steps.filter(
+          (s: any) => s.type === 'CUSTOM_ANSWER'
+        )
+        const myAnswerIndex = answerBlocks.indexOf(step)
+        const formTasks =
+          assignment?.assignment_tasks?.filter(
+            (t: any) => t.assignment_type === 'FORM'
+          ) || []
+        const matchingTask = formTasks[myAnswerIndex] || formTasks[0]
+
+        if (matchingTask) {
+          return (
+            <div id={`step-${index}`} className="mb-12">
+              {instructorLink}
+              <TaskFormObject
+                view="student"
+                assignmentTaskUUID={matchingTask.assignment_task_uuid}
+                isFocusMode={isFocusMode}
+              />
+            </div>
+          )
+        }
         return (
           <div id={`step-${index}`} className="mb-12">
+            {instructorLink}
             <CustomAnswerBlock step={step} />
           </div>
         )
-      case 'FILE_SUBMISSION':
+      }
+      case 'FILE_SUBMISSION': {
+        const fileBlocks = steps.filter(
+          (s: any) => s.type === 'FILE_SUBMISSION'
+        )
+        const myFileIndex = fileBlocks.indexOf(step)
+        const fileTasks =
+          assignment?.assignment_tasks?.filter(
+            (t: any) => t.assignment_type === 'FILE_UPLOAD'
+          ) || []
+        const matchingTask = fileTasks[myFileIndex] || fileTasks[0]
+
+        if (matchingTask) {
+          return (
+            <div id={`step-${index}`} className="mb-12">
+              {instructorLink}
+              <TaskFileObject
+                view="student"
+                assignmentTaskUUID={matchingTask.assignment_task_uuid}
+                isFocusMode={isFocusMode}
+              />
+            </div>
+          )
+        }
         return (
           <div id={`step-${index}`} className="mb-12">
+            {instructorLink}
             <FileSubmissionBlock step={step} />
           </div>
         )
+      }
       case 'IMAGE':
         return (
           <div
@@ -557,7 +656,10 @@ function SmartArticleActivity({
             <div className="flex items-center gap-3">
               {prevActivity ? (
                 <Link
-                  href={`/orgs/${orgslug}/course/${course?.course_uuid}/activity/${prevActivity.activity_uuid}`}
+                  href={getUriWithOrg(
+                    orgslug || '',
+                    `/course/${course?.course_uuid?.replace('course_', '')}/activity/${prevActivity.cleanUuid}`
+                  )}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
                 >
                   <ArrowLeft size={16} /> Previous Lesson
@@ -575,7 +677,10 @@ function SmartArticleActivity({
               </span>
               {nextActivity ? (
                 <Link
-                  href={`/orgs/${orgslug}/course/${course?.course_uuid}/activity/${nextActivity.activity_uuid}`}
+                  href={getUriWithOrg(
+                    orgslug || '',
+                    `/course/${course?.course_uuid?.replace('course_', '')}/activity/${nextActivity.cleanUuid}`
+                  )}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20"
                 >
                   Next Lesson <ArrowRight size={16} />
