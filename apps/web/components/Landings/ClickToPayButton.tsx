@@ -146,20 +146,37 @@ export default function ClickToPayButton({
         )
       }
 
-      if (res && res.checkout_url) {
-        window.location.href = res.checkout_url
-      } else {
-        toast.error('Failed to initialize checkout.')
-        setIsProcessing(false)
+      const checkoutUrl = res?.data?.checkout_url
+      if (res?.success && checkoutUrl) {
+        window.location.href = checkoutUrl
+        return
       }
+
+      const detail: string =
+        typeof res?.data?.detail === 'string' ? res.data.detail : ''
+
+      if (res?.status === 404) {
+        if (detail.toLowerCase().includes('upsell')) {
+          // Only the add-on is unavailable: drop it so the student can still buy the main course.
+          setIsUpsellSelected(false)
+          setIsDisclaimerAccepted(false)
+          toast.error(
+            'The Career Accelerator add-on is not available yet. It has been removed from your order, so you can continue with the course only.'
+          )
+          if (!skipDiscountModal) setIsDiscountModalOpen(true)
+        } else {
+          toast.error(
+            'This course is not available for purchase yet. Please contact support or try again later.'
+          )
+        }
+      } else if (res?.status === 401 || res?.status === 403) {
+        toast.error('Your session has expired. Please log in again.')
+      } else {
+        toast.error(detail || 'Failed to initialize checkout.')
+      }
+      setIsProcessing(false)
     } catch (e: any) {
-      if (e?.status === 404) {
-        toast.error(
-          "The course you are trying to buy hasn't been created yet. Please create it in the dashboard."
-        )
-      } else {
-        toast.error('Error initiating payment')
-      }
+      toast.error('Error initiating payment. Please try again.')
       setIsProcessing(false)
     }
   }
