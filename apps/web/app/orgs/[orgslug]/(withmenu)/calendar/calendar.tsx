@@ -8,6 +8,10 @@ import {
   getMyTimetable,
   StudentTimetableEvent,
 } from '@services/courses/schedule'
+import type { EventClickArg } from '@fullcalendar/core'
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
 import {
   ArrowLeft,
   BookOpen,
@@ -26,22 +30,20 @@ import toast from 'react-hot-toast'
 import useSWR from 'swr'
 import { getOrgCourses } from '@services/courses/courses'
 import { getAssignmentsFromACourse } from '@services/courses/assignments'
-
-const weekDays = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-]
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@components/ui/dialog'
 
 function CalendarClient({ orgslug }: { orgslug: string }) {
   const org = useOrg() as any
   const session = useLHSession() as any
   const accessToken = session?.data?.tokens?.access_token
   const [now] = useState(() => Date.now())
+  const [selectedBlock, setSelectedBlock] = useState<CalendarBlock | null>(null)
 
   const {
     data: events,
@@ -97,8 +99,8 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
         new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
     )
   const nextEvent = upcomingEvents[0]
-  const weekBlocks = useMemo(
-    () => buildWeekBlocks(calendarEvents, courseAssignments, orgslug),
+  const calendarBlocks = useMemo(
+    () => buildCalendarBlocks(calendarEvents, courseAssignments, orgslug),
     [calendarEvents, courseAssignments, orgslug]
   )
 
@@ -122,15 +124,14 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
                 <div className="min-w-0">
                   <h1 className="text-2xl font-bold text-gray-950">Calendar</h1>
                   <p className="mt-1 text-sm text-gray-500">
-                    Your LMS week view across calendar, modules, community and
-                    assessments.
+                    Your calendar across sessions, modules, and assessments.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-sm sm:grid-cols-3">
-              <Metric label="Blocks" value={weekBlocks.length} />
+              <Metric label="Blocks" value={calendarBlocks.length} />
               <Metric
                 label="Courses"
                 value={
@@ -185,64 +186,86 @@ function CalendarClient({ orgslug }: { orgslug: string }) {
           )}
 
           {!isLoading && !error && (
-            <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div className="border-b border-gray-100 px-5 py-4">
-                <h2 className="font-bold text-gray-950">Unified week view</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Calendar sessions, LMS modules and pending assignments in one
-                  rhythm.
-                </p>
-              </div>
-              <div className="divide-y divide-gray-100">
-                {weekDays.map((day) => (
-                  <CalendarDayRow
-                    key={day}
-                    day={day}
-                    blocks={weekBlocks.filter(
-                      (block) => eventDay(block.starts_at) === day
-                    )}
-                  />
-                ))}
+            <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-3 shadow-sm sm:p-5">
+              <div className="min-w-0 [&_.fc-toolbar]:flex-wrap [&_.fc-toolbar]:gap-2 [&_.fc-toolbar-title]:text-lg [&_.fc-button]:capitalize [&_.fc-button]:shadow-none">
+                <FullCalendar
+                  plugins={[dayGridPlugin, timeGridPlugin]}
+                  initialView="dayGridMonth"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay',
+                  }}
+                  buttonText={{
+                    today: 'today',
+                    month: 'month',
+                    week: 'week',
+                    day: 'day',
+                  }}
+                  events={calendarBlocks.map((block) => ({
+                    id: block.id,
+                    title: block.title,
+                    start: block.starts_at,
+                    end:
+                      block.starts_at === block.ends_at
+                        ? undefined
+                        : block.ends_at,
+                    allDay:
+                      block.kind === 'assignment' &&
+                      !/[T ]\d{2}:\d{2}/.test(block.starts_at),
+                    backgroundColor:
+                      block.kind === 'assignment'
+                        ? '#b45309'
+                        : block.kind === 'module'
+                          ? '#0f766e'
+                          : '#2563eb',
+                    borderColor: 'transparent',
+                    extendedProps: { block },
+                  }))}
+                  eventClick={(info: EventClickArg) => {
+                    info.jsEvent.preventDefault()
+                    setSelectedBlock(info.event.extendedProps.block)
+                  }}
+                  height="min(72vh, 760px)"
+                  firstDay={0}
+                  dayMaxEvents={3}
+                  scrollTime="06:00:00"
+                  nowIndicator
+                  eventTimeFormat={{
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    meridiem: 'short',
+                  }}
+                />
               </div>
             </section>
           )}
+          <Dialog
+            open={selectedBlock !== null}
+            onOpenChange={(open) => {
+              if (!open) setSelectedBlock(null)
+            }}
+          >
+            <DialogContent className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-3xl flex-col overflow-hidden p-0">
+              {selectedBlock && (
+                <>
+                  <DialogHeader className="shrink-0 border-b border-gray-100 p-5 pr-12 text-left">
+                    <DialogTitle>{selectedBlock.title}</DialogTitle>
+                    <DialogDescription>
+                      {selectedBlock.course_name} -{' '}
+                      {formatDateTime(selectedBlock.starts_at)}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                    <CalendarEventCard event={selectedBlock} />
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </GeneralWrapperStyled>
     </main>
-  )
-}
-
-function CalendarDayRow({
-  day,
-  blocks,
-}: {
-  day: string
-  blocks: CalendarBlock[]
-}) {
-  const sortedEvents = [...blocks].sort(
-    (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
-  )
-
-  return (
-    <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-[160px_minmax(0,1fr)]">
-      <div className="flex items-center justify-between gap-2 lg:items-start">
-        <h3 className="text-sm font-bold text-gray-800">{day}</h3>
-        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
-          {blocks.length}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {sortedEvents.map((event) => (
-          <CalendarEventCard key={event.id} event={event} />
-        ))}
-        {blocks.length === 0 && (
-          <div className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400">
-            No blocks
-          </div>
-        )}
-      </div>
-    </div>
   )
 }
 
@@ -386,12 +409,6 @@ function Metric({ label, value }: { label: string; value: number }) {
   )
 }
 
-function eventDay(value: string) {
-  return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(
-    new Date(value)
-  )
-}
-
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
@@ -420,7 +437,7 @@ function getLocationLink(location: string) {
   return url.startsWith('http') ? url : `https://${url}`
 }
 
-function buildWeekBlocks(
+function buildCalendarBlocks(
   events: StudentTimetableEvent[],
   assignments: any[],
   orgslug: string
