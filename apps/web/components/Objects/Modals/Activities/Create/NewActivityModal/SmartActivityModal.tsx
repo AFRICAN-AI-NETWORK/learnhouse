@@ -11,7 +11,7 @@ import { constructAcceptValue } from '@/lib/constants'
 import { FileText, Upload, FileUp, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-const SUPPORTED_FILES = constructAcceptValue(['pdf'])
+const SUPPORTED_FILES = constructAcceptValue(['pdf', 'json'])
 
 function SmartActivityModal({ submitFileActivity, chapterId, course }: any) {
   const [documentpdf, setDocumentPdf] = React.useState(null) as any
@@ -90,13 +90,13 @@ function SmartActivityModal({ submitFileActivity, chapterId, course }: any) {
           <div className="flex items-center justify-between">
             <FormLabel className="flex items-center gap-2 text-zinc-900 font-bold text-sm">
               <Upload size={16} className="text-zinc-500" />
-              Source PDF (For AI conversion)
+              Source File (PDF for AI conversion or JSON direct)
             </FormLabel>
             <FormMessage
               match="valueMissing"
               className="text-[10px] font-bold text-rose-500 uppercase tracking-tight"
             >
-              PDF Document required
+              Document required
             </FormMessage>
           </div>
 

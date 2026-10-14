@@ -57,6 +57,95 @@ def run_python_locally(code: str, stdin: str = "", timeout: int = 10) -> dict:
         os.unlink(tmp_path)
 
 
+LANGUAGE_NORMALIZATION = {
+    "js": "javascript",
+    "javascript": "javascript",
+    "node": "javascript",
+    "nodejs": "javascript",
+    "node.js": "javascript",
+    "express": "javascript",
+    "ts": "typescript",
+    "typescript": "typescript",
+    "py": "python",
+    "python": "python",
+    "python3": "python",
+    "java": "java",
+    "c": "c",
+    "cpp": "cpp",
+    "c++": "cpp",
+    "golang": "go",
+    "go": "go",
+    "ruby": "ruby",
+    "rust": "rust",
+    "rs": "rust",
+    "php": "php",
+    "bash": "bash",
+    "sh": "bash",
+    "shell": "bash",
+    "csharp": "csharp",
+    "c#": "csharp",
+    "cs": "csharp",
+}
+
+EXT_MAP = {
+    "python": "py",
+    "javascript": "js",
+    "typescript": "ts",
+    "java": "java",
+    "c": "c",
+    "cpp": "cpp",
+    "go": "go",
+    "ruby": "rb",
+    "rust": "rs",
+    "php": "php",
+    "bash": "sh",
+    "csharp": "cs",
+}
+
+VERSION_MAP = {
+    "python": "*",
+    "javascript": "*",
+    "typescript": "*",
+    "java": "*",
+    "c": "*",
+    "cpp": "*",
+    "go": "*",
+    "ruby": "*",
+    "rust": "*",
+    "php": "*",
+    "bash": "*",
+    "csharp": "*",
+}
+
+
+def run_node_locally(code: str, stdin: str = "", timeout: int = 10) -> dict:
+    """Run Node.js / JavaScript code locally using subprocess. Returns dict with stdout, stderr, exit_code."""
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".js", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(code)
+        tmp_path = f.name
+    try:
+        result = subprocess.run(
+            ["node", tmp_path],
+            input=stdin.replace("\\n", "\n") if stdin else "",
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        return {
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "exit_code": result.returncode,
+        }
+    except subprocess.TimeoutExpired:
+        return {"stdout": "", "stderr": "Execution timed out", "exit_code": 1}
+    except Exception as e:  # noqa: BLE001
+        return {"stdout": "", "stderr": str(e), "exit_code": 1}
+    finally:
+        os.unlink(tmp_path)
+
+
 async def run_piston_execution(
     language: str,
     version: str,
@@ -65,27 +154,19 @@ async def run_piston_execution(
     client_ip: str = "unknown",
     additional_files: list[dict] | None = None,
 ):
-    # Map language to proper file extension
     if additional_files is None:
         additional_files = []
-    ext_map = {
-        "python": "py",
-        "javascript": "js",
-        "java": "java",
-        "c": "c",
-        "cpp": "cpp",
-        "go": "go",
-        "ruby": "rb",
-    }
-    file_ext = ext_map.get(language, language)
+
+    normalized_lang = LANGUAGE_NORMALIZATION.get(language.lower(), language.lower())
+    file_ext = EXT_MAP.get(normalized_lang, normalized_lang)
 
     files = [{"name": f"main.{file_ext}", "content": code}]
     if additional_files:
         files.extend(additional_files)
 
     piston_payload = {
-        "language": language,
-        "version": version,
+        "language": normalized_lang,
+        "version": version or "*",
         "files": files,
         "stdin": stdin.replace("\\n", "\n") if stdin else "",
         "compile_timeout": 15000,
@@ -134,20 +215,13 @@ async def execute_and_grade(
         dataset_files = []
     if test_cases is None:
         test_cases = []
-    version_map = {
-        "python": "3.10.0",
-        "javascript": "*",
-        "java": "*",
-        "c": "*",
-        "cpp": "*",
-        "go": "*",
-        "ruby": "*",
-    }
-    version = version_map.get(language, "*")
+
+    normalized_lang = LANGUAGE_NORMALIZATION.get(language.lower(), language.lower())
+    version = VERSION_MAP.get(normalized_lang, "*")
 
     # 1. Main execution via Piston
     main_res = await run_piston_execution(
-        language, version, code, stdin, client_ip, dataset_files
+        normalized_lang, version, code, stdin, client_ip, dataset_files
     )
 
     # Piston succeeded
@@ -166,7 +240,7 @@ async def execute_and_grade(
         if test_cases:
             for tc in test_cases:
                 tc_res = await run_piston_execution(
-                    language,
+                    normalized_lang,
                     version,
                     code,
                     tc.get("input", ""),
@@ -194,10 +268,11 @@ async def execute_and_grade(
 
         return response
 
-    # Piston failed — fallback to local Python execution
-    if language == "python":
+    # Piston failed — fallback to local execution for Python and Node.js
+    if normalized_lang in ["python", "javascript"]:
+        runner = run_python_locally if normalized_lang == "python" else run_node_locally
         start_time = time.time()
-        main_run = run_python_locally(code, stdin)
+        main_run = runner(code, stdin)
         elapsed_ms = int((time.time() - start_time) * 1000)
 
         test_results = []
@@ -205,7 +280,7 @@ async def execute_and_grade(
 
         if test_cases:
             for tc in test_cases:
-                tc_run = run_python_locally(code, tc.get("input", ""))
+                tc_run = runner(code, tc.get("input", ""))
                 actual = tc_run["stdout"].strip()
                 expected = tc.get("expectedOutput", "").strip()
                 passed = actual == expected
@@ -232,5 +307,4 @@ async def execute_and_grade(
             total_count=len(test_cases),
         )
 
-    # Non-Python + no Piston = can't execute
     return None
