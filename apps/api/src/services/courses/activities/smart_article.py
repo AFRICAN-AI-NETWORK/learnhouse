@@ -269,36 +269,63 @@ async def create_smart_article_activity(
         request, course.course_uuid, current_user, "create", db_session
     )
 
-    # Validate PDF
+    # Validate PDF or JSON file
     if not pdf_file:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Smart Article: No PDF file provided",
+            detail="Smart Article: No file provided",
         )
 
-    if pdf_file.content_type not in ["application/pdf"]:
+    filename = (pdf_file.filename or "").lower()
+    content_type = (pdf_file.content_type or "").lower()
+    is_json_file = filename.endswith(".json") or content_type in ["application/json", "text/plain"]
+    is_pdf_file = filename.endswith(".pdf") or content_type in ["application/pdf"]
+
+    if not (is_json_file or is_pdf_file):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Smart Article: Wrong file format, expected PDF",
+            detail="Smart Article: Wrong file format, expected PDF or JSON",
         )
 
     # Load config for AI provider
     config = get_learnhouse_config()
 
-    # Read PDF bytes
-    pdf_bytes = await pdf_file.read()
+    # Read bytes
+    file_bytes = await pdf_file.read()
 
     # Step 1: Extract text
-    raw_text = extract_text_from_pdf(pdf_bytes)
+    if is_json_file:
+        try:
+            raw_text = file_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            raw_text = file_bytes.decode("latin-1")
+    else:
+        raw_text = extract_text_from_pdf(file_bytes)
 
     if not raw_text.strip():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Smart Article: Could not extract any text from the PDF. It may be image-based.",
+            detail="Smart Article: Could not extract any text from the file. If PDF, it may be image-based.",
         )
 
-    # Step 2: Chunk with AI (supports OpenAI and Gemini)
-    steps = await chunk_text_with_ai(raw_text, config)
+    # Step 2: Check if content is already structured JSON (Option B: direct JSON)
+    steps = None
+    stripped = raw_text.strip()
+    if (stripped.startswith("[") and stripped.endswith("]")) or (
+        stripped.startswith("{") and stripped.endswith("}")
+    ):
+        try:
+            parsed = json.loads(stripped)
+            if isinstance(parsed, list) and len(parsed) > 0 and isinstance(parsed[0], dict):
+                steps = parsed
+            elif isinstance(parsed, dict) and "steps" in parsed and isinstance(parsed["steps"], list):
+                steps = parsed["steps"]
+        except (json.JSONDecodeError, ValueError, TypeError):
+            steps = None
+
+    # If not valid JSON, chunk with AI (Option A: plain text PDF)
+    if not steps:
+        steps = await chunk_text_with_ai(raw_text, config)
 
     # Step 3: Create activity
     activity_uuid = f"activity_{uuid4()}"

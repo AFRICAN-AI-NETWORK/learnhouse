@@ -84,12 +84,16 @@ async def execute_code(
             if res:
                 return res
 
-        # Fallback: run Python locally in dev mode
-        if config.general_config.development_mode and request.language == "python":
+        # Fallback: run Python or Node.js locally in dev mode
+        from src.services.code_execution import LANGUAGE_NORMALIZATION, run_node_locally
+
+        normalized_lang = LANGUAGE_NORMALIZATION.get(request.language.lower(), request.language.lower())
+        if config.general_config.development_mode and normalized_lang in ["python", "javascript"]:
+            runner = run_python_locally if normalized_lang == "python" else run_node_locally
             start_time = time.time()
 
             # 1. Main execution (with stdin if provided)
-            main_run = run_python_locally(request.code, request.stdin)
+            main_run = runner(request.code, request.stdin)
             elapsed_ms = int((time.time() - start_time) * 1000)
 
             test_results = []
@@ -98,7 +102,7 @@ async def execute_code(
             # 2. Run each test case
             if request.test_cases:
                 for tc in request.test_cases:
-                    tc_run = run_python_locally(request.code, tc.get("input", ""))
+                    tc_run = runner(request.code, tc.get("input", ""))
                     actual = tc_run["stdout"].strip()
                     expected = tc.get("expectedOutput", "").strip()
                     passed = actual == expected
@@ -126,10 +130,10 @@ async def execute_code(
                 total_count=len(request.test_cases),
             )
 
-        # If not Python or not dev mode and Piston is down
+        # If not supported language or not dev mode and Piston is down
         raise HTTPException(
             status_code=503,
-            detail="Code execution service unavailable. Piston is not running and local fallback only supports Python.",
+            detail="Code execution service unavailable. Piston is not running and local fallback only supports Python and JavaScript/Node.js.",
         )
     except HTTPException:
         raise

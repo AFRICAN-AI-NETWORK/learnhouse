@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Terminal, Play, CheckCircle2 } from 'lucide-react'
+import { getAPIUrl } from '@services/config/config'
+import { Terminal, Play, CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface CodeExerciseBlockProps {
   step: any
@@ -16,16 +17,47 @@ export default function CodeExerciseBlock({ step }: CodeExerciseBlockProps) {
   const [code, setCode] = useState(startingCode)
   const [isRunning, setIsRunning] = useState(false)
   const [output, setOutput] = useState<string | null>(null)
+  const [isError, setIsError] = useState(false)
 
-  const handleRunCode = () => {
+  const handleRunCode = async () => {
     setIsRunning(true)
-    // Simulate code execution delay
-    setTimeout(() => {
+    setOutput(null)
+    setIsError(false)
+
+    try {
+      const response = await fetch(`${getAPIUrl()}code/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language,
+          code,
+          test_cases: step.testCases || step.test_cases || [],
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        setIsError(true)
+        setOutput(data.detail || 'Code execution failed.')
+        return
+      }
+
+      if (data.stderr && data.stderr.trim()) {
+        setIsError(true)
+        setOutput(data.stderr)
+      } else if (data.stdout && data.stdout.trim()) {
+        setIsError(false)
+        setOutput(data.stdout)
+      } else {
+        setIsError(false)
+        setOutput('(Program executed successfully with no output)')
+      }
+    } catch (e: any) {
+      setIsError(true)
+      setOutput('Network error: Unable to execute code.')
+    } finally {
       setIsRunning(false)
-      setOutput(
-        'Execution completed successfully. All tests passed! \nOutput:\n> Hello, World!'
-      )
-    }, 1200)
+    }
   }
 
   return (
@@ -96,13 +128,28 @@ export default function CodeExerciseBlock({ step }: CodeExerciseBlockProps) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-6 p-5 rounded-2xl border border-green-500/20 bg-green-500/5 flex items-start"
+          className={`mt-6 p-5 rounded-2xl border flex items-start ${
+            isError
+              ? 'border-red-500/20 bg-red-500/5'
+              : 'border-green-500/20 bg-green-500/5'
+          }`}
         >
-          <CheckCircle2
-            size={20}
-            className="text-green-500 mr-3 shrink-0 mt-0.5"
-          />
-          <pre className="font-mono text-sm text-green-400 whitespace-pre-wrap">
+          {isError ? (
+            <AlertCircle
+              size={20}
+              className="text-red-500 mr-3 shrink-0 mt-0.5"
+            />
+          ) : (
+            <CheckCircle2
+              size={20}
+              className="text-green-500 mr-3 shrink-0 mt-0.5"
+            />
+          )}
+          <pre
+            className={`font-mono text-sm whitespace-pre-wrap ${
+              isError ? 'text-red-400' : 'text-green-400'
+            }`}
+          >
             {output}
           </pre>
         </motion.div>

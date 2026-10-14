@@ -10,7 +10,8 @@ export const ACCEPTED_FILE_FORMATS = {
     pdf: 'application/pdf',
     pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    zip: 'application/zip,application/x-zip-compressed'
+    zip: 'application/zip,application/x-zip-compressed',
+    json: 'application/json',
 } as const;
 
 /**
