@@ -116,3 +116,81 @@ LearnHouse includes an integrated Piston code execution engine (`http://localhos
 
 ### Code Editor in Smart Article:
 In any `CODE_EXERCISE` block, students can type code directly and click **Run Code**. The code is executed securely via Piston and stdout/stderr results are displayed instantly in the terminal output window.
+
+---
+
+## 5. Frontend Interactive Exercises & Automated Grading (`FRONTEND_EXERCISE`)
+
+For frontend courses (**HTML, CSS, Vanilla JavaScript, React 19 / JSX, and Tailwind CSS**), use the **`FRONTEND_EXERCISE`** block instead of `CODE_EXERCISE`. 
+
+### Why Use `FRONTEND_EXERCISE`?
+* **Live In-Browser Visual Preview:** Students see their actual rendered UI, responsive layout, and styles side-by-side with the code.
+* **Instant Tailwind CSS:** Tailwind utility classes work out-of-the-box (e.g. `bg-blue-600`, `rounded-2xl`, `shadow-xl`, `flex`, `grid`).
+* **Multi-File Projects:** Supports multiple files (e.g., `App.js`, `styles.css`, `index.html`, `components/Button.jsx`).
+* **Automated In-Browser Grading:** Automatically runs test assertions against the student's code and rendered DOM (checking tags, Tailwind classes, and button clicks/interactivity), calculating a grade percentage in real time!
+* **100% Free & Zero Server Load:** Runs entirely in the student's browser via Sandpack web workers—no Docker or backend servers required.
+
+### JSON Schema for `FRONTEND_EXERCISE`:
+
+#### Example 1: React with Tailwind CSS & Automated Interactivity Test
+```json
+{
+  "type": "FRONTEND_EXERCISE",
+  "title": "Interactive Product Card with Tailwind",
+  "template": "react",
+  "instructions": "### Assignment Goals\n1. Use Tailwind classes to create a card with `rounded-2xl`, `shadow-xl`, and `p-6`.\n2. Implement a count state that increments when the 'Add to Cart' button is clicked.",
+  "activeFile": "/App.js",
+  "files": {
+    "/App.js": "import React, { useState } from 'react';\n\nexport default function App() {\n  const [count, setCount] = useState(0);\n  return (\n    <div id=\"product-card\" className=\"max-w-sm bg-white p-6 rounded-2xl shadow-xl space-y-4\">\n      <h2 className=\"text-xl font-bold text-gray-900\">Wireless Headphones</h2>\n      <p className=\"text-gray-500\">Studio-grade noise cancellation.</p>\n      <button \n        id=\"add-btn\"\n        onClick={() => setCount(count + 1)}\n        className=\"px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition\">\n        Add to Cart ({count})\n      </button>\n    </div>\n  );\n}"
+  },
+  "passingScore": 100,
+  "tests": [
+    {
+      "id": "test_heading",
+      "description": "Renders product title 'Wireless Headphones'",
+      "type": "dom_text",
+      "selector": "h2",
+      "expected": "Wireless Headphones"
+    },
+    {
+      "id": "test_tailwind_classes",
+      "description": "Card uses required Tailwind classes (rounded-2xl, shadow-xl)",
+      "type": "class_contains",
+      "selector": "#product-card",
+      "requiredClasses": ["rounded-2xl", "shadow-xl", "p-6"]
+    },
+    {
+      "id": "test_interactivity",
+      "description": "Clicking 'Add to Cart' increments count to 1",
+      "type": "interaction",
+      "action": "click",
+      "targetSelector": "#add-btn",
+      "assertSelector": "#add-btn",
+      "expectedText": "Add to Cart (1)"
+    }
+  ]
+}
+```
+
+#### Example 2: Static HTML & Tailwind CSS
+```json
+{
+  "type": "FRONTEND_EXERCISE",
+  "title": "Responsive Hero Banner",
+  "template": "static",
+  "instructions": "Create a responsive hero banner with a heading and a call-to-action button styled with Tailwind CSS.",
+  "activeFile": "/index.html",
+  "files": {
+    "/index.html": "<div class=\"p-12 text-center bg-slate-900 text-white rounded-3xl\">\n  <h1 class=\"text-4xl font-extrabold\">Build the Future</h1>\n  <p class=\"mt-4 text-slate-400\">Learn practical AI and software engineering skills.</p>\n  <button class=\"mt-6 px-6 py-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl font-bold\">Get Started</button>\n</div>"
+  },
+  "tests": [
+    {
+      "description": "Hero section has dark background",
+      "type": "class_contains",
+      "selector": "div",
+      "requiredClasses": ["bg-slate-900", "text-white"]
+    }
+  ]
+}
+```
+

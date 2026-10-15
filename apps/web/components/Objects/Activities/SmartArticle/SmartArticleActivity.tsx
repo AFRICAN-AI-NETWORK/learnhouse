@@ -28,9 +28,11 @@ import { useTranslation } from 'react-i18next'
 import {
   QuizBlock,
   CodeExerciseBlock,
+  FrontendExerciseBlock,
   CustomAnswerBlock,
   FileSubmissionBlock,
 } from './Blocks'
+
 
 import TaskQuizObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskQuizObject'
 import TaskCodeEditorObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskCodeEditorObject'
@@ -493,6 +495,14 @@ function SmartArticleActivity({
           <div id={`step-${index}`} className="mb-12">
             {instructorLink}
             <CodeExerciseBlock step={step} />
+          </div>
+        )
+      }
+      case 'FRONTEND_EXERCISE': {
+        return (
+          <div id={`step-${index}`} className="mb-12">
+            {instructorLink}
+            <FrontendExerciseBlock step={step} isFocusMode={isFocusMode} />
           </div>
         )
       }
