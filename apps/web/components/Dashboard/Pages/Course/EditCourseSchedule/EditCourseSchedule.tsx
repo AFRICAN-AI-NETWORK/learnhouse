@@ -803,7 +803,7 @@ function DayRow({
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
                 {event.location && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1">
+                  <span className="inline-flex min-w-0 max-w-full items-center gap-1 break-all rounded-md bg-gray-100 px-2 py-1">
                     {event.location.toLowerCase().includes('zoom') ||
                     event.location.toLowerCase().includes('online') ? (
                       <Video size={12} />
