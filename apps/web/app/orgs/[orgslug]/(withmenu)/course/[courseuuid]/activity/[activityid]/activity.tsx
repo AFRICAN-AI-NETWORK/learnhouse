@@ -1677,7 +1677,10 @@ function ActivityPageNavbar({
   videoWatchSatisfied: boolean
 }) {
   const { t } = useTranslation()
+  const [courseProgressMenuOpen, setCourseProgressMenuOpen] = useState(false)
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
+  const ringProgress = Math.min(100, Math.max(0, progressPercentage))
+  const ringCircumference = 2 * Math.PI * 18
   const activityComplete = isActivityComplete(
     activity.activity_uuid,
     course.course_uuid,
@@ -1690,7 +1693,7 @@ function ActivityPageNavbar({
     !activityComplete
 
   return (
-    <div className="sticky top-0 z-30 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
+    <div className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
       <div className="px-4 py-3 sm:px-6 xl:px-8">
         <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_auto] lg:items-center lg:gap-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -1707,18 +1710,66 @@ function ActivityPageNavbar({
               />
             </Link>
             <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 flex-col gap-2">
-                <p className="text-[10px] font-semibold uppercase text-slate-500 dark:text-white/45 sm:text-xs sm:normal-case">
-                  {t('courses.course_progress')}
-                </p>
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="h-1.5 w-full max-w-72 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10 sm:h-2 lg:max-w-80">
-                    <div
-                      className="h-full rounded-full bg-blue-600"
-                      style={{ width: `${progressPercentage}%` }}
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="relative min-w-0">
+                  <button
+                    type="button"
+                    aria-expanded={courseProgressMenuOpen}
+                    onClick={() =>
+                      setCourseProgressMenuOpen(!courseProgressMenuOpen)
+                    }
+                    className="inline-flex items-center gap-1.5 text-left text-[10px] font-semibold uppercase text-slate-500 dark:text-white/45 sm:text-xs sm:normal-case"
+                  >
+                    {t('courses.course_progress')}
+                    <ChevronDown
+                      size={14}
+                      className={`shrink-0 transition-transform ${courseProgressMenuOpen ? 'rotate-180' : ''}`}
                     />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-600 dark:text-white/70 sm:text-xs">
+                  </button>
+                  {courseProgressMenuOpen && (
+                    <div className="absolute left-0 top-full z-50 mt-2 w-52 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-white/10 dark:bg-[#1b1b24]">
+                      <Link
+                        href={
+                          getUriWithOrg(orgslug, '') +
+                          `/course/${cleanCourseUuid}/journey`
+                        }
+                        onClick={() => setCourseProgressMenuOpen(false)}
+                        className="block rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-white/80 dark:hover:bg-white/10"
+                      >
+                        View course journey
+                      </Link>
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="relative grid h-11 w-11 shrink-0 place-items-center"
+                  role="img"
+                  aria-label={`${progressPercentage}% ${t('courses.course_progress')}`}
+                >
+                  <svg className="h-11 w-11 -rotate-90" viewBox="0 0 44 44">
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      fill="none"
+                      className="stroke-slate-200 dark:stroke-white/10"
+                      strokeWidth="4"
+                    />
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="18"
+                      fill="none"
+                      className="stroke-blue-600 transition-[stroke-dashoffset] duration-500"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={
+                        ringCircumference * (1 - ringProgress / 100)
+                      }
+                    />
+                  </svg>
+                  <span className="absolute text-[10px] font-bold text-slate-700 dark:text-white/80">
                     {progressPercentage}%
                   </span>
                 </div>

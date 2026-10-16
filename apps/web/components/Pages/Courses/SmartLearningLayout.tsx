@@ -152,7 +152,9 @@ export default function SmartLearningLayout({
               className={
                 fullWidth
                   ? 'w-full h-full flex flex-col flex-1 min-h-0'
-                  : 'mx-auto max-w-3xl'
+                    : rightProgressTracker
+                      ? 'w-full xl:mx-auto xl:max-w-3xl'
+                      : 'w-full'
               }
             >
               {children}
