@@ -108,3 +108,12 @@ Marketing Emails Broadcast Implementation plan.pdf
 frontend_handoff.md
 scratch_log.txt
 docs/stable_state_checkpoint.md
+
+# Root scratch and temporary scripts
+/*.py
+/update_*.py
+/cleanup_*.py
+/rewrite_*.py
+/scratch_*.py
+/test_*.py
+
