@@ -43,6 +43,7 @@ class AssignmentRead(AssignmentBase):
     assignment_uuid: str
     creation_date: str | None
     update_date: str | None
+    assignment_tasks: list["AssignmentTaskRead"] | None = None
 
 
 class AssignmentUpdate(SQLModel):
@@ -120,6 +121,9 @@ class AssignmentTaskRead(AssignmentTaskBase):
 
     id: int
     assignment_task_uuid: str
+
+
+AssignmentRead.update_forward_refs(AssignmentTaskRead=AssignmentTaskRead)
 
 
 class AssignmentTaskUpdate(SQLModel):

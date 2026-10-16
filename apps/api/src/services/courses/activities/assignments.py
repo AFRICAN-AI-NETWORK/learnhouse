@@ -386,7 +386,16 @@ async def read_assignment(
     )
 
     # return assignment read
-    return AssignmentRead.model_validate(assignment)
+    assignment_read = AssignmentRead.model_validate(assignment)
+    tasks_statement = (
+        select(AssignmentTask)
+        .where(AssignmentTask.assignment_id == assignment.id)
+        .order_by(AssignmentTask.id)  # type: ignore
+    )
+    assignment_read.assignment_tasks = [
+        AssignmentTaskRead.model_validate(t) for t in db_session.exec(tasks_statement).all()
+    ]
+    return assignment_read
 
 
 async def read_assignment_from_activity_uuid(
@@ -431,7 +440,16 @@ async def read_assignment_from_activity_uuid(
     )
 
     # return assignment read
-    return AssignmentRead.model_validate(assignment)
+    assignment_read = AssignmentRead.model_validate(assignment)
+    tasks_statement = (
+        select(AssignmentTask)
+        .where(AssignmentTask.assignment_id == assignment.id)
+        .order_by(AssignmentTask.id)  # type: ignore
+    )
+    assignment_read.assignment_tasks = [
+        AssignmentTaskRead.model_validate(t) for t in db_session.exec(tasks_statement).all()
+    ]
+    return assignment_read
 
 
 async def update_assignment(

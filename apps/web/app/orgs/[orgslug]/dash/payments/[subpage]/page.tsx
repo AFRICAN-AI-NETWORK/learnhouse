@@ -91,13 +91,13 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
         </div>
         <div className="flex flex-wrap gap-2 font-black text-sm overflow-x-auto no-scrollbar dark:text-white/80">
           <TabLink
-            href={`/orgs/${params.orgslug}/dash/payments/customers`}
+            href="/dash/payments/customers"
             icon={<Users size={16} />}
             label="Customers"
             isActive={subpage === 'customers'}
           />
           <TabLink
-            href={`/orgs/${params.orgslug}/dash/payments/paid-products`}
+            href="/dash/payments/paid-products"
             icon={<Gem size={16} />}
             label="Products & Subscriptions"
             isActive={subpage === 'paid-products'}
@@ -109,7 +109,7 @@ function PaymentsPage(props: { params: Promise<PaymentsParams> }) {
             isActive={subpage === 'configuration'}
           /> */}
           <TabLink
-            href={`/orgs/${params.orgslug}/dash/payments/discounts`}
+            href="/dash/payments/discounts"
             icon={<Ticket size={16} />}
             label="Discounts"
             isActive={subpage === 'discounts'}

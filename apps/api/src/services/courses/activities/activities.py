@@ -148,6 +148,24 @@ async def create_activity(
     db_session.commit()
     db_session.refresh(activity_chapter)
 
+    if activity.activity_type == ActivityTypeEnum.TYPE_SMART_ARTICLE:
+        try:
+            from src.services.courses.activities.smart_article import (
+                sync_smart_article_assignment,
+            )
+
+            sync_smart_article_assignment(
+                activity=activity,
+                chapter_id=activity_object.chapter_id,
+                db_session=db_session,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Failed to sync smart article assignment on creation for activity %s: %s",
+                activity.id,
+                e,
+            )
+
     return ActivityRead.model_validate(activity)
 
 
@@ -292,6 +310,23 @@ async def update_activity(
         except Exception as e:  # noqa: BLE001
             logger.warning(
                 "Failed to schedule activity_added fan-out for activity %s: %s",
+                activity.id,
+                e,
+            )
+
+    if activity.activity_type == ActivityTypeEnum.TYPE_SMART_ARTICLE:
+        try:
+            from src.services.courses.activities.smart_article import (
+                sync_smart_article_assignment,
+            )
+
+            sync_smart_article_assignment(
+                activity=activity,
+                db_session=db_session,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "Failed to sync smart article assignment on update for activity %s: %s",
                 activity.id,
                 e,
             )

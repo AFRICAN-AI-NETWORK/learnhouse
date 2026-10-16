@@ -15,6 +15,12 @@ from src.db.courses.activities import (
     ActivitySubTypeEnum,
     ActivityTypeEnum,
 )
+from src.db.courses.assignments import (
+    Assignment,
+    AssignmentTask,
+    AssignmentTaskTypeEnum,
+    GradingTypeEnum,
+)
 from src.db.courses.chapter_activities import ChapterActivity
 from src.db.courses.chapters import Chapter
 from src.db.courses.course_chapters import CourseChapter
@@ -377,4 +383,236 @@ async def create_smart_article_activity(
     db_session.commit()
     db_session.refresh(activity_chapter)
 
+    # Automatically create/sync linked Assignment if interactive steps exist
+    try:
+        sync_smart_article_assignment(
+            activity=activity,
+            steps=steps,
+            chapter_id=int(chapter_id),
+            db_session=db_session,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(
+            "Failed to sync smart article assignment on creation for activity %s: %s",
+            activity.id,
+            e,
+        )
+
     return ActivityRead.model_validate(activity)
+
+
+INTERACTIVE_STEP_TYPES = {
+    "CODE_EXERCISE",
+    "FRONTEND_EXERCISE",
+    "QUIZ",
+    "CUSTOM_ANSWER",
+    "FILE_SUBMISSION",
+}
+
+
+def sync_smart_article_assignment(
+    activity: Activity,
+    steps: list[dict] | None = None,
+    chapter_id: int | None = None,
+    db_session: Session | None = None,
+) -> Assignment | None:
+    """
+    Synchronizes an Assignment and corresponding AssignmentTasks for a Smart Article.
+    When a Smart Article contains interactive steps (CODE_EXERCISE, FRONTEND_EXERCISE,
+    QUIZ, CUSTOM_ANSWER, FILE_SUBMISSION), this ensures:
+    1. An Assignment record exists linked to the Activity (activity_id = activity.id).
+    2. An AssignmentTask record exists for each interactive step.
+    3. The activity seamlessly appears in the Instructor Dashboard (/dash/assignments).
+    4. Student views can grade and submit exercises.
+    """
+    if db_session is None:
+        return None
+
+    if steps is None:
+        if isinstance(activity.content, dict):
+            steps = activity.content.get("steps") or []
+        else:
+            steps = []
+
+    # Find interactive steps
+    interactive_steps: list[tuple[int, dict]] = []
+    for idx, step in enumerate(steps):
+        if not isinstance(step, dict):
+            continue
+        step_type = str(step.get("type", "")).upper()
+        if step_type in INTERACTIVE_STEP_TYPES:
+            interactive_steps.append((idx, step))
+
+    # Resolve chapter_id if not provided
+    if not chapter_id:
+        statement = select(ChapterActivity).where(
+            ChapterActivity.activity_id == activity.id
+        )
+        ca = db_session.exec(statement).first()
+        if ca:
+            chapter_id = ca.chapter_id
+        else:
+            chapter_id = 0
+
+    # Query existing Assignment
+    statement = select(Assignment).where(Assignment.activity_id == activity.id)
+    assignment = db_session.exec(statement).first()
+
+    # If no interactive steps, return existing assignment if any
+    if not interactive_steps:
+        return assignment
+
+    now_str = str(datetime.now(UTC))
+
+    if not assignment:
+        assignment = Assignment(
+            title=activity.name,
+            description=f"Interactive exercises for {activity.name}",
+            due_date="",
+            published=activity.published,
+            grading_type=GradingTypeEnum.NUMERIC,
+            required_for_certificate=False,
+            org_id=activity.org_id,
+            course_id=activity.course_id or 0,
+            chapter_id=chapter_id or 0,
+            activity_id=activity.id,  # type: ignore
+            assignment_uuid=f"assignment_{uuid4()}",
+            creation_date=now_str,
+            update_date=now_str,
+        )
+        db_session.add(assignment)
+        db_session.commit()
+        db_session.refresh(assignment)
+    else:
+        assignment.title = activity.name
+        assignment.published = activity.published
+        if chapter_id:
+            assignment.chapter_id = chapter_id
+        assignment.update_date = now_str
+        db_session.add(assignment)
+        db_session.commit()
+        db_session.refresh(assignment)
+
+    # Fetch existing tasks for this assignment
+    task_statement = (
+        select(AssignmentTask)
+        .where(AssignmentTask.assignment_id == assignment.id)
+        .order_by(AssignmentTask.id)  # type: ignore
+    )
+    existing_tasks = list(db_session.exec(task_statement).all())
+
+    # Build tasks to match interactive_steps
+    for i, (orig_idx, step) in enumerate(interactive_steps):
+        step_type = str(step.get("type", "")).upper()
+        task_title = step.get("title") or f"Exercise {i + 1}"
+        task_description = (
+            step.get("instructions")
+            or step.get("content")
+            or f"Task for step {orig_idx + 1}"
+        )
+        task_hint = step.get("hint") or ""
+
+        if step_type == "CODE_EXERCISE":
+            assignment_type = AssignmentTaskTypeEnum.CODE_EDITOR
+            ex_uuid = step.get("exerciseUUID") or f"code_ex_{orig_idx}"
+            contents = {
+                "exercises": [
+                    {
+                        "exerciseUUID": ex_uuid,
+                        "title": task_title,
+                        "language": step.get("language", "javascript"),
+                        "starterCode": step.get("startingCode") or step.get("starterCode", ""),
+                        "solutionCode": step.get("solutionCode", ""),
+                        "testCases": step.get("testCases", []),
+                        "stepType": "CODE_EXERCISE",
+                    }
+                ]
+            }
+        elif step_type == "FRONTEND_EXERCISE":
+            assignment_type = AssignmentTaskTypeEnum.CODE_EDITOR
+            ex_uuid = step.get("exerciseUUID") or f"fe_ex_{orig_idx}"
+            files = step.get("files") or {}
+            starter_code = (
+                files.get("/App.js")
+                or files.get("/index.html")
+                or step.get("starterCode", "")
+            )
+            contents = {
+                "exercises": [
+                    {
+                        "exerciseUUID": ex_uuid,
+                        "title": task_title,
+                        "language": "javascript",
+                        "template": step.get("template", "react"),
+                        "files": files,
+                        "tests": step.get("tests", []),
+                        "passingScore": step.get("passingScore", 100),
+                        "starterCode": starter_code,
+                        "solutionCode": step.get("solutionCode", ""),
+                        "stepType": "FRONTEND_EXERCISE",
+                    }
+                ]
+            }
+        elif step_type == "QUIZ":
+            assignment_type = AssignmentTaskTypeEnum.QUIZ
+            contents = {
+                "questions": step.get("questions") or []
+            }
+        elif step_type == "CUSTOM_ANSWER":
+            assignment_type = AssignmentTaskTypeEnum.FORM
+            contents = {
+                "questions": step.get("questions") or [
+                    {
+                        "prompt": step.get("prompt") or step.get("content", ""),
+                        "expected_answers": step.get("expected_answers") or [],
+                    }
+                ]
+            }
+        elif step_type == "FILE_SUBMISSION":
+            assignment_type = AssignmentTaskTypeEnum.FILE_SUBMISSION
+            contents = step.get("contents") or {}
+        else:
+            assignment_type = AssignmentTaskTypeEnum.OTHER
+            contents = {}
+
+        if i < len(existing_tasks):
+            # Update existing task
+            task = existing_tasks[i]
+            task.title = task_title
+            task.description = task_description
+            task.hint = task_hint
+            task.assignment_type = assignment_type
+            task.contents = contents
+            task.max_grade_value = 100
+            task.update_date = now_str
+            db_session.add(task)
+        else:
+            # Create new task
+            task = AssignmentTask(
+                title=task_title,
+                description=task_description,
+                hint=task_hint,
+                reference_file=None,
+                assignment_type=assignment_type,
+                contents=contents,
+                max_grade_value=100,
+                assignment_task_uuid=f"assignmenttask_{uuid4()}",
+                creation_date=now_str,
+                update_date=now_str,
+                assignment_id=assignment.id,  # type: ignore
+                org_id=assignment.org_id,
+                course_id=assignment.course_id,
+                chapter_id=assignment.chapter_id,
+                activity_id=activity.id,  # type: ignore
+            )
+            db_session.add(task)
+
+    # Delete any excess tasks if user removed interactive steps
+    if len(existing_tasks) > len(interactive_steps):
+        for excess_task in existing_tasks[len(interactive_steps):]:
+            db_session.delete(excess_task)
+
+    db_session.commit()
+    db_session.refresh(assignment)
+    return assignment
+

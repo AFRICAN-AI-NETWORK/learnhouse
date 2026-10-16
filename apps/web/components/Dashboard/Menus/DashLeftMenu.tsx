@@ -209,7 +209,7 @@ function DashLeftMenu() {
           )}
           {!isPartnerOnly && isPaymentsEnabled && isAdmin && (
             <MenuLink
-              href={`/orgs/${org.slug}/dash/payments/customers`}
+              href="/dash/payments/customers"
               icon={<BadgeDollarSign size={18} />}
               label={t('common.payments')}
               isCollapsed={isCollapsed}

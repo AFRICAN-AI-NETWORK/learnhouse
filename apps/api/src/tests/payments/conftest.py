@@ -32,6 +32,7 @@ from src.db.payments.payments_products import (
 from src.db.payments.payments_users import PaymentsUser
 from src.db.resource_authors import ResourceAuthor  # noqa: F401
 from src.db.roles import Role  # noqa: F401
+from src.db.student_journey import StudentJourneyMilestone  # noqa: F401
 from src.db.user_organizations import UserOrganization  # noqa: F401
 from src.db.users import User
 
