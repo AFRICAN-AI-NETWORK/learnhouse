@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev-https": "next dev --experimental-https -p 443",
-    "build": "next build --webpack",
+    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."

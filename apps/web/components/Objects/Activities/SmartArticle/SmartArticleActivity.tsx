@@ -25,13 +25,25 @@ import {
 } from 'lucide-react'
 import { getAPIUrl, getUriWithOrg } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
+import dynamic from 'next/dynamic'
 import {
   QuizBlock,
   CodeExerciseBlock,
-  FrontendExerciseBlock,
   CustomAnswerBlock,
   FileSubmissionBlock,
 } from './Blocks'
+
+const FrontendExerciseBlock = dynamic(
+  () => import('./Blocks/FrontendExerciseBlock'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full max-w-5xl py-12 mx-auto flex items-center justify-center bg-white dark:bg-[#121212] rounded-2xl border border-slate-200 dark:border-white/10 text-slate-400 dark:text-zinc-500 text-sm animate-pulse">
+        Loading Code Sandbox...
+      </div>
+    ),
+  }
+)
 
 
 import TaskQuizObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskQuizObject'

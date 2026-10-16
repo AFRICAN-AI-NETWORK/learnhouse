@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   SandpackProvider,
   SandpackLayout,
@@ -206,27 +206,30 @@ export default function App() {
       initialFiles['/App.test.js']
   )
 
-  const handleTestComplete = (specs: any) => {
-    setTestStatus('completed')
-    if (!specs) return
+  const handleTestComplete = useCallback((specs: any) => {
+    setTimeout(() => {
+      setTestStatus('completed')
+      if (!specs) return
 
-    let total = 0
-    let passed = 0
+      let total = 0
+      let passed = 0
 
-    Object.values(specs).forEach((spec: any) => {
-      if (spec.tests) {
-        Object.values(spec.tests).forEach((t: any) => {
-          total++
-          if (t.status === 'pass') passed++
-        })
+      Object.values(specs).forEach((spec: any) => {
+        if (spec.tests) {
+          Object.values(spec.tests).forEach((t: any) => {
+            total++
+            if (t.status === 'pass') passed++
+          })
+        }
+      })
+
+      if (total > 0) {
+        const score = Math.round((passed / total) * 100)
+        setTestScore(score)
       }
-    })
+    }, 0)
+  }, [])
 
-    if (total > 0) {
-      const score = Math.round((passed / total) * 100)
-      setTestScore(score)
-    }
-  }
 
   return (
     <div className={`w-full ${isFocusMode ? 'max-w-6xl' : 'max-w-5xl'} py-6 mx-auto`}>
