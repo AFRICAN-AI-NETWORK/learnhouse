@@ -44,6 +44,14 @@ import toast from 'react-hot-toast'
 import CourseWaitlistModal from '@components/Objects/CourseWaitlistModal'
 import CountdownTimer from '@components/Utils/CountdownTimer'
 import { getOrgWaitlists } from '@services/waitlist/waitlist'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@components/ui/pagination'
 
 interface LandingClassicProps {
   courses: any[]
@@ -75,6 +83,8 @@ function LandingClassic({
   const org = useOrg() as any
   const accessToken = session?.data?.tokens?.access_token as string | undefined
   const [activeCourseTab, setActiveCourseTab] = useState<CourseTab>('all')
+  const [coursePage, setCoursePage] = useState(1)
+  const coursesPerPage = 6
   const username =
     session?.data?.user?.username ||
     session?.data?.user?.first_name ||
@@ -244,6 +254,11 @@ function LandingClassic({
 
     return true
   })
+  const pageCount = Math.ceil(displayedCourses.length / coursesPerPage)
+  const paginatedCourses = displayedCourses.slice(
+    (coursePage - 1) * coursesPerPage,
+    coursePage * coursesPerPage
+  )
 
   return (
     <main className="min-h-screen w-full bg-[#f8fafc]">
@@ -274,7 +289,6 @@ function LandingClassic({
               course={continueCourse}
               run={continueRun}
               org={org}
-              orgslug={orgslug}
               progress={getCourseProgress(continueCourse)}
               lessonCount={getCourseTotalLessons(continueCourse)}
               resumeUrl={getResumeUrl(continueCourse)}
@@ -300,7 +314,10 @@ function LandingClassic({
                 {courseTabs.map((tab) => (
                   <button
                     key={tab.value}
-                    onClick={() => setActiveCourseTab(tab.value)}
+                    onClick={() => {
+                      setActiveCourseTab(tab.value)
+                      setCoursePage(1)
+                    }}
                     className={`rounded-full px-4 py-2 text-sm font-medium ${
                       activeCourseTab === tab.value
                         ? 'bg-blue-50 text-blue-700'
@@ -330,25 +347,80 @@ function LandingClassic({
           </div>
 
           {displayedCourses.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {displayedCourses.slice(0, 6).map((course: any) => (
-                <DashboardCourseCard
-                  key={course.course_uuid}
-                  course={getHydratedCourse(course)}
-                  org={org}
-                  orgslug={orgslug}
-                  progress={getCourseProgress(course)}
-                  lessonCount={getCourseTotalLessons(course)}
-                  userStatus={session?.data?.user?.user_status}
-                  resumeUrl={getResumeUrl(getHydratedCourse(course))}
-                  waitlistConfig={orgWaitlists?.data?.find(
-                    (w: any) =>
-                      cleanCourseUuid(w.interest_category) ===
-                      cleanCourseUuid(course.course_uuid)
-                  )}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                {paginatedCourses.map((course: any) => (
+                  <DashboardCourseCard
+                    key={course.course_uuid}
+                    course={getHydratedCourse(course)}
+                    org={org}
+                    orgslug={orgslug}
+                    progress={getCourseProgress(course)}
+                    lessonCount={getCourseTotalLessons(course)}
+                    userStatus={session?.data?.user?.user_status}
+                    resumeUrl={getResumeUrl(getHydratedCourse(course))}
+                    waitlistConfig={orgWaitlists?.data?.find(
+                      (w: any) =>
+                        cleanCourseUuid(w.interest_category) ===
+                        cleanCourseUuid(course.course_uuid)
+                    )}
+                  />
+                ))}
+              </div>
+              {pageCount > 1 && (
+                <Pagination className="mt-6 rounded-lg bg-white p-2 shadow-sm dark:bg-gray-900">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        aria-disabled={coursePage === 1}
+                        className={
+                          coursePage === 1
+                            ? 'pointer-events-none opacity-50'
+                            : ''
+                        }
+                        onClick={(event) => {
+                          event.preventDefault()
+                          setCoursePage((page) => Math.max(1, page - 1))
+                        }}
+                      />
+                    </PaginationItem>
+                    {Array.from(
+                      { length: pageCount },
+                      (_, index) => index + 1
+                    ).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          isActive={page === coursePage}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            setCoursePage(page)
+                          }}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        aria-disabled={coursePage === pageCount}
+                        className={
+                          coursePage === pageCount
+                            ? 'pointer-events-none opacity-50'
+                            : ''
+                        }
+                        onClick={(event) => {
+                          event.preventDefault()
+                          setCoursePage((page) => Math.min(pageCount, page + 1))
+                        }}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </>
           ) : (
             <EmptyPanel
               icon={<BookCopy className="h-8 w-8" />}
@@ -474,7 +546,6 @@ const ContinueLearningCard = ({
   course,
   run,
   org,
-  orgslug,
   progress,
   lessonCount,
   resumeUrl,
@@ -482,7 +553,6 @@ const ContinueLearningCard = ({
   course: any
   run?: any
   org: any
-  orgslug: string
   progress: number
   lessonCount: number
   resumeUrl: string
@@ -635,7 +705,7 @@ const AdminCourseCardActions = ({
       await revalidateTags(['courses'], orgslug)
       toast.success(t('courses.course_deleted_success'))
       router.refresh()
-    } catch (error) {
+    } catch {
       toast.error(t('courses.course_deleted_error'))
     } finally {
       toast.dismiss(toastId)
