@@ -1,0 +1,166 @@
+[
+  {
+    "type": "introduction",
+    "label": "Start Here",
+    "title": "Welcome to Full-Stack Web Development",
+    "content": "In modern software development, a full-stack engineer connects a rich, reactive client interface (React & Tailwind CSS) to a resilient, high-performance server runtime (Node.js). In this hands-on lesson, you will master the end-to-end flow: designing an interactive UI component, styling it with utility-first CSS, and handling backend API logic."
+  },
+  {
+    "type": "learning_objectives",
+    "label": "Learning Objectives",
+    "title": "What You Will Master",
+    "objectives": [
+      "Understand how client state triggers dynamic re-renders in React 19.",
+      "Apply Tailwind CSS utilities for responsive layouts, typography, and hover micro-interactions.",
+      "Write and execute backend data processing logic in Node.js via Piston.",
+      "Pass automated in-browser DOM and state interaction tests."
+    ]
+  },
+  {
+    "type": "concept",
+    "label": "Core Concepts",
+    "title": "Client-Server Architecture: The Separation of Concerns",
+    "subsections": [
+      {
+        "heading": "1. The React Component Lifecycle & State",
+        "content": "React components manage local state using the `useState` hook. Whenever state updates, React re-evaluates the component and patches the real browser DOM with minimal overhead."
+      },
+      {
+        "heading": "2. Modern Utility Styling with Tailwind CSS",
+        "content": "Rather than writing bespoke CSS classes, Tailwind gives you utility primitives like `flex`, `p-6`, `rounded-2xl`, and `shadow-xl`. This ensures design consistency and zero CSS bloat."
+      },
+      {
+        "heading": "3. The Backend Data Pipeline in Node.js",
+        "content": "On the server, Node.js processes asynchronous requests, validates payloads, and formats JSON responses before sending them back to the client."
+      }
+    ]
+  },
+  {
+    "type": "EMBED",
+    "title": "Video Walkthrough: Full-Stack React & Node Architecture",
+    "url": "https://www.youtube.com/watch?v=f2EqECiTBL8"
+  },
+  {
+    "type": "analogy",
+    "label": "Think About It",
+    "title": "The Restaurant Dining Experience",
+    "content": "Think of a full-stack web application like a fine dining restaurant. The dining room, table settings, and menu are the frontend (React & Tailwind)—designed to be intuitive, responsive, and visually delightful. The kitchen is the backend (Node.js & Piston)—handling heavy preparation, data storage, and order fulfillment away from the diners' sight.",
+    "example": "When a customer orders a meal, the waiter (API call) takes the request to the kitchen (Node.js), and brings back a prepared dish (JSON response) for the customer to enjoy."
+  },
+  {
+    "type": "real_world_examples",
+    "label": "Industry Applications",
+    "title": "Production Systems Built on This Stack",
+    "examples": [
+      {
+        "name": "E-Commerce Checkout (Shopify / Amazon)",
+        "description": "Product cards dynamically compute totals on the frontend with React and post completed transactions to Node.js microservices."
+      },
+      {
+        "name": "Live Analytics Dashboards (Vercel / Stripe)",
+        "description": "Real-time metrics are rendered in responsive Tailwind cards that poll backend Node.js endpoints for live updates."
+      }
+    ]
+  },
+  {
+    "type": "CODE_EXERCISE",
+    "title": "Backend Challenge: Process Order Total (Node.js / Piston)",
+    "language": "javascript",
+    "content": "### Exercise Instructions\nComplete the `calculateOrderTotal` function. It receives a `cart` array of items with `price` and `qty`. Calculate the subtotal, add 7.5% tax, and output exactly `Total: $<total>` (formatted to 2 decimal places with `.toFixed(2)`).\n\nClick **Run Code** to execute your code on Piston and verify your answer against test cases.",
+    "startingCode": "// Backend Challenge: Run on Piston (Node.js)\n// TODO: Complete calculateOrderTotal to compute subtotal + 7.5% tax and output 'Total: $<amount>'\n\nfunction calculateOrderTotal(cart) {\n  // 1. Calculate subtotal of all items (item.price * item.qty)\n  // 2. Add 7.5% tax to subtotal\n  // 3. Print 'Total: $<amount>' formatted to 2 decimal places\n  \n  // Write your code below:\n  \n}\n\n// Sample execution for verification:\nconst sampleCart = [\n  { name: 'AI Engineering Track', price: 100, qty: 1 }\n];\ncalculateOrderTotal(sampleCart);\n",
+    "testCases": [
+      {
+        "testUUID": "tc-1",
+        "input": "",
+        "expectedOutput": "Total: $107.50",
+        "description": "Calculates $100 cart with 7.5% tax to $107.50"
+      }
+    ]
+  },
+  {
+    "type": "FRONTEND_EXERCISE",
+    "title": "Frontend Challenge: Interactive Course Card (React & Tailwind)",
+    "template": "react",
+    "instructions": "### Task Instructions\n1. Inspect the card container `#course-card`. It uses Tailwind utilities: `rounded-2xl`, `shadow-xl`, and `p-6`.\n2. Update the main heading `h2` to display **'Full-Stack Mastery'**.\n3. In `handleEnroll`, update the `enrolled` state so clicking `#enroll-btn` increments the student count.\n4. Click **Run Tests & Grade** to run the in-browser test suite and submit your score!\n5. You can also view logs in the **Console** tab or toggle **Full Screen** anytime.",
+    "activeFile": "/App.js",
+    "files": {
+      "/App.js": "import React, { useState, useEffect } from 'react';\n\nexport default function App() {\n  const [enrolled, setEnrolled] = useState(0);\n\n  useEffect(() => {\n    console.log('Course Card component mounted successfully!');\n  }, []);\n\n  const handleEnroll = () => {\n    // TODO: Update enrolled state to increment by 1\n    \n    console.log('Enroll button clicked');\n  };\n\n  return (\n    <div className=\"min-h-screen bg-slate-900 p-8 flex items-center justify-center font-sans\">\n      <div \n        id=\"course-card\" \n        className=\"max-w-md w-full bg-slate-800 text-white rounded-2xl shadow-xl p-6 border border-slate-700/60 space-y-4\">\n        <div className=\"flex items-center justify-between\">\n          <span className=\"px-3 py-1 bg-indigo-500/20 text-indigo-400 font-semibold text-xs rounded-full uppercase tracking-wider\">\n            Full-Stack\n          </span>\n          <span className=\"text-xs text-slate-400\">8 Weeks</span>\n        </div>\n\n        {/* TODO: Change heading text to 'Full-Stack Mastery' */}\n        <h2 className=\"text-2xl font-bold text-white tracking-tight\">\n          Full-Stack Course\n        </h2>\n\n        <p className=\"text-sm text-slate-300 leading-relaxed\">\n          Master React 19, Tailwind CSS, Node.js, and Piston sandboxing with hands-on exercises.\n        </p>\n\n        <div className=\"pt-2 border-t border-slate-700/50 flex items-center justify-between\">\n          <div>\n            <span className=\"text-xs text-slate-400 block\">Tuition</span>\n            <span className=\"text-xl font-extrabold text-white\">$250</span>\n          </div>\n\n          <button\n            id=\"enroll-btn\"\n            onClick={handleEnroll}\n            className=\"px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/30 active:scale-95\">\n            Enroll Now ({enrolled})\n          </button>\n        </div>\n      </div>\n    </div>\n  );\n}"
+    },
+    "passingScore": 100,
+    "tests": [
+      {
+        "id": "test_title",
+        "description": "Heading displays 'Full-Stack Mastery'",
+        "type": "dom_text",
+        "selector": "h2",
+        "expected": "Full-Stack Mastery"
+      },
+      {
+        "id": "test_styling",
+        "description": "Card uses rounded-2xl, shadow-xl, and p-6 Tailwind classes",
+        "type": "class_contains",
+        "selector": "#course-card",
+        "requiredClasses": ["rounded-2xl", "shadow-xl", "p-6"]
+      },
+      {
+        "id": "test_enroll_click",
+        "description": "Clicking 'Enroll Now' updates count to 1",
+        "type": "interaction",
+        "action": "click",
+        "targetSelector": "#enroll-btn",
+        "assertSelector": "#enroll-btn",
+        "expectedText": "Enroll Now (1)"
+      }
+    ]
+  },
+  {
+    "type": "QUIZ",
+    "title": "Check Your Knowledge",
+    "questions": [
+      {
+        "content": "Which hook in React is primarily used to declare and update reactive component state?",
+        "options": [
+          "useEffect()",
+          "useState()",
+          "useContext()",
+          "useCallback()"
+        ],
+        "correctOptionIndex": 1,
+        "explanation": "useState() allows functional components to store state variables and triggers a re-render when the setter function is called."
+      },
+      {
+        "content": "Why is Piston well-suited for backend code execution like Node.js or Python?",
+        "options": [
+          "It provides a visual web browser window for rendering DOM elements",
+          "It compiles React JSX components into mobile apps",
+          "It provides an isolated, secure headless sandbox container for executing terminal scripts",
+          "It automatically publishes websites to production servers"
+        ],
+        "correctOptionIndex": 2,
+        "explanation": "Piston is a headless execution sandbox designed to safely run scripts in containers and capture stdout/stderr."
+      },
+      {
+        "content": "What is the primary benefit of using Tailwind CSS for UI development?",
+        "options": [
+          "It enforces writing hundreds of lines of custom CSS files",
+          "It provides composable utility classes directly in JSX/HTML for rapid and consistent styling",
+          "It replaces JavaScript for backend API routes",
+          "It requires setting up a dedicated database"
+        ],
+        "correctOptionIndex": 1,
+        "explanation": "Tailwind CSS provides utility classes like flex, rounded-2xl, and p-6 directly in markup, eliminating repetitive CSS stylesheets."
+      }
+    ]
+  },
+  {
+    "type": "summary",
+    "label": "Quick Recap",
+    "title": "Summary & Key Takeaways",
+    "items": [
+      "Full-stack architecture pairs interactive React client components with secure Node.js server runtimes.",
+      "Tailwind CSS accelerates styling with utility classes directly in component markup.",
+      "The CODE_EXERCISE block executes backend code in real-time on Piston with live terminal stdout/stderr.",
+      "The FRONTEND_EXERCISE block renders live React and Tailwind UI via Sandpack with automated in-browser test grading."
+    ]
+  }
+]
