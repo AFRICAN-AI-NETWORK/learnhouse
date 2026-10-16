@@ -238,6 +238,19 @@ export default async function proxy(req: NextRequest) {
     const orgslug = fullhost
       ? fullhost.replace(`.${LEARNHOUSE_DOMAIN}`, '')
       : (default_org as string)
+
+    if (pathname.startsWith('/orgs/')) {
+      const response = NextResponse.next()
+      response.cookies.set({
+        name: 'learnhouse_current_orgslug',
+        value: orgslug,
+        domain:
+          LEARNHOUSE_TOP_DOMAIN == 'localhost' ? '' : LEARNHOUSE_TOP_DOMAIN,
+        path: '/',
+      })
+      return response
+    }
+
     const response = NextResponse.rewrite(
       createRewriteUrl(`/orgs/${orgslug}${pathname}${search}`)
     )
@@ -258,13 +271,26 @@ export default async function proxy(req: NextRequest) {
     // Get the default organization slug
     const LEARNHOUSE_TOP_DOMAIN = getLEARNHOUSE_TOP_DOMAIN_VAL()
     const orgslug = default_org as string
-    const response = NextResponse.rewrite(
-      createRewriteUrl(`/orgs/${orgslug}${pathname}${search}`)
-    )
+
+    if (pathname.startsWith('/orgs/')) {
+      const response = NextResponse.next()
+      response.cookies.set({
+        name: 'learnhouse_current_orgslug',
+        value: orgslug,
+        domain:
+          LEARNHOUSE_TOP_DOMAIN == 'localhost' ? '' : LEARNHOUSE_TOP_DOMAIN,
+        path: '/',
+      })
+      return response
+    }
 
     if (pathname.startsWith('/ref/')) {
       return NextResponse.next()
     }
+
+    const response = NextResponse.rewrite(
+      createRewriteUrl(`/orgs/${orgslug}${pathname}${search}`)
+    )
 
     // Set the cookie with the orgslug value
     response.cookies.set({

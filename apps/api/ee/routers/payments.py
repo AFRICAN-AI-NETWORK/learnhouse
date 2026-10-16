@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.core.events.database import get_db_session
 from src.db.courses.courses import Course
@@ -15,7 +15,9 @@ from src.db.payments.payments import (
     PaymentsConfigRead,
     PaymentsConfigUpdate,
 )
+from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import (
+    PaymentsProduct,
     PaymentsProductCreate,
     PaymentsProductRead,
     PaymentsProductUpdate,
@@ -270,6 +272,112 @@ async def api_handle_flutterwave_webhook(
 # Payments checkout
 
 
+def resolve_payment_product_and_course(
+    identifier: str, org_id: int, db_session: Session
+) -> tuple[int | None, Course | None]:
+    """
+    Resolve a course_uuid, course slug, course name, product name, or product ID
+    into a valid (product_id, Course | None) tuple within the organization.
+    """
+    if not identifier:
+        return None, None
+
+    identifier_clean = identifier.strip()
+    norm_id = identifier_clean.lower().replace("-", " ").replace("_", " ")
+
+    # 1. Direct product ID (digit)
+    if identifier_clean.isdigit():
+        prod = db_session.get(PaymentsProduct, int(identifier_clean))
+        if prod and prod.org_id == org_id:
+            return prod.id, None
+
+    # Fetch all products and courses for this org for matching
+    all_products = list(
+        db_session.exec(
+            select(PaymentsProduct).where(PaymentsProduct.org_id == org_id)
+        ).all()
+    )
+    all_courses = list(
+        db_session.exec(
+            select(Course).where(Course.org_id == org_id)
+        ).all()
+    )
+
+    # 2. Check if identifier matches a Course by course_uuid, id, or name/slug
+    matched_course: Course | None = None
+    for course in all_courses:
+        c_uuid = (course.course_uuid or "").strip()
+        if c_uuid == identifier_clean:
+            matched_course = course
+            break
+        if identifier_clean.startswith("course_") and c_uuid == identifier_clean[7:]:
+            matched_course = course
+            break
+        if not identifier_clean.startswith("course_") and c_uuid == f"course_{identifier_clean}":
+            matched_course = course
+            break
+        c_name = course.name.strip().lower().replace("-", " ").replace("_", " ")
+        if c_name == norm_id:
+            matched_course = course
+            break
+
+    # If still not matched, check substring/partial course name match
+    if not matched_course:
+        for course in all_courses:
+            c_name = course.name.strip().lower().replace("-", " ").replace("_", " ")
+            if (len(norm_id) >= 4 and norm_id in c_name) or (len(c_name) >= 4 and c_name in norm_id):
+                matched_course = course
+                break
+
+    # If course is found, find linked PaymentsCourse or matching product
+    if matched_course:
+        payment_course_stmt = select(PaymentsCourse).where(
+            PaymentsCourse.course_id == matched_course.id, PaymentsCourse.org_id == org_id
+        )
+        main_payment_course = db_session.exec(payment_course_stmt).first()
+        if main_payment_course:
+            return main_payment_course.payment_product_id, matched_course
+
+        # Course found, but no PaymentsCourse linked yet: look for a product with matching name or norm_id
+        c_name = matched_course.name.strip().lower().replace("-", " ").replace("_", " ")
+        for prod in all_products:
+            p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
+            if (
+                p_name == c_name
+                or p_name == norm_id
+                or (len(p_name) >= 4 and p_name in c_name)
+                or (len(c_name) >= 4 and c_name in p_name)
+            ):
+                # Auto-link PaymentsCourse so subsequent access checks work seamlessly
+                try:
+                    new_pc = PaymentsCourse(
+                        course_id=matched_course.id,
+                        payment_product_id=prod.id,
+                        org_id=org_id,
+                    )
+                    db_session.add(new_pc)
+                    db_session.commit()
+                except Exception:  # noqa: BLE001
+                    db_session.rollback()
+                return prod.id, matched_course
+
+    # 3. Check if identifier directly matches a PaymentsProduct name or provider_product_id
+    for prod in all_products:
+        p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
+        if p_name == norm_id:
+            return prod.id, matched_course
+        if prod.provider_product_id and prod.provider_product_id.strip() == identifier_clean:
+            return prod.id, matched_course
+
+    # 4. Fallback: fuzzy/partial match on PaymentsProduct name
+    for prod in all_products:
+        p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
+        if (len(norm_id) >= 4 and norm_id in p_name) or (len(p_name) >= 4 and p_name in norm_id):
+            return prod.id, matched_course
+
+    return None, matched_course
+
+
 @router.post("/{org_id}/checkout/course_uuid/{course_uuid}")
 async def api_create_checkout_session_by_uuid(
     request: Request,
@@ -282,41 +390,24 @@ async def api_create_checkout_session_by_uuid(
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
-    from sqlmodel import select
+    product_id, _ = resolve_payment_product_and_course(course_uuid, org_id, db_session)
+    if not product_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Course or payment product not found for '{course_uuid}'",
+        )
 
-    from src.db.courses.courses import Course
-    from src.db.payments.payments_courses import PaymentsCourse
-    
-    course_stmt = select(Course).where(Course.course_uuid == course_uuid, Course.org_id == org_id)
-    main_course = db_session.exec(course_stmt).first()
-    if not main_course:
-        raise HTTPException(status_code=404, detail="Course not found")
-        
-    payment_course_stmt = select(PaymentsCourse).where(
-        PaymentsCourse.course_id == main_course.id, PaymentsCourse.org_id == org_id
-    )
-    main_payment_course = db_session.exec(payment_course_stmt).first()
-    if not main_payment_course:
-        raise HTTPException(status_code=404, detail="Payment product not found for this course")
-    
-    product_id = main_payment_course.payment_product_id
-    
     upsell_product_id = None
     if upsell_course_uuid:
-        upsell_stmt = select(Course).where(Course.course_uuid == upsell_course_uuid, Course.org_id == org_id)
-        upsell_course = db_session.exec(upsell_stmt).first()
-        if not upsell_course:
-            raise HTTPException(status_code=404, detail="Upsell course not found")
-            
-        upsell_payment_course_stmt = select(PaymentsCourse).where(
-            PaymentsCourse.course_id == upsell_course.id, PaymentsCourse.org_id == org_id
+        upsell_product_id, _ = resolve_payment_product_and_course(
+            upsell_course_uuid, org_id, db_session
         )
-        upsell_payment_course = db_session.exec(upsell_payment_course_stmt).first()
-        if not upsell_payment_course:
-            raise HTTPException(status_code=404, detail="Payment product not found for upsell course")
-            
-        upsell_product_id = upsell_payment_course.payment_product_id
-        
+        if not upsell_product_id:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Payment product not found for upsell course '{upsell_course_uuid}'",
+            )
+
     return await initialize_transaction(
         request,
         org_id,

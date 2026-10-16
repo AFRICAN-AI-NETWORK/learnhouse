@@ -6,6 +6,10 @@ from sqlmodel import Session, select
 from src.db.courses.activities import Activity
 from src.db.courses.courses import Course
 from src.db.payments.payments_courses import PaymentsCourse
+from src.db.payments.payments_products import (
+    PaymentProductTypeEnum,
+    PaymentsProduct,
+)
 from src.db.payments.payments_users import PaymentStatusEnum, PaymentsUser
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.rbac.rbac import (
@@ -82,7 +86,23 @@ async def check_activity_paid_access(
         ),
     )
     access = db_session.exec(statement).first()
-    return bool(access)
+    if access:
+        return True
+
+    # Check if user has an active organization subscription
+    org_sub_stmt = (
+        select(PaymentsUser)
+        .join(PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id)
+        .where(
+            PaymentsUser.user_id == user.id,
+            PaymentsProduct.org_id == course.org_id,
+            PaymentsProduct.product_type == PaymentProductTypeEnum.SUBSCRIPTION,
+            PaymentsUser.status.in_(
+                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+            ),
+        )
+    )
+    return bool(db_session.exec(org_sub_stmt).first())
 
 
 async def check_course_paid_access(
@@ -135,4 +155,20 @@ async def check_course_paid_access(
         ),
     )
     subscription = db_session.exec(statement).first()
-    return bool(subscription)
+    if subscription:
+        return True
+
+    # Check if user has an active organization subscription
+    org_sub_stmt = (
+        select(PaymentsUser)
+        .join(PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id)
+        .where(
+            PaymentsUser.user_id == user.id,
+            PaymentsProduct.org_id == course.org_id,
+            PaymentsProduct.product_type == PaymentProductTypeEnum.SUBSCRIPTION,
+            PaymentsUser.status.in_(
+                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+            ),
+        )
+    )
+    return bool(db_session.exec(org_sub_stmt).first())

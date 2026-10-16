@@ -86,9 +86,7 @@ const LiveSessionActivity = lazy(
 )
 const AssignmentStudentActivity = lazy(
   () =>
-    import(
-      '@components/Objects/Activities/Assignment/AssignmentStudentActivity'
-    )
+    import('@components/Objects/Activities/Assignment/AssignmentStudentActivity')
 )
 const AIActivityAsk = lazy(
   () => import('@components/Objects/Activities/AI/AIActivityAsk')
@@ -864,7 +862,10 @@ function ActivityClient(props: ActivityClientProps) {
       : 0
 
   useEffect(() => {
-    if (activity.activity_type == 'TYPE_ASSIGNMENT') {
+    if (
+      activity.activity_type == 'TYPE_ASSIGNMENT' ||
+      activity.activity_type == 'TYPE_SMART_ARTICLE'
+    ) {
       getAssignmentUI()
     }
   }, [activity.activity_type, getAssignmentUI])

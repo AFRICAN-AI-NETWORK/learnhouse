@@ -122,7 +122,7 @@ function DashMobileMenu() {
         {!isPartnerOnly && isAdmin && (
           <ToolTip content={'Payments'} slateBlack sideOffset={8} side="top">
             <Link
-              href={`/orgs/${org.slug}/dash/payments/customers`}
+              href="/dash/payments/customers"
               className="flex flex-col items-center p-2"
               aria-label="Manage payments and billing"
             >
