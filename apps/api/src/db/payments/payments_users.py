@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from openai import BaseModel
+from pydantic import BaseModel
 from sqlmodel import JSON, BigInteger, Column, Field, ForeignKey, SQLModel
 
 

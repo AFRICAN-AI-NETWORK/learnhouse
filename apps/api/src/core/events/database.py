@@ -143,6 +143,160 @@ else:
         logger.debug("Connection returned to pool")
 
 
+def ensure_schema_compatibility(db_engine):
+    """
+    Ensure newly added columns and enum values exist in PostgreSQL/SQLite
+    so that queries don't crash with UndefinedColumn or LookupError.
+    Idempotent and safe to run on every startup.
+    """
+    try:
+        from sqlalchemy import inspect, text
+
+        with db_engine.connect() as conn:
+            inspector = inspect(conn)
+            tables = inspector.get_table_names()
+
+            # 1. paymentsproduct table
+            if "paymentsproduct" in tables:
+                cols = {c["name"] for c in inspector.get_columns("paymentsproduct")}
+                if "interval" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsproduct ADD COLUMN IF NOT EXISTS "interval" VARCHAR DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add interval to paymentsproduct: {e}"
+                        )
+                if "trial_days" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsproduct ADD COLUMN IF NOT EXISTS "trial_days" INTEGER DEFAULT 0;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add trial_days to paymentsproduct: {e}"
+                        )
+
+            # 2. paymentsuser table
+            if "paymentsuser" in tables:
+                cols = {c["name"] for c in inspector.get_columns("paymentsuser")}
+                if "grace_period_start_date" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "grace_period_start_date" TIMESTAMP WITH TIME ZONE DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add grace_period_start_date to paymentsuser: {e}"
+                        )
+                if "discount_code_id" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "discount_code_id" BIGINT DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add discount_code_id to paymentsuser: {e}"
+                        )
+                if "referral_code_id" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "referral_code_id" BIGINT DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add referral_code_id to paymentsuser: {e}"
+                        )
+                if "original_amount" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "original_amount" DOUBLE PRECISION DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add original_amount to paymentsuser: {e}"
+                        )
+                if "discount_amount" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "discount_amount" DOUBLE PRECISION DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add discount_amount to paymentsuser: {e}"
+                        )
+                if "final_amount" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "final_amount" DOUBLE PRECISION DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add final_amount to paymentsuser: {e}"
+                        )
+
+            # 3. course_timetable_event table: add weekly_schedule_phase column if missing
+            if "course_timetable_event" in tables:
+                col_query = text(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'course_timetable_event';"
+                )
+                cols = {r[0] for r in conn.execute(col_query).fetchall()}
+                if "weekly_schedule_phase" not in cols:
+                    try:
+                        conn.execute(
+                            text(
+                                'ALTER TABLE course_timetable_event ADD COLUMN IF NOT EXISTS "weekly_schedule_phase" VARCHAR(255) DEFAULT NULL;'
+                            )
+                        )
+                        conn.commit()
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            f"Failed to add weekly_schedule_phase to course_timetable_event: {e}"
+                        )
+
+            # 4. notification table: normalize uppercase enum values to lowercase
+            if "notification" in tables:
+                try:
+                    conn.execute(
+                        text(
+                            "UPDATE notification SET notification_type = lower(notification_type) WHERE notification_type IS NOT NULL;"
+                        )
+                    )
+                    conn.commit()
+                except Exception as e:  # noqa: BLE001
+                    logger.debug(
+                        f"Notification enum normalization (ignored): {e}"
+                    )
+
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"ensure_schema_compatibility error: {e}")
+
+
 # Only create tables if not in test mode (tests will handle this themselves)
 if not is_testing:
     from sqlalchemy import text
@@ -162,6 +316,7 @@ if not is_testing:
         logger.warning(f"Could not pre-create paymentproviderenum type: {e}")
 
     SQLModel.metadata.create_all(engine)
+    ensure_schema_compatibility(engine)
     # Note: logfire instrumentation will be handled in app.py after configuration
 
 
@@ -171,6 +326,7 @@ async def connect_to_db(app: FastAPI):
     # Only create tables if not in test mode
     if not is_testing:
         SQLModel.metadata.create_all(engine)
+        ensure_schema_compatibility(engine)
 
 
 def get_db_session():

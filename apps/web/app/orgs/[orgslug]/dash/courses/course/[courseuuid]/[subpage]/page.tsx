@@ -1,8 +1,11 @@
 'use client'
-import React, { use, useEffect } from 'react'
-import { CourseProvider } from '../../../../../../../../components/Contexts/CourseContext'
+import React, { useEffect } from 'react'
+import { CourseProvider } from '@components/Contexts/CourseContext'
 import Link from 'next/link'
-import { CourseOverviewTop } from '@components/Dashboard/Misc/CourseOverviewTop'
+import {
+  CourseOverviewTop,
+  CourseOverviewParams,
+} from '@components/Dashboard/Misc/CourseOverviewTop'
 import { motion } from 'framer-motion'
 import {
   GalleryVerticalEnd,
@@ -22,25 +25,33 @@ import EditCourseCertification from '@components/Dashboard/Pages/Course/EditCour
 import EditCourseSchedule from '@components/Dashboard/Pages/Course/EditCourseSchedule/EditCourseSchedule'
 import EditCourseMilestones from '@components/Dashboard/Pages/Course/EditCourseMilestones/EditCourseMilestones'
 import { useCourseRights } from '@hooks/useCourseRights'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import ToolTip from '@components/Objects/StyledElements/Tooltip/Tooltip'
 import { getUriWithOrg } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
 
-export type CourseOverviewParams = {
-  orgslug: string
-  courseuuid: string
-  subpage: string
-}
+export type { CourseOverviewParams }
 
-function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
+function CourseOverviewPage(props: { params?: Promise<CourseOverviewParams> }) {
   const { t } = useTranslation()
-  const params = use(props.params)
+  const routeParams = useParams<{
+    orgslug?: string
+    courseuuid?: string
+    subpage?: string
+  }>()
+
+  const params: CourseOverviewParams = {
+    orgslug: (routeParams?.orgslug as string) || 'default',
+    courseuuid: (routeParams?.courseuuid as string) || '',
+    subpage: (routeParams?.subpage as string) || 'general',
+  }
   const router = useRouter()
 
   function getEntireCourseUUID(courseuuid: string) {
     // add course_ to uuid
-    return `course_${courseuuid}`
+    return courseuuid.startsWith('course_')
+      ? courseuuid
+      : `course_${courseuuid}`
   }
 
   const courseuuid = getEntireCourseUUID(params.courseuuid)
@@ -159,7 +170,7 @@ function CourseOverviewPage(props: { params: Promise<CourseOverviewParams> }) {
           <div className="flex flex-wrap gap-2 font-black text-sm overflow-x-auto">
             {tabs.map((tab) => {
               const IconComponent = tab.icon
-              const isActive = params.subpage.toString() === tab.key
+              const isActive = (params.subpage ?? 'general') === tab.key
               const hasAccess = hasPermission(tab.requiredPermission)
 
               if (!hasAccess) {

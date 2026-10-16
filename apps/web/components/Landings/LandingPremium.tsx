@@ -248,6 +248,7 @@ export default function LandingPremium({
       imageUrl: '/landing/career_accelerator.jpg',
       status: 'Live' as const,
       originalPrice: '$20/one-time',
+      strikethroughPrice: false,
       modulesCount: 6,
     },
     ...upcomingSpecializations,

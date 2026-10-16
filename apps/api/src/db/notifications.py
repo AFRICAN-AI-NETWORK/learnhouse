@@ -12,6 +12,15 @@ class NotificationType(StrEnum):
     ACTIVITY_ADDED = "activity_added"
     APP_UPDATE = "app_update"
 
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            val_lower = value.lower()
+            for member in cls:
+                if member.value == val_lower or member.name.lower() == val_lower:
+                    return member
+        return None
+
 
 class EmailStatus(StrEnum):
     NOT_REQUIRED = "not_required"

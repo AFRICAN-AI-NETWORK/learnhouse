@@ -170,3 +170,5 @@ Pipfile.lock
 run.py
 
 REFERRAL_BACKEND_IMPLEMENTATION.md
+*.db
+*.sqlite

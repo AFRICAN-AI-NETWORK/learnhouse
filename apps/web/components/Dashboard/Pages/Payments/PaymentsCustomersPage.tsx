@@ -70,24 +70,24 @@ function PaymentsUsersTable({ data }: { data: PaymentUserData[] }) {
                   border="border-2"
                   rounded="rounded-md"
                   avatar_url={getUserAvatarMediaDirectory(
-                    item.user.user_uuid,
-                    item.user.avatar_image
+                    item.user?.user_uuid || '',
+                    item.user?.avatar_image
                   )}
                 />
                 <div className="flex flex-col">
                   <span className="font-medium">
-                    {item.user.first_name || item.user.username}
+                    {item.user?.first_name || item.user?.username || 'Customer'}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-white/45">
-                    {item.user.email}
+                    {item.user?.email || ''}
                   </span>
                 </div>
               </div>
             </TableCell>
-            <TableCell>{item.product.name}</TableCell>
+            <TableCell>{item.product?.name || 'Standard Access'}</TableCell>
             <TableCell>
               <div className="flex items-center space-x-2">
-                {item.product.product_type === 'subscription' ? (
+                {item.product?.product_type === 'subscription' ? (
                   <Badge variant="outline" className="flex items-center gap-1">
                     <RefreshCcw size={12} />
                     <span>Subscription</span>
@@ -101,10 +101,12 @@ function PaymentsUsersTable({ data }: { data: PaymentUserData[] }) {
               </div>
             </TableCell>
             <TableCell>
-              {new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: item.product.currency,
-              }).format(item.product.amount)}
+              {item.product?.currency
+                ? new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: item.product.currency,
+                  }).format(item.product.amount || 0)
+                : `$${item.product?.amount || 0}`}
             </TableCell>
             <TableCell>
               <Badge
@@ -120,7 +122,9 @@ function PaymentsUsersTable({ data }: { data: PaymentUserData[] }) {
               </Badge>
             </TableCell>
             <TableCell>
-              {new Date(item.creation_date).toLocaleDateString()}
+              {item.creation_date
+                ? new Date(item.creation_date).toLocaleDateString()
+                : '-'}
             </TableCell>
           </TableRow>
         ))}

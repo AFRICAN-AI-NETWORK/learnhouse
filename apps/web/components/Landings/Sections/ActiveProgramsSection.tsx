@@ -16,6 +16,7 @@ interface ActiveProgram {
   imageUrl: string
   status?: 'Live' | 'Upcoming'
   originalPrice?: string
+  strikethroughPrice?: boolean
   modulesCount?: number
 }
 
@@ -181,7 +182,14 @@ export default function ActiveProgramsSection({
                           <span className="text-[18px] font-black text-[#65a30d]">
                             {program.badgeText}
                             {program.originalPrice && (
-                              <span className="text-[12px] text-gray-400 font-medium line-through ml-2">
+                              <span
+                                className={`text-[12px] font-medium ml-2 ${
+                                  program.strikethroughPrice === false ||
+                                  program.id === 'career-accelerator'
+                                    ? 'text-gray-500'
+                                    : 'text-gray-400 line-through'
+                                }`}
+                              >
                                 {program.originalPrice}
                               </span>
                             )}

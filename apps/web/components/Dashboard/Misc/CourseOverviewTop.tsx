@@ -3,7 +3,6 @@ import { useCourse } from '@components/Contexts/CourseContext'
 import { useEffect } from 'react'
 import BreadCrumbs from './BreadCrumbs'
 import SaveState from './SaveState'
-import { CourseOverviewParams } from 'app/orgs/[orgslug]/dash/courses/course/[courseuuid]/[subpage]/page'
 import { getUriWithOrg } from '@services/config/config'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
@@ -13,6 +12,12 @@ import EmptyThumbnailImage from '../../../public/empty_thumbnail.png'
 import { BookOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import NextImage from 'next/image'
+
+export type CourseOverviewParams = {
+  orgslug: string
+  courseuuid: string
+  subpage?: string
+}
 
 export function CourseOverviewTop({
   params,
