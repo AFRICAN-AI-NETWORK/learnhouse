@@ -6,7 +6,13 @@
 export interface DeclarativeTest {
   id?: string
   description: string
-  type?: 'dom_text' | 'dom_exists' | 'class_contains' | 'attribute_check' | 'interaction' | 'custom'
+  type?:
+    | 'dom_text'
+    | 'dom_exists'
+    | 'class_contains'
+    | 'attribute_check'
+    | 'interaction'
+    | 'custom'
   selector?: string
   targetSelector?: string
   assertSelector?: string
@@ -83,7 +89,13 @@ test('Placeholder test', () => {
       testBody = `
   const target = document.querySelector('${targetSel}');
   expect(target).not.toBeNull();
-  target.click();
+  if (typeof act !== 'undefined') {
+    await act(async () => {
+      target.click();
+    });
+  } else {
+    target.click();
+  }
   const assertEl = document.querySelector('${assertSel}');
   expect(assertEl).not.toBeNull();
   expect(assertEl.textContent).toContain('${exp}');
@@ -97,7 +109,7 @@ test('Placeholder test', () => {
     }
 
     testCasesCode += `
-test('${desc}', () => {
+test('${desc}', async () => {
 ${testBody}
 });
 `
@@ -105,22 +117,34 @@ ${testBody}
 
   if (isReact) {
     return `
-import React from 'react';
+import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 
 let testRoot = null;
 
 describe('Assignment Test Suite', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     document.body.innerHTML = '<div id="test-root"></div>';
     testRoot = createRoot(document.getElementById('test-root'));
-    testRoot.render(<App />);
+    if (typeof act !== 'undefined') {
+      await act(async () => {
+        testRoot.render(<App />);
+      });
+    } else {
+      testRoot.render(<App />);
+    }
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (testRoot) {
-      testRoot.unmount();
+      if (typeof act !== 'undefined') {
+        await act(async () => {
+          testRoot.unmount();
+        });
+      } else {
+        testRoot.unmount();
+      }
       testRoot = null;
     }
     document.body.innerHTML = '';

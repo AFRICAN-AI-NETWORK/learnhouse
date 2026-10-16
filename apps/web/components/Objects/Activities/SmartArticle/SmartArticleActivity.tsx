@@ -45,7 +45,6 @@ const FrontendExerciseBlock = dynamic(
   }
 )
 
-
 import TaskQuizObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskQuizObject'
 import TaskCodeEditorObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskCodeEditorObject'
 import TaskFormObject from 'app/orgs/[orgslug]/dash/assignments/[assignmentuuid]/_components/TaskEditor/Subs/TaskTypes/TaskFormObject'
@@ -663,9 +662,9 @@ function SmartArticleActivity({
         className={`flex-1 min-w-0 min-h-0 flex flex-col relative transition-all duration-500 ease-in-out`}
       >
         {/* Header Breadcrumb */}
-        <div className="px-4 sm:px-8 py-5 bg-white border-b border-slate-200 flex flex-col gap-3 shrink-0 z-10 shadow-sm">
+        <div className="px-4 sm:px-8 py-3.5 bg-white border-b border-slate-200 flex flex-col gap-1.5 shrink-0 z-10 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">
               <span className="truncate max-w-[200px] hover:text-slate-900 transition-colors cursor-pointer">
                 {course?.name || 'AINA Course'}
               </span>
@@ -676,23 +675,23 @@ function SmartArticleActivity({
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {prevActivity ? (
                 <Link
                   href={getUriWithOrg(
                     orgslug || '',
                     `/course/${course?.course_uuid?.replace('course_', '')}/activity/${prevActivity.cleanUuid}`
                   )}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm"
                 >
-                  <ArrowLeft size={16} /> Previous Lesson
+                  <ArrowLeft size={14} /> Previous Lesson
                 </Link>
               ) : (
                 <button
                   disabled
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed"
                 >
-                  <ArrowLeft size={16} /> Previous Lesson
+                  <ArrowLeft size={14} /> Previous Lesson
                 </button>
               )}
               <span className="text-xs font-bold text-slate-400">
@@ -704,25 +703,25 @@ function SmartArticleActivity({
                     orgslug || '',
                     `/course/${course?.course_uuid?.replace('course_', '')}/activity/${nextActivity.cleanUuid}`
                   )}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20"
                 >
-                  Next Lesson <ArrowRight size={16} />
+                  Next Lesson <ArrowRight size={14} />
                 </Link>
               ) : (
                 <button
                   disabled
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-400 bg-slate-50 border border-slate-200 rounded-lg cursor-not-allowed"
                 >
-                  Next Lesson <ArrowRight size={16} />
+                  Next Lesson <ArrowRight size={14} />
                 </button>
               )}
             </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5">
             {activity?.name || 'Smart Article'}
           </h1>
-          <p className="text-slate-600 text-sm font-medium">
+          <p className="text-slate-500 text-xs sm:text-sm font-medium">
             Complete the activities below to finish this lesson.
           </p>
         </div>
@@ -731,9 +730,9 @@ function SmartArticleActivity({
         <div className="flex-1 relative min-h-0">
           <div
             ref={contentRef}
-            className="absolute inset-0 overflow-y-auto px-3 sm:px-6 pt-3"
+            className="absolute inset-0 overflow-y-auto px-4 sm:px-8 lg:px-10 py-6"
           >
-            <div className="max-w-7xl mx-auto pb-4">
+            <div className="max-w-4xl xl:max-w-5xl mx-auto pb-32">
               {steps.map((step: any, index: number) => (
                 <React.Fragment key={index}>
                   {renderBlock(step, index)}
@@ -741,7 +740,7 @@ function SmartArticleActivity({
               ))}
 
               {/* Completion Block */}
-              <div className="mt-16 mb-16 bg-white border border-slate-200 rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
+              <div className="mt-12 bg-white border border-slate-200 rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
                     <CheckCircle2 size={24} />
@@ -759,7 +758,6 @@ function SmartArticleActivity({
                 <button
                   onClick={() => {
                     if (onComplete && !isCompleted) onComplete()
-                    // Optionally scroll to top or navigate if nextActivity exists
                   }}
                   disabled={isCompleted}
                   className={`px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all shadow-sm shrink-0 ${
@@ -777,14 +775,14 @@ function SmartArticleActivity({
       </div>
 
       {/* Right : Sidebar Progress & AI */}
-      <div
-        className={`w-80 shrink-0 bg-transparent flex flex-col gap-6 px-6 py-8 overflow-y-auto border-l border-slate-200`}
-      >
+      <div className="w-72 xl:w-80 shrink-0 bg-slate-50/50 flex flex-col gap-4 p-4 lg:p-5 overflow-y-auto border-l border-slate-200 pb-32">
         {/* Lesson Progress (Top Half) */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="font-bold text-slate-900 mb-2">Lesson Progress</h3>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+          <h3 className="font-bold text-slate-900 text-sm mb-2">
+            Lesson Progress
+          </h3>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-emerald-500 transition-all duration-500"
                 style={{
@@ -792,7 +790,7 @@ function SmartArticleActivity({
                 }}
               />
             </div>
-            <span className="text-xs font-bold text-slate-500">
+            <span className="text-[11px] font-bold text-slate-500">
               {isCompleted
                 ? 100
                 : Math.round(
@@ -802,8 +800,8 @@ function SmartArticleActivity({
             </span>
           </div>
 
-          <div className="space-y-1 relative">
-            <div className="absolute left-[11px] top-4 bottom-4 w-px bg-slate-200 z-0"></div>
+          <div className="space-y-0.5 relative">
+            <div className="absolute left-[9px] top-3 bottom-3 w-px bg-slate-200 z-0"></div>
             {steps.map((step: any, index: number) => {
               const isActive = index === activeStepIndex
               const isPast =
@@ -812,10 +810,10 @@ function SmartArticleActivity({
               return (
                 <div
                   key={index}
-                  className="flex items-center gap-4 relative z-10 py-2"
+                  className="flex items-center gap-3 relative z-10 py-1.5"
                 >
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold border-2 transition-colors ${
+                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold border-2 transition-colors ${
                       isActive && !isCompleted
                         ? 'border-blue-600 text-blue-600 bg-white'
                         : isPast
@@ -824,13 +822,13 @@ function SmartArticleActivity({
                     }`}
                   >
                     {isPast ? (
-                      <Check size={12} strokeWidth={3} />
+                      <Check size={10} strokeWidth={3} />
                     ) : (
-                      <Circle size={12} strokeWidth={3} />
+                      <Circle size={10} strokeWidth={3} />
                     )}
                   </div>
                   <span
-                    className={`text-sm font-medium transition-colors ${isActive && !isCompleted ? 'text-blue-700 font-bold' : isPast ? 'text-slate-700' : 'text-slate-400'}`}
+                    className={`text-xs font-medium transition-colors line-clamp-1 ${isActive && !isCompleted ? 'text-blue-700 font-bold' : isPast ? 'text-slate-700' : 'text-slate-400'}`}
                   >
                     {step.label || step.title || `Section ${index + 1}`}
                   </span>
@@ -841,21 +839,21 @@ function SmartArticleActivity({
         </div>
 
         {/* Need Help? Panel */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 mb-2">Need Help?</h3>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-2">
+          <h3 className="font-bold text-slate-900 text-sm mb-1">Need Help?</h3>
 
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="w-full flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left"
           >
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-              <MessageSquare size={20} />
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+              <MessageSquare size={16} />
             </div>
             <div>
-              <div className="font-bold text-slate-900 text-sm">
+              <div className="font-bold text-slate-900 text-xs">
                 Ask AI Tutor
               </div>
-              <div className="text-xs text-slate-500 font-medium mt-0.5">
+              <div className="text-[11px] text-slate-500 font-medium">
                 Get instant help with this lesson
               </div>
             </div>

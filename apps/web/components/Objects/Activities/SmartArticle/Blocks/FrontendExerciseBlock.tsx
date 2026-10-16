@@ -143,10 +143,14 @@ export default function FrontendExerciseBlock({
   step,
   isFocusMode = false,
 }: FrontendExerciseBlockProps) {
-  const [activeTab, setActiveTab] = useState<'preview' | 'tests' | 'console'>('preview')
+  const [activeTab, setActiveTab] = useState<'preview' | 'tests' | 'console'>(
+    'preview'
+  )
   const [showInstructions, setShowInstructions] = useState(true)
   const [testScore, setTestScore] = useState<number | null>(null)
-  const [testStatus, setTestStatus] = useState<'idle' | 'running' | 'completed'>('idle')
+  const [testStatus, setTestStatus] = useState<
+    'idle' | 'running' | 'completed'
+  >('idle')
   const [isFullScreen, setIsFullScreen] = useState(false)
 
   // Listen for Escape key to exit full screen
@@ -215,9 +219,7 @@ export default function App() {
 
     // If step has declarative tests, generate test file
     const hasTests = Boolean(
-      (step.tests && step.tests.length > 0) ||
-        step.testFile ||
-        step.testFiles
+      (step.tests && step.tests.length > 0) || step.testFile || step.testFiles
     )
 
     if (hasTests) {
@@ -368,20 +370,18 @@ export default function App() {
         }`}
       >
         <SandpackProvider
-          template={template === 'static' || template === 'html' ? 'static' : 'react'}
+          template={
+            template === 'static' || template === 'html' ? 'static' : 'react'
+          }
           theme="dark"
           files={initialFiles}
           options={{
-            activeFile: step.activeFile || (template === 'static' ? '/index.html' : '/App.js'),
+            activeFile:
+              step.activeFile ||
+              (template === 'static' ? '/index.html' : '/App.js'),
             recompileMode: 'delayed',
             recompileDelay: 300,
             externalResources: ['https://cdn.tailwindcss.com'],
-          }}
-          customSetup={{
-            dependencies: {
-              '@testing-library/react': '^16.1.0',
-              '@testing-library/jest-dom': '^6.4.2',
-            },
           }}
         >
           <SandpackLayout className="!border-none !rounded-none flex-1 min-h-0 !h-full">
