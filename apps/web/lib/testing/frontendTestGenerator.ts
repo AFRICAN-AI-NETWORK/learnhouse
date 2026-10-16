@@ -1,6 +1,6 @@
 /**
  * Helper to convert declarative JSON tests from Smart Article steps
- * into Jest / Testing Library test suites that Sandpack executes in-browser.
+ * into Jest test suites executed by Sandpack in-browser using standard React DOM.
  */
 
 export interface DeclarativeTest {
@@ -89,7 +89,6 @@ test('Placeholder test', () => {
   expect(assertEl.textContent).toContain('${exp}');
 `
     } else {
-      // Default fallback: selector check
       const sel = t.selector || 'body'
       testBody = `
   const el = document.querySelector('${sel}');
@@ -107,13 +106,24 @@ ${testBody}
   if (isReact) {
     return `
 import React from 'react';
-import { render } from '@testing-library/react';
+import { createRoot } from 'react-dom/client';
 import App from './App';
+
+let testRoot = null;
 
 describe('Assignment Test Suite', () => {
   beforeEach(() => {
+    document.body.innerHTML = '<div id="test-root"></div>';
+    testRoot = createRoot(document.getElementById('test-root'));
+    testRoot.render(<App />);
+  });
+
+  afterEach(() => {
+    if (testRoot) {
+      testRoot.unmount();
+      testRoot = null;
+    }
     document.body.innerHTML = '';
-    render(<App />);
   });
 
 ${testCasesCode}

@@ -663,7 +663,7 @@ function SmartArticleActivity({
         className={`flex-1 min-w-0 min-h-0 flex flex-col relative transition-all duration-500 ease-in-out`}
       >
         {/* Header Breadcrumb */}
-        <div className="px-8 lg:px-12 py-8 bg-white border-b border-slate-200 flex flex-col gap-4 shrink-0 z-10 shadow-sm">
+        <div className="px-4 sm:px-8 py-5 bg-white border-b border-slate-200 flex flex-col gap-3 shrink-0 z-10 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-500 uppercase tracking-wider">
               <span className="truncate max-w-[200px] hover:text-slate-900 transition-colors cursor-pointer">
@@ -719,10 +719,10 @@ function SmartArticleActivity({
             </div>
           </div>
 
-          <h1 className="text-3xl font-black text-slate-900 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
             {activity?.name || 'Smart Article'}
           </h1>
-          <p className="text-slate-600 font-medium">
+          <p className="text-slate-600 text-sm font-medium">
             Complete the activities below to finish this lesson.
           </p>
         </div>
@@ -731,7 +731,7 @@ function SmartArticleActivity({
         <div className="flex-1 relative min-h-0">
           <div
             ref={contentRef}
-            className="absolute inset-0 overflow-y-auto px-8 lg:px-12 pt-4"
+            className="absolute inset-0 overflow-y-auto px-3 sm:px-6 pt-3"
           >
             <div className="max-w-7xl mx-auto pb-4">
               {steps.map((step: any, index: number) => (

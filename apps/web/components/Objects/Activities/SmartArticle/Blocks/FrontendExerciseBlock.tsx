@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   SandpackProvider,
   SandpackLayout,
@@ -22,6 +22,8 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import { generateTestFileFromDeclarative } from '@/lib/testing/frontendTestGenerator'
 
@@ -37,17 +39,21 @@ function ExerciseActions({
   onReset,
   activeTab,
   setActiveTab,
+  isFullScreen,
+  setIsFullScreen,
 }: {
   onRunTests: () => void
   hasTests: boolean
   onReset: () => void
   activeTab: 'preview' | 'tests' | 'console'
   setActiveTab: (tab: 'preview' | 'tests' | 'console') => void
+  isFullScreen: boolean
+  setIsFullScreen: (fs: boolean | ((prev: boolean) => boolean)) => void
 }) {
   const { sandpack } = useSandpack()
 
   return (
-    <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-[#111111] border-t border-white/5 gap-3">
+    <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-[#111111] border-t border-white/5 gap-3 shrink-0">
       {/* View Switcher Tabs */}
       <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-lg">
         <button
@@ -101,6 +107,22 @@ function ExerciseActions({
           <RotateCcw size={12} className="mr-1.5" /> Reset Files
         </button>
 
+        <button
+          onClick={() => setIsFullScreen((prev) => !prev)}
+          title={isFullScreen ? 'Exit Full Screen (Esc)' : 'Full Screen'}
+          className="flex items-center text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-all"
+        >
+          {isFullScreen ? (
+            <>
+              <Minimize2 size={13} className="mr-1.5" /> Exit Full Screen
+            </>
+          ) : (
+            <>
+              <Maximize2 size={13} className="mr-1.5" /> Full Screen
+            </>
+          )}
+        </button>
+
         {hasTests && (
           <button
             onClick={() => {
@@ -125,6 +147,18 @@ export default function FrontendExerciseBlock({
   const [showInstructions, setShowInstructions] = useState(true)
   const [testScore, setTestScore] = useState<number | null>(null)
   const [testStatus, setTestStatus] = useState<'idle' | 'running' | 'completed'>('idle')
+  const [isFullScreen, setIsFullScreen] = useState(false)
+
+  // Listen for Escape key to exit full screen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullScreen])
 
   const title = step.title || step.label || 'Interactive Frontend Exercise'
   const instructions = step.instructions || step.content || step.text || ''
@@ -230,55 +264,70 @@ export default function App() {
     }, 0)
   }, [])
 
-
   return (
-    <div className={`w-full ${isFocusMode ? 'max-w-6xl' : 'max-w-5xl'} py-6 mx-auto`}>
+    <div
+      className={
+        isFullScreen
+          ? 'fixed inset-0 z-[100] bg-[#0d0d0d] p-4 flex flex-col w-screen h-screen overflow-hidden'
+          : `w-full py-4 mx-auto`
+      }
+    >
       {/* Exercise Header */}
-      <div className="mb-4 bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/10 rounded-2xl p-5 shadow-sm">
+      <div className="mb-3 bg-white dark:bg-[#121212] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <Code2 size={20} />
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <Code2 size={18} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 {title}
               </h3>
               <div className="flex items-center space-x-2 mt-0.5">
-                <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-zinc-400 font-semibold">
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-zinc-400 font-semibold">
                   {template}
                 </span>
-                <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold">
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold">
                   Tailwind CSS Enabled
                 </span>
                 {hasTests && (
-                  <span className="text-[11px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold flex items-center">
-                    <Sparkles size={11} className="mr-1" /> Automated Grading
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold flex items-center">
+                    <Sparkles size={10} className="mr-1" /> Automated Grading
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          {instructions && (
+          <div className="flex items-center space-x-3">
+            {instructions && (
+              <button
+                onClick={() => setShowInstructions(!showInstructions)}
+                className="flex items-center text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white transition-colors"
+              >
+                <Info size={14} className="mr-1" />
+                {showInstructions ? 'Hide Instructions' : 'View Instructions'}
+                {showInstructions ? (
+                  <ChevronUp size={14} className="ml-0.5" />
+                ) : (
+                  <ChevronDown size={14} className="ml-0.5" />
+                )}
+              </button>
+            )}
+
             <button
-              onClick={() => setShowInstructions(!showInstructions)}
-              className="flex items-center text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white transition-colors"
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              title={isFullScreen ? 'Exit Full Screen (Esc)' : 'Full Screen'}
+              className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
             >
-              <Info size={14} className="mr-1" />
-              {showInstructions ? 'Hide Instructions' : 'View Instructions'}
-              {showInstructions ? (
-                <ChevronUp size={14} className="ml-0.5" />
-              ) : (
-                <ChevronDown size={14} className="ml-0.5" />
-              )}
+              {isFullScreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             </button>
-          )}
+          </div>
         </div>
 
         {/* Collapsible Instructions Box */}
         {showInstructions && instructions && (
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 text-sm text-slate-600 dark:text-zinc-300 whitespace-pre-line leading-relaxed">
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 text-xs text-slate-600 dark:text-zinc-300 whitespace-pre-line leading-relaxed">
             {instructions}
           </div>
         )}
@@ -286,7 +335,7 @@ export default function App() {
         {/* Test Score Banner */}
         {testScore !== null && (
           <div
-            className={`mt-4 p-3 rounded-xl border flex items-center justify-between ${
+            className={`mt-3 p-2.5 rounded-xl border flex items-center justify-between ${
               testScore >= (step.passingScore || 80)
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                 : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
@@ -294,15 +343,15 @@ export default function App() {
           >
             <div className="flex items-center space-x-2">
               {testScore >= (step.passingScore || 80) ? (
-                <CheckCircle2 size={18} className="text-emerald-500" />
+                <CheckCircle2 size={16} className="text-emerald-500" />
               ) : (
-                <XCircle size={18} className="text-amber-500" />
+                <XCircle size={16} className="text-amber-500" />
               )}
               <span className="text-xs font-bold">
                 Automated Grading Score: {testScore}%
                 {testScore >= (step.passingScore || 80)
                   ? ' — All passing criteria met!'
-                  : ' — Some tests failed. Review the test logs below.'}
+                  : ' — Some tests failed. Review the test logs in the Automated Tests tab.'}
               </span>
             </div>
             <span className="text-xs font-mono font-semibold">
@@ -313,7 +362,11 @@ export default function App() {
       </div>
 
       {/* Sandpack Workspace */}
-      <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl bg-[#1e1e1e]">
+      <div
+        className={`rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl bg-[#1e1e1e] flex flex-col ${
+          isFullScreen ? 'flex-1 min-h-0' : 'h-[560px]'
+        }`}
+      >
         <SandpackProvider
           template={template === 'static' || template === 'html' ? 'static' : 'react'}
           theme="dark"
@@ -324,8 +377,14 @@ export default function App() {
             recompileDelay: 300,
             externalResources: ['https://cdn.tailwindcss.com'],
           }}
+          customSetup={{
+            dependencies: {
+              '@testing-library/react': '^16.1.0',
+              '@testing-library/jest-dom': '^6.4.2',
+            },
+          }}
         >
-          <SandpackLayout className="!border-none !rounded-none">
+          <SandpackLayout className="!border-none !rounded-none flex-1 min-h-0 !h-full">
             {/* Left Panel: Code Editor */}
             <SandpackCodeEditor
               showTabs={true}
@@ -333,21 +392,29 @@ export default function App() {
               showInlineErrors={true}
               wrapContent={true}
               closableTabs={false}
-              style={{ height: '480px' }}
+              style={{ height: '100%', flex: 1 }}
             />
 
-            {/* Right Panel: Conditional Tab Display */}
-            <div className="w-full flex-1 flex flex-col h-[480px] bg-[#141414] border-l border-white/5 relative">
-              {activeTab === 'preview' && (
+            {/* Right Panel: Kept mounted at all times to preserve iframe state and console logs */}
+            <div className="w-full flex-1 flex flex-col h-full bg-[#141414] border-l border-white/5 relative overflow-hidden">
+              {/* Live Preview Pane */}
+              <div
+                className="w-full h-full"
+                style={{ display: activeTab === 'preview' ? 'flex' : 'none' }}
+              >
                 <SandpackPreview
                   showNavigator={false}
                   showRefreshButton={true}
                   style={{ height: '100%', width: '100%' }}
                 />
-              )}
+              </div>
 
-              {activeTab === 'tests' && hasTests && (
-                <div className="h-full overflow-y-auto p-2">
+              {/* Automated Tests Pane */}
+              {hasTests && (
+                <div
+                  className="w-full h-full overflow-y-auto p-2"
+                  style={{ display: activeTab === 'tests' ? 'block' : 'none' }}
+                >
                   <SandpackTests
                     watchMode={false}
                     verbose={true}
@@ -357,11 +424,13 @@ export default function App() {
                 </div>
               )}
 
-              {activeTab === 'console' && (
-                <div className="h-full">
-                  <SandpackConsole style={{ height: '100%' }} />
-                </div>
-              )}
+              {/* Console Output Pane */}
+              <div
+                className="w-full h-full flex flex-col overflow-y-auto"
+                style={{ display: activeTab === 'console' ? 'flex' : 'none' }}
+              >
+                <SandpackConsole style={{ height: '100%' }} />
+              </div>
             </div>
           </SandpackLayout>
 
@@ -370,6 +439,8 @@ export default function App() {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             hasTests={hasTests}
+            isFullScreen={isFullScreen}
+            setIsFullScreen={setIsFullScreen}
             onReset={() => {
               setTestScore(null)
               setTestStatus('idle')
