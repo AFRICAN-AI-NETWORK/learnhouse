@@ -23,6 +23,7 @@ import {
 import {
   QuizEditorBlock,
   CodeExerciseEditorBlock,
+  FrontendExerciseEditorBlock,
   CustomAnswerEditorBlock,
   FileSubmissionEditorBlock,
   LearningObjectivesEditorBlock,
@@ -52,16 +53,52 @@ export default function SmartArticleEditor({
   const [steps, setSteps] = useState<any[]>(content?.steps || [])
 
   const handleAddBlock = (type: string) => {
+    let initialProps: any = {}
+    if (type === 'FRONTEND_EXERCISE') {
+      initialProps = {
+        template: 'react',
+        instructions: 'Describe the frontend exercise here...',
+        passingScore: 100,
+        files: {
+          '/App.js': `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="p-8 text-center font-sans">\n      <h1 className="text-2xl font-bold">Hello World</h1>\n    </div>\n  );\n}`,
+        },
+        tests: [
+          {
+            id: 'test_1',
+            description: 'Heading renders text',
+            type: 'dom_text',
+            selector: 'h1',
+            expected: 'Hello World',
+          },
+        ],
+      }
+    } else if (type === 'CODE_EXERCISE') {
+      initialProps = {
+        language: 'javascript',
+        startingCode: '// Write your solution here\n',
+        solutionCode: '',
+        testCases: [
+          {
+            testUUID: `tc-${Date.now()}`,
+            description: 'Sample test case',
+            input: '',
+            expectedOutput: '',
+          },
+        ],
+      }
+    }
+
     const newBlock = {
       id: Math.random().toString(36).substring(7),
       type,
       title: 'New ' + type + ' Block',
       content: '',
+      ...initialProps,
     }
     setSteps([...steps, newBlock])
   }
 
-  const handleUpdateBlock = (index: number, field: string, value: string) => {
+  const handleUpdateBlock = (index: number, field: string, value: any) => {
     const newSteps = [...steps]
     newSteps[index] = { ...newSteps[index], [field]: value }
     setSteps(newSteps)
@@ -165,6 +202,12 @@ export default function SmartArticleEditor({
                           />
                         ) : step.type === 'CODE_EXERCISE' ? (
                           <CodeExerciseEditorBlock
+                            step={step}
+                            index={index}
+                            handleUpdateBlock={handleUpdateBlock}
+                          />
+                        ) : step.type === 'FRONTEND_EXERCISE' ? (
+                          <FrontendExerciseEditorBlock
                             step={step}
                             index={index}
                             handleUpdateBlock={handleUpdateBlock}
@@ -300,7 +343,14 @@ export default function SmartArticleEditor({
               className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 bg-white hover:border-indigo-500 hover:shadow-md transition-all text-gray-600 hover:text-indigo-600 w-24"
             >
               <TerminalSquare size={24} />
-              <span className="text-xs font-semibold">Code Ex</span>
+              <span className="text-xs font-semibold">Backend Ex</span>
+            </button>
+            <button
+              onClick={() => handleAddBlock('FRONTEND_EXERCISE')}
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 bg-white hover:border-emerald-500 hover:shadow-md transition-all text-gray-600 hover:text-emerald-600 w-24"
+            >
+              <Code size={24} />
+              <span className="text-xs font-semibold">Frontend Ex</span>
             </button>
             <button
               onClick={() => handleAddBlock('FILE_SUBMISSION')}
