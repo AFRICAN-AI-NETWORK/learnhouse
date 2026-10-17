@@ -1,5 +1,14 @@
 import React from 'react'
-import { Plus, Trash2, CheckCircle2, Circle, Code, Minus, PlusCircle, Sparkles } from 'lucide-react'
+import {
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Circle,
+  Code,
+  Minus,
+  PlusCircle,
+  Sparkles,
+} from 'lucide-react'
 
 interface BlockProps {
   step: any
@@ -281,7 +290,8 @@ export function CodeExerciseEditorBlock({
               Verification Test Cases
             </h4>
             <p className="text-[11px] text-gray-500">
-              When student clicks "Run Code", the output is evaluated against these expected answers.
+              When student clicks "Run Code", the output is evaluated against
+              these expected answers.
             </p>
           </div>
           <button
@@ -344,7 +354,11 @@ export function CodeExerciseEditorBlock({
                     type="text"
                     value={tc.expectedOutput || tc.expected_output || ''}
                     onChange={(e) =>
-                      handleUpdateTestCase(tcIdx, 'expectedOutput', e.target.value)
+                      handleUpdateTestCase(
+                        tcIdx,
+                        'expectedOutput',
+                        e.target.value
+                      )
                     }
                     placeholder="Total: $107.50"
                     className="w-full p-2 border border-gray-200 rounded-lg text-xs bg-white font-mono"
@@ -415,7 +429,9 @@ export function FrontendExerciseEditorBlock({
         </label>
         <textarea
           value={instructions}
-          onChange={(e) => handleUpdateBlock(index, 'instructions', e.target.value)}
+          onChange={(e) =>
+            handleUpdateBlock(index, 'instructions', e.target.value)
+          }
           className="w-full min-h-[90px] p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-y text-sm bg-white"
           placeholder="Describe what the student needs to build or fix..."
         />
@@ -428,7 +444,9 @@ export function FrontendExerciseEditorBlock({
           </label>
           <select
             value={template}
-            onChange={(e) => handleUpdateBlock(index, 'template', e.target.value)}
+            onChange={(e) =>
+              handleUpdateBlock(index, 'template', e.target.value)
+            }
             className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
           >
             <option value="react">React 19 + Tailwind CSS (In-Browser)</option>
@@ -446,28 +464,53 @@ export function FrontendExerciseEditorBlock({
             max={100}
             value={passingScore}
             onChange={(e) =>
-              handleUpdateBlock(index, 'passingScore', parseInt(e.target.value, 10) || 100)
+              handleUpdateBlock(
+                index,
+                'passingScore',
+                parseInt(e.target.value, 10) || 100
+              )
             }
             className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
           />
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Starter Code ({activeFileName})
-          </label>
-          <span className="text-[10px] text-gray-400 font-mono">
-            Sandpack In-Browser Runner
-          </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Starter Code ({activeFileName})
+            </label>
+            <span className="text-[10px] text-gray-400 font-mono">
+              Student View
+            </span>
+          </div>
+          <textarea
+            value={fileContent}
+            onChange={(e) => handleFileChange(e.target.value)}
+            className="w-full min-h-[220px] p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs leading-relaxed resize-y bg-white"
+            placeholder="// Starter React component or HTML..."
+          />
         </div>
-        <textarea
-          value={fileContent}
-          onChange={(e) => handleFileChange(e.target.value)}
-          className="w-full min-h-[220px] p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs leading-relaxed resize-y bg-white"
-          placeholder="// Starter React component or HTML..."
-        />
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Solution Code (Instructor Reference / Hidden)
+            </label>
+            <span className="text-[10px] text-gray-400 font-mono">
+              Working Solution
+            </span>
+          </div>
+          <textarea
+            value={step.solutionCode || ''}
+            onChange={(e) =>
+              handleUpdateBlock(index, 'solutionCode', e.target.value)
+            }
+            className="w-full min-h-[220px] p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs leading-relaxed resize-y bg-white"
+            placeholder="// Complete working React component..."
+          />
+        </div>
       </div>
 
       {/* Automated Tests Manager */}
@@ -530,13 +573,23 @@ export function FrontendExerciseEditorBlock({
                   </label>
                   <select
                     value={t.type || 'dom_text'}
-                    onChange={(e) => handleUpdateTest(tIdx, 'type', e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateTest(tIdx, 'type', e.target.value)
+                    }
                     className="w-full p-2 border border-gray-200 rounded-lg text-xs bg-white"
                   >
-                    <option value="dom_text">Text Match in DOM (dom_text)</option>
-                    <option value="class_contains">Tailwind Classes (class_contains)</option>
-                    <option value="interaction">Click & Verify State (interaction)</option>
-                    <option value="dom_exists">Element Exists (dom_exists)</option>
+                    <option value="dom_text">
+                      Text Match in DOM (dom_text)
+                    </option>
+                    <option value="class_contains">
+                      Tailwind Classes (class_contains)
+                    </option>
+                    <option value="interaction">
+                      Click & Verify State (interaction)
+                    </option>
+                    <option value="dom_exists">
+                      Element Exists (dom_exists)
+                    </option>
                   </select>
                 </div>
               </div>

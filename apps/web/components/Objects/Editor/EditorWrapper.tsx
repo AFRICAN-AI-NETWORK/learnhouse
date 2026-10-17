@@ -33,9 +33,13 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       return activity.assignment_uuid
 
     const assignmentBlocks = content.steps?.filter((s: any) =>
-      ['QUIZ', 'CODE_EXERCISE', 'CUSTOM_ANSWER', 'FILE_SUBMISSION'].includes(
-        s.type?.toUpperCase() || s.type
-      )
+      [
+        'QUIZ',
+        'CODE_EXERCISE',
+        'FRONTEND_EXERCISE',
+        'CUSTOM_ANSWER',
+        'FILE_SUBMISSION',
+      ].includes(s.type?.toUpperCase() || s.type)
     )
 
     if (!assignmentBlocks || assignmentBlocks.length === 0) {
@@ -115,6 +119,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
       for (const type of [
         'QUIZ',
         'CODE_EXERCISE',
+        'FRONTEND_EXERCISE',
         'CUSTOM_ANSWER',
         'FILE_SUBMISSION',
       ]) {
@@ -129,7 +134,7 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
           const block = blocksOfType[i]
           const existingTask = tasksOfType[i]
 
-          let contents = {}
+          let contents: any = {}
           if (type === 'QUIZ') {
             const mappedQuestions = (block.questions || []).map((q: any) => ({
               questionText: q.content || q.text || q.questionText || '',
@@ -148,6 +153,37 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
               }),
             }))
             contents = { questions: mappedQuestions }
+          } else if (type === 'CODE_EXERCISE') {
+            contents = {
+              exercises: [
+                {
+                  exerciseUUID: block.exerciseUUID || `code_ex_${i}`,
+                  title: block.title || 'Backend Coding Exercise',
+                  language: block.language || 'javascript',
+                  starterCode: block.startingCode || block.starterCode || '',
+                  solutionCode: block.solutionCode || '',
+                  testCases: block.testCases || block.test_cases || [],
+                  stepType: 'CODE_EXERCISE',
+                },
+              ],
+            }
+          } else if (type === 'FRONTEND_EXERCISE') {
+            contents = {
+              exercises: [
+                {
+                  exerciseUUID: block.exerciseUUID || `fe_ex_${i}`,
+                  title: block.title || 'Frontend Exercise',
+                  language: 'javascript',
+                  template: block.template || 'react',
+                  files: block.files || {},
+                  tests: block.tests || [],
+                  passingScore: block.passingScore || 100,
+                  starterCode: block.files?.['/App.js'] || '',
+                  solutionCode: block.solutionCode || '',
+                  stepType: 'FRONTEND_EXERCISE',
+                },
+              ],
+            }
           }
 
           const taskPayload = {

@@ -1,7 +1,7 @@
 'use client'
 import CreateCourseModal from '@components/Objects/Modals/Course/Create/CreateCourse'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import GeneralWrapperStyled from '@components/Objects/StyledElements/Wrappers/GeneralWrapper'
 import TypeOfContentTitle from '@components/Objects/StyledElements/Titles/TypeOfContentTitle'
@@ -11,6 +11,11 @@ import NewCourseButton from '@components/Objects/StyledElements/Buttons/NewCours
 import useAdminStatus from '@components/Hooks/useAdminStatus'
 import { useTranslation } from 'react-i18next'
 import { BookCopy } from 'lucide-react'
+import PaymentResultModal, {
+  PaymentStatusType,
+} from '@components/Objects/Payments/PaymentResultModal'
+import { verifyTransaction } from '@services/payments/payments'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 interface CourseProps {
   orgslug: string
@@ -23,9 +28,53 @@ function Courses(props: CourseProps) {
   const orgslug = props.orgslug
   const courses = props.courses
   const searchParams = useSearchParams()
+  const session = useLHSession() as any
   const isCreatingCourse = searchParams.get('new') ? true : false
   const [newCourseModal, setNewCourseModal] = React.useState(isCreatingCourse)
   const isUserAdmin = useAdminStatus() as any
+
+  // Payment Result Callback State
+  const [paymentModalState, setPaymentModalState] = useState<{
+    isOpen: boolean
+    status: PaymentStatusType
+  }>({
+    isOpen: false,
+    status: null,
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const statusParam = params.get('status')
+    const paymentSuccessParam = params.get('payment_success')
+    const txRef = params.get('tx_ref') || params.get('reference')
+
+    if (statusParam === 'successful' || paymentSuccessParam === 'true') {
+      const access_token = session?.data?.tokens?.access_token
+      if (txRef && props.org_id && access_token) {
+        verifyTransaction(Number(props.org_id), txRef, access_token).catch(
+          () => {}
+        )
+      }
+      window.history.replaceState({}, '', window.location.pathname)
+      setPaymentModalState({
+        isOpen: true,
+        status: 'successful',
+      })
+    } else if (statusParam === 'cancelled') {
+      window.history.replaceState({}, '', window.location.pathname)
+      setPaymentModalState({
+        isOpen: true,
+        status: 'cancelled',
+      })
+    } else if (statusParam === 'failed') {
+      window.history.replaceState({}, '', window.location.pathname)
+      setPaymentModalState({
+        isOpen: true,
+        status: 'failed',
+      })
+    }
+  }, [props.org_id, session?.data?.tokens?.access_token])
 
   async function closeNewCourseModal() {
     setNewCourseModal(false)
@@ -120,6 +169,16 @@ function Courses(props: CourseProps) {
           </div>
         </div>
       </GeneralWrapperStyled>
+
+      {/* PAYMENT RESULT MODAL */}
+      <PaymentResultModal
+        isOpen={paymentModalState.isOpen}
+        onClose={() =>
+          setPaymentModalState((prev) => ({ ...prev, isOpen: false }))
+        }
+        status={paymentModalState.status}
+        orgSlug={orgslug}
+      />
     </div>
   )
 }

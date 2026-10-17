@@ -14,7 +14,7 @@ export async function getPaymentConfigs(orgId: number, access_token: string) {
 }
 
 export async function checkPaidAccess(
-  courseId: number,
+  courseId: number | string,
   orgId: number,
   access_token: string
 ) {
@@ -105,6 +105,19 @@ export async function deletePaymentConfig(
 export async function getOrgCustomers(orgId: number, access_token: string) {
   const result = await fetch(
     `${getAPIUrl()}payments/${orgId}/customers`,
+    RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  const res = await errorHandling(result)
+  return res
+}
+
+export async function verifyTransaction(
+  orgId: number,
+  reference: string,
+  access_token: string
+) {
+  const result = await fetch(
+    `${getAPIUrl()}payments/${orgId}/transactions/${reference}`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
   )
   const res = await errorHandling(result)

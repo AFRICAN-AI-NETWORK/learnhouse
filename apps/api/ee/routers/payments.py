@@ -29,6 +29,7 @@ from src.services.payments.discount_codes import (
     DiscountValidationError,
     create_discount_code,
     deactivate_discount_code,
+    delete_discount_code,
     get_discount_code,
     get_discount_code_analytics,
     list_discount_codes,
@@ -568,6 +569,31 @@ async def api_verify_transaction(
                     response["previous_status"] = payment_user.status.value
                     response["new_status"] = PaymentStatusEnum.COMPLETED.value
 
+                    # Record discount usage if applied
+                    if payment_user.discount_code_id:
+                        try:
+                            from src.services.payments.discount_codes import (
+                                increment_discount_usage_atomic,
+                                record_discount_usage,
+                            )
+                            increment_success = await increment_discount_usage_atomic(
+                                payment_user.discount_code_id, db_session
+                            )
+                            if increment_success:
+                                await record_discount_usage(
+                                    discount_code_id=payment_user.discount_code_id,
+                                    user_id=payment_user.user_id,
+                                    course_id=None,
+                                    product_id=payment_user.product_id,
+                                    payment_user_id=payment_user.id,
+                                    original_amount=payment_user.original_amount or 0.0,
+                                    discount_amount=payment_user.discount_amount or 0.0,
+                                    final_amount=payment_user.final_amount or 0.0,
+                                    db_session=db_session,
+                                )
+                        except Exception as e:  # noqa: BLE001
+                            pass
+
                     # Activate upsell if present
                     upsell_payment_user_id = meta.get("upsell_payment_user_id")
                     if upsell_payment_user_id:
@@ -595,23 +621,48 @@ async def api_verify_transaction(
 async def api_check_course_paid_access(
     request: Request,
     org_id: int,
-    course_id: int,
+    course_id: str,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
     """
-    Check if current user has paid access to a specific course
+    Check if current user has paid access to a specific course.
+    Accepts numeric course ID, course UUID, or course slug/name.
 
-    Returns diagnostic information about why access is granted or denied.
+    Returns diagnostic information, course info, and linked payment product details.
     """
     from sqlmodel import select
 
     from src.db.payments.payments_courses import PaymentsCourse
+    from src.db.payments.payments_products import PaymentsProduct
     from src.db.payments.payments_users import PaymentsUser
 
-    # Get course
-    course_statement = select(Course).where(Course.id == course_id)
-    course = db_session.exec(course_statement).first()
+    course: Course | None = None
+    product_id: int | None = None
+
+    # 1. If numeric string, check Course.id
+    if course_id.isdigit():
+        course_statement = select(Course).where(
+            Course.id == int(course_id), Course.org_id == org_id
+        )
+        course = db_session.exec(course_statement).first()
+
+    # 2. If not found or not digit, resolve using resolve_payment_product_and_course
+    if not course:
+        product_id, course = resolve_payment_product_and_course(
+            course_id, org_id, db_session
+        )
+
+    # 3. Direct UUID lookup fallback
+    if not course:
+        clean_uuid = (
+            course_id if course_id.startswith("course_") else f"course_{course_id}"
+        )
+        course_statement = select(Course).where(
+            (Course.course_uuid == course_id) | (Course.course_uuid == clean_uuid),
+            Course.org_id == org_id,
+        )
+        course = db_session.exec(course_statement).first()
 
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -622,12 +673,18 @@ async def api_check_course_paid_access(
     )
     course_payment = db_session.exec(course_payment_statement).first()
 
+    product: PaymentsProduct | None = None
+    if course_payment:
+        product = db_session.get(PaymentsProduct, course_payment.payment_product_id)
+    elif product_id:
+        product = db_session.get(PaymentsProduct, product_id)
+
     # Check user's payment status
     payment_user = None
-    if course_payment:
+    if product and not isinstance(current_user, AnonymousUser):
         payment_user_statement = select(PaymentsUser).where(
             PaymentsUser.user_id == current_user.id,
-            PaymentsUser.payment_product_id == course_payment.payment_product_id,
+            PaymentsUser.payment_product_id == product.id,
         )
         payment_user = db_session.exec(payment_user_statement).first()
 
@@ -647,15 +704,32 @@ async def api_check_course_paid_access(
     )
 
     has_access = await check_course_paid_access(
-        course_id=course_id, user=current_user, db_session=db_session, request=request
+        course_id=course.id, user=current_user, db_session=db_session, request=request
     )
+
+    product_data = None
+    if product:
+        p_type = getattr(product, "product_type", None)
+        product_data = {
+            "id": product.id,
+            "name": product.name,
+            "amount": product.amount,
+            "currency": product.currency,
+            "product_type": getattr(p_type, "value", str(p_type)) if p_type else None,
+        }
 
     return {
         "has_access": has_access,
+        "course": {
+            "id": course.id,
+            "course_uuid": course.course_uuid,
+            "name": course.name,
+        },
+        "product": product_data,
         "diagnostics": {
-            "course_id": course_id,
-            "course_linked_to_product": course_payment is not None,
-            "product_id": course_payment.payment_product_id if course_payment else None,
+            "course_id": course.id,
+            "course_linked_to_product": course_payment is not None or product is not None,
+            "product_id": product.id if product else None,
             "user_has_payment": payment_user is not None,
             "payment_status": payment_user.status.value if payment_user else None,
             "payment_user_id": payment_user.id if payment_user else None,
@@ -774,6 +848,20 @@ async def api_deactivate_discount_code(
     return DiscountCodeRead.model_validate(code)
 
 
+@router.delete("/{org_id}/discount-codes/{code_id}")
+async def api_delete_discount_code(
+    request: Request,
+    org_id: int,
+    code_id: int,
+    current_user: PublicUser = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session),
+) -> dict:
+    """Permanently delete a discount code (admin only)"""
+    return await delete_discount_code(
+        request, org_id, code_id, current_user, db_session
+    )
+
+
 @router.get("/{org_id}/discount-codes/{code_id}/analytics")
 async def api_get_discount_code_analytics(
     request: Request,
@@ -796,6 +884,7 @@ async def api_validate_discount_code(
     amount: float,
     course_id: int | None = None,
     product_id: int | None = None,
+    course_uuid: str | None = None,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ) -> dict:
@@ -803,6 +892,15 @@ async def api_validate_discount_code(
     Validate a discount code and calculate discounted price (student operation).
     This is a read-only operation that doesn't record usage.
     """
+    if not course_id and course_uuid:
+        resolved_prod_id, resolved_course = resolve_payment_product_and_course(
+            course_uuid, org_id, db_session
+        )
+        if resolved_course:
+            course_id = resolved_course.id
+        if not product_id and resolved_prod_id:
+            product_id = resolved_prod_id
+
     try:
         discount_code, discount_amount, final_amount = await validate_discount_code(
             code=code,

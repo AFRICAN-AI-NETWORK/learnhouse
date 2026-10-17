@@ -429,8 +429,16 @@ def sync_smart_article_assignment(
         return None
 
     if steps is None:
-        if isinstance(activity.content, dict):
-            steps = activity.content.get("steps") or []
+        raw_content = activity.content
+        if isinstance(raw_content, str):
+            try:
+                raw_content = json.loads(raw_content)
+            except Exception:
+                raw_content = None
+        if isinstance(raw_content, list):
+            steps = raw_content
+        elif isinstance(raw_content, dict):
+            steps = raw_content.get("steps") or []
         else:
             steps = []
 
@@ -555,9 +563,69 @@ def sync_smart_article_assignment(
             }
         elif step_type == "QUIZ":
             assignment_type = AssignmentTaskTypeEnum.QUIZ
-            contents = {
-                "questions": step.get("questions") or []
-            }
+            raw_questions = step.get("questions") or []
+            if not raw_questions and (step.get("content") or step.get("text") or step.get("questionText")):
+                raw_questions = [
+                    {
+                        "content": step.get("content") or step.get("questionText") or step.get("text", ""),
+                        "options": step.get("options") or [],
+                        "correctOptionIndex": step.get("correctOptionIndex", 0),
+                        "explanation": step.get("explanation", ""),
+                    }
+                ]
+            norm_questions = []
+            for q_idx, q in enumerate(raw_questions):
+                if not isinstance(q, dict):
+                    continue
+                q_text = (
+                    q.get("questionText")
+                    or q.get("content")
+                    or q.get("text")
+                    or f"Question {q_idx + 1}"
+                )
+                q_uuid = q.get("questionUUID") or f"question_{uuid4()}"
+                correct_idx = q.get("correctOptionIndex")
+                raw_opts = q.get("options") or []
+                norm_opts = []
+                for o_idx, opt in enumerate(raw_opts):
+                    if isinstance(opt, str):
+                        is_right = (
+                            (correct_idx == o_idx)
+                            if correct_idx is not None
+                            else False
+                        )
+                        norm_opts.append(
+                            {
+                                "text": opt,
+                                "optionUUID": f"option_{uuid4()}",
+                                "assigned_right_answer": is_right,
+                                "fileID": "",
+                                "type": "text",
+                            }
+                        )
+                    elif isinstance(opt, dict):
+                        norm_opts.append(
+                            {
+                                "text": opt.get("text") or opt.get("content", ""),
+                                "optionUUID": opt.get("optionUUID") or f"option_{uuid4()}",
+                                "assigned_right_answer": bool(
+                                    opt.get("assigned_right_answer", False)
+                                ),
+                                "fileID": opt.get("fileID", ""),
+                                "type": opt.get("type", "text"),
+                            }
+                        )
+                norm_questions.append(
+                    {
+                        "questionText": q_text,
+                        "content": q_text,
+                        "questionUUID": q_uuid,
+                        "options": norm_opts,
+                        "correctOptionIndex": correct_idx,
+                        "explanation": q.get("explanation", ""),
+                    }
+                )
+            contents = {"questions": norm_questions}
         elif step_type == "CUSTOM_ANSWER":
             assignment_type = AssignmentTaskTypeEnum.FORM
             contents = {

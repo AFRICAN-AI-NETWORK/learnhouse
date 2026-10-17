@@ -9,6 +9,8 @@ import { motion } from 'framer-motion'
 
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import CoursePaidOptions from '@components/Objects/Courses/CourseActions/CoursePaidOptions'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
+import { checkPaidAccess } from '@services/payments/payments'
 
 // Define a minimal Course type for the props if an exact front-end type isn't exported globally
 type Course = any
@@ -39,6 +41,27 @@ export default function BundleUpsellBanner({
     useState<PaymentsProduct | null>(null)
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const session = useLHSession() as any
+  const [hasAccess, setHasAccess] = useState(false)
+
+  useEffect(() => {
+    async function verifyAccess() {
+      if (!orgId || !course?.id || !session?.data?.tokens?.access_token) return
+      try {
+        const res = await checkPaidAccess(
+          course.id,
+          orgId,
+          session.data.tokens.access_token
+        )
+        if (res?.has_access) {
+          setHasAccess(true)
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
+    verifyAccess()
+  }, [course?.id, orgId, session?.data?.tokens?.access_token])
 
   useEffect(() => {
     async function findUpsells() {
@@ -92,22 +115,31 @@ export default function BundleUpsellBanner({
     )
   }
 
-  if (!course?.is_paid && bundles.length === 0) {
+  if (hasAccess || (!course?.is_paid && bundles.length === 0)) {
     return null
   }
 
-  const bestBundle = bundles[0] || standaloneProduct || { name: course?.name || 'Full Course Access' }
+  const bestBundle = bundles[0] ||
+    standaloneProduct || { name: course?.name || 'Full Course Access' }
 
   const landingPath = (() => {
     const name = (course?.name || '').toLowerCase()
-    if (name.includes('content creator')) return getUriWithOrg(orgslug, '/ai-automation-content-creators')
-    if (name.includes('business') || name.includes('automation')) return getUriWithOrg(orgslug, '/ai-automation')
-    if (name.includes('data science') || name.includes('fundamentals')) return getUriWithOrg(orgslug, '/ai-fundamentals')
-    if (name.includes('engineering')) return getUriWithOrg(orgslug, '/ai-engineering')
-    if (name.includes('node') || name.includes('backend')) return getUriWithOrg(orgslug, '/nodejs-backend')
-    if (name.includes('laravel')) return getUriWithOrg(orgslug, '/laravel-backend')
-    if (name.includes('frontend')) return getUriWithOrg(orgslug, '/frontend-dev')
-    if (name.includes('career') || name.includes('accelerator')) return getUriWithOrg(orgslug, '/career-accelerator')
+    if (name.includes('content creator'))
+      return getUriWithOrg(orgslug, '/ai-automation-content-creators')
+    if (name.includes('business') || name.includes('automation'))
+      return getUriWithOrg(orgslug, '/ai-automation')
+    if (name.includes('data science') || name.includes('fundamentals'))
+      return getUriWithOrg(orgslug, '/ai-fundamentals')
+    if (name.includes('engineering'))
+      return getUriWithOrg(orgslug, '/ai-engineering')
+    if (name.includes('node') || name.includes('backend'))
+      return getUriWithOrg(orgslug, '/nodejs-backend')
+    if (name.includes('laravel'))
+      return getUriWithOrg(orgslug, '/laravel-backend')
+    if (name.includes('frontend'))
+      return getUriWithOrg(orgslug, '/frontend-dev')
+    if (name.includes('career') || name.includes('accelerator'))
+      return getUriWithOrg(orgslug, '/career-accelerator')
     return null
   })()
 
@@ -140,7 +172,8 @@ export default function BundleUpsellBanner({
               Upgrade to the {bestBundle.name}
             </h3>
             <p className="text-slate-600 text-sm">
-              Choose a plan that works best for you. You can either pay monthly or make a one-time payment to get full lifetime access.
+              Choose a plan that works best for you. You can either pay monthly
+              or make a one-time payment to get full lifetime access.
             </p>
           </div>
 

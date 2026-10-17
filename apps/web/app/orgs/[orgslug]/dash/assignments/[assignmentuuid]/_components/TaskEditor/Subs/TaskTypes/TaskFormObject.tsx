@@ -156,10 +156,12 @@ function TaskFormObject({
         questions,
       },
     }
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
     const res = await updateAssignmentTask(
       values,
       assignmentTaskState.assignmentTask.assignment_task_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     if (res) {
@@ -279,10 +281,13 @@ function TaskFormObject({
       task_submission_grade_feedback: '',
     }
 
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
+
     const res = await handleAssignmentTaskSubmission(
       values,
       assignmentTaskUUID,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
 
@@ -302,9 +307,7 @@ function TaskFormObject({
       setShowSavingDisclaimer(false)
 
       // Mutate task submissions list to update activity-level UI
-      mutate(
-        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
-      )
+      mutate(`${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`)
     } else {
       // eslint-disable-next-line no-console
       console.error('Submission error:', res)
@@ -355,10 +358,13 @@ function TaskFormObject({
       task_submission_grade_feedback: 'Auto graded by system',
     }
 
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
+
     const res = await handleAssignmentTaskSubmission(
       values,
       assignmentTaskUUID,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     if (res) {
@@ -377,11 +383,12 @@ function TaskFormObject({
         return
       }
 
-      if (assignmentTaskUUID) {
+      const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+      if (assignmentTaskUUID && assignmentUUID) {
         const res = await getAssignmentTaskSubmissionsUser(
           assignmentTaskUUID,
           user_id,
-          assignment.assignment_object.assignment_uuid,
+          assignmentUUID,
           access_token
         )
         if (res.success) {
@@ -402,7 +409,7 @@ function TaskFormObject({
       access_token,
       user_id,
       assignmentTaskUUID,
-      assignment.assignment_object?.assignment_uuid,
+      assignment?.assignment_object?.assignment_uuid,
     ])
 
   useEffect(() => {
@@ -427,10 +434,11 @@ function TaskFormObject({
     }
 
     const loadUserSubmissions = async () => {
-      if (view === 'student' && assignmentTaskUUID) {
+      const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+      if (view === 'student' && assignmentTaskUUID && assignmentUUID) {
         const res = await getAssignmentTaskSubmissionsMe(
           assignmentTaskUUID,
-          assignment.assignment_object.assignment_uuid,
+          assignmentUUID,
           access_token
         )
         if (res.success) {

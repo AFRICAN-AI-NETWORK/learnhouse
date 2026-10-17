@@ -3,7 +3,7 @@ import React from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { styled, keyframes } from '@stitches/react'
 import { blackA } from '@radix-ui/colors'
-import { AlertTriangle, Info } from 'lucide-react'
+import { AlertTriangle, Info, CheckCircle2 } from 'lucide-react'
 
 type ModalParams = {
   confirmationMessage: string
@@ -11,7 +11,7 @@ type ModalParams = {
   dialogTitle: string
   functionToExecute: any
   dialogTrigger?: React.ReactNode
-  status?: 'warning' | 'info'
+  status?: 'warning' | 'info' | 'success'
   buttonid?: string
 }
 
@@ -19,8 +19,10 @@ const ConfirmationModal = (params: ModalParams) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
   const warningColors = 'bg-red-100 text-red-600'
   const infoColors = 'bg-blue-100 text-blue-600'
+  const successColors = 'bg-emerald-100 text-emerald-600'
   const warningButtonColors = 'text-white bg-red-500 hover:bg-red-600'
   const infoButtonColors = 'text-white bg-blue-500 hover:bg-blue-600'
+  const successButtonColors = 'text-white bg-emerald-600 hover:bg-emerald-700'
 
   const onOpenChange = React.useCallback(
     (open: any) => {
@@ -41,11 +43,17 @@ const ConfirmationModal = (params: ModalParams) => {
           <div className="flex space-x-4 tracking-tight">
             <div
               className={`icon p-6 rounded-xl flex items-center align-content-center ${
-                params.status === 'warning' ? warningColors : infoColors
+                params.status === 'warning'
+                  ? warningColors
+                  : params.status === 'success'
+                    ? successColors
+                    : infoColors
               }`}
             >
               {params.status === 'warning' ? (
                 <AlertTriangle size={35} />
+              ) : params.status === 'success' ? (
+                <CheckCircle2 size={35} />
               ) : (
                 <Info size={35} />
               )}
@@ -63,7 +71,9 @@ const ConfirmationModal = (params: ModalParams) => {
                   className={`rounded-md text-sm px-3 py-2 font-bold flex justify-center items-center hover:cursor-pointer ${
                     params.status === 'warning'
                       ? warningButtonColors
-                      : infoButtonColors
+                      : params.status === 'success'
+                        ? successButtonColors
+                        : infoButtonColors
                   }
                                 hover:shadow-lg transition duration-300 ease-in-out
                                 `}

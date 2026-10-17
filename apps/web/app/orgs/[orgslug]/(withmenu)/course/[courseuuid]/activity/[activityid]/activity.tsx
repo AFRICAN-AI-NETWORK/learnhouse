@@ -86,7 +86,9 @@ const LiveSessionActivity = lazy(
 )
 const AssignmentStudentActivity = lazy(
   () =>
-    import('@components/Objects/Activities/Assignment/AssignmentStudentActivity')
+    import(
+      '@components/Objects/Activities/Assignment/AssignmentStudentActivity'
+    )
 )
 const AIActivityAsk = lazy(
   () => import('@components/Objects/Activities/AI/AIActivityAsk')
@@ -475,6 +477,7 @@ function ActivityClient(props: ActivityClientProps) {
   const [isFocusMode, setIsFocusMode] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
   const [videoWatchSatisfied, setVideoWatchSatisfied] = useState(false)
+  const [smartArticleCanComplete, setSmartArticleCanComplete] = useState(true)
   const { contributorStatus } = useContributorStatus(courseuuid)
   const router = useRouter()
 
@@ -524,6 +527,16 @@ function ActivityClient(props: ActivityClientProps) {
 
   const handleMarkAsComplete = useCallback(
     async (aUuid: string, mark: boolean) => {
+      if (
+        activity?.activity_type === 'TYPE_SMART_ARTICLE' &&
+        mark &&
+        !smartArticleCanComplete
+      ) {
+        toast.error(
+          'Please complete all required challenges and quizzes before marking this lesson as complete.'
+        )
+        return
+      }
       try {
         setLoadingMarkComplete(true)
         let result
@@ -558,7 +571,15 @@ function ActivityClient(props: ActivityClientProps) {
         setLoadingMarkComplete(false)
       }
     },
-    [orgslug, courseuuid, session.data?.tokens?.access_token, org?.id, t]
+    [
+      orgslug,
+      courseuuid,
+      session.data?.tokens?.access_token,
+      org?.id,
+      t,
+      activity?.activity_type,
+      smartArticleCanComplete,
+    ]
   )
 
   // Memoize activity position calculation
@@ -664,6 +685,7 @@ function ActivityClient(props: ActivityClientProps) {
                 trailData
               )
             }
+            onCanCompleteChange={setSmartArticleCanComplete}
             prevActivity={prevActivity}
             nextActivity={nextActivity}
             currentIndex={currentIndex}
@@ -1204,7 +1226,7 @@ function ActivityClient(props: ActivityClientProps) {
 
                           {/* Focus Mode Content */}
                           <div
-                            className={`${isSmartArticle ? 'pt-0 pb-0 h-screen' : 'pt-16 pb-24 md:pb-16 h-full'} overflow-x-hidden overflow-y-auto relative scrollbar-hide`}
+                            className={`${isSmartArticle ? 'pt-0 pb-0 min-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden' : 'pt-16 pb-24 md:pb-16 h-full overflow-x-hidden overflow-y-auto'} relative scrollbar-hide`}
                           >
                             {/* Floating Navigation Arrows - Hidden on Mobile */}
                             {!isSmartArticle && (
@@ -1436,6 +1458,7 @@ function ActivityClient(props: ActivityClientProps) {
                           progressPercentage={progressPercentage}
                           trailData={trailData}
                           videoWatchSatisfied={videoWatchSatisfied}
+                          smartArticleCanComplete={smartArticleCanComplete}
                         />
 
                         <SmartLearningLayout
@@ -1656,6 +1679,7 @@ function ActivityPageNavbar({
   progressPercentage,
   trailData,
   videoWatchSatisfied,
+  smartArticleCanComplete,
 }: {
   activity: any
   activityid: string
@@ -1675,6 +1699,7 @@ function ActivityPageNavbar({
   progressPercentage: number
   trailData: any
   videoWatchSatisfied: boolean
+  smartArticleCanComplete?: boolean
 }) {
   const { t } = useTranslation()
   const [courseProgressMenuOpen, setCourseProgressMenuOpen] = useState(false)
@@ -1691,6 +1716,11 @@ function ActivityPageNavbar({
     activity.activity_sub_type === 'SUBTYPE_VIDEO_HOSTED' &&
     !videoWatchSatisfied &&
     !activityComplete
+
+  const isSmartArticleLocked =
+    activity.activity_type === 'TYPE_SMART_ARTICLE' &&
+    !activityComplete &&
+    smartArticleCanComplete === false
 
   return (
     <div className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/8 dark:bg-[#13131a]/95">
@@ -1821,23 +1851,42 @@ function ActivityPageNavbar({
                   />
 
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      if (isSmartArticleLocked) {
+                        toast.error(
+                          'Please complete all required challenges and quizzes before marking this lesson as complete.'
+                        )
+                        return
+                      }
                       handleMarkAsComplete(
                         activity.activity_uuid,
                         !activityComplete
                       )
+                    }}
+                    disabled={
+                      loadingMarkComplete ||
+                      requiresVideoWatch ||
+                      isSmartArticleLocked
                     }
-                    disabled={loadingMarkComplete || requiresVideoWatch}
+                    title={
+                      isSmartArticleLocked
+                        ? 'Please complete all required challenges and quizzes before marking this lesson as complete'
+                        : undefined
+                    }
                     className={`col-span-2 inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md border px-3 text-[11px] font-bold uppercase transition sm:col-auto sm:min-w-48 sm:px-4 sm:text-xs ${
                       activityComplete
                         ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-400/20 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/15'
-                        : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
-                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                        : isSmartArticleLocked
+                          ? 'border-amber-300 bg-amber-50/80 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 cursor-not-allowed shadow-none'
+                          : 'border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 dark:border-white/8 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10'
+                    } disabled:cursor-not-allowed disabled:opacity-80`}
                   >
                     {loadingMarkComplete ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : activityComplete ? (
                       <CheckCircle size={16} />
+                    ) : isSmartArticleLocked ? (
+                      <Lock size={15} />
                     ) : (
                       <Circle size={16} />
                     )}
@@ -1845,7 +1894,9 @@ function ActivityPageNavbar({
                       ? 'Watch video to complete'
                       : activityComplete
                         ? t('common.completed')
-                        : t('activities.mark_as_complete')}
+                        : isSmartArticleLocked
+                          ? 'Challenges Incomplete'
+                          : t('activities.mark_as_complete')}
                   </button>
                 </div>
               </AuthenticatedClientElement>

@@ -14,6 +14,7 @@ import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { getUriWithOrg } from '@services/config/config'
 import { validateDiscountCode } from '@services/payments/discounts'
+import { checkPaidAccess } from '@services/payments/payments'
 import { X, Tag } from 'lucide-react'
 import { Input } from '@components/ui/input'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
@@ -52,6 +53,31 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
   const [isValidating, setIsValidating] = useState(false)
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState<string | null>(null)
+  const [hasPaidAccess, setHasPaidAccess] = useState(false)
+
+  React.useEffect(() => {
+    async function checkAccess() {
+      if (
+        !course?.id ||
+        !course?.org_id ||
+        !session?.data?.tokens?.access_token
+      )
+        return
+      try {
+        const res = await checkPaidAccess(
+          course.id,
+          course.org_id,
+          session.data.tokens.access_token
+        )
+        if (res?.has_access) {
+          setHasPaidAccess(true)
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
+    checkAccess()
+  }, [course?.id, course?.org_id, session?.data?.tokens?.access_token])
 
   const handleApplyDiscount = async (amount: number, productId: number) => {
     if (!discountCode.trim()) return
@@ -201,67 +227,88 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
             </button>
           </div>
 
-          <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
-            {product.amount > 0 && (
-              <>
-                <div className="flex items-center space-x-2">
-                  <div className="relative grow">
-                    <Tag
-                      size={14}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <Input
-                      placeholder={
-                        t('payments.discount_code_placeholder') ||
-                        'Discount code'
-                      }
-                      value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value)}
-                      className="pl-9 h-9 text-sm"
-                      disabled={isValidating || !!appliedDiscount}
-                    />
-                    {appliedDiscount && (
-                      <button
-                        onClick={clearDiscount}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          {!hasPaidAccess && (
+            <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
+              {product.amount > 0 && (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <div className="relative grow">
+                      <Tag
+                        size={14}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+                      <Input
+                        placeholder={
+                          t('payments.discount_code_placeholder') ||
+                          'Discount code'
+                        }
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value)}
+                        className="pl-9 h-9 text-sm"
+                        disabled={isValidating || !!appliedDiscount}
+                      />
+                      {appliedDiscount && (
+                        <button
+                          onClick={clearDiscount}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    {!appliedDiscount && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleApplyDiscount(product.amount, product.id)
+                        }
+                        disabled={!discountCode || isValidating}
+                        className="h-9"
                       >
-                        <X size={14} />
-                      </button>
+                        {isValidating ? t('common.loading') : t('common.apply')}
+                      </Button>
                     )}
                   </div>
-                  {!appliedDiscount && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        handleApplyDiscount(product.amount, product.id)
-                      }
-                      disabled={!discountCode || isValidating}
-                      className="h-9"
-                    >
-                      {isValidating ? t('common.loading') : t('common.apply')}
-                    </Button>
+
+                  {discountError && (
+                    <p className="text-xs text-red-500 font-medium">
+                      {discountError}
+                    </p>
                   )}
-                </div>
+                </>
+              )}
 
-                {discountError && (
-                  <p className="text-xs text-red-500 font-medium">
-                    {discountError}
-                  </p>
-                )}
-              </>
-            )}
-
-            <div className="mt-2 flex items-center justify-between bg-gray-100/80 rounded-md p-2.5">
-              <span className="text-sm text-gray-600 font-medium">
-                {product.price_type === 'customer_choice'
-                  ? t('payments.min_price')
-                  : t('common.price')}
-              </span>
-              <div className="flex flex-col items-end">
-                {appliedDiscount ? (
-                  <>
-                    <span className="text-xs text-gray-400 line-through">
+              <div className="mt-2 flex items-center justify-between bg-gray-100/80 rounded-md p-2.5">
+                <span className="text-sm text-gray-600 font-medium">
+                  {product.price_type === 'customer_choice'
+                    ? t('payments.min_price')
+                    : t('common.price')}
+                </span>
+                <div className="flex flex-col items-end">
+                  {appliedDiscount ? (
+                    <>
+                      <span className="text-xs text-gray-400 line-through">
+                        {new Intl.NumberFormat(
+                          i18n.language === 'fr' ? 'fr-FR' : 'en-US',
+                          {
+                            style: 'currency',
+                            currency: product.currency,
+                          }
+                        ).format(product.amount)}
+                      </span>
+                      <span className="font-bold text-xl text-teal-600">
+                        {new Intl.NumberFormat(
+                          i18n.language === 'fr' ? 'fr-FR' : 'en-US',
+                          {
+                            style: 'currency',
+                            currency: product.currency,
+                          }
+                        ).format(appliedDiscount.final_amount)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-semibold text-lg">
                       {new Intl.NumberFormat(
                         i18n.language === 'fr' ? 'fr-FR' : 'en-US',
                         {
@@ -269,42 +316,23 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
                           currency: product.currency,
                         }
                       ).format(product.amount)}
-                    </span>
-                    <span className="font-bold text-xl text-teal-600">
-                      {new Intl.NumberFormat(
-                        i18n.language === 'fr' ? 'fr-FR' : 'en-US',
-                        {
-                          style: 'currency',
-                          currency: product.currency,
-                        }
-                      ).format(appliedDiscount.final_amount)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="font-semibold text-lg">
-                    {new Intl.NumberFormat(
-                      i18n.language === 'fr' ? 'fr-FR' : 'en-US',
-                      {
-                        style: 'currency',
-                        currency: product.currency,
-                      }
-                    ).format(product.amount)}
-                    {product.product_type === 'subscription' && (
-                      <span className="text-sm text-gray-500 ml-1">
-                        {t('payments.per_month_short')}
-                      </span>
-                    )}
-                  </span>
-                )}
-                {product.price_type === 'customer_choice' &&
-                  !appliedDiscount && (
-                    <span className="text-sm text-gray-500">
-                      {t('payments.choose_price')}
+                      {product.product_type === 'subscription' && (
+                        <span className="text-sm text-gray-500 ml-1">
+                          {t('payments.per_month_short')}
+                        </span>
+                      )}
                     </span>
                   )}
+                  {product.price_type === 'customer_choice' &&
+                    !appliedDiscount && (
+                      <span className="text-sm text-gray-500">
+                        {t('payments.choose_price')}
+                      </span>
+                    )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-4">
             <ClickToPayButton

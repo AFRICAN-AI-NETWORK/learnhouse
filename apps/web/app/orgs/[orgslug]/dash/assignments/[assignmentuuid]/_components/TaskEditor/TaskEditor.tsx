@@ -26,9 +26,11 @@ function AssignmentTaskEditor({ page }: any) {
   const access_token = session?.data?.tokens?.access_token
 
   async function deleteTaskUI() {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
     const res = await deleteAssignmentTask(
       assignmentTaskState.assignmentTask.assignment_task_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     if (res) {
@@ -39,12 +41,8 @@ function AssignmentTaskEditor({ page }: any) {
           assignmentTask: {},
         },
       })
-      mutate(
-        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks`
-      )
-      mutate(
-        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}`
-      )
+      mutate(`${getAPIUrl()}assignments/${assignmentUUID}/tasks`)
+      mutate(`${getAPIUrl()}assignments/${assignmentUUID}`)
       toast.success('Task deleted successfully')
     } else {
       toast.error('Error deleting task, please retry later.')

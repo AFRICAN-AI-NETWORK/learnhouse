@@ -15,11 +15,13 @@ export async function validateDiscountCode(
   amount: number,
   access_token: string,
   courseId?: number,
-  productId?: number
+  productId?: number,
+  courseUuid?: string
 ) {
   let url = `${getAPIUrl()}payments/${orgId}/validate-discount?code=${encodeURIComponent(code)}&amount=${amount}`
   if (courseId) url += `&course_id=${courseId}`
   if (productId) url += `&product_id=${productId}`
+  if (courseUuid) url += `&course_uuid=${encodeURIComponent(courseUuid)}`
 
   const result = await fetch(
     url,
@@ -106,6 +108,22 @@ export async function getDiscountAnalytics(
   const result = await fetch(
     `${getAPIUrl()}payments/${orgId}/discount-codes/${codeId}/analytics`,
     RequestBodyWithAuthHeader('GET', null, null, access_token)
+  )
+  const res = await getResponseMetadata(result)
+  return res
+}
+
+/**
+ * Permanently delete a discount code.
+ */
+export async function deleteDiscountCode(
+  orgId: number,
+  codeId: number,
+  access_token: string
+) {
+  const result = await fetch(
+    `${getAPIUrl()}payments/${orgId}/discount-codes/${codeId}`,
+    RequestBodyWithAuthHeader('DELETE', null, null, access_token)
   )
   const res = await getResponseMetadata(result)
   return res

@@ -151,8 +151,14 @@ async def validate_discount_code(
 
     # Course-Specific Restriction Enforcement
     if discount_code.course_id and discount_code.course_id != course_id:
+        from src.db.courses.courses import Course
+
+        restricted_course = db_session.get(Course, discount_code.course_id)
+        c_title = (
+            f"'{restricted_course.name}'" if restricted_course else "a specific course"
+        )
         raise DiscountValidationError(
-            f"Discount code '{discount_code.code}' is not valid for this course."
+            f"Discount code '{discount_code.code}' is only valid for {c_title}."
         )
 
     # Product-Specific Restriction Enforcement
@@ -495,9 +501,29 @@ async def create_discount_code(
     ).first()
 
     if existing:
-        raise HTTPException(
-            status_code=400, detail="Discount code already exists for this organization"
-        )
+        if not existing.is_active:
+            # Code exists but was deactivated/archived! Reactivate and update it with the new configuration
+            existing.discount_type = discount_data.discount_type
+            existing.discount_value = discount_data.discount_value
+            existing.max_uses = discount_data.max_uses
+            existing.valid_from = valid_from_naive
+            existing.valid_until = valid_until_naive
+            existing.description = discount_data.description
+            existing.course_id = discount_data.course_id
+            existing.is_active = True
+            existing.updated_at = datetime.now(UTC)
+            db_session.add(existing)
+            db_session.commit()
+            db_session.refresh(existing)
+            logger.info(
+                f"Reactivated and updated discount code: {existing.code} for org_id={org_id}"
+            )
+            return existing
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Discount code already exists and is active for this organization",
+            )
 
     # Create discount code with timezone-naive datetimes
     discount_code = DiscountCode(
@@ -708,6 +734,12 @@ async def update_discount_code(
     if discount_update.description is not None:
         discount_code.description = discount_update.description
 
+    if hasattr(discount_update, "course_id"):
+        # Explicit course_id update (allows setting to null for global)
+        fields_set = getattr(discount_update, "model_fields_set", getattr(discount_update, "__fields_set__", set()))
+        if "course_id" in fields_set:
+            discount_code.course_id = discount_update.course_id
+
     discount_code.updated_at = datetime.now(UTC)
 
     db_session.add(discount_code)
@@ -743,6 +775,33 @@ async def deactivate_discount_code(
     logger.info(f"Deactivated discount code: id={code_id}, org_id={org_id}")
 
     return discount_code
+
+
+async def delete_discount_code(
+    request: Request,
+    org_id: int,
+    code_id: int,
+    current_user: PublicUser,
+    db_session: Session,
+) -> dict:
+    """
+    Permanently delete a discount code (admin only).
+    """
+    discount_code = await get_discount_code(
+        request, org_id, code_id, current_user, db_session, action="delete"
+    )
+
+    db_session.delete(discount_code)
+    db_session.commit()
+
+    logger.info(
+        f"Permanently deleted discount code: id={code_id}, code={discount_code.code}, org_id={org_id}"
+    )
+
+    return {
+        "success": True,
+        "message": f"Discount code {discount_code.code} deleted successfully",
+    }
 
 
 async def get_discount_code_analytics(

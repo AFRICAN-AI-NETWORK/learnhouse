@@ -60,7 +60,8 @@ export default function TaskLinkObject({
 
   const getKey = (type: string) => {
     if (!access_token || !assignmentTaskUUID) return null
-    const assignmentUUID = assignment.assignment_object.assignment_uuid
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return null
     if (type === 'task') return [`tasks/${assignmentTaskUUID}`, access_token]
     if (type === 'submission_student')
       return [
@@ -143,11 +144,12 @@ export default function TaskLinkObject({
       grade: 0,
       task_submission_grade_feedback: '',
     }
-    if (assignmentTaskUUID) {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (assignmentTaskUUID && assignmentUUID) {
       const res = await handleAssignmentTaskSubmission(
         values,
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res) {
@@ -155,7 +157,7 @@ export default function TaskLinkObject({
         toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
         mutateStudentSub()
         mutate(
-          `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+          `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
         )
       } else {
         toast.error(t('dashboard.assignments.editor.toasts.task_save_error'))
@@ -164,7 +166,8 @@ export default function TaskLinkObject({
   }
 
   const gradeCustomFC = async (grade: number) => {
-    if (assignmentTaskUUID) {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (assignmentTaskUUID && assignmentUUID) {
       if (grade > (assignmentTask?.max_grade_value || 100)) {
         toast.error(
           `Grade cannot be more than ${assignmentTask?.max_grade_value} points`
@@ -182,7 +185,7 @@ export default function TaskLinkObject({
       const res = await handleAssignmentTaskSubmission(
         values,
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res) {

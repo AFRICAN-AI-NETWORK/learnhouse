@@ -579,12 +579,13 @@ function TaskCodeEditorObject({
 
   // Save function (teacher)
   const saveFC = async () => {
+    if (!assignmentUUID) return
     try {
       const contents = { exercises }
       await updateAssignmentTask(
         { contents },
         assignmentTask.assignmentTask.assignment_task_uuid,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
@@ -607,7 +608,7 @@ function TaskCodeEditorObject({
       const res = await handleAssignmentTaskSubmission(
         { task_submission: submissionData },
         assignmentTaskUUID || activeTaskData?.assignment_task_uuid,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res?.success) {

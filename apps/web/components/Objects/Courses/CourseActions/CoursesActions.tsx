@@ -706,24 +706,35 @@ function CoursesActions({
                     )
                     if (freeProduct) handleFreeEnrollment(freeProduct.id)
                   } else {
-                    const product = linkedProducts[0]
-                    const name = ((course?.name || '') + ' ' + (product?.name || '')).toLowerCase()
+                    const name = (course?.name || '').toLowerCase()
                     let path = ''
                     if (name.includes('content creator')) {
                       path = `/ai-automation-content-creators`
-                    } else if (name.includes('business') || name.includes('automation')) {
+                    } else if (
+                      name.includes('business') ||
+                      name.includes('automation')
+                    ) {
                       path = `/ai-automation`
-                    } else if (name.includes('fundamental') || name.includes('data science')) {
+                    } else if (
+                      name.includes('fundamental') ||
+                      name.includes('data science')
+                    ) {
                       path = `/ai-fundamentals`
                     } else if (name.includes('engineering')) {
                       path = `/ai-engineering`
-                    } else if (name.includes('node') || name.includes('backend')) {
+                    } else if (
+                      name.includes('node') ||
+                      name.includes('backend')
+                    ) {
                       path = `/nodejs-backend`
                     } else if (name.includes('laravel')) {
                       path = `/laravel-backend`
                     } else if (name.includes('frontend')) {
                       path = `/frontend-dev`
-                    } else if (name.includes('career') || name.includes('accelerator')) {
+                    } else if (
+                      name.includes('career') ||
+                      name.includes('accelerator')
+                    ) {
                       path = `/career-accelerator`
                     }
 

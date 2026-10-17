@@ -31,7 +31,7 @@ const PaymentsDiscountsPage = () => {
             session.data?.tokens?.access_token,
           ]
         : null,
-    ([, token]) => listDiscountCodes(org.id, token)
+    ([, token]) => listDiscountCodes(org.id, token, true)
   )
 
   const discountsList = Array.isArray(discounts)

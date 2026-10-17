@@ -45,6 +45,7 @@
     "submit": "Submit",
     "edit": "Edit",
     "delete": "Delete",
+    "delete_permanently": "Delete Permanently",
     "copy": "Copy",
     "previous": "Previous",
     "next": "Next",
@@ -82,7 +83,8 @@
     "remove": "Remove",
     "original_price": "Original Price",
     "inactive": "Inactive",
-    "deactivate": "Deactivate"
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate"
   },
   "auth": {
     "login": "Login",
@@ -544,7 +546,15 @@
     "global_code_description": "Applies to all products in the organization (Admins only)",
     "deactivate_discount_confirm": "Are you sure you want to deactivate this discount code? It will no longer be applicable at checkout.",
     "deactivate_discount_title": "Deactivate Discount",
+    "reactivate_discount_confirm": "Are you sure you want to reactivate this discount code? It will immediately become applicable at checkout.",
+    "reactivate_discount_title": "Reactivate Discount",
+    "reactivate": "Reactivate",
+    "delete_discount_confirm": "Are you sure you want to permanently delete this discount code? This action cannot be undone.",
+    "delete_discount_title": "Delete Discount Permanently",
+    "delete_permanently": "Delete Permanently",
     "discount_deactivated": "Discount deactivated",
+    "discount_reactivated": "Discount code reactivated successfully",
+    "discount_deleted": "Discount code deleted permanently",
     "discount_updated": "Discount updated successfully",
     "discount_created": "Discount created successfully",
     "discount_form_description": "Set up your discount rules here. Codes can be restricted to specific courses.",

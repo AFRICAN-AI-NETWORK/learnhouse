@@ -173,10 +173,12 @@ function TaskQuizObject({
         questions,
       },
     }
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
     const res = await updateAssignmentTask(
       values,
       assignmentTaskState.assignmentTask.assignment_task_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     if (res) {
@@ -240,18 +242,48 @@ function TaskQuizObject({
   const getAssignmentTaskUI = useCallback(async () => {
     if (assignmentTaskUUID) {
       const res = await getAssignmentTask(assignmentTaskUUID, access_token)
-      if (res.success) {
+      if (res.success && res.data?.contents?.questions) {
         setAssignmentTaskOutsideProvider(res.data)
-        setQuestions(res.data.contents.questions)
+        const normalized = (res.data.contents.questions || []).map((q: any) => {
+          const qText = q.questionText || q.content || q.text || q.prompt || ''
+          const qUUID = q.questionUUID || `question_${uuidv4()}`
+          const rawOptions = q.options || []
+          const correctIdx = q.correctOptionIndex
+          const normOptions = rawOptions.map((opt: any, optIdx: number) => {
+            if (typeof opt === 'string') {
+              return {
+                text: opt,
+                optionUUID: `option_${uuidv4()}`,
+                assigned_right_answer: correctIdx === optIdx,
+                fileID: '',
+                type: 'text' as const,
+              }
+            }
+            return {
+              text: opt.text || opt.content || '',
+              optionUUID: opt.optionUUID || `option_${uuidv4()}`,
+              assigned_right_answer: !!opt.assigned_right_answer,
+              fileID: opt.fileID || '',
+              type: opt.type || 'text',
+            }
+          })
+          return {
+            questionText: qText,
+            questionUUID: qUUID,
+            options: normOptions,
+          }
+        })
+        setQuestions(normalized)
       }
     }
   }, [assignmentTaskUUID, access_token])
 
   const getAssignmentTaskSubmissionFromUserUI = useCallback(async () => {
-    if (assignmentTaskUUID) {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (assignmentTaskUUID && assignmentUUID) {
       const res = await getAssignmentTaskSubmissionsMe(
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res.success) {
@@ -271,7 +303,7 @@ function TaskQuizObject({
     }
   }, [
     assignmentTaskUUID,
-    assignment.assignment_object?.assignment_uuid,
+    assignment?.assignment_object?.assignment_uuid,
     access_token,
   ])
 
@@ -318,11 +350,12 @@ function TaskQuizObject({
       task_submission_grade_feedback: '',
     }
 
-    if (assignmentTaskUUID) {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (assignmentTaskUUID && assignmentUUID) {
       const res = await handleAssignmentTaskSubmission(
         values,
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res) {
@@ -344,7 +377,7 @@ function TaskQuizObject({
 
         // Mutate task submissions list to update activity-level UI
         mutate(
-          `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+          `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
         )
       } else {
         toast.error(t('dashboard.assignments.editor.toasts.task_save_error'))
@@ -359,11 +392,12 @@ function TaskQuizObject({
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false)
   const getAssignmentTaskSubmissionFromIdentifiedUserUI =
     useCallback(async () => {
-      if (assignmentTaskUUID && user_id) {
+      const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+      if (assignmentTaskUUID && user_id && assignmentUUID) {
         const res = await getAssignmentTaskSubmissionsUser(
           assignmentTaskUUID,
           user_id,
-          assignment.assignment_object.assignment_uuid,
+          assignmentUUID,
           access_token
         )
         if (res.success) {
@@ -383,7 +417,7 @@ function TaskQuizObject({
     }, [
       assignmentTaskUUID,
       user_id,
-      assignment.assignment_object?.assignment_uuid,
+      assignment?.assignment_object?.assignment_uuid,
       access_token,
     ])
 
@@ -420,10 +454,13 @@ function TaskQuizObject({
         task_submission_grade_feedback: 'Auto graded by system',
       }
 
+      const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+      if (!assignmentUUID) return
+
       const res = await handleAssignmentTaskSubmission(
         values,
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res) {
@@ -503,7 +540,7 @@ function TaskQuizObject({
                     <p
                       className={`min-w-0 w-full break-words px-3 bg-[#00008b00] border-2 rounded-md border-dotted text-sm font-bold ${isFocusMode ? 'text-zinc-100 border-white/20' : 'text-neutral-600 border-gray-200'}`}
                     >
-                      {question.questionText}
+                      {question.questionText || (question as any).content || ''}
                     </p>
                   )}
                   {view === 'teacher' && (
@@ -542,7 +579,11 @@ function TaskQuizObject({
                         {view === 'teacher' ? (
                           <input
                             type="text"
-                            value={option.text}
+                            value={
+                              typeof option === 'string'
+                                ? option
+                                : option.text || (option as any).content || ''
+                            }
                             onChange={(e) =>
                               handleOptionChange(qIndex, oIndex, e.target.value)
                             }
@@ -553,7 +594,9 @@ function TaskQuizObject({
                           <p
                             className={`min-w-0 flex-1 basis-40 break-words px-3 pr-2 text-sm font-bold whitespace-normal ${isFocusMode ? 'text-zinc-200' : 'text-neutral-600'}`}
                           >
-                            {option.text}
+                            {typeof option === 'string'
+                              ? option
+                              : option.text || (option as any).content || ''}
                           </p>
                         )}
                         {view === 'teacher' && (

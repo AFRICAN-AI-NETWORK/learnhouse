@@ -6,12 +6,17 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
+  RotateCcw,
   Globe,
   GraduationCap,
 } from 'lucide-react'
 import { Button } from '@components/ui/button'
 import { Badge } from '@components/ui/badge'
-import { deactivateDiscountCode } from '@services/payments/discounts'
+import {
+  deactivateDiscountCode,
+  updateDiscountCode,
+  deleteDiscountCode,
+} from '@services/payments/discounts'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import toast from 'react-hot-toast'
@@ -47,6 +52,40 @@ const DiscountTable = ({
     } catch {
       toast.error(t('common.error_request'))
     }
+  }
+
+  const handleReactivate = async (id: number) => {
+    try {
+      await updateDiscountCode(
+        org.id,
+        id,
+        { is_active: true },
+        session.data?.tokens?.access_token
+      )
+      toast.success(
+        t('payments.discount_reactivated') || 'Discount reactivated'
+      )
+      onRefresh()
+    } catch {
+      toast.error(t('common.error_request'))
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteDiscountCode(org.id, id, session.data?.tokens?.access_token)
+      toast.success(
+        t('payments.discount_deleted') || 'Discount deleted permanently'
+      )
+      onRefresh()
+    } catch {
+      toast.error(t('common.error_request'))
+    }
+  }
+
+  const getI18nText = (key: string, fallback: string) => {
+    const val = t(key)
+    return !val || val === key ? fallback : val
   }
 
   const getDiscountDisplay = (discount: any) => {
@@ -179,28 +218,90 @@ const DiscountTable = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(discount)}
-                        className="h-8 w-8 text-gray-400 hover:text-blue-600"
+                        className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        title={t('common.edit') || 'Edit'}
                       >
-                        <Pencil size={14} />
+                        <Pencil size={15} />
                       </Button>
+
+                      {discount.is_active ? (
+                        <ConfirmationModal
+                          confirmationButtonText={getI18nText(
+                            'common.deactivate',
+                            'Deactivate'
+                          )}
+                          confirmationMessage={getI18nText(
+                            'payments.deactivate_discount_confirm',
+                            'Are you sure you want to deactivate this discount code? It will no longer be applicable at checkout.'
+                          )}
+                          dialogTitle={getI18nText(
+                            'payments.deactivate_discount_title',
+                            `Deactivate ${discount.code}?`
+                          )}
+                          dialogTrigger={
+                            <button
+                              title="Deactivate Code"
+                              className="h-8 w-8 flex items-center justify-center rounded-md text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                            >
+                              <XCircle size={15} />
+                            </button>
+                          }
+                          functionToExecute={() =>
+                            handleDeactivate(discount.id)
+                          }
+                          status="warning"
+                        />
+                      ) : (
+                        <ConfirmationModal
+                          confirmationButtonText={getI18nText(
+                            'payments.reactivate',
+                            'Reactivate'
+                          )}
+                          confirmationMessage={getI18nText(
+                            'payments.reactivate_discount_confirm',
+                            'Are you sure you want to reactivate this discount code? It will immediately become applicable at checkout.'
+                          )}
+                          dialogTitle={getI18nText(
+                            'payments.reactivate_discount_title',
+                            `Reactivate ${discount.code}?`
+                          )}
+                          dialogTrigger={
+                            <button
+                              title="Reactivate Code"
+                              className="h-8 w-8 flex items-center justify-center rounded-md text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                            >
+                              <RotateCcw size={15} />
+                            </button>
+                          }
+                          functionToExecute={() =>
+                            handleReactivate(discount.id)
+                          }
+                          status="success"
+                        />
+                      )}
+
                       <ConfirmationModal
-                        confirmationButtonText={
-                          t('common.deactivate') || 'Deactivate'
-                        }
-                        confirmationMessage={
-                          t('payments.deactivate_discount_confirm') ||
-                          'Are you sure you want to deactivate this discount code? It will no longer be applicable at checkout.'
-                        }
-                        dialogTitle={
-                          t('payments.deactivate_discount_title') ||
-                          `Deactivate ${discount.code}?`
-                        }
+                        confirmationButtonText={getI18nText(
+                          'payments.delete_permanently',
+                          'Delete Permanently'
+                        )}
+                        confirmationMessage={getI18nText(
+                          'payments.delete_discount_confirm',
+                          'Are you sure you want to permanently delete this discount code? This action cannot be undone.'
+                        )}
+                        dialogTitle={getI18nText(
+                          'payments.delete_discount_title',
+                          `Delete ${discount.code}?`
+                        )}
                         dialogTrigger={
-                          <button className="h-8 w-8 flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-                            <Trash2 size={14} />
+                          <button
+                            title="Delete Permanently"
+                            className="h-8 w-8 flex items-center justify-center rounded-md text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
+                          >
+                            <Trash2 size={15} />
                           </button>
                         }
-                        functionToExecute={() => handleDeactivate(discount.id)}
+                        functionToExecute={() => handleDelete(discount.id)}
                         status="warning"
                       />
                     </div>

@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useOrg } from '@components/Contexts/OrgContext'
 import { useRouter } from 'next/navigation'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, Loader2, CreditCard, Tag, Check } from 'lucide-react'
+import { X, Loader2, CreditCard, Tag, Check, CheckCircle2 } from 'lucide-react'
 import OpenSignUpComponent from '@/app/auth/signup/OpenSignup'
 import toast from 'react-hot-toast'
 import { signIn } from 'next-auth/react'
@@ -16,6 +16,10 @@ import {
   getCheckoutSessionByCourseUuid,
   getStripeProductCheckoutSession,
 } from '@services/payments/products'
+import { verifyTransaction, checkPaidAccess } from '@services/payments/payments'
+import PaymentResultModal, {
+  PaymentStatusType,
+} from '@components/Objects/Payments/PaymentResultModal'
 import { Input } from '@components/ui/input'
 import { Button } from '@components/ui/button'
 
@@ -47,6 +51,89 @@ export default function ClickToPayButton({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDisclaimerAccepted, setIsDisclaimerAccepted] = useState(false)
+
+  // Payment Result Callback State
+  const [paymentModalState, setPaymentModalState] = useState<{
+    isOpen: boolean
+    status: PaymentStatusType
+    isFreeBypass?: boolean
+  }>({
+    isOpen: false,
+    status: null,
+    isFreeBypass: false,
+  })
+
+  // Live Course & Access State
+  const [resolvedCourse, setResolvedCourse] = useState<{
+    id: number
+    course_uuid: string
+    name: string
+  } | null>(null)
+  const [hasPaidAccess, setHasPaidAccess] = useState(false)
+
+  const cleanCourseUuid = (
+    resolvedCourse?.course_uuid || String(courseId)
+  ).replace(/^course_/, '')
+
+  // Check user course access on mount
+  useEffect(() => {
+    async function fetchCourseAccess() {
+      if (!org?.id || !session?.data?.tokens?.access_token) return
+      try {
+        const res = await checkPaidAccess(
+          courseId,
+          org.id,
+          session.data.tokens.access_token
+        )
+        if (res?.course) {
+          setResolvedCourse(res.course)
+        }
+        if (res?.has_access) {
+          setHasPaidAccess(true)
+        }
+      } catch (err) {
+        // Fallback gracefully
+      }
+    }
+    fetchCourseAccess()
+  }, [courseId, org?.id, session?.data?.tokens?.access_token])
+
+  // Check URL parameters for Flutterwave payment callback status
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const statusParam = params.get('status')
+    const paymentSuccessParam = params.get('payment_success')
+    const txRef = params.get('tx_ref') || params.get('reference')
+
+    if (statusParam === 'successful' || paymentSuccessParam === 'true') {
+      const access_token = session?.data?.tokens?.access_token
+      if (txRef && org?.id && access_token) {
+        verifyTransaction(org.id, txRef, access_token).catch(() => {})
+      }
+      setHasPaidAccess(true)
+      window.history.replaceState({}, '', window.location.pathname)
+      setPaymentModalState({
+        isOpen: true,
+        status: 'successful',
+        isFreeBypass: false,
+      })
+    } else if (statusParam === 'cancelled') {
+      window.history.replaceState({}, '', window.location.pathname)
+      setPaymentModalState({
+        isOpen: true,
+        status: 'cancelled',
+        isFreeBypass: false,
+      })
+    } else if (statusParam === 'failed') {
+      window.history.replaceState({}, '', window.location.pathname)
+      setPaymentModalState({
+        isOpen: true,
+        status: 'failed',
+        isFreeBypass: false,
+      })
+    }
+  }, [org?.id, session?.data?.tokens?.access_token])
 
   // Discount State
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
@@ -81,24 +168,41 @@ export default function ClickToPayButton({
     setDiscountError(null)
 
     try {
+      const numericCourseId =
+        typeof courseId === 'number' ||
+        (typeof courseId === 'string' && /^\d+$/.test(courseId))
+          ? parseInt(courseId.toString())
+          : undefined
+      const stringCourseUuid =
+        typeof courseId === 'string' && isNaN(Number(courseId))
+          ? courseId
+          : undefined
+
       const result = (await validateDiscountCode(
         org.id,
         discountCode,
         priceAmount,
-        access_token
+        access_token,
+        numericCourseId,
+        productId,
+        stringCourseUuid
       )) as any
 
-      if (result && result.data && result.data.valid) {
-        const convertedFinalAmount = convertAmount(result.data.final_amount)
+      const validationData = result?.data ?? result
+
+      if (result && validationData && validationData.valid) {
+        const convertedFinalAmount = convertAmount(validationData.final_amount)
 
         setAppliedDiscount({
-          ...result.data,
-          code: result.data.code || discountCode.trim(),
+          ...validationData,
+          code: validationData.code || discountCode.trim(),
           final_amount: convertedFinalAmount,
         })
         toast.success('Discount applied successfully!')
       } else {
-        setDiscountError(result.message || 'Invalid discount code')
+        setDiscountError(
+          validationData?.error || result?.message || 'Invalid discount code'
+        )
       }
     } catch (error) {
       setDiscountError('Failed to validate discount code')
@@ -124,10 +228,11 @@ export default function ClickToPayButton({
     try {
       let res
       // We will redirect back to the current page upon success or cancellation
-      const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+      const currentUrl =
+        typeof window !== 'undefined' ? window.location.href : ''
       const codeToApply = appliedDiscount
         ? appliedDiscount.code
-        : (initialDiscountCode || undefined)
+        : initialDiscountCode || undefined
 
       if (productId) {
         // If we have an exact product ID (from dashboard/CoursePaidOptions), use the standard checkout
@@ -155,6 +260,28 @@ export default function ClickToPayButton({
       }
 
       const checkoutUrl = res?.data?.checkout_url
+      if (
+        res?.data?.access_code === 'free_bypass' ||
+        (res?.success && checkoutUrl?.includes('payment_success=true'))
+      ) {
+        setIsProcessing(false)
+        setIsDiscountModalOpen(false)
+        setHasPaidAccess(true)
+        if (res?.data?.course_uuid) {
+          setResolvedCourse((prev) => ({
+            id: prev?.id || 0,
+            course_uuid: res.data.course_uuid,
+            name: res.data.course_name || prev?.name || courseName,
+          }))
+        }
+        setPaymentModalState({
+          isOpen: true,
+          status: 'successful',
+          isFreeBypass: true,
+        })
+        return
+      }
+
       if (res?.success && checkoutUrl) {
         window.location.href = checkoutUrl
         return
@@ -238,20 +365,35 @@ export default function ClickToPayButton({
 
   return (
     <>
-      <button
-        onClick={handleClick}
-        disabled={isProcessing}
-        className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-      >
-        {isProcessing ? (
-          <Loader2 className="animate-spin" size={20} />
-        ) : (
-          <>
-            <CreditCard size={20} />
-            CLICK TO PAY →
-          </>
-        )}
-      </button>
+      {hasPaidAccess ? (
+        <div className="w-full flex flex-col items-center gap-2.5">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold tracking-wide shadow-xs">
+            <CheckCircle2 size={13} className="text-emerald-600" />
+            <span>✓ Enrolled &amp; Active</span>
+          </div>
+          <Link
+            href={`/orgs/${org?.slug || 'default'}/course/${cleanCourseUuid}`}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-emerald-500/25"
+          >
+            START LEARNING →
+          </Link>
+        </div>
+      ) : (
+        <button
+          onClick={handleClick}
+          disabled={isProcessing}
+          className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+        >
+          {isProcessing ? (
+            <Loader2 className="animate-spin" size={20} />
+          ) : (
+            <>
+              <CreditCard size={20} />
+              CLICK TO PAY →
+            </>
+          )}
+        </button>
+      )}
 
       <Dialog.Root open={isModalOpen} onOpenChange={setIsModalOpen}>
         <Dialog.Portal>
@@ -520,6 +662,23 @@ export default function ClickToPayButton({
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* PAYMENT RESULT MODAL (SUCCESS, CANCELLED, FAILED) */}
+      <PaymentResultModal
+        isOpen={paymentModalState.isOpen}
+        onClose={() =>
+          setPaymentModalState((prev) => ({ ...prev, isOpen: false }))
+        }
+        status={paymentModalState.status}
+        courseName={resolvedCourse?.name || courseName}
+        courseUuid={cleanCourseUuid}
+        orgSlug={org?.slug}
+        isFreeBypass={paymentModalState.isFreeBypass}
+        onRetryPayment={() => {
+          setPaymentModalState((prev) => ({ ...prev, isOpen: false }))
+          setIsDiscountModalOpen(true)
+        }}
+      />
     </>
   )
 }

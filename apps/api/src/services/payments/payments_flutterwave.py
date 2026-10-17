@@ -402,19 +402,77 @@ async def initialize_transaction(
             product_id=product_id,
             status=PaymentStatusEnum.COMPLETED,
             provider_data={
-                "bypass_reason": "free_product",
+                "bypass_reason": "free_product" if not discount_code_obj else "100_percent_discount",
                 "selected_currency": selected_currency,
             },
             current_user=InternalUser(),
             db_session=db_session,
             referral_code_id=referral_code_id,
         )
+
+        if discount_code_obj:
+            payment_user.discount_code_id = discount_code_obj.id
+            payment_user.original_amount = original_amount
+            payment_user.discount_amount = discount_amount
+            payment_user.final_amount = final_amount
+            db_session.add(payment_user)
+            db_session.commit()
+            db_session.refresh(payment_user)
+
+            try:
+                from src.services.payments.discount_codes import (
+                    increment_discount_usage_atomic,
+                    record_discount_usage,
+                )
+
+                increment_success = await increment_discount_usage_atomic(
+                    discount_code_obj.id, db_session
+                )
+                if increment_success:
+                    await record_discount_usage(
+                        discount_code_id=discount_code_obj.id,
+                        user_id=current_user.id,
+                        course_id=None,
+                        product_id=product_id,
+                        payment_user_id=payment_user.id,
+                        original_amount=original_amount,
+                        discount_amount=discount_amount,
+                        final_amount=final_amount,
+                        db_session=db_session,
+                    )
+            except Exception as e:  # noqa: BLE001
+                logger.error(f"Failed to record 100% discount usage: {e!s}")
+
         separator = "&" if "?" in redirect_uri else "?"
         success_url = f"{redirect_uri}{separator}payment_success=true&reference=free_{payment_user.id}"
+
+        course_uuid = None
+        course_name = None
+        try:
+            from src.db.courses import Course
+            from src.db.payments.payments_courses import PaymentsCourse
+
+            pc = db_session.exec(
+                select(PaymentsCourse).where(
+                    PaymentsCourse.payment_product_id == product_id
+                )
+            ).first()
+            if pc:
+                c = db_session.exec(
+                    select(Course).where(Course.id == pc.course_id)
+                ).first()
+                if c:
+                    course_uuid = c.course_uuid
+                    course_name = c.name
+        except Exception:  # noqa: BLE001
+            pass
+
         return {
             "checkout_url": success_url,
             "reference": f"free_{payment_user.id}",
             "access_code": "free_bypass",
+            "course_uuid": course_uuid,
+            "course_name": course_name,
         }
 
     customer = await create_flutterwave_customer(

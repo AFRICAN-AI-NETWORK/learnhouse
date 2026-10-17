@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import AISidebar from './AISidebar'
 import {
@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Circle,
   ChevronRight,
+  Lock,
 } from 'lucide-react'
 import { getAPIUrl, getUriWithOrg } from '@services/config/config'
 import { useTranslation } from 'react-i18next'
@@ -56,6 +57,7 @@ interface SmartArticleActivityProps {
   isFocusMode?: boolean
   onComplete?: () => void
   isCompleted?: boolean
+  onCanCompleteChange?: (canComplete: boolean) => void
   prevActivity?: any
   nextActivity?: any
   currentIndex?: number
@@ -71,6 +73,7 @@ function SmartArticleActivity({
   isFocusMode = false,
   onComplete,
   isCompleted = false,
+  onCanCompleteChange,
   prevActivity,
   nextActivity,
   currentIndex = 0,
@@ -92,17 +95,84 @@ function SmartArticleActivity({
   ])
   const [activeStepIndex, setActiveStepIndex] = useState(0)
 
-  // Backend returns steps as [{title: "...", content: "..."}, ...]
-  const steps = activity?.content?.steps || [
-    {
-      type: 'introduction',
-      label: 'Start Here',
-      title: 'No Content',
-      content: 'No content available. Instructor must upload or create steps.',
-    },
-  ]
+  // Backend returns steps as [{title: "...", content: "..."}, ...] or {steps: [...]}
+  const steps = React.useMemo(() => {
+    let raw = activity?.content
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw)
+      } catch {
+        raw = null
+      }
+    }
+    if (Array.isArray(raw)) return raw
+    if (Array.isArray(raw?.steps)) return raw.steps
+    return [
+      {
+        type: 'introduction',
+        label: 'Start Here',
+        title: 'No Content',
+        content:
+          'No content available. Instructor must upload or create steps.',
+      },
+    ]
+  }, [activity?.content])
 
   const totalSteps = steps.length
+
+  // Map of step index -> { passed: boolean; label?: string; score?: number }
+  const [challengeStatuses, setChallengeStatuses] = useState<
+    Record<number, { passed: boolean; label?: string; score?: number }>
+  >({})
+
+  const handleChallengePassChange = useCallback(
+    (stepIndex: number, passed: boolean, label?: string, score?: number) => {
+      setChallengeStatuses((prev) => {
+        const current = prev[stepIndex]
+        if (current && current.passed === passed && current.score === score) {
+          return prev
+        }
+        return {
+          ...prev,
+          [stepIndex]: {
+            passed,
+            label: label || `Challenge ${stepIndex + 1}`,
+            score,
+          },
+        }
+      })
+    },
+    []
+  )
+
+  // Interactive challenges that gate lesson completion (Option A Mastery Gate)
+  const interactiveSteps = useMemo(() => {
+    return steps
+      .map((step: any, index: number) => ({ step, index }))
+      .filter(({ step }: any) =>
+        ['FRONTEND_EXERCISE', 'CODE_EXERCISE', 'QUIZ'].includes(step?.type)
+      )
+  }, [steps])
+
+  const allChallengesPassed = useMemo(() => {
+    if (interactiveSteps.length === 0) return true
+    return interactiveSteps.every(
+      ({ index }: any) => challengeStatuses[index]?.passed === true
+    )
+  }, [interactiveSteps, challengeStatuses])
+
+  const pendingChallenges = useMemo(() => {
+    return interactiveSteps.filter(
+      ({ index }: any) => !challengeStatuses[index]?.passed
+    )
+  }, [interactiveSteps, challengeStatuses])
+
+  // Sync canComplete with parent activity page
+  useEffect(() => {
+    if (onCanCompleteChange) {
+      onCanCompleteChange(allChallengesPassed)
+    }
+  }, [allChallengesPassed, onCanCompleteChange])
 
   // Track which steps have been visited
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(
@@ -451,8 +521,6 @@ function SmartArticleActivity({
         )
 
       case 'QUIZ': {
-        // Try to find a matching assignment task for this quiz block
-        // In case of multiple quizzes, match them sequentially
         const quizBlocks = steps.filter((s: any) => s.type === 'QUIZ')
         const myQuizIndex = quizBlocks.indexOf(step)
         const quizTasks =
@@ -461,23 +529,22 @@ function SmartArticleActivity({
           ) || []
         const matchingTask = quizTasks[myQuizIndex] || quizTasks[0]
 
-        if (matchingTask) {
-          return (
-            <div id={`step-${index}`} className="mb-12">
-              {instructorLink}
-              <TaskQuizObject
-                view="student"
-                assignmentTaskUUID={matchingTask.assignment_task_uuid}
-                isFocusMode={isFocusMode}
-              />
-            </div>
-          )
-        }
-
         return (
           <div id={`step-${index}`} className="mb-12">
             {instructorLink}
-            <QuizBlock step={step} />
+            <QuizBlock
+              step={step}
+              matchingTask={matchingTask}
+              assignmentUUID={assignment?.assignment_object?.assignment_uuid}
+              onPassChange={(passed, score) =>
+                handleChallengePassChange(
+                  index,
+                  passed,
+                  step.title || step.label || `Quiz ${index + 1}`,
+                  score
+                )
+              }
+            />
           </div>
         )
       }
@@ -505,7 +572,16 @@ function SmartArticleActivity({
         return (
           <div id={`step-${index}`} className="mb-12">
             {instructorLink}
-            <CodeExerciseBlock step={step} />
+            <CodeExerciseBlock
+              step={step}
+              onPassChange={(passed) =>
+                handleChallengePassChange(
+                  index,
+                  passed,
+                  step.title || step.label || `Backend Challenge ${index + 1}`
+                )
+              }
+            />
           </div>
         )
       }
@@ -513,7 +589,18 @@ function SmartArticleActivity({
         return (
           <div id={`step-${index}`} className="mb-12">
             {instructorLink}
-            <FrontendExerciseBlock step={step} isFocusMode={isFocusMode} />
+            <FrontendExerciseBlock
+              step={step}
+              isFocusMode={isFocusMode}
+              onPassChange={(passed, score) =>
+                handleChallengePassChange(
+                  index,
+                  passed,
+                  step.title || step.label || `Frontend Challenge ${index + 1}`,
+                  score
+                )
+              }
+            />
           </div>
         )
       }
@@ -656,7 +743,9 @@ function SmartArticleActivity({
   }
 
   return (
-    <div className={`flex w-full flex-1 min-h-0 bg-[#F8FAFC]`}>
+    <div
+      className={`flex w-full flex-1 min-h-[calc(100vh-4rem)] h-full bg-[#F8FAFC]`}
+    >
       {/* Left : Reading Pane */}
       <div
         className={`flex-1 min-w-0 min-h-0 flex flex-col relative transition-all duration-500 ease-in-out`}
@@ -730,9 +819,9 @@ function SmartArticleActivity({
         <div className="flex-1 relative min-h-0">
           <div
             ref={contentRef}
-            className="absolute inset-0 overflow-y-auto px-4 sm:px-8 lg:px-10 py-6"
+            className="absolute inset-0 overflow-y-auto px-4 sm:px-8 lg:px-10 py-6 scroll-smooth"
           >
-            <div className="max-w-4xl xl:max-w-5xl mx-auto pb-32">
+            <div className="max-w-4xl xl:max-w-5xl mx-auto pb-36">
               {steps.map((step: any, index: number) => (
                 <React.Fragment key={index}>
                   {renderBlock(step, index)}
@@ -740,35 +829,92 @@ function SmartArticleActivity({
               ))}
 
               {/* Completion Block */}
-              <div className="mt-12 bg-white border border-slate-200 rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
-                    <CheckCircle2 size={24} />
+              {!allChallengesPassed && !isCompleted ? (
+                <div className="mt-12 bg-amber-50/70 border border-amber-200 rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-left">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+                      <Lock size={22} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2.5">
+                        <h2 className="text-xl font-black text-slate-900">
+                          Challenges Incomplete
+                        </h2>
+                        <span className="text-[11px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-amber-200/70 text-amber-900">
+                          {interactiveSteps.length - pendingChallenges.length} /{' '}
+                          {interactiveSteps.length} Completed
+                        </span>
+                      </div>
+                      <p className="text-slate-600 text-sm max-w-xl">
+                        You must complete and pass all required coding
+                        challenges and attempt all quizzes in this lesson before
+                        marking it as complete.
+                      </p>
+                      {pendingChallenges.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                          <span className="text-xs font-semibold text-slate-500 mr-0.5">
+                            Pending:
+                          </span>
+                          {pendingChallenges.map(
+                            ({ step, index }: { step: any; index: number }) => (
+                              <span
+                                key={index}
+                                className="text-xs font-medium px-2.5 py-1 rounded-lg bg-white border border-amber-200 text-amber-900 flex items-center gap-1.5 shadow-xs"
+                              >
+                                <Lock size={12} className="text-amber-600" />
+                                {step.title ||
+                                  step.label ||
+                                  `Challenge ${index + 1}`}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-900 mb-1">
-                      Lesson Complete!
-                    </h2>
-                    <p className="text-slate-500 text-sm max-w-lg">
-                      You've reached the end of this lesson. Great work!
-                    </p>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => {
-                    if (onComplete && !isCompleted) onComplete()
-                  }}
-                  disabled={isCompleted}
-                  className={`px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all shadow-sm shrink-0 ${
-                    isCompleted
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow hover:-translate-y-0.5 active:translate-y-0'
-                  }`}
-                >
-                  {isCompleted ? 'Completed' : 'Mark as Complete'}
-                </button>
-              </div>
+                  <button
+                    disabled
+                    className="px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed flex items-center gap-2 shadow-none shrink-0"
+                  >
+                    <Lock size={15} /> Complete Challenges to Unlock
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-12 bg-white border border-slate-200 rounded-2xl p-6 lg:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 shrink-0">
+                      <CheckCircle2 size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900 mb-1">
+                        {isCompleted
+                          ? 'Lesson Completed!'
+                          : 'All Challenges Passed!'}
+                      </h2>
+                      <p className="text-slate-500 text-sm max-w-lg">
+                        {isCompleted
+                          ? "You've reached the end of this lesson. Great work!"
+                          : 'Congratulations! All required challenges have been satisfied. You may now mark this lesson as complete.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (onComplete && !isCompleted) onComplete()
+                    }}
+                    disabled={isCompleted}
+                    className={`px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all shadow-sm shrink-0 ${
+                      isCompleted
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow hover:-translate-y-0.5 active:translate-y-0'
+                    }`}
+                  >
+                    {isCompleted ? 'Completed' : 'Mark as Complete'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -804,34 +950,81 @@ function SmartArticleActivity({
             <div className="absolute left-[9px] top-3 bottom-3 w-px bg-slate-200 z-0"></div>
             {steps.map((step: any, index: number) => {
               const isActive = index === activeStepIndex
+              const isInteractive = [
+                'FRONTEND_EXERCISE',
+                'CODE_EXERCISE',
+                'QUIZ',
+              ].includes(step.type)
+              const challengeStatus = challengeStatuses[index]
+              const isChallengePassed = Boolean(challengeStatus?.passed)
+
               const isPast =
                 isCompleted ||
-                (completedSteps.has(index) && index !== activeStepIndex)
+                (isInteractive
+                  ? isChallengePassed
+                  : completedSteps.has(index) && index !== activeStepIndex)
+
+              const isLocked =
+                isInteractive && !isChallengePassed && !isCompleted
+
               return (
                 <div
                   key={index}
-                  className="flex items-center gap-3 relative z-10 py-1.5"
+                  className="flex items-center gap-2.5 relative z-10 py-1.5"
                 >
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold border-2 transition-colors ${
-                      isActive && !isCompleted
-                        ? 'border-blue-600 text-blue-600 bg-white'
-                        : isPast
-                          ? 'border-emerald-500 bg-emerald-500 text-white'
-                          : 'border-slate-300 text-slate-400 bg-white'
+                      isLocked
+                        ? 'border-amber-400 bg-amber-50 text-amber-600'
+                        : isActive && !isCompleted
+                          ? 'border-blue-600 text-blue-600 bg-white'
+                          : isPast
+                            ? 'border-emerald-500 bg-emerald-500 text-white'
+                            : 'border-slate-300 text-slate-400 bg-white'
                     }`}
                   >
-                    {isPast ? (
+                    {isLocked ? (
+                      <Lock size={9} strokeWidth={2.5} />
+                    ) : isPast ? (
                       <Check size={10} strokeWidth={3} />
                     ) : (
                       <Circle size={10} strokeWidth={3} />
                     )}
                   </div>
                   <span
-                    className={`text-xs font-medium transition-colors line-clamp-1 ${isActive && !isCompleted ? 'text-blue-700 font-bold' : isPast ? 'text-slate-700' : 'text-slate-400'}`}
+                    className={`text-xs font-medium transition-colors line-clamp-1 flex-1 ${
+                      isLocked
+                        ? 'text-amber-900/80 font-semibold'
+                        : isActive && !isCompleted
+                          ? 'text-blue-700 font-bold'
+                          : isPast
+                            ? 'text-slate-700'
+                            : 'text-slate-400'
+                    }`}
                   >
                     {step.label || step.title || `Section ${index + 1}`}
                   </span>
+                  {isInteractive && (
+                    <span
+                      className={`text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                        isChallengePassed || isCompleted
+                          ? step.type === 'QUIZ' && challengeStatus?.score === 0
+                            ? 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300'
+                            : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          : 'bg-amber-100/70 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                      }`}
+                    >
+                      {isChallengePassed || isCompleted
+                        ? step.type === 'QUIZ'
+                          ? challengeStatus?.score === 0
+                            ? 'Submitted'
+                            : 'Passed'
+                          : 'Passed'
+                        : step.type === 'QUIZ'
+                          ? 'Quiz'
+                          : 'Challenge'}
+                    </span>
+                  )}
                 </div>
               )
             })}

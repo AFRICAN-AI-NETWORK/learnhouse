@@ -61,7 +61,8 @@ export default function TaskFileObject({
 
   const getKey = (type: string) => {
     if (!access_token || !assignmentTaskUUID) return null
-    const assignmentUUID = assignment.assignment_object.assignment_uuid
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return null
     if (type === 'task') return [`tasks/${assignmentTaskUUID}`, access_token]
     if (type === 'submission_student')
       return [
@@ -136,10 +137,15 @@ export default function TaskFileObject({
       return
     }
     setIsLoading(true)
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) {
+      setIsLoading(false)
+      return
+    }
     const res = await updateSubFile(
       localUploadFile,
       assignmentTask.assignment_task_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     await new Promise((r) => setTimeout(r, 1500))
@@ -150,9 +156,7 @@ export default function TaskFileObject({
     } else {
       assignmentTaskStateHook({ type: 'reload' })
       await mutateStudentSub()
-      mutate(
-        `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
-      )
+      mutate(`${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`)
       setIsLoading(false)
       setError('')
       setUploadSuccess(true)
@@ -184,11 +188,12 @@ export default function TaskFileObject({
       grade: 0,
       task_submission_grade_feedback: '',
     }
-    if (assignmentTaskUUID) {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (assignmentTaskUUID && assignmentUUID) {
       const res = await handleAssignmentTaskSubmission(
         values,
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res) {
@@ -196,7 +201,7 @@ export default function TaskFileObject({
         toast.success(t('dashboard.assignments.editor.toasts.task_saved'))
         mutateStudentSub()
         mutate(
-          `${getAPIUrl()}assignments/${assignment.assignment_object.assignment_uuid}/tasks/submissions/me`
+          `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
         )
       } else {
         toast.error(t('dashboard.assignments.editor.toasts.task_save_error'))
@@ -205,7 +210,8 @@ export default function TaskFileObject({
   }
 
   const gradeCustomFC = async (grade: number) => {
-    if (assignmentTaskUUID) {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (assignmentTaskUUID && assignmentUUID) {
       if (grade > (assignmentTaskOutsideProvider?.max_grade_value || 100)) {
         toast.error(
           `Grade cannot be more than ${assignmentTaskOutsideProvider?.max_grade_value} points`
@@ -223,7 +229,7 @@ export default function TaskFileObject({
       const res = await handleAssignmentTaskSubmission(
         values,
         assignmentTaskUUID,
-        assignment.assignment_object.assignment_uuid,
+        assignmentUUID,
         access_token
       )
       if (res) {
@@ -283,9 +289,9 @@ export default function TaskFileObject({
             <Link
               href={getTaskFileSubmissionDir(
                 org?.org_uuid,
-                assignment.course_object.course_uuid,
-                assignment.activity_object.activity_uuid,
-                assignment.assignment_object.assignment_uuid,
+                assignment?.course_object?.course_uuid || '',
+                assignment?.activity_object?.activity_uuid || '',
+                assignment?.assignment_object?.assignment_uuid || '',
                 assignmentTaskUUID,
                 userSubmissions.fileUUID
               )}

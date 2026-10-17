@@ -64,8 +64,14 @@ export function AssignmentTaskGeneralEdit() {
     description: Yup.string().nullable(),
     hint: Yup.string().nullable(),
     max_grade_value: Yup.number()
-      .min(20, t('dashboard.assignments.editor.task_editor.general.max_grade_error'))
-      .max(100, t('dashboard.assignments.editor.task_editor.general.max_grade_error'))
+      .min(
+        20,
+        t('dashboard.assignments.editor.task_editor.general.max_grade_error')
+      )
+      .max(
+        100,
+        t('dashboard.assignments.editor.task_editor.general.max_grade_error')
+      )
       .nullable(),
   })
 
@@ -84,10 +90,12 @@ export function AssignmentTaskGeneralEdit() {
   })
 
   const onSubmit = async (values: any) => {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
     const res = await updateAssignmentTask(
       values,
       assignmentTaskState.assignmentTask.assignment_task_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     if (res) {
@@ -281,12 +289,14 @@ function UpdateTaskRef() {
   const [error, setError] = React.useState('') as any
 
   const handleFileChange = async (event: any) => {
+    const assignmentUUID = assignment?.assignment_object?.assignment_uuid
+    if (!assignmentUUID) return
     const file = event.target.files[0]
     setIsLoading(true)
     const res = await updateReferenceFile(
       file,
       assignmentTaskState.assignmentTask.assignment_task_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignmentUUID,
       access_token
     )
     assignmentTaskStateHook({ type: 'reload' })
@@ -309,9 +319,9 @@ function UpdateTaskRef() {
   const getTaskRefDirUI = () => {
     return getTaskRefFileDir(
       org?.org_uuid,
-      assignment.course_object.course_uuid,
-      assignment.activity_object.activity_uuid,
-      assignment.assignment_object.assignment_uuid,
+      assignment?.course_object?.course_uuid,
+      assignment?.activity_object?.activity_uuid,
+      assignment?.assignment_object?.assignment_uuid,
       assignmentTaskState.assignmentTask.assignment_task_uuid,
       assignmentTaskState.assignmentTask.reference_file
     )

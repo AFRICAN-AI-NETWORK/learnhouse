@@ -173,8 +173,8 @@ async def run_piston_execution(
         "run_timeout": 15000,
     }
 
-    # Retry logic for network flakiness
-    max_retries = 2
+    # Fast timeout with quick fallback to local execution
+    max_retries = 1
     headers = {"X-Forwarded-For": client_ip, "X-LearnHouse-Client": client_ip}
     for attempt in range(max_retries):
         async with httpx.AsyncClient() as client:
@@ -183,7 +183,7 @@ async def run_piston_execution(
                     f"{PISTON_URL}/api/v2/execute",
                     json=piston_payload,
                     headers=headers,
-                    timeout=35.0,
+                    timeout=8.0,
                 )
                 if response.status_code != 200:
                     print(
@@ -198,7 +198,7 @@ async def run_piston_execution(
                     f"[Piston] Execution error for {language} on attempt {attempt + 1}: {e}"
                 )
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(1)  # Small delay before retry
+                    await asyncio.sleep(0.5)  # Small delay before retry
                     continue
                 return None
 
@@ -250,7 +250,12 @@ async def execute_and_grade(
                 if tc_res:
                     tc_run = tc_res.get("run", {})
                     actual = tc_run.get("stdout", "").strip()
-                    expected = tc.get("expectedOutput", "").strip()
+                    expected = (
+                        tc.get("expectedOutput")
+                        or tc.get("expected_output")
+                        or tc.get("expected")
+                        or ""
+                    ).strip()
                     passed = actual == expected
                     if passed:
                         response.passed_count += 1
@@ -282,7 +287,12 @@ async def execute_and_grade(
             for tc in test_cases:
                 tc_run = runner(code, tc.get("input", ""))
                 actual = tc_run["stdout"].strip()
-                expected = tc.get("expectedOutput", "").strip()
+                expected = (
+                    tc.get("expectedOutput")
+                    or tc.get("expected_output")
+                    or tc.get("expected")
+                    or ""
+                ).strip()
                 passed = actual == expected
                 if passed:
                     passed_count += 1
