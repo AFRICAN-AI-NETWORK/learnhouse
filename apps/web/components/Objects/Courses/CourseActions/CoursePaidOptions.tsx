@@ -315,6 +315,7 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
               }
               courseName={product.name}
               skipDiscountModal={true} // Skip since this modal already handles discounts
+              initialDiscountCode={appliedDiscount?.code}
             />
           </div>
         </div>

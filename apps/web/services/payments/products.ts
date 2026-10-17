@@ -127,7 +127,8 @@ export async function getStripeProductCheckoutSession(
   redirect_uri: string,
   access_token: string,
   discountCode?: string,
-  upsellProductId?: number
+  upsellProductId?: number,
+  currency?: string
 ) {
   let url = `${getAPIUrl()}payments/${orgId}/checkout/product/${productId}?redirect_uri=${encodeURIComponent(redirect_uri)}`
 
@@ -137,6 +138,10 @@ export async function getStripeProductCheckoutSession(
 
   if (upsellProductId) {
     url += `&upsell_product_id=${encodeURIComponent(upsellProductId.toString())}`
+  }
+
+  if (currency) {
+    url += `&currency=${encodeURIComponent(currency)}`
   }
 
   const result = await fetch(
@@ -153,7 +158,8 @@ export async function getCheckoutSessionByCourseUuid(
   redirect_uri: string,
   access_token: string,
   discountCode?: string,
-  upsellCourseUuid?: string
+  upsellCourseUuid?: string,
+  currency?: string
 ) {
   let url = `${getAPIUrl()}payments/${orgId}/checkout/course_uuid/${courseUuid}?redirect_uri=${encodeURIComponent(redirect_uri)}`
 
@@ -163,6 +169,10 @@ export async function getCheckoutSessionByCourseUuid(
 
   if (upsellCourseUuid) {
     url += `&upsell_course_uuid=${encodeURIComponent(upsellCourseUuid)}`
+  }
+
+  if (currency) {
+    url += `&currency=${encodeURIComponent(currency)}`
   }
 
   const result = await fetch(

@@ -617,71 +617,78 @@ const DashboardCourseCard = ({
   userStatus?: string
   resumeUrl: string
   waitlistConfig?: any
-}) => (
-  <article className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-    <AdminCourseCardActions course={course} orgslug={orgslug} />
-    <Link href={resumeUrl}>
-      <div className="relative">
-        <CourseImage course={course} org={org} className="h-50" />
-        <span
-          className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[10px] font-bold uppercase text-white ${
-            course.is_paid ? 'bg-blue-600' : 'bg-emerald-600'
-          }`}
-        >
-          {course.is_paid ? 'Paid' : 'Free'}
-        </span>
-      </div>
-    </Link>
-    <div className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <Link
-            href={resumeUrl}
-            className="text-base font-bold text-gray-950 hover:text-blue-600"
+}) => {
+  const courseHubUrl = getUriWithOrg(
+    orgslug,
+    `/course/${cleanCourseUuid(course.course_uuid)}`
+  )
+
+  return (
+    <article className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <AdminCourseCardActions course={course} orgslug={orgslug} />
+      <Link href={courseHubUrl}>
+        <div className="relative">
+          <CourseImage course={course} org={org} className="h-50" />
+          <span
+            className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[10px] font-bold uppercase text-white ${
+              course.is_paid ? 'bg-blue-600' : 'bg-emerald-600'
+            }`}
           >
-            {course.name}
-          </Link>
-          <p className="mt-1 text-sm text-gray-500 line-clamp-1">
-            {course.description || 'African AI Network'}
-          </p>
+            {course.is_paid ? 'Paid' : 'Free'}
+          </span>
+        </div>
+      </Link>
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Link
+              href={courseHubUrl}
+              className="text-base font-bold text-gray-950 hover:text-blue-600"
+            >
+              {course.name}
+            </Link>
+            <p className="mt-1 text-sm text-gray-500 line-clamp-1">
+              {course.description || 'African AI Network'}
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 flex items-center gap-3">
+          <ProgressBar
+            progress={progress}
+            color={progress >= 100 ? 'green' : 'blue'}
+          />
+          <span className="text-sm font-semibold text-gray-700">{progress}%</span>
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-5 text-xs text-gray-500">
+          <span className="inline-flex items-center gap-1.5">
+            <BookCopy size={14} />
+            {lessonCount} Lessons
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock3 size={14} />
+            {Math.max(1, Math.ceil((lessonCount * 15) / 60))}h{' '}
+            {(lessonCount * 15) % 60}m
+          </span>
+          {userStatus === 'WAITLIST' ? (
+            <div className="w-[120px] text-right">
+              <CountdownTimer
+                launchDate={waitlistConfig?.launch_datetime}
+                displayFormat="compact"
+              />
+            </div>
+          ) : (
+            <Link
+              href={courseHubUrl}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+            >
+              {progress > 0 ? 'Continue course' : 'View course'}
+            </Link>
+          )}
         </div>
       </div>
-      <div className="mt-5 flex items-center gap-3">
-        <ProgressBar
-          progress={progress}
-          color={progress >= 100 ? 'green' : 'blue'}
-        />
-        <span className="text-sm font-semibold text-gray-700">{progress}%</span>
-      </div>
-      <div className="mt-4 flex items-center justify-between gap-5 text-xs text-gray-500">
-        <span className="inline-flex items-center gap-1.5">
-          <BookCopy size={14} />
-          {lessonCount} Lessons
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Clock3 size={14} />
-          {Math.max(1, Math.ceil((lessonCount * 15) / 60))}h{' '}
-          {(lessonCount * 15) % 60}m
-        </span>
-        {userStatus === 'WAITLIST' ? (
-          <div className="w-[120px] text-right">
-            <CountdownTimer
-              launchDate={waitlistConfig?.launch_datetime}
-              displayFormat="compact"
-            />
-          </div>
-        ) : (
-          <Link
-            href={resumeUrl}
-            className="text-sm font-semibold text-blue-400 hover:text-blue-700"
-          >
-            Start learning
-          </Link>
-        )}
-      </div>
-    </div>
-  </article>
-)
+    </article>
+  )
+}
 
 const AdminCourseCardActions = ({
   course,

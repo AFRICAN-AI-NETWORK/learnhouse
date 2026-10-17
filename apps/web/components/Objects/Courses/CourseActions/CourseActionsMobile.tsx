@@ -445,7 +445,7 @@ const CourseActionsMobile = ({
                     }
 
                     if (path) {
-                      router.push(path)
+                      router.push(getUriWithOrg(orgslug, path))
                     } else {
                       setIsModalOpen(true)
                     }

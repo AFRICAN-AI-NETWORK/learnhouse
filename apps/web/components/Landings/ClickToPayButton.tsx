@@ -27,6 +27,7 @@ interface ClickToPayButtonProps {
   courseName: string
   planId?: string
   skipDiscountModal?: boolean
+  initialDiscountCode?: string
 }
 
 export default function ClickToPayButton({
@@ -37,6 +38,7 @@ export default function ClickToPayButton({
   courseName,
   planId,
   skipDiscountModal,
+  initialDiscountCode,
 }: ClickToPayButtonProps) {
   const session = useLHSession() as any
   const org = useOrg() as any
@@ -91,6 +93,7 @@ export default function ClickToPayButton({
 
         setAppliedDiscount({
           ...result.data,
+          code: result.data.code || discountCode.trim(),
           final_amount: convertedFinalAmount,
         })
         toast.success('Discount applied successfully!')
@@ -120,9 +123,11 @@ export default function ClickToPayButton({
 
     try {
       let res
-      // We will redirect back to the course page upon success
-      const currentUrl = window.location.origin + `/course/${courseId}`
-      const codeToApply = appliedDiscount ? appliedDiscount.code : undefined
+      // We will redirect back to the current page upon success or cancellation
+      const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+      const codeToApply = appliedDiscount
+        ? appliedDiscount.code
+        : (initialDiscountCode || undefined)
 
       if (productId) {
         // If we have an exact product ID (from dashboard/CoursePaidOptions), use the standard checkout
@@ -131,7 +136,9 @@ export default function ClickToPayButton({
           productId,
           currentUrl,
           access_token,
-          codeToApply
+          codeToApply,
+          undefined,
+          finalCurrency
         )
       } else {
         // Otherwise use the uuid based checkout (from landing pages)
@@ -142,7 +149,8 @@ export default function ClickToPayButton({
           currentUrl,
           access_token,
           codeToApply,
-          upsellUuid
+          upsellUuid,
+          finalCurrency
         )
       }
 
