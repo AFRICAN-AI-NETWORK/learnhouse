@@ -70,13 +70,6 @@ def upgrade() -> None:
                 sa.Column("final_amount", sa.Float(), nullable=True),
             )
 
-    # 3. notification table: normalize uppercase enum values
-    if "notification" in tables:
-        try:
-            op.execute("UPDATE notification SET notification_type = lower(notification_type) WHERE notification_type IS NOT NULL")
-        except Exception:  # noqa: BLE001
-            pass
-
 
 def downgrade() -> None:
     pass

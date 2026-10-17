@@ -323,9 +323,15 @@ def resolve_payment_product_and_course(
 
     # If still not matched, check substring/partial course name match
     if not matched_course:
+        norm_tokens = [w for w in norm_id.split() if len(w) >= 3 and w not in ("and", "for", "the", "with")]
         for course in all_courses:
             c_name = course.name.strip().lower().replace("-", " ").replace("_", " ")
             if (len(norm_id) >= 4 and norm_id in c_name) or (len(c_name) >= 4 and c_name in norm_id):
+                matched_course = course
+                break
+            # Token overlap check (e.g. "fundamentals", "automation", "creators")
+            c_tokens = set(c_name.split())
+            if any(t in c_tokens for t in norm_tokens if t in ("fundamentals", "creators", "automation", "backend", "frontend", "career", "science")):
                 matched_course = course
                 break
 
@@ -340,6 +346,7 @@ def resolve_payment_product_and_course(
 
         # Course found, but no PaymentsCourse linked yet: look for a product with matching name or norm_id
         c_name = matched_course.name.strip().lower().replace("-", " ").replace("_", " ")
+        c_tokens = set(c_name.split())
         for prod in all_products:
             p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
             if (
@@ -347,6 +354,7 @@ def resolve_payment_product_and_course(
                 or p_name == norm_id
                 or (len(p_name) >= 4 and p_name in c_name)
                 or (len(c_name) >= 4 and c_name in p_name)
+                or any(t in p_name.split() for t in c_tokens if len(t) >= 4)
             ):
                 # Auto-link PaymentsCourse so subsequent access checks work seamlessly
                 try:
@@ -374,6 +382,18 @@ def resolve_payment_product_and_course(
         p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
         if (len(norm_id) >= 4 and norm_id in p_name) or (len(p_name) >= 4 and p_name in norm_id):
             return prod.id, matched_course
+
+    # 5. Fallback for subscription aliases like "aina-pro-subscription", "pro-subscription"
+    if "subscription" in norm_id or "pro" in norm_id:
+        for prod in all_products:
+            if getattr(prod, "product_type", None) == "subscription" or "subscription" in prod.name.lower():
+                return prod.id, matched_course
+
+    # 6. Fallback for Career Accelerator upsell
+    if "career" in norm_id or "accelerator" in norm_id:
+        for prod in all_products:
+            if "career" in prod.name.lower() or "accelerator" in prod.name.lower():
+                return prod.id, matched_course
 
     return None, matched_course
 

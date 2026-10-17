@@ -44,6 +44,7 @@ interface CourseRun {
 interface Course {
   id: string
   course_uuid: string
+  name?: string
   authors: Author[]
   trail?: {
     runs: CourseRun[]
@@ -423,22 +424,28 @@ const CourseActionsMobile = ({
                 <button
                   onClick={() => {
                     const product = linkedProducts[0]
-                    if (product && product.name) {
-                      const name = product.name.toLowerCase()
-                      let path = ''
-                      if (name.includes('content creators')) {
-                        path = `/ai-automation-content-creators`
-                      } else if (name.includes('business')) {
-                        path = `/ai-automation`
-                      } else if (name.includes('fundamental') || name.includes('foundations')) {
-                        path = `/ai-fundamentals`
-                      }
+                    const name = ((course?.name || '') + ' ' + (product?.name || '')).toLowerCase()
+                    let path = ''
+                    if (name.includes('content creator')) {
+                      path = `/ai-automation-content-creators`
+                    } else if (name.includes('business') || name.includes('automation')) {
+                      path = `/ai-automation`
+                    } else if (name.includes('fundamental') || name.includes('data science')) {
+                      path = `/ai-fundamentals`
+                    } else if (name.includes('engineering')) {
+                      path = `/ai-engineering`
+                    } else if (name.includes('node') || name.includes('backend')) {
+                      path = `/nodejs-backend`
+                    } else if (name.includes('laravel')) {
+                      path = `/laravel-backend`
+                    } else if (name.includes('frontend')) {
+                      path = `/frontend-dev`
+                    } else if (name.includes('career') || name.includes('accelerator')) {
+                      path = `/career-accelerator`
+                    }
 
-                      if (path) {
-                        router.push(path)
-                      } else {
-                        setIsModalOpen(true)
-                      }
+                    if (path) {
+                      router.push(path)
                     } else {
                       setIsModalOpen(true)
                     }

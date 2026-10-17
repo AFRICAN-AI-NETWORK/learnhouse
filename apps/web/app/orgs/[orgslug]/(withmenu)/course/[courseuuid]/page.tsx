@@ -118,24 +118,6 @@ const CoursePage = async (params: any) => {
       }
     : { __html: '' }
 
-  // Direct-to-Content Routing: Bypass the Syllabus page entirely
-  const firstChapter = course_meta?.chapters?.[0]
-  const firstActivity = firstChapter?.activities?.[0]
-
-  if (firstActivity) {
-    const cleanCourseUuid = courseuuid.replace('course_', '')
-    const cleanActivityUuid = firstActivity.activity_uuid.replace(
-      'activity_',
-      ''
-    )
-    redirect(
-      getUriWithOrg(
-        orgslug,
-        `/course/${cleanCourseUuid}/activity/${cleanActivityUuid}`
-      )
-    )
-  }
-
   return (
     <>
       {course_meta && (

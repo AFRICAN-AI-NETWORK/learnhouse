@@ -83,6 +83,8 @@ export default function BundleUpsellBanner({
             )
             setStandaloneProduct(sorted[0])
             setBundles(sorted.slice(1)) // Everything else is considered an upsell/bundle
+          } else if (courseProducts.length === 1) {
+            setStandaloneProduct(courseProducts[0])
           }
         }
       } catch (error) {
@@ -105,11 +107,11 @@ export default function BundleUpsellBanner({
     )
   }
 
-  if (bundles.length === 0 || !standaloneProduct) {
+  if (!course?.is_paid && bundles.length === 0) {
     return null
   }
 
-  const bestBundle = bundles[0] // Recommend the next tier up
+  const bestBundle = bundles[0] || standaloneProduct || { name: course?.name || 'Full Course Access' }
 
   return (
     <motion.div
@@ -139,8 +141,13 @@ export default function BundleUpsellBanner({
           href={(() => {
             const name = (course?.name || '').toLowerCase()
             if (name.includes('content creator')) return getUriWithOrg(orgslug, '/ai-automation-content-creators')
-            if (name.includes('business')) return getUriWithOrg(orgslug, '/ai-automation')
+            if (name.includes('business') || name.includes('automation')) return getUriWithOrg(orgslug, '/ai-automation')
             if (name.includes('data science') || name.includes('fundamentals')) return getUriWithOrg(orgslug, '/ai-fundamentals')
+            if (name.includes('engineering')) return getUriWithOrg(orgslug, '/ai-engineering')
+            if (name.includes('node') || name.includes('backend')) return getUriWithOrg(orgslug, '/nodejs-backend')
+            if (name.includes('laravel')) return getUriWithOrg(orgslug, '/laravel-backend')
+            if (name.includes('frontend')) return getUriWithOrg(orgslug, '/frontend-dev')
+            if (name.includes('career') || name.includes('accelerator')) return getUriWithOrg(orgslug, '/career-accelerator')
             return getUriWithOrg(orgslug, '/pricing')
           })()}
           className="shrink-0 flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-sm hover:shadow active:scale-95"

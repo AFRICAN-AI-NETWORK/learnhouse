@@ -204,8 +204,8 @@ export default function AIFundamentalsPage() {
               </p>
               <div className="w-full lg:w-64">
                 <ClickToPayButton
-                  courseId="aina-pro-subscription"
-                  courseName="AINA Pro Subscription"
+                  courseId="ai-fundamentals"
+                  courseName="Applied Data Science (AI Fundamentals)"
                   priceAmount={10}
                   currency="USD"
                 />

@@ -154,8 +154,8 @@ export default function NodejsBackendPage() {
               </p>
               <div className="w-full lg:w-64">
                 <ClickToPayButton
-                  courseId="aina-pro-subscription"
-                  courseName="AINA Pro Subscription"
+                  courseId="nodejs-backend"
+                  courseName="Backend Development with Node.js"
                   priceAmount={10}
                   currency="USD"
                 />

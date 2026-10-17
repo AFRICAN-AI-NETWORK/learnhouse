@@ -202,8 +202,8 @@ export default function AIAutomationContentCreatorsPage() {
               </p>
               <div className="w-full lg:w-64">
                 <ClickToPayButton
-                  courseId="aina-pro-subscription"
-                  courseName="AINA Pro Subscription"
+                  courseId="ai-automation-content-creators"
+                  courseName="AI Automation for Content Creators"
                   priceAmount={10}
                   currency="USD"
                 />

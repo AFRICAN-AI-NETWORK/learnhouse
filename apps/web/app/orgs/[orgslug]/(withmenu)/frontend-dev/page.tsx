@@ -154,8 +154,8 @@ export default function FrontendDevPage() {
               </p>
               <div className="w-full lg:w-64">
                 <ClickToPayButton
-                  courseId="aina-pro-subscription"
-                  courseName="AINA Pro Subscription"
+                  courseId="frontend-dev"
+                  courseName="Frontend Web Development"
                   priceAmount={10}
                   currency="USD"
                 />

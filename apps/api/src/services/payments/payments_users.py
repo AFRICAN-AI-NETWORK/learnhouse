@@ -95,12 +95,22 @@ async def create_payment_user(
                 status_code=400, detail="User already has purchase for this product"
             )
 
+    # Safe serialization for provider_specific_data across Pydantic v1/v2
+    if hasattr(provider_specific_data, "model_dump"):
+        psd_data = provider_specific_data.model_dump()
+    elif hasattr(provider_specific_data, "dict"):
+        psd_data = provider_specific_data.dict()
+    elif isinstance(provider_specific_data, dict):
+        psd_data = provider_specific_data
+    else:
+        psd_data = dict(provider_specific_data) if provider_specific_data else {}
+
     # Create new payment user
     payment_user = PaymentsUser(
         user_id=user_id,
         org_id=org_id,
         payment_product_id=product_id,
-        provider_specific_data=provider_specific_data.model_dump(),
+        provider_specific_data=psd_data,
         status=status,
         referral_code_id=referral_code_id,  # Added for referral system
     )
