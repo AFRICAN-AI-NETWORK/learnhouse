@@ -547,6 +547,19 @@ function ActivityClient(props: ActivityClientProps) {
             aUuid,
             session.data?.tokens?.access_token
           )
+          if (
+            assignment?.assignment_uuid &&
+            session.data?.tokens?.access_token
+          ) {
+            try {
+              await submitAssignmentForGrading(
+                assignment.assignment_uuid,
+                session.data?.tokens?.access_token
+              )
+            } catch (assignErr) {
+              // Non-blocking background submission
+            }
+          }
         } else {
           result = await unmarkActivityAsComplete(
             orgslug,
@@ -579,6 +592,7 @@ function ActivityClient(props: ActivityClientProps) {
       t,
       activity?.activity_type,
       smartArticleCanComplete,
+      assignment,
     ]
   )
 

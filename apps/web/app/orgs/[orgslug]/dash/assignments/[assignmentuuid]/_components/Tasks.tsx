@@ -78,7 +78,8 @@ function AssignmentTasks({ assignment_uuid }: any) {
                         <FileUp size={15} />
                       )}
                       {task.assignment_type === 'FORM' && <Type size={15} />}
-                      {task.assignment_type === 'CODE_EDITOR' && (
+                      {(task.assignment_type === 'CODE_EDITOR' ||
+                        task.assignment_type === 'FRONTEND_EXERCISE') && (
                         <Code size={15} />
                       )}
                       {task.assignment_type === 'LINK_SUBMISSION' && (

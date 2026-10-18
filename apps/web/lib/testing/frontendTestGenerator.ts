@@ -64,7 +64,19 @@ test('Placeholder test', () => {
 `
     } else if (t.type === 'class_contains') {
       const sel = t.selector || 'body'
-      const classes = t.requiredClasses || []
+      const rawClasses =
+        t.requiredClasses ||
+        (t as any).classes ||
+        (typeof t.expected === 'string' ? t.expected.split(' ') : t.expected) ||
+        []
+      const classes = Array.isArray(rawClasses)
+        ? rawClasses.map((c) => String(c).trim()).filter(Boolean)
+        : typeof rawClasses === 'string'
+          ? (rawClasses as string)
+              .split(' ')
+              .map((c) => c.trim())
+              .filter(Boolean)
+          : []
       const classChecks = classes
         .map((c) => `expect(el.classList.contains('${c}')).toBe(true);`)
         .join('\n  ')

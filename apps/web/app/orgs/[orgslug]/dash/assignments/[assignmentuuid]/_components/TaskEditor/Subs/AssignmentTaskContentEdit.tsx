@@ -42,7 +42,9 @@ function AssignmentTaskContentEdit() {
           }
         />
       )}
-      {assignment_task?.assignmentTask.assignment_type === 'CODE_EDITOR' && (
+      {(assignment_task?.assignmentTask.assignment_type === 'CODE_EDITOR' ||
+        assignment_task?.assignmentTask.assignment_type ===
+          'FRONTEND_EXERCISE') && (
         <TaskCodeEditorObject
           key={assignment_task?.assignmentTask.assignment_task_uuid}
           view="teacher"

@@ -26,10 +26,14 @@ import {
   Minimize2,
 } from 'lucide-react'
 import { generateTestFileFromDeclarative } from '@/lib/testing/frontendTestGenerator'
+import { handleAssignmentTaskSubmission } from '@services/courses/assignments'
+import { useLHSession } from '@components/Contexts/LHSessionContext'
 
 interface FrontendExerciseBlockProps {
   step: any
   isFocusMode?: boolean
+  matchingTask?: any
+  assignmentUUID?: string
   onPassChange?: (passed: boolean, score: number) => void
 }
 
@@ -51,6 +55,7 @@ function SandpackWorkspaceContent({
   onReset,
   onRunTests,
   handleTestComplete,
+  onReportScore,
 }: {
   activeTab: 'preview' | 'tests' | 'console'
   setActiveTab: (tab: 'preview' | 'tests' | 'console') => void
@@ -68,6 +73,7 @@ function SandpackWorkspaceContent({
   onReset: () => void
   onRunTests: () => void
   handleTestComplete: (specs: any) => void
+  onReportScore?: (score: number, files: Record<string, string>) => void
 }) {
   const { sandpack } = useSandpack()
   const [localTestResults, setLocalTestResults] = useState<any[]>([])
@@ -112,21 +118,42 @@ function SandpackWorkspaceContent({
       const results = tests.map((t: any, idx: number) => {
         let passed = false
         if (t.type === 'class_contains') {
-          const req = t.requiredClasses || []
-          passed = req.every((cls: string) => code.includes(cls))
+          const rawReq =
+            t.requiredClasses ||
+            t.classes ||
+            (typeof t.expected === 'string'
+              ? t.expected.split(' ')
+              : t.expected) ||
+            []
+          const req = Array.isArray(rawReq)
+            ? rawReq.map((c: any) => String(c).trim()).filter(Boolean)
+            : typeof rawReq === 'string'
+              ? (rawReq as string)
+                  .split(' ')
+                  .map((c: string) => c.trim())
+                  .filter(Boolean)
+              : []
+          passed =
+            req.length > 0
+              ? req.every((cls: string) => code.includes(cls))
+              : code.length > 20
         } else if (t.type === 'dom_text') {
           const expected = t.expected || t.expectedText || ''
           passed = code.includes(expected)
-        } else if (t.type === 'interaction') {
+        } else if (t.type === 'attribute_check') {
+          const attr = t.attribute || ''
+          const expected = t.expected || ''
           passed =
-            (code.includes('setEnrolled') ||
-              code.includes('setCount') ||
-              code.includes('enrolled')) &&
-            (code.includes('+ 1') ||
-              code.includes('+1') ||
-              code.includes('prev + 1') ||
-              code.includes('prev+1') ||
-              code.includes('enrolled + 1'))
+            code.includes(attr) && (expected ? code.includes(expected) : true)
+        } else if (t.type === 'interaction') {
+          const exp = t.expectedText || t.expected || ''
+          passed =
+            (Boolean(exp) && code.includes(exp)) ||
+            code.includes('onClick') ||
+            code.includes('onChange') ||
+            code.includes('set') ||
+            code.includes('+ 1') ||
+            code.includes('+1')
         } else {
           passed = code.length > 20
         }
@@ -145,6 +172,12 @@ function SandpackWorkspaceContent({
       const score = Math.round((passedCount / results.length) * 100)
       setTestScore(score)
       setTestStatus('completed')
+
+      const filesMap: Record<string, string> = {}
+      Object.entries(sandpack.files).forEach(([k, v]) => {
+        filesMap[k] = v.code
+      })
+      onReportScore?.(score, filesMap)
     }
   }
 
@@ -490,8 +523,13 @@ function SandpackWorkspaceContent({
 export default function FrontendExerciseBlock({
   step,
   isFocusMode = false,
+  matchingTask,
+  assignmentUUID,
   onPassChange,
 }: FrontendExerciseBlockProps) {
+  const session = useLHSession() as any
+  const access_token = session?.data?.tokens?.access_token
+
   const [activeTab, setActiveTab] = useState<'preview' | 'tests' | 'console'>(
     'preview'
   )
@@ -629,6 +667,65 @@ export default function App() {
       }
     }, 0)
   }, [])
+
+  const handleScoreReport = useCallback(
+    async (score: number, currentFiles: Record<string, string>) => {
+      setTestScore(score)
+      if (
+        matchingTask?.assignment_task_uuid &&
+        assignmentUUID &&
+        access_token
+      ) {
+        try {
+          const activeFile =
+            step?.activeFile ||
+            (template === 'static' || template === 'html'
+              ? '/index.html'
+              : '/App.js')
+          const studentCode =
+            currentFiles[activeFile] || Object.values(currentFiles)[0] || ''
+          const exUuid =
+            matchingTask?.contents?.exercises?.[0]?.exerciseUUID ||
+            step?.exerciseUUID ||
+            'fe_ex'
+
+          const submissionData = {
+            exercises: matchingTask?.contents?.exercises || [
+              {
+                exerciseUUID: exUuid,
+                stepType: 'FRONTEND_EXERCISE',
+                starterCode: studentCode,
+              },
+            ],
+            submissions: [
+              {
+                exerciseUUID: exUuid,
+                code: studentCode,
+              },
+            ],
+          }
+
+          const passing =
+            step.passingScore !== undefined ? step.passingScore : 80
+          await handleAssignmentTaskSubmission(
+            {
+              task_submission: submissionData,
+              grade: score,
+              task_submission_grade_feedback: `Auto-graded: ${score}% on frontend test suite (${
+                score >= passing ? 'Passed' : 'Incomplete'
+              })`,
+            },
+            matchingTask.assignment_task_uuid,
+            assignmentUUID,
+            access_token
+          )
+        } catch (err) {
+          // background sync
+        }
+      }
+    },
+    [matchingTask, assignmentUUID, access_token, step, template]
+  )
 
   // Report exercise mastery/pass state to parent SmartArticle container
   useEffect(() => {
@@ -845,6 +942,7 @@ export default function App() {
               setTestStatus('running')
             }}
             handleTestComplete={handleTestComplete}
+            onReportScore={handleScoreReport}
           />
         </SandpackProvider>
       </div>

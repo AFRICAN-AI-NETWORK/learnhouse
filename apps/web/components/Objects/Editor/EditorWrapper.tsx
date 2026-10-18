@@ -126,9 +126,22 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
         const blocksOfType = assignmentBlocks.filter(
           (b: any) => (b.type?.toUpperCase() || b.type) === type
         )
-        const tasksOfType = existingTasks.filter(
-          (t: any) => t.assignment_type === type
-        )
+        const tasksOfType = existingTasks.filter((t: any) => {
+          if (type === 'CODE_EXERCISE') {
+            return (
+              t.assignment_type === 'CODE_EDITOR' &&
+              t.contents?.exercises?.[0]?.stepType !== 'FRONTEND_EXERCISE'
+            )
+          }
+          if (type === 'FRONTEND_EXERCISE') {
+            return (
+              (t.assignment_type === 'CODE_EDITOR' &&
+                t.contents?.exercises?.[0]?.stepType === 'FRONTEND_EXERCISE') ||
+              t.assignment_type === 'FRONTEND_EXERCISE'
+            )
+          }
+          return t.assignment_type === type
+        })
 
         for (let i = 0; i < blocksOfType.length; i++) {
           const block = blocksOfType[i]
@@ -191,7 +204,10 @@ function EditorWrapper(props: EditorWrapperProps): JSX.Element {
             description: block.content || block.text || '',
             hint: '',
             reference_file: '',
-            assignment_type: type,
+            assignment_type:
+              type === 'CODE_EXERCISE' || type === 'FRONTEND_EXERCISE'
+                ? 'CODE_EDITOR'
+                : type,
             contents: contents,
             max_grade_value: 100,
           }

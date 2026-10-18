@@ -64,6 +64,8 @@
   },
   {
     "type": "CODE_EXERCISE",
+    "stepType": "CODE_EXERCISE",
+    "exerciseUUID": "code_ex_order_summary",
     "title": "Backend Challenge: Process Order Summary (Node.js / Piston)",
     "language": "javascript",
     "content": "### Exercise Instructions\nWrite a Node.js function `calculateOrderTotal` that takes a `cart` array of items (each with `price` and `qty`).\n\n1. Calculate the **subtotal** of all items (`price * qty`).\n2. Calculate **7.5% tax** on the subtotal (`subtotal * 0.075`).\n3. Calculate the **final total** (`subtotal + tax`).\n4. Return an object with `subtotal`, `tax`, and `total` formatted to 2 decimal places using `.toFixed(2)`.\n\nClick **Run Code** to execute your code on Piston and verify your answer against automated test cases.",
@@ -74,12 +76,15 @@
         "testUUID": "tc-order-1",
         "description": "Calculate order summary ($250 subtotal + 7.5% tax = $268.75 final total)",
         "input": "",
-        "expectedOutput": "=== ORDER SUMMARY ===\nSubtotal: $250.00\nTax (7.5%): $18.75\nFinal Total: $268.75"
+        "expectedOutput": "=== ORDER SUMMARY ===\nSubtotal: $250.00\nTax (7.5%): $18.75\nFinal Total: $268.75",
+        "isHidden": false
       }
     ]
   },
   {
     "type": "FRONTEND_EXERCISE",
+    "stepType": "FRONTEND_EXERCISE",
+    "exerciseUUID": "fe_ex_course_card",
     "title": "Frontend Challenge: Interactive Course Card (React & Tailwind)",
     "template": "react",
     "instructions": "### Task Instructions\n1. Inspect the card container `#course-card`. It uses Tailwind utilities: `rounded-2xl`, `shadow-xl`, and `p-6`.\n2. Update the main heading `h2` to display **'Full-Stack Mastery'**.\n3. In `handleEnroll`, update the `enrolled` state so clicking `#enroll-btn` increments the student count.\n4. Click **Run Tests & Grade** to run the in-browser test suite and submit your score!\n5. You can also view logs in the **Console** tab or toggle **Full Screen** anytime.",
@@ -101,7 +106,8 @@
         "description": "Card uses rounded-2xl, shadow-xl, and p-6 Tailwind classes",
         "type": "class_contains",
         "selector": "#course-card",
-        "requiredClasses": ["rounded-2xl", "shadow-xl", "p-6"]
+        "requiredClasses": ["rounded-2xl", "shadow-xl", "p-6"],
+        "classes": ["rounded-2xl", "shadow-xl", "p-6"]
       },
       {
         "id": "test_enroll_click",

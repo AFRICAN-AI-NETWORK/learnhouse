@@ -553,7 +553,9 @@ function SmartArticleActivity({
         const myCodeIndex = codeBlocks.indexOf(step)
         const codeTasks =
           assignment?.assignment_tasks?.filter(
-            (t: any) => t.assignment_type === 'CODE_EDITOR'
+            (t: any) =>
+              t.assignment_type === 'CODE_EDITOR' &&
+              t.contents?.exercises?.[0]?.stepType !== 'FRONTEND_EXERCISE'
           ) || []
         const matchingTask = codeTasks[myCodeIndex] || codeTasks[0]
 
@@ -586,11 +588,28 @@ function SmartArticleActivity({
         )
       }
       case 'FRONTEND_EXERCISE': {
+        const feBlocks = steps.filter(
+          (s: any) => s.type === 'FRONTEND_EXERCISE'
+        )
+        const myFeIndex = feBlocks.indexOf(step)
+        const feTasks =
+          assignment?.assignment_tasks?.filter(
+            (t: any) =>
+              t.assignment_type === 'CODE_EDITOR' &&
+              t.contents?.exercises?.[0]?.stepType === 'FRONTEND_EXERCISE'
+          ) || []
+        const matchingTask = feTasks[myFeIndex] || feTasks[0]
+
         return (
           <div id={`step-${index}`} className="mb-12">
             {instructorLink}
             <FrontendExerciseBlock
               step={step}
+              matchingTask={matchingTask}
+              assignmentUUID={
+                assignment?.assignment_object?.assignment_uuid ||
+                assignment?.assignment_uuid
+              }
               isFocusMode={isFocusMode}
               onPassChange={(passed, score) =>
                 handleChallengePassChange(

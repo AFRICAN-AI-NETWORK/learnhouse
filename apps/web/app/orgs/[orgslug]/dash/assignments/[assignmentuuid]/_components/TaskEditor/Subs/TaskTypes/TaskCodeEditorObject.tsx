@@ -25,6 +25,8 @@ import {
   AlertCircle,
   Wand2,
   ShieldAlert,
+  Trash2,
+  Sparkles,
 } from 'lucide-react'
 import {
   Select,
@@ -49,6 +51,13 @@ const DiffEditor = dynamic(
   () => import('@monaco-editor/react').then((mod) => mod.DiffEditor),
   { ssr: false }
 )
+const FrontendExerciseBlock = dynamic(
+  () =>
+    import(
+      '@components/Objects/Activities/SmartArticle/Blocks/FrontendExerciseBlock'
+    ),
+  { ssr: false }
+)
 
 // Language options for code editor
 const SUPPORTED_LANGUAGES = [
@@ -69,7 +78,7 @@ type CodeExerciseSchema = {
   starterCode: string
   solutionCode: string
   strictMode?: boolean
-  testCases: {
+  testCases?: {
     testUUID: string
     input: string
     expectedOutput: string
@@ -81,6 +90,25 @@ type CodeExerciseSchema = {
     content: string
     size: number
   }[]
+  stepType?: 'CODE_EXERCISE' | 'FRONTEND_EXERCISE' | string
+  template?: 'react' | 'static' | string
+  files?: Record<string, string>
+  tests?: Array<{
+    id: string
+    description: string
+    type?: string
+    selector?: string
+    target?: string
+    expected?: any
+    classes?: string
+    action?: string
+    attribute?: string
+    value?: string
+    points?: number
+    rule?: string
+  }>
+  passingScore?: number
+  instructions?: string
 }
 
 type CodeSubmitSchema = {
@@ -418,6 +446,37 @@ function TaskCodeEditorObject({
       solutionCode: '# Reference solution\n',
       testCases: [],
       datasetFiles: [],
+      stepType: 'CODE_EXERCISE',
+    }
+  }
+
+  // Create an empty frontend exercise template
+  function createEmptyFrontendExercise(): CodeExerciseSchema {
+    const starterReact = `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="p-8 text-center font-sans">\n      <h1 className="text-2xl font-bold">Hello World</h1>\n    </div>\n  );\n}`
+    return {
+      exerciseUUID: 'exercise_' + uuidv4(),
+      title: '',
+      description: '',
+      language: 'javascript',
+      template: 'react',
+      starterCode: starterReact,
+      solutionCode: '',
+      stepType: 'FRONTEND_EXERCISE',
+      files: {
+        '/App.js': starterReact,
+      },
+      tests: [
+        {
+          id: `test_${Date.now()}`,
+          description: 'Heading renders text',
+          type: 'dom_text',
+          selector: 'h1',
+          expected: 'Hello World',
+        },
+      ],
+      passingScore: 100,
+      testCases: [],
+      datasetFiles: [],
     }
   }
 
@@ -432,14 +491,35 @@ function TaskCodeEditorObject({
     }
   }
 
-  // TEACHER: Exercises state
+  // TEACHER: Active file being edited per frontend exercise
+  const [activeFrontendFiles, setActiveFrontendFiles] = useState<
+    Record<number, string>
+  >({})
+
+  // TEACHER: Exercises state with defensive fallbacks
   const [exercises, setExercises] = useState<CodeExerciseSchema[]>(() => {
     if (view === 'teacher' && assignmentTask?.assignmentTask?.contents) {
       const contents = assignmentTask.assignmentTask.contents as {
         exercises?: CodeExerciseSchema[]
       }
       if (contents.exercises && contents.exercises.length > 0) {
-        return contents.exercises
+        return contents.exercises.map((ex) => ({
+          ...ex,
+          testCases: Array.isArray(ex.testCases) ? ex.testCases : [],
+          datasetFiles: Array.isArray(ex.datasetFiles) ? ex.datasetFiles : [],
+          tests: Array.isArray((ex as any).tests) ? (ex as any).tests : [],
+          files:
+            (ex as any).files && typeof (ex as any).files === 'object'
+              ? (ex as any).files
+              : {},
+          stepType:
+            ex.stepType ||
+            ((ex as any).template ||
+            (ex as any).tests?.length ||
+            ((ex as any).files && Object.keys((ex as any).files).length > 0)
+              ? 'FRONTEND_EXERCISE'
+              : 'CODE_EXERCISE'),
+        }))
       }
     }
     return [createEmptyExercise()]
@@ -470,6 +550,15 @@ function TaskCodeEditorObject({
     setExercises([...exercises, createEmptyExercise()])
   }
 
+  // Add a new frontend exercise
+  const addFrontendExercise = () => {
+    if (exercises.length >= 10) {
+      toast.error(t('dashboard.assignments.editor.max_exercises_reached'))
+      return
+    }
+    setExercises([...exercises, createEmptyFrontendExercise()])
+  }
+
   // Remove an exercise
   const removeExercise = (index: number) => {
     const newExercises = exercises.filter((_, i) => i !== index)
@@ -490,20 +579,26 @@ function TaskCodeEditorObject({
   // Add test case to exercise
   const addTestCase = (exerciseIndex: number) => {
     const newExercises = [...exercises]
-    if (newExercises[exerciseIndex].testCases.length >= 20) {
+    const currentTestCases = newExercises[exerciseIndex].testCases || []
+    if (currentTestCases.length >= 20) {
       toast.error(t('dashboard.assignments.editor.max_test_cases_reached'))
       return
     }
-    newExercises[exerciseIndex].testCases.push(createEmptyTestCase())
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      testCases: [...currentTestCases, createEmptyTestCase()],
+    }
     setExercises(newExercises)
   }
 
   // Remove test case
   const removeTestCase = (exerciseIndex: number, testIndex: number) => {
     const newExercises = [...exercises]
-    newExercises[exerciseIndex].testCases = newExercises[
-      exerciseIndex
-    ].testCases.filter((_, i) => i !== testIndex)
+    const currentTestCases = newExercises[exerciseIndex].testCases || []
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      testCases: currentTestCases.filter((_, i) => i !== testIndex),
+    }
     setExercises(newExercises)
   }
 
@@ -515,9 +610,85 @@ function TaskCodeEditorObject({
     value: any
   ) => {
     const newExercises = [...exercises]
-    newExercises[exerciseIndex].testCases[testIndex] = {
-      ...newExercises[exerciseIndex].testCases[testIndex],
+    const currentTestCases = [...(newExercises[exerciseIndex].testCases || [])]
+    currentTestCases[testIndex] = {
+      ...currentTestCases[testIndex],
       [field]: value,
+    }
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      testCases: currentTestCases,
+    }
+    setExercises(newExercises)
+  }
+
+  // Frontend: Add test assertion
+  const addFrontendTest = (exerciseIndex: number) => {
+    const newExercises = [...exercises]
+    const currentTests = (newExercises[exerciseIndex] as any).tests || []
+    const updatedTests = [
+      ...currentTests,
+      {
+        id: `test_${Date.now()}`,
+        description: `Assertion ${currentTests.length + 1}`,
+        type: 'dom_text',
+        selector: 'h1',
+        expected: 'Expected Text',
+      },
+    ]
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      tests: updatedTests,
+    }
+    setExercises(newExercises)
+  }
+
+  // Frontend: Remove test assertion
+  const removeFrontendTest = (exerciseIndex: number, testIndex: number) => {
+    const newExercises = [...exercises]
+    const currentTests = (newExercises[exerciseIndex] as any).tests || []
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      tests: currentTests.filter((_: any, i: number) => i !== testIndex),
+    }
+    setExercises(newExercises)
+  }
+
+  // Frontend: Update test assertion
+  const updateFrontendTest = (
+    exerciseIndex: number,
+    testIndex: number,
+    field: string,
+    value: any
+  ) => {
+    const newExercises = [...exercises]
+    const currentTests = [...((newExercises[exerciseIndex] as any).tests || [])]
+    currentTests[testIndex] = {
+      ...currentTests[testIndex],
+      [field]: value,
+    }
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      tests: currentTests,
+    }
+    setExercises(newExercises)
+  }
+
+  // Frontend: Update file content
+  const updateFrontendFile = (
+    exerciseIndex: number,
+    fileName: string,
+    code: string
+  ) => {
+    const newExercises = [...exercises]
+    const currentFiles = {
+      ...((newExercises[exerciseIndex] as any).files || {}),
+      [fileName]: code,
+    }
+    newExercises[exerciseIndex] = {
+      ...newExercises[exerciseIndex],
+      files: currentFiles,
+      starterCode: code,
     }
     setExercises(newExercises)
   }
@@ -569,19 +740,26 @@ function TaskCodeEditorObject({
 
   const removeDatasetFile = (exerciseIndex: number, datasetIndex: number) => {
     const newExercises = [...exercises]
-    if (newExercises[exerciseIndex].datasetFiles) {
-      newExercises[exerciseIndex].datasetFiles = newExercises[
-        exerciseIndex
-      ].datasetFiles.filter((_, i) => i !== datasetIndex)
-      setExercises(newExercises)
-    }
+    const currentDatasets = newExercises[exerciseIndex].datasetFiles || []
+    newExercises[exerciseIndex].datasetFiles = currentDatasets.filter(
+      (_, i) => i !== datasetIndex
+    )
+    setExercises(newExercises)
   }
 
   // Save function (teacher)
   const saveFC = async () => {
     if (!assignmentUUID) return
     try {
-      const contents = { exercises }
+      const contents = {
+        exercises: exercises.map((ex) => ({
+          ...ex,
+          testCases: ex.testCases || [],
+          datasetFiles: ex.datasetFiles || [],
+          tests: (ex as any).tests || [],
+          files: (ex as any).files || {},
+        })),
+      }
       await updateAssignmentTask(
         { contents },
         assignmentTask.assignmentTask.assignment_task_uuid,
@@ -722,7 +900,7 @@ function TaskCodeEditorObject({
             language: exercise.language,
             code: studentCode,
             stdin: customInputs[exercise.exerciseUUID] || '',
-            test_cases: exercise.testCases.filter((tc) => !tc.isHidden),
+            test_cases: (exercise.testCases || []).filter((tc) => !tc.isHidden),
             dataset_files: exercise.datasetFiles || [],
           },
           access_token
@@ -808,398 +986,863 @@ function TaskCodeEditorObject({
         maxPoints={activeTaskData?.max_grade_value}
       >
         <div className="flex flex-col space-y-6 w-full max-w-full overflow-hidden mt-4 min-w-0">
-          {exercises.map((exercise, exIndex) => (
-            <div
-              key={exercise.exerciseUUID}
-              className="flex flex-col space-y-4 p-6 bg-gray-50 rounded-lg border border-gray-200 w-full min-w-0"
-            >
-              {/* Exercise Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  {t('dashboard.assignments.editor.exercise')} {exIndex + 1}
-                </h3>
-                {exercises.length > 1 && (
-                  <button
-                    onClick={() => removeExercise(exIndex)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X size={20} />
-                  </button>
-                )}
-              </div>
+          {exercises.map((exercise, exIndex) => {
+            const isFrontend =
+              exercise.stepType === 'FRONTEND_EXERCISE' ||
+              Boolean(
+                (exercise as any).template ||
+                  (exercise as any).tests?.length ||
+                  ((exercise as any).files &&
+                    Object.keys((exercise as any).files).length > 0)
+              )
 
-              {/* Title */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  {t('dashboard.assignments.editor.title')}
-                </label>
-                <input
-                  type="text"
-                  value={exercise.title}
-                  onChange={(e) =>
-                    updateExercise(exIndex, 'title', e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder={t(
-                    'dashboard.assignments.editor.exercise_title_placeholder'
-                  )}
-                />
-              </div>
-
-              {/* Language Selector */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  {t('dashboard.assignments.editor.language')}
-                </label>
-                <Select
-                  value={exercise.language}
-                  onValueChange={(val) =>
-                    updateExercise(exIndex, 'language', val)
-                  }
-                >
-                  <SelectTrigger
-                    className={`w-full px-3 py-2 border rounded-md h-auto ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-300' : 'bg-white border-gray-300 text-gray-900'}`}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    className={
-                      isFocusMode
-                        ? 'bg-zinc-900 border-white/10 text-zinc-300'
-                        : ''
-                    }
-                  >
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.id} value={lang.id}>
-                        {lang.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="text-sm font-medium text-gray-700">
-                  {t('dashboard.assignments.editor.description')}
-                </label>
-                <textarea
-                  value={exercise.description}
-                  onChange={(e) =>
-                    updateExercise(exIndex, 'description', e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  rows={3}
-                  placeholder={t(
-                    'dashboard.assignments.editor.exercise_description_placeholder'
-                  )}
-                />
-              </div>
-
-              {/* Starter Code */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
-                  {t('dashboard.assignments.editor.starter_code')}
-                  <button
-                    onClick={() =>
-                      formatCode(
-                        `starter-${exercise.exerciseUUID || exIndex}`,
-                        exercise.language
-                      )
-                    }
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
-                  >
-                    Format
-                  </button>
-                </label>
-                <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
-                  <div className="absolute inset-0">
-                    <Editor
-                      height="100%"
-                      width="100%"
-                      language={exercise.language}
-                      value={exercise.starterCode}
-                      onChange={(value) =>
-                        updateExercise(exIndex, 'starterCode', value || '')
-                      }
-                      onMount={(editor) => {
-                        editorRefs.current[
-                          `starter-${exercise.exerciseUUID || exIndex}`
-                        ] = editor
-                      }}
-                      theme={editorTheme}
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        automaticLayout: true,
-                        scrollBeyondLastLine: false,
-                      }}
-                    />
+            return (
+              <div
+                key={exercise.exerciseUUID}
+                className="flex flex-col space-y-4 p-6 bg-gray-50 rounded-lg border border-gray-200 w-full min-w-0"
+              >
+                {/* Exercise Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-200">
+                  <div className="flex items-center space-x-3">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {t('dashboard.assignments.editor.exercise')} {exIndex + 1}
+                    </h3>
+                    {isFrontend ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <Sparkles size={12} className="text-emerald-600" />
+                        Frontend Sandpack Challenge
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                        <Terminal size={12} className="text-blue-600" />
+                        Backend Piston Code
+                      </span>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              {/* Solution Code */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
-                  <div className="flex items-center">
-                    {t('dashboard.assignments.editor.solution_code')}
-                    <span className="text-xs text-gray-500 ml-2">
-                      ({t('dashboard.assignments.editor.hidden_from_students')})
-                    </span>
-                  </div>
-                  <button
-                    onClick={() =>
-                      formatCode(
-                        `solution-${exercise.exerciseUUID || exIndex}`,
-                        exercise.language
-                      )
-                    }
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
-                  >
-                    Format
-                  </button>
-                </label>
-                <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
-                  <div className="absolute inset-0">
-                    <Editor
-                      height="100%"
-                      width="100%"
-                      language={exercise.language}
-                      value={exercise.solutionCode}
-                      onChange={(value) =>
-                        updateExercise(exIndex, 'solutionCode', value || '')
-                      }
-                      onMount={(editor) => {
-                        editorRefs.current[
-                          `solution-${exercise.exerciseUUID || exIndex}`
-                        ] = editor
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isFrontend) {
+                          updateExercise(exIndex, 'stepType', 'CODE_EXERCISE')
+                        } else {
+                          updateExercise(
+                            exIndex,
+                            'stepType',
+                            'FRONTEND_EXERCISE'
+                          )
+                          if (!(exercise as any).template) {
+                            updateExercise(exIndex, 'template' as any, 'react')
+                          }
+                          if (!(exercise as any).files) {
+                            updateExercise(exIndex, 'files' as any, {
+                              '/App.js':
+                                exercise.starterCode ||
+                                `import React from 'react';\n\nexport default function App() {\n  return <div>Hello World</div>;\n}`,
+                            })
+                          }
+                        }
                       }}
-                      theme={editorTheme}
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        automaticLayout: true,
-                        scrollBeyondLastLine: false,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Dataset Files */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
-                    Dataset Files
-                  </label>
-                  <label className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
-                    <PlusCircle size={16} />
-                    <span>Upload Dataset</span>
-                    <input
-                      title="Upload Dataset"
-                      type="file"
-                      accept=".csv,.json,.txt"
-                      className="hidden"
-                      onChange={(e) => handleDatasetUpload(exIndex, e)}
-                    />
-                  </label>
-                </div>
-                {exercise.datasetFiles && exercise.datasetFiles.length > 0 && (
-                  <div className="space-y-2 mt-2">
-                    {exercise.datasetFiles.map((file, fileIndex) => (
-                      <div
-                        key={fileIndex}
-                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md"
+                      className="text-xs px-2.5 py-1 rounded border border-gray-300 hover:bg-gray-100 text-gray-600 font-medium transition-colors"
+                    >
+                      Switch to{' '}
+                      {isFrontend ? 'Backend Code' : 'Frontend Sandpack'}
+                    </button>
+                    {exercises.length > 1 && (
+                      <button
+                        onClick={() => removeExercise(exIndex)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Remove Exercise"
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                            <Code size={16} />
+                        <X size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    {t('dashboard.assignments.editor.title')}
+                  </label>
+                  <input
+                    type="text"
+                    value={exercise.title || ''}
+                    onChange={(e) =>
+                      updateExercise(exIndex, 'title', e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md mt-1"
+                    placeholder={t(
+                      'dashboard.assignments.editor.exercise_title_placeholder'
+                    )}
+                  />
+                </div>
+
+                {isFrontend ? (
+                  /* ==============================================
+                     FRONTEND EXERCISE EDITOR (REACT / STATIC HTML)
+                     ============================================== */
+                  <>
+                    {/* Sandbox Template & Passing Score */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 block mb-1">
+                          Sandbox Template
+                        </label>
+                        <select
+                          value={(exercise as any).template || 'react'}
+                          onChange={(e) =>
+                            updateExercise(
+                              exIndex,
+                              'template' as any,
+                              e.target.value
+                            )
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                        >
+                          <option value="react">
+                            React 19 + Tailwind CSS (In-Browser)
+                          </option>
+                          <option value="static">
+                            Static HTML5 / CSS / Vanilla JS
+                          </option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 block mb-1">
+                          Passing Score (%)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={(exercise as any).passingScore ?? 100}
+                          onChange={(e) =>
+                            updateExercise(
+                              exIndex,
+                              'passingScore' as any,
+                              parseInt(e.target.value, 10) || 100
+                            )
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Instructions / Description */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        {t('dashboard.assignments.editor.description')}
+                      </label>
+                      <textarea
+                        value={
+                          exercise.description ||
+                          (exercise as any).instructions ||
+                          ''
+                        }
+                        onChange={(e) => {
+                          updateExercise(exIndex, 'description', e.target.value)
+                          updateExercise(
+                            exIndex,
+                            'instructions' as any,
+                            e.target.value
+                          )
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md mt-1 text-sm font-sans"
+                        rows={3}
+                        placeholder="Describe the frontend challenge instructions and requirements..."
+                      />
+                    </div>
+
+                    {/* Starter Code & File Tabs */}
+                    {(() => {
+                      const exTemplate = (exercise as any).template || 'react'
+                      const defaultFile =
+                        exTemplate === 'static' ? '/index.html' : '/App.js'
+                      const filesObj = (exercise as any).files || {}
+                      const filesList =
+                        Object.keys(filesObj).length > 0
+                          ? Object.keys(filesObj)
+                          : [defaultFile]
+                      const currentActiveFile =
+                        activeFrontendFiles[exIndex] &&
+                        filesList.includes(activeFrontendFiles[exIndex])
+                          ? activeFrontendFiles[exIndex]
+                          : filesList[0]
+
+                      const fileLanguage = currentActiveFile.endsWith('.html')
+                        ? 'html'
+                        : currentActiveFile.endsWith('.css')
+                          ? 'css'
+                          : 'javascript'
+
+                      const currentFileCode =
+                        (filesObj[currentActiveFile] !== undefined
+                          ? filesObj[currentActiveFile]
+                          : exercise.starterCode) || ''
+
+                      return (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-medium text-gray-700">
+                              Starter Code ({currentActiveFile})
+                            </label>
+                            {filesList.length > 1 && (
+                              <div className="flex items-center space-x-1.5">
+                                {filesList.map((fileName) => (
+                                  <button
+                                    key={fileName}
+                                    type="button"
+                                    onClick={() =>
+                                      setActiveFrontendFiles((prev) => ({
+                                        ...prev,
+                                        [exIndex]: fileName,
+                                      }))
+                                    }
+                                    className={`px-2.5 py-0.5 rounded text-xs font-mono font-medium transition-colors ${
+                                      currentActiveFile === fileName
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                  >
+                                    {fileName}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">
-                              {file.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </p>
+                          <div className="border border-gray-300 rounded-md overflow-hidden h-[240px] relative w-full mt-1">
+                            <div className="absolute inset-0">
+                              <Editor
+                                height="100%"
+                                width="100%"
+                                language={fileLanguage}
+                                value={currentFileCode}
+                                onChange={(val) =>
+                                  updateFrontendFile(
+                                    exIndex,
+                                    currentActiveFile,
+                                    val || ''
+                                  )
+                                }
+                                theme={editorTheme}
+                                options={{
+                                  minimap: { enabled: false },
+                                  fontSize: 14,
+                                  automaticLayout: true,
+                                  scrollBeyondLastLine: false,
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
+                      )
+                    })()}
+
+                    {/* Solution Code */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 flex items-center justify-between mb-1">
+                        <div className="flex items-center">
+                          {t('dashboard.assignments.editor.solution_code')}
+                          <span className="text-xs text-gray-500 ml-2">
+                            (
+                            {t(
+                              'dashboard.assignments.editor.hidden_from_students'
+                            )}
+                            )
+                          </span>
+                        </div>
+                      </label>
+                      <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
+                        <div className="absolute inset-0">
+                          <Editor
+                            height="100%"
+                            width="100%"
+                            language="javascript"
+                            value={exercise.solutionCode || ''}
+                            onChange={(value) =>
+                              updateExercise(
+                                exIndex,
+                                'solutionCode',
+                                value || ''
+                              )
+                            }
+                            theme={editorTheme}
+                            options={{
+                              minimap: { enabled: false },
+                              fontSize: 14,
+                              automaticLayout: true,
+                              scrollBeyondLastLine: false,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Automated In-Browser Test Assertions */}
+                    <div className="space-y-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-800">
+                            Automated In-Browser Test Assertions
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            Evaluated automatically in the student's live
+                            browser sandbox to determine grading.
+                          </p>
+                        </div>
                         <button
-                          onClick={() => removeDatasetFile(exIndex, fileIndex)}
-                          className="text-red-500 hover:text-red-700"
+                          type="button"
+                          onClick={() => addFrontendTest(exIndex)}
+                          className="flex items-center space-x-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors"
                         >
-                          <X size={16} />
+                          <PlusCircle size={16} />
+                          <span>Add Test Assertion</span>
                         </button>
                       </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-xs text-gray-500">
-                  Upload data files (CSV, JSON, TXT) that students can read in
-                  their code. Max 3 files, 500KB each.
-                </p>
-              </div>
 
-              {/* Test Cases */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
-                    {t('dashboard.assignments.editor.test_cases')}
-                  </label>
-                  <button
-                    onClick={() => addTestCase(exIndex)}
-                    className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700"
-                  >
-                    <PlusCircle size={16} />
-                    <span>
-                      {t('dashboard.assignments.editor.add_test_case')}
-                    </span>
-                  </button>
-                </div>
+                      {((exercise as any).tests || []).length === 0 ? (
+                        <div className="p-4 bg-white border border-dashed border-gray-300 rounded-lg text-center text-xs text-gray-500">
+                          No test assertions configured yet. Click "Add Test
+                          Assertion" to automatically grade student components.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {((exercise as any).tests || []).map(
+                            (test: any, testIndex: number) => (
+                              <div
+                                key={test.id || testIndex}
+                                className="p-4 bg-white border border-gray-200 rounded-md space-y-3 shadow-xs"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-700">
+                                    Assertion #{testIndex + 1}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      removeFrontendTest(exIndex, testIndex)
+                                    }
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                    title="Remove assertion"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
 
-                {exercise.testCases.map((testCase, testIndex) => (
-                  <div
-                    key={testCase.testUUID}
-                    className="p-4 bg-white border border-gray-200 rounded-md space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-600">
-                        {t('dashboard.assignments.editor.test_case')}{' '}
-                        {testIndex + 1}
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        <label className="flex items-center space-x-1 text-xs text-gray-600">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-xs font-medium text-gray-600 block mb-1">
+                                      Description
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={test.description || ''}
+                                      onChange={(e) =>
+                                        updateFrontendTest(
+                                          exIndex,
+                                          testIndex,
+                                          'description',
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="e.g. Card container has rounded-2xl class"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-medium text-gray-600 block mb-1">
+                                      Assertion Type
+                                    </label>
+                                    <select
+                                      value={test.type || 'dom_text'}
+                                      onChange={(e) =>
+                                        updateFrontendTest(
+                                          exIndex,
+                                          testIndex,
+                                          'type',
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-white"
+                                    >
+                                      <option value="dom_text">
+                                        Text Match in DOM (dom_text)
+                                      </option>
+                                      <option value="class_contains">
+                                        Tailwind / CSS Classes (class_contains)
+                                      </option>
+                                      <option value="interaction">
+                                        Click & Verify State (interaction)
+                                      </option>
+                                      <option value="dom_exists">
+                                        Element Exists (dom_exists)
+                                      </option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-xs font-medium text-gray-600 block mb-1">
+                                      CSS Selector / Target
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={test.selector || test.target || ''}
+                                      onChange={(e) => {
+                                        updateFrontendTest(
+                                          exIndex,
+                                          testIndex,
+                                          'selector',
+                                          e.target.value
+                                        )
+                                        updateFrontendTest(
+                                          exIndex,
+                                          testIndex,
+                                          'target',
+                                          e.target.value
+                                        )
+                                      }}
+                                      placeholder="e.g. #course-card, h1, button"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm font-mono"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-medium text-gray-600 block mb-1">
+                                      {test.type === 'class_contains'
+                                        ? 'Expected Classes (space separated)'
+                                        : 'Expected Value / Text'}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={
+                                        test.expected !== undefined
+                                          ? String(test.expected)
+                                          : test.classes || ''
+                                      }
+                                      onChange={(e) => {
+                                        updateFrontendTest(
+                                          exIndex,
+                                          testIndex,
+                                          'expected',
+                                          e.target.value
+                                        )
+                                        updateFrontendTest(
+                                          exIndex,
+                                          testIndex,
+                                          'classes',
+                                          e.target.value
+                                        )
+                                      }}
+                                      placeholder={
+                                        test.type === 'class_contains'
+                                          ? 'e.g. rounded-2xl shadow-xl'
+                                          : 'e.g. Enroll Now'
+                                      }
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm font-mono"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* ==============================================
+                     BACKEND EXERCISE EDITOR (PISTON CODE RUNNER)
+                     ============================================== */
+                  <>
+                    {/* Language Selector */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        {t('dashboard.assignments.editor.language')}
+                      </label>
+                      <Select
+                        value={exercise.language || 'python'}
+                        onValueChange={(val) =>
+                          updateExercise(exIndex, 'language', val)
+                        }
+                      >
+                        <SelectTrigger
+                          className={`w-full px-3 py-2 border rounded-md h-auto ${isFocusMode ? 'bg-white/5 border-white/10 text-zinc-300' : 'bg-white border-gray-300 text-gray-900'}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent
+                          className={
+                            isFocusMode
+                              ? 'bg-zinc-900 border-white/10 text-zinc-300'
+                              : ''
+                          }
+                        >
+                          {SUPPORTED_LANGUAGES.map((lang) => (
+                            <SelectItem key={lang.id} value={lang.id}>
+                              {lang.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">
+                        {t('dashboard.assignments.editor.description')}
+                      </label>
+                      <textarea
+                        value={exercise.description || ''}
+                        onChange={(e) =>
+                          updateExercise(exIndex, 'description', e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        rows={3}
+                        placeholder={t(
+                          'dashboard.assignments.editor.exercise_description_placeholder'
+                        )}
+                      />
+                    </div>
+
+                    {/* Starter Code */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                        {t('dashboard.assignments.editor.starter_code')}
+                        <button
+                          onClick={() =>
+                            formatCode(
+                              `starter-${exercise.exerciseUUID || exIndex}`,
+                              exercise.language
+                            )
+                          }
+                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                        >
+                          Format
+                        </button>
+                      </label>
+                      <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
+                        <div className="absolute inset-0">
+                          <Editor
+                            height="100%"
+                            width="100%"
+                            language={exercise.language || 'python'}
+                            value={exercise.starterCode || ''}
+                            onChange={(value) =>
+                              updateExercise(
+                                exIndex,
+                                'starterCode',
+                                value || ''
+                              )
+                            }
+                            onMount={(editor) => {
+                              editorRefs.current[
+                                `starter-${exercise.exerciseUUID || exIndex}`
+                              ] = editor
+                            }}
+                            theme={editorTheme}
+                            options={{
+                              minimap: { enabled: false },
+                              fontSize: 14,
+                              automaticLayout: true,
+                              scrollBeyondLastLine: false,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Solution Code */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                        <div className="flex items-center">
+                          {t('dashboard.assignments.editor.solution_code')}
+                          <span className="text-xs text-gray-500 ml-2">
+                            (
+                            {t(
+                              'dashboard.assignments.editor.hidden_from_students'
+                            )}
+                            )
+                          </span>
+                        </div>
+                        <button
+                          onClick={() =>
+                            formatCode(
+                              `solution-${exercise.exerciseUUID || exIndex}`,
+                              exercise.language
+                            )
+                          }
+                          className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors uppercase tracking-widest"
+                        >
+                          Format
+                        </button>
+                      </label>
+                      <div className="border border-gray-300 rounded-md overflow-hidden h-[200px] relative w-full mt-1">
+                        <div className="absolute inset-0">
+                          <Editor
+                            height="100%"
+                            width="100%"
+                            language={exercise.language || 'python'}
+                            value={exercise.solutionCode || ''}
+                            onChange={(value) =>
+                              updateExercise(
+                                exIndex,
+                                'solutionCode',
+                                value || ''
+                              )
+                            }
+                            onMount={(editor) => {
+                              editorRefs.current[
+                                `solution-${exercise.exerciseUUID || exIndex}`
+                              ] = editor
+                            }}
+                            theme={editorTheme}
+                            options={{
+                              minimap: { enabled: false },
+                              fontSize: 14,
+                              automaticLayout: true,
+                              scrollBeyondLastLine: false,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dataset Files */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-700">
+                          Dataset Files
+                        </label>
+                        <label className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
+                          <PlusCircle size={16} />
+                          <span>Upload Dataset</span>
                           <input
-                            type="checkbox"
-                            checked={testCase.isHidden}
+                            title="Upload Dataset"
+                            type="file"
+                            accept=".csv,.json,.txt"
+                            className="hidden"
+                            onChange={(e) => handleDatasetUpload(exIndex, e)}
+                          />
+                        </label>
+                      </div>
+                      {exercise.datasetFiles &&
+                        exercise.datasetFiles.length > 0 && (
+                          <div className="space-y-2 mt-2">
+                            {exercise.datasetFiles.map((file, fileIndex) => (
+                              <div
+                                key={fileIndex}
+                                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md"
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                    <Code size={16} />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-800">
+                                      {file.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {(file.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    removeDatasetFile(exIndex, fileIndex)
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      <p className="text-xs text-gray-500">
+                        Upload data files (CSV, JSON, TXT) that students can
+                        read in their code. Max 3 files, 500KB each.
+                      </p>
+                    </div>
+
+                    {/* Test Cases */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium text-gray-700">
+                          {t('dashboard.assignments.editor.test_cases')}
+                        </label>
+                        <button
+                          onClick={() => addTestCase(exIndex)}
+                          className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          <PlusCircle size={16} />
+                          <span>
+                            {t('dashboard.assignments.editor.add_test_case')}
+                          </span>
+                        </button>
+                      </div>
+
+                      {(exercise.testCases || []).map((testCase, testIndex) => (
+                        <div
+                          key={testCase.testUUID}
+                          className="p-4 bg-white border border-gray-200 rounded-md space-y-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-600">
+                              {t('dashboard.assignments.editor.test_case')}{' '}
+                              {testIndex + 1}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <label className="flex items-center space-x-1 text-xs text-gray-600">
+                                <input
+                                  type="checkbox"
+                                  checked={testCase.isHidden}
+                                  onChange={(e) =>
+                                    updateTestCase(
+                                      exIndex,
+                                      testIndex,
+                                      'isHidden',
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="rounded"
+                                />
+                                <span>
+                                  {t('dashboard.assignments.editor.hidden')}
+                                </span>
+                              </label>
+                              <button
+                                onClick={() =>
+                                  removeTestCase(exIndex, testIndex)
+                                }
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Minus size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <input
+                            type="text"
+                            value={testCase.description}
                             onChange={(e) =>
                               updateTestCase(
                                 exIndex,
                                 testIndex,
-                                'isHidden',
-                                e.target.checked
+                                'description',
+                                e.target.value
                               )
                             }
-                            className="rounded"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+                            placeholder={t(
+                              'dashboard.assignments.editor.test_case_description_placeholder'
+                            )}
                           />
-                          <span>
-                            {t('dashboard.assignments.editor.hidden')}
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-xs text-gray-500">
+                                {t('dashboard.assignments.editor.input')}
+                              </label>
+                              <textarea
+                                value={testCase.input}
+                                onChange={(e) =>
+                                  updateTestCase(
+                                    exIndex,
+                                    testIndex,
+                                    'input',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md font-mono"
+                                rows={2}
+                                placeholder="stdin"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500">
+                                {t(
+                                  'dashboard.assignments.editor.expected_output'
+                                )}
+                              </label>
+                              <textarea
+                                value={testCase.expectedOutput}
+                                onChange={(e) =>
+                                  updateTestCase(
+                                    exIndex,
+                                    testIndex,
+                                    'expectedOutput',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md font-mono"
+                                rows={2}
+                                placeholder="expected stdout"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Strict Mode Toggle */}
+                    <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id={`strict-mode-${exIndex}`}
+                        checked={exercise.strictMode || false}
+                        onChange={(e) =>
+                          updateExercise(
+                            exIndex,
+                            'strictMode' as any,
+                            e.target.checked
+                          )
+                        }
+                        className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <label
+                        htmlFor={`strict-mode-${exIndex}`}
+                        className="flex items-center space-x-2 cursor-pointer"
+                      >
+                        <ShieldAlert size={16} className="text-amber-600" />
+                        <div>
+                          <span className="text-sm font-semibold text-amber-800">
+                            Strict Mode (Exam)
                           </span>
-                        </label>
-                        <button
-                          onClick={() => removeTestCase(exIndex, testIndex)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Minus size={16} />
-                        </button>
-                      </div>
+                          <p className="text-xs text-amber-600 mt-0.5">
+                            Disables copy/paste in the student editor to prevent
+                            external code injection.
+                          </p>
+                        </div>
+                      </label>
                     </div>
-
-                    <input
-                      type="text"
-                      value={testCase.description}
-                      onChange={(e) =>
-                        updateTestCase(
-                          exIndex,
-                          testIndex,
-                          'description',
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-                      placeholder={t(
-                        'dashboard.assignments.editor.test_description_placeholder'
-                      )}
-                    />
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-gray-600">
-                          {t('dashboard.assignments.editor.input')}
-                        </label>
-                        <textarea
-                          value={testCase.input}
-                          onChange={(e) =>
-                            updateTestCase(
-                              exIndex,
-                              testIndex,
-                              'input',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md font-mono"
-                          rows={2}
-                          placeholder="stdin input"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-600">
-                          {t('dashboard.assignments.editor.expected_output')}
-                        </label>
-                        <textarea
-                          value={testCase.expectedOutput}
-                          onChange={(e) =>
-                            updateTestCase(
-                              exIndex,
-                              testIndex,
-                              'expectedOutput',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md font-mono"
-                          rows={2}
-                          placeholder="expected stdout"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  </>
+                )}
               </div>
+            )
+          })}
 
-              {/* Strict Mode Toggle */}
-              <div className="flex items-center space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <input
-                  type="checkbox"
-                  id={`strict-mode-${exIndex}`}
-                  checked={exercise.strictMode || false}
-                  onChange={(e) =>
-                    updateExercise(
-                      exIndex,
-                      'strictMode' as any,
-                      e.target.checked
-                    )
-                  }
-                  className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                />
-                <label
-                  htmlFor={`strict-mode-${exIndex}`}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <ShieldAlert size={16} className="text-amber-600" />
-                  <div>
-                    <span className="text-sm font-semibold text-amber-800">
-                      Strict Mode (Exam)
-                    </span>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                      Disables copy/paste in the student editor to prevent
-                      external code injection.
-                    </p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          ))}
-
-          {/* Add Exercise Button */}
+          {/* Add Exercise Buttons */}
           {exercises.length < 10 && (
-            <button
-              onClick={addExercise}
-              className="flex items-center justify-center space-x-2 w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
-            >
-              <Plus size={20} />
-              <span>{t('dashboard.assignments.editor.add_exercise')}</span>
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={addExercise}
+                className="flex items-center justify-center space-x-2 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <Plus size={18} />
+                <span>Add Backend Coding Exercise</span>
+              </button>
+              <button
+                type="button"
+                onClick={addFrontendExercise}
+                className="flex items-center justify-center space-x-2 py-3 border-2 border-dashed border-emerald-300 rounded-lg text-emerald-700 bg-emerald-50/30 hover:border-emerald-400 hover:bg-emerald-50/60 transition-colors"
+              >
+                <Sparkles size={18} className="text-emerald-600" />
+                <span>Add Frontend Sandpack Challenge</span>
+              </button>
+            </div>
           )}
         </div>
       </AssignmentBoxUI>
@@ -1296,6 +1939,101 @@ function TaskCodeEditorObject({
                     studentSubmissions.find(
                       (s) => s.exerciseUUID === exercise.exerciseUUID
                     )?.code || exercise.starterCode
+
+                  const isFrontend =
+                    exercise.stepType === 'FRONTEND_EXERCISE' ||
+                    Boolean(
+                      (exercise as any).template ||
+                        (exercise as any).tests?.length ||
+                        ((exercise as any).files &&
+                          Object.keys((exercise as any).files).length > 0)
+                    )
+
+                  if (isFrontend) {
+                    const exTemplate = (exercise as any).template || 'react'
+                    const defaultFile =
+                      exTemplate === 'static' ? '/index.html' : '/App.js'
+                    const customFiles =
+                      (exercise as any).files &&
+                      Object.keys((exercise as any).files).length > 0
+                        ? { ...(exercise as any).files }
+                        : {
+                            [defaultFile]:
+                              studentCode || exercise.starterCode || '',
+                          }
+
+                    if (studentCode && customFiles[defaultFile]) {
+                      customFiles[defaultFile] = studentCode
+                    }
+
+                    const frontendStep = {
+                      title: exercise.title,
+                      label: exercise.title,
+                      instructions:
+                        exercise.description || (exercise as any).instructions,
+                      content:
+                        exercise.description || (exercise as any).instructions,
+                      template: exTemplate,
+                      files: customFiles,
+                      tests: (exercise as any).tests || [],
+                      passingScore: (exercise as any).passingScore || 100,
+                      solutionCode: exercise.solutionCode,
+                    }
+
+                    return (
+                      <div
+                        key={exercise.exerciseUUID}
+                        className="flex flex-col space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                      >
+                        <FrontendExerciseBlock
+                          step={frontendStep}
+                          isFocusMode={isFocusMode}
+                          onPassChange={(passed, score) => {
+                            if (
+                              passed &&
+                              assignmentTaskUUID &&
+                              access_token &&
+                              assignmentUUID
+                            ) {
+                              const submissionData: CodeSubmitSchema = {
+                                exercises:
+                                  activeTaskData?.contents?.exercises || [],
+                                submissions: [
+                                  {
+                                    exerciseUUID: exercise.exerciseUUID,
+                                    code:
+                                      studentCode || exercise.starterCode || '',
+                                  },
+                                ],
+                              }
+                              handleAssignmentTaskSubmission(
+                                {
+                                  task_submission: submissionData,
+                                  grade: score || 100,
+                                  task_submission_grade_feedback: `Auto-graded: ${score}% on frontend test suite`,
+                                },
+                                assignmentTaskUUID,
+                                assignmentUUID,
+                                access_token
+                              )
+                                .then(() => {
+                                  mutate(
+                                    `${getAPIUrl()}assignments/${assignmentUUID}/tasks/submissions/me`
+                                  )
+                                })
+                                .catch((err) => {
+                                  // eslint-disable-next-line no-console
+                                  console.error(
+                                    '[FrontendTaskSubmission] error:',
+                                    err
+                                  )
+                                })
+                            }
+                          }}
+                        />
+                      </div>
+                    )
+                  }
 
                   return (
                     <div
@@ -1763,8 +2501,8 @@ function TaskCodeEditorObject({
                       </div>
 
                       {/* Visible Test Cases */}
-                      {exercise.testCases.filter((tc) => !tc.isHidden).length >
-                        0 && (
+                      {(exercise.testCases || []).filter((tc) => !tc.isHidden)
+                        .length > 0 && (
                         <div className="space-y-4">
                           <div
                             className={`flex items-center space-x-2 text-[11px] font-bold uppercase tracking-widest px-1 ${isFocusMode ? 'text-zinc-300' : 'text-slate-400'}`}
@@ -1772,7 +2510,7 @@ function TaskCodeEditorObject({
                             <span>Visible Test Cases:</span>
                           </div>
                           <div className="space-y-3">
-                            {exercise.testCases
+                            {(exercise.testCases || [])
                               .filter((tc) => !tc.isHidden)
                               .map((testCase, tcIndex) => {
                                 const runResult = exResults?.test_results?.find(
