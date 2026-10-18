@@ -158,7 +158,7 @@ async def validate_discount_code(
             f"'{restricted_course.name}'" if restricted_course else "a specific course"
         )
         raise DiscountValidationError(
-            f"Discount code '{discount_code.code}' is only valid for {c_title}."
+            f"Discount code '{discount_code.code}' is not valid for this course. Only valid for {c_title}."
         )
 
     # Product-Specific Restriction Enforcement

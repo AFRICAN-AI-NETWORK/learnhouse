@@ -7,6 +7,7 @@ from fastapi import HTTPException, Request
 from sqlmodel import Session, select
 
 from config.config import get_learnhouse_config
+from src.db.courses.courses import Course
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import PaymentProductTypeEnum, PaymentsProduct
 from src.db.payments.payments_users import PaymentStatusEnum
@@ -449,9 +450,6 @@ async def initialize_transaction(
         course_uuid = None
         course_name = None
         try:
-            from src.db.courses import Course
-            from src.db.payments.payments_courses import PaymentsCourse
-
             pc = db_session.exec(
                 select(PaymentsCourse).where(
                     PaymentsCourse.payment_product_id == product_id
