@@ -18,6 +18,7 @@ import { checkPaidAccess } from '@services/payments/payments'
 import { X, Tag } from 'lucide-react'
 import { Input } from '@components/ui/input'
 import ClickToPayButton from '@components/Landings/ClickToPayButton'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 
 interface CoursePaidOptionsProps {
   course: {
@@ -30,8 +31,12 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
   const { t, i18n } = useTranslation()
   const org = useOrg() as any
   const session = useLHSession() as any
+  const { currency: contextCurrency, convertAmount } = useCurrency()
   const [expandedProducts, setExpandedProducts] = useState<{
     [key: string]: boolean
+  }>({})
+  const [autoRenewByProduct, setAutoRenewByProduct] = useState<{
+    [key: number]: boolean
   }>({})
   const [isProcessing, setIsProcessing] = useState<{ [key: string]: boolean }>(
     {}
@@ -54,6 +59,7 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState<string | null>(null)
   const [hasPaidAccess, setHasPaidAccess] = useState(false)
+  const [accessDiagnostics, setAccessDiagnostics] = useState<any>(null)
 
   React.useEffect(() => {
     async function checkAccess() {
@@ -69,8 +75,9 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
           course.org_id,
           session.data.tokens.access_token
         )
-        if (res?.has_access) {
-          setHasPaidAccess(true)
+        setHasPaidAccess(Boolean(res?.has_access))
+        if (res?.diagnostics) {
+          setAccessDiagnostics(res.diagnostics)
         }
       } catch {
         // Fallback gracefully
@@ -285,54 +292,89 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
                     ? t('payments.min_price')
                     : t('common.price')}
                 </span>
-                <div className="flex flex-col items-end">
-                  {appliedDiscount ? (
-                    <>
-                      <span className="text-xs text-gray-400 line-through">
-                        {new Intl.NumberFormat(
-                          i18n.language === 'fr' ? 'fr-FR' : 'en-US',
-                          {
-                            style: 'currency',
-                            currency: product.currency,
-                          }
-                        ).format(product.amount)}
-                      </span>
-                      <span className="font-bold text-xl text-teal-600">
-                        {new Intl.NumberFormat(
-                          i18n.language === 'fr' ? 'fr-FR' : 'en-US',
-                          {
-                            style: 'currency',
-                            currency: product.currency,
-                          }
-                        ).format(appliedDiscount.final_amount)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="font-semibold text-lg">
-                      {new Intl.NumberFormat(
-                        i18n.language === 'fr' ? 'fr-FR' : 'en-US',
-                        {
-                          style: 'currency',
-                          currency: product.currency,
-                        }
-                      ).format(product.amount)}
-                      {product.product_type === 'subscription' && (
-                        <span className="text-sm text-gray-500 ml-1">
-                          {t('payments.per_month_short')}
+                {(() => {
+                  const baseCurr = (product.currency || 'USD').toUpperCase()
+                  const displayCurr =
+                    baseCurr === 'USD' ? contextCurrency : baseCurr
+                  const formatAmt = (amt: number) => {
+                    const converted =
+                      baseCurr === 'USD' ? convertAmount(amt) : amt
+                    return new Intl.NumberFormat(
+                      i18n.language === 'fr' ? 'fr-FR' : 'en-US',
+                      {
+                        style: 'currency',
+                        currency: displayCurr,
+                      }
+                    ).format(converted)
+                  }
+                  return (
+                    <div className="flex flex-col items-end">
+                      {appliedDiscount ? (
+                        <>
+                          <span className="text-xs text-gray-400 line-through">
+                            {formatAmt(product.amount)}
+                          </span>
+                          <span className="font-bold text-xl text-teal-600">
+                            {formatAmt(appliedDiscount.final_amount)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-semibold text-lg">
+                          {formatAmt(product.amount)}
+                          {product.product_type === 'subscription' && (
+                            <span className="text-sm text-gray-500 ml-1">
+                              {t('payments.per_month_short')}
+                            </span>
+                          )}
                         </span>
                       )}
-                    </span>
-                  )}
-                  {product.price_type === 'customer_choice' &&
-                    !appliedDiscount && (
-                      <span className="text-sm text-gray-500">
-                        {t('payments.choose_price')}
-                      </span>
-                    )}
-                </div>
+                      {product.price_type === 'customer_choice' &&
+                        !appliedDiscount && (
+                          <span className="text-sm text-gray-500">
+                            {t('payments.choose_price')}
+                          </span>
+                        )}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           )}
+
+          {product.product_type === 'subscription' &&
+            (!hasPaidAccess ||
+              accessDiagnostics?.is_in_grace_period ||
+              accessDiagnostics?.is_expiring_soon ||
+              accessDiagnostics?.is_expired) && (
+              <div className="mt-3 p-3 rounded-lg border border-gray-200 bg-white flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  id={`course-auto-renew-${product.id}`}
+                  checked={Boolean(autoRenewByProduct[product.id])}
+                  onChange={(e) =>
+                    setAutoRenewByProduct((prev) => ({
+                      ...prev,
+                      [product.id]: e.target.checked,
+                    }))
+                  }
+                  className="mt-0.5 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                />
+                <label
+                  htmlFor={`course-auto-renew-${product.id}`}
+                  className="text-xs text-gray-600 leading-relaxed cursor-pointer select-none"
+                >
+                  <span className="font-semibold text-gray-900 block">
+                    Auto-renew monthly (Card only)
+                  </span>
+                  Leave unchecked to unlock all local payment methods (Bank
+                  Transfer, USSD, Mobile Money, &amp; Card) in{' '}
+                  {(product.currency || 'USD').toUpperCase() === 'USD'
+                    ? contextCurrency
+                    : product.currency}
+                  .
+                </label>
+              </div>
+            )}
 
           <div className="mt-4">
             <ClickToPayButton
@@ -341,9 +383,17 @@ function CoursePaidOptions({ course }: CoursePaidOptionsProps) {
               priceAmount={
                 appliedDiscount ? appliedDiscount.final_amount : product.amount
               }
+              currency={product.currency}
               courseName={product.name}
               skipDiscountModal={true} // Skip since this modal already handles discounts
               initialDiscountCode={appliedDiscount?.code}
+              isSubscription={product.product_type === 'subscription'}
+              autoRenew={Boolean(autoRenewByProduct[product.id])}
+              allowRenewal={Boolean(
+                accessDiagnostics?.is_in_grace_period ||
+                  accessDiagnostics?.is_expiring_soon ||
+                  accessDiagnostics?.is_expired
+              )}
             />
           </div>
         </div>

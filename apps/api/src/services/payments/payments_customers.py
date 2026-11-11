@@ -9,6 +9,7 @@ from src.db.payments.payments_users import PaymentsUser
 from src.db.users import AnonymousUser, PublicUser, User, UserRead
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.orgs.orgs import rbac_check
+from src.services.payments.payments_cycles import compute_subscription_lifecycle_state
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,7 @@ async def get_customers(
     try:
         check_limits_with_usage("payments", org_id, db_session)
     except Exception as e:  # noqa: BLE001
-        logger.warning(
-            "Limit check warning for payments on org %s: %s", org_id, e
-        )
+        logger.warning("Limit check warning for payments on org %s: %s", org_id, e)
 
     # Check if organization exists
     statement = select(Organization).where(Organization.id == org_id)
@@ -82,6 +81,7 @@ async def get_customers(
 
             # 2. Resolve Product
             product_data = None
+            product_obj = None
             if payment_user.payment_product_id:
                 product_obj = db_session.exec(
                     select(PaymentsProduct).where(
@@ -96,8 +96,12 @@ async def get_customers(
                         product_data = {
                             "id": product_obj.id,
                             "name": getattr(product_obj, "name", "Product"),
-                            "product_type": getattr(product_obj, "product_type", "one_time"),
-                            "price_type": getattr(product_obj, "price_type", "fixed_price"),
+                            "product_type": getattr(
+                                product_obj, "product_type", "one_time"
+                            ),
+                            "price_type": getattr(
+                                product_obj, "price_type", "fixed_price"
+                            ),
                             "amount": getattr(product_obj, "amount", 0.0),
                             "currency": getattr(product_obj, "currency", "USD"),
                         }
@@ -108,7 +112,9 @@ async def get_customers(
                     "name": "Standard Access",
                     "product_type": "one_time",
                     "price_type": "fixed_price",
-                    "amount": payment_user.final_amount or payment_user.original_amount or 0.0,
+                    "amount": payment_user.final_amount
+                    or payment_user.original_amount
+                    or 0.0,
                     "currency": "USD",
                 }
 
@@ -138,6 +144,7 @@ async def get_customers(
                 "status": status_val,
                 "creation_date": creation_date_str,
                 "update_date": update_date_str,
+                **compute_subscription_lifecycle_state(payment_user, product_obj),
             }
             customers_data.append(customer_data)
         except Exception as row_error:  # noqa: BLE001

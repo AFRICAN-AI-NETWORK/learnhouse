@@ -10,6 +10,7 @@ import { validateDiscountCode } from '@services/payments/discounts'
 import toast from 'react-hot-toast'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import { useRouter } from 'next/navigation'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 
 type Props = {
   isOpen: boolean
@@ -20,6 +21,7 @@ type Props = {
     amount: number
     currency: string
     description?: string
+    product_type?: 'one_time' | 'subscription'
   }
   orgId: number
   orgSlug: string
@@ -33,7 +35,8 @@ type Props = {
   onCheckout: (
     productId: number,
     discountCode?: string,
-    upsellProductId?: number
+    upsellProductId?: number,
+    autoRenew?: boolean
   ) => void
 }
 
@@ -49,6 +52,7 @@ const DiscountCodeModal = ({
   const { t, i18n } = useTranslation()
   const session = useLHSession() as any
   const router = useRouter()
+  const { currency: contextCurrency, convertAmount } = useCurrency()
   const access_token = session?.data?.tokens?.access_token
 
   const [code, setCode] = useState('')
@@ -58,6 +62,7 @@ const DiscountCodeModal = ({
 
   const [isUpsellSelected, setIsUpsellSelected] = useState(false)
   const [isDisclaimerAccepted, setIsDisclaimerAccepted] = useState(false)
+  const [autoRenew, setAutoRenew] = useState(false)
 
   const handleApply = async () => {
     if (!code.trim()) return
@@ -96,11 +101,17 @@ const DiscountCodeModal = ({
     }
   }
 
-  const formatPrice = (amount: number) => {
+  const baseCurrency = (product.currency || 'USD').toUpperCase()
+  const displayCurrency =
+    baseCurrency === 'USD' ? contextCurrency : baseCurrency
+
+  const formatPrice = (amount: number, sourceCurr = baseCurrency) => {
+    const converted =
+      sourceCurr.toUpperCase() === 'USD' ? convertAmount(amount) : amount
     return new Intl.NumberFormat(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
       style: 'currency',
-      currency: product.currency || 'NGN',
-    }).format(amount)
+      currency: displayCurrency || 'NGN',
+    }).format(converted)
   }
 
   let finalAmount = appliedDiscount
@@ -222,7 +233,11 @@ const DiscountCodeModal = ({
                     Add {upsellProduct.name}
                   </h4>
                   <span className="font-bold text-amber-700 ml-4">
-                    +{formatPrice(upsellProduct.amount)}
+                    +
+                    {formatPrice(
+                      upsellProduct.amount,
+                      upsellProduct.currency || 'USD'
+                    )}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
@@ -264,6 +279,28 @@ const DiscountCodeModal = ({
         </div>
       )}
 
+      {product.product_type === 'subscription' && access_token && (
+        <div className="p-3.5 rounded-xl border border-gray-200 bg-gray-50 flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="modal-auto-renew-checkbox"
+            checked={autoRenew}
+            onChange={(e) => setAutoRenew(e.target.checked)}
+            className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900 cursor-pointer"
+          />
+          <label
+            htmlFor="modal-auto-renew-checkbox"
+            className="text-xs text-gray-600 leading-relaxed cursor-pointer select-none"
+          >
+            <span className="font-bold text-gray-900 block">
+              Auto-renew monthly (Card only)
+            </span>
+            Leave unchecked to unlock all local payment methods (Bank Transfer,
+            USSD, Mobile Money, &amp; Card) in {displayCurrency}.
+          </label>
+        </div>
+      )}
+
       <div className="pt-2">
         <div className="flex justify-between items-center mb-6">
           <span className="text-base font-bold text-gray-900 uppercase tracking-wide">
@@ -292,7 +329,8 @@ const DiscountCodeModal = ({
               onCheckout(
                 product.id,
                 appliedDiscount?.code,
-                isUpsellSelected ? upsellProduct?.id : undefined
+                isUpsellSelected ? upsellProduct?.id : undefined,
+                product.product_type === 'subscription' ? autoRenew : false
               )
             }
           >

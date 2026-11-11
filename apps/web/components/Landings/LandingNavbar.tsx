@@ -111,6 +111,8 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                 <option value="ZAR">ZAR</option>
                 <option value="UGX">UGX</option>
                 <option value="RWF">RWF</option>
+                <option value="TZS">TZS</option>
+                <option value="ZMW">ZMW</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
                 <ChevronDown size={14} />
@@ -179,6 +181,8 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
                   <option value="ZAR">ZAR - South African Rand</option>
                   <option value="UGX">UGX - Ugandan Shilling</option>
                   <option value="RWF">RWF - Rwandan Franc</option>
+                  <option value="TZS">TZS - Tanzanian Shilling</option>
+                  <option value="ZMW">ZMW - Zambian Kwacha</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
                   <ChevronDown size={20} />

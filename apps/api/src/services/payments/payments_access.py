@@ -16,8 +16,47 @@ from src.security.rbac.rbac import (
     authorization_verify_based_on_org_admin_status,
     authorization_verify_if_user_is_author,
 )
+from src.services.payments.payments_cycles import is_payment_user_access_valid
 
 logger = logging.getLogger(__name__)
+
+
+def _user_has_valid_course_or_org_access(
+    user_id: int,
+    org_id: int,
+    payment_product_id: int,
+    db_session: Session,
+) -> bool:
+    """
+    Check direct product purchase/subscription OR org-wide subscription, enforcing
+    period-end + 7-day grace validation via ``is_payment_user_access_valid``.
+    """
+    direct_product = db_session.get(PaymentsProduct, payment_product_id)
+    direct_rows = db_session.exec(
+        select(PaymentsUser).where(
+            PaymentsUser.user_id == user_id,
+            PaymentsUser.payment_product_id == payment_product_id,
+            PaymentsUser.status.in_(
+                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+            ),
+        )
+    ).all()
+    if any(is_payment_user_access_valid(pu, direct_product) for pu in direct_rows):
+        return True
+
+    org_sub_rows = db_session.exec(
+        select(PaymentsUser, PaymentsProduct)
+        .join(PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id)
+        .where(
+            PaymentsUser.user_id == user_id,
+            PaymentsProduct.org_id == org_id,
+            PaymentsProduct.product_type == PaymentProductTypeEnum.SUBSCRIPTION,
+            PaymentsUser.status.in_(
+                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
+            ),
+        )
+    ).all()
+    return any(is_payment_user_access_valid(pu, prod) for pu, prod in org_sub_rows)
 
 
 async def check_activity_paid_access(
@@ -77,32 +116,13 @@ async def check_activity_paid_access(
     if isinstance(user, AnonymousUser):
         return False
 
-    # 4. Paid access check: Verify payment status in the database.
-    statement = select(PaymentsUser).where(
-        PaymentsUser.user_id == user.id,
-        PaymentsUser.payment_product_id == course_payment.payment_product_id,
-        PaymentsUser.status.in_(
-            [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
-        ),
+    # 4. Paid access check: Verify payment status + active billing/grace period.
+    return _user_has_valid_course_or_org_access(
+        user_id=user.id,
+        org_id=course.org_id,
+        payment_product_id=course_payment.payment_product_id,
+        db_session=db_session,
     )
-    access = db_session.exec(statement).first()
-    if access:
-        return True
-
-    # Check if user has an active organization subscription
-    org_sub_stmt = (
-        select(PaymentsUser)
-        .join(PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id)
-        .where(
-            PaymentsUser.user_id == user.id,
-            PaymentsProduct.org_id == course.org_id,
-            PaymentsProduct.product_type == PaymentProductTypeEnum.SUBSCRIPTION,
-            PaymentsUser.status.in_(
-                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
-            ),
-        )
-    )
-    return bool(db_session.exec(org_sub_stmt).first())
 
 
 async def check_course_paid_access(
@@ -147,28 +167,9 @@ async def check_course_paid_access(
     if isinstance(user, AnonymousUser):
         return False
 
-    statement = select(PaymentsUser).where(
-        PaymentsUser.user_id == user.id,
-        PaymentsUser.payment_product_id == course_payment.payment_product_id,
-        PaymentsUser.status.in_(
-            [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
-        ),
+    return _user_has_valid_course_or_org_access(
+        user_id=user.id,
+        org_id=course.org_id,
+        payment_product_id=course_payment.payment_product_id,
+        db_session=db_session,
     )
-    subscription = db_session.exec(statement).first()
-    if subscription:
-        return True
-
-    # Check if user has an active organization subscription
-    org_sub_stmt = (
-        select(PaymentsUser)
-        .join(PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id)
-        .where(
-            PaymentsUser.user_id == user.id,
-            PaymentsProduct.org_id == course.org_id,
-            PaymentsProduct.product_type == PaymentProductTypeEnum.SUBSCRIPTION,
-            PaymentsUser.status.in_(
-                [PaymentStatusEnum.ACTIVE, PaymentStatusEnum.COMPLETED]
-            ),
-        )
-    )
-    return bool(db_session.exec(org_sub_stmt).first())

@@ -38,6 +38,11 @@ interface PaymentUserData {
   }
   status: string
   creation_date: string
+  auto_renew?: boolean
+  current_period_end?: string | null
+  grace_period_ends_at?: string | null
+  is_in_grace_period?: boolean
+  is_expired?: boolean
 }
 
 function PaymentsUsersTable({ data }: { data: PaymentUserData[] }) {
@@ -59,6 +64,7 @@ function PaymentsUsersTable({ data }: { data: PaymentUserData[] }) {
           <TableHead>Amount</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Purchase Date</TableHead>
+          <TableHead>Renewal</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -125,6 +131,30 @@ function PaymentsUsersTable({ data }: { data: PaymentUserData[] }) {
               {item.creation_date
                 ? new Date(item.creation_date).toLocaleDateString()
                 : '-'}
+            </TableCell>
+            <TableCell className="text-xs text-gray-600 dark:text-white/60">
+              {item.product?.product_type === 'subscription' ? (
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium text-gray-800 dark:text-white/80">
+                    {item.auto_renew ? 'Auto-renew (Card)' : 'Manual renewal'}
+                  </span>
+                  {item.is_in_grace_period && item.grace_period_ends_at ? (
+                    <span className="text-amber-600 font-semibold">
+                      Grace until{' '}
+                      {new Date(item.grace_period_ends_at).toLocaleDateString()}
+                    </span>
+                  ) : item.current_period_end ? (
+                    <span>
+                      {item.is_expired ? 'Expired ' : 'Ends '}
+                      {new Date(item.current_period_end).toLocaleDateString()}
+                    </span>
+                  ) : (
+                    <span>-</span>
+                  )}
+                </div>
+              ) : (
+                <span>Lifetime</span>
+              )}
             </TableCell>
           </TableRow>
         ))}

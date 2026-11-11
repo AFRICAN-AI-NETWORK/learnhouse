@@ -267,15 +267,16 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
         except (RedisError, ValueError) as e:
             logger.warning(f"Redis cache read failed: {e}. Falling back to API.")
 
-    # Fallback: Check in-memory cache (single-worker only)
+    # Fallback: Check in-memory cache (single-worker only, keyed by currency)
     now = datetime.now(UTC)
-    if _exchange_rate_cache.get("rate") and _exchange_rate_cache.get("timestamp"):
-        cache_age = (now - _exchange_rate_cache["timestamp"]).total_seconds()
+    cached_entry = _exchange_rate_cache.get(target_currency)
+    if cached_entry and cached_entry.get("rate") and cached_entry.get("timestamp"):
+        cache_age = (now - cached_entry["timestamp"]).total_seconds()
         if cache_age < EXCHANGE_RATE_CACHE_TTL:
             logger.debug(
-                f"Using in-memory cached exchange rate: {_exchange_rate_cache['rate']} (age: {cache_age:.0f}s)"
+                f"Using in-memory cached exchange rate for USD → {target_currency}: {cached_entry['rate']} (age: {cache_age:.0f}s)"
             )
-            return _exchange_rate_cache["rate"]
+            return cached_entry["rate"]
 
     # Try fetching from API
     try:
@@ -314,8 +315,10 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
                         logger.warning(f"Redis cache write failed: {e}")
 
                 # Also update in-memory cache as fallback
-                _exchange_rate_cache["rate"] = rate
-                _exchange_rate_cache["timestamp"] = now
+                _exchange_rate_cache[target_currency] = {
+                    "rate": rate,
+                    "timestamp": now,
+                }
 
                 logger.debug(
                     f"Redis cache hit for USD → {target_currency} exchange rate: {rate}"
@@ -340,7 +343,11 @@ async def get_usd_to_currency_exchange_rate(target_currency: str = "NGN") -> flo
         "RWF": float(os.getenv("USD_TO_RWF_RATE", "1300")),
         "TZS": float(os.getenv("USD_TO_TZS_RATE", "2500")),
         "UGX": float(os.getenv("USD_TO_UGX_RATE", "3800")),
+        "ZMW": float(os.getenv("USD_TO_ZMW_RATE", "27")),
         "XOF": float(os.getenv("USD_TO_XOF_RATE", "600")),
+        "XAF": float(os.getenv("USD_TO_XAF_RATE", "600")),
+        "GBP": float(os.getenv("USD_TO_GBP_RATE", "0.79")),
+        "EUR": float(os.getenv("USD_TO_EUR_RATE", "0.92")),
         "EGP": float(os.getenv("USD_TO_EGP_RATE", "47")),
     }
     return fallback_map.get(target_currency, 1.0)

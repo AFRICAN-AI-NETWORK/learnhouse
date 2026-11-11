@@ -32,6 +32,9 @@ interface ClickToPayButtonProps {
   planId?: string
   skipDiscountModal?: boolean
   initialDiscountCode?: string
+  isSubscription?: boolean
+  autoRenew?: boolean
+  allowRenewal?: boolean
 }
 
 export default function ClickToPayButton({
@@ -43,6 +46,9 @@ export default function ClickToPayButton({
   planId,
   skipDiscountModal,
   initialDiscountCode,
+  isSubscription: isSubscriptionProp,
+  autoRenew: autoRenewProp,
+  allowRenewal = false,
 }: ClickToPayButtonProps) {
   const session = useLHSession() as any
   const org = useOrg() as any
@@ -51,6 +57,7 @@ export default function ClickToPayButton({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDisclaimerAccepted, setIsDisclaimerAccepted] = useState(false)
+  const [autoRenew, setAutoRenew] = useState<boolean>(Boolean(autoRenewProp))
 
   // Payment Result Callback State
   const [paymentModalState, setPaymentModalState] = useState<{
@@ -69,13 +76,30 @@ export default function ClickToPayButton({
     course_uuid: string
     name: string
   } | null>(null)
+  const [resolvedProduct, setResolvedProduct] = useState<{
+    id: number
+    name: string
+    amount: number
+    currency: string
+    product_type: string | null
+  } | null>(null)
   const [hasPaidAccess, setHasPaidAccess] = useState(false)
+  const [accessDiagnostics, setAccessDiagnostics] = useState<any>(null)
 
   const cleanCourseUuid = (
     resolvedCourse?.course_uuid || String(courseId)
   ).replace(/^course_/, '')
 
-  // Check user course access on mount
+  const isSubscriptionCourse = Boolean(
+    isSubscriptionProp ||
+      planId ||
+      resolvedProduct?.product_type === 'subscription'
+  )
+
+  // Discount State
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
+
+  // Check user course access on mount (and ensure product metadata loads when checkout modal opens)
   useEffect(() => {
     async function fetchCourseAccess() {
       if (!org?.id || !session?.data?.tokens?.access_token) return
@@ -88,15 +112,24 @@ export default function ClickToPayButton({
         if (res?.course) {
           setResolvedCourse(res.course)
         }
-        if (res?.has_access) {
-          setHasPaidAccess(true)
+        if (res?.product) {
+          setResolvedProduct(res.product)
         }
+        if (res?.diagnostics) {
+          setAccessDiagnostics(res.diagnostics)
+        }
+        setHasPaidAccess(Boolean(res?.has_access))
       } catch (err) {
         // Fallback gracefully
       }
     }
     fetchCourseAccess()
-  }, [courseId, org?.id, session?.data?.tokens?.access_token])
+  }, [
+    courseId,
+    org?.id,
+    session?.data?.tokens?.access_token,
+    isDiscountModalOpen,
+  ])
 
   // Check URL parameters for Flutterwave payment callback status
   useEffect(() => {
@@ -136,10 +169,9 @@ export default function ClickToPayButton({
   }, [org?.id, session?.data?.tokens?.access_token])
 
   // Discount State
-  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false)
   const [discountCode, setDiscountCode] = useState('')
-  const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false)
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
   const [discountError, setDiscountError] = useState<string | null>(null)
 
   // Upsell State
@@ -148,13 +180,26 @@ export default function ClickToPayButton({
   // Hardcoded upsell price for Career Accelerator (always $20 base)
   const upsellBasePrice = 20
 
-  const baseAmount = convertAmount(priceAmount)
+  const sourceCurrency = (
+    currency ||
+    resolvedProduct?.currency ||
+    'USD'
+  ).toUpperCase()
+
+  const toDisplayCurrency = (amt: number) => {
+    if (sourceCurrency === contextCurrency.toUpperCase()) return amt
+    if (sourceCurrency === 'USD') return convertAmount(amt)
+    return amt
+  }
+
+  const baseAmount = toDisplayCurrency(priceAmount)
   const upsellAmount = convertAmount(upsellBasePrice)
 
   let finalAmount = appliedDiscount ? appliedDiscount.final_amount : baseAmount
 
   const displayFinalAmount = finalAmount + (isUpsellSelected ? upsellAmount : 0)
-  const finalCurrency = contextCurrency
+  const finalCurrency =
+    sourceCurrency === 'USD' ? contextCurrency : sourceCurrency
 
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) return
@@ -191,7 +236,9 @@ export default function ClickToPayButton({
       const validationData = result?.data ?? result
 
       if (result && validationData && validationData.valid) {
-        const convertedFinalAmount = convertAmount(validationData.final_amount)
+        const convertedFinalAmount = toDisplayCurrency(
+          validationData.final_amount
+        )
 
         setAppliedDiscount({
           ...validationData,
@@ -234,6 +281,10 @@ export default function ClickToPayButton({
         ? appliedDiscount.code
         : initialDiscountCode || undefined
 
+      const shouldAutoRenew = Boolean(
+        isSubscriptionCourse && (autoRenewProp ?? autoRenew)
+      )
+
       if (productId) {
         // If we have an exact product ID (from dashboard/CoursePaidOptions), use the standard checkout
         res = await getStripeProductCheckoutSession(
@@ -243,7 +294,8 @@ export default function ClickToPayButton({
           access_token,
           codeToApply,
           undefined,
-          finalCurrency
+          finalCurrency,
+          shouldAutoRenew
         )
       } else {
         // Otherwise use the uuid based checkout (from landing pages)
@@ -255,7 +307,8 @@ export default function ClickToPayButton({
           access_token,
           codeToApply,
           upsellUuid,
-          finalCurrency
+          finalCurrency,
+          shouldAutoRenew
         )
       }
 
@@ -363,14 +416,41 @@ export default function ClickToPayButton({
     }, 100)
   }
 
+  const needsRenewalAttention = Boolean(
+    allowRenewal ||
+      accessDiagnostics?.is_in_grace_period ||
+      accessDiagnostics?.is_expiring_soon
+  )
+  const isSubscriptionExpired = Boolean(
+    !hasPaidAccess && accessDiagnostics?.is_expired
+  )
+
   return (
     <>
-      {hasPaidAccess ? (
+      {hasPaidAccess && !allowRenewal ? (
         <div className="w-full flex flex-col items-center gap-2.5">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold tracking-wide shadow-xs">
-            <CheckCircle2 size={13} className="text-emerald-600" />
-            <span>✓ Enrolled &amp; Active</span>
-          </div>
+          {needsRenewalAttention ? (
+            <div className="w-full p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center space-y-2">
+              <p className="font-semibold">
+                {accessDiagnostics?.is_in_grace_period
+                  ? `Grace period active (${accessDiagnostics?.grace_days_remaining ?? 1}d left). Renew via Bank Transfer, USSD, OPay, Mobile Money, or Card to keep access.`
+                  : `Monthly access ends in ${accessDiagnostics?.days_remaining ?? 0}d. Renew early with any local payment method or Card.`}
+              </p>
+              <button
+                type="button"
+                onClick={handleClick}
+                disabled={isProcessing}
+                className="w-full py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors disabled:opacity-50"
+              >
+                {isProcessing ? 'Loading...' : 'RENEW MONTHLY ACCESS →'}
+              </button>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold tracking-wide shadow-xs">
+              <CheckCircle2 size={13} className="text-emerald-600" />
+              <span>✓ Enrolled &amp; Active</span>
+            </div>
+          )}
           <Link
             href={`/orgs/${org?.slug || 'default'}/course/${cleanCourseUuid}`}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-emerald-500/25"
@@ -379,20 +459,31 @@ export default function ClickToPayButton({
           </Link>
         </div>
       ) : (
-        <button
-          onClick={handleClick}
-          disabled={isProcessing}
-          className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-        >
-          {isProcessing ? (
-            <Loader2 className="animate-spin" size={20} />
-          ) : (
-            <>
-              <CreditCard size={20} />
-              CLICK TO PAY →
-            </>
+        <div className="w-full flex flex-col items-center gap-2">
+          {isSubscriptionExpired && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+              <span>Subscription expired — renew to restore access</span>
+            </div>
           )}
-        </button>
+          <button
+            onClick={handleClick}
+            disabled={isProcessing}
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-[15px] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+          >
+            {isProcessing ? (
+              <Loader2 className="animate-spin" size={20} />
+            ) : (
+              <>
+                <CreditCard size={20} />
+                {hasPaidAccess && allowRenewal
+                  ? 'RENEW MONTHLY ACCESS →'
+                  : isSubscriptionExpired
+                    ? 'RENEW ACCESS →'
+                    : 'CLICK TO PAY →'}
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       <Dialog.Root open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -635,6 +726,40 @@ export default function ClickToPayButton({
                     AINA. Even though we do our best to ensure you are fit and
                     have a high chance of getting the job, the final decision
                     rests solely with the employer.
+                  </label>
+                </div>
+              )}
+
+              {isSubscriptionCourse && (
+                <div className="mb-5 p-3.5 rounded-xl border border-gray-200 bg-gray-50/80 flex items-start gap-3">
+                  <div className="mt-0.5">
+                    <input
+                      type="checkbox"
+                      id="auto-renew-checkbox"
+                      checked={autoRenew}
+                      onChange={(e) => setAutoRenew(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                    />
+                  </div>
+                  <label
+                    htmlFor="auto-renew-checkbox"
+                    className="text-xs text-gray-700 leading-relaxed cursor-pointer select-none"
+                  >
+                    <span className="font-bold text-gray-900 block">
+                      Auto-renew monthly (Card only)
+                    </span>
+                    {autoRenew ? (
+                      <span className="text-gray-600">
+                        Automatically renews each billing cycle. Flutterwave
+                        will restrict checkout to Card payments only.
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">
+                        Leave unchecked to access all {finalCurrency} payment
+                        methods (Bank Transfer, USSD, OPay, Mobile Money, &amp;
+                        Card where supported).
+                      </span>
+                    )}
                   </label>
                 </div>
               )}

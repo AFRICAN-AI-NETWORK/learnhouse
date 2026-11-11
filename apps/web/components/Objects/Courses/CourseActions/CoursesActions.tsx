@@ -23,6 +23,9 @@ import {
 } from 'lucide-react'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import CoursePaidOptions from './CoursePaidOptions'
+import SubscriptionRenewalBanner, {
+  AccessDiagnostics,
+} from './SubscriptionRenewalBanner'
 import { checkPaidAccess } from '@services/payments/payments'
 import { applyForContributor } from '@services/courses/courses'
 import toast from 'react-hot-toast'
@@ -87,6 +90,8 @@ function CoursesActions({
   const [accessReason, setAccessReason] = useState<
     'PURCHASED' | 'ADMIN' | 'AUTHOR' | 'FREE' | null
   >(null)
+  const [accessDiagnostics, setAccessDiagnostics] =
+    useState<AccessDiagnostics | null>(null)
   const { contributorStatus, refetch } = useContributorStatus(courseuuid)
   const [isProgressOpen, setIsProgressOpen] = useState(false)
   const org = useOrg() as any
@@ -146,15 +151,18 @@ function CoursesActions({
           session.data?.tokens?.access_token
         )
         setHasAccess(response.has_access)
+        setAccessDiagnostics(response.diagnostics || null)
 
         if (response.has_access) {
+          const paymentStatus =
+            response.diagnostics?.payment_status?.toUpperCase()
           if (response.diagnostics?.is_admin) {
             setAccessReason('ADMIN')
           } else if (response.diagnostics?.is_author) {
             setAccessReason('AUTHOR')
           } else if (
             response.diagnostics?.user_has_payment &&
-            response.diagnostics?.payment_status === 'COMPLETED'
+            (paymentStatus === 'COMPLETED' || paymentStatus === 'ACTIVE')
           ) {
             setAccessReason('PURCHASED')
           } else if (!response.diagnostics?.course_linked_to_product) {
@@ -570,9 +578,22 @@ function CoursesActions({
   if (linkedProducts.length > 0) {
     return (
       <div className="bg-white shadow-md shadow-gray-300/25 outline-1 outline-neutral-200/40 rounded-lg overflow-hidden p-4">
+        <Modal
+          isDialogOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          dialogContent={<CoursePaidOptions course={course} />}
+          dialogTitle={t('courses.purchase_course_title')}
+          dialogDescription={t('courses.purchase_course_description')}
+          minWidth="sm"
+        />
         <div className="space-y-4">
           {hasAccess ? (
             <>
+              <SubscriptionRenewalBanner
+                diagnostics={accessDiagnostics}
+                hasAccess={true}
+                onRenew={() => setIsModalOpen(true)}
+              />
               {accessReason === 'ADMIN' && (
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg nice-shadow">
                   <div className="flex items-center gap-3">
@@ -676,27 +697,27 @@ function CoursesActions({
             </>
           ) : (
             <>
-              {!isFreeCourse && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg nice-shadow">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-800" />
-                    <h3 className="text-amber-800 font-semibold">
-                      {t('courses.paid_course')}
-                    </h3>
+              {accessDiagnostics?.is_expired ? (
+                <SubscriptionRenewalBanner
+                  diagnostics={accessDiagnostics}
+                  hasAccess={false}
+                  onRenew={() => setIsModalOpen(true)}
+                />
+              ) : (
+                !isFreeCourse && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg nice-shadow">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-800" />
+                      <h3 className="text-amber-800 font-semibold">
+                        {t('courses.paid_course')}
+                      </h3>
+                    </div>
+                    <p className="text-amber-700 text-sm mt-1">
+                      {t('courses.paid_course_description')}
+                    </p>
                   </div>
-                  <p className="text-amber-700 text-sm mt-1">
-                    {t('courses.paid_course_description')}
-                  </p>
-                </div>
+                )
               )}
-              <Modal
-                isDialogOpen={isModalOpen}
-                onOpenChange={setIsModalOpen}
-                dialogContent={<CoursePaidOptions course={course} />}
-                dialogTitle={t('courses.purchase_course_title')}
-                dialogDescription={t('courses.purchase_course_description')}
-                minWidth="sm"
-              />
               <button
                 className="w-full bg-neutral-900 text-white py-3 rounded-lg nice-shadow font-semibold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
                 onClick={() => {

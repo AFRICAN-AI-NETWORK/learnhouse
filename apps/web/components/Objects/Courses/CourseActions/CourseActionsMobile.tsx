@@ -17,6 +17,9 @@ import {
 } from 'lucide-react'
 import Modal from '@components/Objects/StyledElements/Modal/Modal'
 import CoursePaidOptions from './CoursePaidOptions'
+import SubscriptionRenewalBanner, {
+  AccessDiagnostics,
+} from './SubscriptionRenewalBanner'
 import { checkPaidAccess } from '@services/payments/payments'
 import { removeCourse, startCourse } from '@services/courses/activity'
 import { revalidateTags, swrFetcher } from '@services/utils/ts/requests'
@@ -155,6 +158,8 @@ const CourseActionsMobile = ({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
   const [accessReason, setAccessReason] = useState<string | null>(null)
+  const [accessDiagnostics, setAccessDiagnostics] =
+    useState<AccessDiagnostics | null>(null)
 
   const cleanCourseUuid = course.course_uuid?.replace('course_', '')
 
@@ -211,15 +216,18 @@ const CourseActionsMobile = ({
           session.data?.tokens?.access_token
         )
         setHasAccess(response.has_access)
+        setAccessDiagnostics(response.diagnostics || null)
 
         if (response.has_access) {
+          const paymentStatus =
+            response.diagnostics?.payment_status?.toUpperCase()
           if (response.diagnostics?.is_admin) {
             setAccessReason('ADMIN')
           } else if (response.diagnostics?.is_author) {
             setAccessReason('AUTHOR')
           } else if (
             response.diagnostics?.user_has_payment &&
-            response.diagnostics?.payment_status === 'COMPLETED'
+            (paymentStatus === 'COMPLETED' || paymentStatus === 'ACTIVE')
           ) {
             setAccessReason('PURCHASED')
           } else if (!response.diagnostics?.course_linked_to_product) {
@@ -328,15 +336,38 @@ const CourseActionsMobile = ({
 
         {linkedProducts.length > 0 ? (
           <div className="space-y-3">
+            <Modal
+              isDialogOpen={isModalOpen}
+              onOpenChange={setIsModalOpen}
+              dialogContent={<CoursePaidOptions course={course} />}
+              dialogTitle="Purchase Course"
+              dialogDescription="Select a payment option to access this course"
+              minWidth="sm"
+            />
             {hasAccess ? (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-green-800 text-sm font-semibold">
-                    You Own This Course
-                  </span>
+              <div className="space-y-2.5">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-green-800 text-sm font-semibold">
+                      You Own This Course
+                    </span>
+                  </div>
                 </div>
+                <SubscriptionRenewalBanner
+                  diagnostics={accessDiagnostics}
+                  hasAccess={true}
+                  onRenew={() => setIsModalOpen(true)}
+                  compact={true}
+                />
               </div>
+            ) : accessDiagnostics?.is_expired ? (
+              <SubscriptionRenewalBanner
+                diagnostics={accessDiagnostics}
+                hasAccess={false}
+                onRenew={() => setIsModalOpen(true)}
+                compact={true}
+              />
             ) : (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex items-center gap-2">
@@ -413,14 +444,6 @@ const CourseActionsMobile = ({
               </>
             ) : (
               <>
-                <Modal
-                  isDialogOpen={isModalOpen}
-                  onOpenChange={setIsModalOpen}
-                  dialogContent={<CoursePaidOptions course={course} />}
-                  dialogTitle="Purchase Course"
-                  dialogDescription="Select a payment option to access this course"
-                  minWidth="sm"
-                />
                 <button
                   onClick={() => {
                     const name = (course?.name || '').toLowerCase()

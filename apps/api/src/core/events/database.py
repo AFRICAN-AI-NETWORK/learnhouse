@@ -260,6 +260,32 @@ def ensure_schema_compatibility(db_engine):
                             f"Failed to add final_amount to paymentsuser: {e}"
                         )
 
+                ts_type = (
+                    "DATETIME"
+                    if conn.dialect.name == "sqlite"
+                    else "TIMESTAMP WITH TIME ZONE"
+                )
+                for col_name, col_sql in (
+                    ("auto_renew", "BOOLEAN NOT NULL DEFAULT FALSE"),
+                    ("current_period_start", f"{ts_type} DEFAULT NULL"),
+                    ("current_period_end", f"{ts_type} DEFAULT NULL"),
+                    ("last_payment_date", f"{ts_type} DEFAULT NULL"),
+                    ("renewal_reminder_sent_at", f"{ts_type} DEFAULT NULL"),
+                    ("grace_notice_sent_at", f"{ts_type} DEFAULT NULL"),
+                ):
+                    if col_name not in cols:
+                        try:
+                            if conn.dialect.name == "sqlite":
+                                stmt = f'ALTER TABLE paymentsuser ADD COLUMN "{col_name}" {col_sql};'
+                            else:
+                                stmt = f'ALTER TABLE paymentsuser ADD COLUMN IF NOT EXISTS "{col_name}" {col_sql};'
+                            conn.execute(text(stmt))
+                            conn.commit()
+                        except Exception as e:  # noqa: BLE001
+                            logger.warning(
+                                f"Failed to add {col_name} to paymentsuser: {e}"
+                            )
+
             # 3. course_timetable_event table: add weekly_schedule_phase column if missing
             if "course_timetable_event" in tables:
                 col_query = text(
@@ -289,9 +315,7 @@ def ensure_schema_compatibility(db_engine):
                     )
                     conn.commit()
                 except Exception as e:  # noqa: BLE001
-                    logger.debug(
-                        f"Notification enum normalization (ignored): {e}"
-                    )
+                    logger.debug(f"Notification enum normalization (ignored): {e}")
 
     except Exception as e:  # noqa: BLE001
         logger.warning(f"ensure_schema_compatibility error: {e}")

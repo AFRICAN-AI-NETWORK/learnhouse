@@ -7,7 +7,10 @@ from sqlmodel import Session, select
 from src.db.courses.courses import AuthorWithRole, Course, CourseRead
 from src.db.organizations import Organization
 from src.db.payments.payments_courses import PaymentsCourse
-from src.db.payments.payments_products import PaymentsProduct
+from src.db.payments.payments_products import (
+    PaymentProductTypeEnum,
+    PaymentsProduct,
+)
 from src.db.payments.payments_users import (
     PaymentStatusEnum,
     PaymentsUser,
@@ -17,6 +20,10 @@ from src.db.resource_authors import ResourceAuthor, ResourceAuthorshipStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser, User, UserRead
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.orgs.orgs import rbac_check
+from src.services.payments.payments_cycles import (
+    compute_subscription_lifecycle_state,
+    is_payment_user_access_valid,
+)
 
 
 async def create_payment_user(
@@ -120,6 +127,99 @@ async def create_payment_user(
     db_session.refresh(payment_user)
 
     return payment_user
+
+
+async def prepare_checkout_payment_user(
+    request: Request,
+    org_id: int,
+    user_id: int,
+    product_id: int,
+    status: PaymentStatusEnum,
+    provider_data: Any,
+    current_user: PublicUser | AnonymousUser | InternalUser,
+    db_session: Session,
+    referral_code_id: int | None = None,
+) -> tuple[PaymentsUser, bool]:
+    """
+    Create or safely reuse a ``PaymentsUser`` record for checkout/renewal.
+
+    - Fresh checkout or prior ``PENDING``/``CANCELLED``/``FAILED`` rows: returns
+      ``(new_payment_user, True)``.
+    - Existing ``SUBSCRIPTION`` row in ``ACTIVE``, ``COMPLETED``, or ``EXPIRED``:
+      reuses the row without altering its current status or deleting it if checkout
+      is abandoned, returning ``(existing_payment_user, False)``.
+    - Existing ``ONE_TIME`` paid purchase in ``ACTIVE``/``COMPLETED``: still raises
+      HTTP 400.
+    """
+    if not isinstance(current_user, InternalUser):
+        check_limits_with_usage("payments", org_id, db_session)
+
+    org = db_session.exec(select(Organization).where(Organization.id == org_id)).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    await rbac_check(request, org.org_uuid, current_user, "create", db_session)
+
+    product = db_session.exec(
+        select(PaymentsProduct).where(
+            PaymentsProduct.id == product_id, PaymentsProduct.org_id == org_id
+        )
+    ).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    existing_payment_user = db_session.exec(
+        select(PaymentsUser).where(
+            PaymentsUser.user_id == user_id,
+            PaymentsUser.org_id == org_id,
+            PaymentsUser.payment_product_id == product_id,
+        )
+    ).first()
+
+    if existing_payment_user:
+        is_subscription = (
+            getattr(product, "product_type", None)
+            == PaymentProductTypeEnum.SUBSCRIPTION
+        )
+        if existing_payment_user.status in [
+            PaymentStatusEnum.PENDING,
+            PaymentStatusEnum.CANCELLED,
+            PaymentStatusEnum.FAILED,
+        ]:
+            db_session.delete(existing_payment_user)
+            db_session.commit()
+        elif is_subscription:
+            psd = dict(existing_payment_user.provider_specific_data or {})
+            if isinstance(provider_data, dict):
+                for key in ("flutterwave_customer", "customer_code"):
+                    if provider_data.get(key) is not None:
+                        psd[key] = provider_data[key]
+            existing_payment_user.provider_specific_data = psd
+            if referral_code_id and not existing_payment_user.referral_code_id:
+                existing_payment_user.referral_code_id = referral_code_id
+            db_session.add(existing_payment_user)
+            db_session.commit()
+            db_session.refresh(existing_payment_user)
+            return existing_payment_user, False
+        elif product.amount == 0:
+            return existing_payment_user, False
+        else:
+            raise HTTPException(
+                status_code=400, detail="User already has purchase for this product"
+            )
+
+    created = await create_payment_user(
+        request=request,
+        org_id=org_id,
+        user_id=user_id,
+        product_id=product_id,
+        status=status,
+        provider_data=provider_data,
+        current_user=current_user,
+        db_session=db_session,
+        referral_code_id=referral_code_id,
+    )
+    return created, True
 
 
 async def get_payment_user(
@@ -290,8 +390,12 @@ async def get_owned_courses(
         )
         payment_users = db_session.exec(statement).all()
 
-        # Get all product IDs from payment users
-        product_ids = [pu.payment_product_id for pu in payment_users]
+        # Keep only purchases/subscriptions whose billing/grace period is currently valid
+        product_ids = []
+        for pu in payment_users:
+            prod = db_session.get(PaymentsProduct, pu.payment_product_id)
+            if is_payment_user_access_valid(pu, prod):
+                product_ids.append(pu.payment_product_id)
 
         # Get all courses linked to these products
         courses = []
@@ -397,6 +501,7 @@ async def get_my_payments(
         pu_dict = payment_user.model_dump()
         product_dict = product.model_dump()
         pu_dict["product"] = product_dict
+        pu_dict.update(compute_subscription_lifecycle_state(payment_user, product))
         payment_users.append(pu_dict)
 
     return payment_users

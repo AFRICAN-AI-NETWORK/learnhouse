@@ -15,6 +15,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from src.db.courses.courses import Course
+from src.db.notifications import Notification  # noqa: F401
 
 # Import ALL table models so SQLModel.metadata registers them for create_all().
 from src.db.organizations import Organization

@@ -10,6 +10,7 @@ import { getStripeProductCheckoutSession } from '@services/payments/products'
 import { useLHSession } from '@components/Contexts/LHSessionContext'
 import toast from 'react-hot-toast'
 import DiscountCodeModal from '@components/Objects/Modals/Payments/DiscountCodeModal'
+import { useCurrency } from '@components/Contexts/CurrencyContext'
 
 type PaymentsProduct = {
   id: number
@@ -40,6 +41,7 @@ export default function PricingPageClient({
   const { t } = useTranslation()
   const router = useRouter()
   const session = useLHSession() as any
+  const { currency } = useCurrency()
   const access_token = session?.data?.tokens?.access_token
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>(
     'monthly'
@@ -52,7 +54,8 @@ export default function PricingPageClient({
   const handleCheckout = async (
     productId: number,
     discountCode?: string,
-    upsellProductId?: number
+    upsellProductId?: number,
+    autoRenew?: boolean
   ) => {
     if (!access_token) {
       // Redirect to login if not authenticated
@@ -70,7 +73,9 @@ export default function PricingPageClient({
         redirectUri,
         access_token,
         discountCode,
-        upsellProductId
+        upsellProductId,
+        currency,
+        autoRenew
       )) as any
 
       if (checkoutResponse?.data?.checkout_url) {
@@ -234,9 +239,9 @@ export default function PricingPageClient({
           )}
           orgId={orgId}
           orgSlug={orgslug}
-          onCheckout={(pid, code, upsellPid) => {
+          onCheckout={(pid, code, upsellPid, autoRenew) => {
             setIsModalOpen(false)
-            handleCheckout(pid, code, upsellPid)
+            handleCheckout(pid, code, upsellPid, autoRenew)
           }}
         />
       )}

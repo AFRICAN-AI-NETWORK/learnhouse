@@ -14,9 +14,10 @@ from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.features_utils.usage import check_limits_with_usage
 from src.services.payments.discount_codes import validate_discount_code
+from src.services.payments.payments_cycles import extend_payment_period
 from src.services.payments.payments_users import (
-    create_payment_user,
     delete_payment_user,
+    prepare_checkout_payment_user,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,9 @@ FLUTTERWAVE_SUPPORTED_CURRENCIES = {
     "GHS",
     "ZAR",
     "KES",
+    "UGX",
+    "TZS",
+    "ZMW",
     "XOF",
     "XAF",
     "GBP",
@@ -44,6 +48,9 @@ FLUTTERWAVE_CURRENCY_INFO = {
     "GHS": {"name": "Ghanaian Cedi", "symbol": "₵", "subunit": "Pesewa"},
     "ZAR": {"name": "South African Rand", "symbol": "R", "subunit": "Cent"},
     "KES": {"name": "Kenyan Shilling", "symbol": "Ksh.", "subunit": "Cent"},
+    "UGX": {"name": "Ugandan Shilling", "symbol": "USh", "subunit": "Cent"},
+    "TZS": {"name": "Tanzanian Shilling", "symbol": "TSh", "subunit": "Senti"},
+    "ZMW": {"name": "Zambian Kwacha", "symbol": "ZK", "subunit": "Ngwee"},
     "XOF": {"name": "West African CFA Franc", "symbol": "CFA", "subunit": "Centime"},
     "XAF": {
         "name": "Central African CFA Franc",
@@ -55,10 +62,39 @@ FLUTTERWAVE_CURRENCY_INFO = {
     "RWF": {"name": "Rwandan Franc", "symbol": "FRw", "subunit": "Cent"},
 }
 
+# Explicit Flutterwave Standard v3 payment_options mapped by currency.
+# Flutterwave expects a comma-and-space-separated string and filters channels
+# enabled on the merchant account and valid for the selected currency.
+FLUTTERWAVE_CURRENCY_PAYMENT_OPTIONS: dict[str, str] = {
+    "NGN": "card, banktransfer, ussd, account, opay, nqr",
+    "GHS": "card, mobilemoneyghana, banktransfer",
+    "KES": "card, mpesa, banktransfer",
+    "UGX": "card, mobilemoneyuganda, banktransfer",
+    "RWF": "card, mobilemoneyrwanda, banktransfer",
+    "TZS": "card, mobilemoneytanzania, banktransfer",
+    "ZMW": "card, mobilemoneyzambia, banktransfer",
+    "ZAR": "card, banktransfer, account, 1voucher",
+    "XOF": "card, mobilemoneyfranco, banktransfer",
+    "XAF": "card, mobilemoneyfranco, banktransfer",
+    "USD": "card, applepay, googlepay, account",
+    "GBP": "card, banktransfer, account, applepay, googlepay",
+    "EUR": "card, banktransfer, account, applepay, googlepay",
+}
+
+
+def get_payment_options_for_currency(currency: str) -> str:
+    """Return all supported Flutterwave checkout payment options for the currency."""
+    return FLUTTERWAVE_CURRENCY_PAYMENT_OPTIONS.get((currency or "USD").upper(), "card")
+
 
 def get_supported_currencies() -> dict:
     return {
-        code: {"code": code, **info} for code, info in FLUTTERWAVE_CURRENCY_INFO.items()
+        code: {
+            "code": code,
+            **info,
+            "payment_options": get_payment_options_for_currency(code),
+        }
+        for code, info in FLUTTERWAVE_CURRENCY_INFO.items()
     }
 
 
@@ -195,6 +231,7 @@ async def create_flutterwave_product(
             "name": product_data.name,
             "interval": interval,
             "duration": 0,  # 0 means run indefinitely
+            "currency": (product_data.currency or "USD").upper(),
         }
 
         plan = await make_flutterwave_request("POST", "/payment-plans", plan_data)
@@ -262,6 +299,29 @@ def validate_currency(currency: str) -> None:
         )
 
 
+async def _convert_currency_amount(
+    amount: float, from_currency: str, to_currency: str
+) -> float:
+    """Convert an amount from source currency to target currency using live/cached FX rates."""
+    src = (from_currency or "USD").upper()
+    dst = (to_currency or "USD").upper()
+    if src == dst or amount <= 0:
+        return amount
+
+    from src.services.referrals.payouts import get_usd_to_currency_exchange_rate
+
+    amount_in_usd = amount
+    if src != "USD":
+        base_rate = await get_usd_to_currency_exchange_rate(src)
+        amount_in_usd = amount / base_rate if base_rate else amount
+
+    if dst != "USD":
+        target_rate = await get_usd_to_currency_exchange_rate(dst)
+        return amount_in_usd * target_rate if target_rate else amount_in_usd
+
+    return amount_in_usd
+
+
 async def initialize_transaction(
     request: Request,
     org_id: int,
@@ -272,6 +332,7 @@ async def initialize_transaction(
     upsell_product_id: int | None = None,
     current_user: PublicUser | AnonymousUser = None,
     db_session: Session = None,
+    auto_renew: bool = False,
 ) -> dict:
     with sentry_sdk.start_span(
         op="payment.initialize", description="Initialize Flutterwave transaction"
@@ -358,7 +419,11 @@ async def initialize_transaction(
         if course_id:
             metadata_dict["course_id"] = str(course_id)
 
-    amount_to_charge = final_amount if discount_code_obj else product.amount
+    amount_to_charge = await _convert_currency_amount(
+        final_amount if discount_code_obj else product.amount,
+        product.currency,
+        selected_currency,
+    )
 
     upsell_product = None
     if upsell_product_id:
@@ -368,47 +433,36 @@ async def initialize_transaction(
         upsell_product = db_session.exec(upsell_statement).first()
         if not upsell_product:
             raise HTTPException(status_code=404, detail="Upsell product not found")
-        # Add the upsell amount (assumes same currency for simplicity, otherwise convert)
-        amount_to_charge += upsell_product.amount
+        upsell_converted = await _convert_currency_amount(
+            upsell_product.amount, upsell_product.currency, selected_currency
+        )
+        amount_to_charge += upsell_converted
 
-    if product.currency.upper() != selected_currency.upper():
-        from src.services.referrals.payouts import get_usd_to_currency_exchange_rate
-
-        amount_in_usd = amount_to_charge
-        if product.currency.upper() != "USD":
-            base_rate = await get_usd_to_currency_exchange_rate(
-                product.currency.upper()
-            )
-            amount_in_usd = (
-                amount_to_charge / base_rate if base_rate else amount_to_charge
-            )
-
-        if selected_currency.upper() != "USD":
-            target_rate = await get_usd_to_currency_exchange_rate(
-                selected_currency.upper()
-            )
-            amount_to_charge = (
-                amount_in_usd * target_rate if target_rate else amount_in_usd
-            )
-        else:
-            amount_to_charge = amount_in_usd
-
-        amount_to_charge = round(amount_to_charge, 2)
+    amount_to_charge = round(amount_to_charge, 2)
 
     if amount_to_charge <= 0:
-        payment_user = await create_payment_user(
+        payment_user, _ = await prepare_checkout_payment_user(
             request=request,
             org_id=org_id,
             user_id=current_user.id,
             product_id=product_id,
             status=PaymentStatusEnum.COMPLETED,
             provider_data={
-                "bypass_reason": "free_product" if not discount_code_obj else "100_percent_discount",
+                "bypass_reason": "free_product"
+                if not discount_code_obj
+                else "100_percent_discount",
                 "selected_currency": selected_currency,
             },
             current_user=InternalUser(),
             db_session=db_session,
             referral_code_id=referral_code_id,
+        )
+        extend_payment_period(
+            db_session,
+            payment_user,
+            product,
+            tx_ref=f"free_{payment_user.id}_{uuid.uuid4().hex[:6]}",
+            auto_renew=False,
         )
 
         if discount_code_obj:
@@ -473,11 +527,53 @@ async def initialize_transaction(
             "course_name": course_name,
         }
 
+    is_recurring_subscription = (
+        auto_renew
+        and product.product_type == PaymentProductTypeEnum.SUBSCRIPTION
+        and bool(product.provider_product_id)
+    )
+
+    # Validate payment plan currency compatibility before creating a PENDING PaymentUser
+    if is_recurring_subscription and str(product.provider_product_id).isdigit():
+        try:
+            plan_info = await make_flutterwave_request(
+                "GET", f"/payment-plans/{product.provider_product_id}"
+            )
+            plan_currency = (
+                plan_info.get("currency", "").upper()
+                if isinstance(plan_info, dict)
+                else ""
+            )
+            if plan_currency and plan_currency != selected_currency:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Auto-renewal is only supported in the plan currency ({plan_currency}). "
+                        f"Switch currency to {plan_currency} or uncheck Auto-renew to pay in {selected_currency} using all local payment methods."
+                    ),
+                )
+        except HTTPException as he:
+            if he.status_code == 400 and "Auto-renewal is only supported" in str(
+                he.detail
+            ):
+                raise
+        except Exception:  # noqa: BLE001
+            pass
+
+    if is_recurring_subscription:
+        # Attaching payment_plan forces card tokenization on Flutterwave checkout
+        payment_options = "card"
+    else:
+        payment_options = get_payment_options_for_currency(selected_currency)
+
+    metadata_dict["auto_renew"] = str(is_recurring_subscription).lower()
+    metadata_dict["payment_options"] = payment_options
+
     customer = await create_flutterwave_customer(
         current_user.email, current_user.first_name, current_user.last_name
     )
 
-    payment_user = await create_payment_user(
+    payment_user, created_new = await prepare_checkout_payment_user(
         request=request,
         org_id=org_id,
         user_id=current_user.id,
@@ -502,8 +598,9 @@ async def initialize_transaction(
         db_session.refresh(payment_user)
 
     upsell_payment_user = None
+    upsell_created_new = False
     if upsell_product:
-        upsell_payment_user = await create_payment_user(
+        upsell_payment_user, upsell_created_new = await prepare_checkout_payment_user(
             request=request,
             org_id=org_id,
             user_id=current_user.id,
@@ -522,11 +619,13 @@ async def initialize_transaction(
 
     tx_ref = f"LH_{payment_user.id}_{uuid.uuid4().hex[:8]}"
     metadata_dict["payment_user_id"] = str(payment_user.id)
+    metadata_dict["tx_ref"] = tx_ref
 
     transaction_data = {
         "tx_ref": tx_ref,
         "amount": str(amount_to_charge),  # Flutterwave uses decimal amount, not subunit
         "currency": selected_currency,
+        "payment_options": payment_options,
         "redirect_url": redirect_uri,
         "customer": {
             "email": current_user.email,
@@ -540,9 +639,8 @@ async def initialize_transaction(
             {"id": org_payment_config.provider_specific_id}
         ]
 
-    if product.product_type == PaymentProductTypeEnum.SUBSCRIPTION:
-        if product.provider_product_id:
-            transaction_data["payment_plan"] = product.provider_product_id
+    if is_recurring_subscription:
+        transaction_data["payment_plan"] = product.provider_product_id
 
     try:
         transaction_response = await make_flutterwave_request(
@@ -556,12 +654,25 @@ async def initialize_transaction(
                 detail="Failed to get authorization URL from Flutterwave",
             )
 
-        payment_user.provider_specific_data.update(
-            {
-                "flutterwave_tx_ref": tx_ref,
+        next_psd = {
+            **(payment_user.provider_specific_data or {}),
+            "pending_checkout": {
+                "tx_ref": tx_ref,
                 "selected_currency": selected_currency,
-            }
-        )
+                "payment_options": payment_options,
+                "auto_renew": is_recurring_subscription,
+            },
+        }
+        if created_new:
+            next_psd.update(
+                {
+                    "flutterwave_tx_ref": tx_ref,
+                    "selected_currency": selected_currency,
+                    "payment_options": payment_options,
+                    "auto_renew": is_recurring_subscription,
+                }
+            )
+        payment_user.provider_specific_data = next_psd
         db_session.add(payment_user)
         db_session.commit()
 
@@ -571,15 +682,16 @@ async def initialize_transaction(
         }
 
     except Exception as e:  # noqa: BLE001
-        if payment_user and payment_user.id:
+        if created_new and payment_user and payment_user.id:
             await delete_payment_user(
                 request, org_id, payment_user.id, InternalUser(), db_session
             )
-        if upsell_payment_user and upsell_payment_user.id:
+        if upsell_created_new and upsell_payment_user and upsell_payment_user.id:
             await delete_payment_user(
                 request, org_id, upsell_payment_user.id, InternalUser(), db_session
             )
-        raise HTTPException(status_code=400, detail=str(e))
+        detail = e.detail if isinstance(e, HTTPException) else str(e)
+        raise HTTPException(status_code=400, detail=detail)
 
 
 async def verify_transaction(reference: str) -> dict:

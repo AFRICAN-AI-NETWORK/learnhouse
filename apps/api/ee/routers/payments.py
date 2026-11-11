@@ -17,12 +17,12 @@ from src.db.payments.payments import (
 )
 from src.db.payments.payments_courses import PaymentsCourse
 from src.db.payments.payments_products import (
+    PaymentProductTypeEnum,
     PaymentsProduct,
     PaymentsProductCreate,
     PaymentsProductRead,
     PaymentsProductUpdate,
 )
-from src.db.payments.payments_users import PaymentStatusEnum
 from src.db.users import AnonymousUser, InternalUser, PublicUser
 from src.security.auth import get_current_user
 from src.services.payments.discount_codes import (
@@ -49,6 +49,10 @@ from src.services.payments.payments_courses import (
     unlink_course_from_product,
 )
 from src.services.payments.payments_customers import get_customers
+from src.services.payments.payments_cycles import (
+    compute_subscription_lifecycle_state,
+    extend_payment_period,
+)
 from src.services.payments.payments_flutterwave import (
     get_supported_currencies,
     initialize_transaction,
@@ -65,7 +69,6 @@ from src.services.payments.payments_products import (
 )
 from src.services.payments.payments_users import (
     get_owned_courses,
-    update_payment_user_status,
 )
 from src.services.payments.webhooks.payments_flutterwave_webhooks import (
     handle_flutterwave_webhook,
@@ -299,9 +302,7 @@ def resolve_payment_product_and_course(
         ).all()
     )
     all_courses = list(
-        db_session.exec(
-            select(Course).where(Course.org_id == org_id)
-        ).all()
+        db_session.exec(select(Course).where(Course.org_id == org_id)).all()
     )
 
     # 2. Check if identifier matches a Course by course_uuid, id, or name/slug
@@ -314,7 +315,10 @@ def resolve_payment_product_and_course(
         if identifier_clean.startswith("course_") and c_uuid == identifier_clean[7:]:
             matched_course = course
             break
-        if not identifier_clean.startswith("course_") and c_uuid == f"course_{identifier_clean}":
+        if (
+            not identifier_clean.startswith("course_")
+            and c_uuid == f"course_{identifier_clean}"
+        ):
             matched_course = course
             break
         c_name = course.name.strip().lower().replace("-", " ").replace("_", " ")
@@ -324,22 +328,42 @@ def resolve_payment_product_and_course(
 
     # If still not matched, check substring/partial course name match
     if not matched_course:
-        norm_tokens = [w for w in norm_id.split() if len(w) >= 3 and w not in ("and", "for", "the", "with")]
+        norm_tokens = [
+            w
+            for w in norm_id.split()
+            if len(w) >= 3 and w not in ("and", "for", "the", "with")
+        ]
         for course in all_courses:
             c_name = course.name.strip().lower().replace("-", " ").replace("_", " ")
-            if (len(norm_id) >= 4 and norm_id in c_name) or (len(c_name) >= 4 and c_name in norm_id):
+            if (len(norm_id) >= 4 and norm_id in c_name) or (
+                len(c_name) >= 4 and c_name in norm_id
+            ):
                 matched_course = course
                 break
             # Token overlap check (e.g. "fundamentals", "automation", "creators")
             c_tokens = set(c_name.split())
-            if any(t in c_tokens for t in norm_tokens if t in ("fundamentals", "creators", "automation", "backend", "frontend", "career", "science")):
+            if any(
+                t in c_tokens
+                for t in norm_tokens
+                if t
+                in (
+                    "fundamentals",
+                    "creators",
+                    "automation",
+                    "backend",
+                    "frontend",
+                    "career",
+                    "science",
+                )
+            ):
                 matched_course = course
                 break
 
     # If course is found, find linked PaymentsCourse or matching product
     if matched_course:
         payment_course_stmt = select(PaymentsCourse).where(
-            PaymentsCourse.course_id == matched_course.id, PaymentsCourse.org_id == org_id
+            PaymentsCourse.course_id == matched_course.id,
+            PaymentsCourse.org_id == org_id,
         )
         main_payment_course = db_session.exec(payment_course_stmt).first()
         if main_payment_course:
@@ -375,19 +399,27 @@ def resolve_payment_product_and_course(
         p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
         if p_name == norm_id:
             return prod.id, matched_course
-        if prod.provider_product_id and prod.provider_product_id.strip() == identifier_clean:
+        if (
+            prod.provider_product_id
+            and prod.provider_product_id.strip() == identifier_clean
+        ):
             return prod.id, matched_course
 
     # 4. Fallback: fuzzy/partial match on PaymentsProduct name
     for prod in all_products:
         p_name = prod.name.strip().lower().replace("-", " ").replace("_", " ")
-        if (len(norm_id) >= 4 and norm_id in p_name) or (len(p_name) >= 4 and p_name in norm_id):
+        if (len(norm_id) >= 4 and norm_id in p_name) or (
+            len(p_name) >= 4 and p_name in norm_id
+        ):
             return prod.id, matched_course
 
     # 5. Fallback for subscription aliases like "aina-pro-subscription", "pro-subscription"
     if "subscription" in norm_id or "pro" in norm_id:
         for prod in all_products:
-            if getattr(prod, "product_type", None) == "subscription" or "subscription" in prod.name.lower():
+            if (
+                getattr(prod, "product_type", None) == "subscription"
+                or "subscription" in prod.name.lower()
+            ):
                 return prod.id, matched_course
 
     # 6. Fallback for Career Accelerator upsell
@@ -408,6 +440,7 @@ async def api_create_checkout_session_by_uuid(
     currency: str | None = None,
     discount_code: str | None = None,
     upsell_course_uuid: str | None = None,
+    auto_renew: bool = False,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -439,6 +472,7 @@ async def api_create_checkout_session_by_uuid(
         upsell_product_id,
         current_user,
         db_session,
+        auto_renew=auto_renew,
     )
 
 
@@ -451,6 +485,7 @@ async def api_create_checkout_session(
     currency: str | None = None,
     discount_code: str | None = None,
     upsell_product_id: int | None = None,
+    auto_renew: bool = False,
     current_user: PublicUser = Depends(get_current_user),
     db_session: Session = Depends(get_db_session),
 ):
@@ -459,10 +494,11 @@ async def api_create_checkout_session(
 
     Query Parameters:
         redirect_uri: URL to redirect after payment completion
-        currency: Optional currency code (ISO 4217). Supported: NGN, USD, GHS, ZAR, KES, XOF
+        currency: Optional currency code (ISO 4217). Supported: NGN, USD, GHS, ZAR, KES, UGX, TZS, ZMW, XOF, XAF, GBP, EUR, RWF
                  If not provided, uses the product's default currency
         discount_code: Optional discount code to apply to the purchase
         upsell_product_id: Optional ID of a product to upsell/bump with this checkout
+        auto_renew: Optional boolean; if True for subscriptions, attaches a Flutterwave payment_plan (Card only)
 
     Example:
         POST /api/v1/payments/{org_id}/checkout/product/{product_id}?redirect_uri=https://example.com/success&currency=USD&discount_code=SCHOOL2026&upsell_product_id=5
@@ -477,6 +513,7 @@ async def api_create_checkout_session(
         upsell_product_id,
         current_user,
         db_session,
+        auto_renew=auto_renew,
     )
 
 
@@ -523,11 +560,12 @@ async def api_verify_transaction(
             detail=f"Failed to verify transaction with Flutterwave: {e!s}",
         )
 
-    # Extract transaction details
-    flutterwave_status = transaction_data.get("status")
-    flutterwave_data = transaction_data.get("data", {})
-    # For Flutterwave, meta is slightly different. Sometimes it's inside data.meta
-    meta = flutterwave_data.get("meta", {})
+    # Extract transaction details (verify_transaction wraps Flutterwave data in {"status": "success", "data": {...}})
+    flutterwave_data = transaction_data.get("data", {}) or {}
+    flutterwave_status = flutterwave_data.get("status") or transaction_data.get(
+        "status"
+    )
+    meta = flutterwave_data.get("meta", {}) or {}
     payment_user_id = meta.get("payment_user_id")
 
     # Prepare response
@@ -545,68 +583,85 @@ async def api_verify_transaction(
         "payment_status_updated": False,
     }
 
-    # If transaction is successful and we have a payment_user_id, update the payment status
+    # If transaction is successful and we have a payment_user_id, activate or extend billing period
     if flutterwave_status == "successful" and payment_user_id:
         try:
-            # Find the payment user
             payment_user_statement = select(PaymentsUser).where(
                 PaymentsUser.id == int(payment_user_id), PaymentsUser.org_id == org_id
             )
             payment_user = db_session.exec(payment_user_statement).first()
 
             if payment_user:
-                # Update status to COMPLETED if it's not already
-                if payment_user.status != PaymentStatusEnum.COMPLETED:
-                    await update_payment_user_status(
-                        request=request,
-                        org_id=org_id,
-                        payment_user_id=int(payment_user_id),
-                        status=PaymentStatusEnum.COMPLETED,
-                        current_user=InternalUser(),
-                        db_session=db_session,
-                    )
-                    response["payment_status_updated"] = True
-                    response["previous_status"] = payment_user.status.value
-                    response["new_status"] = PaymentStatusEnum.COMPLETED.value
-
-                    # Record discount usage if applied
-                    if payment_user.discount_code_id:
-                        try:
-                            from src.services.payments.discount_codes import (
-                                increment_discount_usage_atomic,
-                                record_discount_usage,
-                            )
-                            increment_success = await increment_discount_usage_atomic(
-                                payment_user.discount_code_id, db_session
-                            )
-                            if increment_success:
-                                await record_discount_usage(
-                                    discount_code_id=payment_user.discount_code_id,
-                                    user_id=payment_user.user_id,
-                                    course_id=None,
-                                    product_id=payment_user.product_id,
-                                    payment_user_id=payment_user.id,
-                                    original_amount=payment_user.original_amount or 0.0,
-                                    discount_amount=payment_user.discount_amount or 0.0,
-                                    final_amount=payment_user.final_amount or 0.0,
-                                    db_session=db_session,
-                                )
-                        except Exception as e:  # noqa: BLE001
-                            pass
-
-                    # Activate upsell if present
-                    upsell_payment_user_id = meta.get("upsell_payment_user_id")
-                    if upsell_payment_user_id:
-                        await update_payment_user_status(
-                            request=request,
-                            org_id=org_id,
-                            payment_user_id=int(upsell_payment_user_id),
-                            status=PaymentStatusEnum.COMPLETED,
-                            current_user=InternalUser(),
-                            db_session=db_session,
-                        )
+                prev_status = payment_user.status.value
+                meta_auto_renew = meta.get("auto_renew")
+                if str(meta_auto_renew).lower() == "true":
+                    resolved_auto_renew: bool | None = True
+                elif str(meta_auto_renew).lower() == "false":
+                    resolved_auto_renew = False
                 else:
-                    response["payment_status"] = PaymentStatusEnum.COMPLETED.value
+                    resolved_auto_renew = None
+
+                tx_key = flutterwave_data.get("tx_ref") or reference
+                payment_user, did_extend = extend_payment_period(
+                    db_session,
+                    payment_user,
+                    tx_ref=tx_key,
+                    auto_renew=resolved_auto_renew,
+                )
+
+                response["payment_status_updated"] = did_extend or (
+                    prev_status != payment_user.status.value
+                )
+                response["previous_status"] = prev_status
+                response["new_status"] = payment_user.status.value
+                response["payment_status"] = payment_user.status.value
+                response["current_period_end"] = (
+                    payment_user.current_period_end.isoformat()
+                    if payment_user.current_period_end
+                    else None
+                )
+
+                # Record discount usage if applied (only once per tx_ref)
+                if did_extend and payment_user.discount_code_id:
+                    try:
+                        from src.services.payments.discount_codes import (
+                            increment_discount_usage_atomic,
+                            record_discount_usage,
+                        )
+
+                        increment_success = await increment_discount_usage_atomic(
+                            payment_user.discount_code_id, db_session
+                        )
+                        if increment_success:
+                            await record_discount_usage(
+                                discount_code_id=payment_user.discount_code_id,
+                                user_id=payment_user.user_id,
+                                course_id=None,
+                                product_id=payment_user.payment_product_id,
+                                payment_user_id=payment_user.id,
+                                original_amount=payment_user.original_amount or 0.0,
+                                discount_amount=payment_user.discount_amount or 0.0,
+                                final_amount=payment_user.final_amount or 0.0,
+                                db_session=db_session,
+                            )
+                    except Exception:  # noqa: BLE001
+                        pass
+
+                # Activate upsell if present
+                upsell_payment_user_id = meta.get("upsell_payment_user_id")
+                if upsell_payment_user_id and str(upsell_payment_user_id).isdigit():
+                    upsell_pu = db_session.exec(
+                        select(PaymentsUser).where(
+                            PaymentsUser.id == int(upsell_payment_user_id),
+                            PaymentsUser.org_id == org_id,
+                        )
+                    ).first()
+                    if upsell_pu:
+                        extend_payment_period(
+                            db_session,
+                            upsell_pu,
+                            tx_ref=f"{tx_key}:upsell" if tx_key else None,
+                        )
             else:
                 response["warning"] = (
                     f"Payment user {payment_user_id} not found in database"
@@ -679,14 +734,35 @@ async def api_check_course_paid_access(
     elif product_id:
         product = db_session.get(PaymentsProduct, product_id)
 
-    # Check user's payment status
+    # Check user's payment status (direct course product or org-wide subscription)
     payment_user = None
+    lifecycle_product = product
     if product and not isinstance(current_user, AnonymousUser):
         payment_user_statement = select(PaymentsUser).where(
             PaymentsUser.user_id == current_user.id,
             PaymentsUser.payment_product_id == product.id,
         )
         payment_user = db_session.exec(payment_user_statement).first()
+
+    if not payment_user and not isinstance(current_user, AnonymousUser):
+        org_sub = db_session.exec(
+            select(PaymentsUser, PaymentsProduct)
+            .join(
+                PaymentsProduct, PaymentsUser.payment_product_id == PaymentsProduct.id
+            )
+            .where(
+                PaymentsUser.user_id == current_user.id,
+                PaymentsProduct.org_id == org_id,
+                PaymentsProduct.product_type == PaymentProductTypeEnum.SUBSCRIPTION,
+            )
+            .order_by(PaymentsUser.id.desc())
+        ).first()
+        if org_sub:
+            payment_user, lifecycle_product = org_sub
+
+    lifecycle_state = compute_subscription_lifecycle_state(
+        payment_user, lifecycle_product
+    )
 
     is_author = False
     if request and not isinstance(current_user, AnonymousUser):
@@ -728,13 +804,15 @@ async def api_check_course_paid_access(
         "product": product_data,
         "diagnostics": {
             "course_id": course.id,
-            "course_linked_to_product": course_payment is not None or product is not None,
+            "course_linked_to_product": course_payment is not None
+            or product is not None,
             "product_id": product.id if product else None,
             "user_has_payment": payment_user is not None,
             "payment_status": payment_user.status.value if payment_user else None,
             "payment_user_id": payment_user.id if payment_user else None,
             "is_admin": is_admin,
             "is_author": is_author,
+            **lifecycle_state,
         },
     }
 

@@ -48,14 +48,17 @@ export default function PriceDisplay({
         ? finalAmount.toString()
         : finalAmount.toFixed(2)
 
-  const finalOriginalAmount = originalPriceUSD ? convertAmount(originalPriceUSD) : null
-  const formattedOriginalAmount = finalOriginalAmount !== null
-    ? (finalOriginalAmount > 1000
+  const finalOriginalAmount = originalPriceUSD
+    ? convertAmount(originalPriceUSD)
+    : null
+  const formattedOriginalAmount =
+    finalOriginalAmount !== null
+      ? finalOriginalAmount > 1000
         ? Math.round(finalOriginalAmount).toLocaleString()
         : Number.isInteger(finalOriginalAmount)
           ? finalOriginalAmount.toString()
-          : finalOriginalAmount.toFixed(2))
-    : null
+          : finalOriginalAmount.toFixed(2)
+      : null
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
@@ -110,6 +113,12 @@ export default function PriceDisplay({
               </option>
               <option value="RWF" className="bg-[#0a0f1e]">
                 RWF - Rwandan Franc
+              </option>
+              <option value="TZS" className="bg-[#0a0f1e]">
+                TZS - Tanzanian Shilling
+              </option>
+              <option value="ZMW" className="bg-[#0a0f1e]">
+                ZMW - Zambian Kwacha
               </option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-emerald-400">

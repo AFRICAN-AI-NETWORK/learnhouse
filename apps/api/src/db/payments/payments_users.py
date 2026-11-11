@@ -40,6 +40,12 @@ class PaymentsUserBase(SQLModel):
     original_amount: float | None = None
     discount_amount: float | None = None
     final_amount: float | None = None
+    auto_renew: bool = False
+    current_period_start: datetime | None = Field(default=None)
+    current_period_end: datetime | None = Field(default=None)
+    last_payment_date: datetime | None = Field(default=None)
+    renewal_reminder_sent_at: datetime | None = Field(default=None)
+    grace_notice_sent_at: datetime | None = Field(default=None)
     grace_period_start_date: datetime | None = Field(default=None)
 
 
