@@ -79,6 +79,12 @@ if (process.env.NODE_ENV === 'development') {
 
 const finalConfig = withPWA(nextConfig)
 
+const isSentryConfigured = Boolean(
+  process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+)
+
 module.exports =
   process.env.NODE_ENV === 'development'
     ? finalConfig
@@ -87,5 +93,13 @@ module.exports =
         project: process.env.SENTRY_PROJECT,
         authToken: process.env.SENTRY_AUTH_TOKEN,
         silent: true,
-        disableLogger: true,
+        sourcemaps: {
+          disable: !isSentryConfigured,
+          deleteSourcemapsAfterUpload: true,
+        },
+        webpack: {
+          treeshake: {
+            removeDebugLogging: true,
+          },
+        },
       })

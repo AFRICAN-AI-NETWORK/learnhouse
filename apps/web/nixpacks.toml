@@ -1,5 +1,8 @@
-# Nixpacks configuration for Next.js standalone deployment
+# Nixpacks / Railpack configuration for Next.js standalone deployment
 # This ensures static assets are properly copied into the standalone build
+
+[variables]
+NEXT_TELEMETRY_DISABLED = "1"
 
 [phases.build]
 cmds = [
