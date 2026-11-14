@@ -2,49 +2,42 @@ FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk update && apk upgrade && apk add --no-cache libc6-compat && rm -rf /var/cache/apk/*
+RUN apk update && apk add --no-cache libc6-compat && rm -rf /var/cache/apk/*
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Install dependencies with BuildKit pnpm store cache
+COPY package.json pnpm-lock.yaml* ./
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    corepack enable pnpm && pnpm i --frozen-lockfile
 
-
-# Rebuild the source code only when needed
+# Builder stage
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
-# Remove .env files from the final image
-# This is a good practice to avoid leaking sensitive data
-# Learn more about it in the Next.js documentation: https://nextjs.org/docs/basic-features/environment-variables
+# Remove .env files from the build image to prevent leaking secrets
 RUN rm -f .env*
 
-RUN \
-  if [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
-# Production image, copy all the files and run next
+# Build Next.js with pnpm store & Next.js cache mounts
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    --mount=type=cache,id=next-cache,target=/app/.next/cache \
+    corepack enable pnpm && pnpm run build
+
+# Production image
 FROM base AS runner
 WORKDIR /app
 
 # Install curl for health checks
 RUN apk update && apk add --no-cache curl && rm -rf /var/cache/apk/*
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -55,8 +48,7 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Copy standalone build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -68,14 +60,14 @@ RUN chmod +x server-wrapper.js
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
-# Create runtime-config.json placeholder (will be generated at startup)
+# Create runtime-config.json placeholder
 RUN touch runtime-config.json && chown nextjs:nodejs runtime-config.json
 
 USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3000}/api/health || curl -f http://localhost:${PORT:-3000}/ || exit 1
 
-# Use entrypoint script which will start the server with runtime env vars
 ENTRYPOINT ["./docker-entrypoint.sh"]
