@@ -217,7 +217,7 @@ export default function QuizBlock({
                     : ''}
                 </span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-relaxed whitespace-pre-line">
                 {q.content || 'Select the correct answer:'}
               </h3>
             </div>
@@ -310,7 +310,7 @@ export default function QuizBlock({
                   )}
                 </p>
                 {q.explanation && (
-                  <p className="text-sm mt-2 opacity-90 leading-relaxed font-normal">
+                  <p className="text-sm mt-2 opacity-90 leading-relaxed font-normal whitespace-pre-line">
                     {q.explanation}
                   </p>
                 )}

@@ -295,7 +295,7 @@ function SmartArticleActivity({
                 <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                   {title}
                 </h2>
-                <p className="text-slate-600 leading-relaxed text-lg font-medium">
+                <p className="text-slate-600 leading-relaxed text-lg font-medium whitespace-pre-line">
                   {step.content}
                 </p>
               </div>
@@ -335,7 +335,7 @@ function SmartArticleActivity({
                         className="text-emerald-500 shrink-0 mt-0.5"
                         size={20}
                       />
-                      <span className="leading-relaxed">{obj}</span>
+                      <span className="leading-relaxed whitespace-pre-line">{obj}</span>
                     </li>
                   ))}
                 </ul>
@@ -377,7 +377,7 @@ function SmartArticleActivity({
                       <h3 className="text-lg font-bold text-slate-900">
                         {sub.heading}
                       </h3>
-                      <p className="text-slate-600 leading-relaxed font-medium">
+                      <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-line">
                         {sub.content}
                       </p>
                     </div>
@@ -408,11 +408,11 @@ function SmartArticleActivity({
                 {label || 'Think About It'}
               </div>
               <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
-              <p className="text-slate-600 leading-relaxed font-medium">
+              <p className="text-slate-600 leading-relaxed font-medium whitespace-pre-line">
                 {step.content}
               </p>
               {step.example && (
-                <div className="mt-6 p-6 bg-white rounded-xl border border-rose-100 shadow-sm text-slate-700 font-medium leading-relaxed italic">
+                <div className="mt-6 p-6 bg-white rounded-xl border border-rose-100 shadow-sm text-slate-700 font-medium leading-relaxed italic whitespace-pre-line">
                   "{step.example}"
                 </div>
               )}
@@ -467,7 +467,7 @@ function SmartArticleActivity({
                         <h4 className="font-bold text-slate-900 text-base">
                           {ex.name}
                         </h4>
-                        <p className="text-sm text-slate-600 leading-relaxed">
+                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                           {ex.description}
                         </p>
                       </div>
@@ -511,7 +511,7 @@ function SmartArticleActivity({
                         className="text-teal-500 shrink-0 mt-1"
                         size={18}
                       />
-                      <span className="leading-relaxed">{item}</span>
+                      <span className="leading-relaxed whitespace-pre-line">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -697,7 +697,7 @@ function SmartArticleActivity({
               />
             </div>
             {step.caption && (
-              <p className="mt-4 text-sm text-slate-500 font-medium text-center max-w-2xl">
+              <p className="mt-4 text-sm text-slate-500 font-medium text-center max-w-2xl whitespace-pre-line">
                 {step.caption}
               </p>
             )}

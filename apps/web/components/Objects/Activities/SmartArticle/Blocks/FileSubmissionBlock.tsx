@@ -36,7 +36,7 @@ export default function FileSubmissionBlock({
   return (
     <div className="w-full max-w-3xl py-6">
       <div className="mb-6">
-        <h3 className="text-xl font-bold text-white mb-2 leading-relaxed">
+        <h3 className="text-xl font-bold text-white mb-2 leading-relaxed whitespace-pre-line">
           {instructions}
         </h3>
         <p className="text-sm font-medium text-zinc-500 uppercase tracking-widest flex items-center">
