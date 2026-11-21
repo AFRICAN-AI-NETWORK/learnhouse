@@ -54,9 +54,10 @@ function loadRuntimeConfig(): Record<string, string> {
           path.join(currentDir, 'runtime-config.json'),
           path.join(currentDir, '..', 'runtime-config.json'),
           path.join(currentDir, '..', '..', 'runtime-config.json'),
-          // Nixpacks root common locations
+          // Nixpacks and Docker root common locations
           '/app/runtime-config.json',
           '/app/apps/web/runtime-config.json',
+          '/runtime-config.json',
         ]
 
         // Only log once in production to avoid cluttering logs
@@ -144,11 +145,19 @@ const normalizeApiUrl = (url: string): string => {
 }
 
 // Dynamic config getters - these are functions to ensure runtime values are used
-const getLEARNHOUSE_HTTP_PROTOCOL = () =>
-  getConfig('NEXT_PUBLIC_LEARNHOUSE_HTTPS') === 'true' ? 'https://' : 'http://'
+const getLEARNHOUSE_HTTP_PROTOCOL = () => {
+  const protocol = getConfig('NEXT_PUBLIC_LEARNHOUSE_HTTPS')
+  if (protocol) {
+    return protocol === 'true' ? 'https://' : 'http://'
+  }
+  return typeof process !== 'undefined' &&
+    process.env?.NODE_ENV === 'production'
+    ? 'https://'
+    : 'http://'
+}
+
 const getLEARNHOUSE_API_URL = () => {
   // Check for NEXT_PUBLIC_LEARNHOUSE_API_URL first, then fallback to NEXT_PUBLIC_API_URL for backward compatibility
-
   const learnhouseApiUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_API_URL')
   const apiUrl = learnhouseApiUrl || getConfig('NEXT_PUBLIC_API_URL')
 
@@ -160,30 +169,23 @@ const getLEARNHOUSE_API_URL = () => {
     }
   }
 
-  // In production, fail fast if API URL is not configured
+  if (apiUrl && apiUrl.trim()) {
+    const normalizedUrl = normalizeApiUrl(apiUrl)
+    return normalizedUrl
+  }
+
+  // In production, fallback gracefully if API URL is not configured instead of throwing a fatal error
   if (
     typeof process !== 'undefined' &&
     process.env?.NODE_ENV === 'production'
   ) {
-    if (!apiUrl || !apiUrl.trim()) {
-      const cwd = typeof process.cwd === 'function' ? process.cwd() : 'unknown'
-      throw new Error(
-        `NEXT_PUBLIC_LEARNHOUSE_API_URL is required in production but was not found. ` +
-          `Current working directory: ${cwd}. ` +
-          `Please ensure it is set in your environment variables and that the build used the correct server-wrapper.js.`
+    const defaultProdUrl = 'https://lms-backend.africanainetwork.com/api/v1/'
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn(
+        `[Config] ⚠️ NEXT_PUBLIC_LEARNHOUSE_API_URL was not found in environment. Using default fallback: ${defaultProdUrl}`
       )
     }
-  }
-
-  if (apiUrl && apiUrl.trim()) {
-    const normalizedUrl = normalizeApiUrl(apiUrl)
-    if (
-      typeof process !== 'undefined' &&
-      process.env?.NODE_ENV === 'development'
-    ) {
-      // Development specific logic can go here
-    }
-    return normalizedUrl
+    return defaultProdUrl
   }
 
   // Fallback URLs are development-only
@@ -203,18 +205,9 @@ const getLEARNHOUSE_API_URL = () => {
     )
   }
 
-  // Production should never reach here due to fail-fast check above, but add safety check
-  if (
-    typeof process !== 'undefined' &&
-    process.env?.NODE_ENV === 'production'
-  ) {
-    throw new Error(
-      'API URL not configured. NEXT_PUBLIC_LEARNHOUSE_API_URL must be set in production environment.'
-    )
-  }
-
   return fallbackUrl
 }
+
 const getLEARNHOUSE_BACKEND_URL = () => {
   // Check for NEXT_PUBLIC_LEARNHOUSE_BACKEND_URL first, then fallback to NEXT_PUBLIC_API_URL (without /api/v1/)
   const learnhouseBackendUrl = getConfig('NEXT_PUBLIC_LEARNHOUSE_BACKEND_URL')
@@ -234,12 +227,40 @@ const getLEARNHOUSE_BACKEND_URL = () => {
     // Remove /api/v1/ if present to get base URL
     return backendUrl.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '') + '/'
   }
+
+  if (
+    typeof process !== 'undefined' &&
+    process.env?.NODE_ENV === 'production'
+  ) {
+    return 'https://lms-backend.africanainetwork.com/'
+  }
+
   return 'http://localhost:1338/'
 }
-const getLEARNHOUSE_DOMAIN = () =>
-  getConfig('NEXT_PUBLIC_LEARNHOUSE_DOMAIN', 'localhost:3000')
-const getLEARNHOUSE_TOP_DOMAIN = () =>
-  getConfig('NEXT_PUBLIC_LEARNHOUSE_TOP_DOMAIN', 'localhost')
+
+const getLEARNHOUSE_DOMAIN = () => {
+  const domain = getConfig('NEXT_PUBLIC_LEARNHOUSE_DOMAIN')
+  if (domain && domain.trim()) return domain.trim()
+  if (
+    typeof process !== 'undefined' &&
+    process.env?.NODE_ENV === 'production'
+  ) {
+    return 'lms.africanainetwork.com'
+  }
+  return 'localhost:3000'
+}
+
+const getLEARNHOUSE_TOP_DOMAIN = () => {
+  const topDomain = getConfig('NEXT_PUBLIC_LEARNHOUSE_TOP_DOMAIN')
+  if (topDomain && topDomain.trim()) return topDomain.trim()
+  if (
+    typeof process !== 'undefined' &&
+    process.env?.NODE_ENV === 'production'
+  ) {
+    return 'africanainetwork.com'
+  }
+  return 'localhost'
+}
 
 // Export getter functions for dynamic runtime configuration
 export const getLEARNHOUSE_HTTP_PROTOCOL_VAL = getLEARNHOUSE_HTTP_PROTOCOL

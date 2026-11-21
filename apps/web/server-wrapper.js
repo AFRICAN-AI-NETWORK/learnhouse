@@ -11,19 +11,49 @@ const path = require('path')
 // Read all NEXT_PUBLIC_* environment variables from the environment
 const env = process.env
 
+// Default production configuration values if not provided by the environment
+const PROD_DEFAULTS = {
+  NEXT_PUBLIC_LEARNHOUSE_API_URL:
+    'https://lms-backend.africanainetwork.com/api/v1/',
+  NEXT_PUBLIC_LEARNHOUSE_BACKEND_URL:
+    'https://lms-backend.africanainetwork.com',
+  NEXT_PUBLIC_API_URL: 'https://lms-backend.africanainetwork.com/api/v1/',
+  NEXT_PUBLIC_LEARNHOUSE_DOMAIN: 'lms.africanainetwork.com',
+  NEXT_PUBLIC_LEARNHOUSE_TOP_DOMAIN: 'africanainetwork.com',
+  NEXT_PUBLIC_LEARNHOUSE_HTTPS: 'true',
+  NEXT_PUBLIC_LEARNHOUSE_MULTI_ORG: 'false',
+  NEXT_PUBLIC_LEARNHOUSE_DEFAULT_ORG: 'default',
+}
+
 // Collect all NEXT_PUBLIC_* variables from the environment
 const runtimeConfig = {}
 Object.keys(env).forEach((key) => {
   if (key.startsWith('NEXT_PUBLIC_')) {
     runtimeConfig[key] = env[key]
-    process.env[key] = env[key]
   }
+})
+
+// Inject production defaults for missing critical variables
+if (process.env.NODE_ENV === 'production') {
+  Object.entries(PROD_DEFAULTS).forEach(([key, defaultValue]) => {
+    if (!runtimeConfig[key] || !runtimeConfig[key].trim()) {
+      runtimeConfig[key] = defaultValue
+    }
+  })
+}
+
+// Ensure all runtimeConfig keys are on process.env
+Object.keys(runtimeConfig).forEach((key) => {
+  process.env[key] = runtimeConfig[key]
 })
 
 // Write runtime config JSON file to multiple possible search locations
 const configPaths = [
   path.join(__dirname, 'runtime-config.json'),
   path.join(__dirname, '.next', 'standalone', 'runtime-config.json'),
+  path.join(process.cwd(), 'runtime-config.json'),
+  '/app/runtime-config.json',
+  '/runtime-config.json',
 ]
 
 configPaths.forEach((cp) => {
@@ -47,7 +77,9 @@ const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfi
 // All possible public directories - write to ALL of them
 const allPublicDirs = [
   path.join(__dirname, '.next', 'standalone', 'public'), // Next.js standalone (PRIORITY!)
+  path.join(__dirname, '.next', 'standalone', 'apps', 'web', 'public'),
   path.join(__dirname, 'public'), // Standard location
+  '/app/public',
 ]
 
 let successCount = 0
