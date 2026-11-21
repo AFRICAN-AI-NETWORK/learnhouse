@@ -25,10 +25,10 @@ const PROD_DEFAULTS = {
   NEXT_PUBLIC_LEARNHOUSE_DEFAULT_ORG: 'default',
 }
 
-// Collect all NEXT_PUBLIC_* variables from the environment
+// Collect all runtime config variables from the environment
 const runtimeConfig = {}
 Object.keys(env).forEach((key) => {
-  if (key.startsWith('NEXT_PUBLIC_')) {
+  if (key.startsWith('NEXT_PUBLIC_') || key.startsWith('LEARNHOUSE_')) {
     runtimeConfig[key] = env[key]
   }
 })
@@ -71,8 +71,14 @@ configPaths.forEach((cp) => {
 
 console.log(`📋 Variables found: ${Object.keys(runtimeConfig).join(', ')}`)
 
-// Create client-side runtime config script for browser access
-const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(runtimeConfig)};`
+// Create client-side runtime config script for browser access (NEXT_PUBLIC_* only)
+const clientConfig = {}
+Object.keys(runtimeConfig).forEach((key) => {
+  if (key.startsWith('NEXT_PUBLIC_')) {
+    clientConfig[key] = runtimeConfig[key]
+  }
+})
+const scriptContent = `window.__RUNTIME_CONFIG__ = ${JSON.stringify(clientConfig)};`
 
 // All possible public directories - write to ALL of them
 const allPublicDirs = [

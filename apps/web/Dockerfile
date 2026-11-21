@@ -53,8 +53,10 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 FROM base AS runner
 WORKDIR /app
 
-# Install curl for health checks
-RUN apk update && apk add --no-cache curl && rm -rf /var/cache/apk/*
+# Install curl and libcap for health checks and non-root port binding (<1024, e.g. PORT=80)
+RUN apk update && apk add --no-cache curl libcap && \
+    setcap 'cap_net_bind_service=+ep' /usr/local/bin/node && \
+    rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -92,7 +94,7 @@ RUN touch runtime-config.json && chown nextjs:nodejs runtime-config.json
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3000 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:${PORT:-3000}/api/health || curl -f http://localhost:${PORT:-3000}/ || exit 1
