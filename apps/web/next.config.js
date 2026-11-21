@@ -26,6 +26,14 @@ const nextConfig = {
   },
   reactStrictMode: false,
   output: 'standalone',
+  eslint: {
+    // ESLint is checked in CI / local pre-commit; skipping during Docker build saves ~5-8 minutes
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // TypeScript is verified with tsc --noEmit; skipping in Docker build saves ~5-8 minutes
+    ignoreBuildErrors: true,
+  },
   experimental: {
     serverActions: {
       // Server Action POSTs are proxied to 127.0.0.1 by proxy.ts, so the Host
@@ -86,7 +94,7 @@ const isSentryConfigured = Boolean(
 )
 
 module.exports =
-  process.env.NODE_ENV === 'development'
+  process.env.NODE_ENV === 'development' || !isSentryConfigured
     ? finalConfig
     : withSentryConfig(finalConfig, {
         org: process.env.SENTRY_ORG,
